@@ -1,0 +1,1313 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PRV — Black & White · Apple Liquid Glass Preview</title>
+<style>
+* , *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  /* ── Pure Monochrome Palette ── */
+  --void:        #000000;
+  --ink-1:       #0A0A0A;
+  --ink-2:       #111111;
+  --ink-3:       #1A1A1A;
+  --ink-4:       #222222;
+
+  --white-95:    rgba(255,255,255,0.95);
+  --white-70:    rgba(255,255,255,0.70);
+  --white-45:    rgba(255,255,255,0.45);
+  --white-25:    rgba(255,255,255,0.25);
+  --white-14:    rgba(255,255,255,0.14);
+  --white-08:    rgba(255,255,255,0.08);
+  --white-05:    rgba(255,255,255,0.05);
+
+  /* ── Glass ── */
+  --g1:          rgba(255,255,255,0.06);
+  --g2:          rgba(255,255,255,0.10);
+  --g3:          rgba(255,255,255,0.16);
+  --g-border:    rgba(255,255,255,0.12);
+  --g-shine:     rgba(255,255,255,0.30);
+
+  /* ── Inverse (light cards) ── */
+  --light-bg:    rgba(255,255,255,0.96);
+  --light-g1:    rgba(0,0,0,0.06);
+  --light-g2:    rgba(0,0,0,0.10);
+  --light-border: rgba(0,0,0,0.10);
+  --dark-text:   rgba(0,0,0,0.88);
+  --dark-text-2: rgba(0,0,0,0.50);
+  --dark-text-3: rgba(0,0,0,0.28);
+
+  --font: -apple-system,"SF Pro Display","SF Pro Text",BlinkMacSystemFont,system-ui,sans-serif;
+  --r-sm: 10px; --r-md: 16px; --r-lg: 22px; --r-xl: 28px; --r-2xl: 36px; --r-pill: 100px;
+}
+
+html, body {
+  background: var(--void);
+  color: var(--white-95);
+  font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+/* ── Scroll ── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-thumb { background: var(--white-14); border-radius: 2px; }
+
+/* ════════════════════════════════
+   TOP NAV
+════════════════════════════════ */
+.top-nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 999;
+  display: flex; justify-content: center; align-items: center;
+  padding: 12px 20px;
+  background: rgba(0,0,0,0.80);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border-bottom: 1px solid var(--g-border);
+  gap: 4px;
+}
+.nav-logo {
+  position: absolute; left: 24px;
+  font-size: 15px; font-weight: 700;
+  letter-spacing: 0.05em; color: var(--white-95);
+}
+.nav-logo span { color: var(--white-45); font-weight: 400; }
+.ntab {
+  padding: 7px 18px; border-radius: var(--r-pill);
+  background: transparent; border: none;
+  color: var(--white-45); font-family: var(--font);
+  font-size: 13px; font-weight: 500; cursor: pointer;
+  transition: all 0.2s;
+}
+.ntab:hover { color: var(--white-95); background: var(--g1); }
+.ntab.on {
+  background: var(--white-95); color: #000;
+}
+
+/* ── Screens ── */
+.screen { display: none; padding-top: 62px; min-height: 100vh; }
+.screen.on { display: block; }
+
+/* ════════════════════════════════
+   GLASS UTILITY
+════════════════════════════════ */
+.glass {
+  background: var(--g1);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border: 1px solid var(--g-border);
+  position: relative; overflow: hidden;
+}
+.glass::after {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent 10%, var(--g-shine) 50%, transparent 90%);
+  pointer-events: none;
+}
+
+/* ════════════════════════════════
+   SCREEN 0 · PALETTE SUGGESTION
+════════════════════════════════ */
+#s-palette {
+  background: #000;
+  padding: 80px 40px 60px;
+  max-width: 1100px; margin: 0 auto;
+}
+
+.palette-hero {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 80px; flex-wrap: wrap; gap: 32px;
+}
+.palette-headline {
+  font-size: 56px; font-weight: 800;
+  letter-spacing: -0.04em; line-height: 1.0;
+}
+.palette-headline .white { color: #fff; }
+.palette-headline .gray  { color: rgba(255,255,255,0.35); }
+.palette-sub { font-size: 17px; color: var(--white-45); margin-top: 12px; font-weight: 400; max-width: 360px; line-height: 1.6; }
+
+/* Color swatches */
+.swatches { display: flex; flex-direction: column; gap: 8px; }
+.swatch-row { display: flex; gap: 6px; }
+.swatch {
+  height: 56px; border-radius: var(--r-md);
+  display: flex; align-items: flex-end; padding: 8px 10px;
+  position: relative;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.04em;
+}
+.swatch::after { content:''; position:absolute;top:0;left:0;right:0;height:1px;background:rgba(255,255,255,0.2);border-radius:inherit; }
+
+/* Monochrome scale */
+.mono-scale {
+  display: flex; gap: 0; border-radius: var(--r-xl); overflow: hidden;
+  border: 1px solid var(--g-border); margin-bottom: 60px;
+}
+.mono-step {
+  flex: 1; padding: 20px 0 16px;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+}
+.mono-dot { width: 28px; height: 28px; border-radius: 50%; }
+.mono-label { font-size: 10px; font-weight: 600; letter-spacing: 0.04em; }
+.mono-hex { font-size: 9px; }
+
+/* Comparison */
+.compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 60px; }
+.compare-card {
+  border-radius: var(--r-2xl); padding: 32px;
+  position: relative; overflow: hidden;
+}
+.compare-card::after { content:''; position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.22),transparent); }
+.compare-title { font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 20px; }
+
+/* ════════════════════════════════
+   SCREEN 1 · DARK MODE APP
+════════════════════════════════ */
+#s-dark { background: #000; }
+.dark-wrap { max-width: 1100px; margin: 0 auto; padding: 48px 40px; }
+
+.phones-row {
+  display: flex; gap: 24px; justify-content: center;
+  flex-wrap: wrap; margin-bottom: 48px;
+}
+
+.phone {
+  width: 300px;
+  border-radius: 44px;
+  background: #0A0A0A;
+  border: 1.5px solid rgba(255,255,255,0.16);
+  overflow: hidden;
+  box-shadow:
+    0 60px 120px rgba(0,0,0,0.9),
+    inset 0 1px 0 rgba(255,255,255,0.12),
+    0 0 0 1px rgba(255,255,255,0.04) inset;
+  position: relative; flex-shrink: 0;
+}
+.phone-di {
+  position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+  width: 110px; height: 30px;
+  background: #000; border-radius: 18px; z-index: 10;
+  display: flex; align-items: center; justify-content: space-between; padding: 0 12px;
+}
+.di-c { width: 10px; height: 10px; border-radius: 50%; background: #1a1a1a; }
+.di-live { display:flex;align-items:center;gap:3px; }
+.di-live-dot { width:6px;height:6px;border-radius:50%;background:#fff;opacity:0.9; }
+.di-live-txt { font-size:9px;font-weight:700;color:rgba(255,255,255,0.7); }
+
+.phone-screen {
+  min-height: 650px;
+  background: #000;
+  padding: 52px 14px 80px;
+  position: relative;
+}
+.phone-statusbar {
+  position: absolute; top: 14px; left: 0; right: 0;
+  display: flex; justify-content: space-between; padding: 0 22px;
+  font-size: 11px; font-weight: 600; color: var(--white-95);
+}
+
+/* Tab bar inside phone */
+.phone-tabbar {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  display: flex; justify-content: space-around; align-items: center;
+  padding: 10px 0 22px;
+  background: rgba(10,10,10,0.88);
+  backdrop-filter: blur(40px) saturate(200%);
+  -webkit-backdrop-filter: blur(40px) saturate(200%);
+  border-top: 1px solid var(--g-border);
+}
+.ptab { display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:4px 10px; }
+.ptab .pi { font-size:20px;line-height:1; }
+.ptab .pl { font-size:9px;font-weight:500;color:var(--white-25); }
+.ptab.active .pl { color:#fff; }
+
+/* KPI cards in phone */
+.p-kpi-grid { display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px; }
+.p-kpi {
+  border-radius: 16px; padding: 14px;
+  background: var(--g1);
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+  border: 1px solid var(--g-border);
+  position: relative; overflow: hidden;
+}
+.p-kpi::after { content:''; position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--g-shine),transparent); }
+.p-kpi-val { font-size:20px;font-weight:700;letter-spacing:-0.02em; }
+.p-kpi-lbl { font-size:10px;color:var(--white-45);margin-top:2px; }
+.p-kpi-trend { font-size:10px;font-weight:600;margin-top:5px; }
+
+/* Feed in phone */
+.p-feed {
+  border-radius: 18px; overflow: hidden;
+  background: var(--g1);
+  border: 1px solid var(--g-border);
+  position: relative;
+}
+.p-feed::after { content:''; position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--g-shine),transparent); }
+.p-feed-item {
+  display:flex;align-items:center;gap:10px;
+  padding:10px 12px;
+  border-bottom: 1px solid var(--white-05);
+}
+.p-feed-item:last-child { border-bottom:none; }
+.p-ava { width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0; }
+.p-feed-title { font-size:11px;font-weight:600;line-height:1.3; }
+.p-feed-sub { font-size:10px;color:var(--white-45);margin-top:1px; }
+.p-feed-time { font-size:10px;color:var(--white-25);flex-shrink:0;margin-left:auto; }
+
+/* Phone greeting */
+.p-greet { font-size:22px;font-weight:700;letter-spacing:-0.02em;margin-bottom:3px; }
+.p-role { font-size:11px;color:var(--white-45);margin-bottom:14px;display:flex;align-items:center;gap:6px; }
+.p-role-badge {
+  padding:2px 8px;border-radius:6px;
+  background:var(--g2);border:1px solid var(--g-border);
+  color:var(--white-70);font-size:10px;font-weight:600;
+}
+
+/* Section lbl */
+.p-sect { font-size:10px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--white-25);margin-bottom:8px;margin-top:12px; }
+
+/* ════════════════════════════════
+   SCREEN 2 · LIGHT MODE APP
+════════════════════════════════ */
+#s-light { background: #F0F0F0; }
+.light-wrap { max-width: 1100px; margin: 0 auto; padding: 48px 40px; }
+
+.phone-light {
+  width: 300px; border-radius: 44px;
+  background: #E8E8E8;
+  border: 1.5px solid rgba(0,0,0,0.14);
+  overflow: hidden;
+  box-shadow:
+    0 60px 120px rgba(0,0,0,0.25),
+    inset 0 1px 0 rgba(255,255,255,0.9),
+    0 0 0 1px rgba(255,255,255,0.5) inset;
+  position: relative; flex-shrink: 0;
+}
+.phone-screen-light {
+  min-height: 650px;
+  background: linear-gradient(180deg, #F8F8F8 0%, #EFEFEF 100%);
+  padding: 52px 14px 80px;
+  position: relative;
+}
+.phone-statusbar-light {
+  position: absolute; top: 14px; left: 0; right: 0;
+  display: flex; justify-content: space-between; padding: 0 22px;
+  font-size: 11px; font-weight: 600; color: rgba(0,0,0,0.88);
+}
+.phone-di-light {
+  position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+  width: 110px; height: 30px;
+  background: #1a1a1a; border-radius: 18px; z-index: 10;
+}
+
+/* Light KPI */
+.p-kpi-light {
+  border-radius: 16px; padding: 14px;
+  background: rgba(255,255,255,0.82);
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+  border: 1px solid rgba(255,255,255,0.9);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  position: relative; overflow: hidden;
+}
+.p-kpi-val-light { font-size:20px;font-weight:700;letter-spacing:-0.02em;color:rgba(0,0,0,0.88); }
+.p-kpi-lbl-light { font-size:10px;color:rgba(0,0,0,0.45);margin-top:2px; }
+.p-kpi-trend-light { font-size:10px;font-weight:600;margin-top:5px; }
+
+/* Light feed */
+.p-feed-light {
+  border-radius: 18px; overflow: hidden;
+  background: rgba(255,255,255,0.82);
+  border: 1px solid rgba(255,255,255,0.9);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+}
+.p-feed-item-light {
+  display:flex;align-items:center;gap:10px;
+  padding:10px 12px;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+.p-feed-item-light:last-child { border-bottom:none; }
+.p-greet-light { font-size:22px;font-weight:700;letter-spacing:-0.02em;color:#000;margin-bottom:3px; }
+.p-role-light { font-size:11px;color:rgba(0,0,0,0.45);margin-bottom:14px;display:flex;align-items:center;gap:6px; }
+.p-role-badge-light {
+  padding:2px 8px;border-radius:6px;
+  background:rgba(0,0,0,0.08);
+  color:rgba(0,0,0,0.60);font-size:10px;font-weight:600;
+}
+.p-sect-light { font-size:10px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:rgba(0,0,0,0.30);margin-bottom:8px;margin-top:12px; }
+
+.phone-tabbar-light {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  display: flex; justify-content: space-around; align-items: center;
+  padding: 10px 0 22px;
+  background: rgba(240,240,240,0.92);
+  backdrop-filter: blur(40px) saturate(200%);
+  -webkit-backdrop-filter: blur(40px) saturate(200%);
+  border-top: 1px solid rgba(0,0,0,0.08);
+}
+.ptab-l { display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:4px 10px; }
+.ptab-l .pi { font-size:20px;line-height:1; }
+.ptab-l .pl { font-size:9px;font-weight:500;color:rgba(0,0,0,0.30); }
+.ptab-l.active .pl { color:#000; }
+
+/* ════════════════════════════════
+   SCREEN 3 · COMPONENTS B&W
+════════════════════════════════ */
+#s-components { background: #000; }
+.comp-wrap { max-width: 1100px; margin: 0 auto; padding: 48px 40px; }
+.h2 { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 20px; margin-top: 48px; }
+.h2:first-child { margin-top: 0; }
+
+/* Bottom sheet */
+.bsheet {
+  border-radius: var(--r-2xl) var(--r-2xl) 0 0;
+  padding: 12px 24px 28px;
+  background: rgba(18,18,18,0.97);
+  backdrop-filter: blur(60px) saturate(220%);
+  -webkit-backdrop-filter: blur(60px) saturate(220%);
+  border: 1px solid var(--g-border); border-bottom: none;
+  position: relative;
+}
+.bsheet::after { content:''; position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent 5%,var(--g-shine) 50%,transparent 95%); }
+.bs-handle { width:36px;height:4px;border-radius:2px;background:var(--white-25);margin:0 auto 20px; }
+
+/* Command palette */
+.cmd {
+  border-radius: var(--r-xl); overflow: hidden;
+  background: rgba(14,14,14,0.98);
+  backdrop-filter: blur(60px);
+  -webkit-backdrop-filter: blur(60px);
+  border: 1px solid var(--g-border);
+  box-shadow: 0 40px 80px rgba(0,0,0,0.9), 0 0 0 1px rgba(255,255,255,0.04) inset;
+  position: relative;
+}
+.cmd::after { content:''; position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--g-shine),transparent); }
+.cmd-row {
+  display:flex;align-items:center;gap:12px;
+  padding:14px 18px;
+  border-bottom:1px solid var(--white-05);
+}
+.cmd-result-row {
+  display:flex;align-items:center;gap:12px;
+  padding:9px 18px; cursor:pointer; transition:background 0.15s;
+}
+.cmd-result-row:hover,.cmd-result-row.sel { background:var(--g2); }
+.cmd-ico {
+  width:32px;height:32px;border-radius:10px;
+  background:var(--g2);border:1px solid var(--g-border);
+  display:flex;align-items:center;justify-content:center;
+  font-size:15px;flex-shrink:0;
+}
+.cmd-nm { font-size:14px;font-weight:600; }
+.cmd-path { font-size:11px;color:var(--white-45);margin-top:1px; }
+.kbd { padding:2px 7px;border-radius:5px;background:var(--g2);border:1px solid var(--g-border);font-size:11px;font-weight:600;color:var(--white-45); }
+
+/* Context menu */
+.ctxm {
+  border-radius: var(--r-xl); overflow:hidden;
+  background: rgba(20,20,20,0.97);
+  backdrop-filter:blur(60px);
+  -webkit-backdrop-filter:blur(60px);
+  border:1px solid var(--g-border);
+  box-shadow:0 20px 60px rgba(0,0,0,0.8);
+  min-width:220px; position:relative;
+}
+.ctxm::after { content:''; position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--g-shine),transparent); }
+.ctx-row {
+  display:flex;align-items:center;gap:12px;
+  padding:11px 16px;font-size:15px;cursor:pointer;transition:background 0.15s;
+}
+.ctx-row:hover { background:var(--g1); }
+.ctx-row.del { color:rgba(255,255,255,0.60); }
+.ctx-sep { height:1px;background:var(--white-05);margin:2px 0; }
+
+/* Notif */
+.notif {
+  border-radius: var(--r-xl); padding:14px 16px;
+  background:rgba(16,16,16,0.94);
+  backdrop-filter:blur(40px);
+  -webkit-backdrop-filter:blur(40px);
+  border:1px solid var(--g-border);
+  display:flex;align-items:flex-start;gap:12px;
+  position:relative;overflow:hidden;margin-bottom:10px;
+}
+.notif::after { content:''; position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--g-shine),transparent); }
+
+/* Buttons */
+.btn { display:inline-flex;align-items:center;gap:7px;padding:11px 22px;border-radius:var(--r-pill);font-family:var(--font);font-size:15px;font-weight:600;cursor:pointer;border:none;transition:all 0.2s; }
+.btn-w { background:#fff;color:#000; }
+.btn-w:hover { background:rgba(255,255,255,0.88);transform:scale(1.02); }
+.btn-gb {
+  background:var(--g2);color:var(--white-95);
+  border:1px solid var(--g-border);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  position:relative;overflow:hidden;
+}
+.btn-gb::after { content:'';position:absolute;top:0;left:0;right:0;height:1px;background:var(--g-shine); }
+.btn-ghost-w { background:transparent;color:#fff;border:1.5px solid var(--g-border); }
+.btn-sm { padding:7px 14px;font-size:13px; }
+
+/* Badges B&W */
+.bdg { display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:var(--r-pill);font-size:11px;font-weight:600; }
+
+/* Input */
+.inp-wrap {
+  border-radius: var(--r-lg); overflow:hidden;
+  background:var(--g1);border:1px solid var(--g-border);
+  display:flex;align-items:center;gap:10px;padding:13px 16px;
+  position:relative;
+}
+.inp-wrap::after { content:''; position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--g-shine),transparent); }
+.inp-wrap.focused { border-color:rgba(255,255,255,0.40); box-shadow:0 0 0 3px rgba(255,255,255,0.07); }
+.inp-wrap input { flex:1;background:none;border:none;outline:none;font-family:var(--font);font-size:16px;color:#fff;caret-color:#fff; }
+.inp-wrap input::placeholder { color:var(--white-25); }
+
+/* Toggle */
+.toggle { display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--white-05); }
+.toggle-track {
+  width:50px;height:28px;border-radius:14px;border:none;cursor:pointer;
+  transition:background 0.25s;position:relative;
+}
+.toggle-track.on { background:#fff; }
+.toggle-track.off { background:rgba(255,255,255,0.18); }
+.toggle-knob {
+  position:absolute;top:3px;width:22px;height:22px;border-radius:50%;
+  background:#000;transition:left 0.25s cubic-bezier(.4,0,.2,1);
+  box-shadow:0 2px 6px rgba(0,0,0,0.3);
+}
+.toggle-track.on .toggle-knob { left:25px; }
+.toggle-track.off .toggle-knob { left:3px;background:#fff; }
+
+/* Two col */
+.two-col { display:grid;grid-template-columns:1fr 1fr;gap:28px; }
+@media(max-width:768px) { .two-col{grid-template-columns:1fr;} }
+
+/* Divider */
+.div { height:1px;background:var(--white-08);margin:40px 0; }
+
+/* ════════════════════════════════
+   SCREEN 4 · TYPOGRAPHY & ICONS
+════════════════════════════════ */
+#s-type { background:#000; }
+.type-wrap { max-width:1100px;margin:0 auto;padding:48px 40px; }
+
+.type-row { display:flex;align-items:baseline;gap:20px;margin-bottom:10px; }
+.type-tag { font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--white-25);min-width:120px; }
+
+/* App icons */
+.icon-grid { display:flex;gap:16px;flex-wrap:wrap;margin-bottom:48px; }
+.app-icon {
+  width:80px;height:80px;border-radius:18px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:36px;
+  position:relative;overflow:hidden;
+  border:1px solid var(--g-border);
+  flex-shrink:0;
+}
+.app-icon::after { content:''; position:absolute;top:0;left:0;right:0;height:1px;background:rgba(255,255,255,0.3); }
+
+.spacing-demo { display:flex;flex-direction:column;gap:0;border-radius:var(--r-xl);overflow:hidden;border:1px solid var(--g-border);position:relative;margin-bottom:48px; }
+.spacing-demo::after { content:''; position:absolute;top:0;left:0;right:0;height:1px;background:var(--g-shine); }
+
+</style>
+</head>
+<body>
+
+<!-- ═══ NAV ═══ -->
+<nav class="top-nav">
+  <div class="nav-logo">PRV <span>preview</span></div>
+  <button class="ntab on"   onclick="go('palette',this)">Paletă & Sugestii</button>
+  <button class="ntab"      onclick="go('dark',this)">Dark Mode</button>
+  <button class="ntab"      onclick="go('light',this)">Light Mode</button>
+  <button class="ntab"      onclick="go('components',this)">Componente</button>
+  <button class="ntab"      onclick="go('type',this)">Tipografie & Iconuri</button>
+</nav>
+
+
+<!-- ═══════════════════════════════════
+     SCREEN 0 · PALETA & SUGESTII
+═══════════════════════════════════ -->
+<div id="s-palette" class="screen on">
+<div style="max-width:1100px;margin:0 auto;padding:56px 40px;">
+
+  <!-- Hero -->
+  <div class="palette-hero">
+    <div>
+      <div class="palette-headline">
+        <div class="white">Alb.</div>
+        <div class="white">Negru.</div>
+        <div class="gray">Pur Apple.</div>
+      </div>
+      <div class="palette-sub">
+        Nicio culoare extra. Ierarhia se construiește prin opacitate, blur și lumină — exact ca la Apple.
+      </div>
+    </div>
+    <!-- Live preview mini card -->
+    <div style="
+      width:280px;border-radius:28px;padding:28px;
+      background:rgba(255,255,255,0.06);
+      backdrop-filter:blur(40px) saturate(180%);
+      -webkit-backdrop-filter:blur(40px) saturate(180%);
+      border:1px solid rgba(255,255,255,0.13);
+      position:relative;overflow:hidden;
+    ">
+      <div style="position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.35),transparent)"></div>
+      <div style="font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:rgba(255,255,255,0.28);margin-bottom:16px;">PRV · LIVE CARD</div>
+      <div style="font-size:32px;font-weight:800;letter-spacing:-0.03em;color:#fff;margin-bottom:4px;">₺ 284,920</div>
+      <div style="font-size:13px;color:rgba(255,255,255,0.45);">Vânzări totale azi</div>
+      <div style="display:flex;align-items:center;gap:6px;margin-top:12px;">
+        <div style="width:6px;height:6px;border-radius:50%;background:#fff;opacity:0.9;"></div>
+        <span style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.70);">↑ +12.4% față de ieri</span>
+      </div>
+      <div style="display:flex;align-items:flex-end;gap:3px;height:36px;margin-top:16px;">
+        <div style="flex:1;background:rgba(255,255,255,0.10);border-radius:3px 3px 0 0;height:45%;"></div>
+        <div style="flex:1;background:rgba(255,255,255,0.10);border-radius:3px 3px 0 0;height:70%;"></div>
+        <div style="flex:1;background:rgba(255,255,255,0.10);border-radius:3px 3px 0 0;height:55%;"></div>
+        <div style="flex:1;background:rgba(255,255,255,0.10);border-radius:3px 3px 0 0;height:85%;"></div>
+        <div style="flex:1;background:rgba(255,255,255,0.12);border-radius:3px 3px 0 0;height:65%;"></div>
+        <div style="flex:1;background:rgba(255,255,255,0.95);border-radius:3px 3px 0 0;height:100%;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Monochrome Scale -->
+  <div style="font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:rgba(255,255,255,0.28);margin-bottom:14px;">Scara monocromatică · 10 trepte</div>
+  <div class="mono-scale" style="margin-bottom:48px;">
+    <div class="mono-step" style="background:#fff;">
+      <div class="mono-dot" style="background:#000;border:1px solid rgba(0,0,0,0.1);"></div>
+      <div class="mono-label" style="color:#000;">Pure White</div>
+      <div class="mono-hex" style="color:rgba(0,0,0,0.4);">#FFFFFF</div>
+    </div>
+    <div class="mono-step" style="background:#E5E5E5;">
+      <div class="mono-dot" style="background:#888;"></div>
+      <div class="mono-label" style="color:#333;">Gray 1</div>
+      <div class="mono-hex" style="color:rgba(0,0,0,0.4);">#E5E5E5</div>
+    </div>
+    <div class="mono-step" style="background:#BBBBBB;">
+      <div class="mono-dot" style="background:#555;"></div>
+      <div class="mono-label" style="color:#222;">Gray 2</div>
+      <div class="mono-hex" style="color:rgba(0,0,0,0.4);">#BBBBBB</div>
+    </div>
+    <div class="mono-step" style="background:#888888;">
+      <div class="mono-dot" style="background:#333;"></div>
+      <div class="mono-label" style="color:#fff;">Gray 3</div>
+      <div class="mono-hex" style="color:rgba(255,255,255,0.5);">#888888</div>
+    </div>
+    <div class="mono-step" style="background:#555555;">
+      <div class="mono-dot" style="background:#888;"></div>
+      <div class="mono-label" style="color:#fff;">Gray 4</div>
+      <div class="mono-hex" style="color:rgba(255,255,255,0.4);">#555555</div>
+    </div>
+    <div class="mono-step" style="background:#333333;">
+      <div class="mono-dot" style="background:#999;"></div>
+      <div class="mono-label" style="color:#fff;">Gray 5</div>
+      <div class="mono-hex" style="color:rgba(255,255,255,0.4);">#333333</div>
+    </div>
+    <div class="mono-step" style="background:#222222;">
+      <div class="mono-dot" style="background:rgba(255,255,255,0.6);"></div>
+      <div class="mono-label" style="color:rgba(255,255,255,0.7);">Gray 6</div>
+      <div class="mono-hex" style="color:rgba(255,255,255,0.3);">#222222</div>
+    </div>
+    <div class="mono-step" style="background:#161616;">
+      <div class="mono-dot" style="background:rgba(255,255,255,0.4);"></div>
+      <div class="mono-label" style="color:rgba(255,255,255,0.6);">Gray 7</div>
+      <div class="mono-hex" style="color:rgba(255,255,255,0.25);">#161616</div>
+    </div>
+    <div class="mono-step" style="background:#0A0A0A;">
+      <div class="mono-dot" style="background:rgba(255,255,255,0.2);"></div>
+      <div class="mono-label" style="color:rgba(255,255,255,0.4);">Gray 8</div>
+      <div class="mono-hex" style="color:rgba(255,255,255,0.2);">#0A0A0A</div>
+    </div>
+    <div class="mono-step" style="background:#000000;border-right:none;">
+      <div class="mono-dot" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.08);"></div>
+      <div class="mono-label" style="color:rgba(255,255,255,0.3);">Pure Black</div>
+      <div class="mono-hex" style="color:rgba(255,255,255,0.15);">#000000</div>
+    </div>
+  </div>
+
+  <!-- Compare Dark vs Light -->
+  <div style="font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:rgba(255,255,255,0.28);margin-bottom:14px;">Dark vs Light · Același design, două moduri</div>
+  <div class="compare-grid" style="margin-bottom:48px;">
+
+    <!-- DARK -->
+    <div class="compare-card" style="background:#0A0A0A;border:1px solid rgba(255,255,255,0.12);">
+      <div class="compare-title" style="color:rgba(255,255,255,0.28);">● Dark Mode</div>
+      <!-- mini card stack -->
+      <div style="padding:16px;border-radius:18px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.11);margin-bottom:10px;position:relative;overflow:hidden;">
+        <div style="position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.28),transparent)"></div>
+        <div style="font-size:10px;color:rgba(255,255,255,0.30);margin-bottom:6px;">VÂNZĂRI · MAGAZIN CENTRAL</div>
+        <div style="font-size:24px;font-weight:700;color:#fff;letter-spacing:-0.02em;">₺ 94,200</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.45);margin-top:3px;">↑ +14.2% · 847 tranzacții</div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button style="flex:1;padding:9px;border-radius:10px;background:#fff;color:#000;border:none;font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;">Detalii</button>
+        <button style="flex:1;padding:9px;border-radius:10px;background:rgba(255,255,255,0.10);color:#fff;border:1px solid rgba(255,255,255,0.15);font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;">Export</button>
+      </div>
+    </div>
+
+    <!-- LIGHT -->
+    <div class="compare-card" style="background:#F0F0F0;border:1px solid rgba(0,0,0,0.10);">
+      <div style="position:absolute;top:0;left:0;right:0;height:1px;background:rgba(255,255,255,0.9);"></div>
+      <div class="compare-title" style="color:rgba(0,0,0,0.30);">○ Light Mode</div>
+      <div style="padding:16px;border-radius:18px;background:rgba(255,255,255,0.85);border:1px solid rgba(255,255,255,0.95);box-shadow:0 2px 12px rgba(0,0,0,0.08);margin-bottom:10px;">
+        <div style="font-size:10px;color:rgba(0,0,0,0.30);margin-bottom:6px;">VÂNZĂRI · MAGAZIN CENTRAL</div>
+        <div style="font-size:24px;font-weight:700;color:#000;letter-spacing:-0.02em;">₺ 94,200</div>
+        <div style="font-size:11px;color:rgba(0,0,0,0.45);margin-top:3px;">↑ +14.2% · 847 tranzacții</div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button style="flex:1;padding:9px;border-radius:10px;background:#000;color:#fff;border:none;font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;">Detalii</button>
+        <button style="flex:1;padding:9px;border-radius:10px;background:rgba(0,0,0,0.08);color:#000;border:1px solid rgba(0,0,0,0.12);font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;">Export</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Hierarchy via opacity -->
+  <div style="font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:rgba(255,255,255,0.28);margin-bottom:14px;">Ierarhie vizuală · Opacitate în loc de culoare</div>
+  <div style="border-radius:var(--r-2xl);padding:32px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.10);position:relative;overflow:hidden;margin-bottom:48px;">
+    <div style="position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.25),transparent)"></div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div style="display:flex;align-items:center;gap:16px;">
+        <div style="width:120px;height:12px;border-radius:6px;background:rgba(255,255,255,0.95);"></div>
+        <span style="font-size:12px;color:rgba(255,255,255,0.40);">95% — Titlu principal</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:16px;">
+        <div style="width:200px;height:10px;border-radius:5px;background:rgba(255,255,255,0.70);"></div>
+        <span style="font-size:12px;color:rgba(255,255,255,0.40);">70% — Corp text</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:16px;">
+        <div style="width:160px;height:8px;border-radius:4px;background:rgba(255,255,255,0.45);"></div>
+        <span style="font-size:12px;color:rgba(255,255,255,0.40);">45% — Text secundar</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:16px;">
+        <div style="width:100px;height:7px;border-radius:3px;background:rgba(255,255,255,0.25);"></div>
+        <span style="font-size:12px;color:rgba(255,255,255,0.40);">25% — Metadata, timpuri</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:16px;">
+        <div style="width:60px;height:6px;border-radius:3px;background:rgba(255,255,255,0.12);"></div>
+        <span style="font-size:12px;color:rgba(255,255,255,0.40);">12% — Borduri, separatoare</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+
+<!-- ═══════════════════════════════════
+     SCREEN 1 · DARK MODE
+═══════════════════════════════════ -->
+<div id="s-dark" class="screen">
+<div class="dark-wrap">
+  <div style="font-size:36px;font-weight:700;letter-spacing:-0.03em;margin-bottom:4px;">Dark Mode</div>
+  <div style="font-size:16px;color:rgba(255,255,255,0.40);margin-bottom:40px;">Negru pur · Glass alb cu opacitate · Fără culori extra</div>
+
+  <div class="phones-row">
+
+    <!-- Phone 1: Dashboard -->
+    <div>
+      <div style="font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:rgba(255,255,255,0.25);text-align:center;margin-bottom:12px;">Command · Dashboard</div>
+      <div class="phone">
+        <div class="phone-di">
+          <div class="di-c"></div>
+          <div class="di-live"><div class="di-live-dot"></div><span class="di-live-txt">LIVE</span></div>
+          <div class="di-c"></div>
+        </div>
+        <div class="phone-screen">
+          <div class="phone-statusbar"><span>9:41</span><span>●●● ☁ ⬡</span></div>
+          <div style="padding-top:10px;">
+            <div class="p-greet">Bună, Alex.</div>
+            <div class="p-role">
+              <span class="p-role-badge">Regional Manager</span>
+              <span>· 3 magazine</span>
+            </div>
+            <div class="p-kpi-grid">
+              <div class="p-kpi" style="border-top:1.5px solid rgba(255,255,255,0.40);">
+                <div class="p-kpi-val">₺ 284K</div>
+                <div class="p-kpi-lbl">Vânzări Azi</div>
+                <div class="p-kpi-trend" style="color:rgba(255,255,255,0.70);">↑ +12.4%</div>
+              </div>
+              <div class="p-kpi" style="border-top:1.5px solid rgba(255,255,255,0.40);">
+                <div class="p-kpi-val">1,847</div>
+                <div class="p-kpi-lbl">Tranzacții</div>
+                <div class="p-kpi-trend" style="color:rgba(255,255,255,0.70);">↑ +8.1%</div>
+              </div>
+              <div class="p-kpi">
+                <div class="p-kpi-val">94.2%</div>
+                <div class="p-kpi-lbl">Prezență</div>
+                <div class="p-kpi-trend" style="color:rgba(255,255,255,0.35);">↓ -1.3%</div>
+              </div>
+              <div class="p-kpi">
+                <div class="p-kpi-val">23</div>
+                <div class="p-kpi-lbl">Notificări</div>
+                <div class="p-kpi-trend" style="color:rgba(255,255,255,0.45);">3 urgente</div>
+              </div>
+            </div>
+            <div class="p-sect">Activitate recentă</div>
+            <div class="p-feed">
+              <div class="p-feed-item">
+                <div class="p-ava" style="background:rgba(255,255,255,0.10);color:rgba(255,255,255,0.70);">ML</div>
+                <div><div class="p-feed-title">Maria Lungu · Casa 3</div><div class="p-feed-sub">Magazin Central</div></div>
+                <div class="p-feed-time">2m</div>
+              </div>
+              <div class="p-feed-item">
+                <div class="p-ava" style="background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.40);">⚠</div>
+                <div><div class="p-feed-title">Stoc critic · Produs #4821</div><div class="p-feed-sub">Magazin Nord · 3 unități</div></div>
+                <div class="p-feed-time">8m</div>
+              </div>
+              <div class="p-feed-item">
+                <div class="p-ava" style="background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.40);">AI</div>
+                <div><div class="p-feed-title">Predicție AI disponibilă</div><div class="p-feed-sub">Weekend +18% estimat</div></div>
+                <div class="p-feed-time">22m</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="phone-tabbar">
+          <div class="ptab active"><span class="pi">⌂</span><span class="pl" style="color:#fff;">Command</span></div>
+          <div class="ptab"><span class="pi" style="opacity:0.35;">⊞</span><span class="pl">Operations</span></div>
+          <div class="ptab"><span class="pi" style="opacity:0.35;">◎</span><span class="pl">People</span></div>
+          <div class="ptab"><span class="pi" style="opacity:0.35;">⟁</span><span class="pl">Finance</span></div>
+          <div class="ptab"><span class="pi" style="opacity:0.35;">✦</span><span class="pl">Intel</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phone 2: Operations -->
+    <div>
+      <div style="font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:rgba(255,255,255,0.25);text-align:center;margin-bottom:12px;">Operations · Magazine</div>
+      <div class="phone">
+        <div class="phone-di">
+          <div class="di-c"></div>
+          <div class="di-c"></div>
+          <div class="di-c"></div>
+        </div>
+        <div class="phone-screen" style="background:linear-gradient(180deg,rgba(255,255,255,0.04) 0%,#000 30%);">
+          <div class="phone-statusbar"><span>9:41</span><span>●●● ☁ ⬡</span></div>
+          <div style="padding-top:12px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+              <div style="font-size:22px;font-weight:700;letter-spacing:-0.02em;">Magazine</div>
+              <div style="padding:6px 14px;border-radius:20px;background:rgba(255,255,255,0.95);color:#000;font-size:12px;font-weight:700;cursor:pointer;">+ Adaugă</div>
+            </div>
+            <!-- Search bar -->
+            <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.10);margin-bottom:14px;position:relative;overflow:hidden;">
+              <div style="position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.20),transparent)"></div>
+              <span style="color:rgba(255,255,255,0.30);font-size:14px;">🔍</span>
+              <span style="font-size:13px;color:rgba(255,255,255,0.25);">Caută magazine...</span>
+            </div>
+            <!-- Store list -->
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <div style="padding:14px;border-radius:16px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.13);position:relative;overflow:hidden;">
+                <div style="position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.22),transparent)"></div>
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                  <div>
+                    <div style="font-size:14px;font-weight:700;">Magazin Central</div>
+                    <div style="font-size:10px;color:rgba(255,255,255,0.40);margin-top:2px;">București · 8 case active</div>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:4px;padding:3px 8px;border-radius:8px;background:rgba(255,255,255,0.08);">
+                    <div style="width:5px;height:5px;border-radius:50%;background:#fff;opacity:0.9;"></div>
+                    <span style="font-size:10px;font-weight:600;color:rgba(255,255,255,0.70);">Online</span>
+                  </div>
+                </div>
+                <div style="display:flex;gap:12px;margin-top:10px;">
+                  <div><div style="font-size:16px;font-weight:700;">₺ 94,200</div><div style="font-size:9px;color:rgba(255,255,255,0.35);">Vânzări azi</div></div>
+                  <div><div style="font-size:16px;font-weight:700;">847</div><div style="font-size:9px;color:rgba(255,255,255,0.35);">Tranzacții</div></div>
+                  <div><div style="font-size:16px;font-weight:700;">12</div><div style="font-size:9px;color:rgba(255,255,255,0.35);">Angajați</div></div>
+                </div>
+              </div>
+              <div style="padding:14px;border-radius:16px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);position:relative;overflow:hidden;">
+                <div style="position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.14),transparent)"></div>
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                  <div>
+                    <div style="font-size:14px;font-weight:700;">Magazin Nord</div>
+                    <div style="font-size:10px;color:rgba(255,255,255,0.40);margin-top:2px;">Cluj · 5 case active</div>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:4px;padding:3px 8px;border-radius:8px;background:rgba(255,255,255,0.06);">
+                    <div style="width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,0.5);"></div>
+                    <span style="font-size:10px;font-weight:600;color:rgba(255,255,255,0.40);">Parțial</span>
+                  </div>
+                </div>
+                <div style="display:flex;gap:12px;margin-top:10px;">
+                  <div><div style="font-size:16px;font-weight:700;">₺ 67,800</div><div style="font-size:9px;color:rgba(255,255,255,0.35);">Vânzări azi</div></div>
+                  <div><div style="font-size:16px;font-weight:700;">612</div><div style="font-size:9px;color:rgba(255,255,255,0.35);">Tranzacții</div></div>
+                  <div><div style="font-size:16px;font-weight:700;">9</div><div style="font-size:9px;color:rgba(255,255,255,0.35);">Angajați</div></div>
+                </div>
+              </div>
+              <div style="padding:14px;border-radius:16px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                  <div>
+                    <div style="font-size:14px;font-weight:700;">Magazin Vest</div>
+                    <div style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:2px;">Timișoara · Închis</div>
+                  </div>
+                  <div style="padding:3px 8px;border-radius:8px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);">
+                    <span style="font-size:10px;font-weight:600;color:rgba(255,255,255,0.25);">Închis</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="phone-tabbar">
+          <div class="ptab"><span class="pi" style="opacity:0.35;">⌂</span><span class="pl">Command</span></div>
+          <div class="ptab active"><span class="pi">⊞</span><span class="pl" style="color:#fff;">Operations</span></div>
+          <div class="ptab"><span class="pi" style="opacity:0.35;">◎</span><span class="pl">People</span></div>
+          <div class="ptab"><span class="pi" style="opacity:0.35;">⟁</span><span class="pl">Finance</span></div>
+          <div class="ptab"><span class="pi" style="opacity:0.35;">✦</span><span class="pl">Intel</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phone 3: People -->
+    <div>
+      <div style="font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:rgba(255,255,255,0.25);text-align:center;margin-bottom:12px;">People · Angajați</div>
+      <div class="phone">
+        <div class="phone-di">
+          <div class="di-c"></div>
+          <div class="di-c"></div>
+          <div class="di-c"></div>
+        </div>
+        <div class="phone-screen">
+          <div class="phone-statusbar"><span>9:41</span><span>●●● ☁ ⬡</span></div>
+          <div style="padding-top:12px;">
+            <div style="font-size:22px;font-weight:700;letter-spacing:-0.02em;margin-bottom:14px;">Angajați</div>
+            <!-- Segmented control -->
+            <div style="display:flex;padding:3px;border-radius:12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);margin-bottom:14px;">
+              <div style="flex:1;text-align:center;padding:6px;border-radius:10px;background:rgba(255,255,255,0.90);color:#000;font-size:11px;font-weight:700;">Toți</div>
+              <div style="flex:1;text-align:center;padding:6px;font-size:11px;font-weight:600;color:rgba(255,255,255,0.40);">Activi</div>
+              <div style="flex:1;text-align:center;padding:6px;font-size:11px;font-weight:600;color:rgba(255,255,255,0.40);">Tură</div>
+            </div>
+            <!-- People list -->
+            <div style="display:flex;flex-direction:column;gap:0;border-radius:16px;overflow:hidden;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.10);position:relative;">
+              <div style="position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.20),transparent)"></div>
+              <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.05);">
+                <div style="width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.14);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;">ML</div>
+                <div style="flex:1;"><div style="font-size:13px;font-weight:600;">Maria Lungu</div><div style="font-size:10px;color:rgba(255,255,255,0.40);">Casieră · Central</div></div>
+                <div style="width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,0.85);"></div>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.05);">
+                <div style="width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.10);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;">MP</div>
+                <div style="flex:1;"><div style="font-size:13px;font-weight:600;">Marius Pop</div><div style="font-size:10px;color:rgba(255,255,255,0.40);">Manager · Nord</div></div>
+                <div style="width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,0.85);"></div>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.05);">
+                <div style="width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;">AI</div>
+                <div style="flex:1;"><div style="font-size:13px;font-weight:600;">Ana Ionescu</div><div style="font-size:10px;color:rgba(255,255,255,0.40);">Supervisor · Vest</div></div>
+                <div style="width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,0.25);"></div>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;">
+                <div style="width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:rgba(255,255,255,0.50);">DC</div>
+                <div style="flex:1;"><div style="font-size:13px;font-weight:600;color:rgba(255,255,255,0.60);">Dan Ciobanu</div><div style="font-size:10px;color:rgba(255,255,255,0.30);">Casier · Offline</div></div>
+                <div style="width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,0.18);"></div>
+              </div>
+            </div>
+            <!-- Stats row -->
+            <div style="display:flex;gap:8px;margin-top:12px;">
+              <div style="flex:1;padding:12px;border-radius:14px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.10);text-align:center;">
+                <div style="font-size:18px;font-weight:700;">42</div>
+                <div style="font-size:9px;color:rgba(255,255,255,0.35);margin-top:2px;">Total</div>
+              </div>
+              <div style="flex:1;padding:12px;border-radius:14px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.10);text-align:center;">
+                <div style="font-size:18px;font-weight:700;">38</div>
+                <div style="font-size:9px;color:rgba(255,255,255,0.35);margin-top:2px;">Activi</div>
+              </div>
+              <div style="flex:1;padding:12px;border-radius:14px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.10);text-align:center;">
+                <div style="font-size:18px;font-weight:700;">29</div>
+                <div style="font-size:9px;color:rgba(255,255,255,0.35);margin-top:2px;">Pe tură</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="phone-tabbar">
+          <div class="ptab"><span class="pi" style="opacity:0.35;">⌂</span><span class="pl">Command</span></div>
+          <div class="ptab"><span class="pi" style="opacity:0.35;">⊞</span><span class="pl">Operations</span></div>
+          <div class="ptab active"><span class="pi">◎</span><span class="pl" style="color:#fff;">People</span></div>
+          <div class="ptab"><span class="pi" style="opacity:0.35;">⟁</span><span class="pl">Finance</span></div>
+          <div class="ptab"><span class="pi" style="opacity:0.35;">✦</span><span class="pl">Intel</span></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</div>
+
+
+<!-- ═══════════════════════════════════
+     SCREEN 2 · LIGHT MODE
+═══════════════════════════════════ -->
+<div id="s-light" class="screen">
+<div class="light-wrap">
+  <div style="font-size:36px;font-weight:700;letter-spacing:-0.03em;margin-bottom:4px;color:#000;">Light Mode</div>
+  <div style="font-size:16px;color:rgba(0,0,0,0.40);margin-bottom:40px;">Alb pur · Glass negru cu opacitate · Același sistem, inversul</div>
+
+  <div class="phones-row">
+
+    <!-- Light Dashboard -->
+    <div>
+      <div style="font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:rgba(0,0,0,0.25);text-align:center;margin-bottom:12px;">Command · Dashboard</div>
+      <div class="phone-light">
+        <div class="phone-di-light"></div>
+        <div class="phone-screen-light">
+          <div class="phone-statusbar-light"><span>9:41</span><span>●●● ☁ ⬡</span></div>
+          <div style="padding-top:10px;">
+            <div class="p-greet-light">Bună, Alex.</div>
+            <div class="p-role-light">
+              <span class="p-role-badge-light">Regional Manager</span>
+              <span>· 3 magazine</span>
+            </div>
+            <div class="p-kpi-grid">
+              <div class="p-kpi-light" style="border-top:1.5px solid rgba(0,0,0,0.60);">
+                <div class="p-kpi-val-light">₺ 284K</div>
+                <div class="p-kpi-lbl-light">Vânzări Azi</div>
+                <div class="p-kpi-trend-light" style="color:rgba(0,0,0,0.70);">↑ +12.4%</div>
+              </div>
+              <div class="p-kpi-light" style="border-top:1.5px solid rgba(0,0,0,0.60);">
+                <div class="p-kpi-val-light">1,847</div>
+                <div class="p-kpi-lbl-light">Tranzacții</div>
+                <div class="p-kpi-trend-light" style="color:rgba(0,0,0,0.70);">↑ +8.1%</div>
+              </div>
+              <div class="p-kpi-light">
+                <div class="p-kpi-val-light">94.2%</div>
+                <div class="p-kpi-lbl-light">Prezență</div>
+                <div class="p-kpi-trend-light" style="color:rgba(0,0,0,0.35);">↓ -1.3%</div>
+              </div>
+              <div class="p-kpi-light">
+                <div class="p-kpi-val-light">23</div>
+                <div class="p-kpi-lbl-light">Notificări</div>
+                <div class="p-kpi-trend-light" style="color:rgba(0,0,0,0.45);">3 urgente</div>
+              </div>
+            </div>
+            <div class="p-sect-light">Activitate recentă</div>
+            <div class="p-feed-light">
+              <div class="p-feed-item-light">
+                <div style="width:30px;height:30px;border-radius:50%;background:rgba(0,0,0,0.08);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:rgba(0,0,0,0.60);flex-shrink:0;">ML</div>
+                <div><div style="font-size:11px;font-weight:600;color:#000;">Maria Lungu · Casa 3</div><div style="font-size:10px;color:rgba(0,0,0,0.45);margin-top:1px;">Magazin Central</div></div>
+                <div style="font-size:10px;color:rgba(0,0,0,0.28);margin-left:auto;">2m</div>
+              </div>
+              <div class="p-feed-item-light">
+                <div style="width:30px;height:30px;border-radius:50%;background:rgba(0,0,0,0.06);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:rgba(0,0,0,0.40);flex-shrink:0;">⚠</div>
+                <div><div style="font-size:11px;font-weight:600;color:#000;">Stoc critic · Produs #4821</div><div style="font-size:10px;color:rgba(0,0,0,0.45);margin-top:1px;">Magazin Nord · 3 unități</div></div>
+                <div style="font-size:10px;color:rgba(0,0,0,0.28);margin-left:auto;">8m</div>
+              </div>
+              <div class="p-feed-item-light" style="border-bottom:none;">
+                <div style="width:30px;height:30px;border-radius:50%;background:rgba(0,0,0,0.06);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:rgba(0,0,0,0.40);flex-shrink:0;">AI</div>
+                <div><div style="font-size:11px;font-weight:600;color:#000;">Predicție AI disponibilă</div><div style="font-size:10px;color:rgba(0,0,0,0.45);margin-top:1px;">Weekend +18% estimat</div></div>
+                <div style="font-size:10px;color:rgba(0,0,0,0.28);margin-left:auto;">22m</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="phone-tabbar-light">
+          <div class="ptab-l active"><span class="pi">⌂</span><span class="pl" style="color:#000;">Command</span></div>
+          <div class="ptab-l"><span class="pi" style="opacity:0.25;">⊞</span><span class="pl">Operations</span></div>
+          <div class="ptab-l"><span class="pi" style="opacity:0.25;">◎</span><span class="pl">People</span></div>
+          <div class="ptab-l"><span class="pi" style="opacity:0.25;">⟁</span><span class="pl">Finance</span></div>
+          <div class="ptab-l"><span class="pi" style="opacity:0.25;">✦</span><span class="pl">Intel</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Light Finance -->
+    <div>
+      <div style="font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:rgba(0,0,0,0.25);text-align:center;margin-bottom:12px;">Finance · Rapoarte</div>
+      <div class="phone-light">
+        <div class="phone-di-light"></div>
+        <div class="phone-screen-light">
+          <div class="phone-statusbar-light"><span>9:41</span><span>●●● ☁ ⬡</span></div>
+          <div style="padding-top:12px;">
+            <div style="font-size:22px;font-weight:700;letter-spacing:-0.02em;margin-bottom:4px;color:#000;">Finanțe</div>
+            <div style="font-size:11px;color:rgba(0,0,0,0.40);margin-bottom:16px;">Iunie 2026</div>
+            <!-- Big revenue card -->
+            <div style="padding:18px;border-radius:18px;background:#000;margin-bottom:10px;position:relative;overflow:hidden;">
+              <div style="position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.3),transparent)"></div>
+              <div style="font-size:10px;color:rgba(255,255,255,0.40);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:8px;">Venit Total Luna</div>
+              <div style="font-size:30px;font-weight:800;letter-spacing:-0.03em;color:#fff;">₺ 2.84M</div>
+              <div style="font-size:12px;color:rgba(255,255,255,0.55);margin-top:4px;">↑ +9.3% față de mai</div>
+              <div style="display:flex;align-items:flex-end;gap:2px;height:40px;margin-top:14px;">
+                <div style="flex:1;background:rgba(255,255,255,0.12);border-radius:2px 2px 0 0;height:40%;"></div>
+                <div style="flex:1;background:rgba(255,255,255,0.12);border-radius:2px 2px 0 0;height:60%;"></div>
+                <div style="flex:1;background:rgba(255,255,255,0.12);border-radius:2px 2px 0 0;height:50%;"></div>
+                <div style="flex:1;background:rgba(255,255,255,0.12);border-radius:2px 2px 0 0;height:75%;"></div>
+                <div style="flex:1;background:rgba(255,255,255,0.12);border-radius:2px 2px 0 0;height:55%;"></div>
+                <div style="flex:1;background:rgba(255,255,255,0.90);border-radius:2px 2px 0 0;height:100%;"></div>
+              </div>
+            </div>
+            <!-- Split stats -->
+            <div style="display:flex;gap:8px;margin-bottom:10px;">
+              <div style="flex:1;padding:12px;border-radius:14px;background:rgba(255,255,255,0.85);border:1px solid rgba(0,0,0,0.08);box-shadow:0 1px 6px rgba(0,0,0,0.06);">
+                <div style="font-size:9px;color:rgba(0,0,0,0.35);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Cheltuieli</div>
+                <div style="font-size:17px;font-weight:700;color:#000;">₺ 1.2M</div>
+                <div style="font-size:9px;color:rgba(0,0,0,0.45);margin-top:2px;">↓ -2.1%</div>
+              </div>
+              <div style="flex:1;padding:12px;border-radius:14px;background:rgba(255,255,255,0.85);border:1px solid rgba(0,0,0,0.08);box-shadow:0 1px 6px rgba(0,0,0,0.06);">
+                <div style="font-size:9px;color:rgba(0,0,0,0.35);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Profit Net</div>
+                <div style="font-size:17px;font-weight:700;color:#000;">₺ 1.6M</div>
+                <div style="font-size:9px;color:rgba(0,0,0,0.45);margin-top:2px;">↑ +18.4%</div>
+              </div>
+            </div>
+            <div style="padding:14px;border-radius:14px;background:rgba(255,255,255,0.85);border:1px solid rgba(0,0,0,0.08);box-shadow:0 1px 6px rgba(0,0,0,0.06);">
+              <div style="font-size:12px;font-weight:700;color:#000;margin-bottom:8px;">Top Magazine · Vânzări</div>
+              <div style="display:flex;flex-direction:column;gap:7px;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <span style="font-size:11px;color:rgba(0,0,0,0.50);min-width:14px;">1</span>
+                  <span style="font-size:11px;font-weight:600;color:#000;flex:1;">Central</span>
+                  <div style="height:4px;width:80px;border-radius:2px;background:rgba(0,0,0,0.08);overflow:hidden;"><div style="height:100%;width:100%;background:#000;border-radius:2px;"></div></div>
+                  <span style="font-size:11px;color:rgba(0,0,0,0.50);">₺ 94K</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <span style="font-size:11px;color:rgba(0,0,0,0.50);min-width:14px;">2</span>
+                  <span style="font-size:11px;font-weight:600;color:#000;flex:1;">Nord</span>
+                  <div style="height:4px;width:80px;border-radius:2px;background:rgba(0,0,0,0.08);overflow:hidden;"><div style="height:100%;width:72%;background:#000;border-radius:2px;"></div></div>
+                  <span style="font-size:11px;color:rgba(0,0,0,0.50);">₺ 68K</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="phone-tabbar-light">
+          <div class="ptab-l"><span class="pi" style="opacity:0.25;">⌂</span><span class="pl">Command</span></div>
+          <div class="ptab-l"><span class="pi" style="opacity:0.25;">⊞</span><span class="pl">Operations</span></div>
+          <div class="ptab-l"><span class="pi" style="opacity:0.25;">◎</span><span class="pl">People</span></div>
+          <div class="ptab-l active"><span class="pi">⟁</span><span class="pl" style="color:#000;">Finance</span></div>
+          <div class="ptab-l"><span class="pi" style="opacity:0.25;">✦</span><span class="pl">Intel</span></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</div>
+
+
+<!-- ═══════════════════════════════════
+     SCREEN 3 · COMPONENTS
+═══════════════════════════════════ -->
+<div id="s-components" class="screen">
+<div class="comp-wrap">
+  <div style="font-size:36px;font-weight:700;letter-spacing:-0.03em;margin-bottom:4px;">Componente B&W</div>
+  <div style="font-size:16px;color:rgba(255,255,255,0.40);margin-bottom:0;">Toate componentele în paletă alb-negru</div>
+
+  <div class="two-col">
+    <div>
+
+      <div class="h2">Butoane</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:32px;align-items:center;">
+        <button class="btn btn-w">⊕ Adaugă</button>
+        <button class="btn btn-gb">⬡ Filtrează</button>
+        <button class="btn btn-ghost-w">↗ Export</button>
+        <button class="btn btn-w btn-sm">Salvează</button>
+        <button class="btn btn-gb btn-sm">⋯</button>
+      </div>
+
+      <div class="h2">Badge-uri B&W</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:32px;">
+        <span class="bdg" style="background:rgba(255,255,255,0.95);color:#000;">● Online</span>
+        <span class="bdg" style="background:rgba(255,255,255,0.12);color:rgba(255,255,255,0.70);">Activ</span>
+        <span class="bdg" style="background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.40);">Arhivat</span>
+        <span class="bdg" style="background:rgba(255,255,255,0.90);color:#000;border:1.5px solid rgba(0,0,0,0.15);">★ Admin</span>
+        <span class="bdg" style="background:transparent;color:rgba(255,255,255,0.50);border:1px solid rgba(255,255,255,0.20);">Pending</span>
+      </div>
+
+      <div class="h2">Inputs</div>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:32px;">
+        <div class="inp-wrap focused">
+          <span style="color:rgba(255,255,255,0.30);">✎</span>
+          <input value="Magazin Central" readonly>
+          <span style="font-size:11px;color:rgba(255,255,255,0.30);">✕</span>
+        </div>
+        <div class="inp-wrap">
+          <span style="color:rgba(255,255,255,0.20);">🔍</span>
+          <input placeholder="Caută..." readonly>
+        </div>
+      </div>
+
+      <div class="h2">Toggle Settings</div>
+      <div style="border-radius:var(--r-xl);overflow:hidden;background:var(--g1);border:1px solid var(--g-border);position:relative;margin-bottom:32px;">
+        <div style="position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--g-shine),transparent)"></div>
+        <div class="toggle">
+          <div>
+            <div style="font-size:15px;font-weight:600;">Notificări push</div>
+            <div style="font-size:13px;color:rgba(255,255,255,0.40);">Alerte în timp real</div>
+          </div>
+          <div class="toggle-track on"><div class="toggle-knob"></div></div>
+        </div>
+        <div class="toggle">
+          <div>
+            <div style="font-size:15px;font-weight:600;">Face ID</div>
+            <div style="font-size:13px;color:rgba(255,255,255,0.40);">Autentificare biometrică</div>
+          </div>
+          <div class="toggle-track on"><div class="toggle-knob"></div></div>
+        </div>
+        <div class="toggle" style="border-bottom:none;">
+          <div>
+            <div style="font-size:15px;font-weight:600;">Mod offline</div>
+            <div style="font-size:13px;color:rgba(255,255,255,0.40);">Sincronizare amânată</div>
+          </div>
+          <div class="toggle-track off"><div class="toggle-knob"></div></div>
+        </div>
+      </div>
+
+    </div>
+
+    <div>
+
+      <div class="h2">Command Palette</div>
+      <div class="cmd" style="margin-bottom:32px;">
+        <div class="cmd-row">
+          <span style="font-size:17px;color:rgba(255,255,255,0.25);">⌘</span>
+          <input style="flex:1;background:none;border:none;outline:none;font-family:var(--font);font-size:16px;color:#fff;" value="magazine" readonly>
+          <span class="kbd">ESC</span>
+        </div>
+        <div style="padding:5px 0;">
+          <div style="padding:5px 18px 4px;font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:rgba(255,255,255,0.25);">Rezultate</div>
+          <div class="cmd-result-row sel">
+            <div class="cmd-ico">🏪</div>
+            <div><div class="cmd-nm">Magazin Central</div><div class="cmd-path">Operations → Magazine</div></div>
+            <div style="margin-left:auto;"><span class="kbd">↵</span></div>
+          </div>
+          <div class="cmd-result-row">
+            <div class="cmd-ico">🏪</div>
+            <div><div class="cmd-nm">Magazin Nord</div><div class="cmd-path">Operations → Magazine</div></div>
+          </div>
+          <div class="cmd-result-row">
+            <div class="cmd-ico">📊</div>
+            <div><div class="cmd-nm">Raport magazine lunare</div><div class="cmd-path">Intelligence → Reports</div></div>
+          </div>
+        </div>
+        <div style="padding:8px 18px;border-top:1px solid rgba(255,255,255,0.05);display:flex;gap:14px;">
+          <span style="font-size:11px;color:rgba(255,255,255,0.25);">↑↓ nav</span>
+          <span style="font-size:11px;color:rgba(255,255,255,0.25);">↵ deschide</span>
+        </div>
+      </div>
+
+      <div class="h2">Context Menu</div>
+      <div style="display:flex;gap:16px;align-items:flex-start;margin-bottom:32px;">
+        <div style="padding:14px 16px;border-radius:16px;background:rgba(255,255,255,0.08);border:2px solid rgba(255,255,255,0.30);min-width:130px;position:relative;overflow:hidden;">
+          <div style="position:absolute;top:0;left:0;right:0;height:1px;background:var(--g-shine)"></div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.30);margin-bottom:4px;">Central</div>
+          <div style="font-size:20px;font-weight:700;">₺ 94K</div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.50);margin-top:2px;">↑ +14%</div>
+        </div>
+        <div class="ctxm">
+          <div class="ctx-row"><span style="font-size:16px;min-width:22px;text-align:center;">📊</span><span>Analytics</span></div>
+          <div class="ctx-row"><span style="font-size:16px;min-width:22px;text-align:center;">✏️</span><span>Editează</span></div>
+          <div class="ctx-row"><span style="font-size:16px;min-width:22px;text-align:center;">↗</span><span>Exportă</span></div>
+          <div class="ctx-sep"></div>
+          <div class="ctx-row del"><span style="font-size:16px;min-width:22px;text-align:center;opacity:0.6;">⊗</span><span>Arhivează</span></div>
+        </div>
+      </div>
+
+      <div class="h2">Bottom Sheet</div>
+      <div class="bsheet">
+        <div class="bs-handle"></div>
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px;">
+          <div style="width:50px;height:50px;border-radius:50%;background:rgba(255,255,255,0.14);display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:700;">ML</div>
+          <div>
+            <div style="font-size:17px;font-weight:700;">Maria Lungu</div>
+            <div style="font-size:13px;color:rgba(255,255,255,0.45);">Casieră Senior · Central</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;">
+          <button class="btn btn-w" style="flex:1;justify-content:center;font-size:14px;">✉ Mesaj</button>
+          <button class="btn btn-gb" style="flex:1;justify-content:center;font-size:14px;">📋 Profil</button>
+          <button class="btn btn-gb" style="padding:11px 14px;font-size:16px;">⋯</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+</div>
+
+
+<!-- ═══════════════════════════════════
+     SCREEN 4 · TYPOGRAPHY & ICONS
+═══════════════════════════════════ -->
+<div id="s-type" class="screen">
+<div class="type-wrap">
+  <div style="font-size:36px;font-weight:700;letter-spacing:-0.03em;margin-bottom:4px;">Tipografie & Iconuri</div>
+  <div style="font-size:16px;color:rgba(255,255,255,0.40);margin-bottom:48px;">SF Pro Display · Greutăți, mărimi, ierarhie monocromatică</div>
+
+  <!-- Type scale -->
+  <div style="font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:rgba(255,255,255,0.25);margin-bottom:14px;">Scara tipografică</div>
+  <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:48px;">
+    <div class="type-row"><span class="type-tag">Large Title · 34 · 800</span><span style="font-size:34px;font-weight:800;letter-spacing:-0.03em;">PRV Business OS</span></div>
+    <div class="type-row"><span class="type-tag">Title 1 · 28 · 700</span><span style="font-size:28px;font-weight:700;letter-spacing:-0.02em;color:rgba(255,255,255,0.90);">Dashboard Overview</span></div>
+    <div class="type-row"><span class="type-tag">Title 2 · 22 · 700</span><span style="font-size:22px;font-weight:700;letter-spacing:-0.01em;color:rgba(255,255,255,0.85);">Performanță Magazine</span></div>
+    <div class="type-row"><span class="type-tag">Title 3 · 20 · 600</span><span style="font-size:20px;font-weight:600;color:rgba(255,255,255,0.80);">Analitică Angajați</span></div>
+    <div class="type-row"><span class="type-tag">Headline · 17 · 600</span><span style="font-size:17px;font-weight:600;color:rgba(255,255,255,0.80);">Modul Inventar</span></div>
+    <div class="type-row"><span class="type-tag">Body · 17 · 400</span><span style="font-size:17px;font-weight:400;color:rgba(255,255,255,0.70);">Raportare enterprise cu sincronizare în timp real.</span></div>
+    <div class="type-row"><span class="type-tag">Callout · 16 · 400</span><span style="font-size:16px;font-weight:400;color:rgba(255,255,255,0.50);">Navigare contextuală bazată pe rol</span></div>
+    <div class="type-row"><span class="type-tag">Subheadline · 15 · 400</span><span style="font-size:15px;font-weight:400;color:rgba(255,255,255,0.45);">Actualizat acum 2 minute</span></div>
+    <div class="type-row"><span class="type-tag">Footnote · 13 · 400</span><span style="font-size:13px;font-weight:400;color:rgba(255,255,255,0.30);">Audit log · Toate acțiunile sunt înregistrate</span></div>
+    <div class="type-row"><span class="type-tag">Caption · 11 · 600</span><span style="font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:rgba(255,255,255,0.20);">ZERO TRUST VERIFIED</span></div>
+  </div>
+
+  <div class="div"></div>
+
+  <!-- Numeric emphasis -->
+  <div style="font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:rgba(255,255,255,0.25);margin-bottom:14px;">Numere tabular · KPI display</div>
+  <div style="display:flex;gap:24px;flex-wrap:wrap;margin-bottom:48px;">
+    <div>
+      <div style="font-size:52px;font-weight:800;letter-spacing:-0.04em;line-height:1;font-variant-numeric:tabular-nums;">₺2.84M</div>
+      <div style="font-size:13px;color:rgba(255,255,255,0.35);margin-top:4px;">Venit lunar</div>
+    </div>
+    <div>
+      <div style="font-size:52px;font-weight:800;letter-spacing:-0.04em;line-height:1;color:rgba(255,255,255,0.70);">94.2%</div>
+      <div style="font-size:13px;color:rgba(255,255,255,0.35);margin-top:4px;">Prezență</div>
+    </div>
+    <div>
+      <div style="font-size:52px;font-weight:800;letter-spacing:-0.04em;line-height:1;color:rgba(255,255,255,0.40);">1,847</div>
+      <div style="font-size:13px;color:rgba(255,255,255,0.35);margin-top:4px;">Tranzacții</div>
+    </div>
+  </div>
+
+  <div class="div"></div>
+
+  <!-- App icons B&W -->
+  <div style="font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:rgba(255,255,255,0.25);margin-bottom:14px;">Iconuri module · Black & White</div>
+  <div class="icon-grid">
+    <div>
+      <div class="app-icon" style="background:#fff;"><span style="filter:grayscale(1);">⌂</span></div>
+      <div style="font-size:10px;color:rgba(255,255,255,0.30);text-align:center;margin-top:6px;">Command</div>
+    </div>
+    <div>
+      <div class="app-icon" style="background:rgba(255,255,255,0.90);"><span style="filter:grayscale(1);">⊞</span></div>
+      <div style="font-size:10px;color:rgba(255,255,255,0.30);text-align:center;margin-top:6px;">Operations</div>
+    </div>
+    <div>
+      <div class="app-icon" style="background:rgba(255,255,255,0.14);border:1px solid rgba(255,255,255,0.20);"><span>◎</span></div>
+      <div style="font-size:10px;color:rgba(255,255,255,0.30);text-align:center;margin-top:6px;">People</div>
+    </div>
+    <div>
+      <div class="app-icon" style="background:rgba(255,255,255,0.10);border:1px solid rgba(255,255,255,0.15);"><span>⟁</span></div>
+      <div style="font-size:10px;color:rgba(255,255,255,0.30);text-align:center;margin-top:6px;">Finance</div>
+    </div>
+    <div>
+      <div class="app-icon" style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);"><span>✦</span></div>
+      <div style="font-size:10px;color:rgba(255,255,255,0.30);text-align:center;margin-top:6px;">Intel</div>
+    </div>
+    <div>
+      <div class="app-icon" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);"><span style="opacity:0.6;">⛾</span></div>
+      <div style="font-size:10px;color:rgba(255,255,255,0.30);text-align:center;margin-top:6px;">System</div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+
+<script>
+function go(id, btn) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('on'));
+  document.querySelectorAll('.ntab').forEach(b => b.classList.remove('on'));
+  document.getElementById('s-' + id).classList.add('on');
+  btn.classList.add('on');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+</script>
+</body>
+</html>
