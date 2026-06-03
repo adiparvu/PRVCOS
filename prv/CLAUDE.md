@@ -27,6 +27,41 @@ Every decision I make must reflect all five roles simultaneously.
 4. **Never Simplify** — Never replace enterprise solutions with basic implementations.
 5. **Always Enterprise-Grade** — When two paths exist: choose the more scalable, more secure, more maintainable one.
 
+### When Unsure — Always Prefer:
+- The more **scalable** solution
+- The more **secure** solution
+- The more **maintainable** solution
+- The more **enterprise-grade** solution
+
+### Final Rule
+If there are two possible implementations:
+1. Fast and simple
+2. Scalable and enterprise-grade
+
+**Always choose option 2.**
+
+The goal is to build PRV for the next 10+ years.
+
+---
+
+## DESIGN REQUIREMENTS
+
+The entire application must feel like a **first-party Apple product**.
+
+Must follow:
+- **Human Interface Guidelines** — spacing, typography, gestures, transitions
+- **Liquid Glass design language** — all surfaces, all components
+- **Native animations** — spring physics, no CSS linear animations
+- **Native gestures** — swipe, long-press, pinch, drag
+- **Dynamic Island** — role-specific live context, always active
+- **Live Activities** — real-time data on lock screen and Dynamic Island
+- **Widgets** — Home Screen, Lock Screen, In-App Dashboard
+- **Haptics** — every action has appropriate haptic feedback
+- **Face ID** — authentication, re-auth for sensitive operations
+- **Accessibility** — WCAG 2.1 AA, VoiceOver, Dynamic Type, Reduced Motion
+
+The experience must feel closer to **Apple** than to traditional ERP software.
+
 ---
 
 ## DESIGN SYSTEM
@@ -77,6 +112,31 @@ Every decision I make must reflect all five roles simultaneously.
 - Overlays emerge: scale + blur + opacity (never instant appear)
 - Sheets rise: translateY + opacity
 - Never abrupt appearance or disappearance
+
+---
+
+## ARCHITECTURE REQUIREMENTS
+
+**PRV is a Business Operating System.**
+
+Not:
+- a website
+- a CRM
+- a shop
+- a project manager
+
+But a **complete operating system for companies.**
+
+Every feature must integrate with:
+- Roles & Permissions
+- Scope (company / store / region / team)
+- Notifications
+- Analytics
+- AI
+- Search
+- Inbox
+- Audit Logs
+- Security
 
 ---
 
@@ -224,18 +284,59 @@ Without opening another application.
 
 ---
 
-## SECURITY ARCHITECTURE
+## SECURITY REQUIREMENTS
 
-Zero Trust — no action is trusted by default.
+**Zero Trust Architecture** — no action is trusted by default.
+
+Every action validated through:
+1. **Authentication** — Face ID / biometric / MFA / token
+2. **Authorization** — role check against permission catalog
+3. **Scope Validation** — which company / store / resource
+4. **Audit Logging** — immutable record of every action
 
 ```
 Request → Auth → Identity → Permission → Scope → Execute → Audit Log
 ```
 
-- Authentication: mandatory
-- Convenience: secondary
+- **Security is mandatory. Convenience is secondary.**
 - Every read/write/delete: logged
-- Audit logs: immutable, role-visible
+- Audit logs: immutable, append-only, SHA-256 chained
+- No action bypasses the 4-gate validation chain
+
+---
+
+## SCALABILITY REQUIREMENTS
+
+Architecture must support **without redesigning the platform**:
+- 100+ companies
+- 1,000+ stores
+- 10,000+ employees
+- Millions of records
+- Millions of notifications
+- Millions of audit events
+
+---
+
+## UX REQUIREMENTS
+
+Users should **never** wonder: *"Where do I find this?"*
+
+Information must be:
+- **Contextual** — relevant to the user's current role and task
+- **Discoverable** — surfaced proactively, not hidden in menus
+- **Role-aware** — each role sees only what is relevant
+
+Maximum navigation depth: **3 levels**
+`Tab → List/Grid → Detail` — actions via Bottom Sheet, not new screens
+
+Prefer (in order):
+1. Bottom Sheets
+2. Context Menus
+3. Command Palette (⌘K)
+4. Search Overlay
+5. Peek Preview
+
+Avoid unnecessary screens.
 
 ---
 
