@@ -1,3 +1,5 @@
 export { db } from "./client"
 export type { Database } from "./client"
 export * from "./schema/index"
+export { StorageBucket, BucketMaxSize, buildStoragePath, getSignedUrl, deleteFile } from "./storage"
+export type { StorageBucket as StorageBucketType } from "./storage"

@@ -34,8 +34,12 @@
     },
     "peerDependencyRules": {
       "allowedVersions": {
-        "react": "19"
-      }
+        "react": "19",
+        "next": "16"
+      },
+      "ignoreMissing": [
+        "expo-constants"
+      ]
     }
   },
   "lint-staged": {
