@@ -16,6 +16,9 @@ export interface AuditEntry {
   userAgent?: string
   gateFailed?: number
   errorCode?: string
+  // JIT sysadmin context — set when action was taken during an active JIT session
+  impersonatedBy?: string
+  jitSessionId?: string
 }
 
 export async function sha256hex(input: string): Promise<string> {
@@ -69,6 +72,8 @@ export async function writeAuditLog(entry: AuditEntry): Promise<void> {
       path: entry.path,
       ipAddress: entry.ipAddress,
       userAgent: entry.userAgent,
+      impersonatedBy: entry.impersonatedBy,
+      jitSessionId: entry.jitSessionId,
       gateFailed: entry.gateFailed ?? 0,
       errorCode: entry.errorCode,
       prevHash,

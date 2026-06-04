@@ -58,6 +58,10 @@ export const auditLogs = pgTable(
     ipAddress: varchar("ip_address", { length: 45 }),
     userAgent: text("user_agent"),
 
+    // Set when action was taken during an active JIT sysadmin session
+    impersonatedBy: uuid("impersonated_by").references(() => users.id),
+    jitSessionId: uuid("jit_session_id"),
+
     // 0 = all gates passed; 1–9 = gate number that rejected the request
     gateFailed: integer("gate_failed").notNull().default(0),
     errorCode: varchar("error_code", { length: 50 }),

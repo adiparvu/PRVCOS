@@ -21,3 +21,5 @@ export * from "./fleet"
 export * from "./notifications"
 // Sprint 06: Social Profiles, Presence, Digital Business Cards
 export * from "./social"
+// Sprint 06: JIT Sysadmin Access, GDPR Erasure, API Keys
+export * from "./auth"

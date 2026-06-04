@@ -13,7 +13,9 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "inngest": "^3.30.0"
+    "inngest": "^3.30.0",
+    "@prv/db": "workspace:*",
+    "drizzle-orm": "^0.38.4"
   },
   "devDependencies": {
     "@prv/tsconfig": "workspace:*",

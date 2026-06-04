@@ -26,6 +26,9 @@ export type PRVEvents = {
       diff?: Record<string, unknown>
     }
   }
+  "prv/jit.session.started": {
+    data: { sessionId: string; expiresAt: string }
+  }
 }
 
 export const inngest = new Inngest({
