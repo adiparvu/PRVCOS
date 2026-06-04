@@ -23,3 +23,5 @@ export * from "./notifications"
 export * from "./social"
 // Sprint 06: JIT Sysadmin Access, GDPR Erasure, API Keys
 export * from "./auth"
+// Sprint 07: Multi-Company Architecture — settings, profiles, memberships
+export * from "./multi-tenancy"
