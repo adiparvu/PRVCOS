@@ -23,21 +23,23 @@ export function getTypesenseClient(): TypesenseClient {
   return _client
 }
 
-// Generate a scoped search-only API key per company
-// This key is given to client-side — cannot write or see other companies
-export async function getScopedSearchKey(companyId: string): Promise<string> {
+// Generate a scoped search-only API key per company.
+// Uses generateScopedSearchKey() — a client-side operation that embeds
+// filter_by into the key itself. Typesense ANDs this filter with every query,
+// enforcing company_id isolation without a round-trip to the server.
+//
+// Requires TYPESENSE_SEARCH_API_KEY — a search-only key (not the admin key).
+// The admin key is never sent to clients.
+export function getScopedSearchKey(companyId: string): string {
   const client = getTypesenseClient()
+  const searchOnlyKey = process.env["TYPESENSE_SEARCH_API_KEY"]
 
-  const key = await client.keys().create({
-    description: `Search key for company ${companyId}`,
-    actions: ["documents:search"],
-    collections: ["*"],
-    // Filter all searches to this company's data
-    value_regex: `.*`,
-    // Embedded filter — Typesense will AND this with every query
-    // Ensures multi-tenant isolation at the search layer
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } as any)
+  if (!searchOnlyKey) {
+    throw new Error("TYPESENSE_SEARCH_API_KEY is required for scoped key generation")
+  }
 
-  return key.value ?? ""
+  // Embeds filter_by into the key — Typesense enforces this server-side on every query
+  return client.keys().generateScopedSearchKey(searchOnlyKey, {
+    filter_by: `company_id:${companyId}`,
+  })
 }

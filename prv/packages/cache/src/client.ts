@@ -40,9 +40,26 @@ export const cacheKey = {
   query: (namespace: string, hash: string) => `query:${namespace}:${hash}`,
 } as const
 
+// Session TTL per security level — matches ROLE_ARCHITECTURE.md security levels
+// L5 (CEO, Co-CEO, Group CEO, Sysadmin): 1 hour
+// L4 (Directors, OPM): 2 hours
+// L3 (Managers, TLs, OMS): 4 hours
+// L2 (Workers, Sellers): 8 hours
+export const SessionTTL = {
+  L5: 3_600, // 1 hour
+  L4: 7_200, // 2 hours
+  L3: 14_400, // 4 hours
+  L2: 28_800, // 8 hours
+} as const
+
+export type SecurityLevel = keyof typeof SessionTTL
+
+export function getSessionTTL(level: SecurityLevel): number {
+  return SessionTTL[level]
+}
+
 // Cache TTL constants (seconds)
 export const CacheTTL = {
-  SESSION: 86_400, // 24 hours
   COMPANY_CONTEXT: 300, // 5 minutes
   TYPESENSE_KEY: 3_600, // 1 hour
   QUERY_SHORT: 60, // 1 minute

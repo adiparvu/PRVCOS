@@ -2,13 +2,16 @@ import type { Instrumentation } from "next"
 
 export async function register() {
   if (process.env["NEXT_RUNTIME"] === "nodejs") {
-    const Sentry = await import("@sentry/nextjs")
+    // Validate all required server environment variables at startup.
+    // Fails fast on misconfiguration rather than at first use.
+    const { validateServerEnv } = await import("@prv/env")
+    validateServerEnv(process.env)
 
+    const Sentry = await import("@sentry/nextjs")
     Sentry.init({
       dsn: process.env["SENTRY_DSN"],
       environment: process.env["NODE_ENV"],
       tracesSampleRate: process.env["NODE_ENV"] === "production" ? 0.1 : 1.0,
-      // Strip PII from error events before sending
       beforeSend(event) {
         if (event.user) {
           delete event.user.email
