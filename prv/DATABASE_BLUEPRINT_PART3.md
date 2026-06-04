@@ -33,7 +33,7 @@ The Notification Center is a universal notification delivery system. Every modul
 ### Table: notification_templates
 
 **Purpose:** Reusable templates for notification content. Version-controlled. Supports multi-channel rendering with role-based visibility rules.
-**RLS Pattern:** Pattern 5 (global system + company override)
+**RLS Pattern:** Pattern E-Override (global system + company override)
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -72,7 +72,7 @@ The Notification Center is a universal notification delivery system. Every modul
 ### Table: notification_preferences
 
 **Purpose:** Per-user, per-template preferences. Users can opt-out of non-critical channels.
-**RLS Pattern:** Pattern 1
+**RLS Pattern:** Pattern C
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -97,7 +97,7 @@ The Notification Center is a universal notification delivery system. Every modul
 ### Table: notifications
 
 **Purpose:** Every notification instance sent to a user. The in-app inbox table. High volume — partitioned.
-**RLS Pattern:** Pattern 1
+**RLS Pattern:** Pattern C
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -139,7 +139,7 @@ The Notification Center is a universal notification delivery system. Every modul
 ### Table: notification_deliveries
 
 **Purpose:** Delivery status tracking per channel. One row per channel per notification instance.
-**RLS Pattern:** Pattern 4 (managers/admin read-only)
+**RLS Pattern:** Pattern A-Manager (managers/admin read-only)
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -168,7 +168,7 @@ The Notification Center is a universal notification delivery system. Every modul
 ### Table: notification_batches
 
 **Purpose:** Groups of notifications sent in bulk (announcements, system events, scheduled digests).
-**RLS Pattern:** Pattern 4
+**RLS Pattern:** Pattern A-Manager
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -200,7 +200,7 @@ Analytics captures raw events, computes aggregations, and stores pre-computed me
 ### Table: analytics_events
 
 **Purpose:** Raw event stream. Every user action, module event, and system event logged here. Immutable. Partitioned by day.
-**RLS Pattern:** Pattern 4 (no user writes; system-only inserts)
+**RLS Pattern:** Pattern A-Manager (no user writes; system-only inserts)
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -235,7 +235,7 @@ Analytics captures raw events, computes aggregations, and stores pre-computed me
 ### Table: analytics_daily_rollups
 
 **Purpose:** Pre-aggregated daily metrics per company per module. Computed nightly by background job.
-**RLS Pattern:** Pattern 3
+**RLS Pattern:** Pattern A-Scope
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -261,7 +261,7 @@ Analytics captures raw events, computes aggregations, and stores pre-computed me
 ### Table: analytics_metric_definitions
 
 **Purpose:** Registry of all tracked metrics — their formula, source, display properties.
-**RLS Pattern:** Pattern 5
+**RLS Pattern:** Pattern E-Override
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -290,7 +290,7 @@ Analytics captures raw events, computes aggregations, and stores pre-computed me
 ### Table: dashboard_widget_configs
 
 **Purpose:** Per-user, per-role dashboard widget layout and configuration.
-**RLS Pattern:** Pattern 1
+**RLS Pattern:** Pattern C
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -319,7 +319,7 @@ Analytics captures raw events, computes aggregations, and stores pre-computed me
 ### Table: report_definitions
 
 **Purpose:** Saved report configurations that can be executed on demand or scheduled.
-**RLS Pattern:** Pattern 3
+**RLS Pattern:** Pattern A-Scope
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -335,7 +335,6 @@ Analytics captures raw events, computes aggregations, and stores pre-computed me
 | schedule_recipients | UUID[] | NOT NULL | Default '{}' |
 | last_run_at | TIMESTAMPTZ | NULL | |
 | owner_id | UUID | NOT NULL | FK → users.id |
-| is_deleted | BOOLEAN | NOT NULL | Default false |
 | deleted_at | TIMESTAMPTZ | NULL | |
 | created_at | TIMESTAMPTZ | NOT NULL | Default now() |
 | updated_at | TIMESTAMPTZ | NOT NULL | Default now() |
@@ -345,7 +344,7 @@ Analytics captures raw events, computes aggregations, and stores pre-computed me
 ### Table: report_runs
 
 **Purpose:** Execution history for each report. Stores the output reference.
-**RLS Pattern:** Pattern 3
+**RLS Pattern:** Pattern A-Scope
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -375,7 +374,7 @@ The AI Center is built on a layered data architecture: prompts → conversations
 ### Table: ai_conversations
 
 **Purpose:** Top-level container for an AI session. Every AI interaction is scoped to a conversation.
-**RLS Pattern:** Pattern 1 (own) + Pattern 3 (managers for audit)
+**RLS Pattern:** Pattern C (own) + Pattern 3 (managers for audit)
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -393,7 +392,6 @@ The AI Center is built on a layered data architecture: prompts → conversations
 | total_input_tokens | BIGINT | NOT NULL | Default 0 |
 | total_output_tokens | BIGINT | NOT NULL | Default 0 |
 | total_cost_usd | NUMERIC(12,6) | NOT NULL | Default 0 |
-| is_deleted | BOOLEAN | NOT NULL | Default false |
 | deleted_at | TIMESTAMPTZ | NULL | |
 | created_at | TIMESTAMPTZ | NOT NULL | Default now() |
 | updated_at | TIMESTAMPTZ | NOT NULL | Default now() |
@@ -408,7 +406,7 @@ The AI Center is built on a layered data architecture: prompts → conversations
 ### Table: ai_messages
 
 **Purpose:** Individual turns in an AI conversation. Includes user messages, assistant responses, and system messages.
-**RLS Pattern:** Pattern 1
+**RLS Pattern:** Pattern C
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -423,7 +421,6 @@ The AI Center is built on a layered data architecture: prompts → conversations
 | model_id | TEXT | NULL | Snapshot of model at message time |
 | finish_reason | TEXT | NULL | stop / length / tool_calls / content_filter |
 | latency_ms | INTEGER | NULL | |
-| is_deleted | BOOLEAN | NOT NULL | Default false |
 | created_at | TIMESTAMPTZ | NOT NULL | Default now() |
 
 **Indexes:**
@@ -436,7 +433,7 @@ The AI Center is built on a layered data architecture: prompts → conversations
 ### Table: ai_tool_calls
 
 **Purpose:** Every tool invocation made by the AI model during a conversation turn. Enforces AI Tool Permission Manifest.
-**RLS Pattern:** Pattern 4 (admin/security read-only)
+**RLS Pattern:** Pattern A-Manager (admin/security read-only)
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -466,7 +463,7 @@ The AI Center is built on a layered data architecture: prompts → conversations
 ### Table: ai_prompt_templates
 
 **Purpose:** Reusable system prompt templates for each AI agent type. Version-controlled.
-**RLS Pattern:** Pattern 5
+**RLS Pattern:** Pattern E-Override
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -493,7 +490,7 @@ The AI Center is built on a layered data architecture: prompts → conversations
 ### Table: ai_context_injections
 
 **Purpose:** Structured business data injected into AI prompts at runtime. Scoped by user role.
-**RLS Pattern:** Pattern 4
+**RLS Pattern:** Pattern A-Manager
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -511,7 +508,7 @@ The AI Center is built on a layered data architecture: prompts → conversations
 ### Table: ai_insights
 
 **Purpose:** AI-generated insights stored for dashboard surfacing and persistence. Generated proactively by background AI jobs.
-**RLS Pattern:** Pattern 3
+**RLS Pattern:** Pattern A-Scope
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -546,7 +543,7 @@ The AI Center is built on a layered data architecture: prompts → conversations
 ### Table: ai_knowledge_extractions
 
 **Purpose:** Facts and structured knowledge extracted from documents, conversations, and business data by AI. Feeds the contextual AI assistant.
-**RLS Pattern:** Pattern 3
+**RLS Pattern:** Pattern A-Scope
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -564,7 +561,6 @@ The AI Center is built on a layered data architecture: prompts → conversations
 | verified_by | UUID | NULL | FK → users.id |
 | expires_at | TIMESTAMPTZ | NULL | |
 | model_id | TEXT | NULL | Model used to extract |
-| is_deleted | BOOLEAN | NOT NULL | Default false |
 | deleted_at | TIMESTAMPTZ | NULL | |
 | created_at | TIMESTAMPTZ | NOT NULL | Default now() |
 | updated_at | TIMESTAMPTZ | NOT NULL | Default now() |
@@ -579,7 +575,7 @@ The AI Center is built on a layered data architecture: prompts → conversations
 ### Table: ai_usage_costs
 
 **Purpose:** Daily aggregated AI usage and cost tracking per company, model, and agent type. For cost governance and billing.
-**RLS Pattern:** Pattern 4
+**RLS Pattern:** Pattern A-Manager
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -606,7 +602,7 @@ The AI Center is built on a layered data architecture: prompts → conversations
 ### Table: ai_feedback
 
 **Purpose:** User thumbs-up/thumbs-down feedback on AI responses. Used for model quality improvement.
-**RLS Pattern:** Pattern 1
+**RLS Pattern:** Pattern C
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -634,7 +630,7 @@ Audit logs are the immutable, append-only record of every state-changing action 
 ### Table: audit_logs
 
 **Purpose:** Master audit ledger. Every CREATE / UPDATE / DELETE / LOGIN / PERMISSION CHANGE / EXPORT flows through here. Partitioned by month.
-**RLS Pattern:** Pattern 4 (no user writes, elevated read requires justification)
+**RLS Pattern:** Pattern A-Manager (no user writes, elevated read requires justification)
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -682,7 +678,7 @@ Audit logs are the immutable, append-only record of every state-changing action 
 ### Table: audit_log_access_requests
 
 **Purpose:** Tracks who requested access to audit logs and why. Elevated audit access itself is audited (meta-audit).
-**RLS Pattern:** Pattern 4
+**RLS Pattern:** Pattern A-Manager
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -702,7 +698,7 @@ Audit logs are the immutable, append-only record of every state-changing action 
 ### Table: data_erasure_requests
 
 **Purpose:** GDPR Right to Erasure requests. Tracks the full lifecycle from request to verification.
-**RLS Pattern:** Pattern 4
+**RLS Pattern:** Pattern A-Manager
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -728,7 +724,7 @@ Audit logs are the immutable, append-only record of every state-changing action 
 ### Table: security_events
 
 **Purpose:** High-priority security events that require immediate review. Subset of audit_logs focused on security signals.
-**RLS Pattern:** Pattern 4
+**RLS Pattern:** Pattern A-Manager
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -764,7 +760,7 @@ Outbound webhook delivery (PRV → external) and inbound API token management (e
 ### Table: webhook_endpoints
 
 **Purpose:** Registered outbound webhook destinations. Companies can register external URLs to receive PRV events.
-**RLS Pattern:** Pattern 3
+**RLS Pattern:** Pattern A-Scope
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -782,7 +778,6 @@ Outbound webhook delivery (PRV → external) and inbound API token management (e
 | last_success_at | TIMESTAMPTZ | NULL | |
 | last_failure_at | TIMESTAMPTZ | NULL | |
 | failure_count | INTEGER | NOT NULL | Default 0 |
-| is_deleted | BOOLEAN | NOT NULL | Default false |
 | deleted_at | TIMESTAMPTZ | NULL | |
 | created_at | TIMESTAMPTZ | NOT NULL | Default now() |
 | updated_at | TIMESTAMPTZ | NOT NULL | Default now() |
@@ -797,7 +792,7 @@ Outbound webhook delivery (PRV → external) and inbound API token management (e
 ### Table: webhook_deliveries
 
 **Purpose:** Immutable delivery attempt log per event per endpoint.
-**RLS Pattern:** Pattern 4
+**RLS Pattern:** Pattern A-Manager
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -829,7 +824,7 @@ Outbound webhook delivery (PRV → external) and inbound API token management (e
 ### Table: api_keys
 
 **Purpose:** External API credentials for third-party integrations and internal automation. Never store raw key — store hash only.
-**RLS Pattern:** Pattern 3
+**RLS Pattern:** Pattern A-Scope
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -860,7 +855,7 @@ Outbound webhook delivery (PRV → external) and inbound API token management (e
 ### Table: api_request_log
 
 **Purpose:** Per-request log for external API calls. Truncated after 30 days for performance.
-**RLS Pattern:** Pattern 4
+**RLS Pattern:** Pattern A-Manager
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -892,7 +887,7 @@ Internal company knowledge repository. Structured articles, searchable, version-
 ### Table: kb_spaces
 
 **Purpose:** Top-level groupings for knowledge (e.g., HR Policies, Technical Docs, Renovation Guides).
-**RLS Pattern:** Pattern 3
+**RLS Pattern:** Pattern A-Scope
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -914,7 +909,7 @@ Internal company knowledge repository. Structured articles, searchable, version-
 ### Table: kb_articles
 
 **Purpose:** Knowledge articles. Supports rich text / MDX content with versioning.
-**RLS Pattern:** Pattern 3
+**RLS Pattern:** Pattern A-Scope
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -939,7 +934,6 @@ Internal company knowledge repository. Structured articles, searchable, version-
 | ai_summary | TEXT | NULL | AI-generated summary |
 | ai_tags | TEXT[] | NOT NULL | Default '{}' — AI-suggested tags |
 | lexorank | TEXT | NOT NULL | Sibling ordering |
-| is_deleted | BOOLEAN | NOT NULL | Default false |
 | deleted_at | TIMESTAMPTZ | NULL | |
 | created_at | TIMESTAMPTZ | NOT NULL | Default now() |
 | updated_at | TIMESTAMPTZ | NOT NULL | Default now() |
@@ -955,7 +949,7 @@ Internal company knowledge repository. Structured articles, searchable, version-
 ### Table: kb_article_versions
 
 **Purpose:** Version history for knowledge articles.
-**RLS Pattern:** Pattern 3
+**RLS Pattern:** Pattern A-Scope
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -974,7 +968,7 @@ Internal company knowledge repository. Structured articles, searchable, version-
 ### Table: kb_article_feedback
 
 **Purpose:** User feedback on article usefulness.
-**RLS Pattern:** Pattern 1
+**RLS Pattern:** Pattern C
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -1001,7 +995,7 @@ Structured learning: courses, lessons, quizzes, enrollments, progress tracking, 
 ### Table: learning_courses
 
 **Purpose:** Top-level course record. Can be mandatory (assigned by HR) or self-serve.
-**RLS Pattern:** Pattern 3
+**RLS Pattern:** Pattern A-Scope
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -1020,7 +1014,6 @@ Structured learning: courses, lessons, quizzes, enrollments, progress tracking, 
 | certificate_validity_days | INTEGER | NULL | NULL = no expiry |
 | created_by | UUID | NOT NULL | FK → users.id |
 | thumbnail_url | TEXT | NULL | |
-| is_deleted | BOOLEAN | NOT NULL | Default false |
 | deleted_at | TIMESTAMPTZ | NULL | |
 | created_at | TIMESTAMPTZ | NOT NULL | Default now() |
 | updated_at | TIMESTAMPTZ | NOT NULL | Default now() |
@@ -1030,7 +1023,7 @@ Structured learning: courses, lessons, quizzes, enrollments, progress tracking, 
 ### Table: learning_lessons
 
 **Purpose:** Individual lessons within a course.
-**RLS Pattern:** Pattern 3
+**RLS Pattern:** Pattern A-Scope
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -1045,7 +1038,6 @@ Structured learning: courses, lessons, quizzes, enrollments, progress tracking, 
 | duration_minutes | INTEGER | NULL | |
 | is_required | BOOLEAN | NOT NULL | Default true |
 | lexorank | TEXT | NOT NULL | |
-| is_deleted | BOOLEAN | NOT NULL | Default false |
 | deleted_at | TIMESTAMPTZ | NULL | |
 | created_at | TIMESTAMPTZ | NOT NULL | Default now() |
 | updated_at | TIMESTAMPTZ | NOT NULL | Default now() |
@@ -1055,7 +1047,7 @@ Structured learning: courses, lessons, quizzes, enrollments, progress tracking, 
 ### Table: learning_enrollments
 
 **Purpose:** Records when a user is enrolled in a course (manual, automatic, or mandatory).
-**RLS Pattern:** Pattern 1 (own) + Pattern 3 (managers)
+**RLS Pattern:** Pattern C (own) + Pattern 3 (managers)
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -1087,7 +1079,7 @@ Structured learning: courses, lessons, quizzes, enrollments, progress tracking, 
 ### Table: learning_lesson_progress
 
 **Purpose:** Per-lesson completion tracking per user enrollment.
-**RLS Pattern:** Pattern 1
+**RLS Pattern:** Pattern C
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -1109,7 +1101,7 @@ Structured learning: courses, lessons, quizzes, enrollments, progress tracking, 
 ### Table: learning_quiz_attempts
 
 **Purpose:** Quiz attempt records per lesson per user.
-**RLS Pattern:** Pattern 1/3
+**RLS Pattern:** Pattern C/A-Scope
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -1135,7 +1127,7 @@ Manages workplace safety: incidents, inspections, safety briefings, and complian
 ### Table: safety_incidents
 
 **Purpose:** Reports of workplace safety incidents, accidents, or near-misses.
-**RLS Pattern:** Pattern 3
+**RLS Pattern:** Pattern A-Scope
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -1162,7 +1154,6 @@ Manages workplace safety: incidents, inspections, safety briefings, and complian
 | investigation_completed_at | TIMESTAMPTZ | NULL | |
 | investigator_id | UUID | NULL | FK → users.id |
 | documents | UUID[] | NOT NULL | Default '{}' — document IDs |
-| is_deleted | BOOLEAN | NOT NULL | Default false |
 | deleted_at | TIMESTAMPTZ | NULL | |
 | created_at | TIMESTAMPTZ | NOT NULL | Default now() |
 | updated_at | TIMESTAMPTZ | NOT NULL | Default now() |
@@ -1178,7 +1169,7 @@ Manages workplace safety: incidents, inspections, safety briefings, and complian
 ### Table: safety_inspections
 
 **Purpose:** Scheduled and ad-hoc safety inspections of sites, equipment, or procedures.
-**RLS Pattern:** Pattern 3
+**RLS Pattern:** Pattern A-Scope
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -1200,7 +1191,6 @@ Manages workplace safety: incidents, inspections, safety briefings, and complian
 | corrective_actions_required | BOOLEAN | NOT NULL | Default false |
 | notes | TEXT | NULL | |
 | document_id | UUID | NULL | FK → documents.id |
-| is_deleted | BOOLEAN | NOT NULL | Default false |
 | deleted_at | TIMESTAMPTZ | NULL | |
 | created_at | TIMESTAMPTZ | NOT NULL | Default now() |
 | updated_at | TIMESTAMPTZ | NOT NULL | Default now() |
@@ -1210,7 +1200,7 @@ Manages workplace safety: incidents, inspections, safety briefings, and complian
 ### Table: safety_briefings
 
 **Purpose:** Safety briefing records — confirmation that workers received and acknowledged safety instructions.
-**RLS Pattern:** Pattern 3
+**RLS Pattern:** Pattern A-Scope
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -1233,7 +1223,7 @@ Manages workplace safety: incidents, inspections, safety briefings, and complian
 ### Table: safety_briefing_acknowledgments
 
 **Purpose:** Individual worker sign-offs on a safety briefing.
-**RLS Pattern:** Pattern 1/3
+**RLS Pattern:** Pattern C/A-Scope
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -1259,7 +1249,7 @@ System tables manage platform-level operations: feature flags, background job qu
 ### Table: feature_flags
 
 **Purpose:** Runtime feature toggles per company. Enables safe rollouts and per-client feature control.
-**RLS Pattern:** Pattern 5
+**RLS Pattern:** Pattern E-Override
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -1284,7 +1274,7 @@ System tables manage platform-level operations: feature flags, background job qu
 ### Table: background_jobs
 
 **Purpose:** Persistent job queue state. Used alongside Inngest for stateful job tracking.
-**RLS Pattern:** Pattern 5 (system only)
+**RLS Pattern:** Pattern E-Override (system only)
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -1316,7 +1306,7 @@ System tables manage platform-level operations: feature flags, background job qu
 ### Table: rate_limit_counters
 
 **Purpose:** Sliding-window rate limit state stored in DB (Redis is primary; DB is fallback + audit).
-**RLS Pattern:** Pattern 5
+**RLS Pattern:** Pattern E-Override
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -1341,7 +1331,7 @@ System tables manage platform-level operations: feature flags, background job qu
 ### Table: system_configurations
 
 **Purpose:** Key-value store for system-level and company-level configuration. Encrypted for sensitive values.
-**RLS Pattern:** Pattern 5
+**RLS Pattern:** Pattern E-Override
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -1364,7 +1354,7 @@ System tables manage platform-level operations: feature flags, background job qu
 ### Table: migration_history
 
 **Purpose:** Database migration execution log. Tracks applied migrations and their checksums.
-**RLS Pattern:** Pattern 5
+**RLS Pattern:** Pattern E-Override
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -1389,7 +1379,7 @@ System tables manage platform-level operations: feature flags, background job qu
 ### Table: typesense_sync_log
 
 **Purpose:** Tracks which records have been synced to Typesense search index and when.
-**RLS Pattern:** Pattern 5
+**RLS Pattern:** Pattern E-Override
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -1470,7 +1460,7 @@ All partitioned tables use PostgreSQL native declarative partitioning (`PARTITIO
 ### Index Design Principles
 
 1. **Compound indexes** — always lead with `company_id` for multi-tenant tables; this is the most selective filter for RLS
-2. **Partial indexes** — used when query filters have a predictable boolean condition (is_active, is_deleted, status = 'active')
+2. **Partial indexes** — used when query filters have a predictable boolean condition (is_active, deleted_at IS NOT NULL, status = 'active')
 3. **GIN indexes** — used on JSONB columns, text arrays, and full-text search vectors
 4. **HNSW indexes** — used on VECTOR columns for semantic AI search (pgvector)
 5. **Unique indexes** — enforce business uniqueness at the DB level, not just application layer

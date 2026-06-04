@@ -9,12 +9,37 @@ PRV operates on a **Role + Permission + Scope** model enforced at every layer.
 Every screen, every data point, every action is filtered through this triple gate.
 No role ever sees more than their scope allows. No action bypasses audit logging.
 
-**18 Roles across 5 tracks:**
-- Core (3): CEO · Co-CEO · System Administrator
-- Attendance (5): Worker · Team Leader · OMS · Operations Manager · HR/Payroll
+**20 Roles across 6 tracks** (updated v1.1 — Phase 0 Validation, Decision C1/Option C):
+- Core (4): Group CEO · CEO · Co-CEO · System Administrator
+- Attendance (6): Worker · Team Leader · OMS · Operations Manager · Department Head · HR/Payroll
 - Projects (5): Project Worker · Project Team Leader · Project OMS · Project Operations Manager · Project Director
 - Shop (3): Seller · Store Manager · Shop Director
 - Analytics (3): App Support Specialist · Data Analyst · QA Tester
+- External (2): Client Portal User · Supplier Portal User (limited-scope, no system role inheritance)
+
+**UI Display Name Mapping (Phase 0 Decision C1 — Option C):**
+| UI Display Name (UI_SITEMAP) | System Role | Type |
+|-----------------------------|-------------|------|
+| Sysadmin | System Administrator | Display alias |
+| Platform Admin | System Administrator | Merged — same system role |
+| Group CEO | Group CEO | Exact match |
+| CEO | CEO | Exact match |
+| Co-CEO | Co-CEO | Exact match |
+| Regional Manager | Operations Manager | Display alias |
+| Store Manager | Store Manager | Exact match |
+| Shop Director | Shop Director | Exact match |
+| Department Head | Department Head | New role (added C1) |
+| HR Manager | HR/Payroll | Display alias |
+| Finance Manager | Permission Group | Not a separate system role |
+| Project Manager | Project Operations Manager | Display alias |
+| Team Lead | Team Leader | Display alias |
+| Field Supervisor | OMS | Display alias |
+| Worker | Worker | Exact match |
+| Cashier | Seller | Display alias (retail context) |
+| Procurement Officer | Permission Group | Not a separate system role |
+| Fleet Manager | Permission Group | Not a separate system role |
+| Client Portal User | Client Portal User | External actor — limited scope |
+| Supplier Portal User | Supplier Portal User | External actor — limited scope |
 
 ---
 
@@ -35,16 +60,21 @@ Permission types: `none` · `read` · `write` · `manage` · `admin` · `full`
 
 ## 3. SCOPE SYSTEM
 
-| Scope | Definition |
-|---|---|
-| Personal | Own data only — own shifts, tasks, records |
-| Team | Own team's data |
-| Multiple Teams | All teams in assigned area |
-| Assigned Projects | Only projects the user is added to |
-| Assigned Stores | Only stores the user manages |
-| Regional | All stores/teams in assigned region |
-| Company | All data within one company entity |
-| Global | All companies in PRV Group |
+Scope is defined as a **9-level numeric hierarchy** (canonical, code-level identifiers) with human-readable aliases.
+
+| Level | Code Constant | Display Name | Definition |
+|-------|--------------|--------------|-----------|
+| 1 | `SCOPE_RECORD` | Personal | Own data only — own shifts, tasks, records |
+| 2 | `SCOPE_TEAM` | Team | Own team's data |
+| 3 | `SCOPE_DEPARTMENT` | Department | All teams/records in assigned department |
+| 4 | `SCOPE_STORE` | Assigned Stores | Only stores the user manages |
+| 5 | `SCOPE_REGION` | Regional | All stores/teams in assigned region |
+| 6 | `SCOPE_COMPANY` | Company | All data within one company entity |
+| 7 | `SCOPE_GROUP` | Group | All companies in PRV Group (Group CEO) |
+| 8 | `SCOPE_PLATFORM` | Platform | Platform-wide (System Administrator) |
+| 9 | `SCOPE_GLOBAL` | Global | All data across all groups and companies |
+
+> **Note:** "Multiple Teams" and "Assigned Projects" are not scope levels — they are scope **targets** (specific entity IDs within a scope level). A user at SCOPE_TEAM may be assigned to multiple teams; scope level stays 2.
 
 ---
 
@@ -63,6 +93,9 @@ Permission types: `none` · `read` · `write` · `manage` · `admin` · `full`
 ## 5. PERMISSION INHERITANCE TREE
 
 ```
+Group CEO
+└── inherits: all CEO permissions (across all companies in group)
+
 CEO
 └── inherits: all executive permissions + Co-CEO
 
@@ -102,6 +135,7 @@ Shop Director
 
         Seller (base — Shop track)
 
+Department Head — inherits: Team Leader (manages a department, not a full Operations Manager)
 HR / Payroll — horizontal role, does not inherit Attendance track
 System Administrator — isolated track, no business inheritance
 App Support Specialist — read-only horizontal access

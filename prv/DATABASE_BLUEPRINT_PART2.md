@@ -30,7 +30,7 @@ The Renovation Services module is the primary revenue platform. It manages the f
 ### Table: renovation_projects
 
 **Purpose:** Master record for each renovation engagement. One per client project.
-**RLS Pattern:** Pattern 3 (scope-based — assigned employees + company)
+**RLS Pattern:** Pattern A-Scope (scope-based — assigned employees + company)
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -65,7 +65,6 @@ The Renovation Services module is the primary revenue platform. It manages the f
 | approved_by | UUID | NULL | FK → users.id |
 | notes | TEXT | NULL | Internal notes |
 | metadata | JSONB | NOT NULL | Default '{}' |
-| is_deleted | BOOLEAN | NOT NULL | Default false |
 | deleted_at | TIMESTAMPTZ | NULL | |
 | deleted_by | UUID | NULL | FK → users.id |
 | created_at | TIMESTAMPTZ | NOT NULL | Default now() |
@@ -94,7 +93,7 @@ The Renovation Services module is the primary revenue platform. It manages the f
 ### Table: renovation_phases
 
 **Purpose:** Work phases within a renovation project (e.g., Demolition, Electrical, Finishing).
-**RLS Pattern:** Pattern 3
+**RLS Pattern:** Pattern A-Scope
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -117,7 +116,6 @@ The Renovation Services module is the primary revenue platform. It manages the f
 | client_approved_at | TIMESTAMPTZ | NULL | |
 | supervisor_id | UUID | NULL | FK → users.id |
 | lexorank | TEXT | NOT NULL | Ordering within project |
-| is_deleted | BOOLEAN | NOT NULL | Default false |
 | deleted_at | TIMESTAMPTZ | NULL | |
 | created_at | TIMESTAMPTZ | NOT NULL | Default now() |
 | updated_at | TIMESTAMPTZ | NOT NULL | Default now() |
@@ -133,7 +131,7 @@ The Renovation Services module is the primary revenue platform. It manages the f
 ### Table: renovation_tasks
 
 **Purpose:** Granular work items within a phase. Assigned to workers or teams.
-**RLS Pattern:** Pattern 3
+**RLS Pattern:** Pattern A-Scope
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -155,7 +153,6 @@ The Renovation Services module is the primary revenue platform. It manages the f
 | completed_by | UUID | NULL | FK → users.id |
 | blocked_reason | TEXT | NULL | |
 | lexorank | TEXT | NOT NULL | |
-| is_deleted | BOOLEAN | NOT NULL | Default false |
 | deleted_at | TIMESTAMPTZ | NULL | |
 | created_at | TIMESTAMPTZ | NOT NULL | Default now() |
 | updated_at | TIMESTAMPTZ | NOT NULL | Default now() |
@@ -166,7 +163,7 @@ The Renovation Services module is the primary revenue platform. It manages the f
 ### Table: renovation_estimates
 
 **Purpose:** Detailed cost estimates for a renovation project. Multiple drafts possible; one marked as accepted.
-**RLS Pattern:** Pattern 3
+**RLS Pattern:** Pattern A-Scope
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -192,7 +189,6 @@ The Renovation Services module is the primary revenue platform. It manages the f
 | client_response_note | TEXT | NULL | |
 | notes | TEXT | NULL | |
 | pdf_document_id | UUID | NULL | FK → documents.id |
-| is_deleted | BOOLEAN | NOT NULL | Default false |
 | deleted_at | TIMESTAMPTZ | NULL | |
 | created_at | TIMESTAMPTZ | NOT NULL | Default now() |
 | updated_at | TIMESTAMPTZ | NOT NULL | Default now() |
@@ -208,7 +204,7 @@ The Renovation Services module is the primary revenue platform. It manages the f
 ### Table: renovation_estimate_lines
 
 **Purpose:** Individual line items in an estimate (labor, materials, subcontractors, overhead).
-**RLS Pattern:** Pattern 3
+**RLS Pattern:** Pattern A-Scope
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -233,7 +229,7 @@ The Renovation Services module is the primary revenue platform. It manages the f
 ### Table: renovation_contracts
 
 **Purpose:** Signed contracts for renovation projects. Version-controlled.
-**RLS Pattern:** Pattern 3
+**RLS Pattern:** Pattern A-Scope
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -255,7 +251,6 @@ The Renovation Services module is the primary revenue platform. It manages the f
 | termination_reason | TEXT | NULL | |
 | payment_terms | JSONB | NOT NULL | Payment schedule structure |
 | document_id | UUID | NULL | FK → documents.id |
-| is_deleted | BOOLEAN | NOT NULL | Default false |
 | deleted_at | TIMESTAMPTZ | NULL | |
 | created_at | TIMESTAMPTZ | NOT NULL | Default now() |
 | updated_at | TIMESTAMPTZ | NOT NULL | Default now() |
@@ -266,7 +261,7 @@ The Renovation Services module is the primary revenue platform. It manages the f
 ### Table: renovation_site_reports
 
 **Purpose:** Daily or event-based site reports submitted by supervisors.
-**RLS Pattern:** Pattern 3
+**RLS Pattern:** Pattern A-Scope
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -285,7 +280,6 @@ The Renovation Services module is the primary revenue platform. It manages the f
 | completion_delta | NUMERIC(5,2) | NULL | % progress added this report |
 | photos | JSONB | NOT NULL | Default '[]' — document IDs |
 | client_visible | BOOLEAN | NOT NULL | Default false |
-| is_deleted | BOOLEAN | NOT NULL | Default false |
 | deleted_at | TIMESTAMPTZ | NULL | |
 | created_at | TIMESTAMPTZ | NOT NULL | Default now() |
 | updated_at | TIMESTAMPTZ | NOT NULL | Default now() |
@@ -299,7 +293,7 @@ The Renovation Services module is the primary revenue platform. It manages the f
 ### Table: renovation_material_requests
 
 **Purpose:** Material procurement requests generated from renovation projects.
-**RLS Pattern:** Pattern 3
+**RLS Pattern:** Pattern A-Scope
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -315,7 +309,6 @@ The Renovation Services module is the primary revenue platform. It manages the f
 | approved_at | TIMESTAMPTZ | NULL | |
 | purchase_order_id | UUID | NULL | FK → purchase_orders.id |
 | notes | TEXT | NULL | |
-| is_deleted | BOOLEAN | NOT NULL | Default false |
 | deleted_at | TIMESTAMPTZ | NULL | |
 | created_at | TIMESTAMPTZ | NOT NULL | Default now() |
 | updated_at | TIMESTAMPTZ | NOT NULL | Default now() |
@@ -330,7 +323,7 @@ The Renovation Services module is the primary revenue platform. It manages the f
 ### Table: renovation_material_request_lines
 
 **Purpose:** Individual materials in a request.
-**RLS Pattern:** Pattern 3
+**RLS Pattern:** Pattern A-Scope
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -358,7 +351,7 @@ The Shop module is a full-featured e-commerce and internal product catalog. Serv
 ### Table: product_categories
 
 **Purpose:** Hierarchical product taxonomy. Supports unlimited nesting.
-**RLS Pattern:** Pattern 2 (company-scoped read)
+**RLS Pattern:** Pattern A (company-scoped read)
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -373,7 +366,6 @@ The Shop module is a full-featured e-commerce and internal product catalog. Serv
 | is_public | BOOLEAN | NOT NULL | Default true |
 | lexorank | TEXT | NOT NULL | Display order |
 | metadata | JSONB | NOT NULL | Default '{}' |
-| is_deleted | BOOLEAN | NOT NULL | Default false |
 | deleted_at | TIMESTAMPTZ | NULL | |
 | created_at | TIMESTAMPTZ | NOT NULL | Default now() |
 | updated_at | TIMESTAMPTZ | NOT NULL | Default now() |
@@ -389,7 +381,7 @@ The Shop module is a full-featured e-commerce and internal product catalog. Serv
 ### Table: products
 
 **Purpose:** Master product/service catalog. Supports physical products, digital products, and services.
-**RLS Pattern:** Pattern 2
+**RLS Pattern:** Pattern A
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -418,7 +410,6 @@ The Shop module is a full-featured e-commerce and internal product catalog. Serv
 | requires_approval_for_discount | BOOLEAN | NOT NULL | Default false |
 | metadata | JSONB | NOT NULL | Default '{}' |
 | search_vector | TSVECTOR | NULL | Full-text search |
-| is_deleted | BOOLEAN | NOT NULL | Default false |
 | deleted_at | TIMESTAMPTZ | NULL | |
 | created_at | TIMESTAMPTZ | NOT NULL | Default now() |
 | updated_at | TIMESTAMPTZ | NOT NULL | Default now() |
@@ -444,7 +435,7 @@ The Shop module is a full-featured e-commerce and internal product catalog. Serv
 ### Table: product_variants
 
 **Purpose:** Variant SKUs for configurable products (size, color, material combinations).
-**RLS Pattern:** Pattern 2
+**RLS Pattern:** Pattern A
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -459,7 +450,6 @@ The Shop module is a full-featured e-commerce and internal product catalog. Serv
 | cost_price | NUMERIC(19,4) | NULL | |
 | weight_kg | NUMERIC(8,4) | NULL | |
 | is_active | BOOLEAN | NOT NULL | Default true |
-| is_deleted | BOOLEAN | NOT NULL | Default false |
 | deleted_at | TIMESTAMPTZ | NULL | |
 | created_at | TIMESTAMPTZ | NOT NULL | Default now() |
 | updated_at | TIMESTAMPTZ | NOT NULL | Default now() |
@@ -473,7 +463,7 @@ The Shop module is a full-featured e-commerce and internal product catalog. Serv
 ### Table: product_price_tiers
 
 **Purpose:** Volume pricing and client-type pricing tiers.
-**RLS Pattern:** Pattern 2
+**RLS Pattern:** Pattern A
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -498,7 +488,7 @@ The Shop module is a full-featured e-commerce and internal product catalog. Serv
 ### Table: product_images
 
 **Purpose:** Product image gallery with ordering.
-**RLS Pattern:** Pattern 2
+**RLS Pattern:** Pattern A
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -518,7 +508,7 @@ The Shop module is a full-featured e-commerce and internal product catalog. Serv
 ### Table: inventory_locations
 
 **Purpose:** Physical storage locations (warehouses, store rooms, site storage).
-**RLS Pattern:** Pattern 3
+**RLS Pattern:** Pattern A-Scope
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -528,7 +518,6 @@ The Shop module is a full-featured e-commerce and internal product catalog. Serv
 | location_type | TEXT | NOT NULL | warehouse / store_room / site / vehicle |
 | address | TEXT | NULL | |
 | is_active | BOOLEAN | NOT NULL | Default true |
-| is_deleted | BOOLEAN | NOT NULL | Default false |
 | deleted_at | TIMESTAMPTZ | NULL | |
 | created_at | TIMESTAMPTZ | NOT NULL | Default now() |
 | updated_at | TIMESTAMPTZ | NOT NULL | Default now() |
@@ -539,7 +528,7 @@ The Shop module is a full-featured e-commerce and internal product catalog. Serv
 ### Table: inventory_items
 
 **Purpose:** Stock levels per product/variant per location.
-**RLS Pattern:** Pattern 3
+**RLS Pattern:** Pattern A-Scope
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -567,7 +556,7 @@ The Shop module is a full-featured e-commerce and internal product catalog. Serv
 ### Table: inventory_movements
 
 **Purpose:** Immutable ledger of all stock changes. Never updated, only inserted.
-**RLS Pattern:** Pattern 3
+**RLS Pattern:** Pattern A-Scope
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -596,7 +585,7 @@ The Shop module is a full-featured e-commerce and internal product catalog. Serv
 ### Table: shop_orders
 
 **Purpose:** Customer and internal orders. Covers B2C, B2B, and internal requisitions.
-**RLS Pattern:** Pattern 1 (own record) for clients; Pattern 3 for internal
+**RLS Pattern:** Pattern C (own record) for clients; Pattern A-Scope for internal
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -630,7 +619,6 @@ The Shop module is a full-featured e-commerce and internal product catalog. Serv
 | fulfilled_by | UUID | NULL | FK → users.id |
 | fulfilled_at | TIMESTAMPTZ | NULL | |
 | metadata | JSONB | NOT NULL | Default '{}' |
-| is_deleted | BOOLEAN | NOT NULL | Default false |
 | deleted_at | TIMESTAMPTZ | NULL | |
 | created_at | TIMESTAMPTZ | NOT NULL | Default now() |
 | updated_at | TIMESTAMPTZ | NOT NULL | Default now() |
@@ -647,7 +635,7 @@ The Shop module is a full-featured e-commerce and internal product catalog. Serv
 ### Table: shop_order_lines
 
 **Purpose:** Individual line items per order.
-**RLS Pattern:** Pattern 1/3 (inherits from parent order)
+**RLS Pattern:** Pattern C/A-Scope (inherits from parent order)
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -672,7 +660,7 @@ The Shop module is a full-featured e-commerce and internal product catalog. Serv
 ### Table: discount_codes
 
 **Purpose:** Promotional and client-specific discount codes.
-**RLS Pattern:** Pattern 3
+**RLS Pattern:** Pattern A-Scope
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -710,7 +698,7 @@ CRM manages client relationships from first contact through lifetime value. Incl
 ### Table: crm_clients
 
 **Purpose:** Organization-level client record. A client is a company or individual that has or may have a commercial relationship.
-**RLS Pattern:** Pattern 3
+**RLS Pattern:** Pattern A-Scope
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -734,7 +722,6 @@ CRM manages client relationships from first contact through lifetime value. Incl
 | payment_terms_days | INTEGER | NULL | Default net days |
 | notes | TEXT | NULL | |
 | metadata | JSONB | NOT NULL | Default '{}' |
-| is_deleted | BOOLEAN | NOT NULL | Default false |
 | deleted_at | TIMESTAMPTZ | NULL | |
 | created_at | TIMESTAMPTZ | NOT NULL | Default now() |
 | updated_at | TIMESTAMPTZ | NOT NULL | Default now() |
@@ -751,7 +738,7 @@ CRM manages client relationships from first contact through lifetime value. Incl
 ### Table: crm_contacts
 
 **Purpose:** Individual persons at a client organization. Many contacts per client.
-**RLS Pattern:** Pattern 3
+**RLS Pattern:** Pattern A-Scope
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -770,7 +757,6 @@ CRM manages client relationships from first contact through lifetime value. Incl
 | portal_user_id | UUID | NULL | FK → users.id — if portal account created |
 | preferred_language | CHAR(2) | NOT NULL | Default 'ro' |
 | notes | TEXT | NULL | |
-| is_deleted | BOOLEAN | NOT NULL | Default false |
 | deleted_at | TIMESTAMPTZ | NULL | |
 | created_at | TIMESTAMPTZ | NOT NULL | Default now() |
 | updated_at | TIMESTAMPTZ | NOT NULL | Default now() |
@@ -786,7 +772,7 @@ CRM manages client relationships from first contact through lifetime value. Incl
 ### Table: crm_addresses
 
 **Purpose:** Address book for clients (billing, shipping, site, HQ).
-**RLS Pattern:** Pattern 3
+**RLS Pattern:** Pattern A-Scope
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -811,7 +797,7 @@ CRM manages client relationships from first contact through lifetime value. Incl
 ### Table: crm_interactions
 
 **Purpose:** Log of all client touchpoints: calls, emails, meetings, site visits.
-**RLS Pattern:** Pattern 3
+**RLS Pattern:** Pattern A-Scope
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -845,7 +831,7 @@ CRM manages client relationships from first contact through lifetime value. Incl
 ### Table: crm_opportunities
 
 **Purpose:** Sales pipeline opportunities. Funnel stage tracking.
-**RLS Pattern:** Pattern 3
+**RLS Pattern:** Pattern A-Scope
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -865,7 +851,6 @@ CRM manages client relationships from first contact through lifetime value. Incl
 | renovation_project_id | UUID | NULL | FK → renovation_projects.id (if converted) |
 | source | TEXT | NULL | |
 | tags | TEXT[] | NOT NULL | Default '{}' |
-| is_deleted | BOOLEAN | NOT NULL | Default false |
 | deleted_at | TIMESTAMPTZ | NULL | |
 | created_at | TIMESTAMPTZ | NOT NULL | Default now() |
 | updated_at | TIMESTAMPTZ | NOT NULL | Default now() |
@@ -881,7 +866,7 @@ CRM manages client relationships from first contact through lifetime value. Incl
 ### Table: crm_quotes
 
 **Purpose:** Formal quotes sent to clients. Links to renovation estimates or shop product quotes.
-**RLS Pattern:** Pattern 3
+**RLS Pattern:** Pattern A-Scope
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -902,7 +887,6 @@ CRM manages client relationships from first contact through lifetime value. Incl
 | client_responded_at | TIMESTAMPTZ | NULL | |
 | document_id | UUID | NULL | FK → documents.id |
 | notes | TEXT | NULL | |
-| is_deleted | BOOLEAN | NOT NULL | Default false |
 | deleted_at | TIMESTAMPTZ | NULL | |
 | created_at | TIMESTAMPTZ | NOT NULL | Default now() |
 | updated_at | TIMESTAMPTZ | NOT NULL | Default now() |
@@ -919,7 +903,7 @@ Finance manages invoicing, payments, budgets, and financial reporting across all
 ### Table: invoices
 
 **Purpose:** All outgoing invoices (to clients). Covers renovation, shop, and service invoices.
-**RLS Pattern:** Pattern 3
+**RLS Pattern:** Pattern A-Scope
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -954,7 +938,6 @@ Finance manages invoicing, payments, budgets, and financial reporting across all
 | e_invoice_id | TEXT | NULL | ANAF e-Factura ID |
 | e_invoice_status | TEXT | NULL | pending / submitted / accepted / rejected |
 | metadata | JSONB | NOT NULL | Default '{}' |
-| is_deleted | BOOLEAN | NOT NULL | Default false |
 | deleted_at | TIMESTAMPTZ | NULL | |
 | created_at | TIMESTAMPTZ | NOT NULL | Default now() |
 | updated_at | TIMESTAMPTZ | NOT NULL | Default now() |
@@ -972,7 +955,7 @@ Finance manages invoicing, payments, budgets, and financial reporting across all
 ### Table: invoice_lines
 
 **Purpose:** Line items on invoices.
-**RLS Pattern:** Pattern 3
+**RLS Pattern:** Pattern A-Scope
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -997,7 +980,7 @@ Finance manages invoicing, payments, budgets, and financial reporting across all
 ### Table: payments
 
 **Purpose:** Incoming payment records against invoices. Supports partial payments and multi-invoice payments.
-**RLS Pattern:** Pattern 3
+**RLS Pattern:** Pattern A-Scope
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -1018,7 +1001,6 @@ Finance manages invoicing, payments, budgets, and financial reporting across all
 | reconciled | BOOLEAN | NOT NULL | Default false |
 | reconciled_at | TIMESTAMPTZ | NULL | |
 | reconciled_by | UUID | NULL | FK → users.id |
-| is_deleted | BOOLEAN | NOT NULL | Default false |
 | deleted_at | TIMESTAMPTZ | NULL | |
 | created_at | TIMESTAMPTZ | NOT NULL | Default now() |
 | updated_at | TIMESTAMPTZ | NOT NULL | Default now() |
@@ -1029,7 +1011,7 @@ Finance manages invoicing, payments, budgets, and financial reporting across all
 ### Table: payment_allocations
 
 **Purpose:** Maps payments to invoices (many-to-many with amounts). Supports partial and split payments.
-**RLS Pattern:** Pattern 3
+**RLS Pattern:** Pattern A-Scope
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -1050,7 +1032,7 @@ Finance manages invoicing, payments, budgets, and financial reporting across all
 ### Table: expense_claims
 
 **Purpose:** Employee expense reimbursement requests.
-**RLS Pattern:** Pattern 1 (own) + Pattern 3 (managers)
+**RLS Pattern:** Pattern C (own) + Pattern A-Scope (managers)
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -1070,7 +1052,6 @@ Finance manages invoicing, payments, budgets, and financial reporting across all
 | approved_at | TIMESTAMPTZ | NULL | |
 | paid_at | TIMESTAMPTZ | NULL | |
 | notes | TEXT | NULL | |
-| is_deleted | BOOLEAN | NOT NULL | Default false |
 | deleted_at | TIMESTAMPTZ | NULL | |
 | created_at | TIMESTAMPTZ | NOT NULL | Default now() |
 | updated_at | TIMESTAMPTZ | NOT NULL | Default now() |
@@ -1083,7 +1064,7 @@ Finance manages invoicing, payments, budgets, and financial reporting across all
 ### Table: expense_claim_lines
 
 **Purpose:** Individual expense items within a claim.
-**RLS Pattern:** Pattern 1/3
+**RLS Pattern:** Pattern C/A-Scope
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -1106,7 +1087,7 @@ Finance manages invoicing, payments, budgets, and financial reporting across all
 ### Table: budgets
 
 **Purpose:** Budget allocations per department, project, or cost center. Tracks planned vs actual.
-**RLS Pattern:** Pattern 3
+**RLS Pattern:** Pattern A-Scope
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -1129,7 +1110,6 @@ Finance manages invoicing, payments, budgets, and financial reporting across all
 | approved_by | UUID | NULL | FK → users.id |
 | approved_at | TIMESTAMPTZ | NULL | |
 | notes | TEXT | NULL | |
-| is_deleted | BOOLEAN | NOT NULL | Default false |
 | deleted_at | TIMESTAMPTZ | NULL | |
 | created_at | TIMESTAMPTZ | NOT NULL | Default now() |
 | updated_at | TIMESTAMPTZ | NOT NULL | Default now() |
@@ -1140,7 +1120,7 @@ Finance manages invoicing, payments, budgets, and financial reporting across all
 ### Table: cost_centers
 
 **Purpose:** Logical groupings for financial reporting (e.g., North Region, Showroom BUC).
-**RLS Pattern:** Pattern 3
+**RLS Pattern:** Pattern A-Scope
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -1166,7 +1146,7 @@ Centralized document management for all internal and client-facing documents. In
 ### Table: document_folders
 
 **Purpose:** Hierarchical folder structure. Company-scoped, optional department/project scope.
-**RLS Pattern:** Pattern 3
+**RLS Pattern:** Pattern A-Scope
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -1181,7 +1161,6 @@ Centralized document management for all internal and client-facing documents. In
 | project_id | UUID | NULL | Generic project reference |
 | is_locked | BOOLEAN | NOT NULL | Default false — no new uploads |
 | lexorank | TEXT | NOT NULL | |
-| is_deleted | BOOLEAN | NOT NULL | Default false |
 | deleted_at | TIMESTAMPTZ | NULL | |
 | created_at | TIMESTAMPTZ | NOT NULL | Default now() |
 | updated_at | TIMESTAMPTZ | NOT NULL | Default now() |
@@ -1192,7 +1171,7 @@ Centralized document management for all internal and client-facing documents. In
 ### Table: documents
 
 **Purpose:** Master document record. One record per logical document regardless of number of versions.
-**RLS Pattern:** Pattern 3
+**RLS Pattern:** Pattern A-Scope
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -1217,7 +1196,6 @@ Centralized document management for all internal and client-facing documents. In
 | linked_entity_type | TEXT | NULL | renovation_project / contract / employee / invoice |
 | linked_entity_id | UUID | NULL | Generic FK to source entity |
 | retention_date | DATE | NULL | When document should be archived/deleted per policy |
-| is_deleted | BOOLEAN | NOT NULL | Default false |
 | deleted_at | TIMESTAMPTZ | NULL | |
 | created_at | TIMESTAMPTZ | NOT NULL | Default now() |
 | updated_at | TIMESTAMPTZ | NOT NULL | Default now() |
@@ -1234,7 +1212,7 @@ Centralized document management for all internal and client-facing documents. In
 ### Table: document_versions
 
 **Purpose:** Immutable version history. Each upload creates a new version.
-**RLS Pattern:** Pattern 3
+**RLS Pattern:** Pattern A-Scope
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -1260,7 +1238,7 @@ Centralized document management for all internal and client-facing documents. In
 ### Table: document_access_log
 
 **Purpose:** Immutable record of every document view/download. GDPR audit trail.
-**RLS Pattern:** Pattern 4 (managers can read, no writes)
+**RLS Pattern:** Pattern A-Manager (managers can read, no writes)
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -1284,7 +1262,7 @@ Centralized document management for all internal and client-facing documents. In
 ### Table: document_shares
 
 **Purpose:** Temporary or permanent share links for internal or external document sharing.
-**RLS Pattern:** Pattern 3
+**RLS Pattern:** Pattern A-Scope
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -1320,7 +1298,7 @@ Internal messaging platform. Channels, direct messages, threads, reactions, and 
 ### Table: comm_channels
 
 **Purpose:** Named channels for team or topic-based communication. Similar to Slack channels.
-**RLS Pattern:** Pattern 3
+**RLS Pattern:** Pattern A-Scope
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -1348,7 +1326,7 @@ Internal messaging platform. Channels, direct messages, threads, reactions, and 
 ### Table: comm_channel_members
 
 **Purpose:** Channel membership roster.
-**RLS Pattern:** Pattern 3
+**RLS Pattern:** Pattern A-Scope
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -1371,7 +1349,7 @@ Internal messaging platform. Channels, direct messages, threads, reactions, and 
 ### Table: comm_messages
 
 **Purpose:** Messages in channels or DMs. Supports threading.
-**RLS Pattern:** Pattern 1 (own) + Pattern 3 (channel members)
+**RLS Pattern:** Pattern C (own) + Pattern A-Scope (channel members)
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -1385,7 +1363,6 @@ Internal messaging platform. Channels, direct messages, threads, reactions, and 
 | content_html | TEXT | NULL | Rich text / markdown rendered |
 | is_edited | BOOLEAN | NOT NULL | Default false |
 | edited_at | TIMESTAMPTZ | NULL | |
-| is_deleted | BOOLEAN | NOT NULL | Default false |
 | deleted_at | TIMESTAMPTZ | NULL | |
 | thread_reply_count | INTEGER | NOT NULL | Default 0 |
 | reaction_counts | JSONB | NOT NULL | Default '{}' — {"👍": 3, "❤️": 1} |
@@ -1407,7 +1384,7 @@ Internal messaging platform. Channels, direct messages, threads, reactions, and 
 ### Table: comm_message_attachments
 
 **Purpose:** Files and media attached to messages.
-**RLS Pattern:** Pattern 3
+**RLS Pattern:** Pattern A-Scope
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -1427,7 +1404,7 @@ Internal messaging platform. Channels, direct messages, threads, reactions, and 
 ### Table: comm_reactions
 
 **Purpose:** Per-user reactions on messages.
-**RLS Pattern:** Pattern 3
+**RLS Pattern:** Pattern A-Scope
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -1452,7 +1429,7 @@ Standalone module for managing vendor relationships, onboarding, performance, an
 ### Table: suppliers
 
 **Purpose:** Master supplier/vendor record. External companies that provide goods or services.
-**RLS Pattern:** Pattern 3
+**RLS Pattern:** Pattern A-Scope
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -1479,7 +1456,6 @@ Standalone module for managing vendor relationships, onboarding, performance, an
 | notes | TEXT | NULL | |
 | tags | TEXT[] | NOT NULL | Default '{}' |
 | metadata | JSONB | NOT NULL | Default '{}' |
-| is_deleted | BOOLEAN | NOT NULL | Default false |
 | deleted_at | TIMESTAMPTZ | NULL | |
 | created_at | TIMESTAMPTZ | NOT NULL | Default now() |
 | updated_at | TIMESTAMPTZ | NOT NULL | Default now() |
@@ -1495,7 +1471,7 @@ Standalone module for managing vendor relationships, onboarding, performance, an
 ### Table: supplier_contacts
 
 **Purpose:** Individual persons at a supplier.
-**RLS Pattern:** Pattern 3
+**RLS Pattern:** Pattern A-Scope
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -1510,7 +1486,6 @@ Standalone module for managing vendor relationships, onboarding, performance, an
 | is_primary | BOOLEAN | NOT NULL | Default false |
 | has_portal_access | BOOLEAN | NOT NULL | Default false |
 | portal_user_id | UUID | NULL | FK → users.id |
-| is_deleted | BOOLEAN | NOT NULL | Default false |
 | deleted_at | TIMESTAMPTZ | NULL | |
 | created_at | TIMESTAMPTZ | NOT NULL | Default now() |
 | updated_at | TIMESTAMPTZ | NOT NULL | Default now() |
@@ -1520,7 +1495,7 @@ Standalone module for managing vendor relationships, onboarding, performance, an
 ### Table: supplier_evaluations
 
 **Purpose:** Periodic performance evaluations of suppliers. Builds rating score.
-**RLS Pattern:** Pattern 3
+**RLS Pattern:** Pattern A-Scope
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -1538,7 +1513,6 @@ Standalone module for managing vendor relationships, onboarding, performance, an
 | overall_score | NUMERIC(3,2) | NOT NULL | Computed average |
 | notes | TEXT | NULL | |
 | linked_purchase_order_id | UUID | NULL | FK → purchase_orders.id |
-| is_deleted | BOOLEAN | NOT NULL | Default false |
 | deleted_at | TIMESTAMPTZ | NULL | |
 | created_at | TIMESTAMPTZ | NOT NULL | Default now() |
 | updated_at | TIMESTAMPTZ | NOT NULL | Default now() |
@@ -1548,7 +1522,7 @@ Standalone module for managing vendor relationships, onboarding, performance, an
 ### Table: supplier_documents
 
 **Purpose:** Compliance and contract documents from suppliers (insurance, certificates, contracts).
-**RLS Pattern:** Pattern 3
+**RLS Pattern:** Pattern A-Scope
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -1568,7 +1542,7 @@ Standalone module for managing vendor relationships, onboarding, performance, an
 ### Table: supplier_price_lists
 
 **Purpose:** Agreed pricing from suppliers for materials/services.
-**RLS Pattern:** Pattern 3
+**RLS Pattern:** Pattern A-Scope
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -1592,7 +1566,7 @@ Standalone module for managing vendor relationships, onboarding, performance, an
 ### Table: supplier_price_list_items
 
 **Purpose:** Line items in a supplier price list.
-**RLS Pattern:** Pattern 3
+**RLS Pattern:** Pattern A-Scope
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -1619,7 +1593,7 @@ Purchase Order management. Links supplier management, renovation material reques
 ### Table: purchase_orders
 
 **Purpose:** Formal purchase orders sent to suppliers.
-**RLS Pattern:** Pattern 3
+**RLS Pattern:** Pattern A-Scope
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -1649,7 +1623,6 @@ Purchase Order management. Links supplier management, renovation material reques
 | notes | TEXT | NULL | |
 | supplier_reference | TEXT | NULL | Supplier's own order number |
 | document_id | UUID | NULL | FK → documents.id — generated PDF |
-| is_deleted | BOOLEAN | NOT NULL | Default false |
 | deleted_at | TIMESTAMPTZ | NULL | |
 | created_at | TIMESTAMPTZ | NOT NULL | Default now() |
 | updated_at | TIMESTAMPTZ | NOT NULL | Default now() |
@@ -1666,7 +1639,7 @@ Purchase Order management. Links supplier management, renovation material reques
 ### Table: purchase_order_lines
 
 **Purpose:** Line items in a purchase order.
-**RLS Pattern:** Pattern 3
+**RLS Pattern:** Pattern A-Scope
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -1693,7 +1666,7 @@ Purchase Order management. Links supplier management, renovation material reques
 ### Table: goods_receipts
 
 **Purpose:** Records actual delivery of goods against a purchase order.
-**RLS Pattern:** Pattern 3
+**RLS Pattern:** Pattern A-Scope
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -1720,7 +1693,7 @@ Purchase Order management. Links supplier management, renovation material reques
 ### Table: goods_receipt_lines
 
 **Purpose:** Items received per goods receipt.
-**RLS Pattern:** Pattern 3
+**RLS Pattern:** Pattern A-Scope
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -1739,7 +1712,7 @@ Purchase Order management. Links supplier management, renovation material reques
 ### Table: supplier_invoices
 
 **Purpose:** Incoming invoices FROM suppliers (accounts payable). Matched to purchase orders.
-**RLS Pattern:** Pattern 3
+**RLS Pattern:** Pattern A-Scope
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -1762,7 +1735,6 @@ Purchase Order management. Links supplier management, renovation material reques
 | document_id | UUID | NULL | FK → documents.id |
 | dispute_reason | TEXT | NULL | |
 | notes | TEXT | NULL | |
-| is_deleted | BOOLEAN | NOT NULL | Default false |
 | deleted_at | TIMESTAMPTZ | NULL | |
 | created_at | TIMESTAMPTZ | NOT NULL | Default now() |
 | updated_at | TIMESTAMPTZ | NOT NULL | Default now() |
@@ -1784,7 +1756,7 @@ Tracks company-owned tools, equipment, and consumables. Manages assignment, main
 ### Table: tool_categories
 
 **Purpose:** Taxonomy for tools and equipment.
-**RLS Pattern:** Pattern 2
+**RLS Pattern:** Pattern A
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -1802,7 +1774,7 @@ Tracks company-owned tools, equipment, and consumables. Manages assignment, main
 ### Table: tools
 
 **Purpose:** Individual tool/equipment asset record. Each physical item has one record.
-**RLS Pattern:** Pattern 3
+**RLS Pattern:** Pattern A-Scope
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -1830,7 +1802,6 @@ Tracks company-owned tools, equipment, and consumables. Manages assignment, main
 | next_maintenance_date | DATE | NULL | |
 | notes | TEXT | NULL | |
 | image_url | TEXT | NULL | |
-| is_deleted | BOOLEAN | NOT NULL | Default false |
 | deleted_at | TIMESTAMPTZ | NULL | |
 | created_at | TIMESTAMPTZ | NOT NULL | Default now() |
 | updated_at | TIMESTAMPTZ | NOT NULL | Default now() |
@@ -1847,7 +1818,7 @@ Tracks company-owned tools, equipment, and consumables. Manages assignment, main
 ### Table: tool_assignments
 
 **Purpose:** History of all tool assignments. Immutable log.
-**RLS Pattern:** Pattern 3
+**RLS Pattern:** Pattern A-Scope
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -1875,7 +1846,7 @@ Tracks company-owned tools, equipment, and consumables. Manages assignment, main
 ### Table: tool_maintenance_records
 
 **Purpose:** Maintenance and repair history for tools.
-**RLS Pattern:** Pattern 3
+**RLS Pattern:** Pattern A-Scope
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -1909,7 +1880,7 @@ Manages company vehicles: assignment, maintenance, fuel, insurance, legal compli
 ### Table: vehicles
 
 **Purpose:** Company vehicle master record.
-**RLS Pattern:** Pattern 3
+**RLS Pattern:** Pattern A-Scope
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -1942,7 +1913,6 @@ Manages company vehicles: assignment, maintenance, fuel, insurance, legal compli
 | next_service_km | NUMERIC(10,2) | NULL | |
 | next_service_date | DATE | NULL | |
 | notes | TEXT | NULL | |
-| is_deleted | BOOLEAN | NOT NULL | Default false |
 | deleted_at | TIMESTAMPTZ | NULL | |
 | created_at | TIMESTAMPTZ | NOT NULL | Default now() |
 | updated_at | TIMESTAMPTZ | NOT NULL | Default now() |
@@ -1959,7 +1929,7 @@ Manages company vehicles: assignment, maintenance, fuel, insurance, legal compli
 ### Table: vehicle_assignments
 
 **Purpose:** Immutable log of vehicle assignment history.
-**RLS Pattern:** Pattern 3
+**RLS Pattern:** Pattern A-Scope
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -1982,7 +1952,7 @@ Manages company vehicles: assignment, maintenance, fuel, insurance, legal compli
 ### Table: vehicle_fuel_logs
 
 **Purpose:** Fuel fill-up records. Supports cost tracking and consumption analysis.
-**RLS Pattern:** Pattern 3
+**RLS Pattern:** Pattern A-Scope
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -2010,7 +1980,7 @@ Manages company vehicles: assignment, maintenance, fuel, insurance, legal compli
 ### Table: vehicle_maintenance_records
 
 **Purpose:** Service and repair history. Similar structure to tool_maintenance_records.
-**RLS Pattern:** Pattern 3
+**RLS Pattern:** Pattern A-Scope
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -2040,7 +2010,7 @@ Manages company vehicles: assignment, maintenance, fuel, insurance, legal compli
 ### Table: vehicle_trips
 
 **Purpose:** Recorded trips per vehicle. Populated from GPS integration or manual entry.
-**RLS Pattern:** Pattern 3
+**RLS Pattern:** Pattern A-Scope
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
@@ -2074,7 +2044,7 @@ Manages company vehicles: assignment, maintenance, fuel, insurance, legal compli
 ### Table: vehicle_documents
 
 **Purpose:** Legal documents per vehicle (insurance, ITP, registration).
-**RLS Pattern:** Pattern 3
+**RLS Pattern:** Pattern A-Scope
 
 | Column | Type | Null | Description |
 |--------|------|------|-------------|
