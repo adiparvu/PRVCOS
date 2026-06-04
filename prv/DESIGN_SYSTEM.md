@@ -1425,6 +1425,7 @@ Before every screen is considered complete:
 - [ ] Text hierarchy via opacity (95/65/35/15%)
 - [ ] SF Pro typography on iOS/macOS
 - [ ] Floating navigation elements (not solid, not full-width)
+- [ ] All icons are SF Symbol style — when in doubt between custom and SF Symbol, SF Symbol wins
 
 **Interaction**
 - [ ] All overlays have spring animations
@@ -1532,6 +1533,7 @@ Before every screen is considered complete:
 | Dense form layouts (multiple fields per row) | One concept per section |
 | Hamburger menus | Use floating tab bar or sidebar |
 | Breadcrumbs on iPhone | iPhone uses navigation stack |
+| Custom icons when an SF Symbol equivalent exists | SF Symbols always win — if in doubt, use SF Symbol style |
 | Generic icons (non-SF Symbols) | SF Symbols on Apple platforms |
 | Abrupt appearances/disappearances | Always animate in/out |
 

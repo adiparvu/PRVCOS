@@ -26,6 +26,7 @@ Every decision I make must reflect all five roles simultaneously.
 3. **Never Remove** — Never remove features, modules, roles, permissions, workflows, dashboards, notifications, Dynamic Island features, widgets, analytics, or AI systems without explicit approval.
 4. **Never Simplify** — Never replace enterprise solutions with basic implementations.
 5. **Always Enterprise-Grade** — When two paths exist: choose the more scalable, more secure, more maintainable one.
+6. **SF Symbols Always Win** — When there is any doubt between a custom icon and an SF Symbol style icon, always choose the SF Symbol style icon. No exceptions.
 
 ### When Unsure — Always Prefer:
 - The more **scalable** solution
