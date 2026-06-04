@@ -1,7 +1,7 @@
 import { EventSchemas, Inngest } from "inngest"
 
 // PRV event type registry — extended as modules are implemented
-type PRVEventSchemas = {
+export type PRVEvents = {
   "prv/ping": { data: { message: string; timestamp: string } }
   "prv/user.created": { data: { userId: string; companyId: string; role: string } }
   "prv/approval.requested": {
@@ -28,10 +28,8 @@ type PRVEventSchemas = {
   }
 }
 
-export type PRVEvents = PRVEventSchemas
-
 export const inngest = new Inngest({
   id: "prv",
   eventKey: process.env["INNGEST_EVENT_KEY"],
-  schemas: new EventSchemas().fromRecord<PRVEventSchemas>(),
+  schemas: new EventSchemas().fromRecord<PRVEvents>(),
 })

@@ -1,1 +1,28 @@
-# Commit message hook — commitlint added in Sprint 02
+#!/usr/bin/env sh
+
+COMMIT_MSG_FILE="$1"
+COMMIT_MSG=$(cat "$COMMIT_MSG_FILE")
+
+# Allow merge commits, revert commits, and fixup/squash commits
+if echo "$COMMIT_MSG" | grep -qE "^(Merge|Revert|fixup!|squash!)"; then
+  exit 0
+fi
+
+# Conventional commit format: type(scope)?: description
+PATTERN="^(feat|fix|docs|style|refactor|test|chore|build|ci|perf|revert)(\([a-z0-9/_-]+\))?: .{1,72}$"
+
+if ! echo "$(head -1 "$COMMIT_MSG_FILE")" | grep -qE "$PATTERN"; then
+  echo ""
+  echo "  ❌ Invalid commit message format."
+  echo ""
+  echo "  Expected: <type>(<scope>): <description>"
+  echo "  Example:  feat(auth): add MFA verification flow"
+  echo ""
+  echo "  Types: feat | fix | docs | style | refactor | test | chore | build | ci | perf | revert"
+  echo "  Rules: lowercase type, description max 72 chars, no period at end"
+  echo ""
+  exit 1
+fi
+
+echo "  ✅ Commit message valid"
+exit 0

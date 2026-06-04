@@ -31,6 +31,10 @@ export const serverEnvSchema = sharedSchema.extend({
 
   // Typesense
   TYPESENSE_ADMIN_API_KEY: z.string().min(1),
+  TYPESENSE_SEARCH_API_KEY: z
+    .string()
+    .min(1)
+    .describe("Typesense search-only key used to generate scoped keys — never the admin key"),
   TYPESENSE_HOST: z.string().min(1),
   TYPESENSE_PORT: z.coerce.number().default(443),
   TYPESENSE_PROTOCOL: z.enum(["http", "https"]).default("https"),
