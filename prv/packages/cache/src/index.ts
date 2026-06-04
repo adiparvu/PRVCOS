@@ -1,4 +1,4 @@
-export { getRedis, cacheKey, CacheTTL, SessionTTL, getSessionTTL } from "./client"
+export { getRedis, cacheKey, CacheTTL, SessionTTL, MaxSessions, getSessionTTL } from "./client"
 export type { SecurityLevel } from "./client"
 
 export { checkRateLimit, enforceRateLimit } from "./rate-limit"

@@ -39,10 +39,14 @@ const DLP_PATTERNS = [
   /\b\d{3}-\d{2}-\d{4}\b/, // SSN
 ]
 
+// Prefer x-real-ip (set by trusted reverse proxy, not user-settable on Vercel/common infra).
+// X-Forwarded-For is accepted only as a fallback and its first entry is used — this is
+// still spoofable in environments without a trusted proxy, but x-real-ip mitigates the
+// primary attack vector. Full mitigation requires trusted-proxy config at the infra layer.
 function extractIp(req: Request): string {
   return (
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
     req.headers.get("x-real-ip") ??
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
     "unknown"
   )
 }

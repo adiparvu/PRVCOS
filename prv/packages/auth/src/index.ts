@@ -46,3 +46,6 @@ export { confirmReauth, checkReauth, revokeReauth } from "./re-auth"
 
 export { runGateChain, withGates } from "./gate-chain"
 export type { RouteConfig, GateContext } from "./gate-chain"
+
+export { hasPermission, requirePermission, PERMISSION_CATALOG } from "./permission-catalog"
+export type { PermissionKey } from "./permission-catalog"

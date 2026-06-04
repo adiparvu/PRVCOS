@@ -1,5 +1,6 @@
 // AI Engine — Shared library for all AI features in PRV
 // Full implementation in Epic 19 (AI Platform, Sprints 54–57)
+// Stub functions return safe no-op values — they do NOT throw, to prevent accidental 500s.
 
 export type AIRole = "finance" | "hr" | "project" | "operations" | "executive"
 
@@ -19,21 +20,20 @@ export interface AIConversationContext {
   entityId?: string
 }
 
-// Gate 4: Permission check before any AI tool call
 export function checkAIToolPermission(_toolName: string, _context: AIConversationContext): boolean {
-  throw new Error("Not implemented — Epic 19, Sprint 54")
+  return false // not implemented — deny by default
 }
 
 export function createConversation(_context: AIConversationContext): Promise<string> {
-  throw new Error("Not implemented — Epic 19, Sprint 54")
+  return Promise.resolve("") // not implemented
 }
 
 export function sendMessage(_conversationId: string, _message: string): Promise<string> {
-  throw new Error("Not implemented — Epic 19, Sprint 54")
+  return Promise.resolve("") // not implemented
 }
 
 export function getEmbedding(_text: string, _companyId: string): Promise<number[]> {
-  throw new Error("Not implemented — Epic 19, Sprint 56")
+  return Promise.resolve([]) // not implemented
 }
 
 export function semanticSearch(
@@ -41,5 +41,5 @@ export function semanticSearch(
   _companyId: string,
   _topK: number
 ): Promise<unknown[]> {
-  throw new Error("Not implemented — Epic 19, Sprint 56")
+  return Promise.resolve([]) // not implemented
 }

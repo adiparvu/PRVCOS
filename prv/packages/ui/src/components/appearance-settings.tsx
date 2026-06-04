@@ -188,8 +188,22 @@ export function AppearanceSettings({ onSave, className }: AppearanceSettingsProp
 
       {/* header */}
       <div className="flex items-center gap-3 px-5 pt-5 pb-1">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border border-white/[0.12] bg-white/[0.10] text-base">
-          🎨
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border border-white/[0.12] bg-white/[0.10]">
+          {/* paintbrush.pointed SF Symbol style */}
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="rgba(255,255,255,0.65)"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M18.37 2.63 14 7l-1.59-1.59a2 2 0 0 0-2.82 0L8 7l9 9 1.59-1.59a2 2 0 0 0 0-2.82L17 10l4.37-4.37a2.12 2.12 0 1 0-3-3Z" />
+            <path d="M9 8c-2 3-4 3.5-7 4l8 10c2-1 6-5 6-7" />
+            <path d="M14.5 17.5 4.5 15" />
+          </svg>
         </div>
         <div>
           <p className="text-[16px] font-semibold text-white/95 leading-tight">Appearance</p>
@@ -232,7 +246,19 @@ export function AppearanceSettings({ onSave, className }: AppearanceSettingsProp
         </p>
         <div className="flex items-center justify-between rounded-xl border border-white/[0.08] bg-white/[0.04] px-4 py-3">
           <div className="flex items-center gap-2.5">
-            <span className="text-[18px]">☁️</span>
+            {/* cloud SF Symbol style */}
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="rgba(255,255,255,0.65)"
+              strokeWidth="1.6"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" />
+            </svg>
             <div>
               <p className="text-[13px] font-medium text-white/90 leading-none">
                 Sync across devices
@@ -262,7 +288,7 @@ export function AppearanceSettings({ onSave, className }: AppearanceSettingsProp
         </div>
       </div>
 
-      {/* save button */}
+      {/* Done button — preferences auto-save on selection; this closes the panel */}
       <div className="px-5 pb-5">
         <button
           type="button"
@@ -274,7 +300,7 @@ export function AppearanceSettings({ onSave, className }: AppearanceSettingsProp
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
           )}
         >
-          Save Preferences
+          Done
         </button>
       </div>
     </div>

@@ -90,7 +90,7 @@ export function GlassSheet({
           "border border-white/[0.12]",
           "shadow-[0_24px_64px_rgba(0,0,0,0.7)]",
           "ring-[0.5px] ring-inset ring-white/20",
-          "transition-transform duration-400",
+          "transition-transform duration-[400ms]",
           "will-change-transform",
           positionClasses[side],
           sizeClasses[side],

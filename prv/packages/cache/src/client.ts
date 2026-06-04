@@ -40,16 +40,24 @@ export const cacheKey = {
   query: (namespace: string, hash: string) => `query:${namespace}:${hash}`,
 } as const
 
-// Session TTL per security level — matches ROLE_ARCHITECTURE.md security levels
-// L5 (CEO, Co-CEO, Group CEO, Sysadmin): 1 hour
-// L4 (Directors, OPM): 2 hours
+// Session TTL per security level — canonical values from ROLE_ARCHITECTURE.md §Session Security
+// L5 (CEO, Co-CEO, Group CEO, Sysadmin): 15 minutes
+// L4 (Directors, Project OPM): 30 minutes
 // L3 (Managers, TLs, OMS): 4 hours
 // L2 (Workers, Sellers): 8 hours
 export const SessionTTL = {
-  L5: 3_600, // 1 hour
-  L4: 7_200, // 2 hours
+  L5: 900, // 15 minutes
+  L4: 1_800, // 30 minutes
   L3: 14_400, // 4 hours
   L2: 28_800, // 8 hours
+} as const
+
+// Max concurrent sessions per security level — ROLE_ARCHITECTURE.md §Session Security
+export const MaxSessions = {
+  L5: 1,
+  L4: 1,
+  L3: 2,
+  L2: 3,
 } as const
 
 export type SecurityLevel = keyof typeof SessionTTL

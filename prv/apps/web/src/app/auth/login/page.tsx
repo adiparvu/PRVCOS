@@ -284,7 +284,7 @@ export default function LoginPage() {
 
                 {/* Error message */}
                 {error && (
-                  <p className="text-[13px] text-red-400/90 bg-red-500/10 border border-red-500/20 rounded-[10px] px-3.5 py-2.5">
+                  <p className="text-[13px] text-white/80 bg-white/[0.10] border border-white/[0.20] rounded-[10px] px-3.5 py-2.5">
                     {error}
                   </p>
                 )}

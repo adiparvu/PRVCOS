@@ -9,8 +9,9 @@ const variantClasses: Record<ButtonVariant, string> = {
   ghost: "text-white/65 hover:text-white hover:bg-white/[0.08] active:bg-white/[0.12]",
   glass:
     "bg-white/[0.10] text-white border border-white/[0.12] hover:bg-white/[0.16] active:bg-white/[0.20] backdrop-blur-2xl",
+  // Destructive: elevated opacity + strong border — not color, per monochrome rule
   destructive:
-    "bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30 active:bg-red-500/40",
+    "bg-white/[0.12] text-white/50 border border-white/[0.25] hover:bg-white/[0.18] hover:text-white/70 active:bg-white/[0.22]",
 }
 
 const sizeClasses: Record<ButtonSize, string> = {

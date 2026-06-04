@@ -16,13 +16,18 @@ export default function VerifyMfaPage() {
   const [error, setError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
+  // Redirect immediately if factorId is missing — no recovery possible (P-10)
   useEffect(() => {
-    inputRef.current?.focus()
-  }, [])
+    if (!factorId) {
+      router.replace("/auth/login")
+    } else {
+      inputRef.current?.focus()
+    }
+  }, [factorId, router])
 
-  const handleVerify = () => {
-    const trimmed = code.replace(/\s/g, "")
-    if (trimmed.length !== 6) {
+  // Accept explicit digits string to avoid stale-closure bug on auto-submit (P-18)
+  const handleVerify = (digits: string) => {
+    if (digits.length !== 6) {
       setError("Enter the 6-digit code from your authenticator app.")
       return
     }
@@ -39,7 +44,7 @@ export default function VerifyMfaPage() {
       const { error: verifyError } = await supabase.auth.mfa.verify({
         factorId,
         challengeId: challengeData.id,
-        code: trimmed,
+        code: digits,
       })
 
       if (verifyError) {
@@ -62,9 +67,9 @@ export default function VerifyMfaPage() {
     const digits = value.replace(/\D/g, "").slice(0, 6)
     setCode(digits)
     setError(null)
+    // Pass digits directly — no setTimeout, no closure risk (P-18)
     if (digits.length === 6) {
-      // Auto-submit when 6 digits entered
-      setTimeout(handleVerify, 100)
+      handleVerify(digits)
     }
   }
 
@@ -139,7 +144,7 @@ export default function VerifyMfaPage() {
               placeholder="000000"
               value={code}
               onChange={(e) => handleCodeChange(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleVerify()}
+              onKeyDown={(e) => e.key === "Enter" && handleVerify(code)}
               maxLength={6}
               className="w-full h-14 rounded-[14px] px-4 text-[28px] text-white tracking-[0.4em] font-mono placeholder:text-white/15 placeholder:text-[20px] placeholder:tracking-[0.4em] transition-all duration-150 focus:outline-none text-center"
               style={{
@@ -160,14 +165,14 @@ export default function VerifyMfaPage() {
 
           {/* Error */}
           {error && (
-            <p className="text-[13px] text-red-400/90 bg-red-500/10 border border-red-500/20 rounded-[10px] px-3.5 py-2.5">
+            <p className="text-[13px] text-white/80 bg-white/[0.10] border border-white/[0.20] rounded-[10px] px-3.5 py-2.5">
               {error}
             </p>
           )}
 
           {/* Submit */}
           <button
-            onClick={handleVerify}
+            onClick={() => handleVerify(code)}
             disabled={isPending || code.length !== 6}
             className="w-full h-11 rounded-[12px] text-[15px] font-semibold text-black transition-all duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
             style={{ background: "#ffffff", boxShadow: "0 1px 3px rgba(0,0,0,0.4)" }}

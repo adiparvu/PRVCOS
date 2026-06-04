@@ -1,5 +1,6 @@
 // Approval Engine — Shared library for all approval workflows in PRV
 // Full implementation in Epic 06 (Shared Services, Sprint 14)
+// Stub functions return safe no-op values — they do NOT throw, to prevent accidental 500s.
 
 export type ApprovalStatus =
   | "pending"
@@ -36,9 +37,8 @@ export interface ApprovalDecision {
   decidedAt: Date
 }
 
-// Stub implementations — full logic in Epic 06
 export function createApprovalChain(_config: ApprovalChainConfig): Promise<string> {
-  throw new Error("Not implemented — Epic 06, Sprint 14")
+  return Promise.resolve("") // not implemented
 }
 
 export function submitForApproval(
@@ -46,11 +46,11 @@ export function submitForApproval(
   _entityId: string,
   _companyId: string
 ): Promise<string> {
-  throw new Error("Not implemented — Epic 06, Sprint 14")
+  return Promise.resolve("") // not implemented
 }
 
 export function processApproval(_decision: ApprovalDecision): Promise<void> {
-  throw new Error("Not implemented — Epic 06, Sprint 14")
+  return Promise.resolve() // not implemented
 }
 
 export function delegateApproval(
@@ -58,13 +58,13 @@ export function delegateApproval(
   _delegateToUserId: string,
   _until: Date
 ): Promise<void> {
-  throw new Error("Not implemented — Epic 06, Sprint 14")
+  return Promise.resolve() // not implemented
 }
 
 export function escalateApproval(_approvalId: string, _reason: string): Promise<void> {
-  throw new Error("Not implemented — Epic 06, Sprint 14")
+  return Promise.resolve() // not implemented
 }
 
 export function getApprovalStatus(_approvalId: string): Promise<ApprovalStatus> {
-  throw new Error("Not implemented — Epic 06, Sprint 14")
+  return Promise.resolve("pending") // not implemented
 }

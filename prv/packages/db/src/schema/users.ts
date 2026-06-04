@@ -9,9 +9,12 @@ import {
   pgEnum,
   index,
   unique,
+  foreignKey,
 } from "drizzle-orm/pg-core"
 import { relations } from "drizzle-orm"
 import { companies, departments, teams, stores } from "./companies"
+
+export const securityLevelEnum = pgEnum("security_level", ["L2", "L3", "L4", "L5"])
 
 export const userStatusEnum = pgEnum("user_status", [
   "active",
@@ -87,7 +90,7 @@ export const users = pgTable(
     departmentId: uuid("department_id").references(() => departments.id, { onDelete: "set null" }),
     teamId: uuid("team_id").references(() => teams.id, { onDelete: "set null" }),
     storeId: uuid("store_id").references(() => stores.id, { onDelete: "set null" }),
-    managerId: uuid("manager_id"), // self-referential, set after table creation
+    managerId: uuid("manager_id"),
 
     // Role & access
     role: systemRoleEnum("role").notNull(),
@@ -95,8 +98,8 @@ export const users = pgTable(
     status: userStatusEnum("status").notNull().default("onboarding"),
     mfaEnabled: boolean("mfa_enabled").notNull().default(false),
 
-    // Security settings
-    securityLevel: varchar("security_level", { length: 20 }).notNull().default("standard"),
+    // Security settings — typed enum enforces valid L2/L3/L4/L5 values (P-30)
+    securityLevel: securityLevelEnum("security_level").notNull().default("L2"),
     maxSessionTtlSeconds: varchar("max_session_ttl_seconds", { length: 20 }),
 
     // Locale preferences
@@ -119,6 +122,7 @@ export const users = pgTable(
     index("users_email_idx").on(table.email),
     index("users_supabase_id_idx").on(table.supabaseId),
     unique("users_company_email_unique").on(table.companyId, table.email),
+    foreignKey({ columns: [table.managerId], foreignColumns: [table.id] }).onDelete("set null"),
   ]
 )
 
