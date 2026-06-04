@@ -1,0 +1,10 @@
+{
+  "extends": "@prv/tsconfig/react-library.json",
+  "compilerOptions": {
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts"],
+  "exclude": ["node_modules"]
+}

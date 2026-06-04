@@ -1,0 +1,9 @@
+{
+  "extends": "@prv/tsconfig/base.json",
+  "compilerOptions": {
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext"
+  },
+  "include": ["drizzle.config.ts"],
+  "exclude": ["node_modules"]
+}
