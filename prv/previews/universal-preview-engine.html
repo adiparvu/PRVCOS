@@ -1,0 +1,1451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PRV — Universal Preview Engine & Apple Contact Experience</title>
+<style>
+  :root {
+    --g1: rgba(255,255,255,0.06);
+    --g2: rgba(255,255,255,0.10);
+    --g3: rgba(255,255,255,0.16);
+    --g4: rgba(255,255,255,0.22);
+    --blur-sm: blur(32px);
+    --blur-md: blur(48px);
+    --blur-lg: blur(64px);
+    --blur-xl: blur(80px);
+    --sat-1: saturate(140%);
+    --sat-2: saturate(180%);
+    --sat-3: saturate(200%);
+    --sat-4: saturate(220%);
+    --border: rgba(255,255,255,0.12);
+    --border-strong: rgba(255,255,255,0.20);
+    --specular: inset 0 1px 0 rgba(255,255,255,0.25);
+    --shadow-e1: 0 4px 16px rgba(0,0,0,0.40);
+    --shadow-e2: 0 8px 32px rgba(0,0,0,0.50);
+    --shadow-e3: 0 16px 48px rgba(0,0,0,0.60);
+    --shadow-e4: 0 24px 64px rgba(0,0,0,0.70),0 8px 24px rgba(0,0,0,0.40);
+    --t1: rgba(255,255,255,0.95);
+    --t2: rgba(255,255,255,0.65);
+    --t3: rgba(255,255,255,0.35);
+    --t4: rgba(255,255,255,0.15);
+    --radius-md: 12px;
+    --radius-base: 16px;
+    --radius-card: 20px;
+    --radius-panel: 24px;
+    --radius-sheet: 32px;
+    --spring: cubic-bezier(0.34,1.56,0.64,1);
+    --smooth: cubic-bezier(0.4,0,0.2,1);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #000;
+    color: var(--t1);
+    font-family: -apple-system, 'SF Pro Display', 'Inter', sans-serif;
+    font-size: 14px;
+    min-height: 100vh;
+  }
+  .page-header {
+    padding: 48px 40px 32px;
+    border-bottom: 1px solid var(--border);
+  }
+  .page-header h1 {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    color: var(--t1);
+  }
+  .page-header p { color: var(--t3); font-size: 13px; margin-top: 6px; }
+  .section-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--t3);
+    padding: 40px 40px 16px;
+  }
+  .canvas {
+    padding: 0 40px 60px;
+    display: flex;
+    flex-direction: column;
+    gap: 60px;
+  }
+  .row {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  /* ── Glass Surface ─────────────────────────────────── */
+  .glass {
+    background: var(--g2);
+    backdrop-filter: var(--blur-md) var(--sat-2);
+    -webkit-backdrop-filter: var(--blur-md) var(--sat-2);
+    border: 1px solid var(--border);
+    box-shadow: var(--specular), var(--shadow-e3);
+    position: relative;
+  }
+  .glass::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(180deg, rgba(255,255,255,0.06) 0%, transparent 50%);
+    pointer-events: none;
+  }
+  .glass-heavy {
+    background: var(--g3);
+    backdrop-filter: var(--blur-lg) var(--sat-3);
+    -webkit-backdrop-filter: var(--blur-lg) var(--sat-3);
+    border: 1px solid var(--border-strong);
+    box-shadow: var(--specular), var(--shadow-e4);
+  }
+
+  /* ══════════════════════════════════════════════════════
+     SECTION 1 — QUICK PREVIEW SHEET (Bottom Sheet)
+  ══════════════════════════════════════════════════════ */
+
+  .preview-sheet {
+    width: 390px;
+    border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
+    overflow: hidden;
+    padding-bottom: 34px; /* safe area */
+  }
+
+  .sheet-handle-row {
+    padding: 12px 0 4px;
+    display: flex;
+    justify-content: center;
+  }
+  .sheet-handle {
+    width: 36px; height: 4px;
+    border-radius: 2px;
+    background: rgba(255,255,255,0.25);
+  }
+
+  /* Employee Preview Sheet */
+  .emp-hero {
+    padding: 12px 20px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .emp-avatar-wrap { position: relative; flex-shrink: 0; }
+  .emp-avatar {
+    width: 72px; height: 72px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.06) 100%);
+    border: 2px solid var(--border-strong);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px;
+    color: var(--t2);
+    overflow: hidden;
+  }
+  .emp-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .presence-dot {
+    position: absolute;
+    bottom: 2px; right: 2px;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    border: 2.5px solid rgba(0,0,0,0.8);
+  }
+  .presence-dot.available { background: #30d158; }
+  .presence-dot.busy { background: #ff453a; }
+  .presence-dot.meeting { background: #ff9f0a; }
+  .presence-dot.onsite { background: #0a84ff; }
+  .presence-dot.offline { background: rgba(255,255,255,0.25); }
+
+  .emp-info { flex: 1; min-width: 0; }
+  .emp-name { font-size: 20px; font-weight: 700; letter-spacing: -0.3px; color: var(--t1); }
+  .emp-role { font-size: 13px; color: var(--t2); margin-top: 2px; }
+  .emp-dept {
+    display: inline-flex; align-items: center; gap: 4px;
+    margin-top: 6px;
+    padding: 3px 8px; border-radius: 6px;
+    background: var(--g1); border: 1px solid var(--border);
+    font-size: 11px; color: var(--t3);
+  }
+
+  .sheet-divider { height: 1px; background: var(--border); margin: 0 20px; }
+
+  .sheet-section { padding: 16px 20px; }
+  .sheet-section-title {
+    font-size: 11px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--t3); margin-bottom: 12px;
+  }
+
+  /* Contact row */
+  .contact-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .contact-row:last-child { border-bottom: none; }
+  .contact-icon {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    background: var(--g1); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; flex-shrink: 0;
+  }
+  .contact-label { flex: 1; }
+  .contact-label span { display: block; font-size: 13px; color: var(--t1); }
+  .contact-label small { font-size: 11px; color: var(--t3); }
+  .contact-action {
+    padding: 6px 12px; border-radius: 8px;
+    background: rgba(255,255,255,0.08); border: 1px solid var(--border);
+    font-size: 12px; color: var(--t1); cursor: pointer;
+    transition: background 0.15s;
+  }
+  .contact-action:hover { background: rgba(255,255,255,0.14); }
+
+  /* Social row */
+  .social-row {
+    display: flex; gap: 10px; flex-wrap: wrap; padding: 4px 0 8px;
+  }
+  .social-chip {
+    display: flex; align-items: center; gap: 6px;
+    padding: 7px 12px; border-radius: 10px;
+    background: var(--g1); border: 1px solid var(--border);
+    font-size: 12px; color: var(--t2); cursor: pointer;
+    transition: all 0.15s;
+    text-decoration: none;
+  }
+  .social-chip:hover { background: var(--g2); color: var(--t1); }
+  .social-icon { font-size: 15px; }
+
+  /* Presence row */
+  .presence-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 0;
+  }
+  .presence-badge {
+    display: flex; align-items: center; gap: 6px;
+    padding: 5px 10px; border-radius: 8px;
+    font-size: 12px;
+  }
+  .presence-badge.available { background: rgba(48,209,88,0.12); color: #30d158; }
+  .presence-badge.busy { background: rgba(255,69,58,0.12); color: #ff453a; }
+  .presence-badge.meeting { background: rgba(255,159,10,0.12); color: #ff9f0a; }
+  .presence-badge.onsite { background: rgba(10,132,255,0.12); color: #0a84ff; }
+  .presence-badge.offline { background: rgba(255,255,255,0.06); color: var(--t3); }
+  .presence-dot-sm {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: currentColor;
+  }
+
+  /* Stats row */
+  .stats-row {
+    display: flex; gap: 1px;
+    background: var(--border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    margin-bottom: 12px;
+  }
+  .stat-cell {
+    flex: 1; padding: 14px 12px; text-align: center;
+    background: var(--g1);
+  }
+  .stat-cell:first-child { border-radius: var(--radius-md) 0 0 var(--radius-md); }
+  .stat-cell:last-child { border-radius: 0 var(--radius-md) var(--radius-md) 0; }
+  .stat-num { font-size: 20px; font-weight: 700; color: var(--t1); }
+  .stat-label { font-size: 10px; color: var(--t3); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.06em; }
+
+  /* Actions strip */
+  .actions-strip {
+    display: flex; gap: 8px; padding: 16px 20px 0;
+  }
+  .action-btn {
+    flex: 1; padding: 12px 8px;
+    border-radius: var(--radius-md);
+    background: var(--g1); border: 1px solid var(--border);
+    display: flex; flex-direction: column; align-items: center; gap: 5px;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .action-btn:hover { background: var(--g2); }
+  .action-btn .ab-icon { font-size: 20px; }
+  .action-btn .ab-label { font-size: 10px; color: var(--t2); }
+
+  .open-full-btn {
+    margin: 14px 20px 0;
+    padding: 14px;
+    border-radius: var(--radius-base);
+    background: white;
+    color: black;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: center;
+    cursor: pointer;
+    border: none;
+    width: calc(100% - 40px);
+    transition: opacity 0.15s;
+  }
+  .open-full-btn:hover { opacity: 0.9; }
+
+  /* ══════════════════════════════════════════════════════
+     SECTION 2 — APPLE CONTACT CARD (Full Profile)
+  ══════════════════════════════════════════════════════ */
+
+  .contact-card {
+    width: 390px;
+    border-radius: var(--radius-panel);
+    overflow: hidden;
+  }
+  .card-header-bg {
+    height: 180px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.04) 0%, rgba(0,0,0,0.40) 100%);
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    padding: 0 20px 20px;
+  }
+  .card-header-grid {
+    position: absolute; inset: 0;
+    background-image:
+      repeating-linear-gradient(0deg, rgba(255,255,255,0.03) 0, rgba(255,255,255,0.03) 1px, transparent 1px, transparent 24px),
+      repeating-linear-gradient(90deg, rgba(255,255,255,0.03) 0, rgba(255,255,255,0.03) 1px, transparent 1px, transparent 24px);
+  }
+  .card-avatar-large {
+    width: 88px; height: 88px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.06) 100%);
+    border: 3px solid rgba(255,255,255,0.25);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 36px;
+    position: relative;
+    flex-shrink: 0;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  }
+  .card-identity { margin-left: 16px; }
+  .card-name { font-size: 22px; font-weight: 700; letter-spacing: -0.4px; color: var(--t1); }
+  .card-role-tag {
+    display: inline-flex; align-items: center; gap: 5px;
+    margin-top: 4px;
+    padding: 3px 8px; border-radius: 6px;
+    background: rgba(255,255,255,0.10); border: 1px solid rgba(255,255,255,0.14);
+    font-size: 11px; color: var(--t2);
+  }
+
+  /* Contact sections inside card */
+  .card-body { padding: 0 0 4px; }
+  .card-group {
+    margin: 0 16px 8px;
+    border-radius: var(--radius-card);
+    background: var(--g1);
+    border: 1px solid var(--border);
+    overflow: hidden;
+  }
+  .card-row {
+    display: flex; align-items: center; gap: 14px;
+    padding: 13px 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .card-row:last-child { border-bottom: none; }
+  .cr-icon {
+    width: 34px; height: 34px; border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 17px; flex-shrink: 0;
+  }
+  .cr-icon.green { background: rgba(48,209,88,0.15); }
+  .cr-icon.blue { background: rgba(10,132,255,0.15); }
+  .cr-icon.orange { background: rgba(255,159,10,0.15); }
+  .cr-icon.purple { background: rgba(191,90,242,0.15); }
+  .cr-icon.indigo { background: rgba(94,92,230,0.15); }
+  .cr-icon.red { background: rgba(255,69,58,0.12); }
+  .cr-label { flex: 1; }
+  .cr-label span { display: block; font-size: 14px; color: var(--t1); }
+  .cr-label small { font-size: 12px; color: var(--t3); margin-top: 1px; display: block; }
+  .cr-arrow { color: var(--t4); font-size: 12px; }
+
+  /* Social grid in card */
+  .social-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    padding: 4px;
+  }
+  .social-tile {
+    aspect-ratio: 1;
+    border-radius: var(--radius-md);
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 4px; cursor: pointer;
+    transition: all 0.15s;
+  }
+  .social-tile:hover { background: var(--g1); }
+  .social-tile .si { font-size: 22px; }
+  .social-tile .sn { font-size: 9px; color: var(--t3); }
+
+  /* Digital biz card */
+  .biz-card {
+    width: 340px;
+    border-radius: var(--radius-panel);
+    overflow: hidden;
+    padding: 24px;
+    background: var(--g3);
+    backdrop-filter: var(--blur-lg) var(--sat-3);
+    border: 1px solid var(--border-strong);
+    box-shadow: var(--shadow-e4), var(--specular);
+  }
+  .biz-top { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; }
+  .biz-avatar {
+    width: 56px; height: 56px; border-radius: 50%;
+    background: var(--g1); border: 1.5px solid var(--border-strong);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px;
+  }
+  .biz-name { font-size: 18px; font-weight: 700; color: var(--t1); }
+  .biz-title { font-size: 12px; color: var(--t2); margin-top: 2px; }
+  .biz-company { font-size: 11px; color: var(--t3); margin-top: 1px; }
+  .qr-area {
+    background: white; border-radius: var(--radius-md);
+    padding: 16px; display: flex; align-items: center; justify-content: center;
+    margin-bottom: 16px;
+  }
+  .qr-placeholder {
+    width: 140px; height: 140px;
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+  }
+  .qr-cell {
+    border-radius: 1px;
+    background: #000;
+  }
+  .qr-cell.w { background: transparent; }
+  .biz-contacts {
+    display: flex; gap: 8px; flex-direction: column;
+    margin-bottom: 16px;
+  }
+  .biz-contact-row {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .biz-contact-row span { font-size: 12px; color: var(--t2); }
+  .biz-contact-row .ico { font-size: 14px; width: 20px; }
+  .biz-actions {
+    display: flex; gap: 8px;
+  }
+  .biz-action {
+    flex: 1; padding: 11px 8px; border-radius: var(--radius-md);
+    text-align: center; font-size: 12px; font-weight: 600;
+    cursor: pointer; border: 1px solid var(--border);
+  }
+  .biz-action.primary { background: white; color: black; border-color: white; }
+  .biz-action.secondary { background: var(--g1); color: var(--t1); }
+
+  /* ══════════════════════════════════════════════════════
+     SECTION 3 — CONTEXT MENU
+  ══════════════════════════════════════════════════════ */
+  .ctx-menu {
+    width: 260px;
+    border-radius: 24px;
+    overflow: hidden;
+    background: rgba(28,28,30,0.80);
+    backdrop-filter: blur(60px) saturate(220%);
+    -webkit-backdrop-filter: blur(60px) saturate(220%);
+    border: 1px solid rgba(255,255,255,0.14);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.8), var(--specular);
+  }
+  .ctx-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 0 16px;
+    height: 44px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  .ctx-item:last-child { border-bottom: none; }
+  .ctx-item:hover { background: rgba(255,255,255,0.06); }
+  .ctx-item.destructive { color: rgba(255,255,255,0.60); }
+  .ctx-item-icon { font-size: 17px; width: 22px; }
+  .ctx-item-label { flex: 1; font-size: 15px; color: var(--t1); }
+  .ctx-item.destructive .ctx-item-label { color: rgba(255,255,255,0.50); }
+  .ctx-separator { height: 1px; background: rgba(255,255,255,0.08); }
+
+  /* ══════════════════════════════════════════════════════
+     SECTION 4 — PRESENCE SYSTEM
+  ══════════════════════════════════════════════════════ */
+  .presence-panel {
+    width: 320px;
+    border-radius: var(--radius-card);
+    overflow: hidden;
+    padding: 0;
+  }
+  .presence-title {
+    padding: 16px 16px 12px;
+    font-size: 13px; font-weight: 600; color: var(--t2);
+    text-transform: uppercase; letter-spacing: 0.08em;
+  }
+  .pres-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 16px;
+    border-top: 1px solid rgba(255,255,255,0.05);
+    cursor: pointer;
+    transition: background 0.12s;
+  }
+  .pres-item:hover { background: rgba(255,255,255,0.04); }
+  .pres-avatar {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: var(--g1); border: 1.5px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; position: relative; flex-shrink: 0;
+  }
+  .pres-dot {
+    position: absolute; bottom: 0; right: 0;
+    width: 13px; height: 13px; border-radius: 50%;
+    border: 2px solid rgba(0,0,0,0.9);
+  }
+  .pres-info { flex: 1; min-width: 0; }
+  .pres-name { font-size: 14px; color: var(--t1); }
+  .pres-status-text { font-size: 12px; color: var(--t3); }
+  .pres-time { font-size: 11px; color: var(--t4); }
+
+  /* ══════════════════════════════════════════════════════
+     SECTION 5 — PROJECT / CLIENT / ORDER PREVIEWS
+  ══════════════════════════════════════════════════════ */
+  .proj-preview {
+    width: 360px;
+    border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
+    overflow: hidden;
+    padding-bottom: 34px;
+  }
+  .proj-hero {
+    height: 140px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 100%);
+    display: flex; align-items: flex-end;
+    padding: 16px;
+    position: relative;
+    overflow: hidden;
+  }
+  .proj-hero-grid {
+    position: absolute; inset: 0;
+    background-image:
+      repeating-linear-gradient(0deg, rgba(255,255,255,0.03) 0, rgba(255,255,255,0.03) 1px, transparent 1px, transparent 20px),
+      repeating-linear-gradient(90deg, rgba(255,255,255,0.03) 0, rgba(255,255,255,0.03) 1px, transparent 1px, transparent 20px);
+  }
+  .proj-status-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 5px 10px; border-radius: 8px;
+    font-size: 12px; font-weight: 600;
+    background: rgba(48,209,88,0.15); color: #30d158;
+    border: 1px solid rgba(48,209,88,0.20);
+  }
+  .proj-title { font-size: 18px; font-weight: 700; color: var(--t1); margin-top: 4px; }
+  .proj-meta { font-size: 12px; color: var(--t2); }
+
+  .prog-bar-wrap {
+    background: rgba(255,255,255,0.08);
+    border-radius: 4px;
+    height: 6px;
+    overflow: hidden;
+    margin: 8px 0 4px;
+  }
+  .prog-bar { height: 100%; border-radius: 4px; background: white; }
+  .prog-labels { display: flex; justify-content: space-between; font-size: 11px; color: var(--t3); }
+
+  /* mini-metrics grid */
+  .mini-metrics {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 1px; background: var(--border);
+    border-radius: var(--radius-md); overflow: hidden; margin-bottom: 12px;
+  }
+  .mm-cell {
+    background: var(--g1); padding: 12px; text-align: center;
+  }
+  .mm-val { font-size: 17px; font-weight: 700; color: var(--t1); }
+  .mm-key { font-size: 10px; color: var(--t3); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 2px; }
+
+  /* ══════════════════════════════════════════════════════
+     SECTION 6 — ENTITY TYPE PILLS / OVERVIEW
+  ══════════════════════════════════════════════════════ */
+  .entity-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    max-width: 660px;
+  }
+  .entity-tile {
+    border-radius: var(--radius-card);
+    background: var(--g1);
+    border: 1px solid var(--border);
+    padding: 16px;
+    display: flex; flex-direction: column; gap: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .entity-tile:hover { background: var(--g2); border-color: var(--border-strong); }
+  .et-icon { font-size: 24px; }
+  .et-name { font-size: 14px; font-weight: 600; color: var(--t1); }
+  .et-desc { font-size: 11px; color: var(--t3); line-height: 1.4; }
+  .et-badges { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 2px; }
+  .et-badge {
+    padding: 2px 6px; border-radius: 4px;
+    background: rgba(255,255,255,0.06); border: 1px solid var(--border);
+    font-size: 10px; color: var(--t3);
+  }
+
+  /* ══════════════════════════════════════════════════════
+     SECTION 7 — INTERACTION STATES
+  ══════════════════════════════════════════════════════ */
+  .interaction-panel {
+    width: 340px;
+    border-radius: var(--radius-card);
+    overflow: hidden;
+    padding: 0;
+  }
+  .int-header {
+    padding: 16px; font-size: 13px; font-weight: 600;
+    color: var(--t2); border-bottom: 1px solid var(--border);
+    text-transform: uppercase; letter-spacing: 0.08em;
+  }
+  .int-row {
+    display: flex; align-items: center; gap: 14px;
+    padding: 13px 16px; border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .int-gesture {
+    width: 80px; flex-shrink: 0;
+    background: rgba(255,255,255,0.06); border: 1px solid var(--border);
+    border-radius: 8px; padding: 5px 8px;
+    font-size: 11px; font-weight: 600; color: var(--t2); text-align: center;
+  }
+  .int-arrow { color: var(--t4); font-size: 12px; }
+  .int-desc { flex: 1; font-size: 13px; color: var(--t1); }
+  .int-sub { font-size: 11px; color: var(--t3); margin-top: 2px; }
+
+  /* timeline for order */
+  .timeline { padding: 4px 0; }
+  .tl-item { display: flex; gap: 12px; align-items: flex-start; padding: 6px 0; }
+  .tl-left { display: flex; flex-direction: column; align-items: center; gap: 0; }
+  .tl-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.25);
+    flex-shrink: 0; margin-top: 3px;
+  }
+  .tl-dot.done { background: white; border-color: white; }
+  .tl-dot.active { background: white; border-color: white; box-shadow: 0 0 0 3px rgba(255,255,255,0.15); }
+  .tl-line { width: 2px; flex: 1; background: rgba(255,255,255,0.08); min-height: 16px; }
+  .tl-content { flex: 1; }
+  .tl-label { font-size: 13px; color: var(--t1); }
+  .tl-time { font-size: 11px; color: var(--t3); }
+
+  /* ── Helpers ─────────────────────────────────────── */
+  .pill-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .pill {
+    padding: 4px 10px; border-radius: 20px;
+    background: var(--g1); border: 1px solid var(--border);
+    font-size: 12px; color: var(--t2);
+  }
+  .pill.active { background: rgba(255,255,255,0.12); color: var(--t1); border-color: rgba(255,255,255,0.22); }
+
+  .section-divider {
+    width: 100%; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border), transparent);
+    margin: 8px 0;
+  }
+
+  /* footnote */
+  .footnote {
+    text-align: center; font-size: 11px; color: var(--t4);
+    padding: 20px 40px 60px;
+  }
+
+  /* column header */
+  .col-header {
+    font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--t3); margin-bottom: 10px;
+  }
+</style>
+</head>
+<body>
+
+<!-- ─────────────── PAGE HEADER ─────────────── -->
+<div class="page-header">
+  <h1>PRV — Universal Preview Engine &amp; Apple Contact Experience</h1>
+  <p>Architecture preview · All components use Liquid Glass · Extends existing Navigation Architecture, Design System, and Role Architecture</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SECTION A — QUICK PREVIEW SHEETS
+═══════════════════════════════════════════════════════════ -->
+<div class="section-label">A — Quick Preview Sheets (Bottom Sheet Presentation)</div>
+<div class="canvas">
+  <div class="row">
+
+    <!-- Employee Preview Sheet -->
+    <div>
+      <div class="col-header">Employee Preview</div>
+      <div class="preview-sheet glass-heavy glass">
+        <div class="sheet-handle-row"><div class="sheet-handle"></div></div>
+
+        <div class="emp-hero">
+          <div class="emp-avatar-wrap">
+            <div class="emp-avatar">👤</div>
+            <div class="presence-dot available"></div>
+          </div>
+          <div class="emp-info">
+            <div class="emp-name">Maria Ionescu</div>
+            <div class="emp-role">Project Operations Manager</div>
+            <div class="emp-dept">⊞ Renovation · PRV Group</div>
+          </div>
+        </div>
+
+        <!-- Presence -->
+        <div class="sheet-section" style="padding-top:8px;padding-bottom:8px;">
+          <div class="presence-row">
+            <div class="presence-badge available">
+              <div class="presence-dot-sm"></div>
+              Available
+            </div>
+            <div style="font-size:12px;color:var(--t3);">On site · Building A</div>
+          </div>
+        </div>
+
+        <div class="sheet-divider"></div>
+
+        <!-- Stats -->
+        <div class="sheet-section">
+          <div class="stats-row">
+            <div class="stat-cell">
+              <div class="stat-num">12</div>
+              <div class="stat-label">Projects</div>
+            </div>
+            <div class="stat-cell">
+              <div class="stat-num">7</div>
+              <div class="stat-label">Active</div>
+            </div>
+            <div class="stat-cell">
+              <div class="stat-num">98%</div>
+              <div class="stat-label">Attendance</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="sheet-divider"></div>
+
+        <!-- Contact -->
+        <div class="sheet-section">
+          <div class="sheet-section-title">Contact</div>
+          <div class="contact-row">
+            <div class="contact-icon">📞</div>
+            <div class="contact-label"><span>+40 721 000 111</span><small>Mobile</small></div>
+            <div class="contact-action">Call</div>
+          </div>
+          <div class="contact-row">
+            <div class="contact-icon">✉️</div>
+            <div class="contact-label"><span>m.ionescu@prv.ro</span><small>Work</small></div>
+            <div class="contact-action">Email</div>
+          </div>
+          <div class="contact-row">
+            <div class="contact-icon">💬</div>
+            <div class="contact-label"><span>PRV Messenger</span><small>In-app</small></div>
+            <div class="contact-action">Message</div>
+          </div>
+        </div>
+
+        <div class="sheet-divider"></div>
+
+        <!-- Social Profiles -->
+        <div class="sheet-section">
+          <div class="sheet-section-title">Social</div>
+          <div class="social-row">
+            <a class="social-chip" href="#"><span class="social-icon">in</span> LinkedIn</a>
+            <a class="social-chip" href="#"><span class="social-icon">𝕏</span> X</a>
+            <a class="social-chip" href="#"><span class="social-icon">📸</span> Instagram</a>
+            <a class="social-chip" href="#"><span class="social-icon">💬</span> WhatsApp</a>
+          </div>
+        </div>
+
+        <div class="sheet-divider"></div>
+
+        <!-- Actions -->
+        <div class="actions-strip">
+          <div class="action-btn"><div class="ab-icon">📋</div><div class="ab-label">Projects</div></div>
+          <div class="action-btn"><div class="ab-icon">🗓</div><div class="ab-label">Schedule</div></div>
+          <div class="action-btn"><div class="ab-icon">📄</div><div class="ab-label">Documents</div></div>
+          <div class="action-btn"><div class="ab-icon">📇</div><div class="ab-label">Biz Card</div></div>
+        </div>
+        <button class="open-full-btn">Open Full Profile</button>
+        <div style="height:8px;"></div>
+      </div>
+    </div>
+
+    <!-- Client Preview Sheet -->
+    <div>
+      <div class="col-header">Client Preview</div>
+      <div class="preview-sheet glass-heavy glass" style="width:360px;">
+        <div class="sheet-handle-row"><div class="sheet-handle"></div></div>
+
+        <div class="emp-hero">
+          <div class="emp-avatar-wrap">
+            <div class="emp-avatar">🏢</div>
+          </div>
+          <div class="emp-info">
+            <div class="emp-name">Andrei Popescu</div>
+            <div class="emp-role">Client · Renovation Services</div>
+            <div class="emp-dept">⚙ Active Client · Since 2023</div>
+          </div>
+        </div>
+
+        <div class="sheet-section">
+          <div class="stats-row">
+            <div class="stat-cell">
+              <div class="stat-num">3</div>
+              <div class="stat-label">Projects</div>
+            </div>
+            <div class="stat-cell">
+              <div class="stat-num">€184K</div>
+              <div class="stat-label">Contract</div>
+            </div>
+            <div class="stat-cell">
+              <div class="stat-num">2</div>
+              <div class="stat-label">Invoices</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="sheet-divider"></div>
+
+        <div class="sheet-section">
+          <div class="sheet-section-title">Contact</div>
+          <div class="contact-row">
+            <div class="contact-icon">📞</div>
+            <div class="contact-label"><span>+40 740 000 222</span><small>Mobile</small></div>
+            <div class="contact-action">Call</div>
+          </div>
+          <div class="contact-row">
+            <div class="contact-icon">✉️</div>
+            <div class="contact-label"><span>andrei.p@email.ro</span><small>Personal</small></div>
+            <div class="contact-action">Email</div>
+          </div>
+        </div>
+
+        <div class="sheet-divider"></div>
+        <div class="sheet-section">
+          <div class="sheet-section-title">Social</div>
+          <div class="social-row">
+            <a class="social-chip" href="#"><span class="social-icon">in</span> LinkedIn</a>
+            <a class="social-chip" href="#"><span class="social-icon">🌐</span> Website</a>
+            <a class="social-chip" href="#"><span class="social-icon">💬</span> WhatsApp</a>
+          </div>
+        </div>
+
+        <div class="sheet-divider"></div>
+
+        <div class="actions-strip">
+          <div class="action-btn"><div class="ab-icon">📋</div><div class="ab-label">Projects</div></div>
+          <div class="action-btn"><div class="ab-icon">🧾</div><div class="ab-label">Invoices</div></div>
+          <div class="action-btn"><div class="ab-icon">📝</div><div class="ab-label">Quotes</div></div>
+          <div class="action-btn"><div class="ab-icon">📄</div><div class="ab-label">Contracts</div></div>
+        </div>
+        <button class="open-full-btn">Open Full Profile</button>
+        <div style="height:8px;"></div>
+      </div>
+    </div>
+
+    <!-- Project Preview Sheet -->
+    <div>
+      <div class="col-header">Project Preview</div>
+      <div class="proj-preview glass-heavy glass" style="width:360px;">
+        <div class="sheet-handle-row" style="position:relative;z-index:1;"><div class="sheet-handle"></div></div>
+        <div class="proj-hero">
+          <div class="proj-hero-grid"></div>
+          <div style="position:relative;z-index:1;">
+            <div class="proj-status-badge"><div class="presence-dot-sm"></div> On Track</div>
+            <div class="proj-title">Renovation Sector 3 — Bloc A</div>
+            <div class="proj-meta">Project #PRV-2024-031 · Due 15 Jan 2025</div>
+          </div>
+        </div>
+
+        <div class="sheet-section">
+          <div class="prog-bar-wrap"><div class="prog-bar" style="width:72%"></div></div>
+          <div class="prog-labels"><span>Progress: 72%</span><span>28 days left</span></div>
+        </div>
+
+        <div class="sheet-section">
+          <div class="mini-metrics">
+            <div class="mm-cell"><div class="mm-val">€184K</div><div class="mm-key">Budget</div></div>
+            <div class="mm-cell"><div class="mm-val">78%</div><div class="mm-key">Used</div></div>
+            <div class="mm-cell"><div class="mm-val">8</div><div class="mm-key">Team</div></div>
+          </div>
+        </div>
+
+        <div class="sheet-divider"></div>
+        <div class="sheet-section" style="padding-top:12px;padding-bottom:4px;">
+          <div class="sheet-section-title">Recent Activity</div>
+          <div class="timeline">
+            <div class="tl-item">
+              <div class="tl-left"><div class="tl-dot done"></div><div class="tl-line"></div></div>
+              <div class="tl-content"><div class="tl-label">Phase 2 completed</div><div class="tl-time">2h ago · Maria I.</div></div>
+            </div>
+            <div class="tl-item">
+              <div class="tl-left"><div class="tl-dot active"></div><div class="tl-line"></div></div>
+              <div class="tl-content"><div class="tl-label">Phase 3 started</div><div class="tl-time">Today · Auto</div></div>
+            </div>
+            <div class="tl-item">
+              <div class="tl-left"><div class="tl-dot"></div></div>
+              <div class="tl-content"><div class="tl-label">Client review scheduled</div><div class="tl-time">Tomorrow · 10:00</div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="sheet-divider"></div>
+        <div class="actions-strip">
+          <div class="action-btn"><div class="ab-icon">📸</div><div class="ab-label">Photos</div></div>
+          <div class="action-btn"><div class="ab-icon">📋</div><div class="ab-label">Tasks</div></div>
+          <div class="action-btn"><div class="ab-icon">👥</div><div class="ab-label">Team</div></div>
+          <div class="action-btn"><div class="ab-icon">📄</div><div class="ab-label">Docs</div></div>
+        </div>
+        <button class="open-full-btn">Open Full Project</button>
+        <div style="height:8px;"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SECTION B — APPLE CONTACT CARD + DIGITAL BIZ CARD
+═══════════════════════════════════════════════════════════ -->
+<div class="section-label">B — Apple Contact Card &amp; Digital Business Card</div>
+<div class="canvas">
+  <div class="row" style="align-items:flex-start;">
+
+    <!-- Full Contact Card -->
+    <div>
+      <div class="col-header">Full Contact Card (Employee)</div>
+      <div class="contact-card glass">
+        <div class="card-header-bg">
+          <div class="card-header-grid"></div>
+          <div class="card-avatar-large">
+            <div class="presence-dot available" style="width:20px;height:20px;border-width:3px;bottom:3px;right:3px;"></div>
+            👤
+          </div>
+          <div class="card-identity">
+            <div class="card-name">Maria Ionescu</div>
+            <div class="card-role-tag">Project Operations Manager</div>
+          </div>
+        </div>
+
+        <div class="card-body">
+          <!-- Presence/status -->
+          <div style="margin:12px 16px 8px;">
+            <div class="presence-badge available" style="display:inline-flex;">
+              <div class="presence-dot-sm"></div>
+              Available · On site · Building A
+            </div>
+          </div>
+
+          <!-- Contact group -->
+          <div class="card-group">
+            <div class="card-row">
+              <div class="cr-icon green">📞</div>
+              <div class="cr-label"><span>+40 721 000 111</span><small>Mobile</small></div>
+              <div class="cr-arrow">›</div>
+            </div>
+            <div class="card-row">
+              <div class="cr-icon green">📞</div>
+              <div class="cr-label"><span>+40 31 200 0111</span><small>Work</small></div>
+              <div class="cr-arrow">›</div>
+            </div>
+            <div class="card-row">
+              <div class="cr-icon blue">✉️</div>
+              <div class="cr-label"><span>m.ionescu@prv.ro</span><small>Work</small></div>
+              <div class="cr-arrow">›</div>
+            </div>
+            <div class="card-row">
+              <div class="cr-icon purple">💬</div>
+              <div class="cr-label"><span>Send Message</span><small>PRV Messenger</small></div>
+              <div class="cr-arrow">›</div>
+            </div>
+          </div>
+
+          <!-- Work info -->
+          <div class="card-group">
+            <div class="card-row">
+              <div class="cr-icon orange">🏢</div>
+              <div class="cr-label"><span>Renovation Team Alpha</span><small>Team</small></div>
+              <div class="cr-arrow">›</div>
+            </div>
+            <div class="card-row">
+              <div class="cr-icon indigo">📊</div>
+              <div class="cr-label"><span>12 Active Projects</span><small>Currently assigned</small></div>
+              <div class="cr-arrow">›</div>
+            </div>
+            <div class="card-row">
+              <div class="cr-icon blue">🗓</div>
+              <div class="cr-label"><span>View Schedule</span><small>Today: 09:00 – 18:00</small></div>
+              <div class="cr-arrow">›</div>
+            </div>
+          </div>
+
+          <!-- Social profiles -->
+          <div class="card-group">
+            <div style="padding:12px 12px 4px;">
+              <div class="card-row" style="padding:0;border:none;margin-bottom:10px;">
+                <div style="font-size:12px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:0.08em;">Social Profiles</div>
+              </div>
+              <div class="social-grid">
+                <div class="social-tile"><div class="si">in</div><div class="sn">LinkedIn</div></div>
+                <div class="social-tile"><div class="si">𝕏</div><div class="sn">X</div></div>
+                <div class="social-tile"><div class="si">📸</div><div class="sn">Instagram</div></div>
+                <div class="social-tile"><div class="si">💬</div><div class="sn">WhatsApp</div></div>
+                <div class="social-tile"><div class="si">📘</div><div class="sn">Facebook</div></div>
+                <div class="social-tile"><div class="si">🎵</div><div class="sn">TikTok</div></div>
+                <div class="social-tile"><div class="si">🌐</div><div class="sn">Website</div></div>
+                <div class="social-tile" style="opacity:0.25;cursor:default;"><div class="si">＋</div><div class="sn">Add</div></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Actions group -->
+          <div class="card-group">
+            <div class="card-row">
+              <div class="cr-icon blue">📇</div>
+              <div class="cr-label"><span>Share Business Card</span><small>QR Code + Contact</small></div>
+              <div class="cr-arrow">›</div>
+            </div>
+            <div class="card-row">
+              <div class="cr-icon red">📤</div>
+              <div class="cr-label"><span>Export vCard</span><small>Save to Contacts</small></div>
+              <div class="cr-arrow">›</div>
+            </div>
+          </div>
+          <div style="height:16px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Digital Business Card -->
+    <div style="display:flex;flex-direction:column;gap:20px;">
+      <div class="col-header">Digital Business Card</div>
+      <div class="biz-card">
+        <div class="biz-top">
+          <div class="biz-avatar">👤</div>
+          <div>
+            <div class="biz-name">Maria Ionescu</div>
+            <div class="biz-title">Project Operations Manager</div>
+            <div class="biz-company">PRV Group · Renovation Division</div>
+          </div>
+        </div>
+
+        <div class="qr-area">
+          <!-- Simulated QR pattern -->
+          <div class="qr-placeholder">
+            <!-- Row 1: finder pattern top-left -->
+            <div class="qr-cell"></div><div class="qr-cell"></div><div class="qr-cell"></div><div class="qr-cell"></div><div class="qr-cell"></div><div class="qr-cell w"></div><div class="qr-cell"></div>
+            <div class="qr-cell"></div><div class="qr-cell w"></div><div class="qr-cell w"></div><div class="qr-cell w"></div><div class="qr-cell"></div><div class="qr-cell w"></div><div class="qr-cell"></div>
+            <div class="qr-cell"></div><div class="qr-cell w"></div><div class="qr-cell"></div><div class="qr-cell w"></div><div class="qr-cell"></div><div class="qr-cell w"></div><div class="qr-cell"></div>
+            <div class="qr-cell"></div><div class="qr-cell w"></div><div class="qr-cell w"></div><div class="qr-cell w"></div><div class="qr-cell"></div><div class="qr-cell w"></div><div class="qr-cell w"></div>
+            <div class="qr-cell"></div><div class="qr-cell"></div><div class="qr-cell"></div><div class="qr-cell"></div><div class="qr-cell"></div><div class="qr-cell w"></div><div class="qr-cell"></div>
+            <div class="qr-cell w"></div><div class="qr-cell"></div><div class="qr-cell w"></div><div class="qr-cell"></div><div class="qr-cell w"></div><div class="qr-cell"></div><div class="qr-cell w"></div>
+            <div class="qr-cell"></div><div class="qr-cell w"></div><div class="qr-cell"></div><div class="qr-cell w"></div><div class="qr-cell"></div><div class="qr-cell w"></div><div class="qr-cell"></div>
+          </div>
+        </div>
+
+        <div class="biz-contacts">
+          <div class="biz-contact-row"><span class="ico">📞</span><span>+40 721 000 111</span></div>
+          <div class="biz-contact-row"><span class="ico">✉️</span><span>m.ionescu@prv.ro</span></div>
+          <div class="biz-contact-row"><span class="ico">🌐</span><span>prv.ro</span></div>
+        </div>
+
+        <div style="display:flex;gap:6px;margin-bottom:16px;">
+          <div class="social-chip" style="font-size:11px;padding:5px 9px;">in</div>
+          <div class="social-chip" style="font-size:11px;padding:5px 9px;">𝕏</div>
+          <div class="social-chip" style="font-size:11px;padding:5px 9px;">📸</div>
+          <div class="social-chip" style="font-size:11px;padding:5px 9px;">💬</div>
+          <div class="social-chip" style="font-size:11px;padding:5px 9px;">🌐</div>
+        </div>
+
+        <div class="biz-actions">
+          <div class="biz-action primary">Save Contact</div>
+          <div class="biz-action secondary">Share Card</div>
+          <div class="biz-action secondary">AirDrop</div>
+        </div>
+      </div>
+
+      <!-- Presence Legend -->
+      <div>
+        <div class="col-header">Presence States</div>
+        <div class="presence-panel glass">
+          <div class="presence-title">Team Status</div>
+          <div class="pres-item">
+            <div class="pres-avatar">👤<div class="pres-dot available"></div></div>
+            <div class="pres-info"><div class="pres-name">Maria Ionescu</div><div class="pres-status-text">Available · On site</div></div>
+            <div class="pres-time">2m ago</div>
+          </div>
+          <div class="pres-item">
+            <div class="pres-avatar">👤<div class="pres-dot busy"></div></div>
+            <div class="pres-info"><div class="pres-name">Ion Dumitrescu</div><div class="pres-status-text">Busy · In call</div></div>
+            <div class="pres-time">5m ago</div>
+          </div>
+          <div class="pres-item">
+            <div class="pres-avatar">👤<div class="pres-dot meeting"></div></div>
+            <div class="pres-info"><div class="pres-name">Elena Popa</div><div class="pres-status-text">In Meeting · 14:00–15:00</div></div>
+            <div class="pres-time">Active</div>
+          </div>
+          <div class="pres-item">
+            <div class="pres-avatar">👤<div class="pres-dot onsite"></div></div>
+            <div class="pres-info"><div class="pres-name">Radu Stan</div><div class="pres-status-text">On Site · Sector 3</div></div>
+            <div class="pres-time">Active</div>
+          </div>
+          <div class="pres-item">
+            <div class="pres-avatar">👤<div class="pres-dot offline"></div></div>
+            <div class="pres-info"><div class="pres-name">Ana Marin</div><div class="pres-status-text">Offline</div></div>
+            <div class="pres-time">3h ago</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SECTION C — CONTEXT MENU + INTERACTION STATES
+═══════════════════════════════════════════════════════════ -->
+<div class="section-label">C — Context Menus &amp; Interaction System</div>
+<div class="canvas">
+  <div class="row">
+
+    <!-- Employee Context Menu -->
+    <div>
+      <div class="col-header">Employee Context Menu</div>
+      <div class="ctx-menu">
+        <div class="ctx-item"><div class="ctx-item-icon">👤</div><div class="ctx-item-label">View Profile</div></div>
+        <div class="ctx-item"><div class="ctx-item-icon">💬</div><div class="ctx-item-label">Send Message</div></div>
+        <div class="ctx-item"><div class="ctx-item-icon">📋</div><div class="ctx-item-label">Assign Task</div></div>
+        <div class="ctx-item"><div class="ctx-item-icon">🗓</div><div class="ctx-item-label">View Schedule</div></div>
+        <div class="ctx-item"><div class="ctx-item-icon">📇</div><div class="ctx-item-label">Business Card</div></div>
+        <div class="ctx-separator"></div>
+        <div class="ctx-item"><div class="ctx-item-icon">✏️</div><div class="ctx-item-label">Edit Details</div></div>
+        <div class="ctx-item"><div class="ctx-item-icon">📤</div><div class="ctx-item-label">Export Record</div></div>
+        <div class="ctx-separator"></div>
+        <div class="ctx-item destructive"><div class="ctx-item-icon">🚫</div><div class="ctx-item-label">Suspend Account</div></div>
+      </div>
+    </div>
+
+    <!-- Project Context Menu -->
+    <div>
+      <div class="col-header">Project Context Menu</div>
+      <div class="ctx-menu">
+        <div class="ctx-item"><div class="ctx-item-icon">📂</div><div class="ctx-item-label">Open Project</div></div>
+        <div class="ctx-item"><div class="ctx-item-icon">📊</div><div class="ctx-item-label">Quick Preview</div></div>
+        <div class="ctx-item"><div class="ctx-item-icon">✏️</div><div class="ctx-item-label">Edit</div></div>
+        <div class="ctx-item"><div class="ctx-item-icon">📸</div><div class="ctx-item-label">Add Photos</div></div>
+        <div class="ctx-item"><div class="ctx-item-icon">📋</div><div class="ctx-item-label">Add Task</div></div>
+        <div class="ctx-item"><div class="ctx-item-icon">🔗</div><div class="ctx-item-label">Share Link</div></div>
+        <div class="ctx-separator"></div>
+        <div class="ctx-item"><div class="ctx-item-icon">📤</div><div class="ctx-item-label">Export Report</div></div>
+        <div class="ctx-separator"></div>
+        <div class="ctx-item destructive"><div class="ctx-item-icon">📦</div><div class="ctx-item-label">Archive Project</div></div>
+      </div>
+    </div>
+
+    <!-- Interaction System Panel -->
+    <div>
+      <div class="col-header">Interaction System (All Entities)</div>
+      <div class="interaction-panel glass">
+        <div class="int-header">Gesture → Behavior Map</div>
+        <div class="int-row">
+          <div class="int-gesture">Tap</div>
+          <div class="int-arrow">→</div>
+          <div>
+            <div class="int-desc">Quick Preview Sheet</div>
+            <div class="int-sub">Liquid Glass bottom sheet, 50% height</div>
+          </div>
+        </div>
+        <div class="int-row">
+          <div class="int-gesture">Long Press</div>
+          <div class="int-arrow">→</div>
+          <div>
+            <div class="int-desc">Context Menu + Peek</div>
+            <div class="int-sub">Haptic feedback + glass menu</div>
+          </div>
+        </div>
+        <div class="int-row">
+          <div class="int-gesture">Double Tap</div>
+          <div class="int-arrow">→</div>
+          <div>
+            <div class="int-desc">Favorite / Pin</div>
+            <div class="int-sub">Haptic confirmation + spring animation</div>
+          </div>
+        </div>
+        <div class="int-row">
+          <div class="int-gesture">Swipe Left</div>
+          <div class="int-arrow">→</div>
+          <div>
+            <div class="int-desc">Quick Actions Strip</div>
+            <div class="int-sub">Primary 2–3 actions exposed</div>
+          </div>
+        </div>
+        <div class="int-row">
+          <div class="int-gesture">Swipe Right</div>
+          <div class="int-arrow">→</div>
+          <div>
+            <div class="int-desc">Mark / Pin / Archive</div>
+            <div class="int-sub">Context-aware secondary action</div>
+          </div>
+        </div>
+        <div class="int-row">
+          <div class="int-gesture">Open Full</div>
+          <div class="int-arrow">→</div>
+          <div>
+            <div class="int-desc">Full Entity Page</div>
+            <div class="int-sub">Button inside preview sheet or context menu</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SECTION D — UNIVERSAL ENTITY REGISTRY
+═══════════════════════════════════════════════════════════ -->
+<div class="section-label">D — Universal Entity Registry (12 Entity Types)</div>
+<div class="canvas">
+  <div class="entity-grid">
+    <div class="entity-tile">
+      <div class="et-icon">👤</div>
+      <div class="et-name">Employee</div>
+      <div class="et-desc">Avatar, presence, contact, social, schedule, projects</div>
+      <div class="et-badges"><span class="et-badge">Presence</span><span class="et-badge">Social</span><span class="et-badge">Biz Card</span></div>
+    </div>
+    <div class="entity-tile">
+      <div class="et-icon">🤝</div>
+      <div class="et-name">Client</div>
+      <div class="et-desc">Contact, projects, invoices, contract value, social</div>
+      <div class="et-badges"><span class="et-badge">Social</span><span class="et-badge">CRM</span></div>
+    </div>
+    <div class="entity-tile">
+      <div class="et-icon">🏭</div>
+      <div class="et-name">Supplier</div>
+      <div class="et-desc">Company, contact person, products, deliveries, rating</div>
+      <div class="et-badges"><span class="et-badge">Social</span><span class="et-badge">Rating</span></div>
+    </div>
+    <div class="entity-tile">
+      <div class="et-icon">🏗</div>
+      <div class="et-name">Project</div>
+      <div class="et-desc">Progress, budget, team, deadline, risks, activity</div>
+      <div class="et-badges"><span class="et-badge">Timeline</span><span class="et-badge">Budget</span></div>
+    </div>
+    <div class="entity-tile">
+      <div class="et-icon">📦</div>
+      <div class="et-name">Product</div>
+      <div class="et-desc">Image, price, inventory, supplier, sales metrics</div>
+      <div class="et-badges"><span class="et-badge">Inventory</span><span class="et-badge">Analytics</span></div>
+    </div>
+    <div class="entity-tile">
+      <div class="et-icon">🧾</div>
+      <div class="et-name">Order</div>
+      <div class="et-desc">Customer, status, total, delivery, timeline</div>
+      <div class="et-badges"><span class="et-badge">Timeline</span><span class="et-badge">Status</span></div>
+    </div>
+    <div class="entity-tile">
+      <div class="et-icon">💰</div>
+      <div class="et-name">Invoice</div>
+      <div class="et-desc">Client, amount, due date, payment status, history</div>
+      <div class="et-badges"><span class="et-badge">Finance</span><span class="et-badge">PDF</span></div>
+    </div>
+    <div class="entity-tile">
+      <div class="et-icon">📄</div>
+      <div class="et-name">Document</div>
+      <div class="et-desc">File type, owner, project, version, status</div>
+      <div class="et-badges"><span class="et-badge">Version</span><span class="et-badge">Share</span></div>
+    </div>
+    <div class="entity-tile">
+      <div class="et-icon">🚗</div>
+      <div class="et-name">Vehicle</div>
+      <div class="et-desc">Driver, status, location, maintenance, trips</div>
+      <div class="et-badges"><span class="et-badge">GPS</span><span class="et-badge">Fleet</span></div>
+    </div>
+    <div class="entity-tile">
+      <div class="et-icon">🔧</div>
+      <div class="et-name">Tool</div>
+      <div class="et-desc">Type, condition, location, assigned, maintenance</div>
+      <div class="et-badges"><span class="et-badge">QR</span><span class="et-badge">Assigned</span></div>
+    </div>
+    <div class="entity-tile">
+      <div class="et-icon">👥</div>
+      <div class="et-name">Team</div>
+      <div class="et-desc">Members, active projects, manager, attendance</div>
+      <div class="et-badges"><span class="et-badge">Roster</span><span class="et-badge">KPIs</span></div>
+    </div>
+    <div class="entity-tile">
+      <div class="et-icon">🏢</div>
+      <div class="et-name">Company</div>
+      <div class="et-desc">Divisions, headcount, revenue, active projects</div>
+      <div class="et-badges"><span class="et-badge">Multi-co</span><span class="et-badge">CEO View</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SECTION E — SOCIAL PROFILE SYSTEM
+═══════════════════════════════════════════════════════════ -->
+<div class="section-label">E — Social Profile System (GDPR Compliant)</div>
+<div class="canvas">
+  <div class="row">
+    <div>
+      <div class="col-header">Social Links Panel (Add / Edit)</div>
+      <div style="width:340px;" class="glass" style="border-radius:var(--radius-card);">
+        <div style="border-radius:var(--radius-card);overflow:hidden;">
+
+          <!-- LinkedIn -->
+          <div class="card-row" style="padding:12px 16px;">
+            <div style="width:36px;height:36px;border-radius:10px;background:rgba(10,102,194,0.15);border:1px solid rgba(10,102,194,0.25);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">in</div>
+            <div class="cr-label"><span>linkedin.com/in/maria-ionescu</span><small>LinkedIn</small></div>
+            <div class="cr-arrow">✓</div>
+          </div>
+          <div class="card-row" style="padding:12px 16px;">
+            <div style="width:36px;height:36px;border-radius:10px;background:rgba(29,161,242,0.15);border:1px solid rgba(29,161,242,0.25);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">𝕏</div>
+            <div class="cr-label"><span>@maria_ion_ro</span><small>X (Twitter)</small></div>
+            <div class="cr-arrow">✓</div>
+          </div>
+          <div class="card-row" style="padding:12px 16px;">
+            <div style="width:36px;height:36px;border-radius:10px;background:rgba(225,48,108,0.15);border:1px solid rgba(225,48,108,0.25);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">📸</div>
+            <div class="cr-label"><span>@maria.ionescu.prv</span><small>Instagram</small></div>
+            <div class="cr-arrow">✓</div>
+          </div>
+          <div class="card-row" style="padding:12px 16px;">
+            <div style="width:36px;height:36px;border-radius:10px;background:rgba(37,211,102,0.15);border:1px solid rgba(37,211,102,0.25);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">💬</div>
+            <div class="cr-label"><span>+40 721 000 111</span><small>WhatsApp Business</small></div>
+            <div class="cr-arrow">✓</div>
+          </div>
+          <div class="card-row" style="padding:12px 16px;opacity:0.5;">
+            <div style="width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,0.05);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">📘</div>
+            <div class="cr-label"><span>Add Facebook</span><small>Optional</small></div>
+            <div class="cr-arrow">+</div>
+          </div>
+          <div class="card-row" style="padding:12px 16px;opacity:0.5;">
+            <div style="width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,0.05);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🎵</div>
+            <div class="cr-label"><span>Add TikTok</span><small>Optional</small></div>
+            <div class="cr-arrow">+</div>
+          </div>
+          <div class="card-row" style="padding:12px 16px;opacity:0.5;border-bottom:none;">
+            <div style="width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,0.05);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🌐</div>
+            <div class="cr-label"><span>Add Website</span><small>Optional</small></div>
+            <div class="cr-arrow">+</div>
+          </div>
+
+          <!-- GDPR notice -->
+          <div style="padding:12px 16px;background:rgba(255,255,255,0.03);border-top:1px solid var(--border);">
+            <div style="font-size:11px;color:var(--t3);line-height:1.5;">
+              🔒 Social profiles are optional and permission-controlled. Visible only to users with
+              <strong style="color:var(--t2);">view_social_profiles</strong> permission. Stored per GDPR Article 6.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Permission model -->
+    <div>
+      <div class="col-header">Permission Matrix — Social Profiles</div>
+      <div style="width:360px;" class="glass" style="border-radius:var(--radius-card);overflow:hidden;">
+        <div style="border-radius:var(--radius-card);overflow:hidden;">
+          <div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:0.08em;">
+            <span>Role</span>
+            <span>View Own</span>
+            <span>View Others</span>
+            <span>Edit</span>
+          </div>
+          <div style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.05);display:flex;justify-content:space-between;font-size:13px;color:var(--t1);">
+            <span>Self (any role)</span>
+            <span style="color:#30d158;">✓</span>
+            <span style="color:var(--t4);">—</span>
+            <span style="color:#30d158;">✓</span>
+          </div>
+          <div style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.05);display:flex;justify-content:space-between;font-size:13px;color:var(--t1);">
+            <span>Manager</span>
+            <span style="color:#30d158;">✓</span>
+            <span style="color:#30d158;">✓</span>
+            <span style="color:var(--t4);">—</span>
+          </div>
+          <div style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.05);display:flex;justify-content:space-between;font-size:13px;color:var(--t1);">
+            <span>HR / Admin</span>
+            <span style="color:#30d158;">✓</span>
+            <span style="color:#30d158;">✓</span>
+            <span style="color:#30d158;">✓</span>
+          </div>
+          <div style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.05);display:flex;justify-content:space-between;font-size:13px;color:var(--t1);">
+            <span>Worker / Cashier</span>
+            <span style="color:#30d158;">✓</span>
+            <span style="color:var(--t4);">—</span>
+            <span style="color:#30d158;">✓ (own)</span>
+          </div>
+          <div style="padding:12px 16px;display:flex;justify-content:space-between;font-size:13px;color:var(--t1);">
+            <span>Public (Client Portal)</span>
+            <span style="color:var(--t4);">—</span>
+            <span style="color:var(--t4);">—</span>
+            <span style="color:var(--t4);">—</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Supplier Preview sheet -->
+      <div style="margin-top:20px;">
+        <div class="col-header">Supplier Preview</div>
+        <div class="preview-sheet glass" style="width:340px;border-radius:var(--radius-panel);">
+          <div class="sheet-handle-row"><div class="sheet-handle"></div></div>
+          <div class="emp-hero">
+            <div class="emp-avatar-wrap">
+              <div class="emp-avatar">🏭</div>
+            </div>
+            <div class="emp-info">
+              <div class="emp-name">TechMat SRL</div>
+              <div class="emp-role">Building Materials Supplier</div>
+              <div class="emp-dept">⭐ 4.8 · Preferred Partner</div>
+            </div>
+          </div>
+          <div class="sheet-section">
+            <div class="stats-row">
+              <div class="stat-cell"><div class="stat-num">47</div><div class="stat-label">Orders</div></div>
+              <div class="stat-cell"><div class="stat-num">€320K</div><div class="stat-label">Volume</div></div>
+              <div class="stat-cell"><div class="stat-num">98%</div><div class="stat-label">On Time</div></div>
+            </div>
+          </div>
+          <div class="sheet-divider"></div>
+          <div class="sheet-section">
+            <div class="sheet-section-title">Contact</div>
+            <div class="contact-row">
+              <div class="contact-icon">👤</div>
+              <div class="contact-label"><span>Dan Gheorghe</span><small>Account Manager</small></div>
+              <div class="contact-action">Call</div>
+            </div>
+          </div>
+          <div class="sheet-divider"></div>
+          <div class="sheet-section">
+            <div class="sheet-section-title">Social</div>
+            <div class="social-row">
+              <a class="social-chip" href="#"><span class="social-icon">in</span> LinkedIn</a>
+              <a class="social-chip" href="#"><span class="social-icon">🌐</span> Website</a>
+            </div>
+          </div>
+          <div class="actions-strip">
+            <div class="action-btn"><div class="ab-icon">📦</div><div class="ab-label">Orders</div></div>
+            <div class="action-btn"><div class="ab-icon">🚚</div><div class="ab-label">Deliveries</div></div>
+            <div class="action-btn"><div class="ab-icon">📋</div><div class="ab-label">Products</div></div>
+          </div>
+          <button class="open-full-btn">Open Full Profile</button>
+          <div style="height:8px;"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="footnote">
+  PRV — Universal Preview Engine · Architecture Preview<br>
+  All components use Liquid Glass design language · Zero-flash SSR · Role-aware permissions<br>
+  Extends: Navigation Architecture §9 Context Menus, §15 Peek Preview · Design System §6 Components · Role Architecture
+</div>
+
+</body>
+</html>
