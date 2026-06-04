@@ -1,2 +1,9 @@
 export { baseTemplate, emailStyles } from "./base"
-// Additional templates added per sprint as features are implemented
+export { welcomeEmail } from "./welcome"
+export type { WelcomeEmailProps } from "./welcome"
+export { mfaCodeEmail } from "./mfa"
+export type { MfaCodeEmailProps } from "./mfa"
+export { teamInviteEmail } from "./invite"
+export type { TeamInviteEmailProps } from "./invite"
+export { passwordResetEmail } from "./password-reset"
+export type { PasswordResetEmailProps } from "./password-reset"

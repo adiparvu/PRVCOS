@@ -1,3 +1,4 @@
-// Schema index — tables are added here as epics are implemented
-// Sprint 01: migration_history only (infrastructure table)
+// Schema index — Sprint 03: Core company & user tables
 export * from "./migration-history"
+export * from "./companies"
+export * from "./users"

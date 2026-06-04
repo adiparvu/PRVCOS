@@ -5,7 +5,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./glass": "./src/glass/index.ts",
-    "./tokens": "./src/tokens/index.ts"
+    "./tokens": "./src/tokens/index.ts",
+    "./components": "./src/components/index.ts"
   },
   "scripts": {
     "lint": "tsc --noEmit",

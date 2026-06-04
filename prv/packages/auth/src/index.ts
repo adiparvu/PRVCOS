@@ -18,3 +18,16 @@ export {
   revokeAllUserSessions,
   refreshSession,
 } from "./session"
+
+export {
+  hasScope,
+  requireScope,
+  hasRole,
+  requireRole,
+  requireSameCompany,
+  checkPermission,
+  requireMfa,
+  isMfaMandatory,
+  RoleSets,
+} from "./permissions"
+export type { PermissionCheck } from "./permissions"
