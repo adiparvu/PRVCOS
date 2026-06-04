@@ -364,11 +364,26 @@ Every feature must integrate with:
 5. No implementation without preview approval
 
 ### Tech Stack (Active)
-- Framework: Next.js (App Router, TypeScript)
-- Styling: Tailwind CSS + custom Liquid Glass utilities
-- State: TBD
-- Backend: TBD
-- Auth: TBD
+- **Monorepo:** pnpm + Turborepo
+- **Web:** Next.js 16.2.7 (App Router, TypeScript strict) — `apps/web`
+- **Mobile:** Expo SDK + React Native — `apps/mobile`
+- **Marketing:** Next.js — `apps/marketing`
+- **Styling:** Tailwind CSS 4 + Liquid Glass utilities — `packages/ui`
+- **Database:** PostgreSQL 16 via Supabase (primary + read replica)
+- **ORM:** Drizzle ORM — `packages/db`
+- **Auth:** Supabase Auth (Passkeys, MFA, OAuth, Magic Link)
+- **Storage:** Supabase Storage
+- **Realtime:** 4-tier — Supabase Realtime → SSE → Redis (Upstash) → Polling
+- **Client State:** Zustand
+- **Server State:** TanStack Query
+- **Background Jobs:** Inngest (5 priority levels)
+- **Cache / Rate Limit:** Redis (Upstash)
+- **Search:** Typesense (scoped keys per company)
+- **Email:** Resend
+- **Monitoring:** Sentry
+- **CI/CD:** GitHub Actions
+- **Vector Search:** pgvector HNSW (Supabase)
+- **Shared Libraries:** `packages/approval-engine` · `packages/ai-engine` · `packages/tsconfig`
 
 ---
 
