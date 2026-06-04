@@ -102,7 +102,62 @@ Text Tertiary:       rgba(0, 0, 0, 0.35)
 Text Disabled:       rgba(0, 0, 0, 0.20)
 ```
 
-### 1.6 Monochrome Rule
+### 1.6 Appearance & Personalization System
+
+PRV supports three **theme** modes and three **glass style** variants, selectable per user and synced across all devices.
+
+#### Theme Modes
+
+| Mode | Behavior |
+|------|----------|
+| **Dark** | Primary — pure black `#000000` background, white glass (default) |
+| **Light** | Secondary — `#F2F2F7` background, frosted white glass |
+| **System** | Follows OS `prefers-color-scheme` — Dark or Light automatically |
+
+**Applied via:** `data-theme="dark|light|system"` attribute on `<html>`.
+
+#### Light Mode Canonical Values (Section 1.5 source of truth)
+
+```
+Background:     #F2F2F7
+Glass 1:        rgba(255, 255, 255, 0.72)
+Glass 2:        rgba(255, 255, 255, 0.80)
+Glass 3:        rgba(255, 255, 255, 0.88)
+Glass 4:        rgba(255, 255, 255, 0.95)
+Border:         rgba(0, 0, 0, 0.08)
+Specular:       rgba(255, 255, 255, 0.90)
+Text Primary:   rgba(0, 0, 0, 0.90)
+Text Secondary: rgba(0, 0, 0, 0.60)
+Text Tertiary:  rgba(0, 0, 0, 0.35)
+Text Disabled:  rgba(0, 0, 0, 0.20)
+Shadow:         0 24px 64px rgba(0,0,0,0.10), 0 8px 24px rgba(0,0,0,0.06)
+```
+
+#### Glass Style Variants
+
+Three style variants modulate the visual weight of glass surfaces:
+
+| Variant | Description | Opacity modifier | Best for |
+|---------|-------------|-----------------|----------|
+| **Translucid** | Maximum transparency — backgrounds show through fully | Levels multiplied by 0.60 | Media, photography, content-light screens |
+| **Tinted** | Chromatic warm glass — a subtle grey-blue wash unifies surfaces | Adds `rgba(100,105,130,0.12)` layer | Dashboards, information-dense panels |
+| **Adaptive** *(default)* | Context-aware — standard opacity by default; auto-increases to next glass level on data-heavy screens (tables, analytics, financial data) | Standard on content screens; +1 level on data screens | Universal — the recommended default |
+
+**Applied via:** `data-glass="translucid|tinted|adaptive"` attribute on `<html>`.
+
+**Adaptive detection:** A screen is considered "data-heavy" when it renders a `data-density="high"` wrapper — used automatically by data tables, analytics views, and financial reports.
+
+#### Persistence & Sync
+
+- Stored in `user_preferences` table (one row per user, `UNIQUE(user_id)`)
+- Loaded on session start — injected into SSR layout to prevent flash-of-wrong-theme
+- Cached in `localStorage` for instant client-side restore
+- Synced to DB asynchronously on change via `PATCH /api/preferences`
+- Applies to: Web, macOS, Dynamic Island tint, Widget backgrounds, Live Activity chrome
+
+---
+
+### 1.7 Monochrome Rule
 
 PRV uses **zero color accents**. The palette is monochrome B&W.
 

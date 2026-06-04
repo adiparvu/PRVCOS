@@ -15,3 +15,6 @@ export type { GlassModalProps } from "./glass-modal"
 
 export { GlassBadge } from "./glass-badge"
 export type { GlassBadgeProps } from "./glass-badge"
+
+export { AppearanceSettings } from "./appearance-settings"
+export type { AppearanceSettingsProps } from "./appearance-settings"

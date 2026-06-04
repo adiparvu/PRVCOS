@@ -1,3 +1,6 @@
 export * from "./glass/index"
 export * from "./tokens/index"
 export * from "./components/index"
+export * from "./themes/index"
+export { AppearanceProvider, useAppearance, APPEARANCE_SCRIPT } from "./providers/appearance"
+export type { AppearanceProviderProps } from "./providers/appearance"

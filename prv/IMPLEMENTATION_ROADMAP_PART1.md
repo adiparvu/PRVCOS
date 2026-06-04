@@ -1183,6 +1183,36 @@ Widget sizes:
   XL:     4×6 — dashboard feature widget (CEO cockpit, calendar)
 ```
 
+#### 4.X — Appearance & Personalization System
+
+Overrides F05-21 ("Dark Mode Only"). Full theme and glass-style switching per user.
+
+```
+Theme modes:
+  dark    — #000000 background, white glass (default / primary)
+  light   — #F2F2F7 background, frosted white glass (see DESIGN_SYSTEM §1.6)
+  system  — follows OS prefers-color-scheme
+
+Glass style variants:
+  translucid — max transparency, opacity × 0.60
+  tinted     — chromatic warm wash, rgba(100,105,130,0.12) overlay
+  adaptive   — standard + auto-increases to next glass level on data-heavy screens
+
+Files:
+  packages/db/src/schema/user-preferences.ts          — themeEnum, glassStyleEnum, table
+  packages/ui/src/themes/index.ts                     — TypeScript types + CSS variable maps
+  packages/ui/src/providers/appearance.tsx            — AppearanceProvider + useAppearance()
+  packages/ui/src/components/appearance-settings.tsx  — Settings panel (Liquid Glass)
+  apps/web/src/app/globals.css                        — [data-theme] × [data-glass] CSS vars
+  apps/web/src/app/layout.tsx                         — SSR injection, zero flash
+  apps/web/src/app/api/preferences/route.ts           — GET + PATCH, gate-chained, audited
+
+Sync:
+  Session start → fetch DB → SSR html attributes → zero flash
+  Change → optimistic localStorage → async PATCH → DB
+  New device → DB overwrites localStorage on auth
+```
+
 ### Phase 4 Exit Criteria
 ```
 □ Storybook: all 50+ components documented with all visual states
@@ -1195,6 +1225,9 @@ Widget sizes:
 □ Accessibility: all components pass axe-core (WCAG 2.1 AA)
 □ Responsive: all components function from 375px (iPhone SE) to 1920px
 □ No module-specific content in any component
+□ Theme system: Light / Dark / System render with canonical DESIGN_SYSTEM §1.6 values
+□ Glass style system: Translucid / Tinted / Adaptive apply correctly
+□ Appearance settings panel: saves, syncs, zero flash-of-wrong-theme
 ```
 
 ---

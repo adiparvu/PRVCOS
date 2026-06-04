@@ -167,6 +167,28 @@ Pattern E — Global (no company_id):
 
 ---
 
+## 1.3a user_preferences
+
+**Purpose:** Per-user appearance & personalization settings. One row per user. Synced across all devices.  
+**RLS:** Pattern C (own record only — users read/write only their own row)  
+**Added:** Appearance & Personalization System (Sprint 05 — overrides F05-21 "Dark Mode Only")
+
+| Column | Type | Nullable | Default | Description |
+|--------|------|----------|---------|-------------|
+| id | UUID | NOT NULL | gen_random_uuid() | Primary key |
+| user_id | UUID | NOT NULL FK users UNIQUE | — | One row per user |
+| theme | ENUM('light','dark','system') | NOT NULL | 'system' | Chosen theme mode |
+| glass_style | ENUM('translucid','tinted','adaptive') | NOT NULL | 'adaptive' | Chosen glass style |
+| sync_enabled | BOOLEAN | NOT NULL | true | Whether prefs sync across devices |
+| updated_at | TIMESTAMPTZ | NOT NULL | NOW() | Last modified |
+| synced_at | TIMESTAMPTZ | NULL | — | Last confirmed server sync |
+
+**Indexes:** `user_id` (unique — enforces one row per user)  
+**Cascade:** ON DELETE CASCADE  
+**Enums introduced:** `theme_enum('light','dark','system')`, `glass_style_enum('translucid','tinted','adaptive')`
+
+---
+
 ## 1.4 user_profiles
 
 **Purpose:** Extended user data — profile fields not needed for authentication.

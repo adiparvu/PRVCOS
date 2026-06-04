@@ -151,7 +151,9 @@ PRV is structured into **26 Epics** spanning **63 two-week Sprints** (~126 weeks
 | F05-18 | Dynamic Island Framework | Compact / expanded / minimal state templates + live activity updater | P1 |
 | F05-19 | iPad Adaptive Layout | Split-view, sidebar + detail, adaptive column grid | P1 |
 | F05-20 | Web Responsive Layout | Breakpoints: mobile 375 / tablet 768 / desktop 1280 / wide 1440 | P1 |
-| F05-21 | Dark Mode Only | Enforce black background globally, no light mode variant | P0 |
+| F05-21 | Theme System | Light / Dark / System theme switching — per-user preference, synced across devices via `user_preferences` table; replaces "Dark Mode Only" baseline (overridden by Appearance & Personalization System, Sprint 05) | P0 |
+| F05-22 | Glass Style System | Translucid / Tinted / Adaptive glass style variants — per-user preference; Adaptive auto-increases opacity on data-heavy screens while preserving Liquid Glass language | P0 |
+| F05-23 | Appearance Provider | `AppearanceProvider` React context in `packages/ui`; applies `data-theme` + `data-glass` attributes to `<html>` SSR-safe; zero flash-of-wrong-theme; localStorage for instant load, server-synced via `/api/preferences` | P0 |
 
 ---
 
