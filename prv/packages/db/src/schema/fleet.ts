@@ -7,14 +7,12 @@ import {
   boolean,
   jsonb,
   integer,
-  date,
   pgEnum,
   index,
 } from "drizzle-orm/pg-core"
 import { relations } from "drizzle-orm"
-import { companies } from "./companies"
+import { companies, stores } from "./companies"
 import { users } from "./users"
-import { stores } from "./companies"
 
 // ─── Vehicles ────────────────────────────────────────────────────────────────
 
@@ -52,12 +50,12 @@ export const vehicles = pgTable(
     licensePlate: varchar("license_plate", { length: 20 }).notNull(),
     vin: varchar("vin", { length: 17 }),
     color: varchar("color", { length: 50 }),
+    fuelType: varchar("fuel_type", { length: 50 }),
 
     mileageKm: integer("mileage_km").notNull().default(0),
-    lastServiceDate: date("last_service_date"),
-    nextServiceDate: date("next_service_date"),
-    insuranceExpiresAt: date("insurance_expires_at"),
-    inspectionExpiresAt: date("inspection_expires_at"),
+    nextServiceAtKm: integer("next_service_at_km"),
+    insuranceExpiresAt: timestamp("insurance_expires_at", { withTimezone: true }),
+    itpExpiresAt: timestamp("itp_expires_at", { withTimezone: true }),
 
     notes: text("notes"),
     metadata: jsonb("metadata").notNull().default({}),
@@ -97,16 +95,16 @@ export const tools = pgTable(
 
     name: varchar("name", { length: 255 }).notNull(),
     category: varchar("category", { length: 100 }),
-    brand: varchar("brand", { length: 100 }),
-    model: varchar("model", { length: 100 }),
     serialNumber: varchar("serial_number", { length: 100 }),
     barcode: varchar("barcode", { length: 100 }),
+    brand: varchar("brand", { length: 100 }),
+    model: varchar("model", { length: 100 }),
 
-    purchasedAt: date("purchased_at"),
-    warrantyExpiresAt: date("warranty_expires_at"),
-    lastMaintenanceDate: date("last_maintenance_date"),
-    nextMaintenanceDate: date("next_maintenance_date"),
+    purchasedAt: timestamp("purchased_at", { withTimezone: true }),
+    warrantyExpiresAt: timestamp("warranty_expires_at", { withTimezone: true }),
+    lastServiceAt: timestamp("last_service_at", { withTimezone: true }),
 
+    imageUrl: text("image_url"),
     notes: text("notes"),
     metadata: jsonb("metadata").notNull().default({}),
 
@@ -118,7 +116,6 @@ export const tools = pgTable(
   (table) => [
     index("tools_company_id_idx").on(table.companyId),
     index("tools_assigned_user_id_idx").on(table.assignedUserId),
-    index("tools_status_idx").on(table.status),
   ]
 )
 
