@@ -6,7 +6,7 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint src scripts --ext .ts,.tsx",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf .next dist"
   },
@@ -24,6 +24,7 @@
     "@tanstack/react-query": "^5.62.16",
     "@tanstack/react-query-devtools": "^5.62.16",
     "clsx": "^2.1.1",
+    "drizzle-orm": "^0.38.4",
     "next": "16.2.7",
     "react": "19.2.4",
     "react-dom": "19.2.4",

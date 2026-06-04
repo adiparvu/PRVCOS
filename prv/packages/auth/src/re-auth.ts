@@ -21,11 +21,7 @@ export async function checkReauth(sessionId: string): Promise<void> {
   const redis = getRedis()
   const confirmed = await redis.get(reauthKey(sessionId))
   if (!confirmed) {
-    throw new AuthError(
-      "Re-authentication required for this action",
-      "REAUTH_REQUIRED" as never,
-      403
-    )
+    throw new AuthError("Re-authentication required for this action", "REAUTH_REQUIRED", 403)
   }
 }
 

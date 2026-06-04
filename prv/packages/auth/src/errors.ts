@@ -23,6 +23,7 @@ export type AuthErrorCode =
   | "TOKEN_INVALID"
   | "TOKEN_EXPIRED"
   | "RATE_LIMITED"
+  | "REAUTH_REQUIRED"
 
 export const AuthErrors = {
   sessionExpired: () => new AuthError("Session has expired", "SESSION_EXPIRED", 401),
