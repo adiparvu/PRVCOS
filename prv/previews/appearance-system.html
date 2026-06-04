@@ -1,0 +1,1074 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PRV — Appearance & Personalization System Preview</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+    --smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* ── DARK THEME (PRV default) ── */
+  [data-theme="dark"] {
+    --bg: #000000;
+    --bg-2: #0a0a0a;
+    --text-1: rgba(255,255,255,0.95);
+    --text-2: rgba(255,255,255,0.65);
+    --text-3: rgba(255,255,255,0.35);
+    --text-4: rgba(255,255,255,0.15);
+    --border: rgba(255,255,255,0.12);
+    --shine: rgba(255,255,255,0.32);
+    --g1: rgba(255,255,255,0.06);
+    --g2: rgba(255,255,255,0.10);
+    --g3: rgba(255,255,255,0.16);
+    --g4: rgba(255,255,255,0.22);
+    --g-border: rgba(255,255,255,0.12);
+    --g-spec: rgba(255,255,255,0.25);
+    --shadow: 0 24px 64px rgba(0,0,0,0.7), 0 8px 24px rgba(0,0,0,0.4);
+    --shadow-sm: 0 8px 32px rgba(0,0,0,0.5);
+    --checked-bg: rgba(255,255,255,0.15);
+    --checked-ring: rgba(255,255,255,0.40);
+  }
+
+  /* ── LIGHT THEME ── */
+  [data-theme="light"] {
+    --bg: #f2f2f7;
+    --bg-2: #ffffff;
+    --text-1: rgba(0,0,0,0.88);
+    --text-2: rgba(0,0,0,0.55);
+    --text-3: rgba(0,0,0,0.28);
+    --text-4: rgba(0,0,0,0.12);
+    --border: rgba(0,0,0,0.08);
+    --shine: rgba(255,255,255,0.85);
+    --g1: rgba(255,255,255,0.58);
+    --g2: rgba(255,255,255,0.72);
+    --g3: rgba(255,255,255,0.84);
+    --g4: rgba(255,255,255,0.93);
+    --g-border: rgba(0,0,0,0.06);
+    --g-spec: rgba(255,255,255,0.90);
+    --shadow: 0 24px 64px rgba(0,0,0,0.10), 0 8px 24px rgba(0,0,0,0.06);
+    --shadow-sm: 0 8px 32px rgba(0,0,0,0.07);
+    --checked-bg: rgba(0,0,0,0.08);
+    --checked-ring: rgba(0,0,0,0.20);
+  }
+
+  /* ── GLASS STYLE MODIFIERS ── */
+  [data-glass="translucid"] {
+    --g1: color-mix(in srgb, var(--g1) 60%, transparent);
+    --g2: color-mix(in srgb, var(--g2) 65%, transparent);
+    --g3: color-mix(in srgb, var(--g3) 70%, transparent);
+    --blur-mult: 1.25;
+  }
+  [data-glass="tinted"] {
+    --tint: rgba(100,100,120,0.12);
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #000;
+    color: #fff;
+    min-height: 100vh;
+    padding: 32px 20px;
+  }
+
+  h1 { font-size: 13px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,255,255,0.4); margin-bottom: 40px; text-align: center; }
+
+  /* ── PREVIEW GRID ── */
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; max-width: 1100px; margin: 0 auto 56px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; max-width: 1100px; margin: 0 auto 56px; }
+  .section-label {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase;
+    color: rgba(255,255,255,0.30); margin-bottom: 16px; text-align: center;
+    max-width: 1100px; margin-left: auto; margin-right: auto; padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    margin-bottom: 24px;
+  }
+
+  /* ── PHONE FRAME ── */
+  .phone {
+    width: 100%; max-width: 320px; margin: 0 auto;
+    border-radius: 44px;
+    overflow: hidden;
+    position: relative;
+  }
+  .phone-inner {
+    background: var(--bg);
+    min-height: 560px;
+    padding: 52px 16px 24px;
+    position: relative;
+    transition: background 0.4s var(--smooth);
+  }
+  .phone-frame {
+    position: absolute; inset: 0; border-radius: 44px;
+    border: 1.5px solid rgba(255,255,255,0.14);
+    pointer-events: none; z-index: 10;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.5) inset;
+  }
+  .dynamic-island {
+    position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
+    width: 120px; height: 34px; background: #000;
+    border-radius: 20px; z-index: 20;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.8);
+    transition: width 0.4s var(--spring);
+  }
+  .dynamic-island.active { width: 200px; }
+  .di-dot { width: 10px; height: 10px; border-radius: 50%; background: rgba(255,255,255,0.15); }
+  .di-text { font-size: 10px; color: rgba(255,255,255,0.7); font-weight: 500; }
+  .di-icon { font-size: 11px; }
+
+  /* ── SETTINGS PANEL ── */
+  .panel {
+    background: var(--g2);
+    backdrop-filter: blur(48px) saturate(180%);
+    -webkit-backdrop-filter: blur(48px) saturate(180%);
+    border: 1px solid var(--g-border);
+    border-radius: 24px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    position: relative;
+  }
+  .panel::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: var(--g-spec);
+  }
+  .panel-header {
+    padding: 20px 20px 0;
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 4px;
+  }
+  .panel-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: var(--g3);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; border: 1px solid var(--g-border);
+    flex-shrink: 0;
+  }
+  .panel-title { font-size: 16px; font-weight: 600; color: var(--text-1); }
+  .panel-subtitle { font-size: 12px; color: var(--text-3); }
+
+  .section-group {
+    padding: 16px 20px;
+  }
+  .section-title {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--text-3); margin-bottom: 10px;
+  }
+
+  /* ── THEME SELECTOR ── */
+  .theme-row {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;
+  }
+  .theme-option {
+    border-radius: 14px;
+    border: 1.5px solid transparent;
+    background: var(--g1);
+    padding: 12px 8px;
+    cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    transition: all 0.2s var(--smooth);
+    position: relative; overflow: hidden;
+  }
+  .theme-option.active {
+    border-color: var(--text-1);
+    background: var(--checked-bg);
+    box-shadow: 0 0 0 1px var(--checked-ring);
+  }
+  .theme-option:hover:not(.active) { background: var(--g2); }
+  .theme-preview {
+    width: 48px; height: 32px; border-radius: 8px; overflow: hidden;
+    border: 1px solid var(--g-border);
+    position: relative;
+  }
+  .theme-preview.dark { background: #000; }
+  .theme-preview.light { background: #f2f2f7; }
+  .theme-preview.system {
+    background: linear-gradient(135deg, #000 50%, #f2f2f7 50%);
+  }
+  .theme-preview-bar {
+    position: absolute; top: 5px; left: 5px; right: 5px; height: 5px;
+    border-radius: 2px;
+  }
+  .dark .theme-preview-bar { background: rgba(255,255,255,0.15); }
+  .light .theme-preview-bar { background: rgba(0,0,0,0.10); }
+  .system .theme-preview-bar { background: linear-gradient(90deg, rgba(255,255,255,0.15) 50%, rgba(0,0,0,0.10) 50%); }
+  .theme-label { font-size: 11px; font-weight: 500; color: var(--text-2); }
+  .active .theme-label { color: var(--text-1); font-weight: 600; }
+  .check { position: absolute; top: 5px; right: 5px; width: 14px; height: 14px; border-radius: 50%; background: var(--text-1); display: none; align-items: center; justify-content: center; }
+  .active .check { display: flex; }
+  .check::after { content: ''; width: 6px; height: 4px; border-left: 1.5px solid var(--bg); border-bottom: 1.5px solid var(--bg); transform: rotate(-45deg) translate(0.5px, -0.5px); }
+
+  /* ── GLASS SELECTOR ── */
+  .glass-row {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;
+  }
+  .glass-option {
+    border-radius: 14px;
+    border: 1.5px solid transparent;
+    background: var(--g1);
+    padding: 12px 10px 10px;
+    cursor: pointer;
+    transition: all 0.2s var(--smooth);
+    position: relative; overflow: hidden;
+  }
+  .glass-option.active {
+    border-color: var(--text-1);
+    background: var(--checked-bg);
+    box-shadow: 0 0 0 1px var(--checked-ring);
+  }
+  .glass-option:hover:not(.active) { background: var(--g2); }
+  .glass-swatch {
+    width: 100%; height: 36px; border-radius: 8px; margin-bottom: 8px;
+    position: relative; overflow: hidden;
+    border: 1px solid var(--g-border);
+  }
+  .glass-swatch::before {
+    content: ''; position: absolute; inset: 0;
+  }
+  .glass-swatch.translucid::before { background: rgba(255,255,255,0.04); backdrop-filter: blur(40px); }
+  .glass-swatch.tinted::before { background: rgba(100,110,130,0.18); backdrop-filter: blur(32px); }
+  .glass-swatch.adaptive::before { background: rgba(255,255,255,0.10); backdrop-filter: blur(32px); }
+  .glass-swatch-label {
+    position: absolute; bottom: 4px; left: 6px; font-size: 8px;
+    font-weight: 500; color: rgba(255,255,255,0.5); letter-spacing: 0.06em; text-transform: uppercase;
+  }
+  .glass-option-name { font-size: 12px; font-weight: 600; color: var(--text-1); margin-bottom: 2px; }
+  .glass-option-desc { font-size: 10px; color: var(--text-3); line-height: 1.4; }
+  .active .glass-option-name { color: var(--text-1); }
+
+  /* ── ADAPTIVE BADGE ── */
+  .badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 7px; border-radius: 6px;
+    background: var(--g2); border: 1px solid var(--g-border);
+    font-size: 9px; font-weight: 600; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--text-2); margin-top: 4px;
+  }
+  .badge-dot { width: 4px; height: 4px; border-radius: 50%; background: currentColor; }
+
+  /* ── SYNC ROW ── */
+  .sync-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px;
+    background: var(--g1);
+    border-radius: 12px;
+    border: 1px solid var(--g-border);
+  }
+  .sync-left { display: flex; align-items: center; gap: 10px; }
+  .sync-icon { font-size: 18px; }
+  .sync-info {}
+  .sync-name { font-size: 13px; font-weight: 500; color: var(--text-1); }
+  .sync-desc { font-size: 11px; color: var(--text-3); }
+  .toggle { width: 42px; height: 24px; border-radius: 12px; background: var(--text-1); position: relative; cursor: pointer; flex-shrink: 0; transition: background 0.2s; }
+  .toggle-thumb { position: absolute; top: 2px; right: 2px; width: 20px; height: 20px; border-radius: 10px; background: var(--bg); transition: transform 0.2s var(--spring); box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+
+  /* ── DIVIDER ── */
+  .divider { height: 1px; background: var(--g-border); margin: 0 20px; }
+
+  /* ── PLATFORM ROW ── */
+  .platform-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip {
+    display: flex; align-items: center; gap: 5px;
+    padding: 4px 10px; border-radius: 8px;
+    background: var(--g1); border: 1px solid var(--g-border);
+    font-size: 11px; font-weight: 500; color: var(--text-2);
+  }
+
+  /* ── LIVE ACTIVITY / WIDGET PREVIEW ── */
+  .live-activity {
+    background: rgba(0,0,0,0.85);
+    backdrop-filter: blur(20px);
+    border-radius: 20px;
+    padding: 12px 16px;
+    border: 1px solid rgba(255,255,255,0.12);
+    margin-bottom: 10px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .la-left { display: flex; align-items: center; gap: 10px; }
+  .la-icon { width: 28px; height: 28px; border-radius: 8px; background: rgba(255,255,255,0.10); display: flex; align-items: center; justify-content: center; font-size: 14px; }
+  .la-info {}
+  .la-title { font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.9); }
+  .la-sub { font-size: 10px; color: rgba(255,255,255,0.45); }
+  .la-right { font-size: 14px; font-weight: 700; color: rgba(255,255,255,0.9); }
+
+  .widget-sm {
+    background: var(--g2);
+    backdrop-filter: blur(32px) saturate(180%);
+    border-radius: 20px; padding: 14px;
+    border: 1px solid var(--g-border);
+    box-shadow: var(--shadow-sm);
+    position: relative; overflow: hidden;
+  }
+  .widget-sm::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: var(--g-spec);
+  }
+  .widget-title { font-size: 10px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+  .widget-value { font-size: 26px; font-weight: 700; color: var(--text-1); line-height: 1; }
+  .widget-sub { font-size: 11px; color: var(--text-2); margin-top: 4px; }
+
+  /* ── MINI APP PREVIEW ── */
+  .mini-screen {
+    background: var(--bg);
+    min-height: 480px; padding: 44px 12px 12px;
+    position: relative; border-radius: 36px; overflow: hidden;
+    transition: background 0.4s var(--smooth);
+  }
+  .mini-status-bar {
+    position: absolute; top: 12px; left: 16px; right: 16px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .mini-time { font-size: 13px; font-weight: 600; color: var(--text-1); }
+  .mini-icons { display: flex; gap: 4px; align-items: center; }
+  .mini-icon { font-size: 11px; color: var(--text-2); }
+  .mini-di {
+    position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+    width: 96px; height: 28px; background: #000; border-radius: 14px;
+    z-index: 5;
+  }
+  .mini-content { display: flex; flex-direction: column; gap: 8px; }
+  .mini-card {
+    background: var(--g1);
+    backdrop-filter: blur(32px) saturate(160%);
+    border: 1px solid var(--g-border);
+    border-radius: 16px; padding: 12px 14px;
+    position: relative; overflow: hidden;
+    box-shadow: var(--shadow-sm);
+  }
+  .mini-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: var(--g-spec); }
+  .mini-card-title { font-size: 12px; font-weight: 600; color: var(--text-1); }
+  .mini-card-sub { font-size: 10px; color: var(--text-3); margin-top: 2px; }
+  .mini-bars { display: flex; gap: 4px; align-items: flex-end; margin-top: 10px; height: 30px; }
+  .mini-bar { flex: 1; background: var(--text-1); border-radius: 3px; opacity: 0.7; }
+  .mini-tab-bar {
+    position: absolute; bottom: 14px; left: 16px; right: 16px;
+    background: var(--g2);
+    backdrop-filter: blur(48px) saturate(180%);
+    border: 1px solid var(--g-border);
+    border-radius: 24px; padding: 10px 20px;
+    display: flex; justify-content: space-around;
+    box-shadow: var(--shadow);
+  }
+  .mini-tab { font-size: 16px; opacity: 0.4; transition: opacity 0.2s; }
+  .mini-tab.active { opacity: 1; }
+
+  /* ── ADAPTIVE DENSITY DEMO ── */
+  .density-demo {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+  }
+  .density-card {
+    background: var(--g1);
+    border: 1px solid var(--g-border);
+    border-radius: 12px; padding: 10px;
+    position: relative; overflow: hidden;
+    transition: all 0.3s var(--smooth);
+  }
+  .density-card.data-heavy {
+    background: var(--g2);
+    border-color: rgba(255,255,255,0.16);
+  }
+  .density-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-3); margin-bottom: 6px; font-weight: 600; }
+  .density-rows { display: flex; flex-direction: column; gap: 4px; }
+  .density-row { height: 7px; border-radius: 3px; background: var(--text-4); }
+  .density-row.w-full { width: 100%; }
+  .density-row.w-3\/4 { width: 75%; }
+  .density-row.w-1\/2 { width: 50%; }
+  .density-badge {
+    display: inline-block; margin-top: 6px;
+    padding: 2px 6px; border-radius: 5px;
+    font-size: 8px; font-weight: 700; letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .density-badge.low { background: rgba(255,255,255,0.06); color: var(--text-3); }
+  .density-badge.high { background: rgba(255,255,255,0.16); color: var(--text-1); }
+
+  /* ── SAVE BUTTON ── */
+  .save-btn {
+    width: calc(100% - 40px); margin: 0 20px 20px;
+    background: var(--text-1);
+    color: var(--bg);
+    border: none; border-radius: 14px;
+    padding: 14px; font-size: 14px; font-weight: 600;
+    cursor: pointer; transition: all 0.15s var(--smooth);
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .save-btn:hover { opacity: 0.88; transform: scale(0.99); }
+  .save-btn:active { transform: scale(0.97); }
+
+  /* ── COMPARISON TABLE ── */
+  .compare-table {
+    width: 100%; border-collapse: collapse; font-size: 12px;
+  }
+  .compare-table th {
+    padding: 8px 12px; text-align: left;
+    font-size: 10px; font-weight: 600; letter-spacing: 0.08em;
+    text-transform: uppercase; color: rgba(255,255,255,0.30);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .compare-table td {
+    padding: 10px 12px; color: rgba(255,255,255,0.70);
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    vertical-align: top;
+  }
+  .compare-table tr:last-child td { border-bottom: none; }
+  .td-name { color: rgba(255,255,255,0.90); font-weight: 500; }
+  .tag {
+    display: inline-block; padding: 2px 7px; border-radius: 5px;
+    font-size: 10px; font-weight: 600; letter-spacing: 0.04em;
+  }
+  .tag-green { background: rgba(52,199,89,0.15); color: rgb(52,199,89); }
+  .tag-gray { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.50); }
+
+  /* ── WRAPPER ── */
+  .preview-wrapper {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 28px; padding: 28px;
+    transition: background 0.4s, border-color 0.4s;
+  }
+
+  /* ── LIGHT BG WRAPPER ── */
+  .light-bg {
+    background: #f2f2f7;
+    border-color: rgba(0,0,0,0.06);
+  }
+
+  /* ── CONTROLS ── */
+  .controls {
+    display: flex; justify-content: center; gap: 12px;
+    margin-bottom: 48px; flex-wrap: wrap;
+  }
+  .ctrl-btn {
+    padding: 8px 20px; border-radius: 100px;
+    border: 1.5px solid rgba(255,255,255,0.15);
+    background: rgba(255,255,255,0.06);
+    color: rgba(255,255,255,0.70);
+    font-size: 13px; font-weight: 500; cursor: pointer;
+    transition: all 0.2s var(--smooth); font-family: inherit;
+  }
+  .ctrl-btn:hover { background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.90); }
+  .ctrl-btn.active { background: rgba(255,255,255,0.90); color: #000; border-color: transparent; }
+
+  .divider-full {
+    border: none; height: 1px;
+    background: rgba(255,255,255,0.06);
+    margin: 48px auto; max-width: 1100px;
+  }
+
+  /* ── SCHEMA SPEC ── */
+  .spec-box {
+    max-width: 1100px; margin: 0 auto 56px;
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 20px; overflow: hidden;
+  }
+  .spec-header {
+    padding: 16px 24px; border-bottom: 1px solid rgba(255,255,255,0.06);
+    font-size: 11px; font-weight: 600; letter-spacing: 0.10em; text-transform: uppercase;
+    color: rgba(255,255,255,0.30);
+  }
+  pre {
+    padding: 20px 24px; font-size: 12px; line-height: 1.7;
+    color: rgba(255,255,255,0.70); overflow-x: auto;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+  }
+  .kw { color: rgb(255,122,198); }
+  .type { color: rgb(130,200,255); }
+  .str { color: rgb(255,212,90); }
+  .cm { color: rgba(255,255,255,0.28); font-style: italic; }
+</style>
+</head>
+<body>
+
+<h1>PRV — Appearance &amp; Personalization System · Design Preview</h1>
+
+<!-- LIVE CONTROLS -->
+<div class="controls" id="controls">
+  <button class="ctrl-btn active" onclick="setTheme('dark')" id="btn-dark">● Dark</button>
+  <button class="ctrl-btn" onclick="setTheme('light')" id="btn-light">○ Light</button>
+  <button class="ctrl-btn" onclick="setTheme('system')" id="btn-system">◑ System</button>
+  <span style="width:1px;background:rgba(255,255,255,0.10);height:32px;display:inline-block"></span>
+  <button class="ctrl-btn active" onclick="setGlass('adaptive')" id="btn-adaptive">Adaptive</button>
+  <button class="ctrl-btn" onclick="setGlass('translucid')" id="btn-translucid">Translucid</button>
+  <button class="ctrl-btn" onclick="setGlass('tinted')" id="btn-tinted">Tinted</button>
+</div>
+
+<!-- ── SECTION 1: Settings Panel ── -->
+<div class="section-label">Appearance Settings Panel</div>
+<div class="grid" style="align-items:start">
+
+  <!-- Settings Panel -->
+  <div class="preview-wrapper" data-theme="dark" data-glass="adaptive" id="panel-dark">
+    <div style="font-size:10px;font-weight:600;letter-spacing:0.10em;text-transform:uppercase;color:rgba(255,255,255,0.25);margin-bottom:16px">Dark Theme · Adaptive Glass</div>
+    <div class="panel" data-theme="dark" data-glass="adaptive">
+      <div class="panel-header">
+        <div class="panel-icon">🎨</div>
+        <div>
+          <div class="panel-title">Appearance</div>
+          <div class="panel-subtitle">Personalize your experience</div>
+        </div>
+      </div>
+
+      <div class="section-group">
+        <div class="section-title">Theme</div>
+        <div class="theme-row">
+          <div class="theme-option" onclick="selectTheme(this,'dark-panel')">
+            <div class="check"></div>
+            <div class="theme-preview dark">
+              <div class="theme-preview-bar"></div>
+            </div>
+            <div class="theme-label">Dark</div>
+          </div>
+          <div class="theme-option" onclick="selectTheme(this,'dark-panel')">
+            <div class="check"></div>
+            <div class="theme-preview light">
+              <div class="theme-preview-bar"></div>
+            </div>
+            <div class="theme-label">Light</div>
+          </div>
+          <div class="theme-option active" onclick="selectTheme(this,'dark-panel')">
+            <div class="check"></div>
+            <div class="theme-preview system">
+              <div class="theme-preview-bar"></div>
+            </div>
+            <div class="theme-label">System</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="section-group">
+        <div class="section-title">Liquid Glass Style</div>
+        <div class="glass-row">
+          <div class="glass-option" onclick="selectGlass(this,'dark-panel')">
+            <div class="glass-swatch translucid">
+              <div class="glass-swatch-label">α</div>
+            </div>
+            <div class="glass-option-name">Translucid</div>
+            <div class="glass-option-desc">Maximum transparency</div>
+          </div>
+          <div class="glass-option" onclick="selectGlass(this,'dark-panel')">
+            <div class="glass-swatch tinted">
+              <div class="glass-swatch-label">T</div>
+            </div>
+            <div class="glass-option-name">Tinted</div>
+            <div class="glass-option-desc">Subtle color wash</div>
+          </div>
+          <div class="glass-option active" onclick="selectGlass(this,'dark-panel')">
+            <div class="glass-swatch adaptive">
+              <div class="glass-swatch-label">A</div>
+            </div>
+            <div class="glass-option-name">Adaptive</div>
+            <div class="glass-option-desc">Adjusts to context</div>
+            <div class="badge"><span class="badge-dot"></span>Smart</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="section-group">
+        <div class="section-title">Sync</div>
+        <div class="sync-row">
+          <div class="sync-left">
+            <div class="sync-icon">☁️</div>
+            <div class="sync-info">
+              <div class="sync-name">Sync across devices</div>
+              <div class="sync-desc">iPhone · iPad · Mac · Web · Android</div>
+            </div>
+          </div>
+          <div class="toggle"><div class="toggle-thumb"></div></div>
+        </div>
+      </div>
+
+      <button class="save-btn">Save Preferences</button>
+    </div>
+  </div>
+
+  <!-- Light theme panel -->
+  <div class="preview-wrapper light-bg" data-theme="light" data-glass="adaptive" id="panel-light">
+    <div style="font-size:10px;font-weight:600;letter-spacing:0.10em;text-transform:uppercase;color:rgba(0,0,0,0.25);margin-bottom:16px">Light Theme · Adaptive Glass</div>
+    <div class="panel" data-theme="light" data-glass="adaptive">
+      <div class="panel-header">
+        <div class="panel-icon">🎨</div>
+        <div>
+          <div class="panel-title">Appearance</div>
+          <div class="panel-subtitle">Personalize your experience</div>
+        </div>
+      </div>
+
+      <div class="section-group">
+        <div class="section-title">Theme</div>
+        <div class="theme-row">
+          <div class="theme-option" onclick="selectTheme(this,'light-panel')">
+            <div class="check"></div>
+            <div class="theme-preview dark"><div class="theme-preview-bar"></div></div>
+            <div class="theme-label">Dark</div>
+          </div>
+          <div class="theme-option active" onclick="selectTheme(this,'light-panel')">
+            <div class="check"></div>
+            <div class="theme-preview light"><div class="theme-preview-bar"></div></div>
+            <div class="theme-label">Light</div>
+          </div>
+          <div class="theme-option" onclick="selectTheme(this,'light-panel')">
+            <div class="check"></div>
+            <div class="theme-preview system"><div class="theme-preview-bar"></div></div>
+            <div class="theme-label">System</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="section-group">
+        <div class="section-title">Liquid Glass Style</div>
+        <div class="glass-row">
+          <div class="glass-option" onclick="selectGlass(this,'light-panel')">
+            <div class="glass-swatch translucid"><div class="glass-swatch-label">α</div></div>
+            <div class="glass-option-name">Translucid</div>
+            <div class="glass-option-desc">Maximum transparency</div>
+          </div>
+          <div class="glass-option active" onclick="selectGlass(this,'light-panel')">
+            <div class="glass-swatch tinted"><div class="glass-swatch-label">T</div></div>
+            <div class="glass-option-name">Tinted</div>
+            <div class="glass-option-desc">Subtle color wash</div>
+          </div>
+          <div class="glass-option" onclick="selectGlass(this,'light-panel')">
+            <div class="glass-swatch adaptive"><div class="glass-swatch-label">A</div></div>
+            <div class="glass-option-name">Adaptive</div>
+            <div class="glass-option-desc">Adjusts to context</div>
+            <div class="badge"><span class="badge-dot"></span>Smart</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="section-group">
+        <div class="section-title">Sync</div>
+        <div class="sync-row">
+          <div class="sync-left">
+            <div class="sync-icon">☁️</div>
+            <div class="sync-info">
+              <div class="sync-name">Sync across devices</div>
+              <div class="sync-desc">iPhone · iPad · Mac · Web · Android</div>
+            </div>
+          </div>
+          <div class="toggle"><div class="toggle-thumb" style="right:auto;left:2px;background:#fff;transform:translateX(0)"></div></div>
+        </div>
+      </div>
+
+      <button class="save-btn" style="background:rgba(0,0,0,0.88);color:#fff">Save Preferences</button>
+    </div>
+  </div>
+
+</div>
+
+<hr class="divider-full">
+
+<!-- ── SECTION 2: Phone App Preview ── -->
+<div class="section-label">App Preview — Dark vs Light</div>
+<div class="grid">
+
+  <!-- Dark phone -->
+  <div class="preview-wrapper" data-theme="dark" data-glass="adaptive">
+    <div style="font-size:10px;font-weight:600;letter-spacing:0.10em;text-transform:uppercase;color:rgba(255,255,255,0.25);margin-bottom:20px;text-align:center">Dark · Adaptive</div>
+    <div class="phone" style="max-width:260px">
+      <div class="phone-inner" data-theme="dark" data-glass="adaptive">
+        <div class="dynamic-island active">
+          <span class="di-icon">📊</span>
+          <span class="di-text">Revenue +12%</span>
+        </div>
+        <div class="mini-di"></div>
+
+        <div class="mini-content">
+          <div class="mini-card" data-theme="dark">
+            <div class="mini-card-title">Revenue Today</div>
+            <div class="mini-card-sub">Across all stores</div>
+            <div class="mini-bars">
+              <div class="mini-bar" style="height:60%"></div>
+              <div class="mini-bar" style="height:80%"></div>
+              <div class="mini-bar" style="height:50%"></div>
+              <div class="mini-bar" style="height:100%"></div>
+              <div class="mini-bar" style="height:70%"></div>
+              <div class="mini-bar" style="height:90%"></div>
+              <div class="mini-bar" style="height:65%"></div>
+            </div>
+          </div>
+          <div class="mini-card" data-theme="dark">
+            <div class="mini-card-title">Active Projects</div>
+            <div class="mini-card-sub">3 in progress · 1 urgent</div>
+          </div>
+          <div class="mini-card" data-theme="dark">
+            <div class="mini-card-title">Team Status</div>
+            <div class="mini-card-sub">24 online · 6 on leave</div>
+          </div>
+        </div>
+
+        <div class="mini-tab-bar" data-theme="dark">
+          <div class="mini-tab active">⌂</div>
+          <div class="mini-tab">⊞</div>
+          <div class="mini-tab">◎</div>
+          <div class="mini-tab">⟁</div>
+          <div class="mini-tab">✦</div>
+        </div>
+      </div>
+      <div class="phone-frame"></div>
+    </div>
+  </div>
+
+  <!-- Light phone -->
+  <div class="preview-wrapper light-bg">
+    <div style="font-size:10px;font-weight:600;letter-spacing:0.10em;text-transform:uppercase;color:rgba(0,0,0,0.25);margin-bottom:20px;text-align:center">Light · Translucid</div>
+    <div class="phone" style="max-width:260px">
+      <div class="phone-inner" data-theme="light" data-glass="translucid">
+        <div class="dynamic-island active">
+          <span class="di-icon">📊</span>
+          <span class="di-text">Revenue +12%</span>
+        </div>
+        <div class="mini-di"></div>
+
+        <div class="mini-content">
+          <div class="mini-card" data-theme="light">
+            <div class="mini-card-title">Revenue Today</div>
+            <div class="mini-card-sub">Across all stores</div>
+            <div class="mini-bars">
+              <div class="mini-bar" style="height:60%;background:rgba(0,0,0,0.20)"></div>
+              <div class="mini-bar" style="height:80%;background:rgba(0,0,0,0.20)"></div>
+              <div class="mini-bar" style="height:50%;background:rgba(0,0,0,0.20)"></div>
+              <div class="mini-bar" style="height:100%;background:rgba(0,0,0,0.20)"></div>
+              <div class="mini-bar" style="height:70%;background:rgba(0,0,0,0.20)"></div>
+              <div class="mini-bar" style="height:90%;background:rgba(0,0,0,0.20)"></div>
+              <div class="mini-bar" style="height:65%;background:rgba(0,0,0,0.20)"></div>
+            </div>
+          </div>
+          <div class="mini-card" data-theme="light">
+            <div class="mini-card-title">Active Projects</div>
+            <div class="mini-card-sub">3 in progress · 1 urgent</div>
+          </div>
+          <div class="mini-card" data-theme="light">
+            <div class="mini-card-title">Team Status</div>
+            <div class="mini-card-sub">24 online · 6 on leave</div>
+          </div>
+        </div>
+
+        <div class="mini-tab-bar" data-theme="light">
+          <div class="mini-tab active">⌂</div>
+          <div class="mini-tab">⊞</div>
+          <div class="mini-tab">◎</div>
+          <div class="mini-tab">⟁</div>
+          <div class="mini-tab">✦</div>
+        </div>
+      </div>
+      <div class="phone-frame" style="border-color:rgba(0,0,0,0.10)"></div>
+    </div>
+  </div>
+
+</div>
+
+<hr class="divider-full">
+
+<!-- ── SECTION 3: Glass Style Comparison ── -->
+<div class="section-label">Glass Style Comparison — Same Dark Background</div>
+<div class="grid-3">
+
+  <!-- Translucid -->
+  <div class="preview-wrapper" data-theme="dark" data-glass="translucid">
+    <div style="font-size:10px;font-weight:600;letter-spacing:0.10em;text-transform:uppercase;color:rgba(255,255,255,0.25);margin-bottom:16px;text-align:center">Translucid</div>
+    <div style="background:linear-gradient(135deg,rgba(255,255,255,0.02) 0%,rgba(255,255,255,0.06) 100%);border-radius:20px;padding:16px;border:1px solid rgba(255,255,255,0.05)">
+      <div class="panel" data-theme="dark" style="--g2:rgba(255,255,255,0.04);--g-border:rgba(255,255,255,0.07);--shadow:0 24px 64px rgba(0,0,0,0.50),0 8px 24px rgba(0,0,0,0.30)">
+        <div class="section-group">
+          <div class="section-title" style="margin-bottom:14px">Maximum transparency</div>
+          <div class="density-demo">
+            <div class="density-card" style="--g1:rgba(255,255,255,0.03);--g-border:rgba(255,255,255,0.06)">
+              <div class="density-label">Panel</div>
+              <div class="density-rows">
+                <div class="density-row w-full"></div>
+                <div class="density-row w-3\/4"></div>
+              </div>
+            </div>
+            <div class="density-card" style="--g1:rgba(255,255,255,0.03);--g-border:rgba(255,255,255,0.06)">
+              <div class="density-label">Card</div>
+              <div class="density-rows">
+                <div class="density-row w-full"></div>
+                <div class="density-row w-1\/2"></div>
+              </div>
+            </div>
+          </div>
+          <div style="margin-top:10px;font-size:11px;color:rgba(255,255,255,0.35);line-height:1.5">
+            Backgrounds breathe through all surfaces. Best for media-heavy screens.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tinted -->
+  <div class="preview-wrapper" data-theme="dark" data-glass="tinted">
+    <div style="font-size:10px;font-weight:600;letter-spacing:0.10em;text-transform:uppercase;color:rgba(255,255,255,0.25);margin-bottom:16px;text-align:center">Tinted</div>
+    <div style="background:linear-gradient(135deg,rgba(100,105,130,0.08) 0%,rgba(80,90,120,0.12) 100%);border-radius:20px;padding:16px;border:1px solid rgba(100,110,140,0.10)">
+      <div class="panel" data-theme="dark" style="--g2:rgba(100,105,130,0.18);--g-border:rgba(120,125,155,0.14);--g-spec:rgba(255,255,255,0.20)">
+        <div class="section-group">
+          <div class="section-title" style="margin-bottom:14px">Subtle brand tint</div>
+          <div class="density-demo">
+            <div class="density-card" style="--g1:rgba(90,95,120,0.12);--g-border:rgba(120,125,155,0.12)">
+              <div class="density-label">Panel</div>
+              <div class="density-rows">
+                <div class="density-row w-full"></div>
+                <div class="density-row w-3\/4"></div>
+              </div>
+            </div>
+            <div class="density-card" style="--g1:rgba(90,95,120,0.12);--g-border:rgba(120,125,155,0.12)">
+              <div class="density-label">Card</div>
+              <div class="density-rows">
+                <div class="density-row w-full"></div>
+                <div class="density-row w-1\/2"></div>
+              </div>
+            </div>
+          </div>
+          <div style="margin-top:10px;font-size:11px;color:rgba(255,255,255,0.35);line-height:1.5">
+            Warm chromatic tint across all glass surfaces. Adds depth and character.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Adaptive -->
+  <div class="preview-wrapper" data-theme="dark" data-glass="adaptive">
+    <div style="font-size:10px;font-weight:600;letter-spacing:0.10em;text-transform:uppercase;color:rgba(255,255,255,0.25);margin-bottom:16px;text-align:center">Adaptive ✦</div>
+    <div style="background:linear-gradient(135deg,rgba(255,255,255,0.03) 0%,rgba(255,255,255,0.07) 100%);border-radius:20px;padding:16px;border:1px solid rgba(255,255,255,0.06)">
+      <div class="panel" data-theme="dark">
+        <div class="section-group">
+          <div class="section-title" style="margin-bottom:14px">Context-aware opacity</div>
+          <div class="density-demo">
+            <div class="density-card">
+              <div class="density-label">Content</div>
+              <div class="density-rows">
+                <div class="density-row w-full"></div>
+                <div class="density-row w-3\/4"></div>
+              </div>
+              <div class="density-badge low">Low density</div>
+            </div>
+            <div class="density-card data-heavy">
+              <div class="density-label">Data table</div>
+              <div class="density-rows">
+                <div class="density-row w-full"></div>
+                <div class="density-row w-full"></div>
+                <div class="density-row w-3\/4"></div>
+                <div class="density-row w-1\/2"></div>
+              </div>
+              <div class="density-badge high">High density</div>
+            </div>
+          </div>
+          <div style="margin-top:10px;font-size:11px;color:rgba(255,255,255,0.35);line-height:1.5">
+            Increases opacity on data-heavy screens. Preserves glass language while maximizing legibility.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<hr class="divider-full">
+
+<!-- ── SECTION 4: Widgets & Live Activities ── -->
+<div class="section-label">Widget &amp; Live Activity Integration</div>
+<div class="grid">
+
+  <div class="preview-wrapper" data-theme="dark">
+    <div style="font-size:10px;font-weight:600;letter-spacing:0.10em;text-transform:uppercase;color:rgba(255,255,255,0.25);margin-bottom:16px">Widgets — Dark Theme</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px" data-theme="dark">
+      <div class="widget-sm"><div class="widget-title">Revenue</div><div class="widget-value">€84.2K</div><div class="widget-sub">↑ 12% today</div></div>
+      <div class="widget-sm"><div class="widget-title">Active</div><div class="widget-value">247</div><div class="widget-sub">employees</div></div>
+      <div class="widget-sm"><div class="widget-title">Orders</div><div class="widget-value">38</div><div class="widget-sub">pending</div></div>
+      <div class="widget-sm"><div class="widget-title">Projects</div><div class="widget-value">12</div><div class="widget-sub">in progress</div></div>
+    </div>
+    <div data-theme="dark">
+      <div style="font-size:10px;font-weight:600;letter-spacing:0.10em;text-transform:uppercase;color:rgba(255,255,255,0.25);margin-bottom:8px">Live Activity</div>
+      <div class="live-activity">
+        <div class="la-left">
+          <div class="la-icon">🏗️</div>
+          <div class="la-info">
+            <div class="la-title">Project Alpha</div>
+            <div class="la-sub">3 workers active · Floor 2</div>
+          </div>
+        </div>
+        <div class="la-right">68%</div>
+      </div>
+      <div class="live-activity">
+        <div class="la-left">
+          <div class="la-icon">💰</div>
+          <div class="la-info">
+            <div class="la-title">Shop Revenue</div>
+            <div class="la-sub">Live · Store #3</div>
+          </div>
+        </div>
+        <div class="la-right">€12.4K</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="preview-wrapper light-bg">
+    <div style="font-size:10px;font-weight:600;letter-spacing:0.10em;text-transform:uppercase;color:rgba(0,0,0,0.25);margin-bottom:16px">Widgets — Light Theme</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px" data-theme="light">
+      <div class="widget-sm"><div class="widget-title">Revenue</div><div class="widget-value">€84.2K</div><div class="widget-sub">↑ 12% today</div></div>
+      <div class="widget-sm"><div class="widget-title">Active</div><div class="widget-value">247</div><div class="widget-sub">employees</div></div>
+      <div class="widget-sm"><div class="widget-title">Orders</div><div class="widget-value">38</div><div class="widget-sub">pending</div></div>
+      <div class="widget-sm"><div class="widget-title">Projects</div><div class="widget-value">12</div><div class="widget-sub">in progress</div></div>
+    </div>
+    <div data-theme="light">
+      <div style="font-size:10px;font-weight:600;letter-spacing:0.10em;text-transform:uppercase;color:rgba(0,0,0,0.25);margin-bottom:8px">Live Activity</div>
+      <div class="live-activity" style="background:rgba(255,255,255,0.75);border-color:rgba(0,0,0,0.08)">
+        <div class="la-left">
+          <div class="la-icon">🏗️</div>
+          <div class="la-info">
+            <div class="la-title" style="color:rgba(0,0,0,0.85)">Project Alpha</div>
+            <div class="la-sub" style="color:rgba(0,0,0,0.40)">3 workers active · Floor 2</div>
+          </div>
+        </div>
+        <div class="la-right" style="color:rgba(0,0,0,0.85)">68%</div>
+      </div>
+      <div class="live-activity" style="background:rgba(255,255,255,0.75);border-color:rgba(0,0,0,0.08)">
+        <div class="la-left">
+          <div class="la-icon">💰</div>
+          <div class="la-info">
+            <div class="la-title" style="color:rgba(0,0,0,0.85)">Shop Revenue</div>
+            <div class="la-sub" style="color:rgba(0,0,0,0.40)">Live · Store #3</div>
+          </div>
+        </div>
+        <div class="la-right" style="color:rgba(0,0,0,0.85)">€12.4K</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<hr class="divider-full">
+
+<!-- ── SECTION 5: Architecture Table ── -->
+<div class="section-label">Architecture Overview</div>
+<div class="spec-box">
+  <div class="spec-header">Implementation Plan</div>
+  <table class="compare-table" style="padding:0">
+    <thead>
+      <tr>
+        <th style="padding-left:24px">Layer</th>
+        <th>File</th>
+        <th>What it does</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="padding-left:24px"><span class="td-name">DB Schema</span></td>
+        <td><code style="font-size:11px;color:rgba(255,212,90,0.9)">packages/db/schema/user-preferences.ts</code></td>
+        <td>New <code>user_preferences</code> table — typed columns, per-user unique constraint, cascade delete</td>
+      </tr>
+      <tr>
+        <td style="padding-left:24px"><span class="td-name">Theme Types</span></td>
+        <td><code style="font-size:11px;color:rgba(255,212,90,0.9)">packages/ui/src/themes/index.ts</code></td>
+        <td>TypeScript types: <code>Theme</code>, <code>GlassStyle</code>, <code>AppearancePrefs</code>, CSS variable maps</td>
+      </tr>
+      <tr>
+        <td style="padding-left:24px"><span class="td-name">React Provider</span></td>
+        <td><code style="font-size:11px;color:rgba(255,212,90,0.9)">packages/ui/src/providers/appearance.tsx</code></td>
+        <td>Context + <code>useAppearance()</code> hook. Applies <code>data-theme</code> / <code>data-glass</code> to <code>&lt;html&gt;</code>. SSR-safe. localStorage + server sync.</td>
+      </tr>
+      <tr>
+        <td style="padding-left:24px"><span class="td-name">Settings UI</span></td>
+        <td><code style="font-size:11px;color:rgba(255,212,90,0.9)">packages/ui/src/components/appearance-settings.tsx</code></td>
+        <td>Settings panel component. Theme picker + Glass style picker + Sync toggle. Full Liquid Glass.</td>
+      </tr>
+      <tr>
+        <td style="padding-left:24px"><span class="td-name">API Route</span></td>
+        <td><code style="font-size:11px;color:rgba(255,212,90,0.9)">apps/web/src/app/api/preferences/route.ts</code></td>
+        <td>GET + PATCH. Reads/writes <code>user_preferences</code>. Gate-chained. Audit-logged.</td>
+      </tr>
+      <tr>
+        <td style="padding-left:24px"><span class="td-name">CSS Variables</span></td>
+        <td><code style="font-size:11px;color:rgba(255,212,90,0.9)">apps/web/src/app/globals.css</code></td>
+        <td>Full <code>[data-theme]</code> + <code>[data-glass]</code> CSS variable system. Dark/Light/System × Translucid/Tinted/Adaptive.</td>
+      </tr>
+      <tr>
+        <td style="padding-left:24px"><span class="td-name">Root Layout</span></td>
+        <td><code style="font-size:11px;color:rgba(255,212,90,0.9)">apps/web/src/app/layout.tsx</code></td>
+        <td>Wraps with <code>AppearanceProvider</code>. Injects SSR-fetched prefs to avoid flash-of-wrong-theme.</td>
+      </tr>
+      <tr>
+        <td style="padding-left:24px"><span class="td-name">Migration</span></td>
+        <td><code style="font-size:11px;color:rgba(255,212,90,0.9)">packages/db/migrations/</code></td>
+        <td>Auto-generated via <code>pnpm db:generate</code> after schema addition.</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ── SECTION 6: DB Schema ── -->
+<div class="section-label">Database Schema</div>
+<div class="spec-box">
+  <div class="spec-header">packages/db/src/schema/user-preferences.ts</div>
+  <pre><span class="kw">export const</span> themeEnum = <span class="kw">pgEnum</span>(<span class="str">"theme"</span>, [<span class="str">"light"</span>, <span class="str">"dark"</span>, <span class="str">"system"</span>])
+<span class="kw">export const</span> glassStyleEnum = <span class="kw">pgEnum</span>(<span class="str">"glass_style"</span>, [<span class="str">"translucid"</span>, <span class="str">"tinted"</span>, <span class="str">"adaptive"</span>])
+
+<span class="kw">export const</span> userPreferences = <span class="kw">pgTable</span>(<span class="str">"user_preferences"</span>, {
+  id:         uuid(<span class="str">"id"</span>).primaryKey().defaultRandom(),
+  userId:     uuid(<span class="str">"user_id"</span>).notNull().unique().references(() => users.id, { onDelete: <span class="str">"cascade"</span> }),
+  theme:      themeEnum(<span class="str">"theme"</span>).notNull().default(<span class="str">"system"</span>),
+  glassStyle: glassStyleEnum(<span class="str">"glass_style"</span>).notNull().default(<span class="str">"adaptive"</span>),
+  syncEnabled: boolean(<span class="str">"sync_enabled"</span>).notNull().default(<span class="kw">true</span>),
+  updatedAt:  timestamp(<span class="str">"updated_at"</span>, { withTimezone: <span class="kw">true</span> }).notNull().defaultNow(),
+  syncedAt:   timestamp(<span class="str">"synced_at"</span>, { withTimezone: <span class="kw">true</span> }),
+})</pre>
+</div>
+
+<script>
+  // Live theme switcher for preview page controls
+  function setTheme(theme) {
+    document.querySelectorAll('.preview-wrapper').forEach(el => {
+      if (theme !== 'light') el.classList.remove('light-bg');
+    });
+
+    // Update control buttons
+    ['dark','light','system'].forEach(t => {
+      document.getElementById('btn-' + t).classList.toggle('active', t === theme);
+    });
+
+    if (theme === 'light') {
+      document.querySelectorAll('.preview-wrapper').forEach(el => el.classList.add('light-bg'));
+      document.querySelectorAll('[data-theme]').forEach(el => el.setAttribute('data-theme', 'light'));
+    } else if (theme === 'dark') {
+      document.querySelectorAll('[data-theme]').forEach(el => el.setAttribute('data-theme', 'dark'));
+    } else {
+      const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      document.querySelectorAll('[data-theme]').forEach(el => el.setAttribute('data-theme', isDark ? 'dark' : 'light'));
+    }
+  }
+
+  function setGlass(style) {
+    ['adaptive','translucid','tinted'].forEach(s => {
+      document.getElementById('btn-' + s).classList.toggle('active', s === style);
+    });
+    document.querySelectorAll('[data-glass]').forEach(el => el.setAttribute('data-glass', style));
+  }
+
+  // Panel-local selection
+  function selectTheme(el, panel) {
+    el.closest('.theme-row').querySelectorAll('.theme-option').forEach(o => o.classList.remove('active'));
+    el.classList.add('active');
+  }
+
+  function selectGlass(el, panel) {
+    el.closest('.glass-row').querySelectorAll('.glass-option').forEach(o => o.classList.remove('active'));
+    el.classList.add('active');
+  }
+</script>
+</body>
+</html>
