@@ -3,12 +3,12 @@ import { getSessionTTL, SessionTTL, CacheTTL, cacheKey } from "../client"
 import type { SecurityLevel } from "../client"
 
 describe("getSessionTTL", () => {
-  it("returns 1 hour for L5 (CEO-level)", () => {
-    expect(getSessionTTL("L5")).toBe(3_600)
+  it("returns 15 minutes for L5 (CEO-level)", () => {
+    expect(getSessionTTL("L5")).toBe(900)
   })
 
-  it("returns 2 hours for L4 (Director-level)", () => {
-    expect(getSessionTTL("L4")).toBe(7_200)
+  it("returns 30 minutes for L4 (Director-level)", () => {
+    expect(getSessionTTL("L4")).toBe(1_800)
   })
 
   it("returns 4 hours for L3 (Manager-level)", () => {

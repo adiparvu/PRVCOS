@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { Suspense, useState, useTransition } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { createSupabaseBrowserClient } from "@/lib/supabase/client"
 
@@ -32,7 +32,7 @@ const EyeIcon = ({ open }: { open: boolean }) =>
     </svg>
   )
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const next = searchParams.get("next") ?? "/dashboard"
@@ -316,5 +316,13 @@ export default function LoginPage() {
         <p className="text-center text-white/20 text-[12px] mt-8">PRV — Company Operating System</p>
       </div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-black" />}>
+      <LoginForm />
+    </Suspense>
   )
 }

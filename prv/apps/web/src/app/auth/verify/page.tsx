@@ -1,10 +1,10 @@
 "use client"
 
-import { useState, useTransition, useRef, useEffect } from "react"
+import { Suspense, useState, useTransition, useRef, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { createSupabaseBrowserClient } from "@/lib/supabase/client"
 
-export default function VerifyMfaPage() {
+function VerifyMfaForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const next = searchParams.get("next") ?? "/dashboard"
@@ -196,5 +196,13 @@ export default function VerifyMfaPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function VerifyMfaPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-black" />}>
+      <VerifyMfaForm />
+    </Suspense>
   )
 }

@@ -7,6 +7,7 @@ import {
   boolean,
   jsonb,
   pgEnum,
+  foreignKey,
 } from "drizzle-orm/pg-core"
 import { relations } from "drizzle-orm"
 
@@ -25,45 +26,52 @@ export const companyStatusEnum = pgEnum("company_status", [
   "churned",
 ])
 
-export const companies = pgTable("companies", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  groupId: uuid("group_id"), // nullable — null means root group company
+export const companies = pgTable(
+  "companies",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    groupId: uuid("group_id"), // nullable — null means root group company
 
-  name: varchar("name", { length: 255 }).notNull(),
-  slug: varchar("slug", { length: 100 }).notNull().unique(),
-  type: companyTypeEnum("type").notNull().default("other"),
-  status: companyStatusEnum("status").notNull().default("onboarding"),
+    name: varchar("name", { length: 255 }).notNull(),
+    slug: varchar("slug", { length: 100 }).notNull().unique(),
+    type: companyTypeEnum("type").notNull().default("other"),
+    status: companyStatusEnum("status").notNull().default("onboarding"),
 
-  // Branding
-  logoUrl: text("logo_url"),
-  coverUrl: text("cover_url"),
-  primaryColor: varchar("primary_color", { length: 7 }),
+    // Branding
+    logoUrl: text("logo_url"),
+    coverUrl: text("cover_url"),
+    primaryColor: varchar("primary_color", { length: 7 }),
 
-  // Contact
-  email: varchar("email", { length: 254 }),
-  phone: varchar("phone", { length: 32 }),
-  website: text("website"),
+    // Contact
+    email: varchar("email", { length: 254 }),
+    phone: varchar("phone", { length: 32 }),
+    website: text("website"),
 
-  // Address
-  country: varchar("country", { length: 2 }).notNull().default("RO"),
-  region: varchar("region", { length: 100 }),
-  city: varchar("city", { length: 100 }),
-  address: text("address"),
-  postalCode: varchar("postal_code", { length: 20 }),
+    // Address
+    country: varchar("country", { length: 2 }).notNull().default("RO"),
+    region: varchar("region", { length: 100 }),
+    city: varchar("city", { length: 100 }),
+    address: text("address"),
+    postalCode: varchar("postal_code", { length: 20 }),
 
-  // Legal
-  vatNumber: varchar("vat_number", { length: 50 }),
-  registrationNumber: varchar("registration_number", { length: 50 }),
+    // Legal
+    vatNumber: varchar("vat_number", { length: 50 }),
+    registrationNumber: varchar("registration_number", { length: 50 }),
 
-  // Config (locale, timezone, currency, feature flags)
-  settings: jsonb("settings").notNull().default({}),
+    // Config (locale, timezone, currency, feature flags)
+    settings: jsonb("settings").notNull().default({}),
 
-  // Audit
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-  deletedAt: timestamp("deleted_at", { withTimezone: true }),
-  isActive: boolean("is_active").notNull().default(true),
-})
+    // Audit
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    isActive: boolean("is_active").notNull().default(true),
+  },
+  (table) => [
+    // Self-referential group hierarchy — null means root group company (P-17)
+    foreignKey({ columns: [table.groupId], foreignColumns: [table.id] }).onDelete("set null"),
+  ]
+)
 
 export const stores = pgTable("stores", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -87,22 +95,29 @@ export const stores = pgTable("stores", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 })
 
-export const departments = pgTable("departments", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  companyId: uuid("company_id")
-    .notNull()
-    .references(() => companies.id, { onDelete: "cascade" }),
+export const departments = pgTable(
+  "departments",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id, { onDelete: "cascade" }),
 
-  name: varchar("name", { length: 255 }).notNull(),
-  code: varchar("code", { length: 50 }).notNull(),
-  parentId: uuid("parent_id"), // self-referential for sub-departments
+    name: varchar("name", { length: 255 }).notNull(),
+    code: varchar("code", { length: 50 }).notNull(),
+    parentId: uuid("parent_id"), // self-referential for sub-departments
 
-  headUserId: uuid("head_user_id"), // FK added after users table
-  isActive: boolean("is_active").notNull().default(true),
+    headUserId: uuid("head_user_id"), // FK added after users table
+    isActive: boolean("is_active").notNull().default(true),
 
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-})
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    // Self-referential for sub-departments (P-16)
+    foreignKey({ columns: [table.parentId], foreignColumns: [table.id] }).onDelete("set null"),
+  ]
+)
 
 export const teams = pgTable("teams", {
   id: uuid("id").primaryKey().defaultRandom(),
