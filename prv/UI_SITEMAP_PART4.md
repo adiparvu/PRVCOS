@@ -1037,6 +1037,66 @@ All deeplink routes used in notifications and Dynamic Island actions.
 
 ---
 
+## UNIVERSAL ENTITY PREVIEW ENGINE — SITEMAP SUPPLEMENT
+
+### Preview Sheet Deeplinks
+
+All Quick Preview Sheets are accessible via deeplink. They open as a Bottom Sheet over the current screen, not as full-screen navigation.
+
+| Deeplink Pattern | Preview Sheet | Required Permission |
+|-----------------|---------------|-------------------|
+| `/preview/employee/:id` | Employee Quick Preview | `employees.read` + scope |
+| `/preview/client/:id` | Client Quick Preview | `clients.read` + scope |
+| `/preview/supplier/:id` | Supplier Quick Preview | `suppliers.read` + scope |
+| `/preview/project/:id` | Project Quick Preview | `projects.read` + scope |
+| `/preview/product/:id` | Product Quick Preview | `products.read` + scope |
+| `/preview/order/:id` | Order Quick Preview | `orders.read` + scope |
+| `/preview/invoice/:id` | Invoice Quick Preview | `invoices.read` + scope |
+| `/preview/document/:id` | Document Quick Preview | `documents.read` + scope |
+| `/preview/vehicle/:id` | Vehicle Quick Preview | `fleet.read` + scope |
+| `/preview/tool/:id` | Tool Quick Preview | `tools.read` + scope |
+| `/preview/team/:id` | Team Quick Preview | `teams.read` + scope |
+| `/preview/company/:id` | Company Quick Preview | `companies.read` + scope |
+
+### Digital Business Card Public Routes
+
+| Route | Description | Auth Required |
+|-------|-------------|---------------|
+| `/card/:userId` | Public digital business card | No (consent-filtered) |
+| `/card/:userId/vcf` | Download vCard file | No |
+| `/card/:userId/qr` | QR code image (PNG) | No |
+
+### Social Profile Routes (Authenticated)
+
+| Route | Description |
+|-------|-------------|
+| `/settings/profile/social` | Employee manages own social links |
+| `/people/employees/:id/social` | Manager views employee social (permission gated) |
+| `/crm/clients/:id/social` | Manager views client social (permission gated) |
+| `/procurement/suppliers/:id/social` | Manager views supplier social (permission gated) |
+
+### Presence Routes
+
+Presence is not a navigable screen — it is an ambient indicator within all person entity views. No standalone route.
+
+### Preview Engine Navigation Behavior
+
+```
+Any screen in the app:
+  Entity reference tapped → /preview/:type/:id opens as Modal Bottom Sheet
+  User taps "Open Full [Entity] →" → pushes /[module]/[entity]/:id
+  User taps outside sheet → sheet dismisses, stays on current screen
+  User long-presses → Context Menu + Peek (no route change)
+  User double-taps → Favorite toggle (no route change)
+
+Key rule: /preview/* routes NEVER replace the navigation stack.
+They always present modally over the current screen.
+```
+
+---
+
 *End of UI_SITEMAP_PART4.md — Complete UI Sitemap (All 20 Roles)*
 
 *Parts 1–4 together define the complete screen inventory, navigation patterns, widget catalog, notification matrix, and deeplink system for all 20 PRV roles.*
+
+*Universal Entity Preview Engine supplement added — covers all 12 entity types, social profile routes, digital business card public routes, and presence architecture.*

@@ -2737,6 +2737,132 @@ Any step failure → immediate rejection + audit entry with DENIED status.
 
 ---
 
+## 15. SOCIAL PROFILES PERMISSION ARCHITECTURE
+
+### 15.1 Social Profile Permissions
+
+Social profile data is treated as personal data under GDPR. Access is layered: visibility, editing, and export are separate permission nodes.
+
+| Permission | Description |
+|-----------|-------------|
+| `social_profiles.view` | View social links on any person entity the role can already read |
+| `social_profiles.edit_own` | Employee edits their own social links (LinkedIn, personal IG, X) |
+| `social_profiles.edit_others` | Manager edits company-owned links (WhatsApp Business, Website) |
+| `social_profiles.delete_own` | Employee removes their own social links |
+| `social_profiles.delete_others` | Manager removes social links from managed entities |
+| `data_export.gdpr` | Export profile data including social links (GDPR request handler) |
+
+### 15.2 Social Profile Visibility Matrix
+
+| Viewing Role | Own Profile | Same-Company Employee | Client | Supplier |
+|---|---|---|---|---|
+| Worker | ✓ Full | ✓ view only | ✗ Hidden | ✗ Hidden |
+| Team Leader | ✓ Full | ✓ view (team scope) | ✗ Hidden | ✗ Hidden |
+| OMS | ✓ Full | ✓ view (dept scope) | ✗ Hidden | ✗ Hidden |
+| Operations Manager | ✓ Full | ✓ view (company) | ✓ view | ✓ view |
+| HR/Payroll | ✓ Full | ✓ view + edit_others | ✓ view | ✗ Hidden |
+| CEO | ✓ Full | ✓ Full | ✓ Full | ✓ Full |
+| Project Director | ✓ Full | ✓ view (project scope) | ✓ view | ✓ view |
+| Store Manager | ✓ Full | ✓ view (store scope) | ✓ view | ✗ Hidden |
+| Shop Director | ✓ Full | ✓ view (all stores) | ✓ view | ✓ view |
+| Seller | ✓ Full | ✓ view (store scope) | ✗ Hidden | ✗ Hidden |
+
+**Rules:**
+- No role can see social profiles without `social_profiles.view` AND read access to the entity
+- Personal social links (LinkedIn, X, Instagram) are employee-owned: only `social_profiles.edit_own` allows changes
+- Company-owned links (WhatsApp Business, Website) require `social_profiles.edit_others`
+- GDPR consent flag governs whether a link is displayed; icon is hidden if consent is false/missing
+
+### 15.3 GDPR Consent Model for Social Profiles
+
+```
+SocialProfileField {
+  network:      "linkedin" | "facebook" | "instagram" | "x" | "tiktok" | "website" | "whatsapp_business"
+  url:          string
+  ownerType:    "employee_personal" | "company_managed"
+  consentGiven: boolean        — employee explicitly opted in
+  consentDate:  timestamp
+  addedBy:      userId
+  addedAt:      timestamp
+  visibleTo:    scope level    — defaults to SCOPE_COMPANY
+}
+```
+
+- Fields with `consentGiven: false` are stored but never rendered in UI
+- Employee can withdraw consent at any time (sets `consentGiven: false`)
+- Withdrawal does not delete the data — data is retained per GDPR retention policy, just hidden
+- Data export via GDPR request includes all social profile fields regardless of consent state
+
+---
+
+## 16. PRESENCE SYSTEM PERMISSION ARCHITECTURE
+
+### 16.1 Presence Visibility Rules
+
+| Permission | Description |
+|-----------|-------------|
+| `presence.view_team` | View presence of team members |
+| `presence.view_company` | View presence of all company employees |
+| `presence.view_own` | Employee sees their own presence (always granted) |
+| `presence.set_manual` | Employee manually overrides their presence status |
+| `presence.override_others` | Manager sets presence for subordinates (e.g. on-site check-in) |
+
+### 16.2 Presence Visibility by Role
+
+| Role | Visibility Scope |
+|------|-----------------|
+| Worker | Own + same-team members |
+| Team Leader | Own team |
+| OMS | Own department |
+| Operations Manager | All company employees |
+| HR/Payroll | All company employees |
+| CEO | All company employees |
+| Project Director | Project team members |
+| Store Manager | Store staff |
+| Shop Director | All store staff |
+| Seller | Own store colleagues |
+
+### 16.3 Presence Data Rules
+
+- Presence is derived automatically from: active session, attendance check-in, calendar block
+- Employee can override via manual status (e.g. set "Busy" when working without a meeting block)
+- Manual override expires: after current calendar block ends, or after 4 hours (whichever first)
+- Presence is NOT stored in audit log (ephemeral data, real-time channel only)
+- Offline status set automatically after 5 minutes of no active session heartbeat
+
+---
+
+## 17. DIGITAL BUSINESS CARD PERMISSION ARCHITECTURE
+
+| Permission | Description |
+|-----------|-------------|
+| `business_card.view_own` | View and share own digital business card |
+| `business_card.view_others` | View other employees' digital business cards |
+| `business_card.share` | Share card via Share Sheet / AirDrop / Link |
+| `business_card.public_link` | Generate public /card/:userId URL |
+| `business_card.manage` | Admin manages card templates and company branding |
+
+### 17.1 Eligible Roles for Digital Business Cards
+
+Business cards are available for all employees by default. Content adapts to role:
+
+| Role Tier | Card Content |
+|-----------|-------------|
+| Executive (CEO, Co-CEO, Directors) | Name · Title · Direct line · Email · LinkedIn · Company · QR |
+| Manager (Ops Manager, HR, Store Manager) | Name · Title · Dept · Email · Phone · LinkedIn · QR |
+| Specialist (Data Analyst, App Support) | Name · Title · Email · LinkedIn · QR |
+| Frontline (Worker, Seller, Team Leader) | Name · Title · Company email · QR (no personal social by default) |
+
+### 17.2 Public Card Link Rules
+
+- `/card/:userId` URL is generated only if `business_card.public_link` permission held
+- URL valid for 30 days (renewable)
+- URL renders a public-facing page with only consent-given fields
+- Accessing `/card/:userId` does NOT require PRV login
+- Link can be revoked instantly by employee or manager
+
+---
+
 *End of PRV Complete Role Architecture v1.0*
 *This document is the authoritative source of truth for all role-related implementation decisions.*
 *No role, permission, or scope may be implemented differently without updating this document first.*

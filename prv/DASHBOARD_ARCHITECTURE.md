@@ -2194,6 +2194,82 @@ Additional dashboard-specific security:
 
 ---
 
+## 15. ENTITY PREVIEW INTEGRATION IN DASHBOARDS
+
+### 15.1 Principle
+
+Every entity reference appearing in any dashboard — KPI card, widget, list row, activity feed item, analytics table — must be tappable via the Universal Entity Preview Engine (NAVIGATION_ARCHITECTURE §16). Dashboards never navigate directly to full entity screens on first tap.
+
+```
+Dashboard interaction flow:
+  Tap entity reference → Quick Preview Sheet (Medium Bottom Sheet)
+  → User reviews context, takes quick action, or taps "Open Full →"
+  → Full entity screen opens (push navigation)
+
+  Long press entity reference → Context Menu + Peek Preview
+  → Role-filtered actions appear instantly
+```
+
+### 15.2 Dashboard Surfaces with Entity Preview
+
+| Dashboard Surface | Entity Types Previewed |
+|-------------------|------------------------|
+| My Day — Today's Tasks | Employee (assignee), Project |
+| Command Center — Staff Roster | Employee |
+| Command Center — Project Pipeline | Project, Client |
+| KPI Drill-down rows | Project, Employee, Store, Team |
+| Activity Feed items | Employee, Project, Order, Document |
+| Approval Queue items | Employee (requester), Document |
+| Alert Panel items | Employee, Vehicle, Tool, Project |
+| Analytics Tables | All 12 entity types |
+| Widgets (entity-linked) | Employee, Project, Client, Product, Order |
+
+### 15.3 Widget Preview Behavior
+
+Widgets that reference a specific entity support preview on tap:
+
+```
+Home Screen Widget tap:
+  → Opens PRV app
+  → Immediately presents Quick Preview Sheet for the entity
+  → Background: dashboard (no jarring full-screen entity page)
+
+Dashboard Widget tap (in-app):
+  → Quick Preview Sheet slides up in-app
+  → No app switch, no navigation stack change
+```
+
+### 15.4 Person Entity Cards on Dashboards
+
+Employees, Clients, and Suppliers displayed in dashboard lists/grids must render as Apple Contact-style cards:
+
+```
+Person card (dashboard list row):
+  [Avatar 40pt] [Presence dot]
+  Full Name (17pt, weight 600)
+  Role / Company (15pt, white 65%)
+  [Status pill] [Social icons: max 3]
+  Tap → Quick Preview Sheet
+  Long Press → Context Menu
+```
+
+Rules:
+- Avatar always shown (fallback: initials in glass circle)
+- Presence dot always visible for employees (§16.8)
+- Social icons shown only if `social_profiles.view` permission held
+- Card background: Glass 1
+
+### 15.5 Presence System in Dashboards
+
+The Staff Roster widget, HR Command Center, and People module dashboards must display live presence for all visible employees:
+
+- Presence refreshes via Supabase Realtime (presence channel, company-scoped)
+- Dashboard subscribes on mount, unsubscribes on unmount
+- Presence dots update without re-rendering the full list
+- Aggregate presence stats shown in HR Command Center header: "X available · Y in meeting · Z on site"
+
+---
+
 *PRV Dashboard Architecture · Pasul 6 · Source of Truth*  
 *Do not modify without approval from Lead Architect.*  
 *All 18 platforms · All 18 roles · Zero Trust · Liquid Glass*

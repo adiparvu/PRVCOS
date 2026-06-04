@@ -1452,16 +1452,16 @@ Tapping an event → Quick Preview Bottom Sheet:
 
 ### 15.1 Overview
 
-Peek Preview allows users to see a full-detail preview of an item without navigating away from the current screen.
+Peek Preview allows users to see a full-detail preview of an item without navigating away from the current screen. All peek functionality is now powered by the Universal Entity Preview Engine (§16).
 
 **Trigger:** long-press (mobile) or hover + ⌥ (web/macOS)
 
 ### 15.2 Peek Preview Spec
 
-- Appears as a Small or Medium Bottom Sheet
-- Shows: item summary, key metrics, top actions
+- Appears behind the Context Menu on long-press (85% scale, Glass 3)
+- Content rendered by Universal Entity Preview Engine (§16.4–16.5)
 - Navigation: items inside peek are not navigable (read-only preview)
-- "Open" button in footer for full navigation
+- "Open Full Profile" footer CTA navigates to full entity screen
 
 ### 15.3 Peek Preview Content Per Item Type
 
@@ -1490,6 +1490,504 @@ Status: ●Online  Staff: 7/10
 Revenue today: ₺94,200 (Target: ₺90,000 ✓)
 Alerts: ⚠ 2 low stock items
 [View Store]
+```
+
+---
+
+## 16. UNIVERSAL ENTITY PREVIEW ENGINE
+
+### 16.1 Overview
+
+The Universal Entity Preview Engine is a single, reusable preview system shared across all PRV entities. Every future module automatically inherits preview capabilities with zero additional implementation. There is exactly one preview implementation in the entire PRV ecosystem.
+
+**Principle:** Tap → Preview Sheet. Navigate → Full Screen. No exceptions.
+
+### 16.2 Supported Entities
+
+| Entity | Preview Trigger | Full Screen Route |
+|--------|----------------|-------------------|
+| Employee | Tap avatar / row | `/people/employees/:id` |
+| Client | Tap name / row | `/crm/clients/:id` |
+| Supplier | Tap name / row | `/procurement/suppliers/:id` |
+| Project | Tap card | `/projects/:id` |
+| Product | Tap card / row | `/shop/products/:id` |
+| Order | Tap row | `/shop/orders/:id` |
+| Invoice | Tap row | `/finance/invoices/:id` |
+| Document | Tap row | `/documents/:id` |
+| Vehicle | Tap card / row | `/fleet/vehicles/:id` |
+| Tool | Tap card / row | `/tools/:id` |
+| Team | Tap chip / card | `/people/teams/:id` |
+| Company | Tap card | `/companies/:id` |
+
+### 16.3 Interaction Model — Four Gestures
+
+Every entity responds to the same four gestures uniformly:
+
+```
+TAP
+  → Opens Quick Preview Sheet (Medium Bottom Sheet)
+  → Content: summary card + key metrics + top actions
+  → Does NOT navigate away from current screen
+
+LONG PRESS (Haptic Touch)
+  → Opens Context Menu (glass, role-filtered)
+  → Simultaneously shows Peek Preview behind menu
+  → Dismiss menu → Peek Preview fades out
+
+DOUBLE TAP
+  → Toggle Favorite / Pin for entity
+  → Haptic: selection feedback
+  → Shows micro toast: "Added to Favorites" / "Removed"
+
+SWIPE LEFT (list rows only)
+  → Reveals Quick Action strip (1–3 destructive/secondary actions)
+  → Red-zone swipe → confirm destructive action
+```
+
+### 16.4 Quick Preview Sheet Spec
+
+Presented as a Medium Bottom Sheet (60% height, expandable to Large).
+
+```
+┌──────────────────────────────────────┐
+│  ▬▬▬  (grabber)                      │
+│                                      │
+│  [ENTITY HEADER]                     │
+│  Avatar/Thumbnail · Name · Badge     │
+│  Subtitle line · Status pill         │
+│                                      │
+│  ┌──────────────────────────────┐    │
+│  │  KEY METRICS (3–4 chips)     │    │
+│  └──────────────────────────────┘    │
+│                                      │
+│  [SECTION: Primary Info]             │
+│  Role-appropriate fields             │
+│                                      │
+│  [SECTION: Quick Stats]              │
+│  Glass stat cards (2-column)         │
+│                                      │
+│  [ACTION STRIP]                      │
+│  Pill buttons — max 4 actions        │
+│                                      │
+│  [Open Full Profile →]               │
+│                                      │
+└──────────────────────────────────────┘
+```
+
+**Visual spec:**
+- Material: Glass 3 (rgba(255,255,255,0.16) + blur 64pt)
+- Top specular: rgba(255,255,255,0.30) gradient line
+- Corner radius: 32pt top
+- Header avatar: 56pt circle, glass border
+- Status pill: Glass badge, white text, B&W
+- Action buttons: Glass pill, 36pt height, white 95% label
+- Footer "Open Full Profile": Glass 1 row, arrow.up.right SF Symbol
+
+### 16.5 Entity-Specific Preview Content
+
+**Employee Preview Sheet:**
+```
+Header:    [Avatar 56pt] · Full Name · Role Badge
+Subtitle:  Department · Team
+Status:    Presence indicator (see §16.8)
+Fields:    Phone · Email · Employee ID
+Metrics:   Attendance streak · Active projects · Open tasks · Shift status
+Social:    LinkedIn / WhatsApp / Email icons (see §16.6)
+Actions:   [Call] [Message] [Email] [View Projects]
+Footer:    [Open Full Profile →]
+```
+
+**Client Preview Sheet:**
+```
+Header:    [Avatar 56pt] · Full Name · Client Badge
+Subtitle:  Company (if B2B) · Account Manager
+Status:    Account status pill
+Fields:    Phone · Email · City
+Metrics:   Active projects · Total contract value · Open invoices · Last contact
+Social:    LinkedIn / Website / WhatsApp icons
+Actions:   [Call] [Email] [Message] [Open Invoices]
+Footer:    [Open Full Profile →]
+```
+
+**Supplier Preview Sheet:**
+```
+Header:    [Logo 56pt] · Company Name · Supplier Badge
+Subtitle:  Contact Person · Category
+Status:    Active/Inactive/Review pill
+Fields:    Phone · Email · CUI
+Metrics:   Open orders · Delivery rating · Products count · Last delivery
+Social:    LinkedIn / Website icons
+Actions:   [Call] [Email] [Orders] [Deliveries]
+Footer:    [Open Full Profile →]
+```
+
+**Project Preview Sheet:**
+```
+Header:    [Image/Icon 56pt] · Project Name · Status Badge
+Subtitle:  Client · Project Director
+Status:    On Track / At Risk / Delayed pill
+Fields:    Start date · Deadline · Budget used %
+Metrics:   Progress % · Team size · Open tasks · Days remaining
+Actions:   [Photos] [Documents] [Tasks] [Team]
+Footer:    [Open Full Project →]
+```
+
+**Product Preview Sheet:**
+```
+Header:    [Image 56pt] · Product Name · SKU Badge
+Subtitle:  Category · Supplier
+Status:    In Stock / Low Stock / Out of Stock
+Fields:    Price · Cost · Margin
+Metrics:   Stock qty · Monthly sales · Reserved qty · Reorder point
+Actions:   [Add to Order] [View Inventory] [Analytics]
+Footer:    [Open Product →]
+```
+
+**Order Preview Sheet:**
+```
+Header:    [Icon 56pt] · Order #XXXX · Status Badge
+Subtitle:  Customer · Sales person
+Status:    Pending / Confirmed / Shipped / Delivered
+Fields:    Order date · Delivery date · Total
+Metrics:   Items count · Payment status · Delivery ETA
+Actions:   [Invoice] [View Delivery] [Contact Customer]
+Footer:    [Open Order →]
+```
+
+**Invoice Preview Sheet:**
+```
+Header:    [Icon 56pt] · Invoice #XXXX · Status Badge
+Subtitle:  Client · Due date
+Status:    Draft / Sent / Paid / Overdue
+Fields:    Issue date · Due date · Total · VAT
+Metrics:   Days until due / overdue · Payment history · Series
+Actions:   [Send] [Download PDF] [Mark Paid]
+Footer:    [Open Invoice →]
+```
+
+**Document Preview Sheet:**
+```
+Header:    [File icon 56pt] · Document Name · Type Badge
+Subtitle:  Owner · Project association
+Status:    Draft / Review / Approved / Signed
+Fields:    Version · Last modified · File size
+Metrics:   Collaborators · Comments count · Signature status
+Actions:   [Open] [Share] [Download]
+Footer:    [Open Full Document →]
+```
+
+**Vehicle Preview Sheet:**
+```
+Header:    [Photo 56pt] · Make + Model · Plate Badge
+Subtitle:  Driver · Fleet category
+Status:    Available / In Use / Maintenance / Inactive
+Fields:    Year · Fuel · Mileage
+Metrics:   Next service km · Insurance expiry · Active assignments
+Actions:   [Assign] [View Log] [Maintenance]
+Footer:    [Open Vehicle →]
+```
+
+**Tool Preview Sheet:**
+```
+Header:    [Photo 56pt] · Tool Name · Category Badge
+Subtitle:  Location · Assigned to
+Status:    Available / In Use / Maintenance
+Fields:    Serial · Purchase date · Condition
+Metrics:   Current assignment · Next calibration · Usage hours
+Actions:   [Check Out] [Report Issue] [View History]
+Footer:    [Open Tool →]
+```
+
+**Team Preview Sheet:**
+```
+Header:    [Icon 56pt] · Team Name · Department Badge
+Subtitle:  Team Leader · Department
+Status:    Active / Inactive
+Fields:    Member count · Location / Store
+Metrics:   Active projects · Avg attendance · Open tasks · Team score
+Actions:   [View Members] [View Schedule] [Message Team]
+Footer:    [Open Team →]
+```
+
+**Company Preview Sheet:**
+```
+Header:    [Logo 56pt] · Company Name · Plan Badge
+Subtitle:  CEO name · Sector
+Status:    Active / Onboarding / Suspended
+Fields:    CUI · Address · Founded
+Metrics:   Employees · Stores · Active projects · Monthly revenue
+Actions:   [View Dashboard] [View Staff] [Generate Report]
+Footer:    [Open Company →]
+```
+
+### 16.6 Social Profiles Integration
+
+Social profile links are optional, permission-controlled, and GDPR-compliant.
+
+**Supported networks:**
+| Icon | Network | Opens | Required Permission |
+|------|---------|-------|-------------------|
+| linkedin.svg (SF style) | LinkedIn | Native app / browser | `social_profiles.view` |
+| facebook.svg (SF style) | Facebook | Native app / browser | `social_profiles.view` |
+| instagram.svg (SF style) | Instagram | Native app / browser | `social_profiles.view` |
+| x.svg (SF style) | X (Twitter) | Native app / browser | `social_profiles.view` |
+| tiktok.svg (SF style) | TikTok | Native app / browser | `social_profiles.view` |
+| globe (SF Symbol) | Website | In-app browser | `social_profiles.view` |
+| phone.fill (SF Symbol) | WhatsApp Business | WhatsApp deep link | `social_profiles.view` |
+
+**Display rules:**
+- Show only configured networks (empty slots never shown)
+- Max 5 icons in preview — overflow via "+N more" tap
+- Icons: 28pt, SF Symbol style monochrome, white 65%
+- Tap opens directly without confirmation dialog
+- Edit requires: `social_profiles.edit` permission
+
+**GDPR rules:**
+- Social links stored with explicit consent flag per field
+- Visibility governed by role permission `social_profiles.view`
+- Export/Download of social data requires `data_export.gdpr` permission
+- Employee-owned fields (LinkedIn, personal Instagram) are self-managed
+- Company-owned fields (WhatsApp Business, Website) managed by managers
+
+### 16.7 Peek Preview (Long Press Layer)
+
+Replaces the legacy §15.3 Peek content. All peeked entities now use the Quick Preview Sheet content, rendered at 85% scale behind the context menu.
+
+```
+Long Press gesture sequence:
+  1. Haptic: heavy impact (0ms)
+  2. Peek preview fades in (200ms, scale 0.92→1, blur 40px→0)
+  3. Context menu appears above (280ms spring)
+  4. User selects action → action fires, both dismiss
+  5. User taps outside → both dismiss (spring-out)
+  6. User taps "Open" in context menu → full navigation
+```
+
+### 16.8 Presence System
+
+Applies to: Employee, Client (online portal), and any person-type entity.
+
+| Status | Indicator | Color Token | Description |
+|--------|-----------|-------------|-------------|
+| Available | ● Filled circle | white 95% | Online, ready to respond |
+| Busy | ◐ Half-fill | white 65% | Active but occupied |
+| In Meeting | 📅 Calendar mini | white 65% | Calendar block active |
+| On Site | 📍 Location mini | white 65% | Checked in on-site |
+| Offline | ○ Empty circle | white 25% | No active session |
+
+**Display positions:**
+- Preview Sheet header: 10pt indicator dot on avatar, bottom-right
+- List row: 8pt dot trailing the name
+- Contact Card: status label below name
+
+**Data source:**
+- Derived from: last seen timestamp + active attendance record + calendar sync
+- Refresh: real-time via Supabase Realtime subscription (presence channel per company)
+- Privacy: `presence.view` permission required; employees can set manual override
+
+### 16.9 Digital Business Cards
+
+Available for: Employee, Manager, Executive entities.
+
+**Card content:**
+```
+┌──────────────────────────────────────┐
+│  [Company Logo]          [QR Code]   │
+│                                      │
+│  [Avatar 64pt]                       │
+│  Full Name                           │
+│  Job Title · Department              │
+│                                      │
+│  📱  +40 xxx xxx xxx                 │
+│  ✉   email@company.com               │
+│  🌐  website.com                     │
+│                                      │
+│  [LinkedIn] [X] [Instagram]          │
+│                                      │
+│  [Share]  [Save to Contacts]         │
+└──────────────────────────────────────┘
+```
+
+**QR Code contents:** vCard 4.0 format, includes name, title, phone, email, company, LinkedIn URL.
+
+**Sharing:**
+- Share Sheet (iOS native) — exports as PNG + vCard
+- Copy Link — generates a `/card/:userId` public URL (optional, role-gated)
+- AirDrop — vCard direct
+- NFC tap — if device supports (future)
+
+**Access:** Triggered from preview sheet footer "Share Card" action or from full profile page.
+
+### 16.10 Context Menu — Full Entity Matrix
+
+Replaces and extends §9.3. All entity context menus follow this pattern:
+
+```
+[Primary action]        ← Open / View
+[Secondary action]      ← Edit / Assign / Message
+[Tertiary action]       ← Share / Export
+──────────────────
+[Destructive group]     ← Archive / Delete (hidden if no permission)
+```
+
+**Employee:**
+```
+person.fill       View Profile
+message           Send Message
+checkmark.circle  Assign Task
+calendar          View Schedule
+square.and.pencil Edit Details
+square.and.arrow.up  Export Record
+──────────────────
+exclamationmark.triangle  Suspend Account  (manager+)
+```
+
+**Client:**
+```
+person.fill       View Profile
+phone             Call
+envelope          Send Email
+message           Send Message
+doc.text          Open Invoices
+folder            Open Projects
+──────────────────
+archivebox        Archive
+```
+
+**Supplier:**
+```
+building.2        View Profile
+phone             Call
+envelope          Send Email
+shippingbox       View Orders
+truck             View Deliveries
+star              Supplier Rating
+──────────────────
+archivebox        Archive
+```
+
+**Project:**
+```
+folder            Open Project
+pencil            Edit
+photo             Photos
+doc.text          Documents
+checkmark.circle  Tasks
+person.2          Team
+square.and.arrow.up  Share Link
+──────────────────
+archivebox        Archive
+```
+
+**Product:**
+```
+cube.box          Open Product
+pencil            Edit
+cart              Add to Order
+chart.bar         Analytics
+arrow.2.circlepath  Update Stock
+──────────────────
+trash             Delete
+```
+
+**Order:**
+```
+doc.text          Open Order
+receipt           Invoice
+truck             Delivery Status
+person            Customer
+square.and.arrow.up  Export
+──────────────────
+archivebox        Archive
+```
+
+**Invoice:**
+```
+doc.text          Open Invoice
+arrow.down.doc    Download PDF
+square.and.arrow.up  Send to Client
+checkmark.circle  Mark as Paid
+clock             Payment Reminder
+──────────────────
+archivebox        Archive
+```
+
+**Document:**
+```
+doc.text          Open
+arrow.down.doc    Download
+square.and.arrow.up  Share (expiring link)
+folder            Move to Project
+lock.doc          Move to Vault
+──────────────────
+archivebox        Archive
+trash             Delete
+```
+
+**Vehicle:**
+```
+car               Open Vehicle
+person            Assign Driver
+wrench            Log Maintenance
+chart.bar         View Log
+calendar          Schedule Service
+──────────────────
+archivebox        Decommission
+```
+
+**Tool:**
+```
+hammer            Open Tool
+person            Check Out
+wrench            Log Issue
+calendar          Schedule Calibration
+chart.bar         View History
+──────────────────
+archivebox        Decommission
+```
+
+**Team:**
+```
+person.2          View Team
+message           Message Team
+calendar          View Schedule
+chart.bar         Team Analytics
+person.badge.plus  Add Member
+──────────────────
+archivebox        Archive
+```
+
+**Company:**
+```
+building.2        Open Company
+chart.bar         View Dashboard
+person.2          View Staff
+doc.text          Generate Report
+gear              Settings
+──────────────────
+exclamationmark.triangle  Suspend  (platform admin only)
+```
+
+### 16.11 Preview Engine — Reusability Rules
+
+The Preview Engine is implemented as a single shared system. No entity implements its own preview logic.
+
+```
+PreviewEngine
+  ├── EntityRegistry         — maps entity type → content config
+  ├── PreviewSheetRenderer   — renders content config as Glass Sheet
+  ├── ContextMenuBuilder     — builds role-filtered menu from entity type
+  ├── GestureCoordinator     — routes Tap / Long Press / Double Tap / Swipe
+  ├── SocialProfilesRenderer — renders social icons for any entity
+  ├── PresenceResolver       — resolves presence status for person entities
+  └── BusinessCardExporter   — generates vCard + QR for person entities
+
+Adding a new entity:
+  1. Register entity type in EntityRegistry
+  2. Define content config (header, metrics, actions, social flag)
+  3. All 4 gestures, all social icons, presence, and business cards
+     are automatically inherited.
+  No additional preview code required.
 ```
 
 ---
@@ -1544,7 +2042,9 @@ PRV NAVIGATION SYSTEM
 UNIVERSAL SYSTEMS (all platforms):
   Search · Command Palette · Inbox · Calendar ·
   Bottom Sheets · Context Menus · Peek Preview ·
-  Expandable Cards · Widgets · Dynamic Island (iOS)
+  Expandable Cards · Widgets · Dynamic Island (iOS) ·
+  Universal Entity Preview Engine · Social Profiles ·
+  Presence System · Digital Business Cards
 ```
 
 ---

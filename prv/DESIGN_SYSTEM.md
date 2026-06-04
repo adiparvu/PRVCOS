@@ -976,6 +976,168 @@ Behavior:
   Border-bottom: 1px solid rgba(255,255,255,0.08) (appears on stick)
 ```
 
+### 6.16 Entity Quick Preview Sheet
+
+The primary visual component of the Universal Entity Preview Engine. Extends the Medium Bottom Sheet spec (§6.2) with entity-specific layout zones.
+
+```
+Entity Quick Preview Sheet:
+  Material:     Glass 3 — rgba(255,255,255,0.16) + blur(64px) + saturate(220%)
+  Corner:       32pt top-left, top-right
+  Grabber:      36×4pt, rgba(255,255,255,0.22), centered, 12pt from top
+  Shadow:       0 -8px 40px rgba(0,0,0,0.5)
+
+  ── HEADER ZONE ──────────────────────────────
+  Avatar / Thumbnail:  56pt circle, glass border 1pt rgba(255,255,255,0.20)
+  Name:                Title 2, SF Pro, weight 700, white 95%
+  Subtitle:            Subhead, weight 400, white 65%
+  Status badge:        Glass badge (§6.14), trailing
+  Presence dot:        10pt, bottom-right on avatar (person entities only)
+  Social icons:        28pt row, SF Symbol style, white 65%, max 5
+
+  ── METRICS ZONE ─────────────────────────────
+  Layout:       2×2 glass stat cards (or 1×4 horizontal chips for ≤4 items)
+  Stat card:    Glass 1, radius 12pt, padding 12pt
+  Value:        Title 3, weight 700, white 95%
+  Label:        Caption 1, weight 400, white 35%
+
+  ── CONTENT ZONE ─────────────────────────────
+  Section title:  Footnote, weight 600, white 35%, uppercase
+  Field row:      Icon (SF Symbol, 16pt) + label (white 65%) + value (white 95%)
+  Divider:        1pt rgba(255,255,255,0.06)
+
+  ── ACTION STRIP ─────────────────────────────
+  Layout:       Horizontal scroll row, gap 8pt
+  Button:       Glass pill, 36pt height, radius 100pt
+  Icon:         SF Symbol, 16pt, leading, white 95%
+  Label:        Footnote, weight 600, white 95%
+  Max visible:  4 buttons (overflow via scroll)
+
+  ── FOOTER ───────────────────────────────────
+  "Open Full [Entity] →"
+  Height:       52pt
+  Background:   Glass 1, full-width
+  Separator:    1pt rgba(255,255,255,0.08) above
+  Icon:         arrow.up.right SF Symbol, trailing, white 65%
+  Text:         Subhead, weight 600, white 95%
+```
+
+### 6.17 Apple Contact Card
+
+Person-type entities (Employee, Client, Supplier) use a richer profile card layout inspired by Apple Contacts. Used in the full profile screen header, not the preview sheet.
+
+```
+Contact Card Header (full profile screen):
+  ┌──────────────────────────────────────────┐
+  │  [Blurred avatar as background wallpaper]│
+  │  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░│
+  │  ┌────────────────────────────────────┐  │
+  │  │  [Avatar 80pt circle]              │  │
+  │  │  Full Name (Large Title)           │  │
+  │  │  Job Title · Department (Body)     │  │
+  │  │  [Status pill]  [Presence label]   │  │
+  │  │                                    │  │
+  │  │  [Call] [Message] [Email] [More]   │  │ ← Action row
+  │  │                                    │  │
+  │  │  [LinkedIn][X][Instagram][Website] │  │ ← Social row
+  │  └────────────────────────────────────┘  │
+  └──────────────────────────────────────────┘
+  Blur wallpaper:  avatar image, blur(40px), saturation(60%), darkened 50%
+  Card:            Glass 2, radius 24pt, top specular
+  Avatar border:   2pt white, shadow 0 4px 16px rgba(0,0,0,0.5)
+  Action buttons:  Glass pill, 52×52pt, icon 22pt centered
+  Social icons:    32pt, SF Symbol style (see §6.18), white 65%, gap 16pt
+```
+
+### 6.18 Social Profile Icons
+
+Social profile icons follow the SF Symbol style (stroke-width 1.6, round caps/joins, outline by default, filled on active state). All icons are monochrome white.
+
+```
+Icon sizing:
+  In preview sheet:    28pt, white 65%
+  In contact card:     32pt, white 65%
+  In list row:         20pt, white 35%
+
+Networks and SF-style representations:
+  LinkedIn:        Custom SVG SF-style (rectangle + letter mark)
+  Facebook:        Custom SVG SF-style (circle + f mark)
+  Instagram:       Custom SVG SF-style (rounded square + circle + dot)
+  X (Twitter):     Custom SVG SF-style (X letterform)
+  TikTok:          Custom SVG SF-style (music note variant)
+  Website:         globe (SF Symbol — globe)
+  WhatsApp:        Custom SVG SF-style (speech bubble + phone)
+
+Tap behavior:
+  → iOS: tries native app first, falls back to Safari
+  → Web/Android: opens in new tab / system browser
+  → Requires permission: social_profiles.view
+
+GDPR indicator:
+  Consent-given:   Normal opacity (white 65%)
+  No consent:      Icon hidden entirely
+  Pending consent: Icon grayed with lock.fill overlay (white 20%)
+```
+
+### 6.19 Presence Indicator
+
+```
+Sizes:
+  Large (preview header):  12pt circle
+  Standard (list row):      8pt circle
+  Small (compact row):      6pt circle
+
+Styles (B&W monochrome):
+  Available:    Solid fill, white 95%
+  Busy:         Half-fill (right half), white 65%
+  In Meeting:   calendar.badge.clock icon, 10pt, white 65%
+  On Site:      location.fill icon, 10pt, white 65%
+  Offline:      Ring only (no fill), white 20%
+
+Placement:
+  On avatar:    Bottom-right, 2pt white border between dot and avatar
+  In list row:  Leading, before avatar, or trailing name
+  In widget:    Trailing the name, 6pt
+
+Animation:
+  Available:    Subtle pulse (scale 1→1.2→1, 2s loop, opacity 0.5→1→0.5)
+  Status change: Cross-fade 300ms
+```
+
+### 6.20 Digital Business Card
+
+```
+Digital Business Card layout:
+  Size:          343×194pt (aspect 16:9 landscape), or full-width sheet
+  Material:      Glass 2 + top specular
+  Radius:        20pt
+
+  Top row:       [Company logo 32pt] ─────── [QR code 56×56pt]
+  Avatar:        80pt circle, centered-left, glass border
+  Name:          Title 2, weight 700, white 95%
+  Title:         Subhead, weight 400, white 65%
+
+  Contact row:
+    phone.fill   +40 xxx xxx xxx
+    envelope     email@company.com
+    globe        website.com
+
+  Social row:    [LinkedIn] [X] [Instagram] (28pt icons, white 65%)
+
+  Footer:        [Share]   [Save to Contacts]
+                 Glass pills, 36pt, full-width split
+
+QR Code:
+  Content:       vCard 4.0 (name, title, org, phone, email, url)
+  Style:         White modules on transparent (Glass bg shows through)
+  Size:          56pt in card, 200pt in full-screen share view
+
+Sharing:
+  "Share" → iOS Share Sheet (exports PNG + .vcf)
+  "Save to Contacts" → CNContactStore (iOS) / native handler (Android/Web)
+  "Copy Link" → /card/:userId (role-gated public URL, 30-day expiry)
+```
+
 ---
 
 ## 7. DYNAMIC ISLAND DESIGN SYSTEM
