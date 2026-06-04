@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr"
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
+import { checkRateLimit } from "@prv/cache"
 
 // Routes that require authentication
 const PROTECTED_PREFIXES = [
@@ -16,10 +17,39 @@ const PROTECTED_PREFIXES = [
 // Routes that are only for unauthenticated users (redirect to dashboard if signed in)
 const AUTH_ONLY_ROUTES = ["/auth/login", "/auth/register"]
 
+// Auth endpoints get the strictest rate limit class
+const AUTH_PREFIXES = ["/auth/", "/api/auth/"]
+
+function getClientIp(req: NextRequest): string {
+  return (
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    req.headers.get("x-real-ip") ??
+    "unknown"
+  )
+}
+
 export async function middleware(request: NextRequest) {
-  let response = NextResponse.next({
-    request,
-  })
+  const { pathname } = request.nextUrl
+  const ip = getClientIp(request)
+
+  // ── Edge rate limiting (before any DB/session work) ────────────────────
+  const isAuthRoute = AUTH_PREFIXES.some((p) => pathname.startsWith(p))
+  const rlClass = isAuthRoute ? "auth" : "public"
+  const rl = await checkRateLimit(rlClass, ip)
+  if (!rl.success) {
+    return new NextResponse(JSON.stringify({ error: "Too many requests" }), {
+      status: 429,
+      headers: {
+        "Content-Type": "application/json",
+        "X-RateLimit-Limit": String(rl.limit),
+        "X-RateLimit-Remaining": "0",
+        "X-RateLimit-Reset": String(rl.reset),
+      },
+    })
+  }
+
+  // ── Supabase session refresh ───────────────────────────────────────────
+  let response = NextResponse.next({ request })
 
   const supabase = createServerClient(
     process.env["NEXT_PUBLIC_SUPABASE_URL"]!,
@@ -42,12 +72,9 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // Refresh session — required for Server Components to pick up the session
   const {
     data: { user },
   } = await supabase.auth.getUser()
-
-  const { pathname } = request.nextUrl
 
   // Redirect unauthenticated users away from protected routes
   const isProtected = PROTECTED_PREFIXES.some((p) => pathname.startsWith(p))

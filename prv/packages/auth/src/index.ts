@@ -31,3 +31,18 @@ export {
   RoleSets,
 } from "./permissions"
 export type { PermissionCheck } from "./permissions"
+
+export { writeAuditLog, computeEntryHash, sha256hex } from "./audit"
+export type { AuditEntry } from "./audit"
+
+export { logSecurityEvent } from "./security-events"
+export type {
+  SecurityEventInput,
+  SecurityEventType,
+  SecurityEventSeverity,
+} from "./security-events"
+
+export { confirmReauth, checkReauth, revokeReauth } from "./re-auth"
+
+export { runGateChain, withGates } from "./gate-chain"
+export type { RouteConfig, GateContext } from "./gate-chain"
