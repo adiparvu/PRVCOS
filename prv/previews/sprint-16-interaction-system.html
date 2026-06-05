@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PRV · Sprint 16 — Interaction & Feedback System Preview</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #000; --g1: rgba(255,255,255,0.06); --g2: rgba(255,255,255,0.10);
+    --g3: rgba(255,255,255,0.16); --g4: rgba(255,255,255,0.22);
+    --text-1: rgba(255,255,255,0.95); --text-2: rgba(255,255,255,0.65);
+    --text-3: rgba(255,255,255,0.35); --text-4: rgba(255,255,255,0.15);
+    --border: rgba(255,255,255,0.12); --border-sub: rgba(255,255,255,0.07);
+    --spec: rgba(255,255,255,0.25); --spec2: rgba(255,255,255,0.20);
+    --spring: cubic-bezier(0.34,1.56,0.64,1); --smooth: cubic-bezier(0.4,0,0.2,1);
+  }
+  body { background: var(--bg); color: var(--text-1);
+    font-family: -apple-system,"SF Pro Text","SF Pro Display",sans-serif;
+    min-height: 100vh; padding: 40px 24px 120px; }
+  .page-header { text-align: center; margin-bottom: 56px; }
+  .sprint-badge { display:inline-flex; align-items:center; gap:6px;
+    background:var(--g2); border:1px solid var(--border); border-radius:100px;
+    padding:4px 14px; font-size:11px; font-weight:600; letter-spacing:.08em;
+    text-transform:uppercase; color:var(--text-2); margin-bottom:14px; }
+  .page-title { font-size:34px; font-weight:700; letter-spacing:-.02em; margin-bottom:8px; }
+  .page-sub { font-size:16px; color:var(--text-3); }
+  .section { margin-bottom:72px; }
+  .section-label { font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase;
+    color:var(--text-3); margin-bottom:24px; display:flex; align-items:center; gap:8px; }
+  .section-label::after { content:""; flex:1; height:1px; background:var(--border-sub); }
+  code { font-family:"SF Mono",ui-monospace,monospace; font-size:11px; color:var(--text-1);
+    background:var(--g2); padding:1px 5px; border-radius:4px; }
+  .callout { background:var(--g1); border:1px solid var(--border-sub); border-radius:24px;
+    padding:18px 20px; margin-top:16px; font-size:13px; color:var(--text-3); line-height:1.65; }
+  .callout strong { color:var(--text-2); }
+  .api-table { width:100%; border-collapse:separate; border-spacing:0;
+    border:1px solid var(--border-sub); border-radius:24px; overflow:hidden; margin-top:16px; }
+  .api-table th { padding:9px 14px; text-align:left; font-size:10px; font-weight:700;
+    letter-spacing:.08em; text-transform:uppercase; color:var(--text-3);
+    background:var(--g1); border-bottom:1px solid var(--border-sub); }
+  .api-table td { padding:10px 14px; font-size:12px; color:var(--text-2);
+    border-bottom:1px solid var(--border-sub); }
+  .api-table tr:last-child td { border-bottom:none; }
+  .api-table tr:hover td { background:var(--g1); }
+  .req { color:rgba(255,149,0,.8); font-size:10px; font-weight:600; }
+  .opt { color:var(--text-4); font-size:10px; }
+  .tag-new  { background:rgba(48,209,88,.12); border:1px solid rgba(48,209,88,.2); color:#30d158;
+    font-size:10px; font-weight:600; padding:2px 7px; border-radius:5px; letter-spacing:.04em; }
+  .tag-infra { background:rgba(10,132,255,.10); border:1px solid rgba(10,132,255,.2); color:#0a84ff;
+    font-size:10px; font-weight:600; padding:2px 7px; border-radius:5px; letter-spacing:.04em; }
+
+  /* ══ 01 SEGMENTED CONTROL ══ */
+  .seg-stack { display:flex; flex-direction:column; gap:16px; align-items:flex-start; }
+  .seg-wrap { display:inline-flex; background:var(--g1); border:1px solid var(--border-sub);
+    border-radius:100px; padding:3px; position:relative;
+    backdrop-filter:blur(32px) saturate(160%); }
+  .seg-indicator { position:absolute; top:3px; bottom:3px; background:var(--text-1);
+    border-radius:100px; pointer-events:none;
+    box-shadow:0 2px 8px rgba(0,0,0,0.4);
+    transition:left .28s var(--spring), width .28s var(--spring); }
+  .seg-btn { position:relative; z-index:1; display:flex; align-items:center; gap:5px;
+    padding:7px 16px; border-radius:100px; border:none; background:transparent;
+    cursor:pointer; font-size:13px; font-weight:500; color:var(--text-3);
+    transition:color .2s var(--smooth); white-space:nowrap; font-family:inherit; }
+  .seg-btn.active { color:#000; }
+  .seg-sm .seg-btn { padding:5px 12px; font-size:12px; }
+  .seg-lg .seg-btn { padding:9px 20px; font-size:14px; }
+
+  /* ══ 02 PROGRESS RING ══ */
+  .rings-demo { display:flex; flex-wrap:wrap; gap:28px; align-items:center; }
+  .ring-item { display:flex; flex-direction:column; align-items:center; gap:8px; }
+  .ring-label { font-size:10px; color:var(--text-3); text-transform:uppercase; letter-spacing:.07em; }
+  .progress-ring { position:relative; display:inline-flex; align-items:center; justify-content:center; }
+  .progress-ring svg { transform:rotate(-90deg); }
+  .ring-track { fill:none; stroke:var(--border-sub); }
+  .ring-fill  { fill:none; stroke:var(--text-2); stroke-linecap:round;
+    transition:stroke-dashoffset 1s var(--smooth); }
+  .ring-center { position:absolute; inset:0; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; text-align:center; }
+  .ring-val { font-weight:700; color:var(--text-1); letter-spacing:-.02em; line-height:1; }
+  .ring-sub { font-size:10px; color:var(--text-3); margin-top:2px; }
+
+  /* ══ 03 NOTIFICATION PANEL ══ */
+  .notif-demo { position:relative; height:480px;
+    background:var(--g1); border:1px solid var(--border-sub);
+    border-radius:24px; overflow:hidden; display:flex; flex-direction:column; max-width:420px; }
+  .notif-mock-header { display:flex; align-items:center; justify-content:space-between;
+    padding:16px 20px; border-bottom:1px solid var(--border-sub); flex-shrink:0; }
+  .notif-mock-title { font-size:16px; font-weight:600; color:var(--text-1); }
+  .notif-bell { width:36px; height:36px; border-radius:50%;
+    background:var(--g1); border:1px solid var(--border-sub);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer; position:relative; color:var(--text-2); transition:background .2s; }
+  .notif-bell:hover { background:var(--g2); }
+  .notif-badge { position:absolute; top:-3px; right:-3px; min-width:17px; height:17px;
+    border-radius:100px; background:#ff3b30; border:2px solid var(--bg);
+    display:flex; align-items:center; justify-content:center;
+    font-size:9px; font-weight:700; color:#fff; padding:0 3px; }
+  .notif-panel { position:absolute; top:60px; right:12px; width:320px;
+    background:var(--g3); border:1px solid var(--border); border-radius:20px;
+    backdrop-filter:blur(64px) saturate(200%);
+    box-shadow:0 8px 32px rgba(0,0,0,0.6), inset 0 1px 0 var(--spec2);
+    overflow:hidden; display:flex; flex-direction:column;
+    transform-origin:top right;
+    transition:opacity .22s var(--smooth), transform .28s var(--spring);
+    opacity:0; transform:scale(.92) translateY(-8px);
+    pointer-events:none; z-index:20; max-height:380px; }
+  .notif-panel.open { opacity:1; transform:scale(1) translateY(0); pointer-events:auto; }
+  .notif-panel-header { display:flex; align-items:center; justify-content:space-between;
+    padding:14px 16px 10px; flex-shrink:0; border-bottom:1px solid var(--border-sub); }
+  .notif-panel-title { font-size:14px; font-weight:600; color:var(--text-1); }
+  .notif-mark-all { font-size:12px; color:var(--text-3); background:transparent; border:none;
+    cursor:pointer; font-family:inherit; transition:color .15s; }
+  .notif-mark-all:hover { color:var(--text-1); }
+  .notif-scroll { flex:1; overflow-y:auto; }
+  .notif-section-hd { font-size:10px; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--text-3); padding:10px 16px 4px; }
+  .notif-item { display:flex; align-items:flex-start; gap:10px; padding:10px 14px;
+    cursor:pointer; transition:background .1s; }
+  .notif-item:hover { background:rgba(255,255,255,0.04); }
+  .notif-icon { width:32px; height:32px; border-radius:9px; display:flex;
+    align-items:center; justify-content:center; flex-shrink:0; border:1px solid; }
+  .notif-text { flex:1; min-width:0; }
+  .notif-title { font-size:12px; font-weight:500; color:var(--text-1); line-height:1.35; }
+  .notif-desc  { font-size:11px; color:var(--text-3); margin-top:1px; line-height:1.4; }
+  .notif-time  { font-size:10px; color:var(--text-4); margin-top:2px; }
+  .notif-dot   { width:7px; height:7px; border-radius:50%; background:#0a84ff;
+    flex-shrink:0; margin-top:4px; }
+  .notif-view-all { display:flex; align-items:center; justify-content:center;
+    padding:12px; border-top:1px solid var(--border-sub); flex-shrink:0; }
+  .notif-view-all-btn { font-size:12px; font-weight:500; color:var(--text-2);
+    background:transparent; border:none; cursor:pointer; font-family:inherit; transition:color .15s; }
+  .notif-view-all-btn:hover { color:var(--text-1); }
+
+  /* ══ 04 TIMELINE ══ */
+  .timeline { display:flex; flex-direction:column; max-width:520px; }
+  .timeline-entry { display:flex; gap:14px; align-items:stretch; }
+  .timeline-spine { display:flex; flex-direction:column; align-items:center;
+    flex-shrink:0; width:28px; padding-top:4px; }
+  .timeline-dot { width:28px; height:28px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center; border:1px solid; flex-shrink:0; }
+  .tl-info    { background:rgba(10,132,255,.12); border-color:rgba(10,132,255,.25); color:#0a84ff; }
+  .tl-success { background:rgba(48,209,88,.12);  border-color:rgba(48,209,88,.25);  color:#30d158; }
+  .tl-warning { background:rgba(255,149,0,.12);  border-color:rgba(255,149,0,.25);  color:#ff9500; }
+  .tl-error   { background:rgba(255,59,48,.12);  border-color:rgba(255,59,48,.25);  color:#ff3b30; }
+  .tl-connector { width:1px; flex:1; background:var(--border-sub); margin:4px 0; min-height:8px; }
+  .timeline-entry:last-child .tl-connector { display:none; }
+  .timeline-body { flex:1; padding-bottom:20px; }
+  .timeline-card { background:var(--g1); border:1px solid var(--border-sub);
+    border-radius:16px; padding:12px 14px; position:relative; overflow:hidden;
+    transition:background .2s, border-color .2s; cursor:default; }
+  .timeline-card::before { content:""; position:absolute; inset-x:0; top:0; height:1px;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,.08),transparent); }
+  .timeline-card:hover { background:var(--g2); border-color:var(--border); }
+  .tl-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:4px; }
+  .tl-title  { font-size:13px; font-weight:600; color:var(--text-1); }
+  .tl-time   { font-size:10px; color:var(--text-4); }
+  .tl-desc   { font-size:12px; color:var(--text-3); line-height:1.5; }
+  .tl-actor  { display:flex; align-items:center; gap:5px; margin-top:6px; }
+  .tl-avatar { width:16px; height:16px; border-radius:50%; background:var(--g2);
+    border:1px solid var(--border-sub); display:flex; align-items:center; justify-content:center;
+    font-size:7px; font-weight:700; color:var(--text-2); }
+  .tl-actor-name { font-size:11px; color:var(--text-3); }
+
+  /* ══ 05 EMPTY STATE ══ */
+  .empty-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:12px; }
+  .empty-state { background:var(--g1); border:1px solid var(--border-sub);
+    border-radius:20px; padding:40px 24px; display:flex; flex-direction:column;
+    align-items:center; text-align:center; position:relative; overflow:hidden; }
+  .empty-state::before { content:""; position:absolute; inset-x:0; top:0; height:1px;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,.08),transparent); }
+  .empty-icon { width:52px; height:52px; border-radius:16px; background:var(--g2);
+    border:1px solid var(--border-sub); display:flex; align-items:center; justify-content:center;
+    color:var(--text-3); margin-bottom:16px; }
+  .empty-title { font-size:15px; font-weight:600; color:var(--text-1); margin-bottom:6px; }
+  .empty-desc  { font-size:12px; color:var(--text-3); line-height:1.55; max-width:200px; margin-bottom:20px; }
+  .empty-btn { display:inline-flex; align-items:center; gap:6px;
+    padding:9px 20px; border-radius:100px; background:var(--text-1); color:#000;
+    font-size:13px; font-weight:600; border:none; cursor:pointer;
+    font-family:inherit; transition:opacity .15s; }
+  .empty-btn:hover { opacity:.85; }
+  .empty-btn-ghost { display:inline-flex; align-items:center; gap:6px;
+    padding:9px 20px; border-radius:100px; background:var(--g2); color:var(--text-2);
+    font-size:13px; font-weight:500; border:1px solid var(--border-sub); cursor:pointer;
+    font-family:inherit; transition:background .15s;
+    box-shadow:inset 0 1px 0 var(--spec2); }
+  .empty-btn-ghost:hover { background:var(--g3); }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <div class="sprint-badge">Sprint 16 · Interaction &amp; Feedback System</div>
+  <h1 class="page-title">Interaction &amp; Feedback System</h1>
+  <p class="page-sub">Segmented Control · Progress Ring · Notification Panel · Timeline · Empty State</p>
+</div>
+
+<!-- ── 01 · SEGMENTED CONTROL ──────────────────────────────────────────────── -->
+<div class="section">
+  <div class="section-label">01 — Glass Segmented Control</div>
+
+  <div class="seg-stack">
+    <div>
+      <p style="font-size:11px;color:var(--text-3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">2 segments · icons</p>
+      <div class="seg-wrap" id="seg1">
+        <div class="seg-indicator" id="seg1-ind"></div>
+        <button class="seg-btn active" onclick="setSeg('seg1',0)">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/></svg>
+          Grid
+        </button>
+        <button class="seg-btn" onclick="setSeg('seg1',1)">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" x2="21" y1="6" y2="6"/><line x1="3" x2="21" y1="12" y2="12"/><line x1="3" x2="21" y1="18" y2="18"/></svg>
+          List
+        </button>
+      </div>
+    </div>
+
+    <div>
+      <p style="font-size:11px;color:var(--text-3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">3 segments · text</p>
+      <div class="seg-wrap" id="seg2">
+        <div class="seg-indicator" id="seg2-ind"></div>
+        <button class="seg-btn active" onclick="setSeg('seg2',0)">Today</button>
+        <button class="seg-btn" onclick="setSeg('seg2',1)">Week</button>
+        <button class="seg-btn" onclick="setSeg('seg2',2)">Month</button>
+      </div>
+    </div>
+
+    <div>
+      <p style="font-size:11px;color:var(--text-3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">4 segments · SM size</p>
+      <div class="seg-wrap seg-sm" id="seg3">
+        <div class="seg-indicator" id="seg3-ind"></div>
+        <button class="seg-btn active" onclick="setSeg('seg3',0)">All</button>
+        <button class="seg-btn" onclick="setSeg('seg3',1)">Active</button>
+        <button class="seg-btn" onclick="setSeg('seg3',2)">Paused</button>
+        <button class="seg-btn" onclick="setSeg('seg3',3)">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout">
+    <strong>Component:</strong> <code>GlassSegmentedControl</code> — spring-animated sliding white indicator inside a glass pill.<br>
+    <strong>Items:</strong> <code>items: SegmentItem[]</code> — each with <code>id</code>, <code>label</code>, optional <code>icon: ReactNode</code>.<br>
+    <strong>Sizes:</strong> <code>"sm" | "md" | "lg"</code>. <strong>fullWidth:</strong> stretches pill to fill container.
+  </div>
+
+  <table class="api-table">
+    <thead><tr><th>Prop</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>items</code></td><td><code>SegmentItem[]</code></td><td>—</td><td><span class="req">required</span></td></tr>
+      <tr><td><code>activeId</code></td><td><code>string</code></td><td>—</td><td><span class="req">required</span></td></tr>
+      <tr><td><code>onChange</code></td><td><code>(id: string) =&gt; void</code></td><td>—</td><td><span class="req">required</span></td></tr>
+      <tr><td><code>size</code></td><td><code>"sm" | "md" | "lg"</code></td><td><code>"md"</code></td><td><span class="opt">optional</span></td></tr>
+      <tr><td><code>fullWidth</code></td><td><code>boolean</code></td><td><code>false</code></td><td><span class="opt">optional</span></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ── 02 · PROGRESS RING ──────────────────────────────────────────────────── -->
+<div class="section">
+  <div class="section-label">02 — Glass Progress Ring</div>
+
+  <div class="rings-demo">
+    <div class="ring-item">
+      <div class="progress-ring" data-val="72">
+        <svg width="48" height="48" viewBox="0 0 48 48">
+          <circle class="ring-track" cx="24" cy="24" r="20" stroke-width="4"/>
+          <circle class="ring-fill" cx="24" cy="24" r="20" stroke-width="4"/>
+        </svg>
+        <div class="ring-center"><span class="ring-val" style="font-size:12px">72%</span></div>
+      </div>
+      <span class="ring-label">xs · 48px</span>
+    </div>
+
+    <div class="ring-item">
+      <div class="progress-ring" data-val="85">
+        <svg width="64" height="64" viewBox="0 0 64 64">
+          <circle class="ring-track" cx="32" cy="32" r="27" stroke-width="5"/>
+          <circle class="ring-fill" cx="32" cy="32" r="27" stroke-width="5"/>
+        </svg>
+        <div class="ring-center"><span class="ring-val" style="font-size:15px">85%</span></div>
+      </div>
+      <span class="ring-label">sm · 64px</span>
+    </div>
+
+    <div class="ring-item">
+      <div class="progress-ring" data-val="67">
+        <svg width="96" height="96" viewBox="0 0 96 96">
+          <circle class="ring-track" cx="48" cy="48" r="42" stroke-width="6"/>
+          <circle class="ring-fill" cx="48" cy="48" r="42" stroke-width="6"/>
+        </svg>
+        <div class="ring-center">
+          <span class="ring-val" style="font-size:20px">67%</span>
+          <span class="ring-sub">Completion</span>
+        </div>
+      </div>
+      <span class="ring-label">md · 96px</span>
+    </div>
+
+    <div class="ring-item">
+      <div class="progress-ring" data-val="92">
+        <svg width="128" height="128" viewBox="0 0 128 128">
+          <circle class="ring-track" cx="64" cy="64" r="56" stroke-width="8"/>
+          <circle class="ring-fill" cx="64" cy="64" r="56" stroke-width="8"/>
+        </svg>
+        <div class="ring-center">
+          <span class="ring-val" style="font-size:26px">92%</span>
+          <span class="ring-sub" style="font-size:11px">Revenue</span>
+        </div>
+      </div>
+      <span class="ring-label">lg · 128px</span>
+    </div>
+  </div>
+
+  <div class="callout">
+    <strong>Component:</strong> <code>GlassProgressRing</code> — SVG circle gauge; stroke-dashoffset animates on mount.<br>
+    <strong>Center:</strong> renders <code>value</code>% + optional <code>sublabel</code> string.<br>
+    <strong>Sizes:</strong> <code>"xs"</code> (48) · <code>"sm"</code> (64) · <code>"md"</code> (96) · <code>"lg"</code> (128) · or explicit <code>size: number</code>.<br>
+    <strong>Custom:</strong> <code>strokeColor</code> prop; defaults to <code>--prv-text-2</code>.
+  </div>
+
+  <table class="api-table">
+    <thead><tr><th>Prop</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>value</code></td><td><code>number</code></td><td>—</td><td><span class="req">required</span> — 0–100</td></tr>
+      <tr><td><code>size</code></td><td><code>"xs"|"sm"|"md"|"lg"|number</code></td><td><code>"md"</code></td><td><span class="opt">optional</span></td></tr>
+      <tr><td><code>strokeWidth</code></td><td><code>number</code></td><td>auto</td><td><span class="opt">optional</span></td></tr>
+      <tr><td><code>strokeColor</code></td><td><code>string</code></td><td><code>--prv-text-2</code></td><td><span class="opt">optional</span></td></tr>
+      <tr><td><code>sublabel</code></td><td><code>string</code></td><td>—</td><td><span class="opt">optional</span></td></tr>
+      <tr><td><code>animated</code></td><td><code>boolean</code></td><td><code>true</code></td><td><span class="opt">optional</span></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ── 03 · NOTIFICATION PANEL ──────────────────────────────────────────────── -->
+<div class="section">
+  <div class="section-label">03 — Glass Notification Panel</div>
+
+  <div class="notif-demo">
+    <div class="notif-mock-header">
+      <span class="notif-mock-title">Command Dashboard</span>
+      <div class="notif-bell" id="notifBell" onclick="toggleNotif()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+          <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>
+        </svg>
+        <div class="notif-badge" id="notifBadge">3</div>
+      </div>
+    </div>
+
+    <div style="padding:16px;flex:1;display:grid;grid-template-columns:1fr 1fr;gap:8px;overflow:hidden;align-content:start">
+      <div style="background:var(--g1);border:1px solid var(--border-sub);border-radius:16px;height:80px;grid-column:1/-1"></div>
+      <div style="background:var(--g1);border:1px solid var(--border-sub);border-radius:16px;height:80px"></div>
+      <div style="background:var(--g1);border:1px solid var(--border-sub);border-radius:16px;height:80px"></div>
+    </div>
+
+    <!-- panel -->
+    <div class="notif-panel" id="notifPanel">
+      <div class="notif-panel-header">
+        <span class="notif-panel-title">Notifications</span>
+        <button class="notif-mark-all" onclick="markAllRead()">Mark all read</button>
+      </div>
+      <div class="notif-scroll">
+        <div class="notif-section-hd">New</div>
+        <div class="notif-item">
+          <div class="notif-icon" style="background:rgba(255,59,48,.10);border-color:rgba(255,59,48,.2);color:#ff3b30">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
+          </div>
+          <div class="notif-text">
+            <div class="notif-title">Stoc critic — Gresia Gri 60×60</div>
+            <div class="notif-desc">Stoc: 12 mp · Sub pragul minim (50 mp)</div>
+            <div class="notif-time">Acum 4 min</div>
+          </div>
+          <div class="notif-dot unread-indicator"></div>
+        </div>
+        <div class="notif-item">
+          <div class="notif-icon" style="background:rgba(48,209,88,.10);border-color:rgba(48,209,88,.2);color:#30d158">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div class="notif-text">
+            <div class="notif-title">Proiect finalizat — Str. Florilor 14</div>
+            <div class="notif-desc">Renovare baie · 42 zile · 18.400 RON</div>
+            <div class="notif-time">Acum 18 min</div>
+          </div>
+          <div class="notif-dot unread-indicator"></div>
+        </div>
+        <div class="notif-item">
+          <div class="notif-icon" style="background:rgba(10,132,255,.10);border-color:rgba(10,132,255,.2);color:#0a84ff">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          </div>
+          <div class="notif-text">
+            <div class="notif-title">Angajat adăugat — Ioana Munteanu</div>
+            <div class="notif-desc">Casier · Magazin Cluj-03</div>
+            <div class="notif-time">Acum 1 h</div>
+          </div>
+          <div class="notif-dot unread-indicator"></div>
+        </div>
+        <div class="notif-section-hd" style="margin-top:4px">Earlier</div>
+        <div class="notif-item">
+          <div class="notif-icon" style="background:var(--g2);border-color:var(--border-sub);color:var(--text-2)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          </div>
+          <div class="notif-text">
+            <div class="notif-title" style="color:var(--text-2)">Raport lunar generat</div>
+            <div class="notif-desc">Raport Financiar Iulie 2025</div>
+            <div class="notif-time">Ieri · 16:42</div>
+          </div>
+        </div>
+        <div class="notif-item">
+          <div class="notif-icon" style="background:var(--g2);border-color:var(--border-sub);color:var(--text-2)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect width="8" height="4" x="8" y="2" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>
+          </div>
+          <div class="notif-text">
+            <div class="notif-title" style="color:var(--text-2)">Deviz aprobat</div>
+            <div class="notif-desc">Bucătărie · Bd. Eroilor 12 · 24.200 RON</div>
+            <div class="notif-time">Ieri · 11:15</div>
+          </div>
+        </div>
+      </div>
+      <div class="notif-view-all">
+        <button class="notif-view-all-btn">View all notifications →</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout">
+    <strong>Component:</strong> <code>GlassNotificationBell</code> — icon button with unread badge; <code>GlassNotificationPanel</code> — spring dropdown.<br>
+    <strong>Sections:</strong> groups entries into "New" (unread) and "Earlier" (read) automatically.<br>
+    <strong>Actions:</strong> <code>onMarkAllRead</code> · <code>onDismiss(id)</code> · <code>onSelect(id)</code> · <code>onViewAll</code>.<br>
+    <strong>Entry type:</strong> <code>"info" | "success" | "warning" | "error"</code> — auto-colors the icon container.
+  </div>
+
+  <table class="api-table">
+    <thead><tr><th>Prop</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>notifications</code></td><td><code>NotificationEntry[]</code></td><td>—</td><td><span class="req">required</span></td></tr>
+      <tr><td><code>onSelect</code></td><td><code>(id: string) =&gt; void</code></td><td>—</td><td><span class="opt">optional</span></td></tr>
+      <tr><td><code>onDismiss</code></td><td><code>(id: string) =&gt; void</code></td><td>—</td><td><span class="opt">optional</span></td></tr>
+      <tr><td><code>onMarkAllRead</code></td><td><code>() =&gt; void</code></td><td>—</td><td><span class="opt">optional</span></td></tr>
+      <tr><td><code>onViewAll</code></td><td><code>() =&gt; void</code></td><td>—</td><td><span class="opt">optional</span></td></tr>
+      <tr><td><code>open</code></td><td><code>boolean</code></td><td>—</td><td><span class="opt">optional</span> — controlled</td></tr>
+      <tr><td><code>onOpenChange</code></td><td><code>(v: boolean) =&gt; void</code></td><td>—</td><td><span class="opt">optional</span></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ── 04 · TIMELINE ────────────────────────────────────────────────────────── -->
+<div class="section">
+  <div class="section-label">04 — Glass Timeline</div>
+
+  <div class="timeline">
+    <div class="timeline-entry">
+      <div class="timeline-spine">
+        <div class="timeline-dot tl-success">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <div class="tl-connector"></div>
+      </div>
+      <div class="timeline-body">
+        <div class="timeline-card">
+          <div class="tl-header"><span class="tl-title">Proiect finalizat</span><span class="tl-time">Azi · 14:32</span></div>
+          <div class="tl-desc">Renovare Baie · Str. Florilor 14, Cluj · 18.400 RON · 42 zile</div>
+          <div class="tl-actor"><div class="tl-avatar">AP</div><span class="tl-actor-name">Alexandru Popescu</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="timeline-entry">
+      <div class="timeline-spine">
+        <div class="timeline-dot tl-warning">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
+        </div>
+        <div class="tl-connector"></div>
+      </div>
+      <div class="timeline-body">
+        <div class="timeline-card">
+          <div class="tl-header"><span class="tl-title">Stoc sub prag</span><span class="tl-time">Azi · 11:07</span></div>
+          <div class="tl-desc">Gresia Gri 60×60 · Stoc: 12 mp · Prag: 50 mp · Depozit Cluj</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="timeline-entry">
+      <div class="timeline-spine">
+        <div class="timeline-dot tl-info">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        </div>
+        <div class="tl-connector"></div>
+      </div>
+      <div class="timeline-body">
+        <div class="timeline-card">
+          <div class="tl-header"><span class="tl-title">Angajat adăugat</span><span class="tl-time">Ieri · 16:20</span></div>
+          <div class="tl-desc">Ioana Munteanu · Casier · Cluj-Napoca · Magazin 03</div>
+          <div class="tl-actor"><div class="tl-avatar">GM</div><span class="tl-actor-name">Gheorghe Mihai (HR Manager)</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="timeline-entry">
+      <div class="timeline-spine">
+        <div class="timeline-dot tl-success">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <div class="tl-connector"></div>
+      </div>
+      <div class="timeline-body">
+        <div class="timeline-card">
+          <div class="tl-header"><span class="tl-title">Deviz aprobat</span><span class="tl-time">Ieri · 11:15</span></div>
+          <div class="tl-desc">Renovare Bucătărie · Bd. Eroilor 12 · Valoare: 24.200 RON</div>
+          <div class="tl-actor"><div class="tl-avatar">DI</div><span class="tl-actor-name">Daniela Ionescu (Director)</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="timeline-entry">
+      <div class="timeline-spine">
+        <div class="timeline-dot tl-error">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="18" x2="6" y1="6" y2="18"/><line x1="6" x2="18" y1="6" y2="18"/></svg>
+        </div>
+        <div class="tl-connector"></div>
+      </div>
+      <div class="timeline-body">
+        <div class="timeline-card">
+          <div class="tl-header"><span class="tl-title">Comandă anulată</span><span class="tl-time">23 iul · 09:48</span></div>
+          <div class="tl-desc">Comandă #2891 · Parchet Stejar 15mm · Client: Radu Georgescu</div>
+          <div class="tl-actor"><div class="tl-avatar">CM</div><span class="tl-actor-name">Cosmin Marin (Casier)</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout">
+    <strong>Component:</strong> <code>GlassTimeline</code> — vertical activity feed; typed dots + glass cards + connecting line.<br>
+    <strong>Types:</strong> <code>"info" | "success" | "warning" | "error"</code> — auto-colors dot (blue/green/orange/red).<br>
+    <strong>Entry fields:</strong> <code>title</code> · <code>description</code> · <code>timestamp</code> · optional <code>actor: &#123; name, initials &#125;</code> · optional <code>icon</code>.<br>
+    <strong>Truncation:</strong> <code>maxVisible</code> prop shows "Show N more" button when exceeded.
+  </div>
+
+  <table class="api-table">
+    <thead><tr><th>Prop</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>entries</code></td><td><code>TimelineEntry[]</code></td><td>—</td><td><span class="req">required</span></td></tr>
+      <tr><td><code>onEntryClick</code></td><td><code>(id: string) =&gt; void</code></td><td>—</td><td><span class="opt">optional</span></td></tr>
+      <tr><td><code>maxVisible</code></td><td><code>number</code></td><td>—</td><td><span class="opt">optional</span></td></tr>
+      <tr><td><code>compact</code></td><td><code>boolean</code></td><td><code>false</code></td><td><span class="opt">optional</span> — reduced spacing</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ── 05 · EMPTY STATE ──────────────────────────────────────────────────────── -->
+<div class="section">
+  <div class="section-label">05 — Glass Empty State</div>
+
+  <div class="empty-grid">
+    <div class="empty-state">
+      <div class="empty-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+          <rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18M9 21V9"/>
+        </svg>
+      </div>
+      <p class="empty-title">No items yet</p>
+      <p class="empty-desc">Start by creating your first item. It will appear here once added.</p>
+      <button class="empty-btn">+ Add Item</button>
+    </div>
+
+    <div class="empty-state">
+      <div class="empty-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+          <circle cx="11" cy="11" r="8"/><line x1="21" x2="16.65" y1="21" y2="16.65"/>
+          <line x1="8" x2="14" y1="11" y2="11"/>
+        </svg>
+      </div>
+      <p class="empty-title">No results found</p>
+      <p class="empty-desc">Try a different search term or clear your active filters.</p>
+      <button class="empty-btn-ghost">Clear Filters</button>
+    </div>
+
+    <div class="empty-state">
+      <div class="empty-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+          <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/>
+          <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>
+          <line x1="2" x2="22" y1="2" y2="22"/>
+        </svg>
+      </div>
+      <p class="empty-title">All caught up</p>
+      <p class="empty-desc">No new notifications. Everything is running smoothly.</p>
+    </div>
+  </div>
+
+  <div class="callout">
+    <strong>Component:</strong> <code>GlassEmptyState</code> — centered icon + title + description + optional CTA.<br>
+    <strong>Action:</strong> <code>action?: &#123; label: string; onClick: () =&gt; void; variant?: "primary" | "ghost" &#125;</code>.<br>
+    <strong>compact:</strong> smaller padding for inline use inside panels or table cells.<br>
+    <strong>Usage:</strong> any list/grid/table that may have zero items.
+  </div>
+
+  <table class="api-table">
+    <thead><tr><th>Prop</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>title</code></td><td><code>string</code></td><td>—</td><td><span class="req">required</span></td></tr>
+      <tr><td><code>description</code></td><td><code>string</code></td><td>—</td><td><span class="opt">optional</span></td></tr>
+      <tr><td><code>icon</code></td><td><code>ReactNode</code></td><td>inbox</td><td><span class="opt">optional</span></td></tr>
+      <tr><td><code>action</code></td><td><code>&#123; label; onClick; variant?: "primary"|"ghost" &#125;</code></td><td>—</td><td><span class="opt">optional</span></td></tr>
+      <tr><td><code>compact</code></td><td><code>boolean</code></td><td><code>false</code></td><td><span class="opt">optional</span></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ── DELIVERY TABLE ──────────────────────────────────────────────────────── -->
+<div class="section">
+  <div class="section-label">Sprint 16 · Delivery Scope</div>
+  <table class="api-table">
+    <thead><tr><th>#</th><th>Component</th><th>File</th><th>Type</th><th>Exports</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>GlassSegmentedControl</td><td><code>glass-segmented-control.tsx</code></td><td><span class="tag-new">new</span></td><td><code>GlassSegmentedControl</code> · <code>SegmentItem</code></td></tr>
+      <tr><td>2</td><td>GlassProgressRing</td><td><code>glass-progress-ring.tsx</code></td><td><span class="tag-new">new</span></td><td><code>GlassProgressRing</code></td></tr>
+      <tr><td>3</td><td>GlassNotificationBell + Panel</td><td><code>glass-notification.tsx</code></td><td><span class="tag-new">new</span></td><td><code>GlassNotificationBell</code> · <code>GlassNotificationPanel</code> · <code>NotificationEntry</code></td></tr>
+      <tr><td>4</td><td>GlassTimeline</td><td><code>glass-timeline.tsx</code></td><td><span class="tag-new">new</span></td><td><code>GlassTimeline</code> · <code>TimelineEntry</code> · <code>TimelineEntryType</code></td></tr>
+      <tr><td>5</td><td>GlassEmptyState</td><td><code>glass-empty-state.tsx</code></td><td><span class="tag-new">new</span></td><td><code>GlassEmptyState</code></td></tr>
+      <tr><td>6</td><td>components/index.ts</td><td><code>components/index.ts</code></td><td><span class="tag-infra">infra</span></td><td>All new public symbols re-exported</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<script>
+/* ── Segmented Control ── */
+function setSeg(id, idx) {
+  const wrap = document.getElementById(id);
+  const ind  = document.getElementById(id + '-ind');
+  wrap.querySelectorAll('.seg-btn').forEach((b, i) => b.classList.toggle('active', i === idx));
+  const btn = wrap.querySelectorAll('.seg-btn')[idx];
+  ind.style.left  = btn.offsetLeft  + 'px';
+  ind.style.width = btn.offsetWidth + 'px';
+}
+function initSeg(id) {
+  const wrap = document.getElementById(id);
+  const ind  = document.getElementById(id + '-ind');
+  const btn  = wrap.querySelector('.seg-btn.active');
+  if (btn && ind) { ind.style.left = btn.offsetLeft + 'px'; ind.style.width = btn.offsetWidth + 'px'; }
+}
+window.addEventListener('load', () => ['seg1','seg2','seg3'].forEach(initSeg));
+
+/* ── Progress Rings ── */
+window.addEventListener('load', () => {
+  document.querySelectorAll('.progress-ring').forEach(el => {
+    const val  = parseInt(el.dataset.val);
+    const fill = el.querySelector('.ring-fill');
+    const r    = parseFloat(fill.getAttribute('r'));
+    const circ = 2 * Math.PI * r;
+    fill.style.strokeDasharray  = circ;
+    fill.style.strokeDashoffset = circ;
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      fill.style.strokeDashoffset = circ * (1 - val / 100);
+    }));
+  });
+});
+
+/* ── Notification Panel ── */
+function toggleNotif() {
+  document.getElementById('notifPanel').classList.toggle('open');
+}
+function markAllRead() {
+  document.querySelectorAll('.unread-indicator').forEach(d => d.remove());
+  document.getElementById('notifBadge').style.display = 'none';
+}
+document.addEventListener('click', e => {
+  const panel = document.getElementById('notifPanel');
+  const bell  = document.getElementById('notifBell');
+  if (!panel.contains(e.target) && !bell.contains(e.target)) {
+    panel.classList.remove('open');
+  }
+});
+</script>
+</body>
+</html>
