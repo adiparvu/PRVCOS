@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sprint 12 · Design System Preview</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #000;
+    --text-1: rgba(255,255,255,.95);
+    --text-2: rgba(255,255,255,.65);
+    --text-3: rgba(255,255,255,.35);
+    --text-4: rgba(255,255,255,.15);
+    --border: rgba(255,255,255,.12);
+    --border-strong: rgba(255,255,255,.2);
+    --g1: rgba(255,255,255,.06);
+    --g2: rgba(255,255,255,.10);
+    --g3: rgba(255,255,255,.16);
+    --g4: rgba(255,255,255,.22);
+    --specular: inset 0 1px 0 rgba(255,255,255,.25);
+    --shadow-e2: 0 8px 32px rgba(0,0,0,.5);
+    --shadow-e4: 0 24px 64px rgba(0,0,0,.7), 0 8px 24px rgba(0,0,0,.4);
+    --spring: cubic-bezier(0.34,1.56,0.64,1);
+    --smooth: cubic-bezier(0.4,0,0.2,1);
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text-1);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    padding: 48px 24px 120px;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  /* ─── Section headers ─── */
+  .sprint-header {
+    display: flex; align-items: center; gap: 16px; margin-bottom: 64px;
+  }
+  .sprint-badge {
+    background: var(--g2); border: 1px solid var(--border); border-radius: 100px;
+    padding: 6px 14px; font-size: 12px; font-weight: 600;
+    color: var(--text-2); letter-spacing: .04em; text-transform: uppercase;
+    box-shadow: var(--specular);
+  }
+  .sprint-title { font-size: 34px; font-weight: 700; letter-spacing: -.02em; }
+  .sprint-subtitle { font-size: 17px; color: var(--text-2); margin-top: 4px; }
+
+  .section { margin-bottom: 80px; }
+  .section-label {
+    font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--text-3); margin-bottom: 24px; display: flex; align-items: center; gap: 10px;
+  }
+  .section-label::after {
+    content: ''; flex: 1; height: 1px; background: var(--border);
+  }
+  .new-badge {
+    background: var(--g2); border: 1px solid var(--border-strong); border-radius: 4px;
+    padding: 2px 7px; font-size: 10px; letter-spacing: .06em; color: var(--text-2);
+  }
+
+  /* ─── Glass Card ─── */
+  .glass-card {
+    background: var(--g1); backdrop-filter: blur(32px) saturate(140%);
+    border: 1px solid var(--border); border-radius: 20px;
+    box-shadow: var(--shadow-e4), var(--specular);
+  }
+  .glass-card.l2 { background: var(--g2); backdrop-filter: blur(48px) saturate(180%); }
+  .glass-card.l3 { background: var(--g3); backdrop-filter: blur(64px) saturate(200%); }
+  .glass-card.l4 { background: var(--g4); backdrop-filter: blur(80px) saturate(220%); }
+
+  /* ─── Grid layouts ─── */
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  .grid4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; }
+  .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+
+  /* ─── Component demos ─── */
+  .demo-box {
+    padding: 32px; border-radius: 20px;
+    background: var(--g1); border: 1px solid var(--border);
+    backdrop-filter: blur(32px); box-shadow: var(--shadow-e4), var(--specular);
+    display: flex; flex-direction: column; gap: 16px;
+  }
+  .demo-label {
+    font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--text-3); margin-bottom: 4px;
+  }
+
+  /* ─── Buttons ─── */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 15px; font-weight: 500; border: none; cursor: pointer;
+    transition: all 150ms var(--smooth); border-radius: 12px;
+    height: 40px; padding: 0 16px; gap: 8px; text-decoration: none;
+  }
+  .btn.sm { height: 32px; padding: 0 12px; font-size: 13px; border-radius: 10px; }
+  .btn.lg { height: 48px; padding: 0 24px; font-size: 16px; border-radius: 14px; }
+  .btn.primary {
+    background: #fff; color: #000; font-weight: 600;
+  }
+  .btn.primary:hover { background: rgba(255,255,255,.9); }
+  .btn.ghost {
+    background: transparent; color: var(--text-2); border: none;
+  }
+  .btn.ghost:hover { background: rgba(255,255,255,.08); color: var(--text-1); }
+  .btn.glass {
+    background: var(--g2); color: var(--text-1); border: 1px solid var(--border);
+    backdrop-filter: blur(24px);
+  }
+  .btn.glass:hover { background: var(--g3); }
+  .btn.destructive {
+    background: rgba(255,255,255,.12); color: rgba(255,255,255,.5);
+    border: 1px solid rgba(255,255,255,.25);
+  }
+  .btn.destructive:hover { background: rgba(255,255,255,.18); color: rgba(255,255,255,.7); }
+  .btn:disabled { opacity: .4; cursor: not-allowed; }
+  .btn.icon { padding: 0; width: 40px; border-radius: 12px; }
+  .btn.icon.sm { width: 32px; border-radius: 10px; }
+
+  /* ─── Inputs ─── */
+  .input-wrap { display: flex; flex-direction: column; gap: 6px; }
+  .input-label { font-size: 13px; font-weight: 500; color: var(--text-2); }
+  .input-field-wrap { position: relative; display: flex; align-items: center; }
+  .input-field {
+    width: 100%; height: 40px; border-radius: 12px; padding: 0 14px;
+    background: rgba(255,255,255,.08); border: 1px solid var(--border);
+    color: var(--text-1); font-size: 15px;
+    outline: none; transition: all 150ms var(--smooth); font-family: inherit;
+    backdrop-filter: blur(24px);
+  }
+  .input-field::placeholder { color: rgba(255,255,255,.3); }
+  .input-field:focus {
+    border-color: rgba(255,255,255,.3); background: rgba(255,255,255,.12);
+    box-shadow: 0 0 0 1px rgba(255,255,255,.2);
+  }
+  .input-field.error { border-color: rgba(255,80,80,.5); }
+  .input-field.error:focus { box-shadow: 0 0 0 1px rgba(255,80,80,.3); }
+  .input-icon-left { position: absolute; left: 14px; color: var(--text-3); pointer-events: none; }
+  .input-field.has-left { padding-left: 40px; }
+  .input-hint { font-size: 12px; color: var(--text-3); }
+  .input-error { font-size: 12px; color: rgba(255,100,100,.8); }
+
+  /* ─── Badge ─── */
+  .badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 10px; border-radius: 100px; font-size: 12px; font-weight: 500;
+    border: 1px solid var(--border);
+  }
+  .badge.default { background: var(--g1); color: var(--text-2); }
+  .badge.success { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.22); color: var(--text-1); }
+  .badge.warning { background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.15); color: var(--text-2); }
+  .badge.error { background: rgba(255,255,255,.04); border-color: rgba(255,255,255,.1); color: rgba(255,255,255,.45); }
+  .badge.info { background: var(--g2); border-color: rgba(255,255,255,.16); color: var(--text-2); }
+  .badge.purple { background: rgba(120,100,200,.15); border-color: rgba(140,120,220,.25); color: rgba(180,160,255,.9); }
+  .badge-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+
+  /* ─── Glass Panel (NEW) ─── */
+  .glass-panel {
+    background: var(--g1); border: 1px solid var(--border-subtle);
+    border-radius: 16px; padding: 16px 20px;
+    backdrop-filter: blur(24px);
+  }
+  .glass-panel.elevated {
+    background: var(--g2); border-color: var(--border); border-radius: 16px;
+  }
+
+  /* ─── Typography ─── */
+  .typo-row { display: flex; align-items: baseline; gap: 24px; padding: 14px 0; border-bottom: 1px solid var(--border); }
+  .typo-row:last-child { border-bottom: none; }
+  .typo-meta { width: 130px; flex-shrink: 0; font-size: 11px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+  .typo-meta .scale-name { font-size: 12px; font-weight: 600; color: var(--text-2); margin-bottom: 2px; }
+  .typo-meta .scale-spec { color: var(--text-3); }
+
+  /* HIG scale */
+  .t-largeTitle  { font-size: 34px; font-weight: 700; letter-spacing: -.02em; line-height: 1.18; }
+  .t-title1      { font-size: 28px; font-weight: 700; letter-spacing: -.018em; line-height: 1.2; }
+  .t-title2      { font-size: 22px; font-weight: 700; letter-spacing: -.016em; line-height: 1.22; }
+  .t-title3      { font-size: 20px; font-weight: 600; letter-spacing: -.014em; line-height: 1.25; }
+  .t-headline    { font-size: 17px; font-weight: 600; letter-spacing: -.012em; line-height: 1.29; }
+  .t-body        { font-size: 17px; font-weight: 400; letter-spacing: -.012em; line-height: 1.47; }
+  .t-callout     { font-size: 16px; font-weight: 400; letter-spacing: -.010em; line-height: 1.31; }
+  .t-subheadline { font-size: 15px; font-weight: 400; letter-spacing: -.010em; line-height: 1.33; }
+  .t-footnote    { font-size: 13px; font-weight: 400; letter-spacing: -.008em; line-height: 1.38; }
+  .t-caption1    { font-size: 12px; font-weight: 400; letter-spacing: -.006em; line-height: 1.33; }
+  .t-caption2    { font-size: 11px; font-weight: 400; letter-spacing: .006em; line-height: 1.45; }
+
+  /* ─── Motion demo ─── */
+  .motion-demo {
+    height: 80px; display: flex; align-items: center; padding: 0 20px;
+    background: var(--g1); border: 1px solid var(--border); border-radius: 16px;
+    overflow: hidden; position: relative;
+  }
+  .motion-ball {
+    width: 44px; height: 44px; border-radius: 50%;
+    background: rgba(255,255,255,.9); cursor: pointer; position: relative;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 600; color: #000; user-select: none;
+    flex-shrink: 0;
+  }
+  .motion-track {
+    flex: 1; height: 2px; background: var(--border); margin: 0 20px; position: relative;
+  }
+  .motion-desc { font-size: 13px; color: var(--text-2); margin-left: 8px; font-weight: 500; }
+
+  @keyframes spring-demo {
+    0%   { transform: translateX(0); }
+    50%  { transform: translateX(260px); }
+    100% { transform: translateX(0); }
+  }
+  @keyframes smooth-demo {
+    0%   { transform: translateX(0); }
+    50%  { transform: translateX(260px); }
+    100% { transform: translateX(0); }
+  }
+  .motion-ball.anim-spring {
+    animation: spring-demo 1.2s cubic-bezier(0.34,1.56,0.64,1) infinite;
+  }
+  .motion-ball.anim-smooth {
+    animation: smooth-demo 1.2s cubic-bezier(0.4,0,0.2,1) infinite;
+  }
+
+  /* ─── Glass surface level cards ─── */
+  .level-card {
+    padding: 24px; border-radius: 20px; border: 1px solid var(--border);
+    display: flex; flex-direction: column; gap: 10px;
+    backdrop-filter: blur(32px) saturate(140%);
+    box-shadow: var(--shadow-e2), var(--specular);
+    cursor: default;
+  }
+  .level-card .lc-name { font-size: 13px; font-weight: 600; color: var(--text-1); }
+  .level-card .lc-value { font-size: 11px; color: var(--text-3); font-family: "SF Mono", monospace; }
+  .level-card .lc-use { font-size: 12px; color: var(--text-2); margin-top: 4px; }
+
+  /* ─── Storybook mockup ─── */
+  .storybook-frame {
+    border-radius: 20px; overflow: hidden; border: 1px solid var(--border);
+    box-shadow: var(--shadow-e4), var(--specular);
+  }
+  .sb-titlebar {
+    background: rgba(20,20,20,.95); padding: 12px 16px;
+    display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border);
+  }
+  .sb-dot { width: 12px; height: 12px; border-radius: 50%; }
+  .sb-body { display: flex; background: #0a0a0a; min-height: 340px; }
+  .sb-sidebar {
+    width: 220px; background: rgba(10,10,10,.9); border-right: 1px solid var(--border);
+    padding: 16px 12px; flex-shrink: 0;
+  }
+  .sb-nav-item {
+    padding: 7px 10px; border-radius: 8px; font-size: 13px; cursor: pointer;
+    color: var(--text-2); display: flex; align-items: center; gap: 8px;
+  }
+  .sb-nav-item:hover { background: var(--g1); color: var(--text-1); }
+  .sb-nav-item.active { background: var(--g2); color: var(--text-1); }
+  .sb-nav-group { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--text-3); padding: 8px 10px 4px; margin-top: 8px; }
+  .sb-canvas { flex: 1; padding: 40px; display: flex; align-items: flex-start; gap: 40px; flex-direction: column; }
+  .sb-controls { margin-top: 16px; }
+  .sb-control-row { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .sb-control-label { font-size: 13px; color: var(--text-2); width: 100px; flex-shrink: 0; }
+  .sb-select {
+    background: var(--g1); border: 1px solid var(--border); border-radius: 6px;
+    padding: 4px 10px; font-size: 12px; color: var(--text-1); cursor: pointer;
+    outline: none; font-family: inherit;
+  }
+
+  /* ─── Token table ─── */
+  .token-table { width: 100%; border-collapse: collapse; }
+  .token-table th { text-align: left; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--text-3); padding: 0 12px 12px; }
+  .token-table td { padding: 10px 12px; border-top: 1px solid var(--border); font-size: 13px; color: var(--text-2); }
+  .token-table td:first-child { color: var(--text-1); font-family: "SF Mono", monospace; font-size: 12px; }
+  .token-swatch { width: 24px; height: 24px; border-radius: 6px; border: 1px solid var(--border); display: inline-block; vertical-align: middle; margin-right: 8px; }
+
+  /* ─── Expo tokens mockup ─── */
+  .code-block {
+    background: rgba(255,255,255,.04); border: 1px solid var(--border); border-radius: 14px;
+    padding: 20px 24px; font-family: "SF Mono", "Fira Code", monospace; font-size: 12.5px;
+    color: var(--text-2); line-height: 1.7; overflow-x: auto;
+  }
+  .code-block .kw { color: rgba(200,150,255,.9); }
+  .code-block .str { color: rgba(150,220,150,.85); }
+  .code-block .num { color: rgba(255,190,100,.9); }
+  .code-block .cm { color: rgba(255,255,255,.25); }
+
+  /* ─── Sheet mockup ─── */
+  .sheet-mockup {
+    background: #0a0a0a; border: 1px solid var(--border); border-radius: 20px;
+    overflow: hidden; box-shadow: var(--shadow-e4); position: relative; height: 340px;
+  }
+  .sheet-bg-content {
+    position: absolute; inset: 0; padding: 20px;
+  }
+  .sheet-bottom-slide {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    background: var(--g2); border-top: 1px solid var(--border);
+    border-radius: 28px 28px 0 0; padding: 12px 20px 24px;
+    backdrop-filter: blur(48px) saturate(180%);
+    box-shadow: 0 -4px 32px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.25);
+  }
+  .sheet-handle {
+    width: 36px; height: 4px; border-radius: 2px; background: rgba(255,255,255,.2);
+    margin: 0 auto 16px;
+  }
+
+  .divider { height: 1px; background: var(--border); margin: 40px 0; }
+
+  /* ─── Responsive ─── */
+  @media (max-width: 700px) {
+    .grid4 { grid-template-columns: 1fr 1fr; }
+    .grid3 { grid-template-columns: 1fr; }
+    .grid2 { grid-template-columns: 1fr; }
+    .sb-sidebar { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════ HEADER ═══════════════════════ -->
+<div class="sprint-header">
+  <span class="sprint-badge">Sprint 12</span>
+  <div>
+    <div class="sprint-title">Design System</div>
+    <div class="sprint-subtitle">Liquid Glass tokens · Components · Typography · Storybook</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ GLASS SURFACE LEVELS ═══════════════════════ -->
+<div class="section">
+  <div class="section-label">Glass Surface Levels</div>
+  <div class="grid4">
+    <div class="level-card" style="background:rgba(255,255,255,.06);">
+      <div class="lc-name">Glass 1</div>
+      <div class="lc-value">rgba(255,255,255,0.06)<br/>blur(32px) · sat(140%)</div>
+      <div class="lc-use">Cards · Panels · List items</div>
+    </div>
+    <div class="level-card" style="background:rgba(255,255,255,.10);">
+      <div class="lc-name">Glass 2</div>
+      <div class="lc-value">rgba(255,255,255,0.10)<br/>blur(48px) · sat(180%)</div>
+      <div class="lc-use">Menus · Sheets · Nav bars</div>
+    </div>
+    <div class="level-card" style="background:rgba(255,255,255,.16);">
+      <div class="lc-name">Glass 3</div>
+      <div class="lc-value">rgba(255,255,255,0.16)<br/>blur(64px) · sat(200%)</div>
+      <div class="lc-use">Modals · Overlays</div>
+    </div>
+    <div class="level-card" style="background:rgba(255,255,255,.22);">
+      <div class="lc-name">Glass 4</div>
+      <div class="lc-value">rgba(255,255,255,0.22)<br/>blur(80px) · sat(220%)</div>
+      <div class="lc-use">Command Palette · Critical</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ GLASS CARD ═══════════════════════ -->
+<div class="section">
+  <div class="section-label">GlassCard · 4 levels</div>
+  <div class="grid4">
+    <div class="demo-box" style="background:rgba(255,255,255,.06);padding:24px;">
+      <div class="demo-label">level=1</div>
+      <div style="font-size:15px;color:rgba(255,255,255,.95);font-weight:600;">Card title</div>
+      <div style="font-size:13px;color:rgba(255,255,255,.65);">Secondary info visible here in this card component.</div>
+    </div>
+    <div class="demo-box" style="background:rgba(255,255,255,.10);padding:24px;">
+      <div class="demo-label">level=2</div>
+      <div style="font-size:15px;color:rgba(255,255,255,.95);font-weight:600;">Card title</div>
+      <div style="font-size:13px;color:rgba(255,255,255,.65);">Secondary info visible here in this card component.</div>
+    </div>
+    <div class="demo-box" style="background:rgba(255,255,255,.16);padding:24px;">
+      <div class="demo-label">level=3</div>
+      <div style="font-size:15px;color:rgba(255,255,255,.95);font-weight:600;">Card title</div>
+      <div style="font-size:13px;color:rgba(255,255,255,.65);">Secondary info visible here in this card component.</div>
+    </div>
+    <div class="demo-box" style="background:rgba(255,255,255,.22);padding:24px;">
+      <div class="demo-label">level=4</div>
+      <div style="font-size:15px;color:rgba(255,255,255,.95);font-weight:600;">Card title</div>
+      <div style="font-size:13px;color:rgba(255,255,255,.65);">Secondary info visible here in this card component.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ BUTTONS ═══════════════════════ -->
+<div class="section">
+  <div class="section-label">GlassButton · variants × sizes</div>
+  <div class="demo-box">
+    <div class="demo-label">Variants (size=md)</div>
+    <div class="row">
+      <button class="btn primary">Primary</button>
+      <button class="btn glass">Glass</button>
+      <button class="btn ghost">Ghost</button>
+      <button class="btn destructive">Destructive</button>
+      <button class="btn glass icon">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path d="M8 2l1.5 3 3.3.5-2.4 2.3.6 3.3L8 9.5l-3 1.6.6-3.3L3.2 5.5l3.3-.5z" fill="rgba(255,255,255,.8)"/>
+        </svg>
+      </button>
+    </div>
+    <div class="demo-label" style="margin-top:8px;">Sizes (variant=glass)</div>
+    <div class="row">
+      <button class="btn glass sm">Small</button>
+      <button class="btn glass">Medium</button>
+      <button class="btn glass lg">Large</button>
+    </div>
+    <div class="demo-label" style="margin-top:8px;">States</div>
+    <div class="row">
+      <button class="btn glass" disabled>Disabled</button>
+      <button class="btn glass" style="opacity:.9;">
+        <span style="display:inline-block;width:14px;height:14px;border-radius:50%;border:2px solid rgba(255,255,255,.9);border-top-color:transparent;animation:spin .7s linear infinite;"></span>
+        Loading
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ INPUTS ═══════════════════════ -->
+<div class="section">
+  <div class="section-label">GlassInput · states</div>
+  <div class="grid3">
+    <div class="demo-box">
+      <div class="demo-label">Default</div>
+      <div class="input-wrap">
+        <span class="input-label">Company name</span>
+        <div class="input-field-wrap">
+          <input class="input-field" placeholder="PRV Renovations S.R.L." />
+        </div>
+        <span class="input-hint">Legal name as registered</span>
+      </div>
+    </div>
+    <div class="demo-box">
+      <div class="demo-label">With left icon</div>
+      <div class="input-wrap">
+        <span class="input-label">Search</span>
+        <div class="input-field-wrap">
+          <span class="input-icon-left">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <circle cx="6.5" cy="6.5" r="4.5" stroke="rgba(255,255,255,.35)" stroke-width="1.5"/>
+              <path d="M10 10l3 3" stroke="rgba(255,255,255,.35)" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </span>
+          <input class="input-field has-left" placeholder="Search employees…" />
+        </div>
+      </div>
+    </div>
+    <div class="demo-box">
+      <div class="demo-label">Error state</div>
+      <div class="input-wrap">
+        <span class="input-label">Email address</span>
+        <div class="input-field-wrap">
+          <input class="input-field error" value="not-an-email" />
+        </div>
+        <span class="input-error">Please enter a valid email address</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ BADGES ═══════════════════════ -->
+<div class="section">
+  <div class="section-label">GlassBadge · 6 variants</div>
+  <div class="demo-box">
+    <div class="row">
+      <span class="badge default"><span class="badge-dot"></span>Default</span>
+      <span class="badge success"><span class="badge-dot"></span>Active</span>
+      <span class="badge warning"><span class="badge-dot"></span>Pending</span>
+      <span class="badge error"><span class="badge-dot"></span>Inactive</span>
+      <span class="badge info"><span class="badge-dot"></span>Info</span>
+      <span class="badge purple"><span class="badge-dot"></span>Premium</span>
+    </div>
+    <div class="row" style="margin-top:8px;">
+      <span class="badge default">Default</span>
+      <span class="badge success">Active</span>
+      <span class="badge warning">Pending</span>
+      <span class="badge error">Inactive</span>
+      <span class="badge info">Info</span>
+      <span class="badge purple">Premium</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ GLASS PANEL · NEW ═══════════════════════ -->
+<div class="section">
+  <div class="section-label">GlassPanel <span class="new-badge">NEW</span></div>
+  <div class="grid2">
+    <!-- Panel in context: inside a sheet -->
+    <div>
+      <div class="demo-label" style="margin-bottom:12px;">Inside a bottom sheet</div>
+      <div class="sheet-mockup">
+        <div class="sheet-bg-content">
+          <div style="font-size:13px;color:var(--text-3);padding:4px 0;">Background content</div>
+          <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+            <div style="width:80px;height:60px;border-radius:12px;background:var(--g1);border:1px solid var(--border);"></div>
+            <div style="width:80px;height:60px;border-radius:12px;background:var(--g1);border:1px solid var(--border);"></div>
+          </div>
+        </div>
+        <div class="sheet-bottom-slide">
+          <div class="sheet-handle"></div>
+          <div style="font-size:17px;font-weight:600;margin-bottom:16px;">Edit Employee</div>
+          <!-- GlassPanel inside sheet -->
+          <div class="glass-panel" style="margin-bottom:10px;">
+            <div style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:8px;">Personal Info</div>
+            <div style="font-size:14px;color:rgba(255,255,255,.9);">Alexandru Popescu</div>
+            <div style="font-size:12px;color:rgba(255,255,255,.45);margin-top:2px;">Store Manager · Cluj-Napoca</div>
+          </div>
+          <div class="glass-panel elevated">
+            <div style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:8px;">Role</div>
+            <div style="font-size:14px;color:rgba(255,255,255,.9);">SCOPE_STORE · store_manager</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Panel specs -->
+    <div class="demo-box">
+      <div class="demo-label">GlassPanel · standalone</div>
+      <div class="glass-panel">
+        <div style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:8px;">Section header</div>
+        <div style="font-size:14px;color:rgba(255,255,255,.9);">Panel Default</div>
+        <div style="font-size:12px;color:rgba(255,255,255,.45);margin-top:2px;">G1 · 24px radius · subtle border</div>
+      </div>
+      <div class="glass-panel elevated" style="margin-top:0;">
+        <div style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:8px;">Section header</div>
+        <div style="font-size:14px;color:rgba(255,255,255,.9);">Panel Elevated</div>
+        <div style="font-size:12px;color:rgba(255,255,255,.45);margin-top:2px;">G2 · 16px radius · standard border</div>
+      </div>
+      <div style="margin-top:8px;padding:14px;background:var(--g1);border:1px solid var(--border);border-radius:12px;">
+        <div style="font-size:12px;color:var(--text-3);margin-bottom:6px;">Props</div>
+        <div style="font-size:12px;color:var(--text-2);font-family:monospace;">
+          variant?: "default" | "elevated"<br/>
+          noPadding?: boolean<br/>
+          asChild?: boolean<br/>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div style="margin-top:12px;padding:14px 18px;background:var(--g1);border:1px solid var(--border);border-radius:14px;">
+    <div style="font-size:13px;color:var(--text-2);">
+      <strong style="color:var(--text-1);">GlassPanel vs GlassCard:</strong>
+      Panel is a <em>content section</em> inside sheets/modals (no floating shadow, tighter padding, optional border).
+      Card is a <em>standalone floating surface</em> with E4 shadow, specular highlight, and lift.
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ TYPOGRAPHY ═══════════════════════ -->
+<div class="section">
+  <div class="section-label">Typography · PRVText <span class="new-badge">NEW</span></div>
+  <div class="demo-box">
+    <table class="token-table" style="width:100%;">
+      <thead>
+        <tr>
+          <th>HIG Scale</th>
+          <th>Size / Weight</th>
+          <th>Preview</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>largeTitle</td>
+          <td>34px / 700</td>
+          <td class="t-largeTitle">Command Center</td>
+        </tr>
+        <tr>
+          <td>title1</td>
+          <td>28px / 700</td>
+          <td class="t-title1">Revenue Overview</td>
+        </tr>
+        <tr>
+          <td>title2</td>
+          <td>22px / 700</td>
+          <td class="t-title2">Active Projects</td>
+        </tr>
+        <tr>
+          <td>title3</td>
+          <td>20px / 600</td>
+          <td class="t-title3">Employee Performance</td>
+        </tr>
+        <tr>
+          <td>headline</td>
+          <td>17px / 600</td>
+          <td class="t-headline">Store Cluj-Napoca · 14 employees</td>
+        </tr>
+        <tr>
+          <td>body</td>
+          <td>17px / 400</td>
+          <td class="t-body">The project is currently on track with all milestones within schedule.</td>
+        </tr>
+        <tr>
+          <td>callout</td>
+          <td>16px / 400</td>
+          <td class="t-callout">Last updated 3 hours ago by Alexandru Ionescu</td>
+        </tr>
+        <tr>
+          <td>subheadline</td>
+          <td>15px / 400</td>
+          <td class="t-subheadline">Contract value · 48,000 RON / Completion 87%</td>
+        </tr>
+        <tr>
+          <td>footnote</td>
+          <td>13px / 400</td>
+          <td class="t-footnote" style="color:rgba(255,255,255,.65);">Approved by CEO on 14 March 2026 · requires countersignature</td>
+        </tr>
+        <tr>
+          <td>caption1</td>
+          <td>12px / 400</td>
+          <td class="t-caption1" style="color:rgba(255,255,255,.45);">Updated 2 minutes ago</td>
+        </tr>
+        <tr>
+          <td>caption2</td>
+          <td>11px / 400</td>
+          <td class="t-caption2" style="color:rgba(255,255,255,.35);letter-spacing:.01em;">STORE_ID: CLJ-001 · TIN: RO12345678</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div style="margin-top:20px;padding:14px 18px;background:var(--g1);border:1px solid var(--border);border-radius:12px;">
+      <div style="font-size:12px;color:var(--text-3);margin-bottom:8px;">PRVText component API</div>
+      <div style="font-family:monospace;font-size:12px;color:var(--text-2);line-height:1.8;">
+        &lt;PRVText variant="headline" color="primary"&gt;Text&lt;/PRVText&gt;<br/>
+        &lt;PRVText as="h1" variant="largeTitle"&gt;Title&lt;/PRVText&gt;<br/>
+        &lt;PRVText variant="footnote" color="secondary" truncate&gt;…&lt;/PRVText&gt;
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ MOTION ═══════════════════════ -->
+<div class="section">
+  <div class="section-label">Motion Library</div>
+  <div class="grid2">
+    <div>
+      <div class="demo-label" style="margin-bottom:12px;">Spring · cubic-bezier(0.34, 1.56, 0.64, 1)</div>
+      <div class="motion-demo">
+        <div class="motion-ball anim-spring" style="font-size:10px;">●</div>
+      </div>
+      <div style="font-size:12px;color:var(--text-3);margin-top:8px;">Use for: expand/collapse, appear, modal open, bounce interactions</div>
+    </div>
+    <div>
+      <div class="demo-label" style="margin-bottom:12px;">Smooth · cubic-bezier(0.4, 0, 0.2, 1)</div>
+      <div class="motion-demo">
+        <div class="motion-ball anim-smooth" style="font-size:10px;">●</div>
+      </div>
+      <div style="font-size:12px;color:var(--text-3);margin-top:8px;">Use for: fade, slide transitions, theme changes, subtle state changes</div>
+    </div>
+  </div>
+  <div class="demo-box" style="margin-top:16px;flex-direction:row;flex-wrap:wrap;gap:32px;">
+    <div>
+      <div class="demo-label">Duration tokens</div>
+      <div style="font-size:13px;color:var(--text-2);margin-top:8px;line-height:2;">
+        <code style="color:var(--text-1);">fast</code>   150ms · micro-interactions<br/>
+        <code style="color:var(--text-1);">base</code>   250ms · standard transitions<br/>
+        <code style="color:var(--text-1);">slow</code>   400ms · complex spring animations
+      </div>
+    </div>
+    <div>
+      <div class="demo-label">Emerge pattern</div>
+      <div style="font-size:13px;color:var(--text-2);margin-top:8px;line-height:2;">
+        <code style="color:var(--text-1);">scale</code>  0.92 → 1.0<br/>
+        <code style="color:var(--text-1);">opacity</code> 0 → 1<br/>
+        <code style="color:var(--text-1);">blur</code>   8px → 0 (optional)
+      </div>
+    </div>
+    <div>
+      <div class="demo-label">Sheet rise</div>
+      <div style="font-size:13px;color:var(--text-2);margin-top:8px;line-height:2;">
+        <code style="color:var(--text-1);">translateY</code> 100% → 0<br/>
+        <code style="color:var(--text-1);">opacity</code>    0 → 1<br/>
+        <code style="color:var(--text-1);">easing</code>     spring
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ CSS CUSTOM PROPERTIES ═══════════════════════ -->
+<div class="section">
+  <div class="section-label">CSS Custom Properties · packages/ui</div>
+  <div class="grid2">
+    <div>
+      <div class="demo-label" style="margin-bottom:12px;">Token structure (already in globals.css → moving to packages/ui)</div>
+      <div class="code-block">
+<span class="cm">/* packages/ui/src/styles/tokens.css */</span>
+<span class="kw">:root</span>, [data-theme=<span class="str">"dark"</span>] {
+  --prv-g1: <span class="str">rgba(255,255,255,.06)</span>;
+  --prv-g2: <span class="str">rgba(255,255,255,.10)</span>;
+  --prv-g3: <span class="str">rgba(255,255,255,.16)</span>;
+  --prv-g4: <span class="str">rgba(255,255,255,.22)</span>;
+  --prv-text-1: <span class="str">rgba(255,255,255,.95)</span>;
+  --prv-text-2: <span class="str">rgba(255,255,255,.65)</span>;
+  --prv-text-3: <span class="str">rgba(255,255,255,.35)</span>;
+  --prv-border: <span class="str">rgba(255,255,255,.12)</span>;
+  --prv-shadow-e4: <span class="str">0 24px 64px rgba(0,0,0,.7)…</span>;
+}
+      </div>
+    </div>
+    <div>
+      <div class="demo-label" style="margin-bottom:12px;">Expo / React Native tokens</div>
+      <div class="code-block">
+<span class="cm">/* packages/ui/src/tokens/native.ts */</span>
+<span class="kw">export const</span> nativeTokens = {
+  glass: {
+    level1: <span class="str">'rgba(255,255,255,0.06)'</span>,
+    level2: <span class="str">'rgba(255,255,255,0.10)'</span>,
+    level3: <span class="str">'rgba(255,255,255,0.16)'</span>,
+  },
+  radius: {
+    card: <span class="num">20</span>, panel: <span class="num">24</span>,
+    sheet: <span class="num">32</span>, pill: <span class="num">100</span>,
+  },
+  text: {
+    largeTitle: { fontSize: <span class="num">34</span>, fontWeight: <span class="str">'700'</span> },
+    headline:   { fontSize: <span class="num">17</span>, fontWeight: <span class="str">'600'</span> },
+    body:       { fontSize: <span class="num">17</span>, fontWeight: <span class="str">'400'</span> },
+    caption1:   { fontSize: <span class="num">12</span>, fontWeight: <span class="str">'400'</span> },
+  }
+}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ STORYBOOK ═══════════════════════ -->
+<div class="section">
+  <div class="section-label">Storybook 8 · Component Catalog</div>
+  <div class="storybook-frame">
+    <div class="sb-titlebar">
+      <div class="sb-dot" style="background:#ff5f56;"></div>
+      <div class="sb-dot" style="background:#febc2e;"></div>
+      <div class="sb-dot" style="background:#28c840;"></div>
+      <div style="flex:1;text-align:center;font-size:13px;color:var(--text-2);">PRV Design System · Storybook 8</div>
+    </div>
+    <div class="sb-body">
+      <div class="sb-sidebar">
+        <div style="font-size:14px;font-weight:600;padding:4px 10px 12px;">Components</div>
+        <div class="sb-nav-group">Glass Surfaces</div>
+        <div class="sb-nav-item">GlassCard</div>
+        <div class="sb-nav-item active">GlassButton</div>
+        <div class="sb-nav-item">GlassInput</div>
+        <div class="sb-nav-item">GlassPanel</div>
+        <div class="sb-nav-group">Overlays</div>
+        <div class="sb-nav-item">GlassSheet</div>
+        <div class="sb-nav-item">GlassModal</div>
+        <div class="sb-nav-group">Feedback</div>
+        <div class="sb-nav-item">GlassBadge</div>
+        <div class="sb-nav-group">Typography</div>
+        <div class="sb-nav-item">PRVText</div>
+      </div>
+      <div class="sb-canvas">
+        <div>
+          <div style="font-size:22px;font-weight:700;margin-bottom:4px;">GlassButton</div>
+          <div style="font-size:13px;color:var(--text-3);margin-bottom:24px;">Primary interactive element · 4 variants · 3 sizes</div>
+          <div class="row">
+            <button class="btn primary">Primary</button>
+            <button class="btn glass">Glass</button>
+            <button class="btn ghost">Ghost</button>
+            <button class="btn destructive">Destructive</button>
+          </div>
+        </div>
+        <div class="sb-controls" style="width:100%;margin-top:0;">
+          <div style="font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-3);margin-bottom:8px;">Controls</div>
+          <div class="sb-control-row">
+            <span class="sb-control-label">variant</span>
+            <select class="sb-select"><option>glass</option><option>primary</option><option>ghost</option><option>destructive</option></select>
+          </div>
+          <div class="sb-control-row">
+            <span class="sb-control-label">size</span>
+            <select class="sb-select"><option>md</option><option>sm</option><option>lg</option></select>
+          </div>
+          <div class="sb-control-row">
+            <span class="sb-control-label">loading</span>
+            <select class="sb-select"><option>false</option><option>true</option></select>
+          </div>
+          <div class="sb-control-row">
+            <span class="sb-control-label">disabled</span>
+            <select class="sb-select"><option>false</option><option>true</option></select>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div style="margin-top:12px;padding:14px 18px;background:var(--g1);border:1px solid var(--border);border-radius:14px;">
+    <div style="font-size:13px;color:var(--text-2);">
+      <strong style="color:var(--text-1);">Storybook setup:</strong>
+      @storybook/nextjs · dark theme · all 8 components with ArgTypes · each variant as a named story.
+      Runs on <code>localhost:6006</code> via <code>pnpm storybook</code>.
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ DELIVERY SUMMARY ═══════════════════════ -->
+<div class="section">
+  <div class="section-label">Sprint 12 · Delivery Plan</div>
+  <div class="demo-box">
+    <table class="token-table" style="width:100%;">
+      <thead>
+        <tr><th>Deliverable</th><th>Status</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Design tokens (JS)</td>
+          <td><span class="badge success" style="font-size:11px;">Done</span></td>
+          <td style="color:var(--text-2);">packages/ui/src/tokens/index.ts · complete</td>
+        </tr>
+        <tr>
+          <td>CSS custom properties</td>
+          <td><span class="badge warning" style="font-size:11px;">Move</span></td>
+          <td style="color:var(--text-2);">In apps/web/globals.css → extract to packages/ui/src/styles/tokens.css</td>
+        </tr>
+        <tr>
+          <td>4 glass surface levels</td>
+          <td><span class="badge success" style="font-size:11px;">Done</span></td>
+          <td style="color:var(--text-2);">GlassCard + glass/index.ts · all 4 levels</td>
+        </tr>
+        <tr>
+          <td>GlassCard</td>
+          <td><span class="badge success" style="font-size:11px;">Done</span></td>
+          <td style="color:var(--text-2);">4 levels, specular, shadow, borderless, flat props</td>
+        </tr>
+        <tr>
+          <td>GlassPanel</td>
+          <td><span class="badge info" style="font-size:11px;">New</span></td>
+          <td style="color:var(--text-2);">Inner section container for sheets/modals — default + elevated</td>
+        </tr>
+        <tr>
+          <td>GlassButton</td>
+          <td><span class="badge success" style="font-size:11px;">Done</span></td>
+          <td style="color:var(--text-2);">primary/ghost/glass/destructive · sm/md/lg · loading</td>
+        </tr>
+        <tr>
+          <td>GlassInput</td>
+          <td><span class="badge success" style="font-size:11px;">Done</span></td>
+          <td style="color:var(--text-2);">label/hint/error/icons · focus/disabled/error states</td>
+        </tr>
+        <tr>
+          <td>PRVText (Typography)</td>
+          <td><span class="badge info" style="font-size:11px;">New</span></td>
+          <td style="color:var(--text-2);">HIG scale (largeTitle → caption2) · polymorphic as= · color variants</td>
+        </tr>
+        <tr>
+          <td>Expo/RN tokens</td>
+          <td><span class="badge info" style="font-size:11px;">New</span></td>
+          <td style="color:var(--text-2);">packages/ui/src/tokens/native.ts · StyleSheet-ready values</td>
+        </tr>
+        <tr>
+          <td>Motion library</td>
+          <td><span class="badge success" style="font-size:11px;">Done</span></td>
+          <td style="color:var(--text-2);">motion.spring / smooth / duration in tokens/index.ts</td>
+        </tr>
+        <tr>
+          <td>Storybook 8</td>
+          <td><span class="badge info" style="font-size:11px;">New</span></td>
+          <td style="color:var(--text-2);">@storybook/nextjs · dark theme · 8 component stories + ArgTypes</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<style>
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+
+</body>
+</html>
