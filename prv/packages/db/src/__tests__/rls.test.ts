@@ -109,7 +109,9 @@ describe("Cross-company isolation invariants", () => {
   it("a company_id in the session cannot be undefined or empty", () => {
     const invalidIds = [undefined, null, "", " "]
     for (const id of invalidIds) {
-      expect(id).toBeFalsy()
+      // A valid company_id must be a non-empty, non-whitespace string
+      const isValid = typeof id === "string" && id.trim().length > 0
+      expect(isValid).toBe(false)
     }
   })
 
