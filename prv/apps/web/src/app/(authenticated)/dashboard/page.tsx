@@ -1,11 +1,14 @@
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import { getSession } from "@prv/auth"
+import { db } from "@prv/db"
+import { invoices, projects, companyMemberships, notifications } from "@prv/db/schema"
+import { cacheMemo } from "@prv/cache"
+import { sql, eq, and, gte, lt, isNull, inArray } from "drizzle-orm"
 
 export const dynamic = "force-dynamic"
 export const metadata = { title: "Command" }
 
-// Role display labels
 const ROLE_LABELS: Record<string, string> = {
   group_ceo: "Group CEO",
   ceo: "CEO",
@@ -51,16 +54,106 @@ function GlassCard({
   )
 }
 
-function KpiCard({ label, value, sublabel }: { label: string; value: string; sublabel?: string }) {
+function KpiCard({
+  label,
+  value,
+  sublabel,
+  highlight = false,
+}: {
+  label: string
+  value: string
+  sublabel?: string
+  highlight?: boolean
+}) {
   return (
     <GlassCard>
       <p className="text-[11px] font-medium text-white/35 uppercase tracking-widest mb-2">
         {label}
       </p>
-      <p className="text-[28px] font-semibold text-white/90 leading-none tracking-tight">{value}</p>
+      <p
+        className={`text-[28px] font-semibold leading-none tracking-tight ${highlight ? "text-white" : "text-white/90"}`}
+      >
+        {value}
+      </p>
       {sublabel && <p className="text-[12px] text-white/35 mt-1.5">{sublabel}</p>}
     </GlassCard>
   )
+}
+
+async function fetchKpis(companyId: string, userId: string) {
+  const now = new Date()
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+  const startOfNextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1)
+  const periodKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`
+
+  return cacheMemo(
+    "dashboard_kpis",
+    `${companyId}:${userId}:${periodKey}`,
+    async () => {
+      const [revenueRow, projectsRow, workforceRow, alertsRow] = await Promise.all([
+        db
+          .select({ total: sql<string>`COALESCE(SUM(${invoices.total}), 0)::text` })
+          .from(invoices)
+          .where(
+            and(
+              eq(invoices.companyId, companyId),
+              eq(invoices.status, "paid"),
+              gte(invoices.paidAt, startOfMonth),
+              lt(invoices.paidAt, startOfNextMonth)
+            )
+          ),
+        db
+          .select({ count: sql<number>`COUNT(*)::int` })
+          .from(projects)
+          .where(
+            and(
+              eq(projects.companyId, companyId),
+              eq(projects.status, "active"),
+              eq(projects.isActive, true),
+              isNull(projects.deletedAt)
+            )
+          ),
+        db
+          .select({ count: sql<number>`COUNT(*)::int` })
+          .from(companyMemberships)
+          .where(
+            and(
+              eq(companyMemberships.companyId, companyId),
+              eq(companyMemberships.status, "ACTIVE")
+            )
+          ),
+        db
+          .select({ count: sql<number>`COUNT(*)::int` })
+          .from(notifications)
+          .where(
+            and(
+              eq(notifications.companyId, companyId),
+              eq(notifications.userId, userId),
+              eq(notifications.isRead, false),
+              eq(notifications.isDismissed, false),
+              inArray(notifications.type, ["error", "warning", "action_required"])
+            )
+          ),
+      ])
+
+      return {
+        revenue: revenueRow[0]?.total ?? "0",
+        activeProjects: projectsRow[0]?.count ?? 0,
+        workforce: workforceRow[0]?.count ?? 0,
+        alerts: alertsRow[0]?.count ?? 0,
+        periodKey,
+      }
+    },
+    { ttl: 60 }
+  )
+}
+
+function formatCurrency(raw: string): string {
+  const n = parseFloat(raw)
+  if (isNaN(n)) return "0 RON"
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M RON`
+  if (n >= 1_000) return `${(n / 1_000).toFixed(0)}K RON`
+  return `${n.toLocaleString("ro-RO")} RON`
 }
 
 export default async function DashboardPage() {
@@ -76,6 +169,16 @@ export default async function DashboardPage() {
   }
 
   const roleLabel = ROLE_LABELS[session.role] ?? session.role
+
+  let kpis
+  try {
+    kpis = await fetchKpis(session.companyId, session.userId)
+  } catch {
+    kpis = null
+  }
+
+  const now = new Date()
+  const monthName = now.toLocaleString("en-US", { month: "long" })
 
   return (
     <div className="px-4 pt-14 pb-4 max-w-2xl mx-auto">
@@ -100,10 +203,27 @@ export default async function DashboardPage() {
 
       {/* KPI Grid */}
       <div className="grid grid-cols-2 gap-3 mb-6">
-        <KpiCard label="Revenue" value="—" sublabel="This month" />
-        <KpiCard label="Active Projects" value="—" sublabel="Across all teams" />
-        <KpiCard label="Workforce" value="—" sublabel="Active employees" />
-        <KpiCard label="Alerts" value="—" sublabel="Requires attention" />
+        <KpiCard
+          label="Revenue"
+          value={kpis ? formatCurrency(kpis.revenue) : "—"}
+          sublabel={kpis ? `${monthName} · paid invoices` : "Loading…"}
+        />
+        <KpiCard
+          label="Active Projects"
+          value={kpis ? String(kpis.activeProjects) : "—"}
+          sublabel="Across all teams"
+        />
+        <KpiCard
+          label="Workforce"
+          value={kpis ? String(kpis.workforce) : "—"}
+          sublabel="Active members"
+        />
+        <KpiCard
+          label="Alerts"
+          value={kpis ? String(kpis.alerts) : "—"}
+          sublabel="Unread · critical"
+          highlight={(kpis?.alerts ?? 0) > 0}
+        />
       </div>
 
       {/* Quick Actions */}

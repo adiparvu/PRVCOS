@@ -29,6 +29,12 @@ export type PRVEvents = {
   "prv/jit.session.started": {
     data: { sessionId: string; expiresAt: string }
   }
+  "prv/presence.manual_set": {
+    data: { userId: string; companyId: string; expiresAt: string }
+  }
+  "prv/kpi.snapshot.requested": {
+    data: { companyId: string; period: string }
+  }
 }
 
 export const inngest = new Inngest({
