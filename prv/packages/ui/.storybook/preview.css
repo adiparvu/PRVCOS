@@ -1,0 +1,25 @@
+/* Import canonical PRV design tokens */
+@import "../src/styles/tokens.css";
+
+/* Base styles for Storybook preview */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Ensure inputs use system fonts */
+input,
+button,
+textarea,
+select {
+  font: inherit;
+}

@@ -3,7 +3,7 @@
 import React, { useEffect, useRef } from "react"
 import { clsx } from "clsx"
 
-type ModalSize = "sm" | "md" | "lg" | "xl"
+export type ModalSize = "sm" | "md" | "lg" | "xl"
 
 const sizeMap: Record<ModalSize, string> = {
   sm: "max-w-sm",
@@ -70,9 +70,10 @@ export function GlassModal({
       <div
         ref={overlayRef}
         className={clsx(
-          "absolute inset-0 bg-black/70 backdrop-blur-sm transition-opacity duration-250",
+          "absolute inset-0 backdrop-blur-sm transition-opacity duration-250",
           open ? "opacity-100" : "opacity-0"
         )}
+        style={{ background: "rgba(0,0,0,0.7)" }}
         onClick={() => !persistent && onClose()}
         aria-hidden="true"
       />
@@ -82,26 +83,36 @@ export function GlassModal({
         className={clsx(
           "relative w-full",
           sizeMap[size],
-          "bg-white/[0.10] backdrop-blur-[48px]",
-          "border border-white/[0.12]",
-          "rounded-[24px]",
-          "shadow-[0_32px_80px_rgba(0,0,0,0.8)]",
-          "ring-[0.5px] ring-inset ring-white/20",
+          "border rounded-[24px]",
+          "backdrop-blur-[64px] backdrop-saturate-[200%]",
           "transition-all duration-250",
           open ? "opacity-100 scale-100" : "opacity-0 scale-95",
           className
         )}
+        style={{
+          background: "var(--prv-g3)",
+          borderColor: "var(--prv-border)",
+          boxShadow: "0 32px 80px rgba(0,0,0,0.8), inset 0 1px 0 var(--prv-g3-spec)",
+        }}
       >
         {/* Header */}
         {(title || description) && (
           <div className="px-6 pt-6 pb-4">
             {title && (
-              <h2 id="modal-title" className="text-[18px] font-semibold text-white">
+              <h2
+                id="modal-title"
+                className="text-[18px] font-semibold"
+                style={{ color: "var(--prv-text-1)" }}
+              >
                 {title}
               </h2>
             )}
             {description && (
-              <p id="modal-description" className="mt-1 text-[14px] text-white/50">
+              <p
+                id="modal-description"
+                className="mt-1 text-[14px]"
+                style={{ color: "var(--prv-text-3)" }}
+              >
                 {description}
               </p>
             )}
@@ -113,7 +124,10 @@ export function GlassModal({
 
         {/* Footer */}
         {footer && (
-          <div className="flex items-center justify-end gap-3 px-6 pb-6 pt-2 border-t border-white/[0.08]">
+          <div
+            className="flex items-center justify-end gap-3 px-6 pb-6 pt-2 border-t"
+            style={{ borderColor: "var(--prv-border-subtle)" }}
+          >
             {footer}
           </div>
         )}
@@ -122,7 +136,12 @@ export function GlassModal({
         {!title && (
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 flex h-8 w-8 items-center justify-center rounded-full bg-white/[0.08] text-white/50 hover:bg-white/[0.14] hover:text-white transition-colors"
+            className="absolute top-4 right-4 flex h-8 w-8 items-center justify-center rounded-full border transition-colors"
+            style={{
+              background: "var(--prv-g1)",
+              borderColor: "var(--prv-border)",
+              color: "var(--prv-text-2)",
+            }}
             aria-label="Close"
           >
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">

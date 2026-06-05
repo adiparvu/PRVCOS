@@ -42,7 +42,6 @@ export function GlassSheet({
 }: GlassSheetProps) {
   const sheetRef = useRef<HTMLDivElement>(null)
 
-  // Close on Escape
   useEffect(() => {
     if (!open) return
     const handler = (e: KeyboardEvent) => {
@@ -52,7 +51,6 @@ export function GlassSheet({
     return () => window.removeEventListener("keydown", handler)
   }, [open, onClose])
 
-  // Lock body scroll
   useEffect(() => {
     if (open) {
       document.body.style.overflow = "hidden"
@@ -74,9 +72,10 @@ export function GlassSheet({
       {/* Backdrop */}
       <div
         className={clsx(
-          "absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300",
+          "absolute inset-0 backdrop-blur-sm transition-opacity duration-300",
           open ? "opacity-100" : "opacity-0"
         )}
+        style={{ background: "var(--prv-scrim)" }}
         onClick={onClose}
         aria-hidden="true"
       />
@@ -86,32 +85,46 @@ export function GlassSheet({
         ref={sheetRef}
         className={clsx(
           "absolute overflow-hidden",
-          "bg-white/[0.10] backdrop-blur-[48px]",
-          "border border-white/[0.12]",
-          "shadow-[0_24px_64px_rgba(0,0,0,0.7)]",
-          "ring-[0.5px] ring-inset ring-white/20",
-          "transition-transform duration-[400ms]",
-          "will-change-transform",
+          "border backdrop-blur-[48px] backdrop-saturate-[180%]",
+          "transition-transform duration-[400ms] will-change-transform",
           positionClasses[side],
           sizeClasses[side],
           open ? "translate-x-0 translate-y-0" : translateFrom[side],
           className
         )}
-        style={{ transitionTimingFunction: "cubic-bezier(0.34,1.56,0.64,1)" }}
+        style={{
+          background: "var(--prv-g2)",
+          borderColor: "var(--prv-border)",
+          boxShadow: "0 24px 64px rgba(0,0,0,0.7), inset 0 1px 0 var(--prv-g2-spec)",
+          transitionTimingFunction: "cubic-bezier(0.34,1.56,0.64,1)",
+        }}
       >
         {/* Drag indicator (bottom sheet only) */}
         {side === "bottom" && (
           <div className="flex justify-center pt-3 pb-1">
-            <div className="h-1 w-10 rounded-full bg-white/25" />
+            <div
+              className="h-1 w-10 rounded-full"
+              style={{ background: "var(--prv-border-strong)" }}
+            />
           </div>
         )}
 
         {title && (
-          <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.08]">
-            <h2 className="text-[17px] font-semibold text-white">{title}</h2>
+          <div
+            className="flex items-center justify-between px-6 py-4 border-b"
+            style={{ borderColor: "var(--prv-border-subtle)" }}
+          >
+            <h2 className="text-[17px] font-semibold" style={{ color: "var(--prv-text-1)" }}>
+              {title}
+            </h2>
             <button
               onClick={onClose}
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-white/[0.08] text-white/50 hover:bg-white/[0.14] hover:text-white transition-colors"
+              className="flex h-8 w-8 items-center justify-center rounded-full border transition-colors"
+              style={{
+                background: "var(--prv-g1)",
+                borderColor: "var(--prv-border)",
+                color: "var(--prv-text-2)",
+              }}
               aria-label="Close"
             >
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none">

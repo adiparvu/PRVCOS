@@ -4,20 +4,38 @@ import { clsx } from "clsx"
 type ButtonVariant = "primary" | "ghost" | "glass" | "destructive"
 type ButtonSize = "sm" | "md" | "lg"
 
-const variantClasses: Record<ButtonVariant, string> = {
-  primary: "bg-white text-black hover:bg-white/90 active:bg-white/80 font-semibold",
-  ghost: "text-white/65 hover:text-white hover:bg-white/[0.08] active:bg-white/[0.12]",
-  glass:
-    "bg-white/[0.10] text-white border border-white/[0.12] hover:bg-white/[0.16] active:bg-white/[0.20] backdrop-blur-2xl",
-  // Destructive: elevated opacity + strong border — not color, per monochrome rule
-  destructive:
-    "bg-white/[0.12] text-white/50 border border-white/[0.25] hover:bg-white/[0.18] hover:text-white/70 active:bg-white/[0.22]",
-}
-
 const sizeClasses: Record<ButtonSize, string> = {
   sm: "h-8 px-3 text-[13px] rounded-[10px] gap-1.5",
   md: "h-10 px-4 text-[15px] rounded-[12px] gap-2",
   lg: "h-12 px-6 text-[16px] rounded-[14px] gap-2.5",
+}
+
+const variantBase: Record<ButtonVariant, string> = {
+  primary: "font-semibold",
+  ghost: "font-medium",
+  glass: "font-medium border backdrop-blur-2xl",
+  destructive: "font-medium border",
+}
+
+function variantStyle(variant: ButtonVariant): React.CSSProperties {
+  switch (variant) {
+    case "primary":
+      return { background: "var(--prv-text-1)", color: "var(--prv-bg)" }
+    case "ghost":
+      return { background: "transparent", color: "var(--prv-text-2)" }
+    case "glass":
+      return {
+        background: "var(--prv-g2)",
+        color: "var(--prv-text-1)",
+        borderColor: "var(--prv-border)",
+      }
+    case "destructive":
+      return {
+        background: "var(--prv-g3)",
+        color: "var(--prv-text-3)",
+        borderColor: "var(--prv-border-strong)",
+      }
+  }
 }
 
 export interface GlassButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -35,6 +53,7 @@ export function GlassButton({
   leftIcon,
   rightIcon,
   className,
+  style,
   children,
   disabled,
   ...props
@@ -45,14 +64,15 @@ export function GlassButton({
     <button
       disabled={isDisabled}
       className={clsx(
-        "inline-flex items-center justify-center font-medium",
+        "inline-flex items-center justify-center",
         "transition-all duration-150",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50",
+        "focus-visible:outline-none focus-visible:ring-2",
         "disabled:opacity-40 disabled:cursor-not-allowed",
-        variantClasses[variant],
+        variantBase[variant],
         sizeClasses[size],
         className
       )}
+      style={{ ...variantStyle(variant), ...style }}
       {...props}
     >
       {loading ? (
