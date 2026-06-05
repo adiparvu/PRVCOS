@@ -1,0 +1,1904 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PRV · Sprint 13 — Navigation System Preview</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #000000;
+    --g1: rgba(255,255,255,0.06);
+    --g2: rgba(255,255,255,0.10);
+    --g3: rgba(255,255,255,0.16);
+    --g4: rgba(255,255,255,0.22);
+    --text-1: rgba(255,255,255,0.95);
+    --text-2: rgba(255,255,255,0.65);
+    --text-3: rgba(255,255,255,0.35);
+    --text-4: rgba(255,255,255,0.15);
+    --border: rgba(255,255,255,0.12);
+    --border-subtle: rgba(255,255,255,0.07);
+    --border-strong: rgba(255,255,255,0.22);
+    --spec: rgba(255,255,255,0.25);
+    --spec2: rgba(255,255,255,0.20);
+    --scrim: rgba(0,0,0,0.72);
+    --shadow-e2: 0 4px 16px rgba(0,0,0,0.5);
+    --shadow-e4: 0 24px 64px rgba(0,0,0,0.7), 0 8px 24px rgba(0,0,0,0.4);
+    --spring: cubic-bezier(0.34,1.56,0.64,1);
+    --smooth: cubic-bezier(0.4,0,0.2,1);
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-base: 16px;
+    --radius-card: 20px;
+    --radius-panel: 24px;
+    --radius-sheet: 32px;
+    --radius-pill: 100px;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text-1);
+    font-family: -apple-system, "SF Pro Text", "SF Pro Display", sans-serif;
+    min-height: 100vh;
+    padding: 40px 24px 80px;
+    overflow-x: hidden;
+  }
+
+  /* ── Header ── */
+  .page-header {
+    text-align: center;
+    margin-bottom: 56px;
+  }
+  .sprint-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--g2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-pill);
+    padding: 4px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-2);
+    margin-bottom: 16px;
+  }
+  .page-title { font-size: 34px; font-weight: 700; letter-spacing: -0.02em; color: var(--text-1); margin-bottom: 8px; }
+  .page-sub { font-size: 16px; color: var(--text-3); }
+
+  /* ── Section ── */
+  .section { margin-bottom: 64px; }
+  .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-3);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-label::after { content: ""; flex: 1; height: 1px; background: var(--border-subtle); }
+
+  /* ── Glass surface utility ── */
+  .glass {
+    background: var(--g2);
+    border: 1px solid var(--border);
+    backdrop-filter: blur(48px) saturate(180%);
+    -webkit-backdrop-filter: blur(48px) saturate(180%);
+    box-shadow: var(--shadow-e4), inset 0 1px 0 var(--spec2);
+  }
+  .glass-card {
+    background: var(--g1);
+    border: 1px solid var(--border);
+    backdrop-filter: blur(32px) saturate(140%);
+    -webkit-backdrop-filter: blur(32px) saturate(140%);
+    box-shadow: var(--shadow-e2), inset 0 1px 0 var(--spec2);
+  }
+
+  /* ══════════════════════════════════════════════
+     COMPONENT 1 — FLOATING TAB BAR
+  ══════════════════════════════════════════════ */
+  .tab-demo-container {
+    position: relative;
+    height: 420px;
+    border-radius: var(--radius-sheet);
+    overflow: hidden;
+    background: radial-gradient(ellipse at 50% 0%, rgba(255,255,255,0.03) 0%, transparent 70%);
+    border: 1px solid var(--border-subtle);
+  }
+  .phone-bg {
+    position: absolute;
+    inset: 0;
+    background: #080808;
+    border-radius: var(--radius-sheet);
+    overflow: hidden;
+  }
+  /* Fake content */
+  .fake-content {
+    padding: 20px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .fake-card {
+    background: var(--g1);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-card);
+    height: 90px;
+  }
+  .fake-card:first-child { grid-column: 1 / -1; height: 120px; }
+
+  /* Tab bar */
+  .floating-tab-bar {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 10px;
+    background: var(--g3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-pill);
+    backdrop-filter: blur(48px) saturate(180%);
+    -webkit-backdrop-filter: blur(48px) saturate(180%);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.18);
+    min-width: 280px;
+    justify-content: center;
+  }
+  .tab-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 8px 16px;
+    border-radius: var(--radius-pill);
+    cursor: pointer;
+    transition: all 0.3s var(--spring);
+    position: relative;
+    min-width: 52px;
+  }
+  .tab-item.active {
+    background: rgba(255,255,255,0.14);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.20);
+  }
+  .tab-icon { width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; }
+  .tab-icon svg { transition: all 0.25s var(--spring); }
+  .tab-item.active .tab-icon svg { transform: scale(1.1); }
+  .tab-label { font-size: 9px; font-weight: 500; color: var(--text-3); letter-spacing: 0.01em; }
+  .tab-item.active .tab-label { color: var(--text-1); font-weight: 600; }
+  .tab-dot {
+    position: absolute;
+    top: 6px;
+    right: 10px;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--text-1);
+    border: 1.5px solid var(--bg);
+    display: none;
+  }
+  .tab-item[data-badge="true"] .tab-dot { display: block; }
+
+  /* Variants row */
+  .tab-variants {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 20px;
+    background: var(--g1);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-panel);
+    margin-top: 16px;
+  }
+  .tab-variant-row { display: flex; align-items: center; gap: 16px; }
+  .variant-tag {
+    font-size: 10px;
+    color: var(--text-3);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    width: 80px;
+    flex-shrink: 0;
+  }
+  .mini-tab-bar {
+    display: flex;
+    gap: 2px;
+    padding: 5px 8px;
+    background: var(--g3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-pill);
+    backdrop-filter: blur(32px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.15);
+    flex: 1;
+    justify-content: center;
+  }
+  .mini-tab {
+    padding: 5px 12px;
+    border-radius: var(--radius-pill);
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-3);
+    white-space: nowrap;
+    transition: all 0.25s var(--spring);
+  }
+  .mini-tab.active {
+    background: rgba(255,255,255,0.14);
+    color: var(--text-1);
+    font-weight: 600;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.18);
+  }
+
+  /* ══════════════════════════════════════════════
+     COMPONENT 2 — BOTTOM SHEETS (8 types)
+  ══════════════════════════════════════════════ */
+  .sheet-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 12px;
+  }
+  .sheet-card {
+    background: var(--g1);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-card);
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.25s var(--smooth);
+    position: relative;
+    overflow: hidden;
+  }
+  .sheet-card::before {
+    content: "";
+    position: absolute;
+    inset-x: 0;
+    top: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
+  }
+  .sheet-card:hover { background: var(--g2); border-color: var(--border); transform: translateY(-1px); }
+  .sheet-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .sheet-type-badge {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-3);
+    background: var(--g2);
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    padding: 2px 6px;
+  }
+  .sheet-card-title { font-size: 13px; font-weight: 600; color: var(--text-1); margin-bottom: 4px; }
+  .sheet-card-desc { font-size: 11px; color: var(--text-3); line-height: 1.4; }
+  /* Mini sheet preview */
+  .sheet-mini-preview {
+    margin-top: 12px;
+    height: 60px;
+    background: var(--g2);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    position: relative;
+  }
+  .sheet-mini-preview::before {
+    content: "";
+    position: absolute;
+    inset-x: 0;
+    top: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+  }
+  .sheet-handle {
+    width: 32px; height: 3px;
+    background: var(--border-strong);
+    border-radius: 2px;
+    margin: 6px auto;
+  }
+  .sheet-mini-lines {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding: 4px 10px;
+  }
+  .sheet-mini-line {
+    height: 5px;
+    border-radius: 3px;
+    background: var(--border);
+  }
+
+  /* Bottom sheet overlay */
+  .sheet-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s var(--smooth);
+  }
+  .sheet-overlay.active {
+    pointer-events: auto;
+    opacity: 1;
+  }
+  .sheet-backdrop {
+    position: absolute;
+    inset: 0;
+    background: var(--scrim);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+  .sheet-panel {
+    position: relative;
+    background: var(--g2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
+    backdrop-filter: blur(48px) saturate(180%);
+    -webkit-backdrop-filter: blur(48px) saturate(180%);
+    box-shadow: 0 -24px 64px rgba(0,0,0,0.5), inset 0 1px 0 var(--spec);
+    padding: 0 0 env(safe-area-inset-bottom);
+    transform: translateY(100%);
+    transition: transform 0.45s var(--spring);
+    max-width: 600px;
+    width: 100%;
+    margin: 0 auto;
+  }
+  .sheet-overlay.active .sheet-panel { transform: translateY(0); }
+  .sheet-drag-handle {
+    display: flex;
+    justify-content: center;
+    padding: 12px 0 4px;
+  }
+  .sheet-drag-handle span {
+    width: 36px; height: 4px;
+    background: var(--border-strong);
+    border-radius: 2px;
+  }
+  .sheet-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 20px 16px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .sheet-title { font-size: 17px; font-weight: 600; color: var(--text-1); }
+  .close-btn {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: var(--g2);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-2);
+    font-size: 14px;
+    transition: all 0.2s;
+    user-select: none;
+  }
+  .close-btn:hover { background: var(--g3); }
+  .sheet-body { padding: 16px 20px 24px; }
+
+  /* Action sheet */
+  .action-list { display: flex; flex-direction: column; gap: 2px; }
+  .action-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    border-radius: var(--radius-base);
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .action-item:hover { background: var(--g2); }
+  .action-item-icon {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    background: var(--g2);
+    border: 1px solid var(--border-subtle);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .action-item-label { font-size: 15px; color: var(--text-1); }
+  .action-item-desc { font-size: 12px; color: var(--text-3); margin-top: 1px; }
+  .action-item.destructive .action-item-label { color: rgba(255,80,80,0.85); }
+  .action-item.destructive .action-item-icon { background: rgba(255,50,50,0.08); border-color: rgba(255,50,50,0.15); }
+
+  /* Confirmation sheet */
+  .confirm-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 12px;
+    padding: 8px 0;
+  }
+  .confirm-icon {
+    width: 56px; height: 56px;
+    border-radius: 16px;
+    background: var(--g2);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .confirm-title { font-size: 17px; font-weight: 600; color: var(--text-1); }
+  .confirm-desc { font-size: 14px; color: var(--text-3); line-height: 1.5; }
+  .confirm-actions { display: flex; gap: 10px; width: 100%; margin-top: 8px; }
+  .btn-primary {
+    flex: 1;
+    padding: 14px;
+    border-radius: 14px;
+    background: var(--text-1);
+    color: var(--bg);
+    font-size: 15px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-primary:hover { opacity: 0.9; transform: scale(0.99); }
+  .btn-ghost {
+    flex: 1;
+    padding: 14px;
+    border-radius: 14px;
+    background: var(--g2);
+    color: var(--text-2);
+    font-size: 15px;
+    font-weight: 500;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-ghost:hover { background: var(--g3); }
+  .btn-destructive {
+    flex: 1;
+    padding: 14px;
+    border-radius: 14px;
+    background: rgba(255,50,50,0.12);
+    color: rgba(255,90,90,0.9);
+    font-size: 15px;
+    font-weight: 600;
+    border: 1px solid rgba(255,50,50,0.18);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  /* Filter sheet */
+  .filter-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .filter-label { font-size: 14px; color: var(--text-1); }
+  .filter-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip {
+    padding: 4px 10px;
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--text-2);
+    background: var(--g1);
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .chip.active { background: var(--text-1); color: var(--bg); border-color: transparent; }
+
+  /* Form sheet */
+  .form-field { margin-bottom: 12px; }
+  .form-label { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-3); margin-bottom: 6px; }
+  .form-input {
+    width: 100%;
+    padding: 12px 14px;
+    background: var(--g1);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-base);
+    color: var(--text-1);
+    font-size: 15px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .form-input:focus { border-color: var(--border-strong); }
+
+  /* ══════════════════════════════════════════════
+     COMPONENT 3 — CONTEXT MENU
+  ══════════════════════════════════════════════ */
+  .context-demo-area {
+    position: relative;
+    height: 300px;
+    background: var(--g1);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-panel);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+  }
+  .context-target-card {
+    background: var(--g2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+    padding: 20px 24px;
+    text-align: center;
+    box-shadow: var(--shadow-e2), inset 0 1px 0 rgba(255,255,255,0.15);
+    cursor: context-menu;
+    transition: all 0.2s var(--spring);
+    min-width: 200px;
+  }
+  .context-target-card:hover { background: var(--g3); }
+  .context-target-card:active { transform: scale(0.97); }
+  .context-card-title { font-size: 15px; font-weight: 600; color: var(--text-1); margin-bottom: 4px; }
+  .context-card-sub { font-size: 12px; color: var(--text-3); }
+  .context-hint { position: absolute; bottom: 12px; left: 0; right: 0; text-align: center; font-size: 11px; color: var(--text-4); }
+
+  .context-menu {
+    position: absolute;
+    background: var(--g3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-panel);
+    backdrop-filter: blur(64px) saturate(200%);
+    -webkit-backdrop-filter: blur(64px) saturate(200%);
+    box-shadow: 0 16px 48px rgba(0,0,0,0.7), 0 4px 16px rgba(0,0,0,0.4), inset 0 1px 0 var(--spec);
+    padding: 6px;
+    min-width: 200px;
+    z-index: 50;
+    opacity: 0;
+    transform: scale(0.88) translateY(-8px);
+    transform-origin: top left;
+    pointer-events: none;
+    transition: opacity 0.18s var(--smooth), transform 0.22s var(--spring);
+  }
+  .context-menu.open {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    pointer-events: auto;
+  }
+  .context-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 9px 12px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background 0.12s;
+  }
+  .context-item:hover { background: var(--g1); }
+  .context-item-left { display: flex; align-items: center; gap: 10px; }
+  .context-item-label { font-size: 14px; color: var(--text-1); }
+  .context-item-shortcut { font-size: 11px; color: var(--text-4); }
+  .context-item.destructive .context-item-label { color: rgba(255,80,80,0.85); }
+  .context-separator { height: 1px; background: var(--border-subtle); margin: 4px 6px; }
+
+  /* ══════════════════════════════════════════════
+     COMPONENT 4 — COMMAND PALETTE
+  ══════════════════════════════════════════════ */
+  .cmd-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 10vh;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s var(--smooth);
+  }
+  .cmd-overlay.open {
+    pointer-events: auto;
+    opacity: 1;
+  }
+  .cmd-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  .cmd-panel {
+    position: relative;
+    width: 100%;
+    max-width: 560px;
+    background: var(--g3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sheet);
+    backdrop-filter: blur(64px) saturate(200%);
+    -webkit-backdrop-filter: blur(64px) saturate(200%);
+    box-shadow: 0 32px 80px rgba(0,0,0,0.8), 0 8px 32px rgba(0,0,0,0.5), inset 0 1px 0 var(--spec);
+    overflow: hidden;
+    transform: scale(0.92) translateY(-16px);
+    transition: transform 0.28s var(--spring);
+  }
+  .cmd-overlay.open .cmd-panel { transform: scale(1) translateY(0); }
+  .cmd-search-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .cmd-search-icon { flex-shrink: 0; color: var(--text-3); }
+  .cmd-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text-1);
+    font-size: 17px;
+    font-family: inherit;
+  }
+  .cmd-input::placeholder { color: var(--text-4); }
+  .cmd-kbd {
+    font-size: 11px;
+    color: var(--text-4);
+    background: var(--g2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 2px 6px;
+    flex-shrink: 0;
+  }
+  .cmd-section-title {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-3);
+    padding: 12px 20px 6px;
+  }
+  .cmd-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    margin: 2px 8px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background 0.12s;
+  }
+  .cmd-item:hover, .cmd-item.selected { background: var(--g2); }
+  .cmd-item-icon {
+    width: 32px; height: 32px;
+    border-radius: 9px;
+    background: var(--g1);
+    border: 1px solid var(--border-subtle);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 14px;
+  }
+  .cmd-item-label { font-size: 14px; color: var(--text-1); }
+  .cmd-item-category { font-size: 11px; color: var(--text-3); margin-top: 1px; }
+  .cmd-item-shortcut { margin-left: auto; font-size: 11px; color: var(--text-4); white-space: nowrap; }
+  .cmd-footer {
+    padding: 10px 20px;
+    border-top: 1px solid var(--border-subtle);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .cmd-footer-hint { display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--text-4); }
+  .cmd-footer-hint kbd {
+    background: var(--g2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 5px;
+    font-size: 10px;
+  }
+
+  /* ══════════════════════════════════════════════
+     COMPONENT 5 — DYNAMIC ISLAND
+  ══════════════════════════════════════════════ */
+  .di-demo {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+  .di-phone-frame {
+    background: #050505;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 40px;
+    padding: 20px 16px 28px;
+    max-width: 320px;
+    margin: 0 auto;
+    box-shadow: 0 32px 80px rgba(0,0,0,0.8);
+  }
+  .di-island {
+    width: 96px;
+    height: 28px;
+    background: #000;
+    border-radius: 20px;
+    margin: 0 auto 16px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.4s var(--spring);
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.05);
+    cursor: pointer;
+    user-select: none;
+  }
+  .di-island.compact {
+    width: 128px;
+    height: 32px;
+  }
+  .di-island.expanded {
+    width: 280px;
+    height: 72px;
+    border-radius: 24px;
+  }
+  .di-idle-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.12); }
+  .di-compact-content {
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 10px;
+    width: 100%;
+  }
+  .di-island.compact .di-idle-dot { display: none; }
+  .di-island.compact .di-compact-content { display: flex; }
+  .di-expanded-content {
+    display: none;
+    padding: 10px 14px;
+    width: 100%;
+  }
+  .di-island.expanded .di-idle-dot { display: none; }
+  .di-island.expanded .di-compact-content { display: none; }
+  .di-island.expanded .di-expanded-content { display: block; }
+
+  .di-live-dot { width: 6px; height: 6px; border-radius: 50%; background: #30d158; animation: pulse-dot 2s infinite; }
+  @keyframes pulse-dot { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+  .di-compact-label { font-size: 11px; font-weight: 500; color: rgba(255,255,255,0.8); }
+  .di-compact-value { font-size: 12px; font-weight: 700; color: #fff; }
+  .di-exp-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+  .di-exp-label { font-size: 11px; color: rgba(255,255,255,0.45); }
+  .di-exp-value { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.9); }
+  .di-exp-title { font-size: 13px; font-weight: 600; color: #fff; margin-bottom: 2px; }
+  .di-exp-sub { font-size: 11px; color: rgba(255,255,255,0.5); }
+  .di-progress {
+    height: 3px;
+    background: rgba(255,255,255,0.12);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 8px;
+  }
+  .di-progress-bar {
+    height: 100%;
+    background: #30d158;
+    border-radius: 2px;
+    width: 67%;
+    transition: width 0.5s var(--smooth);
+  }
+
+  /* DI states showcase */
+  .di-states-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+    margin-top: 16px;
+  }
+  .di-state-card {
+    background: var(--g1);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-card);
+    padding: 16px;
+  }
+  .di-state-label { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-3); margin-bottom: 12px; }
+  .di-mock {
+    background: #000;
+    border-radius: 20px;
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid rgba(255,255,255,0.05);
+  }
+  .di-mock-icon { width: 16px; height: 16px; border-radius: 4px; background: rgba(255,255,255,0.15); flex-shrink: 0; }
+  .di-mock-text { font-size: 11px; color: rgba(255,255,255,0.7); font-weight: 500; }
+  .di-mock-val { font-size: 12px; color: #fff; font-weight: 700; margin-left: auto; }
+
+  /* ══════════════════════════════════════════════
+     COMPONENT 6 — GLASS TOAST
+  ══════════════════════════════════════════════ */
+  .toast-container-demo {
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: center;
+    z-index: 300;
+    pointer-events: none;
+    width: 100%;
+    max-width: 400px;
+    padding: 0 16px;
+  }
+  .toast {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    background: var(--g3);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    backdrop-filter: blur(48px) saturate(180%);
+    -webkit-backdrop-filter: blur(48px) saturate(180%);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.6), inset 0 1px 0 var(--spec2);
+    transform: translateY(20px) scale(0.95);
+    opacity: 0;
+    transition: all 0.4s var(--spring);
+    pointer-events: auto;
+    position: relative;
+    overflow: hidden;
+  }
+  .toast.show { transform: translateY(0) scale(1); opacity: 1; }
+  .toast-icon {
+    width: 32px; height: 32px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .toast-icon.success { background: rgba(48,209,88,0.15); border: 1px solid rgba(48,209,88,0.25); }
+  .toast-icon.error { background: rgba(255,59,48,0.15); border: 1px solid rgba(255,59,48,0.25); }
+  .toast-icon.warning { background: rgba(255,149,0,0.15); border: 1px solid rgba(255,149,0,0.25); }
+  .toast-icon.info { background: rgba(10,132,255,0.15); border: 1px solid rgba(10,132,255,0.25); }
+  .toast-text { flex: 1; }
+  .toast-title { font-size: 14px; font-weight: 600; color: var(--text-1); }
+  .toast-desc { font-size: 12px; color: var(--text-3); margin-top: 1px; }
+  .toast-close { color: var(--text-4); cursor: pointer; font-size: 16px; padding: 2px; transition: color 0.15s; }
+  .toast-close:hover { color: var(--text-2); }
+  .toast-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 2px;
+    border-radius: 0 0 0 18px;
+    transition: width 3s linear;
+  }
+  .toast-progress.success { background: #30d158; }
+  .toast-progress.error { background: #ff3b30; }
+  .toast-progress.warning { background: #ff9500; }
+  .toast-progress.info { background: #0a84ff; }
+
+  /* Showcase grid */
+  .toast-showcase {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 12px;
+  }
+  .toast-static {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    background: var(--g2);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    box-shadow: inset 0 1px 0 var(--spec2);
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* ══════════════════════════════════════════════
+     COMPONENT 7 — NAVIGATION SHELL
+  ══════════════════════════════════════════════ */
+  .nav-shell-demo {
+    position: relative;
+    height: 500px;
+    background: #050505;
+    border-radius: var(--radius-sheet);
+    border: 1px solid rgba(255,255,255,0.06);
+    overflow: hidden;
+  }
+  .nav-floating-header {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    right: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    background: var(--g2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-pill);
+    backdrop-filter: blur(48px) saturate(180%);
+    -webkit-backdrop-filter: blur(48px) saturate(180%);
+    box-shadow: var(--shadow-e2), inset 0 1px 0 rgba(255,255,255,0.15);
+    z-index: 10;
+  }
+  .nav-header-title { font-size: 15px; font-weight: 600; color: var(--text-1); }
+  .nav-header-right { margin-left: auto; display: flex; gap: 8px; }
+  .nav-icon-btn {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: var(--g1);
+    border: 1px solid var(--border-subtle);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .nav-icon-btn:hover { background: var(--g2); }
+  /* Content area */
+  .nav-content {
+    position: absolute;
+    inset: 0;
+    padding: 80px 16px 96px;
+    overflow-y: auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    align-content: start;
+  }
+  .nav-content-card {
+    background: var(--g1);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-card);
+    height: 80px;
+  }
+  .nav-content-card:first-child { grid-column: 1 / -1; height: 110px; }
+  /* floating search */
+  .nav-floating-search {
+    position: absolute;
+    bottom: 80px;
+    left: 16px;
+    right: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    background: var(--g2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-pill);
+    backdrop-filter: blur(48px) saturate(180%);
+    -webkit-backdrop-filter: blur(48px) saturate(180%);
+    box-shadow: var(--shadow-e2), inset 0 1px 0 rgba(255,255,255,0.15);
+    z-index: 5;
+    display: none; /* hidden in this demo */
+  }
+
+  /* ══════════════════════════════════════════════
+     CONTROLS
+  ══════════════════════════════════════════════ */
+  .demo-controls {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+  .demo-btn {
+    padding: 8px 16px;
+    border-radius: var(--radius-pill);
+    background: var(--g2);
+    border: 1px solid var(--border);
+    color: var(--text-1);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+    white-space: nowrap;
+  }
+  .demo-btn:hover { background: var(--g3); }
+  .demo-btn.active { background: var(--text-1); color: var(--bg); border-color: transparent; }
+
+  /* ══════════════════════════════════════════════
+     DELIVERY TABLE
+  ══════════════════════════════════════════════ */
+  .delivery-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-panel);
+    overflow: hidden;
+  }
+  .delivery-table th {
+    padding: 10px 16px;
+    text-align: left;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-3);
+    background: var(--g1);
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .delivery-table td {
+    padding: 12px 16px;
+    font-size: 13px;
+    color: var(--text-2);
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .delivery-table tr:last-child td { border-bottom: none; }
+  .delivery-table tr:hover td { background: var(--g1); }
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .tag.new { background: rgba(48,209,88,0.12); border: 1px solid rgba(48,209,88,0.2); color: #30d158; }
+  .tag.update { background: rgba(10,132,255,0.10); border: 1px solid rgba(10,132,255,0.2); color: #0a84ff; }
+  .tag.skeleton { background: rgba(255,149,0,0.10); border: 1px solid rgba(255,149,0,0.2); color: #ff9500; }
+
+  /* ══════════════════════════════════════════════
+     MISC
+  ══════════════════════════════════════════════ */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 600px) { .two-col { grid-template-columns: 1fr; } }
+
+  .specular-bar { height: 1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent); margin: 0; }
+</style>
+</head>
+<body>
+
+<!-- ─── PAGE HEADER ───────────────────────────────────────────────── -->
+<div class="page-header">
+  <div class="sprint-badge">Sprint 13 · Design System</div>
+  <h1 class="page-title">Navigation System</h1>
+  <p class="page-sub">Floating Tab Bar · Bottom Sheets · Context Menu · Command Palette · Dynamic Island · Glass Toast</p>
+</div>
+
+<!-- ─── 1. FLOATING TAB BAR ───────────────────────────────────────── -->
+<div class="section">
+  <div class="section-label">01 — Floating Tab Bar</div>
+
+  <div class="tab-demo-container">
+    <div class="phone-bg">
+      <div class="fake-content">
+        <div class="fake-card"></div>
+        <div class="fake-card"></div>
+        <div class="fake-card"></div>
+        <div class="fake-card"></div>
+        <div class="fake-card"></div>
+      </div>
+    </div>
+    <div class="floating-tab-bar">
+      <div class="tab-item active" onclick="setActiveTab(this)">
+        <div class="tab-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.95)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+            <polyline points="9 22 9 12 15 12 15 22"/>
+          </svg>
+        </div>
+        <span class="tab-label">Command</span>
+      </div>
+      <div class="tab-item" onclick="setActiveTab(this)" data-badge="true">
+        <div class="tab-dot"></div>
+        <div class="tab-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.40)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/>
+          </svg>
+        </div>
+        <span class="tab-label">Operations</span>
+      </div>
+      <div class="tab-item" onclick="setActiveTab(this)">
+        <div class="tab-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.40)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+        </div>
+        <span class="tab-label">People</span>
+      </div>
+      <div class="tab-item" onclick="setActiveTab(this)">
+        <div class="tab-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.40)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" x2="12" y1="1" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+          </svg>
+        </div>
+        <span class="tab-label">Finance</span>
+      </div>
+      <div class="tab-item" onclick="setActiveTab(this)">
+        <div class="tab-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.40)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2 20h.01"/><path d="M7 20v-4"/><path d="M12 20v-8"/><path d="M17 20V8"/><path d="M22 4v16"/>
+          </svg>
+        </div>
+        <span class="tab-label">Intelligence</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Variant row -->
+  <div class="tab-variants">
+    <div class="tab-variant-row">
+      <span class="variant-tag">Business OS</span>
+      <div class="mini-tab-bar">
+        <div class="mini-tab active">Command</div>
+        <div class="mini-tab">Operations</div>
+        <div class="mini-tab">People</div>
+        <div class="mini-tab">Finance</div>
+        <div class="mini-tab">Intelligence</div>
+      </div>
+    </div>
+    <div class="tab-variant-row">
+      <span class="variant-tag">Public App</span>
+      <div class="mini-tab-bar">
+        <div class="mini-tab">Home</div>
+        <div class="mini-tab active">Shop</div>
+        <div class="mini-tab">Search</div>
+        <div class="mini-tab">Favorites</div>
+        <div class="mini-tab">Account</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── 2. BOTTOM SHEETS ───────────────────────────────────────────── -->
+<div class="section">
+  <div class="section-label">02 — Bottom Sheet System · 8 Types</div>
+  <div class="sheet-grid">
+
+    <div class="sheet-card" onclick="openSheet('standard')">
+      <div class="sheet-card-header"><span class="sheet-type-badge">Standard</span></div>
+      <div class="sheet-card-title">StandardSheet</div>
+      <div class="sheet-card-desc">General content — lists, detail views, nested forms</div>
+      <div class="sheet-mini-preview">
+        <div class="sheet-handle"></div>
+        <div class="sheet-mini-lines"><div class="sheet-mini-line" style="width:60%"></div><div class="sheet-mini-line" style="width:85%"></div><div class="sheet-mini-line" style="width:40%"></div></div>
+      </div>
+    </div>
+
+    <div class="sheet-card" onclick="openSheet('action')">
+      <div class="sheet-card-header"><span class="sheet-type-badge">Action</span></div>
+      <div class="sheet-card-title">ActionSheet</div>
+      <div class="sheet-card-desc">Contextual action list with icons and destructive option</div>
+      <div class="sheet-mini-preview">
+        <div class="sheet-handle"></div>
+        <div class="sheet-mini-lines"><div class="sheet-mini-line" style="width:70%"></div><div class="sheet-mini-line" style="width:55%"></div></div>
+      </div>
+    </div>
+
+    <div class="sheet-card" onclick="openSheet('form')">
+      <div class="sheet-card-header"><span class="sheet-type-badge">Form</span></div>
+      <div class="sheet-card-title">FormSheet</div>
+      <div class="sheet-card-desc">Input fields, pickers, selectors — inline data entry</div>
+      <div class="sheet-mini-preview">
+        <div class="sheet-handle"></div>
+        <div class="sheet-mini-lines"><div class="sheet-mini-line" style="width:40%; height:10px; border-radius:6px; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.07);"></div><div class="sheet-mini-line" style="width:80%; height:10px; border-radius:6px; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.07);"></div></div>
+      </div>
+    </div>
+
+    <div class="sheet-card" onclick="openSheet('confirm')">
+      <div class="sheet-card-header"><span class="sheet-type-badge">Confirmation</span></div>
+      <div class="sheet-card-title">ConfirmationSheet</div>
+      <div class="sheet-card-desc">Icon + title + desc + primary/cancel actions</div>
+      <div class="sheet-mini-preview">
+        <div class="sheet-handle"></div>
+        <div style="display:flex;gap:6px;padding:6px 8px;"><div style="height:18px;flex:1;border-radius:6px;background:rgba(255,255,255,0.85);"></div><div style="height:18px;flex:1;border-radius:6px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1);"></div></div>
+      </div>
+    </div>
+
+    <div class="sheet-card" onclick="openSheet('filter')">
+      <div class="sheet-card-header"><span class="sheet-type-badge">Filter</span></div>
+      <div class="sheet-card-title">FilterSheet</div>
+      <div class="sheet-card-desc">Multi-parameter filtering with pill chips</div>
+      <div class="sheet-mini-preview">
+        <div class="sheet-handle"></div>
+        <div style="display:flex;gap:4px;padding:6px 8px;"><div style="height:14px;width:40px;border-radius:20px;background:rgba(255,255,255,0.85);"></div><div style="height:14px;width:36px;border-radius:20px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1);"></div><div style="height:14px;width:44px;border-radius:20px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1);"></div></div>
+      </div>
+    </div>
+
+    <div class="sheet-card" onclick="openSheet('preview')">
+      <div class="sheet-card-header"><span class="sheet-type-badge">Preview</span></div>
+      <div class="sheet-card-title">PreviewSheet</div>
+      <div class="sheet-card-desc">Peek & Pop — quick view without full navigation</div>
+      <div class="sheet-mini-preview">
+        <div class="sheet-handle"></div>
+        <div style="display:flex;gap:6px;padding:4px 8px;align-items:center;"><div style="width:24px;height:24px;border-radius:6px;background:rgba(255,255,255,0.08);flex-shrink:0;"></div><div style="flex:1;"><div style="height:6px;width:70%;border-radius:3px;background:rgba(255,255,255,0.15);margin-bottom:4px;"></div><div style="height:5px;width:50%;border-radius:3px;background:rgba(255,255,255,0.07);"></div></div></div>
+      </div>
+    </div>
+
+    <div class="sheet-card" onclick="openSheet('overlay')">
+      <div class="sheet-card-header"><span class="sheet-type-badge">Overlay</span></div>
+      <div class="sheet-card-title">OverlaySheet</div>
+      <div class="sheet-card-desc">Settings panels, preferences, multi-step config</div>
+      <div class="sheet-mini-preview">
+        <div class="sheet-handle"></div>
+        <div class="sheet-mini-lines"><div class="sheet-mini-line" style="width:50%"></div><div class="sheet-mini-line" style="width:75%"></div><div class="sheet-mini-line" style="width:30%"></div></div>
+      </div>
+    </div>
+
+    <div class="sheet-card" onclick="openSheet('fullscreen')">
+      <div class="sheet-card-header"><span class="sheet-type-badge">Fullscreen</span></div>
+      <div class="sheet-card-title">FullscreenSheet</div>
+      <div class="sheet-card-desc">Full-height modal view — document editor, camera, scan</div>
+      <div class="sheet-mini-preview" style="height:50px;background:rgba(255,255,255,0.04);">
+        <div style="height:100%;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text-4);">max-h: 100dvh</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ─── 3. CONTEXT MENU ────────────────────────────────────────────── -->
+<div class="section">
+  <div class="section-label">03 — Glass Context Menu</div>
+  <div class="context-demo-area" oncontextmenu="showContextMenu(event)" onclick="hideContextMenu()">
+    <div class="context-target-card" oncontextmenu="showContextMenu(event)" onclick="event.stopPropagation(); hideContextMenu()">
+      <div class="context-card-title">Alexandru Popescu</div>
+      <div class="context-card-sub">Store Manager · Cluj-Napoca</div>
+    </div>
+    <span class="context-hint">Right-click or long-press to open context menu</span>
+
+    <div class="context-menu" id="ctxMenu">
+      <div class="context-item" onclick="hideContextMenu()">
+        <div class="context-item-left">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--text-2)" stroke-width="1.8" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          <span class="context-item-label">Edit Employee</span>
+        </div>
+        <span class="context-item-shortcut">⌘E</span>
+      </div>
+      <div class="context-item" onclick="hideContextMenu()">
+        <div class="context-item-left">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--text-2)" stroke-width="1.8" stroke-linecap="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" x2="15.42" y1="13.51" y2="17.49"/><line x1="15.41" x2="8.59" y1="6.51" y2="10.49"/></svg>
+          <span class="context-item-label">Share Profile</span>
+        </div>
+        <span class="context-item-shortcut">⌘S</span>
+      </div>
+      <div class="context-item" onclick="hideContextMenu()">
+        <div class="context-item-left">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--text-2)" stroke-width="1.8" stroke-linecap="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" x2="12" y1="2" y2="15"/></svg>
+          <span class="context-item-label">Export Data</span>
+        </div>
+      </div>
+      <div class="context-separator"></div>
+      <div class="context-item" onclick="hideContextMenu()">
+        <div class="context-item-left">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--text-2)" stroke-width="1.8" stroke-linecap="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" x2="6" y1="1" y2="4"/><line x1="10" x2="10" y1="1" y2="4"/><line x1="14" x2="14" y1="1" y2="4"/></svg>
+          <span class="context-item-label">Change Role</span>
+        </div>
+      </div>
+      <div class="context-separator"></div>
+      <div class="context-item destructive" onclick="hideContextMenu()">
+        <div class="context-item-left">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(255,80,80,0.8)" stroke-width="1.8" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          <span class="context-item-label">Remove Employee</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── 4. COMMAND PALETTE ─────────────────────────────────────────── -->
+<div class="section">
+  <div class="section-label">04 — Command Palette · ⌘K</div>
+  <div class="demo-controls">
+    <button class="demo-btn" onclick="toggleCommandPalette()">Open Command Palette (⌘K)</button>
+  </div>
+  <div style="background:var(--g1);border:1px solid var(--border-subtle);border-radius:var(--radius-panel);padding:16px;font-size:13px;color:var(--text-3);line-height:1.6;">
+    <strong style="color:var(--text-2)">Triggers:</strong> ⌘K (web) · swipe-up gesture (mobile) · search icon long-press<br>
+    <strong style="color:var(--text-2)">Sections:</strong> Recent · Navigation · Actions · People · Settings<br>
+    <strong style="color:var(--text-2)">Search:</strong> Real-time across all entities — employees, stores, documents, commands<br>
+    <strong style="color:var(--text-2)">Keyboard:</strong> ↑↓ navigate · Enter confirm · Esc dismiss · ⌘1–5 jump to section
+  </div>
+</div>
+
+<!-- ─── 5. DYNAMIC ISLAND ──────────────────────────────────────────── -->
+<div class="section">
+  <div class="section-label">05 — Dynamic Island Framework</div>
+
+  <div class="two-col">
+    <div>
+      <p style="font-size:12px;color:var(--text-3);margin-bottom:12px;">Tap to cycle states: Idle → Compact → Expanded</p>
+      <div class="di-phone-frame">
+        <div class="di-island" id="diIsland" onclick="cycleDI()">
+          <div class="di-idle-dot"></div>
+          <div class="di-compact-content">
+            <div class="di-live-dot"></div>
+            <span class="di-compact-label">Revenue</span>
+            <span class="di-compact-value">€127K</span>
+          </div>
+          <div class="di-expanded-content">
+            <div class="di-exp-row">
+              <div>
+                <div class="di-exp-title">Daily Revenue</div>
+                <div class="di-exp-sub">PRV Group · Today</div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-size:16px;font-weight:700;color:#fff;">€127,450</div>
+                <div style="font-size:10px;color:#30d158;">↑ 12.4%</div>
+              </div>
+            </div>
+            <div class="di-progress"><div class="di-progress-bar"></div></div>
+            <div style="display:flex;justify-content:space-between;margin-top:4px;">
+              <span class="di-exp-label">67% of daily target</span>
+              <span class="di-exp-label">Target: €190K</span>
+            </div>
+          </div>
+        </div>
+        <!-- Phone content -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:14px;height:70px;"></div>
+          <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:14px;height:70px;"></div>
+          <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:14px;height:70px;grid-column:1/-1;"></div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <p style="font-size:12px;color:var(--text-3);margin-bottom:12px;">Role-specific Live Activity states</p>
+      <div class="di-states-grid">
+        <div class="di-state-card">
+          <div class="di-state-label">CEO · Revenue</div>
+          <div class="di-mock">
+            <div class="di-live-dot" style="flex-shrink:0;"></div>
+            <div class="di-mock-text">Revenue</div>
+            <div class="di-mock-val">€127K</div>
+          </div>
+        </div>
+        <div class="di-state-card">
+          <div class="di-state-label">Store Mgr · Sales</div>
+          <div class="di-mock">
+            <div class="di-live-dot" style="flex-shrink:0;"></div>
+            <div class="di-mock-text">Sales Today</div>
+            <div class="di-mock-val">47 txn</div>
+          </div>
+        </div>
+        <div class="di-state-card">
+          <div class="di-state-label">Cashier · Queue</div>
+          <div class="di-mock">
+            <div class="di-live-dot" style="flex-shrink:0;"></div>
+            <div class="di-mock-text">Queue</div>
+            <div class="di-mock-val">3 wait</div>
+          </div>
+        </div>
+        <div class="di-state-card">
+          <div class="di-state-label">All · Alert</div>
+          <div class="di-mock" style="border:1px solid rgba(255,80,80,0.2);">
+            <div style="width:6px;height:6px;border-radius:50%;background:#ff3b30;flex-shrink:0;"></div>
+            <div class="di-mock-text">Low Stock</div>
+            <div class="di-mock-val" style="color:#ff3b30;">3 SKU</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── 6. GLASS TOAST ─────────────────────────────────────────────── -->
+<div class="section">
+  <div class="section-label">06 — Glass Toast · 4 Severity Levels</div>
+  <div class="demo-controls">
+    <button class="demo-btn" onclick="showToast('success','Saved successfully','Employee record has been updated.')">Success</button>
+    <button class="demo-btn" onclick="showToast('error','Action failed','Permission denied: insufficient scope.')">Error</button>
+    <button class="demo-btn" onclick="showToast('warning','Low inventory','3 SKUs below reorder threshold.')">Warning</button>
+    <button class="demo-btn" onclick="showToast('info','Sync in progress','Syncing attendance records across 4 stores.')">Info</button>
+  </div>
+  <div class="toast-showcase">
+    <div class="toast-static">
+      <div class="toast-icon success">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#30d158" stroke-width="2.2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <div class="toast-text">
+        <div class="toast-title">Changes saved</div>
+        <div class="toast-desc">Employee record updated</div>
+      </div>
+      <div style="height:2px;position:absolute;bottom:0;left:0;width:40%;background:#30d158;border-radius:0 0 0 18px;"></div>
+    </div>
+    <div class="toast-static">
+      <div class="toast-icon error">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ff3b30" stroke-width="2.2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </div>
+      <div class="toast-text">
+        <div class="toast-title">Action failed</div>
+        <div class="toast-desc">Insufficient permissions</div>
+      </div>
+      <div style="height:2px;position:absolute;bottom:0;left:0;width:70%;background:#ff3b30;border-radius:0 0 0 18px;"></div>
+    </div>
+    <div class="toast-static">
+      <div class="toast-icon warning">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ff9500" stroke-width="2.2" stroke-linecap="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+      </div>
+      <div class="toast-text">
+        <div class="toast-title">Low inventory</div>
+        <div class="toast-desc">3 SKUs below threshold</div>
+      </div>
+      <div style="height:2px;position:absolute;bottom:0;left:0;width:85%;background:#ff9500;border-radius:0 0 0 18px;"></div>
+    </div>
+    <div class="toast-static">
+      <div class="toast-icon info">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0a84ff" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+      </div>
+      <div class="toast-text">
+        <div class="toast-title">Sync in progress</div>
+        <div class="toast-desc">4 stores · attendance records</div>
+      </div>
+      <div style="height:2px;position:absolute;bottom:0;left:0;width:55%;background:#0a84ff;border-radius:0 0 0 18px;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── 7. NAVIGATION SHELL ────────────────────────────────────────── -->
+<div class="section">
+  <div class="section-label">07 — Navigation Shell</div>
+  <div class="nav-shell-demo">
+    <div class="nav-floating-header">
+      <div style="width:28px;height:28px;border-radius:8px;background:var(--g2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-2)" stroke-width="1.8" stroke-linecap="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+      </div>
+      <span class="nav-header-title">Command</span>
+      <div class="nav-header-right">
+        <div class="nav-icon-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-2)" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        </div>
+        <div class="nav-icon-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-2)" stroke-width="1.8" stroke-linecap="round"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
+        </div>
+        <div class="nav-icon-btn">
+          <div style="width:22px;height:22px;border-radius:50%;background:var(--g2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:var(--text-2);">AP</div>
+        </div>
+      </div>
+    </div>
+    <div class="nav-content">
+      <div class="nav-content-card"></div>
+      <div class="nav-content-card"></div>
+      <div class="nav-content-card"></div>
+      <div class="nav-content-card"></div>
+      <div class="nav-content-card"></div>
+      <div class="nav-content-card"></div>
+    </div>
+    <div class="floating-tab-bar" style="bottom:16px;left:50%;transform:translateX(-50%);min-width:auto;padding:6px 8px;gap:2px;">
+      <div class="tab-item active" style="padding:6px 12px;min-width:auto;">
+        <div class="tab-icon" style="width:18px;height:18px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.95)" stroke-width="1.8" stroke-linecap="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+        </div>
+        <span class="tab-label" style="font-size:8px;">Command</span>
+      </div>
+      <div class="tab-item" style="padding:6px 12px;min-width:auto;" onclick="setActiveTab(this)">
+        <div class="tab-icon" style="width:18px;height:18px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.8" stroke-linecap="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
+        </div>
+        <span class="tab-label" style="font-size:8px;">Operations</span>
+      </div>
+      <div class="tab-item" style="padding:6px 12px;min-width:auto;" onclick="setActiveTab(this)">
+        <div class="tab-icon" style="width:18px;height:18px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.8" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+        </div>
+        <span class="tab-label" style="font-size:8px;">People</span>
+      </div>
+      <div class="tab-item" style="padding:6px 12px;min-width:auto;" onclick="setActiveTab(this)">
+        <div class="tab-icon" style="width:18px;height:18px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.8" stroke-linecap="round"><line x1="12" x2="12" y1="1" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        </div>
+        <span class="tab-label" style="font-size:8px;">Finance</span>
+      </div>
+      <div class="tab-item" style="padding:6px 12px;min-width:auto;" onclick="setActiveTab(this)">
+        <div class="tab-icon" style="width:18px;height:18px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.8" stroke-linecap="round"><path d="M2 20h.01"/><path d="M7 20v-4"/><path d="M12 20v-8"/><path d="M17 20V8"/><path d="M22 4v16"/></svg>
+        </div>
+        <span class="tab-label" style="font-size:8px;">Intelligence</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── DELIVERY TABLE ─────────────────────────────────────────────── -->
+<div class="section">
+  <div class="section-label">Sprint 13 · Delivery Scope</div>
+  <table class="delivery-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Deliverable</th>
+        <th>Package</th>
+        <th>Type</th>
+        <th>Acceptance Criteria</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>1</td>
+        <td>Floating Tab Bar — 2 configs (Business OS · Public App)</td>
+        <td><code>packages/ui</code></td>
+        <td><span class="tag new">New</span></td>
+        <td>Floats 16px above safe area; content scrolls behind it; spring-animated active indicator</td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td>Bottom Sheet System — 8 variants</td>
+        <td><code>packages/ui</code></td>
+        <td><span class="tag new">New</span></td>
+        <td>All 8 types animate correctly; drag-to-dismiss at 60fps; spring physics on entry</td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td>Glass Context Menu — right-click + long-press</td>
+        <td><code>packages/ui</code></td>
+        <td><span class="tag new">New</span></td>
+        <td>Appears within 50ms; scale+opacity spring enter; dismiss on outside click or Esc</td>
+      </tr>
+      <tr>
+        <td>4</td>
+        <td>Command Palette — ⌘K, search, sections, keyboard nav</td>
+        <td><code>packages/ui</code></td>
+        <td><span class="tag new">New</span></td>
+        <td>Opens in &lt;200ms; ↑↓ navigation; Enter confirm; Esc dismiss; real-time filter</td>
+      </tr>
+      <tr>
+        <td>5</td>
+        <td>Dynamic Island — compact + expanded + live activity hook</td>
+        <td><code>packages/ui</code></td>
+        <td><span class="tag new">New</span></td>
+        <td>Smooth size transitions via spring; role-specific data slots; updater hook exported</td>
+      </tr>
+      <tr>
+        <td>6</td>
+        <td>Glass Toast — 4 severity levels, auto-dismiss, progress bar</td>
+        <td><code>packages/ui</code></td>
+        <td><span class="tag new">New</span></td>
+        <td>Spring emerge; 3s auto-dismiss; progress bar drains; stacks up to 3</td>
+      </tr>
+      <tr>
+        <td>7</td>
+        <td>Navigation Shell — floating header + screen container</td>
+        <td><code>packages/ui</code></td>
+        <td><span class="tag new">New</span></td>
+        <td>Header floats over scroll content; glass tab bar + glass header rendered together</td>
+      </tr>
+      <tr>
+        <td>8</td>
+        <td>Storybook stories for all 7 new components</td>
+        <td><code>packages/ui</code></td>
+        <td><span class="tag update">Stories</span></td>
+        <td>All variants covered; dark+light theme switch works for each story</td>
+      </tr>
+      <tr>
+        <td>9</td>
+        <td>Haptic feedback map (token constants)</td>
+        <td><code>packages/ui/tokens</code></td>
+        <td><span class="tag new">New</span></td>
+        <td>Impact / notification / selection haptic types exported; used by mobile components</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ─── BOTTOM SHEETS (live overlays) ─────────────────────────────── -->
+<!-- Standard Sheet -->
+<div class="sheet-overlay" id="sheet-standard">
+  <div class="sheet-backdrop" onclick="closeSheet('standard')"></div>
+  <div class="sheet-panel">
+    <div class="sheet-drag-handle"><span></span></div>
+    <div class="sheet-header">
+      <span class="sheet-title">Employee Details</span>
+      <div class="close-btn" onclick="closeSheet('standard')">✕</div>
+    </div>
+    <div class="sheet-body">
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="background:var(--g1);border:1px solid var(--border-subtle);border-radius:14px;padding:14px;">
+          <div style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-3);margin-bottom:6px;">Personal</div>
+          <div style="font-size:15px;color:var(--text-1);margin-bottom:2px;">Alexandru Popescu</div>
+          <div style="font-size:13px;color:var(--text-3);">Store Manager · Cluj-Napoca</div>
+        </div>
+        <div style="background:var(--g1);border:1px solid var(--border-subtle);border-radius:14px;padding:14px;">
+          <div style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-3);margin-bottom:6px;">Role</div>
+          <div style="font-size:15px;color:var(--text-1);">SCOPE_STORE · store_manager</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Action Sheet -->
+<div class="sheet-overlay" id="sheet-action">
+  <div class="sheet-backdrop" onclick="closeSheet('action')"></div>
+  <div class="sheet-panel">
+    <div class="sheet-drag-handle"><span></span></div>
+    <div class="sheet-header">
+      <span class="sheet-title">Actions</span>
+      <div class="close-btn" onclick="closeSheet('action')">✕</div>
+    </div>
+    <div class="sheet-body">
+      <div class="action-list">
+        <div class="action-item"><div class="action-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-2)" stroke-width="1.8" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div><div><div class="action-item-label">Edit Employee</div><div class="action-item-desc">Modify profile and role</div></div></div>
+        <div class="action-item"><div class="action-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-2)" stroke-width="1.8" stroke-linecap="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" x2="12" y1="2" y2="15"/></svg></div><div><div class="action-item-label">Export Data</div><div class="action-item-desc">Download as CSV or PDF</div></div></div>
+        <div class="action-item"><div class="action-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-2)" stroke-width="1.8" stroke-linecap="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/></svg></div><div><div class="action-item-label">Send Message</div><div class="action-item-desc">In-app message</div></div></div>
+        <div style="height:1px;background:var(--border-subtle);margin:4px 0;"></div>
+        <div class="action-item destructive"><div class="action-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,80,80,0.8)" stroke-width="1.8" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></div><div><div class="action-item-label">Remove Employee</div><div class="action-item-desc">This action cannot be undone</div></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Form Sheet -->
+<div class="sheet-overlay" id="sheet-form">
+  <div class="sheet-backdrop" onclick="closeSheet('form')"></div>
+  <div class="sheet-panel">
+    <div class="sheet-drag-handle"><span></span></div>
+    <div class="sheet-header">
+      <span class="sheet-title">Edit Employee</span>
+      <div class="close-btn" onclick="closeSheet('form')">✕</div>
+    </div>
+    <div class="sheet-body">
+      <div class="form-field"><div class="form-label">Full Name</div><input class="form-input" value="Alexandru Popescu" /></div>
+      <div class="form-field"><div class="form-label">Job Title</div><input class="form-input" value="Store Manager" /></div>
+      <div class="form-field"><div class="form-label">Location</div><input class="form-input" value="Cluj-Napoca" /></div>
+      <div style="display:flex;gap:10px;margin-top:8px;">
+        <button class="btn-primary" onclick="closeSheet('form')">Save Changes</button>
+        <button class="btn-ghost" onclick="closeSheet('form')">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Confirmation Sheet -->
+<div class="sheet-overlay" id="sheet-confirm">
+  <div class="sheet-backdrop" onclick="closeSheet('confirm')"></div>
+  <div class="sheet-panel">
+    <div class="sheet-drag-handle"><span></span></div>
+    <div class="sheet-body">
+      <div class="confirm-content">
+        <div class="confirm-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(255,80,80,0.8)" stroke-width="1.8" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        </div>
+        <div class="confirm-title">Delete Employee Record</div>
+        <div class="confirm-desc">This action is permanent and cannot be reversed. All associated data will be removed.</div>
+        <div class="confirm-actions">
+          <button class="btn-ghost" onclick="closeSheet('confirm')">Cancel</button>
+          <button class="btn-destructive" onclick="closeSheet('confirm')">Delete</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Filter Sheet -->
+<div class="sheet-overlay" id="sheet-filter">
+  <div class="sheet-backdrop" onclick="closeSheet('filter')"></div>
+  <div class="sheet-panel">
+    <div class="sheet-drag-handle"><span></span></div>
+    <div class="sheet-header">
+      <span class="sheet-title">Filter Employees</span>
+      <div class="close-btn" onclick="closeSheet('filter')">✕</div>
+    </div>
+    <div class="sheet-body">
+      <div class="filter-row">
+        <span class="filter-label">Role</span>
+        <div class="filter-chips">
+          <div class="chip active" onclick="toggleChip(this)">All</div>
+          <div class="chip" onclick="toggleChip(this)">Manager</div>
+          <div class="chip" onclick="toggleChip(this)">Cashier</div>
+        </div>
+      </div>
+      <div class="filter-row">
+        <span class="filter-label">Store</span>
+        <div class="filter-chips">
+          <div class="chip active" onclick="toggleChip(this)">All Stores</div>
+          <div class="chip" onclick="toggleChip(this)">Cluj</div>
+          <div class="chip" onclick="toggleChip(this)">Bucharest</div>
+        </div>
+      </div>
+      <div class="filter-row">
+        <span class="filter-label">Status</span>
+        <div class="filter-chips">
+          <div class="chip active" onclick="toggleChip(this)">Active</div>
+          <div class="chip" onclick="toggleChip(this)">On Leave</div>
+          <div class="chip" onclick="toggleChip(this)">Inactive</div>
+        </div>
+      </div>
+      <div style="margin-top:16px;">
+        <button class="btn-primary" onclick="closeSheet('filter')">Apply Filters</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Preview Sheet -->
+<div class="sheet-overlay" id="sheet-preview">
+  <div class="sheet-backdrop" onclick="closeSheet('preview')"></div>
+  <div class="sheet-panel">
+    <div class="sheet-drag-handle"><span></span></div>
+    <div class="sheet-header">
+      <span class="sheet-title">Quick Preview</span>
+      <div class="close-btn" onclick="closeSheet('preview')">✕</div>
+    </div>
+    <div class="sheet-body">
+      <div style="display:flex;gap:12px;align-items:center;margin-bottom:16px;">
+        <div style="width:48px;height:48px;border-radius:14px;background:var(--g2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--text-2);">AP</div>
+        <div>
+          <div style="font-size:17px;font-weight:600;color:var(--text-1);">Alexandru Popescu</div>
+          <div style="font-size:13px;color:var(--text-3);">Store Manager · CLJ-01</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div style="background:var(--g1);border:1px solid var(--border-subtle);border-radius:12px;padding:12px;"><div style="font-size:10px;color:var(--text-3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Attendance</div><div style="font-size:20px;font-weight:700;color:var(--text-1);">98<span style="font-size:12px;color:var(--text-3);">%</span></div></div>
+        <div style="background:var(--g1);border:1px solid var(--border-subtle);border-radius:12px;padding:12px;"><div style="font-size:10px;color:var(--text-3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Sales</div><div style="font-size:20px;font-weight:700;color:var(--text-1);">€47K</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Overlay Sheet -->
+<div class="sheet-overlay" id="sheet-overlay">
+  <div class="sheet-backdrop" onclick="closeSheet('overlay')"></div>
+  <div class="sheet-panel">
+    <div class="sheet-drag-handle"><span></span></div>
+    <div class="sheet-header">
+      <span class="sheet-title">Settings</span>
+      <div class="close-btn" onclick="closeSheet('overlay')">✕</div>
+    </div>
+    <div class="sheet-body">
+      <div style="display:flex;flex-direction:column;gap:2px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--g1);border:1px solid var(--border-subtle);border-radius:14px;"><span style="font-size:15px;color:var(--text-1);">Notifications</span><div style="width:36px;height:20px;background:var(--text-1);border-radius:20px;position:relative;"><div style="position:absolute;right:2px;top:2px;width:16px;height:16px;border-radius:50%;background:var(--bg);"></div></div></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--g1);border:1px solid var(--border-subtle);border-radius:14px;"><span style="font-size:15px;color:var(--text-1);">Appearance</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="1.8" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--g1);border:1px solid var(--border-subtle);border-radius:14px;"><span style="font-size:15px;color:var(--text-1);">Language</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="1.8" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Fullscreen Sheet -->
+<div class="sheet-overlay" id="sheet-fullscreen">
+  <div class="sheet-backdrop" onclick="closeSheet('fullscreen')"></div>
+  <div class="sheet-panel" style="max-height:100dvh;border-radius:var(--radius-sheet) var(--radius-sheet) 0 0;">
+    <div class="sheet-drag-handle"><span></span></div>
+    <div class="sheet-header">
+      <span class="sheet-title">Document Editor</span>
+      <div class="close-btn" onclick="closeSheet('fullscreen')">✕</div>
+    </div>
+    <div class="sheet-body" style="height:60vh;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;">
+      <div style="font-size:32px;opacity:0.15;">📄</div>
+      <div style="font-size:14px;color:var(--text-3);">Full-height sheet — document editor, camera, barcode scan</div>
+    </div>
+  </div>
+</div>
+
+<!-- Command Palette overlay -->
+<div class="cmd-overlay" id="cmdPalette">
+  <div class="cmd-backdrop" onclick="toggleCommandPalette()"></div>
+  <div class="cmd-panel">
+    <div class="cmd-search-row">
+      <svg class="cmd-search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input class="cmd-input" id="cmdInput" placeholder="Search commands, people, stores…" onkeydown="cmdKeyDown(event)" oninput="cmdFilter(event)" />
+      <span class="cmd-kbd">Esc</span>
+    </div>
+    <div id="cmdResults">
+      <div class="cmd-section-title">Recent</div>
+      <div class="cmd-item selected" tabindex="0"><div class="cmd-item-icon">📊</div><div><div class="cmd-item-label">Revenue Dashboard</div><div class="cmd-item-category">Navigation · Command</div></div><span class="cmd-item-shortcut">⌘1</span></div>
+      <div class="cmd-item" tabindex="0"><div class="cmd-item-icon">👤</div><div><div class="cmd-item-label">Alexandru Popescu</div><div class="cmd-item-category">Employee · Store Manager</div></div></div>
+      <div class="cmd-item" tabindex="0"><div class="cmd-item-icon">🏪</div><div><div class="cmd-item-label">CLJ-01 Store</div><div class="cmd-item-category">Store · Cluj-Napoca</div></div></div>
+      <div class="cmd-section-title">Actions</div>
+      <div class="cmd-item" tabindex="0"><div class="cmd-item-icon">➕</div><div><div class="cmd-item-label">Add Employee</div><div class="cmd-item-category">People · HR</div></div><span class="cmd-item-shortcut">⌘N</span></div>
+      <div class="cmd-item" tabindex="0"><div class="cmd-item-icon">📋</div><div><div class="cmd-item-label">Generate Report</div><div class="cmd-item-category">Analytics · Intelligence</div></div></div>
+      <div class="cmd-item" tabindex="0"><div class="cmd-item-icon">⚙️</div><div><div class="cmd-item-label">Open Settings</div><div class="cmd-item-category">System</div></div><span class="cmd-item-shortcut">⌘,</span></div>
+    </div>
+    <div class="cmd-footer">
+      <div class="cmd-footer-hint"><kbd>↑</kbd><kbd>↓</kbd> navigate</div>
+      <div class="cmd-footer-hint"><kbd>↵</kbd> select</div>
+      <div class="cmd-footer-hint"><kbd>Esc</kbd> dismiss</div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast container -->
+<div class="toast-container-demo" id="toastContainer"></div>
+
+<script>
+// ── Tab bar ──
+function setActiveTab(el) {
+  el.closest('.floating-tab-bar').querySelectorAll('.tab-item').forEach(t => {
+    t.classList.remove('active');
+    t.querySelectorAll('svg').forEach(s => s.setAttribute('stroke', 'rgba(255,255,255,0.40)'));
+  });
+  el.classList.add('active');
+  el.querySelectorAll('svg').forEach(s => s.setAttribute('stroke', 'rgba(255,255,255,0.95)'));
+}
+
+// ── Bottom sheets ──
+function openSheet(type) {
+  document.getElementById('sheet-' + type)?.classList.add('active');
+}
+function closeSheet(type) {
+  document.getElementById('sheet-' + type)?.classList.remove('active');
+}
+
+// ── Context menu ──
+let ctxMenu = null;
+document.addEventListener('DOMContentLoaded', () => { ctxMenu = document.getElementById('ctxMenu'); });
+function showContextMenu(e) {
+  e.preventDefault();
+  const menu = document.getElementById('ctxMenu');
+  const area = e.currentTarget.getBoundingClientRect?.() || { left: 0, top: 0 };
+  const x = e.clientX - (e.currentTarget.closest('.context-demo-area')?.getBoundingClientRect().left || 0);
+  const y = e.clientY - (e.currentTarget.closest('.context-demo-area')?.getBoundingClientRect().top || 0);
+  menu.style.left = Math.min(x, 260) + 'px';
+  menu.style.top = Math.min(y, 180) + 'px';
+  menu.classList.add('open');
+  e.stopPropagation();
+}
+function hideContextMenu() { document.getElementById('ctxMenu')?.classList.remove('open'); }
+
+// ── Command palette ──
+function toggleCommandPalette() {
+  const el = document.getElementById('cmdPalette');
+  el.classList.toggle('open');
+  if (el.classList.contains('open')) setTimeout(() => document.getElementById('cmdInput')?.focus(), 50);
+}
+function cmdKeyDown(e) {
+  if (e.key === 'Escape') toggleCommandPalette();
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    e.preventDefault();
+    const items = [...document.querySelectorAll('.cmd-item')];
+    const cur = items.findIndex(i => i.classList.contains('selected'));
+    items[cur]?.classList.remove('selected');
+    const next = e.key === 'ArrowDown' ? Math.min(cur + 1, items.length - 1) : Math.max(cur - 1, 0);
+    items[next]?.classList.add('selected');
+  }
+}
+function cmdFilter(e) {
+  const q = e.target.value.toLowerCase();
+  document.querySelectorAll('.cmd-item').forEach(item => {
+    const label = item.querySelector('.cmd-item-label')?.textContent?.toLowerCase() || '';
+    item.style.display = !q || label.includes(q) ? '' : 'none';
+  });
+}
+document.addEventListener('keydown', e => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); toggleCommandPalette(); }
+});
+
+// ── Dynamic Island ──
+const diStates = ['idle', 'compact', 'expanded'];
+let diState = 0;
+function cycleDI() {
+  const el = document.getElementById('diIsland');
+  diState = (diState + 1) % diStates.length;
+  el.className = 'di-island ' + (diStates[diState] === 'idle' ? '' : diStates[diState]);
+}
+
+// ── Toast ──
+const toastIcons = {
+  success: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#30d158" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>`,
+  error: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ff3b30" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`,
+  warning: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ff9500" stroke-width="2.5" stroke-linecap="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>`,
+  info: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0a84ff" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>`,
+};
+function showToast(type, title, desc) {
+  const container = document.getElementById('toastContainer');
+  if (container.children.length >= 3) container.removeChild(container.children[0]);
+  const t = document.createElement('div');
+  t.className = `toast`;
+  t.innerHTML = `
+    <div class="toast-icon ${type}">${toastIcons[type]}</div>
+    <div class="toast-text"><div class="toast-title">${title}</div><div class="toast-desc">${desc}</div></div>
+    <div class="toast-close" onclick="this.closest('.toast').remove()">✕</div>
+    <div class="toast-progress ${type}" style="width:100%"></div>`;
+  container.appendChild(t);
+  requestAnimationFrame(() => {
+    t.classList.add('show');
+    const bar = t.querySelector('.toast-progress');
+    requestAnimationFrame(() => { bar.style.width = '0%'; });
+  });
+  setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 400); }, 3000);
+}
+
+// ── Filter chips ──
+function toggleChip(el) {
+  el.classList.toggle('active');
+}
+</script>
+</body>
+</html>
