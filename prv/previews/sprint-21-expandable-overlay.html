@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PRV · Sprint 21 — Expandable & Overlay</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --prv-bg:            #000;
+    --prv-g1:            rgba(255,255,255,0.06);
+    --prv-g2:            rgba(255,255,255,0.10);
+    --prv-g3:            rgba(255,255,255,0.15);
+    --prv-g4:            rgba(255,255,255,0.22);
+    --prv-text-1:        rgba(255,255,255,0.95);
+    --prv-text-2:        rgba(255,255,255,0.65);
+    --prv-text-3:        rgba(255,255,255,0.35);
+    --prv-text-4:        rgba(255,255,255,0.15);
+    --prv-border:        rgba(255,255,255,0.12);
+    --prv-border-subtle: rgba(255,255,255,0.07);
+  }
+
+  html, body {
+    background: var(--prv-bg);
+    color: var(--prv-text-1);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page { max-width: 960px; margin: 0 auto; padding: 48px 24px 96px; }
+
+  .sprint-header { margin-bottom: 52px; }
+  .chips { display: flex; gap: 8px; margin-bottom: 10px; }
+  .chip { padding: 3px 10px; border-radius: 100px; background: var(--prv-g2); border: 1px solid var(--prv-border-subtle); font-size: 11px; font-weight: 600; color: var(--prv-text-3); letter-spacing: .06em; text-transform: uppercase; }
+  h1 { font-size: 28px; font-weight: 700; letter-spacing: -.02em; }
+  .sub { font-size: 14px; color: var(--prv-text-3); margin-top: 4px; }
+
+  .section { margin-bottom: 60px; }
+  .sl { font-size: 11px; font-weight: 600; color: var(--prv-text-3); letter-spacing: .07em; text-transform: uppercase; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+  .sl::after { content: ""; flex: 1; height: 1px; background: var(--prv-border-subtle); }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 640px) { .grid2 { grid-template-columns: 1fr; } }
+
+  /* ── Delivery table ── */
+  .dt { width: 100%; border-collapse: collapse; }
+  .dt th, .dt td { text-align: left; padding: 10px 14px; font-size: 13px; border-bottom: 1px solid var(--prv-border-subtle); }
+  .dt th { font-size: 11px; font-weight: 600; color: var(--prv-text-3); letter-spacing: .06em; text-transform: uppercase; }
+  .dt td { color: var(--prv-text-1); }
+  .dt td:nth-child(2) { color: var(--prv-text-3); font-family: "SF Mono", monospace; font-size: 11px; }
+  .dt tr:last-child td { border-bottom: none; }
+  .tag { display: inline-flex; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 500; background: var(--prv-g2); color: var(--prv-text-3); border: 1px solid var(--prv-border-subtle); }
+  .tag.new { background: rgba(10,132,255,.12); color: rgba(10,132,255,.9); border-color: rgba(10,132,255,.2); }
+  .glass-surface { position: relative; overflow: hidden; background: var(--prv-g1); border: 1px solid var(--prv-border-subtle); border-radius: 20px; }
+  .glass-surface::before { content: ""; position: absolute; inset: 0 0 auto; height: 1px; background: linear-gradient(90deg,transparent,rgba(255,255,255,0.09),transparent); pointer-events: none; }
+
+  /* ════════════════════════════════════════════════
+     GLASS ACCORDION
+  ════════════════════════════════════════════════ */
+
+  .accordion { overflow: hidden; }
+
+  .accordion-item {
+    border-top: 1px solid var(--prv-border-subtle);
+  }
+  .accordion-item:first-child { border-top: none; }
+
+  .accordion-trigger {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    text-align: left;
+    transition: background 120ms;
+  }
+  .accordion-trigger:hover { background: var(--prv-g2); }
+
+  .accordion-icon-wrap {
+    width: 32px; height: 32px;
+    border-radius: 10px;
+    background: var(--prv-g2);
+    border: 1px solid var(--prv-border-subtle);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    color: var(--prv-text-2);
+  }
+
+  .accordion-title { flex: 1; font-size: 14px; font-weight: 600; color: var(--prv-text-1); }
+  .accordion-subtitle { font-size: 12px; color: var(--prv-text-3); margin-top: 1px; }
+
+  .accordion-chevron {
+    flex-shrink: 0;
+    color: var(--prv-text-4);
+    transition: transform 320ms cubic-bezier(0.4,0,0.2,1);
+  }
+  .accordion-item.open .accordion-chevron { transform: rotate(180deg); }
+
+  .accordion-body-wrap {
+    overflow: hidden;
+    max-height: 0;
+    transition: max-height 380ms cubic-bezier(0.4,0,0.2,1);
+  }
+  .accordion-item.open .accordion-body-wrap { max-height: 400px; }
+
+  .accordion-body {
+    padding: 0 20px 20px 64px;
+    font-size: 13px;
+    color: var(--prv-text-3);
+    line-height: 1.65;
+  }
+
+  /* ════════════════════════════════════════════════
+     GLASS DRAWER
+  ════════════════════════════════════════════════ */
+
+  .drawer-demo-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 20px; border-radius: 12px;
+    background: var(--prv-g2); border: 1px solid var(--prv-border);
+    color: var(--prv-text-1); font-size: 13px; font-weight: 600;
+    font-family: inherit; cursor: pointer;
+    transition: background 150ms;
+  }
+  .drawer-demo-btn:hover { background: var(--prv-g3); }
+
+  /* Overlay */
+  .drawer-overlay {
+    position: fixed; inset: 0; z-index: 100;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    opacity: 0; pointer-events: none;
+    transition: opacity 300ms;
+  }
+  .drawer-overlay.open { opacity: 1; pointer-events: all; }
+
+  /* Drawer panel */
+  .drawer-panel {
+    position: fixed; top: 0; right: 0; bottom: 0; z-index: 101;
+    width: 380px; max-width: 90vw;
+    background: rgba(18,18,18,0.92);
+    backdrop-filter: blur(48px) saturate(180%);
+    -webkit-backdrop-filter: blur(48px) saturate(180%);
+    border-left: 1px solid var(--prv-border-subtle);
+    box-shadow: -24px 0 64px rgba(0,0,0,0.7);
+    transform: translateX(100%);
+    transition: transform 380ms cubic-bezier(0.34,1.56,0.64,1);
+    overflow-y: auto;
+    display: flex; flex-direction: column;
+  }
+  .drawer-panel.open { transform: translateX(0); }
+
+  /* Specular top edge inside drawer */
+  .drawer-panel::before {
+    content: "";
+    position: absolute; inset: 0 0 auto;
+    height: 1px;
+    background: linear-gradient(90deg,transparent,rgba(255,255,255,0.12),transparent);
+    pointer-events: none;
+  }
+
+  .drawer-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 20px 20px 16px;
+    border-bottom: 1px solid var(--prv-border-subtle);
+    flex-shrink: 0;
+  }
+  .drawer-title { font-size: 16px; font-weight: 700; color: var(--prv-text-1); }
+  .drawer-subtitle { font-size: 12px; color: var(--prv-text-3); margin-top: 2px; }
+
+  .drawer-close {
+    width: 32px; height: 32px; border-radius: 10px;
+    background: var(--prv-g2); border: 1px solid var(--prv-border-subtle);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: var(--prv-text-2);
+    transition: background 150ms;
+    flex-shrink: 0;
+  }
+  .drawer-close:hover { background: var(--prv-g3); }
+
+  .drawer-body { flex: 1; padding: 20px; overflow-y: auto; }
+
+  .drawer-section-label {
+    font-size: 11px; font-weight: 600; color: var(--prv-text-4);
+    letter-spacing: .07em; text-transform: uppercase;
+    margin-bottom: 10px; margin-top: 20px;
+  }
+  .drawer-section-label:first-child { margin-top: 0; }
+
+  .drawer-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 14px; border-radius: 12px;
+    background: var(--prv-g1); border: 1px solid var(--prv-border-subtle);
+    margin-bottom: 8px; cursor: pointer;
+    transition: background 120ms;
+    position: relative;
+  }
+  .drawer-row::before { content: ""; position: absolute; inset: 0 0 auto; height: 1px; background: linear-gradient(90deg,transparent,rgba(255,255,255,0.07),transparent); pointer-events: none; }
+  .drawer-row:hover { background: var(--prv-g2); }
+  .drawer-row-icon { width: 34px; height: 34px; border-radius: 9px; background: var(--prv-g2); border: 1px solid var(--prv-border-subtle); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--prv-text-2); }
+  .drawer-row-label { flex: 1; font-size: 13px; font-weight: 500; color: var(--prv-text-1); }
+  .drawer-row-sub { font-size: 11px; color: var(--prv-text-3); margin-top: 1px; }
+  .drawer-row-chev { color: var(--prv-text-4); flex-shrink: 0; }
+
+  .drawer-footer {
+    padding: 16px 20px; border-top: 1px solid var(--prv-border-subtle);
+    flex-shrink: 0; display: flex; gap: 10px;
+  }
+  .drawer-btn {
+    flex: 1; padding: 10px; border-radius: 10px;
+    font-family: inherit; font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: background 150ms;
+  }
+  .drawer-btn.secondary { background: var(--prv-g2); border: 1px solid var(--prv-border-subtle); color: var(--prv-text-2); }
+  .drawer-btn.primary   { background: var(--prv-text-1); border: 1px solid transparent; color: #000; }
+  .drawer-btn.secondary:hover { background: var(--prv-g3); }
+  .drawer-btn.primary:hover   { background: rgba(255,255,255,0.85); }
+
+  /* ════════════════════════════════════════════════
+     GLASS POPOVER
+  ════════════════════════════════════════════════ */
+
+  .popover-demo-row {
+    display: flex; align-items: flex-start; gap: 32px; flex-wrap: wrap;
+    padding: 48px 24px; justify-content: center;
+  }
+
+  .popover-anchor {
+    position: relative; display: inline-block;
+  }
+
+  .popover-trigger {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 8px 16px; border-radius: 10px;
+    background: var(--prv-g2); border: 1px solid var(--prv-border);
+    color: var(--prv-text-1); font-size: 13px; font-weight: 500;
+    font-family: inherit; cursor: pointer;
+    transition: background 150ms;
+  }
+  .popover-trigger:hover { background: var(--prv-g3); }
+  .popover-trigger.active { background: var(--prv-g3); }
+
+  .popover {
+    position: absolute;
+    z-index: 50;
+    background: rgba(22,22,22,0.92);
+    backdrop-filter: blur(32px) saturate(160%);
+    -webkit-backdrop-filter: blur(32px) saturate(160%);
+    border: 1px solid var(--prv-border);
+    border-radius: 14px;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.7), 0 4px 12px rgba(0,0,0,0.4);
+    padding: 14px 16px;
+    min-width: 220px;
+    opacity: 0; pointer-events: none;
+    transform: scale(0.95) translateY(4px);
+    transform-origin: top center;
+    transition: opacity 160ms, transform 220ms cubic-bezier(0.34,1.56,0.64,1);
+  }
+  .popover.above {
+    bottom: calc(100% + 10px); left: 50%; transform: translateX(-50%) scale(0.95) translateY(4px);
+    transform-origin: bottom center;
+  }
+  .popover.below {
+    top: calc(100% + 10px); left: 50%; transform: translateX(-50%) scale(0.95) translateY(-4px);
+    transform-origin: top center;
+  }
+  .popover.open {
+    opacity: 1; pointer-events: all;
+  }
+  .popover.above.open { transform: translateX(-50%) scale(1) translateY(0); }
+  .popover.below.open { transform: translateX(-50%) scale(1) translateY(0); }
+
+  /* Arrow */
+  .popover-arrow {
+    position: absolute;
+    width: 10px; height: 10px;
+    background: rgba(22,22,22,0.92);
+    border: 1px solid var(--prv-border);
+    transform: rotate(45deg);
+  }
+  .popover.above .popover-arrow { bottom: -6px; left: 50%; margin-left: -5px; border-top: none; border-left: none; }
+  .popover.below .popover-arrow { top: -6px; left: 50%; margin-left: -5px; border-bottom: none; border-right: none; }
+
+  /* Popover top specular */
+  .popover::before { content: ""; position: absolute; inset: 0 0 auto; height: 1px; background: linear-gradient(90deg,transparent,rgba(255,255,255,0.1),transparent); pointer-events: none; border-radius: 14px 14px 0 0; }
+
+  .popover-title { font-size: 13px; font-weight: 600; color: var(--prv-text-1); margin-bottom: 4px; }
+  .popover-desc  { font-size: 12px; color: var(--prv-text-3); line-height: 1.5; }
+  .popover-divider { height: 1px; background: var(--prv-border-subtle); margin: 10px 0; }
+
+  .popover-action-row {
+    display: flex; gap: 8px; margin-top: 10px;
+  }
+  .popover-btn {
+    flex: 1; padding: 7px 10px; border-radius: 8px;
+    font-family: inherit; font-size: 12px; font-weight: 600;
+    cursor: pointer; transition: background 150ms; text-align: center;
+  }
+  .popover-btn.cancel   { background: var(--prv-g2); border: 1px solid var(--prv-border-subtle); color: var(--prv-text-2); }
+  .popover-btn.confirm  { background: rgba(255,59,48,0.15); border: 1px solid rgba(255,59,48,0.25); color: rgba(255,59,48,0.9); }
+  .popover-btn.cancel:hover  { background: var(--prv-g3); }
+  .popover-btn.confirm:hover { background: rgba(255,59,48,0.22); }
+
+  /* Info popover items */
+  .popover-stat { display: flex; justify-content: space-between; align-items: baseline; margin-top: 8px; }
+  .popover-stat-label { font-size: 12px; color: var(--prv-text-3); }
+  .popover-stat-val   { font-size: 13px; font-weight: 600; color: var(--prv-text-1); }
+
+  /* ════════════════════════════════════════════════
+     GLASS STEPS
+  ════════════════════════════════════════════════ */
+
+  /* Horizontal stepper */
+  .steps-h {
+    display: flex; align-items: flex-start;
+    padding: 24px 20px;
+  }
+
+  .step-h {
+    display: flex; flex-direction: column; align-items: center;
+    position: relative; flex: 1;
+  }
+  .step-h:not(:last-child)::after {
+    content: "";
+    position: absolute;
+    top: 16px;
+    left: calc(50% + 16px);
+    right: calc(-50% + 16px);
+    height: 1px;
+    background: var(--prv-border-subtle);
+    transition: background 400ms;
+  }
+  .step-h.completed:not(:last-child)::after { background: rgba(10,132,255,0.4); }
+
+  .step-circle {
+    width: 32px; height: 32px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700;
+    border: 2px solid var(--prv-border);
+    background: var(--prv-g1);
+    color: var(--prv-text-4);
+    transition: all 300ms cubic-bezier(0.34,1.56,0.64,1);
+    flex-shrink: 0;
+    position: relative; z-index: 1;
+  }
+  .step-h.active   .step-circle { border-color: rgba(10,132,255,0.8); background: rgba(10,132,255,0.12); color: rgba(10,132,255,0.9); }
+  .step-h.completed .step-circle { border-color: rgba(10,132,255,0.6); background: rgba(10,132,255,0.2); color: rgba(10,132,255,0.9); }
+
+  .step-label { font-size: 12px; font-weight: 500; color: var(--prv-text-4); margin-top: 8px; text-align: center; }
+  .step-h.active    .step-label { color: var(--prv-text-1); }
+  .step-h.completed .step-label { color: var(--prv-text-3); }
+  .step-sublabel { font-size: 11px; color: var(--prv-text-4); margin-top: 2px; text-align: center; }
+  .step-h.active .step-sublabel { color: var(--prv-text-3); }
+
+  /* Vertical stepper */
+  .steps-v { display: flex; flex-direction: column; padding: 20px; gap: 0; }
+
+  .step-v {
+    display: flex; gap: 14px;
+    position: relative;
+  }
+
+  .step-v-spine {
+    display: flex; flex-direction: column; align-items: center;
+    flex-shrink: 0; width: 32px;
+  }
+
+  .step-v-circle {
+    width: 32px; height: 32px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700; flex-shrink: 0;
+    border: 2px solid var(--prv-border);
+    background: var(--prv-g1);
+    color: var(--prv-text-4);
+    transition: all 300ms cubic-bezier(0.34,1.56,0.64,1);
+    position: relative; z-index: 1;
+  }
+  .step-v.active    .step-v-circle { border-color: rgba(10,132,255,0.8); background: rgba(10,132,255,0.12); color: rgba(10,132,255,0.9); }
+  .step-v.completed .step-v-circle { border-color: rgba(10,132,255,0.6); background: rgba(10,132,255,0.18); color: rgba(10,132,255,0.9); }
+
+  .step-v-line {
+    flex: 1; width: 1px; background: var(--prv-border-subtle); margin: 4px 0;
+    min-height: 24px;
+    transition: background 400ms;
+  }
+  .step-v.completed .step-v-line { background: rgba(10,132,255,0.3); }
+
+  .step-v-body { flex: 1; padding-bottom: 24px; }
+  .step-v:last-child .step-v-body { padding-bottom: 0; }
+
+  .step-v-title { font-size: 14px; font-weight: 600; color: var(--prv-text-4); margin-top: 4px; line-height: 1; }
+  .step-v.active    .step-v-title { color: var(--prv-text-1); }
+  .step-v.completed .step-v-title { color: var(--prv-text-2); }
+
+  .step-v-desc { font-size: 12px; color: var(--prv-text-4); margin-top: 6px; line-height: 1.5; }
+  .step-v.active    .step-v-desc { color: var(--prv-text-3); }
+  .step-v.completed .step-v-desc { color: var(--prv-text-4); }
+
+  /* Active step content card */
+  .step-v-content {
+    background: var(--prv-g1); border: 1px solid var(--prv-border-subtle);
+    border-radius: 12px; padding: 14px 16px; margin-top: 10px;
+    font-size: 13px; color: var(--prv-text-3);
+    display: none;
+  }
+  .step-v.active .step-v-content { display: block; }
+
+  /* Navigation buttons */
+  .steps-nav { display: flex; gap: 10px; padding: 0 20px 20px; }
+  .step-nav-btn {
+    padding: 8px 20px; border-radius: 10px;
+    font-family: inherit; font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: background 150ms;
+  }
+  .step-nav-btn.prev { background: var(--prv-g2); border: 1px solid var(--prv-border-subtle); color: var(--prv-text-2); }
+  .step-nav-btn.next { background: var(--prv-text-1); border: 1px solid transparent; color: #000; }
+  .step-nav-btn.prev:hover { background: var(--prv-g3); }
+  .step-nav-btn.next:hover { background: rgba(255,255,255,0.85); }
+  .step-nav-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="sprint-header">
+    <div class="chips"><span class="chip">Sprint 21</span><span class="chip">Preview</span><span class="chip">Phase 1 · M9</span></div>
+    <h1>Expandable &amp; Overlay</h1>
+    <div class="sub">GlassAccordion · GlassDrawer · GlassPopover · GlassSteps</div>
+  </div>
+
+  <!-- ── ACCORDION ── -->
+  <div class="section">
+    <div class="sl">GlassAccordion — Spring height animation, icon &amp; subtitle support</div>
+    <div class="glass-surface accordion" id="acc">
+
+      <div class="accordion-item open" data-acc="0">
+        <button class="accordion-trigger" onclick="toggleAcc(0)">
+          <div class="accordion-icon-wrap">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <div style="flex:1">
+            <div class="accordion-title">Security &amp; Access</div>
+            <div class="accordion-subtitle">Zero Trust, MFA, session management</div>
+          </div>
+          <svg class="accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="accordion-body-wrap">
+          <div class="accordion-body">
+            Every action in PRV is validated through a 4-gate chain: Authentication → Authorization → Scope Validation → Audit Log. Face ID re-authentication is required for sensitive operations such as payroll approval, user deletion, and financial reports.
+          </div>
+        </div>
+      </div>
+
+      <div class="accordion-item" data-acc="1">
+        <button class="accordion-trigger" onclick="toggleAcc(1)">
+          <div class="accordion-icon-wrap">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+          </div>
+          <div style="flex:1">
+            <div class="accordion-title">Integrations</div>
+            <div class="accordion-subtitle">Stripe, Supabase, Resend, Typesense</div>
+          </div>
+          <svg class="accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="accordion-body-wrap">
+          <div class="accordion-body">
+            PRV connects to Stripe for payments and subscriptions, Supabase for database, auth, and realtime, Resend for transactional emails, and Typesense for fast scoped search. All integration credentials are stored in environment variables with zero hardcoded secrets.
+          </div>
+        </div>
+      </div>
+
+      <div class="accordion-item" data-acc="2">
+        <button class="accordion-trigger" onclick="toggleAcc(2)">
+          <div class="accordion-icon-wrap">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+          </div>
+          <div style="flex:1">
+            <div class="accordion-title">Role System</div>
+            <div class="accordion-subtitle">Superadmin · Owner · Manager · Cashier · Custom</div>
+          </div>
+          <svg class="accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="accordion-body-wrap">
+          <div class="accordion-body">
+            Roles are hierarchical and scoped. A Superadmin sees all companies, a Regional Manager sees assigned stores, a Cashier sees only their register. Custom roles allow fine-grained per-module permissions with an enterprise-grade permission catalog.
+          </div>
+        </div>
+      </div>
+
+      <div class="accordion-item" data-acc="3">
+        <button class="accordion-trigger" onclick="toggleAcc(3)">
+          <div class="accordion-icon-wrap">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          </div>
+          <div style="flex:1">
+            <div class="accordion-title">Audit Logs</div>
+            <div class="accordion-subtitle">Immutable, SHA-256 chained, append-only</div>
+          </div>
+          <svg class="accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="accordion-body-wrap">
+          <div class="accordion-body">
+            Every read, write, and delete is logged to an append-only audit table with SHA-256 chain hashing to prevent tampering. Logs include user ID, role, scope, timestamp, action, and before/after state diffs. Audit logs are retained for 7 years.
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── DRAWER ── -->
+  <div class="section">
+    <div class="sl">GlassDrawer — Spring slide-in, backdrop blur overlay, header + footer</div>
+    <div class="glass-surface" style="padding:32px 24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+      <button class="drawer-demo-btn" onclick="openDrawer('right')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        Open right drawer
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+      <span style="font-size:13px;color:var(--prv-text-4)">Spring animation · backdrop blur · focus trap · Escape to close</span>
+    </div>
+  </div>
+
+  <!-- ── POPOVER ── -->
+  <div class="section">
+    <div class="sl">GlassPopover — Smart positioning, arrow, spring scale animation</div>
+    <div class="glass-surface">
+      <div class="popover-demo-row">
+
+        <!-- Info popover (above) -->
+        <div class="popover-anchor" id="pop-info-anchor">
+          <button class="popover-trigger" id="pop-info-btn" onclick="togglePopover('pop-info')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            Store info
+          </button>
+          <div class="popover above" id="pop-info">
+            <div class="popover-arrow"></div>
+            <div class="popover-title">Cluj · Main Store</div>
+            <div class="popover-desc">Str. Horea 12, Cluj-Napoca</div>
+            <div class="popover-divider"></div>
+            <div class="popover-stat"><span class="popover-stat-label">Revenue MTD</span><span class="popover-stat-val">€48,290</span></div>
+            <div class="popover-stat"><span class="popover-stat-label">Active staff</span><span class="popover-stat-val">12</span></div>
+            <div class="popover-stat"><span class="popover-stat-label">Open tasks</span><span class="popover-stat-val" style="color:rgba(255,149,0,0.9)">7</span></div>
+          </div>
+        </div>
+
+        <!-- Confirm popover (below) -->
+        <div class="popover-anchor" id="pop-confirm-anchor">
+          <button class="popover-trigger" id="pop-confirm-btn" onclick="togglePopover('pop-confirm')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,59,48,0.9)" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            Delete record
+          </button>
+          <div class="popover below" id="pop-confirm">
+            <div class="popover-arrow"></div>
+            <div class="popover-title">Delete this record?</div>
+            <div class="popover-desc">This action cannot be undone. The record will be removed permanently from all reports.</div>
+            <div class="popover-action-row">
+              <button class="popover-btn cancel" onclick="togglePopover('pop-confirm')">Cancel</button>
+              <button class="popover-btn confirm" onclick="togglePopover('pop-confirm')">Delete</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- User card popover (above) -->
+        <div class="popover-anchor" id="pop-user-anchor">
+          <button class="popover-trigger" id="pop-user-btn" onclick="togglePopover('pop-user')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            Andrei Popescu
+          </button>
+          <div class="popover above" id="pop-user" style="min-width:200px">
+            <div class="popover-arrow"></div>
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+              <div style="width:36px;height:36px;border-radius:50%;background:var(--prv-g3);border:1px solid var(--prv-border);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--prv-text-1);flex-shrink:0">AP</div>
+              <div>
+                <div style="font-size:13px;font-weight:600;color:var(--prv-text-1)">Andrei Popescu</div>
+                <div style="font-size:11px;color:var(--prv-text-3)">Store Manager · Cluj</div>
+              </div>
+            </div>
+            <div class="popover-divider"></div>
+            <div style="display:flex;flex-direction:column;gap:2px">
+              <button style="width:100%;text-align:left;padding:7px 8px;border-radius:7px;background:transparent;border:none;font-family:inherit;font-size:12px;color:var(--prv-text-2);cursor:pointer;transition:background 120ms" onmouseover="this.style.background='var(--prv-g2)'" onmouseout="this.style.background='transparent'">View profile</button>
+              <button style="width:100%;text-align:left;padding:7px 8px;border-radius:7px;background:transparent;border:none;font-family:inherit;font-size:12px;color:var(--prv-text-2);cursor:pointer;transition:background 120ms" onmouseover="this.style.background='var(--prv-g2)'" onmouseout="this.style.background='transparent'">Send message</button>
+              <button style="width:100%;text-align:left;padding:7px 8px;border-radius:7px;background:transparent;border:none;font-family:inherit;font-size:12px;color:rgba(255,59,48,0.8);cursor:pointer;transition:background 120ms" onmouseover="this.style.background='rgba(255,59,48,0.08)'" onmouseout="this.style.background='transparent'">Deactivate account</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ── STEPS ── -->
+  <div class="section">
+    <div class="sl">GlassSteps — Horizontal &amp; vertical, active/completed/pending states</div>
+
+    <div style="display:flex;flex-direction:column;gap:16px">
+
+      <!-- Horizontal stepper -->
+      <div class="glass-surface">
+        <div style="padding:16px 20px 0;font-size:11px;font-weight:600;color:var(--prv-text-4);letter-spacing:.06em;text-transform:uppercase">Horizontal · variant="h"</div>
+        <div class="steps-h" id="steps-h">
+          <div class="step-h completed" data-step="0">
+            <div class="step-circle">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <div class="step-label">Company</div>
+            <div class="step-sublabel">Done</div>
+          </div>
+          <div class="step-h completed" data-step="1">
+            <div class="step-circle">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <div class="step-label">Team</div>
+            <div class="step-sublabel">Done</div>
+          </div>
+          <div class="step-h active" data-step="2">
+            <div class="step-circle">3</div>
+            <div class="step-label">Permissions</div>
+            <div class="step-sublabel">In progress</div>
+          </div>
+          <div class="step-h" data-step="3">
+            <div class="step-circle">4</div>
+            <div class="step-label">Integrations</div>
+            <div class="step-sublabel">Pending</div>
+          </div>
+          <div class="step-h" data-step="4">
+            <div class="step-circle">5</div>
+            <div class="step-label">Launch</div>
+            <div class="step-sublabel">Pending</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Vertical stepper -->
+      <div class="glass-surface">
+        <div style="padding:16px 20px 0;font-size:11px;font-weight:600;color:var(--prv-text-4);letter-spacing:.06em;text-transform:uppercase">Vertical · variant="v" · interactive</div>
+        <div class="steps-v" id="steps-v">
+
+          <div class="step-v completed">
+            <div class="step-v-spine">
+              <div class="step-v-circle">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <div class="step-v-line"></div>
+            </div>
+            <div class="step-v-body">
+              <div class="step-v-title">Choose plan</div>
+              <div class="step-v-desc">Enterprise · 50 users · Monthly billing</div>
+            </div>
+          </div>
+
+          <div class="step-v active">
+            <div class="step-v-spine">
+              <div class="step-v-circle">2</div>
+              <div class="step-v-line"></div>
+            </div>
+            <div class="step-v-body">
+              <div class="step-v-title">Payment details</div>
+              <div class="step-v-desc">Add your billing information</div>
+              <div class="step-v-content">
+                Enter your card details or bank transfer info. All payments are processed securely via Stripe.
+              </div>
+            </div>
+          </div>
+
+          <div class="step-v">
+            <div class="step-v-spine">
+              <div class="step-v-circle">3</div>
+              <div class="step-v-line"></div>
+            </div>
+            <div class="step-v-body">
+              <div class="step-v-title">Configure workspace</div>
+              <div class="step-v-desc">Set up your company, stores, and roles</div>
+            </div>
+          </div>
+
+          <div class="step-v">
+            <div class="step-v-spine">
+              <div class="step-v-circle">4</div>
+            </div>
+            <div class="step-v-body">
+              <div class="step-v-title">Go live</div>
+              <div class="step-v-desc">Invite your team and start using PRV</div>
+            </div>
+          </div>
+
+        </div>
+        <div class="steps-nav">
+          <button class="step-nav-btn prev" id="v-prev" onclick="stepNav(-1)">← Previous</button>
+          <button class="step-nav-btn next" id="v-next" onclick="stepNav(1)">Next →</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── Delivery ── -->
+  <div class="section">
+    <div class="sl">Sprint 21 Delivery</div>
+    <div class="glass-surface">
+      <table class="dt">
+        <thead><tr><th>Component</th><th>File</th><th>Key Props</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>GlassAccordion</td><td>glass-accordion.tsx</td><td>items[], defaultOpen, multiple, animated, onOpenChange</td><td><span class="tag new">New</span></td></tr>
+          <tr><td>GlassDrawer</td><td>glass-drawer.tsx</td><td>open, onClose, side (left|right), title, subtitle, footer, size</td><td><span class="tag new">New</span></td></tr>
+          <tr><td>GlassPopover</td><td>glass-popover.tsx</td><td>trigger, content, side (top|bottom|left|right), align, open, onOpenChange</td><td><span class="tag new">New</span></td></tr>
+          <tr><td>GlassSteps</td><td>glass-steps.tsx</td><td>steps[], currentStep, variant (h|v), onStepClick, animated</td><td><span class="tag new">New</span></td></tr>
+          <tr><td>index.ts</td><td>components/index.ts</td><td>Export all 4 components + types</td><td><span class="tag">Update</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div><!-- /page -->
+
+<!-- ── DRAWER MARKUP ── -->
+<div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
+<div class="drawer-panel" id="drawer-panel">
+  <div class="drawer-header">
+    <div>
+      <div class="drawer-title">Store Settings</div>
+      <div class="drawer-subtitle">Cluj · Main Store</div>
+    </div>
+    <button class="drawer-close" onclick="closeDrawer()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+  <div class="drawer-body">
+    <div class="drawer-section-label">General</div>
+    <div class="drawer-row"><div class="drawer-row-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></div><div><div class="drawer-row-label">Store information</div><div class="drawer-row-sub">Name, address, timezone</div></div><svg class="drawer-row-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg></div>
+    <div class="drawer-row"><div class="drawer-row-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg></div><div><div class="drawer-row-label">Business hours</div><div class="drawer-row-sub">Mon – Fri 08:00–20:00</div></div><svg class="drawer-row-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg></div>
+
+    <div class="drawer-section-label">Team</div>
+    <div class="drawer-row"><div class="drawer-row-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div><div class="drawer-row-label">Staff &amp; Roles</div><div class="drawer-row-sub">12 active employees</div></div><svg class="drawer-row-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg></div>
+    <div class="drawer-row"><div class="drawer-row-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div><div><div class="drawer-row-label">Schedule templates</div><div class="drawer-row-sub">3 active templates</div></div><svg class="drawer-row-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg></div>
+
+    <div class="drawer-section-label">Integrations</div>
+    <div class="drawer-row"><div class="drawer-row-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div><div><div class="drawer-row-label">Payment terminal</div><div class="drawer-row-sub">Stripe · Connected</div></div><div style="display:flex;align-items:center;gap:6px"><div style="width:7px;height:7px;border-radius:50%;background:rgba(48,209,88,0.9)"></div><svg class="drawer-row-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg></div></div>
+  </div>
+  <div class="drawer-footer">
+    <button class="drawer-btn secondary" onclick="closeDrawer()">Cancel</button>
+    <button class="drawer-btn primary" onclick="closeDrawer()">Save changes</button>
+  </div>
+</div>
+
+<script>
+// ── Accordion ─────────────────────────────────────────────────────────────────
+function toggleAcc(idx) {
+  const items = document.querySelectorAll('#acc .accordion-item')
+  items.forEach((item, i) => {
+    if (i === idx) item.classList.toggle('open')
+    // single-expand: else item.classList.remove('open')
+  })
+}
+
+// ── Drawer ────────────────────────────────────────────────────────────────────
+function openDrawer() {
+  document.getElementById('drawer-overlay').classList.add('open')
+  document.getElementById('drawer-panel').classList.add('open')
+  document.body.style.overflow = 'hidden'
+}
+function closeDrawer() {
+  document.getElementById('drawer-overlay').classList.remove('open')
+  document.getElementById('drawer-panel').classList.remove('open')
+  document.body.style.overflow = ''
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrawer() })
+
+// ── Popover ───────────────────────────────────────────────────────────────────
+let activePopover = null
+function togglePopover(id) {
+  const el = document.getElementById(id)
+  const btn = document.getElementById(id.replace('pop-', 'pop-') + '-btn') ||
+              document.querySelector(`[onclick="togglePopover('${id}')"]`)
+  if (activePopover && activePopover !== id) {
+    document.getElementById(activePopover)?.classList.remove('open')
+    activePopover = null
+  }
+  const isOpen = el.classList.contains('open')
+  el.classList.toggle('open')
+  btn?.classList.toggle('active', !isOpen)
+  activePopover = isOpen ? null : id
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('.popover-anchor') && activePopover) {
+    document.getElementById(activePopover)?.classList.remove('open')
+    document.querySelectorAll('.popover-trigger').forEach(b => b.classList.remove('active'))
+    activePopover = null
+  }
+})
+
+// ── Steps (vertical interactive) ─────────────────────────────────────────────
+let vStep = 1  // 0-indexed active step (starts at step 2 = index 1)
+const V_TOTAL = 4
+
+function renderVSteps() {
+  const steps = document.querySelectorAll('#steps-v .step-v')
+  steps.forEach((el, i) => {
+    el.classList.remove('active', 'completed')
+    if (i < vStep)       el.classList.add('completed')
+    else if (i === vStep) el.classList.add('active')
+    // Update connector lines
+    const line = el.querySelector('.step-v-line')
+    // Already handled by CSS
+  })
+  document.getElementById('v-prev').disabled = vStep === 0
+  document.getElementById('v-next').disabled = vStep === V_TOTAL - 1
+  // Update button text
+  if (vStep === V_TOTAL - 1) {
+    document.getElementById('v-next').textContent = '🎉 Complete'
+    document.getElementById('v-next').disabled = false
+  } else {
+    document.getElementById('v-next').textContent = 'Next →'
+  }
+}
+
+function stepNav(dir) {
+  if (dir > 0 && vStep < V_TOTAL - 1) vStep++
+  else if (dir > 0 && vStep === V_TOTAL - 1) { vStep = 0 } // reset demo
+  else if (dir < 0 && vStep > 0) vStep--
+  renderVSteps()
+}
+
+renderVSteps()
+</script>
+</body>
+</html>
