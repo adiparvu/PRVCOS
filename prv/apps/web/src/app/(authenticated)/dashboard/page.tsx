@@ -4,6 +4,7 @@ import { getSession } from "@prv/auth"
 import { queryCompanyKpis } from "@prv/db"
 import { cacheMemo } from "@prv/cache"
 import { OnlineNowPanel } from "@/components/presence/OnlineNowPanel"
+import { PinnedContactsRow } from "@/components/dashboard/PinnedContactsRow"
 
 export const dynamic = "force-dynamic"
 export const metadata = { title: "Command" }
@@ -186,6 +187,9 @@ export default async function DashboardPage() {
       <div className="mb-5">
         <OnlineNowPanel companyId={session.companyId} />
       </div>
+
+      {/* Pinned Contacts — quick access row (client component) */}
+      <PinnedContactsRow />
 
       {/* Quick Actions */}
       <GlassCard className="mb-5">
