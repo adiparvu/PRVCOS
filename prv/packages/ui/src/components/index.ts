@@ -116,6 +116,24 @@ export type { GlassListViewProps, ListViewSection, ListViewItem } from "./glass-
 export { GlassSkeleton } from "./glass-skeleton"
 export type { GlassSkeletonProps, SkeletonVariant } from "./glass-skeleton"
 
+export { GlassTabs } from "./glass-tabs"
+export type { GlassTabsProps, TabItem, TabVariant } from "./glass-tabs"
+
+export { GlassBreadcrumb } from "./glass-breadcrumb"
+export type { GlassBreadcrumbProps, BreadcrumbItem, BreadcrumbVariant } from "./glass-breadcrumb"
+
+export { GlassProgressBar } from "./glass-progress-bar"
+export type {
+  GlassProgressBarProps,
+  ProgressSegment,
+  ProgressVariant,
+  ProgressSize,
+  ProgressColor,
+} from "./glass-progress-bar"
+
+export { GlassAlertBanner } from "./glass-alert-banner"
+export type { GlassAlertBannerProps, AlertType } from "./glass-alert-banner"
+
 export { GlassLineChart } from "./glass-line-chart"
 export type { GlassLineChartProps, ChartSeries } from "./glass-line-chart"
 
