@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PRV · Sprint 15 — Content System Preview</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #000;
+    --g1: rgba(255,255,255,0.06);
+    --g2: rgba(255,255,255,0.10);
+    --g3: rgba(255,255,255,0.16);
+    --g4: rgba(255,255,255,0.22);
+    --text-1: rgba(255,255,255,0.95);
+    --text-2: rgba(255,255,255,0.65);
+    --text-3: rgba(255,255,255,0.35);
+    --text-4: rgba(255,255,255,0.15);
+    --border: rgba(255,255,255,0.12);
+    --border-sub: rgba(255,255,255,0.07);
+    --border-str: rgba(255,255,255,0.22);
+    --spec: rgba(255,255,255,0.25);
+    --spec2: rgba(255,255,255,0.20);
+    --spring: cubic-bezier(0.34,1.56,0.64,1);
+    --smooth: cubic-bezier(0.4,0,0.2,1);
+    --r-pill: 100px;
+    --r-sheet: 32px;
+    --r-panel: 24px;
+    --r-card: 20px;
+    --r-base: 16px;
+    --r-md: 12px;
+  }
+
+  body {
+    background: var(--bg); color: var(--text-1);
+    font-family: -apple-system,"SF Pro Text","SF Pro Display",sans-serif;
+    min-height: 100vh; padding: 40px 24px 120px;
+  }
+
+  .page-header { text-align: center; margin-bottom: 56px; }
+  .sprint-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--g2); border: 1px solid var(--border);
+    border-radius: var(--r-pill); padding: 4px 14px;
+    font-size: 11px; font-weight: 600; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--text-2); margin-bottom: 14px;
+  }
+  .page-title { font-size: 34px; font-weight: 700; letter-spacing: -.02em; margin-bottom: 8px; }
+  .page-sub { font-size: 16px; color: var(--text-3); }
+
+  .section { margin-bottom: 72px; }
+  .section-label {
+    font-size: 11px; font-weight: 700; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--text-3);
+    margin-bottom: 24px; display: flex; align-items: center; gap: 8px;
+  }
+  .section-label::after { content:""; flex:1; height:1px; background:var(--border-sub); }
+
+  code { font-family:"SF Mono",ui-monospace,monospace; font-size:11px; color:var(--text-1); background:var(--g2); padding:1px 5px; border-radius:4px; }
+  .callout { background:var(--g1); border:1px solid var(--border-sub); border-radius:var(--r-panel); padding:18px 20px; margin-top:16px; font-size:13px; color:var(--text-3); line-height:1.65; }
+  .callout strong { color:var(--text-2); }
+
+  .api-table { width:100%; border-collapse:separate; border-spacing:0; border:1px solid var(--border-sub); border-radius:var(--r-panel); overflow:hidden; margin-top:16px; }
+  .api-table th { padding:9px 14px; text-align:left; font-size:10px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--text-3); background:var(--g1); border-bottom:1px solid var(--border-sub); }
+  .api-table td { padding:10px 14px; font-size:12px; color:var(--text-2); border-bottom:1px solid var(--border-sub); }
+  .api-table tr:last-child td { border-bottom:none; }
+  .api-table tr:hover td { background:var(--g1); }
+  .req { color:rgba(255,149,0,.8); font-size:10px; font-weight:600; }
+  .opt { color:var(--text-4); font-size:10px; }
+
+  .two-col { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  @media(max-width:600px){ .two-col { grid-template-columns:1fr; } }
+
+  /* ══════════════════════════════════════════
+     01 — GLASS SEARCH OVERLAY
+  ══════════════════════════════════════════ */
+  .search-trigger-row { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:20px; }
+  .glass-btn {
+    display:inline-flex; align-items:center; gap:8px;
+    padding:10px 18px; border-radius:var(--r-pill);
+    background:var(--g2); border:1px solid var(--border);
+    color:var(--text-1); font-size:14px; font-weight:500;
+    cursor:pointer; font-family:inherit;
+    box-shadow:inset 0 1px 0 var(--spec2);
+    transition:background .2s;
+  }
+  .glass-btn:hover { background:var(--g3); }
+
+  /* floating search bar (collapsed state) */
+  .search-bar-float {
+    display:flex; align-items:center; gap:10px;
+    padding:11px 18px; border-radius:var(--r-pill);
+    background:var(--g2); border:1px solid var(--border);
+    backdrop-filter:blur(48px) saturate(180%);
+    box-shadow:0 4px 16px rgba(0,0,0,.5), inset 0 1px 0 var(--spec2);
+    cursor:text; max-width:400px;
+  }
+  .search-bar-float-text { font-size:15px; color:var(--text-4); flex:1; }
+
+  /* full overlay */
+  .search-overlay {
+    position:fixed; inset:0; z-index:8000;
+    display:flex; flex-direction:column;
+    pointer-events:none; opacity:0;
+    transition:opacity .18s var(--smooth);
+  }
+  .search-overlay.open { pointer-events:auto; opacity:1; }
+  .search-overlay-backdrop {
+    position:absolute; inset:0;
+    background:rgba(0,0,0,.72);
+    backdrop-filter:blur(16px);
+    -webkit-backdrop-filter:blur(16px);
+  }
+  .search-overlay-panel {
+    position:relative; z-index:1;
+    display:flex; flex-direction:column;
+    height:100%; max-width:640px; margin:0 auto; width:100%;
+    padding:env(safe-area-inset-top,20px) 16px 0;
+  }
+  /* input row */
+  .search-input-row {
+    display:flex; align-items:center; gap:12px;
+    padding:13px 20px;
+    background:var(--g2); border:1px solid var(--border);
+    border-radius:var(--r-pill);
+    backdrop-filter:blur(64px) saturate(200%);
+    box-shadow:0 8px 32px rgba(0,0,0,.6), inset 0 1px 0 var(--spec);
+    margin-top:16px;
+    transform:translateY(-8px) scale(.97);
+    transition:transform .28s var(--spring);
+  }
+  .search-overlay.open .search-input-row { transform:translateY(0) scale(1); }
+  .search-real-input {
+    flex:1; background:transparent; border:none; outline:none;
+    font-size:17px; color:var(--text-1); font-family:inherit;
+  }
+  .search-real-input::placeholder { color:var(--text-4); }
+  .search-cancel-btn {
+    font-size:14px; font-weight:500; color:var(--text-2);
+    background:transparent; border:none; cursor:pointer;
+    font-family:inherit; white-space:nowrap; padding:2px 0;
+    transition:color .15s;
+  }
+  .search-cancel-btn:hover { color:var(--text-1); }
+
+  /* results list */
+  .search-results {
+    flex:1; overflow-y:auto; padding:12px 0 24px;
+    opacity:0; transform:translateY(8px);
+    transition:opacity .22s var(--smooth), transform .22s var(--smooth);
+    transition-delay:.08s;
+  }
+  .search-overlay.open .search-results { opacity:1; transform:translateY(0); }
+  .search-section-title {
+    font-size:10px; font-weight:700; letter-spacing:.09em;
+    text-transform:uppercase; color:var(--text-3);
+    padding:10px 4px 5px;
+  }
+  .search-result-item {
+    display:flex; align-items:center; gap:12px;
+    padding:11px 12px; border-radius:var(--r-base);
+    cursor:pointer; transition:background .1s;
+  }
+  .search-result-item:hover { background:var(--g2); }
+  .search-result-icon {
+    width:36px; height:36px; border-radius:10px;
+    background:var(--g1); border:1px solid var(--border-sub);
+    display:flex; align-items:center; justify-content:center;
+    color:var(--text-2); flex-shrink:0;
+  }
+  .search-result-text { flex:1; }
+  .search-result-label { font-size:14px; color:var(--text-1); }
+  .search-result-meta  { font-size:11px; color:var(--text-3); margin-top:1px; }
+  .search-result-badge {
+    font-size:10px; font-weight:600; letter-spacing:.05em;
+    text-transform:uppercase; padding:2px 7px; border-radius:6px;
+    background:var(--g2); border:1px solid var(--border-sub);
+    color:var(--text-3); white-space:nowrap;
+  }
+
+  /* scope pills */
+  .search-scope-row {
+    display:flex; gap:6px; padding:10px 4px 4px; flex-wrap:wrap;
+  }
+  .scope-pill {
+    padding:5px 12px; border-radius:var(--r-pill);
+    border:1px solid var(--border); font-size:12px; font-weight:500;
+    color:var(--text-3); background:var(--g1); cursor:pointer;
+    transition:all .2s;
+  }
+  .scope-pill.active {
+    background:var(--text-1); color:var(--bg);
+    border-color:transparent;
+  }
+
+  /* ══════════════════════════════════════════
+     02 — EXPANDABLE GLASS CARD
+  ══════════════════════════════════════════ */
+  .expand-grid {
+    display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
+    gap:12px;
+  }
+  .exp-card {
+    background:var(--g1); border:1px solid var(--border-sub);
+    border-radius:var(--r-card); overflow:hidden;
+    transition:all .32s var(--spring);
+    cursor:pointer;
+    position:relative;
+  }
+  .exp-card::before {
+    content:""; position:absolute; inset-x:0; top:0; height:1px;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,.10),transparent);
+  }
+  .exp-card:hover { background:var(--g2); border-color:var(--border); }
+  .exp-card-header {
+    display:flex; align-items:center; gap:12px; padding:16px;
+  }
+  .exp-card-icon {
+    width:40px; height:40px; border-radius:12px;
+    background:var(--g2); border:1px solid var(--border-sub);
+    display:flex; align-items:center; justify-content:center;
+    color:var(--text-2); flex-shrink:0;
+  }
+  .exp-card-titles { flex:1; min-width:0; }
+  .exp-card-title { font-size:15px; font-weight:600; color:var(--text-1); }
+  .exp-card-sub   { font-size:12px; color:var(--text-3); margin-top:2px; }
+  .exp-card-chevron {
+    width:24px; height:24px; border-radius:50%;
+    background:var(--g1); border:1px solid var(--border-sub);
+    display:flex; align-items:center; justify-content:center;
+    color:var(--text-3); flex-shrink:0;
+    transition:transform .3s var(--spring), background .2s;
+  }
+  .exp-card.open .exp-card-chevron { transform:rotate(180deg); background:var(--g2); }
+
+  .exp-card-body {
+    max-height:0; overflow:hidden;
+    transition:max-height .38s var(--smooth), opacity .25s var(--smooth);
+    opacity:0;
+  }
+  .exp-card.open .exp-card-body { max-height:400px; opacity:1; }
+  .exp-card-divider { height:1px; background:var(--border-sub); margin:0 16px; }
+  .exp-card-content { padding:14px 16px 16px; }
+
+  /* stat row inside card */
+  .exp-stat-row {
+    display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:12px;
+  }
+  .exp-stat {
+    background:var(--g1); border:1px solid var(--border-sub);
+    border-radius:var(--r-base); padding:10px 12px;
+  }
+  .exp-stat-val { font-size:17px; font-weight:700; color:var(--text-1); }
+  .exp-stat-lbl { font-size:10px; color:var(--text-3); margin-top:2px; text-transform:uppercase; letter-spacing:.05em; }
+
+  /* progress bar */
+  .exp-progress { height:4px; background:var(--border-sub); border-radius:2px; overflow:hidden; margin-bottom:10px; }
+  .exp-progress-fill { height:100%; background:var(--text-1); border-radius:2px; transition:width .5s var(--smooth); }
+
+  .exp-card-actions { display:flex; gap:6px; }
+  .exp-action-btn {
+    flex:1; padding:9px; border-radius:var(--r-base);
+    background:var(--g2); border:1px solid var(--border-sub);
+    color:var(--text-2); font-size:13px; font-weight:500;
+    cursor:pointer; font-family:inherit; text-align:center;
+    transition:background .15s;
+  }
+  .exp-action-btn:hover { background:var(--g3); }
+  .exp-action-btn.primary { background:var(--text-1); color:var(--bg); border-color:transparent; }
+  .exp-action-btn.primary:hover { opacity:.9; }
+
+  /* ══════════════════════════════════════════
+     03 — GLASS QUICK ACTIONS PANEL
+  ══════════════════════════════════════════ */
+  .qap-demo {
+    position:relative; height:320px;
+    background:var(--g1); border:1px solid var(--border-sub);
+    border-radius:var(--r-panel); overflow:hidden;
+  }
+  /* fake bg content */
+  .qap-bg { padding:20px; display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .qap-bg-card { background:var(--g1); border:1px solid var(--border-sub); border-radius:var(--r-card); height:70px; }
+  .qap-bg-card:first-child { grid-column:1/-1; height:90px; }
+
+  /* FAB */
+  .qap-fab {
+    position:absolute; bottom:20px; right:20px;
+    width:52px; height:52px; border-radius:50%;
+    background:var(--g3); border:1px solid var(--border);
+    backdrop-filter:blur(48px) saturate(180%);
+    box-shadow:0 8px 24px rgba(0,0,0,.6), inset 0 1px 0 var(--spec);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer; color:var(--text-1);
+    transition:all .3s var(--spring); z-index:10;
+  }
+  .qap-fab:hover { background:var(--g4); transform:scale(1.06); }
+  .qap-fab.open { transform:rotate(45deg) scale(1.06); }
+
+  /* action items ring */
+  .qap-actions {
+    position:absolute; bottom:82px; right:20px;
+    display:flex; flex-direction:column-reverse; gap:8px;
+    align-items:flex-end; z-index:9;
+    pointer-events:none;
+  }
+  .qap-action-item {
+    display:flex; align-items:center; gap:10px;
+    opacity:0;
+    transform:translateY(16px) scale(.9);
+    transition:opacity .22s var(--smooth), transform .28s var(--spring);
+    pointer-events:none;
+  }
+  .qap-actions.open .qap-action-item { opacity:1; transform:none; pointer-events:auto; }
+  .qap-actions.open .qap-action-item:nth-child(1) { transition-delay:.04s; }
+  .qap-actions.open .qap-action-item:nth-child(2) { transition-delay:.08s; }
+  .qap-actions.open .qap-action-item:nth-child(3) { transition-delay:.12s; }
+  .qap-actions.open .qap-action-item:nth-child(4) { transition-delay:.16s; }
+
+  .qap-action-label {
+    background:var(--g3); border:1px solid var(--border);
+    border-radius:var(--r-pill); padding:6px 12px;
+    backdrop-filter:blur(32px);
+    font-size:12px; font-weight:500; color:var(--text-1);
+    white-space:nowrap;
+    box-shadow:0 4px 12px rgba(0,0,0,.4), inset 0 1px 0 var(--spec2);
+  }
+  .qap-action-btn {
+    width:42px; height:42px; border-radius:50%;
+    background:var(--g2); border:1px solid var(--border);
+    backdrop-filter:blur(32px);
+    box-shadow:0 4px 16px rgba(0,0,0,.5), inset 0 1px 0 var(--spec2);
+    display:flex; align-items:center; justify-content:center;
+    color:var(--text-1); cursor:pointer; flex-shrink:0;
+    transition:background .15s, transform .2s var(--spring);
+  }
+  .qap-action-btn:hover { background:var(--g3); transform:scale(1.08); }
+
+  /* ── Backdrop for QAP */
+  .qap-backdrop {
+    position:absolute; inset:0;
+    background:rgba(0,0,0,0);
+    pointer-events:none; z-index:8;
+    transition:background .25s var(--smooth);
+  }
+  .qap-backdrop.open { background:rgba(0,0,0,.4); pointer-events:auto; }
+
+  /* ══════════════════════════════════════════
+     04 — GLASS AVATAR
+  ══════════════════════════════════════════ */
+  .avatar-showcase {
+    display:flex; flex-wrap:wrap; gap:24px; align-items:flex-end;
+  }
+
+  .avatar-item { display:flex; flex-direction:column; align-items:center; gap:8px; }
+  .avatar-item-label { font-size:10px; color:var(--text-3); text-transform:uppercase; letter-spacing:.07em; }
+
+  .avatar {
+    position:relative; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    overflow:visible; flex-shrink:0;
+  }
+  .avatar-img {
+    width:100%; height:100%; border-radius:50%;
+    background:var(--g2); border:1.5px solid var(--border);
+    display:flex; align-items:center; justify-content:center;
+    font-weight:700; letter-spacing:-.01em; user-select:none;
+  }
+  /* sizes */
+  .avatar-xs { width:24px; height:24px; }
+  .avatar-xs .avatar-img { font-size:9px; }
+  .avatar-sm { width:32px; height:32px; }
+  .avatar-sm .avatar-img { font-size:11px; }
+  .avatar-md { width:40px; height:40px; }
+  .avatar-md .avatar-img { font-size:14px; }
+  .avatar-lg { width:52px; height:52px; }
+  .avatar-lg .avatar-img { font-size:18px; }
+  .avatar-xl { width:64px; height:64px; }
+  .avatar-xl .avatar-img { font-size:22px; }
+
+  /* presence dot */
+  .avatar-presence {
+    position:absolute; bottom:0; right:0;
+    width:10px; height:10px; border-radius:50%;
+    border:2px solid var(--bg);
+  }
+  .avatar-xs .avatar-presence { width:7px; height:7px; }
+  .avatar-sm .avatar-presence { width:9px; height:9px; }
+  .avatar-lg .avatar-presence { width:13px; height:13px; }
+  .avatar-xl .avatar-presence { width:15px; height:15px; }
+  .presence-online  { background:#30d158; }
+  .presence-away    { background:#ff9500; }
+  .presence-busy    { background:#ff3b30; }
+  .presence-offline { background:rgba(255,255,255,0.25); }
+
+  /* ring variant */
+  .avatar-ring .avatar-img { border:2px solid var(--text-1); }
+
+  /* group stack */
+  .avatar-stack { display:flex; }
+  .avatar-stack .avatar { margin-left:-10px; }
+  .avatar-stack .avatar:first-child { margin-left:0; }
+  .avatar-stack .avatar .avatar-img { border:2px solid var(--bg); }
+  .avatar-stack .avatar-overflow {
+    width:40px; height:40px; border-radius:50%;
+    background:var(--g2); border:2px solid var(--bg);
+    display:flex; align-items:center; justify-content:center;
+    font-size:12px; font-weight:600; color:var(--text-2);
+    margin-left:-10px;
+  }
+
+  /* ══════════════════════════════════════════
+     05 — GLASS STAT CARD
+  ══════════════════════════════════════════ */
+  .stat-grid {
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(180px,1fr));
+    gap:10px;
+  }
+  .stat-card {
+    background:var(--g1); border:1px solid var(--border-sub);
+    border-radius:var(--r-card); padding:18px 20px;
+    position:relative; overflow:hidden;
+    transition:all .25s var(--smooth);
+  }
+  .stat-card::before {
+    content:""; position:absolute; inset-x:0; top:0; height:1px;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,.10),transparent);
+  }
+  .stat-card:hover { background:var(--g2); border-color:var(--border); transform:translateY(-1px); }
+
+  .stat-card-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+  .stat-card-icon {
+    width:34px; height:34px; border-radius:10px;
+    background:var(--g2); border:1px solid var(--border-sub);
+    display:flex; align-items:center; justify-content:center;
+    color:var(--text-2);
+  }
+  .stat-card-trend {
+    display:flex; align-items:center; gap:3px;
+    font-size:11px; font-weight:600; padding:3px 7px;
+    border-radius:var(--r-pill); border:1px solid;
+  }
+  .trend-up   { color:rgba(48,209,88,.9);  border-color:rgba(48,209,88,.2);  background:rgba(48,209,88,.08);  }
+  .trend-down { color:rgba(255,59,48,.9);  border-color:rgba(255,59,48,.2);  background:rgba(255,59,48,.08);  }
+  .trend-flat { color:var(--text-3);       border-color:var(--border-sub);   background:var(--g1);            }
+
+  .stat-card-value { font-size:26px; font-weight:700; letter-spacing:-.02em; color:var(--text-1); line-height:1; }
+  .stat-card-label { font-size:12px; color:var(--text-3); margin-top:4px; }
+  .stat-card-sparkline {
+    margin-top:12px; height:28px;
+    display:flex; align-items:flex-end; gap:3px;
+  }
+  .spark-bar {
+    flex:1; border-radius:2px; min-height:4px;
+    background:var(--border-sub); transition:height .3s var(--smooth);
+  }
+  .spark-bar.hi { background:var(--text-2); }
+
+  /* wide stat card */
+  .stat-card.wide { grid-column:1/-1; display:flex; align-items:center; gap:20px; padding:20px 24px; }
+  .stat-card.wide .stat-card-header { margin-bottom:0; flex:none; }
+  .stat-card.wide .stat-card-main { flex:1; }
+  .stat-card.wide .stat-card-sparkline { margin-top:0; flex:0 0 120px; height:40px; }
+
+  /* ── Delivery table ── */
+  .delivery-table {
+    width:100%; border-collapse:separate; border-spacing:0;
+    border:1px solid var(--border-sub); border-radius:var(--r-panel); overflow:hidden;
+  }
+  .delivery-table th { padding:10px 16px; text-align:left; font-size:10px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--text-3); background:var(--g1); border-bottom:1px solid var(--border-sub); }
+  .delivery-table td { padding:12px 16px; font-size:13px; color:var(--text-2); border-bottom:1px solid var(--border-sub); }
+  .delivery-table tr:last-child td { border-bottom:none; }
+  .delivery-table tr:hover td { background:var(--g1); }
+  .tag { display:inline-flex; align-items:center; padding:2px 8px; border-radius:6px; font-size:10px; font-weight:600; letter-spacing:.05em; text-transform:uppercase; }
+  .tag.new  { background:rgba(48,209,88,.12); border:1px solid rgba(48,209,88,.2); color:#30d158; }
+  .tag.comp { background:rgba(10,132,255,.10); border:1px solid rgba(10,132,255,.2); color:#0a84ff; }
+</style>
+</head>
+<body>
+
+<!-- ── PAGE HEADER ─────────────────────────────────────────────────────── -->
+<div class="page-header">
+  <div class="sprint-badge">Sprint 15 · Content System</div>
+  <h1 class="page-title">Content System</h1>
+  <p class="page-sub">Search Overlay · Expandable Card · Quick Actions Panel · Avatar · Stat Card</p>
+</div>
+
+<!-- ── 01 · GLASS SEARCH OVERLAY ──────────────────────────────────────── -->
+<div class="section">
+  <div class="section-label">01 — Glass Search Overlay</div>
+
+  <div class="search-trigger-row">
+    <!-- collapsed floating bar -->
+    <div class="search-bar-float" onclick="openSearch()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" style="color:var(--text-3);flex-shrink:0">
+        <circle cx="11" cy="11" r="8"/><line x1="21" x2="16.65" y1="21" y2="16.65"/>
+      </svg>
+      <span class="search-bar-float-text">Search employees, stores, documents…</span>
+      <kbd style="font-size:11px;color:var(--text-4);background:var(--g1);border:1px solid var(--border-sub);border-radius:5px;padding:2px 7px">⌘F</kbd>
+    </div>
+  </div>
+
+  <!-- full-screen overlay -->
+  <div class="search-overlay" id="searchOverlay">
+    <div class="search-overlay-backdrop" onclick="closeSearch()"></div>
+    <div class="search-overlay-panel">
+      <!-- scope pills -->
+      <div class="search-scope-row">
+        <div class="scope-pill active" onclick="setScope(this)">All</div>
+        <div class="scope-pill" onclick="setScope(this)">People</div>
+        <div class="scope-pill" onclick="setScope(this)">Stores</div>
+        <div class="scope-pill" onclick="setScope(this)">Projects</div>
+        <div class="scope-pill" onclick="setScope(this)">Documents</div>
+        <div class="scope-pill" onclick="setScope(this)">Inventory</div>
+      </div>
+
+      <!-- input -->
+      <div class="search-input-row">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" style="color:var(--text-3);flex-shrink:0">
+          <circle cx="11" cy="11" r="8"/><line x1="21" x2="16.65" y1="21" y2="16.65"/>
+        </svg>
+        <input class="search-real-input" id="searchInput" placeholder="Search everything…" />
+        <button class="search-cancel-btn" onclick="closeSearch()">Cancel</button>
+      </div>
+
+      <!-- results -->
+      <div class="search-results">
+        <div class="search-section-title">People</div>
+        <div class="search-result-item">
+          <div class="search-result-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          </div>
+          <div class="search-result-text">
+            <div class="search-result-label">Alexandru Popescu</div>
+            <div class="search-result-meta">Store Manager · Cluj-Napoca</div>
+          </div>
+          <span class="search-result-badge">Employee</span>
+        </div>
+        <div class="search-result-item">
+          <div class="search-result-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          </div>
+          <div class="search-result-text">
+            <div class="search-result-label">Ioana Munteanu</div>
+            <div class="search-result-meta">Cashier · Timișoara</div>
+          </div>
+          <span class="search-result-badge">Employee</span>
+        </div>
+
+        <div class="search-section-title">Projects</div>
+        <div class="search-result-item">
+          <div class="search-result-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>
+          </div>
+          <div class="search-result-text">
+            <div class="search-result-label">Renovare Baie · Str. Florilor</div>
+            <div class="search-result-meta">In progress · 67% complete</div>
+          </div>
+          <span class="search-result-badge">Project</span>
+        </div>
+        <div class="search-result-item">
+          <div class="search-result-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>
+          </div>
+          <div class="search-result-text">
+            <div class="search-result-label">Bucătărie · Bd. Eroilor 12</div>
+            <div class="search-result-meta">Quoting · Estimat: 14.200 RON</div>
+          </div>
+          <span class="search-result-badge">Project</span>
+        </div>
+
+        <div class="search-section-title">Inventory</div>
+        <div class="search-result-item">
+          <div class="search-result-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+          </div>
+          <div class="search-result-text">
+            <div class="search-result-label">Gresia Gri 60×60 Rectificată</div>
+            <div class="search-result-meta">Stoc: 243 mp · Depozit Cluj</div>
+          </div>
+          <span class="search-result-badge">Product</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout">
+    <strong>Component:</strong> <code>GlassSearchOverlay</code> — full-screen search with blurred backdrop + floating pill input.<br>
+    <strong>Scope pills:</strong> <code>scopes?: SearchScope[]</code> — filters results to a specific entity type (All / People / Stores / Projects / Documents / Inventory).<br>
+    <strong>Results:</strong> grouped by entity type via <code>sections: SearchResultSection[]</code>; each item has icon, label, meta, badge.<br>
+    <strong>Collapsed state:</strong> <code>GlassSearchBar</code> — a floating pill that opens the full overlay on click / ⌘F.
+  </div>
+
+  <table class="api-table">
+    <thead><tr><th>Prop</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>open</code></td><td><code>boolean</code></td><td>—</td><td><span class="req">required</span></td></tr>
+      <tr><td><code>onClose</code></td><td><code>() =&gt; void</code></td><td>—</td><td><span class="req">required</span></td></tr>
+      <tr><td><code>sections</code></td><td><code>SearchResultSection[]</code></td><td><code>[]</code></td><td><span class="opt">optional</span> — grouped results</td></tr>
+      <tr><td><code>scopes</code></td><td><code>SearchScope[]</code></td><td>—</td><td><span class="opt">optional</span> — scope filter pills</td></tr>
+      <tr><td><code>activeScope</code></td><td><code>string</code></td><td><code>"all"</code></td><td><span class="opt">optional</span></td></tr>
+      <tr><td><code>onScopeChange</code></td><td><code>(id: string) =&gt; void</code></td><td>—</td><td><span class="opt">optional</span></td></tr>
+      <tr><td><code>onQueryChange</code></td><td><code>(q: string) =&gt; void</code></td><td>—</td><td><span class="opt">optional</span> — debounced query for caller to fetch</td></tr>
+      <tr><td><code>onSelect</code></td><td><code>(item: SearchResultItem) =&gt; void</code></td><td>—</td><td><span class="opt">optional</span></td></tr>
+      <tr><td><code>placeholder</code></td><td><code>string</code></td><td><code>"Search everything…"</code></td><td><span class="opt">optional</span></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ── 02 · EXPANDABLE GLASS CARD ─────────────────────────────────────── -->
+<div class="section">
+  <div class="section-label">02 — Expandable Glass Card</div>
+
+  <div class="expand-grid">
+
+    <!-- Card 1: Project -->
+    <div class="exp-card" id="card1" onclick="toggleCard('card1')">
+      <div class="exp-card-header">
+        <div class="exp-card-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect width="8" height="4" x="8" y="2" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 14 2 2 4-4"/></svg>
+        </div>
+        <div class="exp-card-titles">
+          <div class="exp-card-title">Renovare Cluj S2</div>
+          <div class="exp-card-sub">In progress · 67%</div>
+        </div>
+        <div class="exp-card-chevron">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+      </div>
+      <div class="exp-card-body">
+        <div class="exp-card-divider"></div>
+        <div class="exp-card-content">
+          <div class="exp-progress" style="margin-bottom:12px">
+            <div class="exp-progress-fill" style="width:67%"></div>
+          </div>
+          <div class="exp-stat-row">
+            <div class="exp-stat"><div class="exp-stat-val">67%</div><div class="exp-stat-lbl">Progress</div></div>
+            <div class="exp-stat"><div class="exp-stat-val">8</div><div class="exp-stat-lbl">On site</div></div>
+            <div class="exp-stat"><div class="exp-stat-val">12d</div><div class="exp-stat-lbl">Remaining</div></div>
+          </div>
+          <div class="exp-card-actions">
+            <button class="exp-action-btn">Details</button>
+            <button class="exp-action-btn primary">Update</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 2: Employee -->
+    <div class="exp-card" id="card2" onclick="toggleCard('card2')">
+      <div class="exp-card-header">
+        <div class="exp-card-icon" style="width:40px;height:40px;border-radius:50%">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        </div>
+        <div class="exp-card-titles">
+          <div class="exp-card-title">Alexandru Popescu</div>
+          <div class="exp-card-sub">Store Manager · Cluj</div>
+        </div>
+        <div class="exp-card-chevron">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+      </div>
+      <div class="exp-card-body">
+        <div class="exp-card-divider"></div>
+        <div class="exp-card-content">
+          <div class="exp-stat-row">
+            <div class="exp-stat"><div class="exp-stat-val">22</div><div class="exp-stat-lbl">Days on</div></div>
+            <div class="exp-stat"><div class="exp-stat-val">4.8</div><div class="exp-stat-lbl">Rating</div></div>
+            <div class="exp-stat"><div class="exp-stat-val">3</div><div class="exp-stat-lbl">Active</div></div>
+          </div>
+          <div class="exp-card-actions">
+            <button class="exp-action-btn">Profile</button>
+            <button class="exp-action-btn">Schedule</button>
+            <button class="exp-action-btn primary">Message</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 3: Inventory item -->
+    <div class="exp-card" id="card3" onclick="toggleCard('card3')">
+      <div class="exp-card-header">
+        <div class="exp-card-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/></svg>
+        </div>
+        <div class="exp-card-titles">
+          <div class="exp-card-title">Gresia Gri 60×60</div>
+          <div class="exp-card-sub">243 mp · Depozit Cluj</div>
+        </div>
+        <div class="exp-card-chevron">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+      </div>
+      <div class="exp-card-body">
+        <div class="exp-card-divider"></div>
+        <div class="exp-card-content">
+          <div class="exp-stat-row">
+            <div class="exp-stat"><div class="exp-stat-val">243</div><div class="exp-stat-lbl">In stock</div></div>
+            <div class="exp-stat"><div class="exp-stat-val">58</div><div class="exp-stat-lbl">Reserved</div></div>
+            <div class="exp-stat"><div class="exp-stat-val">50mp</div><div class="exp-stat-lbl">Threshold</div></div>
+          </div>
+          <div class="exp-progress" style="margin-bottom:12px">
+            <div class="exp-progress-fill" style="width:82%"></div>
+          </div>
+          <div class="exp-card-actions">
+            <button class="exp-action-btn">History</button>
+            <button class="exp-action-btn primary">Order</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="callout">
+    <strong>Component:</strong> <code>GlassExpandableCard</code> — single-slot accordion; spring chevron + <code>max-height</code> animation.<br>
+    <strong>Header:</strong> <code>icon</code> · <code>title</code> · <code>subtitle</code> · optional <code>badge</code>.<br>
+    <strong>Body:</strong> any <code>children</code> — stat rows, progress bars, action buttons.<br>
+    <strong>Controlled or uncontrolled:</strong> <code>open</code> + <code>onOpenChange</code> props; or self-manages state when omitted.
+  </div>
+
+  <table class="api-table">
+    <thead><tr><th>Prop</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>icon</code></td><td><code>ReactNode</code></td><td>—</td><td><span class="opt">optional</span></td></tr>
+      <tr><td><code>title</code></td><td><code>string</code></td><td>—</td><td><span class="req">required</span></td></tr>
+      <tr><td><code>subtitle</code></td><td><code>string</code></td><td>—</td><td><span class="opt">optional</span></td></tr>
+      <tr><td><code>badge</code></td><td><code>ReactNode</code></td><td>—</td><td><span class="opt">optional</span> — right of subtitle</td></tr>
+      <tr><td><code>open</code></td><td><code>boolean</code></td><td>—</td><td><span class="opt">optional</span> — controlled mode</td></tr>
+      <tr><td><code>onOpenChange</code></td><td><code>(v: boolean) =&gt; void</code></td><td>—</td><td><span class="opt">optional</span></td></tr>
+      <tr><td><code>children</code></td><td><code>ReactNode</code></td><td>—</td><td><span class="req">required</span> — body content</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ── 03 · GLASS QUICK ACTIONS PANEL ─────────────────────────────────── -->
+<div class="section">
+  <div class="section-label">03 — Glass Quick Actions Panel</div>
+
+  <div class="qap-demo">
+    <div class="qap-bg">
+      <div class="qap-bg-card"></div>
+      <div class="qap-bg-card"></div>
+      <div class="qap-bg-card"></div>
+      <div class="qap-bg-card"></div>
+      <div class="qap-bg-card"></div>
+    </div>
+
+    <!-- dim backdrop -->
+    <div class="qap-backdrop" id="qapBackdrop" onclick="closeQAP()"></div>
+
+    <!-- action items (rendered above FAB) -->
+    <div class="qap-actions" id="qapActions">
+      <div class="qap-action-item">
+        <span class="qap-action-label">Add Employee</span>
+        <div class="qap-action-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/></svg>
+        </div>
+      </div>
+      <div class="qap-action-item">
+        <span class="qap-action-label">New Project</span>
+        <div class="qap-action-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect width="8" height="4" x="8" y="2" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><line x1="12" x2="12" y1="11" y2="17"/><line x1="9" x2="15" y1="14" y2="14"/></svg>
+        </div>
+      </div>
+      <div class="qap-action-item">
+        <span class="qap-action-label">Scan Barcode</span>
+        <div class="qap-action-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="7" x2="7" y1="8" y2="16"/><line x1="10" x2="10" y1="8" y2="16"/><line x1="13" x2="13" y1="8" y2="16"/><line x1="16" x2="16" y1="8" y2="16"/></svg>
+        </div>
+      </div>
+      <div class="qap-action-item">
+        <span class="qap-action-label">New Order</span>
+        <div class="qap-action-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" x2="21" y1="6" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- FAB -->
+    <div class="qap-fab" id="qapFab" onclick="toggleQAP()">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+        <line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/>
+      </svg>
+    </div>
+  </div>
+
+  <div class="callout">
+    <strong>Component:</strong> <code>GlassQuickActionsPanel</code> — floating action button + staggered action list.<br>
+    <strong>FAB:</strong> 52 px glass circle, rotates 45° to × on open. Position: bottom-right by default, configurable.<br>
+    <strong>Actions:</strong> <code>actions: QAPAction[]</code> — each has <code>id</code>, <code>label</code>, <code>icon</code>. Stagger delay 40 ms per item.<br>
+    <strong>Backdrop:</strong> semi-transparent dim layer closes the panel on tap.
+  </div>
+
+  <table class="api-table">
+    <thead><tr><th>Prop</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>actions</code></td><td><code>QAPAction[]</code></td><td>—</td><td><span class="req">required</span></td></tr>
+      <tr><td><code>onSelect</code></td><td><code>(id: string) =&gt; void</code></td><td>—</td><td><span class="req">required</span></td></tr>
+      <tr><td><code>open</code></td><td><code>boolean</code></td><td>—</td><td><span class="opt">optional</span> — controlled</td></tr>
+      <tr><td><code>onOpenChange</code></td><td><code>(v: boolean) =&gt; void</code></td><td>—</td><td><span class="opt">optional</span></td></tr>
+      <tr><td><code>fabIcon</code></td><td><code>ReactNode</code></td><td>+ icon</td><td><span class="opt">optional</span></td></tr>
+      <tr><td><code>position</code></td><td><code>"bottom-right" | "bottom-left"</code></td><td><code>"bottom-right"</code></td><td><span class="opt">optional</span></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ── 04 · GLASS AVATAR ──────────────────────────────────────────────── -->
+<div class="section">
+  <div class="section-label">04 — Glass Avatar</div>
+
+  <div class="two-col">
+    <!-- sizes + presence -->
+    <div>
+      <p style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);margin-bottom:16px">Sizes · Presence</p>
+      <div class="avatar-showcase">
+        <div class="avatar-item">
+          <div class="avatar avatar-xs"><div class="avatar-img" style="color:var(--text-2)">AP</div><span class="avatar-presence presence-online"></span></div>
+          <span class="avatar-item-label">xs</span>
+        </div>
+        <div class="avatar-item">
+          <div class="avatar avatar-sm"><div class="avatar-img" style="color:var(--text-2)">AP</div><span class="avatar-presence presence-online"></span></div>
+          <span class="avatar-item-label">sm</span>
+        </div>
+        <div class="avatar-item">
+          <div class="avatar avatar-md"><div class="avatar-img" style="color:var(--text-2)">AP</div><span class="avatar-presence presence-away"></span></div>
+          <span class="avatar-item-label">md</span>
+        </div>
+        <div class="avatar-item">
+          <div class="avatar avatar-lg"><div class="avatar-img" style="color:var(--text-2)">IM</div><span class="avatar-presence presence-busy"></span></div>
+          <span class="avatar-item-label">lg</span>
+        </div>
+        <div class="avatar-item">
+          <div class="avatar avatar-xl"><div class="avatar-img" style="color:var(--text-2)">GH</div><span class="avatar-presence presence-offline"></span></div>
+          <span class="avatar-item-label">xl</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ring + stack variants -->
+    <div>
+      <p style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);margin-bottom:16px">Ring · Stack</p>
+      <div class="avatar-showcase" style="flex-direction:column;align-items:flex-start">
+        <div class="avatar-item" style="flex-direction:row;gap:10px">
+          <div class="avatar avatar-lg avatar-ring"><div class="avatar-img" style="color:var(--text-1)">AP</div><span class="avatar-presence presence-online"></span></div>
+          <div>
+            <p style="font-size:14px;font-weight:600;color:var(--text-1)">Alexandru Popescu</p>
+            <p style="font-size:12px;color:var(--text-3)">Store Manager · Online</p>
+          </div>
+        </div>
+        <div class="avatar-item" style="flex-direction:row;align-items:center;gap:8px;margin-top:16px">
+          <div class="avatar-stack">
+            <div class="avatar avatar-md"><div class="avatar-img" style="color:var(--text-2)">AP</div></div>
+            <div class="avatar avatar-md"><div class="avatar-img" style="color:var(--text-2)">IM</div></div>
+            <div class="avatar avatar-md"><div class="avatar-img" style="color:var(--text-2)">GH</div></div>
+            <div class="avatar-overflow">+5</div>
+          </div>
+          <span style="font-size:13px;color:var(--text-3)">8 team members</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout">
+    <strong>Component:</strong> <code>GlassAvatar</code> — displays initials or image with glass surface, optional presence dot and ring.<br>
+    <strong>Presence:</strong> <code>"online" | "away" | "busy" | "offline"</code> — green / orange / red / dim dot.<br>
+    <strong>Sizes:</strong> <code>xs</code> (24px) · <code>sm</code> (32px) · <code>md</code> (40px) · <code>lg</code> (52px) · <code>xl</code> (64px).<br>
+    <strong>GlassAvatarGroup:</strong> stacks up to <code>max</code> avatars then shows overflow badge.
+  </div>
+
+  <table class="api-table">
+    <thead><tr><th>Prop</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>initials</code></td><td><code>string</code></td><td>—</td><td><span class="opt">optional</span> — 1–2 chars</td></tr>
+      <tr><td><code>src</code></td><td><code>string</code></td><td>—</td><td><span class="opt">optional</span> — image URL; falls back to initials</td></tr>
+      <tr><td><code>size</code></td><td><code>"xs"|"sm"|"md"|"lg"|"xl"</code></td><td><code>"md"</code></td><td><span class="opt">optional</span></td></tr>
+      <tr><td><code>presence</code></td><td><code>"online"|"away"|"busy"|"offline"</code></td><td>—</td><td><span class="opt">optional</span></td></tr>
+      <tr><td><code>ring</code></td><td><code>boolean</code></td><td><code>false</code></td><td><span class="opt">optional</span> — white border ring</td></tr>
+      <tr><td><code>alt</code></td><td><code>string</code></td><td>—</td><td><span class="opt">optional</span> — img alt / aria-label</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ── 05 · GLASS STAT CARD ───────────────────────────────────────────── -->
+<div class="section">
+  <div class="section-label">05 — Glass Stat Card</div>
+
+  <div class="stat-grid">
+
+    <div class="stat-card">
+      <div class="stat-card-header">
+        <div class="stat-card-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="12" x2="12" y1="1" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        </div>
+        <span class="stat-card-trend trend-up">↑ 12%</span>
+      </div>
+      <div class="stat-card-value">124.8k</div>
+      <div class="stat-card-label">Revenue MTD (RON)</div>
+      <div class="stat-card-sparkline">
+        <div class="spark-bar" style="height:40%"></div>
+        <div class="spark-bar" style="height:55%"></div>
+        <div class="spark-bar" style="height:45%"></div>
+        <div class="spark-bar" style="height:70%"></div>
+        <div class="spark-bar" style="height:60%"></div>
+        <div class="spark-bar hi" style="height:80%"></div>
+        <div class="spark-bar hi" style="height:90%"></div>
+        <div class="spark-bar hi" style="height:100%"></div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-card-header">
+        <div class="stat-card-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect width="8" height="4" x="8" y="2" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>
+        </div>
+        <span class="stat-card-trend trend-flat">→ 0%</span>
+      </div>
+      <div class="stat-card-value">34</div>
+      <div class="stat-card-label">Active Projects</div>
+      <div class="stat-card-sparkline">
+        <div class="spark-bar" style="height:60%"></div>
+        <div class="spark-bar" style="height:65%"></div>
+        <div class="spark-bar" style="height:60%"></div>
+        <div class="spark-bar" style="height:70%"></div>
+        <div class="spark-bar" style="height:65%"></div>
+        <div class="spark-bar hi" style="height:68%"></div>
+        <div class="spark-bar hi" style="height:65%"></div>
+        <div class="spark-bar hi" style="height:68%"></div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-card-header">
+        <div class="stat-card-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
+        <span class="stat-card-trend trend-up">↑ 3</span>
+      </div>
+      <div class="stat-card-value">127</div>
+      <div class="stat-card-label">Active Employees</div>
+      <div class="stat-card-sparkline">
+        <div class="spark-bar" style="height:75%"></div>
+        <div class="spark-bar" style="height:78%"></div>
+        <div class="spark-bar" style="height:80%"></div>
+        <div class="spark-bar" style="height:82%"></div>
+        <div class="spark-bar hi" style="height:85%"></div>
+        <div class="spark-bar hi" style="height:88%"></div>
+        <div class="spark-bar hi" style="height:90%"></div>
+        <div class="spark-bar hi" style="height:95%"></div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-card-header">
+        <div class="stat-card-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/></svg>
+        </div>
+        <span class="stat-card-trend trend-down">↓ 8%</span>
+      </div>
+      <div class="stat-card-value">1.24k</div>
+      <div class="stat-card-label">Inventory Items</div>
+      <div class="stat-card-sparkline">
+        <div class="spark-bar hi" style="height:100%"></div>
+        <div class="spark-bar hi" style="height:95%"></div>
+        <div class="spark-bar hi" style="height:90%"></div>
+        <div class="spark-bar" style="height:85%"></div>
+        <div class="spark-bar" style="height:80%"></div>
+        <div class="spark-bar" style="height:75%"></div>
+        <div class="spark-bar" style="height:65%"></div>
+        <div class="spark-bar" style="height:55%"></div>
+      </div>
+    </div>
+
+    <!-- wide card -->
+    <div class="stat-card wide">
+      <div class="stat-card-header">
+        <div class="stat-card-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M2 20h.01"/><path d="M7 20v-4"/><path d="M12 20v-8"/><path d="M17 20V8"/><path d="M22 4v16"/></svg>
+        </div>
+      </div>
+      <div class="stat-card-main">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:2px">
+          <div class="stat-card-value" style="font-size:22px">87.4%</div>
+          <span class="stat-card-trend trend-up">↑ 2.1%</span>
+        </div>
+        <div class="stat-card-label">Overall Completion Rate — all projects</div>
+      </div>
+      <div class="stat-card-sparkline">
+        <div class="spark-bar" style="height:55%"></div>
+        <div class="spark-bar" style="height:62%"></div>
+        <div class="spark-bar" style="height:68%"></div>
+        <div class="spark-bar hi" style="height:75%"></div>
+        <div class="spark-bar hi" style="height:80%"></div>
+        <div class="spark-bar hi" style="height:85%"></div>
+        <div class="spark-bar hi" style="height:90%"></div>
+        <div class="spark-bar hi" style="height:95%"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="callout">
+    <strong>Component:</strong> <code>GlassStatCard</code> — KPI tile with icon, value, label, trend badge, and inline sparkline.<br>
+    <strong>Trend:</strong> <code>trend?: &#123; direction: "up"|"down"|"flat"; value: string &#125;</code> — auto-colors badge (green/red/neutral).<br>
+    <strong>Sparkline:</strong> <code>sparkline?: number[]</code> — 4–12 normalized values (0–1); rendered as glass bar chart.<br>
+    <strong>Wide variant:</strong> <code>wide?: boolean</code> — spans full row; ideal for banner KPIs on the CEO dashboard.
+  </div>
+
+  <table class="api-table">
+    <thead><tr><th>Prop</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>value</code></td><td><code>string | number</code></td><td>—</td><td><span class="req">required</span></td></tr>
+      <tr><td><code>label</code></td><td><code>string</code></td><td>—</td><td><span class="req">required</span></td></tr>
+      <tr><td><code>icon</code></td><td><code>ReactNode</code></td><td>—</td><td><span class="opt">optional</span></td></tr>
+      <tr><td><code>trend</code></td><td><code>&#123; direction: "up"|"down"|"flat"; value: string &#125;</code></td><td>—</td><td><span class="opt">optional</span></td></tr>
+      <tr><td><code>sparkline</code></td><td><code>number[]</code></td><td>—</td><td><span class="opt">optional</span> — normalized 0–1</td></tr>
+      <tr><td><code>wide</code></td><td><code>boolean</code></td><td><code>false</code></td><td><span class="opt">optional</span> — full-row layout</td></tr>
+      <tr><td><code>onClick</code></td><td><code>() =&gt; void</code></td><td>—</td><td><span class="opt">optional</span> — makes card tappable</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ── DELIVERY TABLE ──────────────────────────────────────────────────── -->
+<div class="section">
+  <div class="section-label">Sprint 15 · Delivery Scope</div>
+  <table class="delivery-table">
+    <thead><tr><th>#</th><th>Component</th><th>File</th><th>Type</th><th>Exports</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>GlassSearchOverlay + GlassSearchBar</td><td><code>glass-search-overlay.tsx</code></td><td><span class="tag new">new</span></td><td><code>GlassSearchOverlay</code> · <code>GlassSearchBar</code> · <code>SearchResultSection</code></td></tr>
+      <tr><td>2</td><td>GlassExpandableCard</td><td><code>glass-expandable-card.tsx</code></td><td><span class="tag new">new</span></td><td><code>GlassExpandableCard</code></td></tr>
+      <tr><td>3</td><td>GlassQuickActionsPanel</td><td><code>glass-quick-actions-panel.tsx</code></td><td><span class="tag new">new</span></td><td><code>GlassQuickActionsPanel</code> · <code>QAPAction</code></td></tr>
+      <tr><td>4</td><td>GlassAvatar + GlassAvatarGroup</td><td><code>glass-avatar.tsx</code></td><td><span class="tag new">new</span></td><td><code>GlassAvatar</code> · <code>GlassAvatarGroup</code> · <code>AvatarPresence</code></td></tr>
+      <tr><td>5</td><td>GlassStatCard</td><td><code>glass-stat-card.tsx</code></td><td><span class="tag new">new</span></td><td><code>GlassStatCard</code> · <code>StatTrend</code></td></tr>
+      <tr><td>6</td><td>components/index.ts</td><td><code>components/index.ts</code></td><td><span class="tag comp">infra</span></td><td>All new public symbols re-exported</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<script>
+/* Search Overlay */
+function openSearch() {
+  document.getElementById('searchOverlay').classList.add('open');
+  setTimeout(()=>document.getElementById('searchInput')?.focus(),80);
+}
+function closeSearch() { document.getElementById('searchOverlay').classList.remove('open'); }
+function setScope(el) {
+  el.closest('.search-scope-row').querySelectorAll('.scope-pill').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+}
+document.addEventListener('keydown', e=>{
+  if((e.metaKey||e.ctrlKey)&&e.key==='f'){ e.preventDefault(); openSearch(); }
+  if(e.key==='Escape') closeSearch();
+});
+
+/* Expandable Cards */
+function toggleCard(id) {
+  document.getElementById(id).classList.toggle('open');
+}
+
+/* Quick Actions Panel */
+function toggleQAP() {
+  const fab = document.getElementById('qapFab');
+  const actions = document.getElementById('qapActions');
+  const backdrop = document.getElementById('qapBackdrop');
+  [fab,actions,backdrop].forEach(el=>el.classList.toggle('open'));
+}
+function closeQAP() {
+  ['qapFab','qapActions','qapBackdrop'].forEach(id=>document.getElementById(id).classList.remove('open'));
+}
+</script>
+</body>
+</html>
