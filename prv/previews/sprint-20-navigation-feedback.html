@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PRV · Sprint 20 — Navigation & Feedback</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --prv-bg:            #000;
+    --prv-g1:            rgba(255,255,255,0.06);
+    --prv-g2:            rgba(255,255,255,0.10);
+    --prv-g3:            rgba(255,255,255,0.15);
+    --prv-g4:            rgba(255,255,255,0.22);
+    --prv-text-1:        rgba(255,255,255,0.95);
+    --prv-text-2:        rgba(255,255,255,0.65);
+    --prv-text-3:        rgba(255,255,255,0.35);
+    --prv-text-4:        rgba(255,255,255,0.15);
+    --prv-border:        rgba(255,255,255,0.12);
+    --prv-border-subtle: rgba(255,255,255,0.07);
+    --c-blue:   rgba(10,132,255,1);
+    --c-green:  rgba(48,209,88,1);
+    --c-orange: rgba(255,149,0,1);
+    --c-red:    rgba(255,59,48,1);
+    --c-purple: rgba(191,90,242,1);
+  }
+
+  html, body {
+    background: var(--prv-bg);
+    color: var(--prv-text-1);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page { max-width: 960px; margin: 0 auto; padding: 48px 24px 96px; }
+
+  .sprint-header { margin-bottom: 52px; }
+  .chips { display: flex; gap: 8px; margin-bottom: 10px; }
+  .chip { padding: 3px 10px; border-radius: 100px; background: var(--prv-g2); border: 1px solid var(--prv-border-subtle); font-size: 11px; font-weight: 600; color: var(--prv-text-3); letter-spacing: .06em; text-transform: uppercase; }
+  h1 { font-size: 28px; font-weight: 700; letter-spacing: -.02em; }
+  .sub { font-size: 14px; color: var(--prv-text-3); margin-top: 4px; }
+
+  .section { margin-bottom: 60px; }
+  .sl { font-size: 11px; font-weight: 600; color: var(--prv-text-3); letter-spacing: .07em; text-transform: uppercase; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+  .sl::after { content: ""; flex: 1; height: 1px; background: var(--prv-border-subtle); }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 640px) { .grid2 { grid-template-columns: 1fr; } }
+
+  /* ── Glass surface ── */
+  .glass { position: relative; overflow: hidden; background: var(--prv-g1); border: 1px solid var(--prv-border-subtle); border-radius: 20px; }
+  .glass::before { content: ""; position: absolute; inset: 0 0 auto; height: 1px; background: linear-gradient(90deg,transparent,rgba(255,255,255,0.09),transparent); pointer-events: none; }
+
+  /* ── Delivery table ── */
+  .dt { width: 100%; border-collapse: collapse; }
+  .dt th, .dt td { text-align: left; padding: 10px 14px; font-size: 13px; border-bottom: 1px solid var(--prv-border-subtle); }
+  .dt th { font-size: 11px; font-weight: 600; color: var(--prv-text-3); letter-spacing: .06em; text-transform: uppercase; }
+  .dt td { color: var(--prv-text-1); }
+  .dt td:nth-child(2) { color: var(--prv-text-3); font-family: "SF Mono", monospace; font-size: 11px; }
+  .dt tr:last-child td { border-bottom: none; }
+  .tag { display: inline-flex; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 500; background: var(--prv-g2); color: var(--prv-text-3); border: 1px solid var(--prv-border-subtle); }
+  .tag.new { background: rgba(10,132,255,.12); color: rgba(10,132,255,.9); border-color: rgba(10,132,255,.2); }
+
+  /* ═══════════════════════════════════════════════════════════
+     GLASS TABS
+  ═══════════════════════════════════════════════════════════ */
+
+  .glass-tabs { padding: 4px; }
+
+  .tabs-strip {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 4px;
+    background: var(--prv-g2);
+    border-radius: 14px;
+    position: relative;
+    border: 1px solid var(--prv-border-subtle);
+  }
+
+  .tabs-strip.underline-style {
+    background: transparent;
+    border-radius: 0;
+    border: none;
+    border-bottom: 1px solid var(--prv-border-subtle);
+    padding: 0;
+    gap: 0;
+  }
+
+  .tab-btn {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 16px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: inherit;
+    color: var(--prv-text-3);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: color 180ms;
+    white-space: nowrap;
+    z-index: 1;
+  }
+
+  .tab-btn.active { color: var(--prv-text-1); }
+
+  .tab-btn .tab-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 16px;
+    border-radius: 8px;
+    background: var(--prv-g3);
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--prv-text-2);
+    padding: 0 5px;
+  }
+
+  /* Pill indicator */
+  .tab-pill-indicator {
+    position: absolute;
+    top: 4px;
+    height: calc(100% - 8px);
+    background: var(--prv-g3);
+    border-radius: 8px;
+    border: 1px solid var(--prv-border);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+    transition: transform 280ms cubic-bezier(0.34,1.56,0.64,1), width 220ms cubic-bezier(0.4,0,0.2,1);
+    pointer-events: none;
+  }
+
+  /* Underline indicator */
+  .tab-underline-indicator {
+    position: absolute;
+    bottom: -1px;
+    height: 2px;
+    background: var(--prv-text-1);
+    border-radius: 2px 2px 0 0;
+    transition: transform 280ms cubic-bezier(0.34,1.56,0.64,1), width 220ms cubic-bezier(0.4,0,0.2,1);
+    pointer-events: none;
+  }
+
+  /* Underline tab button */
+  .tabs-strip.underline-style .tab-btn {
+    border-radius: 0;
+    padding: 10px 16px 12px;
+  }
+
+  .tab-content {
+    padding: 20px;
+    font-size: 13px;
+    color: var(--prv-text-2);
+    line-height: 1.6;
+    animation: tabFadeIn 200ms ease;
+  }
+
+  @keyframes tabFadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+  /* ═══════════════════════════════════════════════════════════
+     GLASS BREADCRUMB
+  ═══════════════════════════════════════════════════════════ */
+
+  .breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    padding: 8px 14px;
+    border-radius: 12px;
+    background: var(--prv-g1);
+    border: 1px solid var(--prv-border-subtle);
+    overflow: hidden;
+    position: relative;
+  }
+  .breadcrumb::before { content: ""; position: absolute; inset: 0 0 auto; height: 1px; background: linear-gradient(90deg,transparent,rgba(255,255,255,0.08),transparent); pointer-events: none; }
+
+  .bc-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--prv-text-3);
+    white-space: nowrap;
+    transition: color 150ms;
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 6px;
+  }
+  .bc-item:last-child { color: var(--prv-text-1); font-weight: 500; cursor: default; }
+  .bc-item:not(:last-child):hover { color: var(--prv-text-2); background: var(--prv-g2); }
+
+  .bc-sep {
+    color: var(--prv-text-4);
+    font-size: 11px;
+    flex-shrink: 0;
+    margin: 0 2px;
+  }
+
+  .bc-icon {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    opacity: 0.6;
+  }
+  .bc-item:last-child .bc-icon { opacity: 1; }
+
+  /* Floating breadcrumb style */
+  .breadcrumb.floating {
+    background: rgba(255,255,255,0.08);
+    backdrop-filter: blur(32px) saturate(180%);
+    -webkit-backdrop-filter: blur(32px) saturate(180%);
+    border-color: rgba(255,255,255,0.12);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+    display: inline-flex;
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     GLASS PROGRESS BAR
+  ═══════════════════════════════════════════════════════════ */
+
+  .progress-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .progress-row {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .progress-label-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+  .progress-label { font-size: 12px; color: var(--prv-text-2); }
+  .progress-value { font-size: 12px; font-weight: 600; color: var(--prv-text-1); }
+
+  .progress-track {
+    width: 100%;
+    height: 6px;
+    background: var(--prv-g2);
+    border-radius: 100px;
+    overflow: hidden;
+    position: relative;
+  }
+  .progress-track.thick { height: 10px; }
+  .progress-track.thin  { height: 3px; }
+
+  .progress-fill {
+    height: 100%;
+    border-radius: 100px;
+    background: var(--prv-text-1);
+    transition: width 800ms cubic-bezier(0.34,1.56,0.64,1);
+    width: 0;
+  }
+
+  .progress-fill.blue   { background: var(--c-blue); }
+  .progress-fill.green  { background: var(--c-green); }
+  .progress-fill.orange { background: var(--c-orange); }
+  .progress-fill.red    { background: var(--c-red); }
+  .progress-fill.purple { background: var(--c-purple); }
+
+  .progress-fill.gradient {
+    background: linear-gradient(90deg, rgba(10,132,255,0.9) 0%, rgba(48,209,88,0.9) 100%);
+  }
+
+  /* Indeterminate */
+  @keyframes indeterminate {
+    0%   { transform: translateX(-100%); }
+    100% { transform: translateX(400%); }
+  }
+  .progress-fill.indeterminate {
+    width: 30% !important;
+    background: linear-gradient(90deg,transparent,rgba(255,255,255,0.7),transparent);
+    animation: indeterminate 1.4s ease-in-out infinite;
+    border-radius: 100px;
+  }
+
+  /* Segmented */
+  .progress-segmented {
+    display: flex;
+    gap: 2px;
+    height: 8px;
+    width: 100%;
+  }
+  .seg-fill {
+    height: 100%;
+    border-radius: 100px;
+    transition: width 800ms cubic-bezier(0.34,1.56,0.64,1);
+  }
+
+  /* Striped */
+  @keyframes stripe-move {
+    from { background-position: 0 0; }
+    to   { background-position: 28px 0; }
+  }
+  .progress-fill.striped {
+    background-image: linear-gradient(
+      135deg,
+      rgba(255,255,255,0.12) 25%,
+      transparent 25%,
+      transparent 50%,
+      rgba(255,255,255,0.12) 50%,
+      rgba(255,255,255,0.12) 75%,
+      transparent 75%
+    );
+    background-size: 28px 28px;
+    animation: stripe-move 0.8s linear infinite;
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     GLASS ALERT BANNER
+  ═══════════════════════════════════════════════════════════ */
+
+  .alert-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .alert {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 16px;
+    border-radius: 14px;
+    background: var(--prv-g1);
+    border: 1px solid var(--prv-border-subtle);
+    overflow: hidden;
+    transition: opacity 250ms, transform 250ms;
+  }
+  .alert::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto;
+    height: 1px;
+    background: linear-gradient(90deg,transparent,rgba(255,255,255,0.08),transparent);
+    pointer-events: none;
+  }
+  .alert-bar {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    border-radius: 14px 0 0 14px;
+  }
+
+  .alert.info    { border-color: rgba(10,132,255,0.2);  background: rgba(10,132,255,0.06); }
+  .alert.success { border-color: rgba(48,209,88,0.2);   background: rgba(48,209,88,0.06);  }
+  .alert.warning { border-color: rgba(255,149,0,0.2);   background: rgba(255,149,0,0.06);  }
+  .alert.error   { border-color: rgba(255,59,48,0.2);   background: rgba(255,59,48,0.06);  }
+
+  .alert.info    .alert-bar { background: var(--c-blue);   }
+  .alert.success .alert-bar { background: var(--c-green);  }
+  .alert.warning .alert-bar { background: var(--c-orange); }
+  .alert.error   .alert-bar { background: var(--c-red);    }
+
+  .alert-icon {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .alert.info    .alert-icon { color: var(--c-blue);   }
+  .alert.success .alert-icon { color: var(--c-green);  }
+  .alert.warning .alert-icon { color: var(--c-orange); }
+  .alert.error   .alert-icon { color: var(--c-red);    }
+
+  .alert-body { flex: 1; min-width: 0; }
+  .alert-title { font-size: 13px; font-weight: 600; color: var(--prv-text-1); }
+  .alert-desc  { font-size: 12px; color: var(--prv-text-3); margin-top: 2px; line-height: 1.5; }
+
+  .alert-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .alert-action-btn {
+    font-size: 12px;
+    font-weight: 600;
+    font-family: inherit;
+    padding: 5px 12px;
+    border-radius: 8px;
+    background: var(--prv-g3);
+    border: 1px solid var(--prv-border-subtle);
+    color: var(--prv-text-1);
+    cursor: pointer;
+    transition: background 150ms;
+  }
+  .alert-action-btn:hover { background: var(--prv-g4); }
+
+  .alert-dismiss {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    background: transparent;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--prv-text-3);
+    flex-shrink: 0;
+    transition: background 150ms, color 150ms;
+  }
+  .alert-dismiss:hover { background: var(--prv-g3); color: var(--prv-text-1); }
+  .alert.dismissed { opacity: 0; transform: translateX(12px); pointer-events: none; }
+
+  /* ═══════════════════════════════════════════════════════════
+     Tabs demo content boxes
+  ═══════════════════════════════════════════════════════════ */
+  .demo-content-box {
+    height: 80px;
+    border-radius: 10px;
+    background: var(--prv-g2);
+    border: 1px solid var(--prv-border-subtle);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    color: var(--prv-text-3);
+    margin-top: 8px;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="sprint-header">
+    <div class="chips"><span class="chip">Sprint 20</span><span class="chip">Preview</span><span class="chip">Phase 1 · M8</span></div>
+    <h1>Navigation &amp; Feedback</h1>
+    <div class="sub">GlassTabs · GlassBreadcrumb · GlassProgressBar · GlassAlertBanner</div>
+  </div>
+
+  <!-- ── Tabs ── -->
+  <div class="section">
+    <div class="sl">GlassTabs — Pill &amp; underline variants, spring indicator</div>
+
+    <div style="display:flex;flex-direction:column;gap:16px;">
+
+      <!-- Pill tabs -->
+      <div class="glass" style="padding:16px 20px 20px">
+        <div style="font-size:11px;color:var(--prv-text-3);font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin-bottom:14px">Pill variant</div>
+        <div class="tabs-strip" id="pill-strip" style="position:relative">
+          <div class="tab-pill-indicator" id="pill-indicator"></div>
+          <button class="tab-btn active" data-tab="pill" data-idx="0" onclick="selectTab('pill',0,this)">
+            <svg class="tab-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+            Overview
+          </button>
+          <button class="tab-btn" data-tab="pill" data-idx="1" onclick="selectTab('pill',1,this)">
+            <svg class="tab-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            Analytics
+            <span class="tab-badge">3</span>
+          </button>
+          <button class="tab-btn" data-tab="pill" data-idx="2" onclick="selectTab('pill',2,this)">
+            <svg class="tab-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            Team
+          </button>
+          <button class="tab-btn" data-tab="pill" data-idx="3" onclick="selectTab('pill',3,this)">
+            <svg class="tab-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+            Settings
+          </button>
+        </div>
+        <div class="tab-content" id="pill-content">
+          <div class="demo-content-box">Content panel for the selected tab appears here with a spring fade-in transition.</div>
+        </div>
+      </div>
+
+      <!-- Underline tabs -->
+      <div class="glass" style="padding:16px 20px 20px">
+        <div style="font-size:11px;color:var(--prv-text-3);font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin-bottom:14px">Underline variant</div>
+        <div class="tabs-strip underline-style" id="ul-strip" style="position:relative">
+          <div class="tab-underline-indicator" id="ul-indicator"></div>
+          <button class="tab-btn active" data-tab="ul" data-idx="0" onclick="selectTab('ul',0,this)">Revenue</button>
+          <button class="tab-btn" data-tab="ul" data-idx="1" onclick="selectTab('ul',1,this)">Expenses</button>
+          <button class="tab-btn" data-tab="ul" data-idx="2" onclick="selectTab('ul',2,this)">Payroll</button>
+          <button class="tab-btn" data-tab="ul" data-idx="3" onclick="selectTab('ul',3,this)">Tax</button>
+        </div>
+        <div class="tab-content" id="ul-content">
+          <div class="demo-content-box">Revenue breakdown panel</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── Breadcrumb ── -->
+  <div class="section">
+    <div class="sl">GlassBreadcrumb — Navigation trail with chevron separators</div>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+
+      <!-- Default -->
+      <div class="breadcrumb" style="display:inline-flex">
+        <div class="bc-item">
+          <svg class="bc-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          Home
+        </div>
+        <span class="bc-sep">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </span>
+        <div class="bc-item">Operations</div>
+        <span class="bc-sep">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </span>
+        <div class="bc-item">Stores</div>
+        <span class="bc-sep">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </span>
+        <div class="bc-item">
+          <svg class="bc-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          Cluj · Main Store
+        </div>
+      </div>
+
+      <!-- Floating style -->
+      <div>
+        <div class="breadcrumb floating">
+          <div class="bc-item">
+            <svg class="bc-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          </div>
+          <span class="bc-sep"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg></span>
+          <div class="bc-item">Finance</div>
+          <span class="bc-sep"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg></span>
+          <div class="bc-item">Reports</div>
+          <span class="bc-sep"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg></span>
+          <div class="bc-item">Q2 2026 Revenue</div>
+        </div>
+        <div style="font-size:11px;color:var(--prv-text-4);margin-top:8px;margin-left:2px">Floating variant — backdrop blur + elevated shadow</div>
+      </div>
+
+      <!-- Collapsed with ellipsis -->
+      <div class="breadcrumb" style="display:inline-flex">
+        <div class="bc-item">
+          <svg class="bc-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          Home
+        </div>
+        <span class="bc-sep"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg></span>
+        <!-- collapsed items -->
+        <div class="bc-item" style="padding:2px 8px;background:var(--prv-g2);border-radius:6px;font-size:11px;letter-spacing:.05em">•••</div>
+        <span class="bc-sep"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg></span>
+        <div class="bc-item">Workforce</div>
+        <span class="bc-sep"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg></span>
+        <div class="bc-item">Schedule · Week 23</div>
+      </div>
+      <div style="font-size:11px;color:var(--prv-text-4);margin-top:-4px;margin-left:2px">Collapsed variant — middle items replaced with ••• when path is deep</div>
+
+    </div>
+  </div>
+
+  <!-- ── Progress Bar ── -->
+  <div class="section">
+    <div class="sl">GlassProgressBar — Determinate, indeterminate, segmented</div>
+    <div class="glass" style="padding:24px">
+      <div class="progress-wrap">
+
+        <div class="progress-row">
+          <div class="progress-label-row">
+            <span class="progress-label">Project completion</span>
+            <span class="progress-value" id="pv1">0%</span>
+          </div>
+          <div class="progress-track"><div class="progress-fill" id="pf1"></div></div>
+        </div>
+
+        <div class="progress-row">
+          <div class="progress-label-row">
+            <span class="progress-label">Storage used</span>
+            <span class="progress-value" id="pv2">0 GB</span>
+          </div>
+          <div class="progress-track thick"><div class="progress-fill blue" id="pf2"></div></div>
+        </div>
+
+        <div class="progress-row">
+          <div class="progress-label-row">
+            <span class="progress-label">Budget spend</span>
+            <span class="progress-value" id="pv3">0%</span>
+          </div>
+          <div class="progress-track thick"><div class="progress-fill gradient striped" id="pf3"></div></div>
+        </div>
+
+        <div class="progress-row">
+          <div class="progress-label-row">
+            <span class="progress-label">Risk level</span>
+            <span class="progress-value" style="color:rgba(255,59,48,0.9)">78%</span>
+          </div>
+          <div class="progress-track"><div class="progress-fill red" id="pf4"></div></div>
+        </div>
+
+        <div class="progress-row">
+          <div class="progress-label-row">
+            <span class="progress-label">Syncing data</span>
+            <span class="progress-value" style="color:var(--prv-text-3)">Indeterminate</span>
+          </div>
+          <div class="progress-track thin"><div class="progress-fill indeterminate"></div></div>
+        </div>
+
+        <!-- Segmented -->
+        <div class="progress-row">
+          <div class="progress-label-row">
+            <span class="progress-label">Revenue by category</span>
+            <span class="progress-value">€248k total</span>
+          </div>
+          <div class="progress-segmented" id="seg-bar">
+            <div class="seg-fill" style="background:rgba(255,255,255,0.85);width:0;border-radius:100px 0 0 100px" id="sf1"></div>
+            <div class="seg-fill" style="background:rgba(10,132,255,0.85);width:0" id="sf2"></div>
+            <div class="seg-fill" style="background:rgba(48,209,88,0.85);width:0" id="sf3"></div>
+            <div class="seg-fill" style="background:rgba(255,149,0,0.85);width:0;border-radius:0 100px 100px 0" id="sf4"></div>
+          </div>
+          <div style="display:flex;gap:14px;margin-top:6px;">
+            <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--prv-text-3)"><div style="width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,0.85)"></div>Bathrooms 38%</div>
+            <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--prv-text-3)"><div style="width:8px;height:8px;border-radius:50%;background:rgba(10,132,255,0.85)"></div>Kitchens 26%</div>
+            <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--prv-text-3)"><div style="width:8px;height:8px;border-radius:50%;background:rgba(48,209,88,0.85)"></div>Flooring 20%</div>
+            <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--prv-text-3)"><div style="width:8px;height:8px;border-radius:50%;background:rgba(255,149,0,0.85)"></div>Other 16%</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Alert Banner ── -->
+  <div class="section">
+    <div class="sl">GlassAlertBanner — Info · Success · Warning · Error</div>
+    <div class="alert-stack">
+
+      <div class="alert info" id="al-info">
+        <div class="alert-bar"></div>
+        <svg class="alert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        <div class="alert-body">
+          <div class="alert-title">System update scheduled</div>
+          <div class="alert-desc">PRV will be in maintenance mode on Sunday, 8 Jun at 02:00 – 04:00 EEST. No data will be lost.</div>
+        </div>
+        <div class="alert-actions">
+          <button class="alert-action-btn">Details</button>
+          <button class="alert-dismiss" onclick="dismissAlert('al-info')">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="alert success" id="al-success">
+        <div class="alert-bar"></div>
+        <svg class="alert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+        </svg>
+        <div class="alert-body">
+          <div class="alert-title">Payroll processed successfully</div>
+          <div class="alert-desc">€184,320 disbursed to 47 employees. All transfers completed.</div>
+        </div>
+        <div class="alert-actions">
+          <button class="alert-dismiss" onclick="dismissAlert('al-success')">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="alert warning" id="al-warning">
+        <div class="alert-bar"></div>
+        <svg class="alert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+        <div class="alert-body">
+          <div class="alert-title">Inventory below threshold — Cluj store</div>
+          <div class="alert-desc">12 SKUs are below the minimum stock level. Reorder recommended before Friday.</div>
+        </div>
+        <div class="alert-actions">
+          <button class="alert-action-btn">Review inventory</button>
+          <button class="alert-dismiss" onclick="dismissAlert('al-warning')">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="alert error" id="al-error">
+        <div class="alert-bar"></div>
+        <svg class="alert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+        </svg>
+        <div class="alert-body">
+          <div class="alert-title">Payment gateway unreachable</div>
+          <div class="alert-desc">Stripe API is not responding. Online orders are temporarily suspended.</div>
+        </div>
+        <div class="alert-actions">
+          <button class="alert-action-btn">Retry connection</button>
+          <button class="alert-dismiss" onclick="dismissAlert('al-error')">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── Delivery ── -->
+  <div class="section">
+    <div class="sl">Sprint 20 Delivery</div>
+    <div class="glass">
+      <table class="dt">
+        <thead><tr><th>Component</th><th>File</th><th>Key Props</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>GlassTabs</td><td>glass-tabs.tsx</td><td>tabs[], defaultTab, variant (pill|underline), onTabChange, animated</td><td><span class="tag new">New</span></td></tr>
+          <tr><td>GlassBreadcrumb</td><td>glass-breadcrumb.tsx</td><td>items[], maxVisible, variant (default|floating), separator, onItemClick</td><td><span class="tag new">New</span></td></tr>
+          <tr><td>GlassProgressBar</td><td>glass-progress-bar.tsx</td><td>value, max, variant (default|gradient|striped|indeterminate|segmented), size (sm|md|lg), label, animated</td><td><span class="tag new">New</span></td></tr>
+          <tr><td>GlassAlertBanner</td><td>glass-alert-banner.tsx</td><td>type (info|success|warning|error), title, description, action, onDismiss, dismissable</td><td><span class="tag new">New</span></td></tr>
+          <tr><td>index.ts</td><td>components/index.ts</td><td>Export all 4 new components + related types</td><td><span class="tag">Update</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── Tabs ─────────────────────────────────────────────────────────────
+
+const tabLabels = {
+  pill: ['Overview', 'Analytics', 'Team', 'Settings'],
+  ul:   ['Revenue', 'Expenses', 'Payroll', 'Tax'],
+}
+
+function initIndicator(stripId, indicatorId, type) {
+  const strip = document.getElementById(stripId)
+  const indicator = document.getElementById(indicatorId)
+  const activeBtn = strip.querySelector('.tab-btn.active')
+  if (!activeBtn || !indicator) return
+
+  if (type === 'pill') {
+    indicator.style.left   = activeBtn.offsetLeft + 'px'
+    indicator.style.width  = activeBtn.offsetWidth + 'px'
+  } else {
+    indicator.style.left  = activeBtn.offsetLeft + 'px'
+    indicator.style.width = activeBtn.offsetWidth + 'px'
+  }
+}
+
+function selectTab(tabGroup, idx, btn) {
+  const strip = btn.closest('.tabs-strip')
+  strip.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'))
+  btn.classList.add('active')
+
+  const isUnderline = strip.classList.contains('underline-style')
+  const indicatorId = tabGroup === 'pill' ? 'pill-indicator' : 'ul-indicator'
+  const indicator = document.getElementById(indicatorId)
+
+  if (indicator) {
+    indicator.style.left  = btn.offsetLeft + 'px'
+    indicator.style.width = btn.offsetWidth + 'px'
+  }
+
+  const contentId = tabGroup + '-content'
+  const content   = document.getElementById(contentId)
+  if (content) {
+    content.style.animation = 'none'
+    content.offsetHeight  // reflow
+    content.style.animation = ''
+    content.innerHTML = `<div class="demo-content-box">${tabLabels[tabGroup][idx]} panel content</div>`
+  }
+}
+
+// Init on load
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    initIndicator('pill-strip', 'pill-indicator', 'pill')
+    initIndicator('ul-strip', 'ul-indicator', 'underline')
+  }, 50)
+})
+
+// ── Alert dismiss ─────────────────────────────────────────────────────
+
+function dismissAlert(id) {
+  const el = document.getElementById(id)
+  if (el) {
+    el.classList.add('dismissed')
+    setTimeout(() => { el.style.height = el.offsetHeight + 'px'; el.offsetHeight; el.style.height = '0'; el.style.marginBottom = '0'; el.style.overflow = 'hidden'; el.style.transition = 'height 300ms, margin 300ms'; }, 240)
+  }
+}
+
+// ── Progress bars ─────────────────────────────────────────────────────
+
+function animateProgress() {
+  const bars = [
+    { fill: 'pf1', val: 72,  display: () => document.getElementById('pv1').textContent = '72%' },
+    { fill: 'pf2', val: 58,  display: () => document.getElementById('pv2').textContent = '58.4 GB' },
+    { fill: 'pf3', val: 84,  display: () => document.getElementById('pv3').textContent = '84%' },
+    { fill: 'pf4', val: 78,  display: () => {} },
+  ]
+  bars.forEach(({ fill, val, display }) => {
+    const el = document.getElementById(fill)
+    if (el) { el.style.width = val + '%'; display(); }
+  })
+
+  // Segmented
+  const segs = [
+    { id: 'sf1', pct: 38 },
+    { id: 'sf2', pct: 26 },
+    { id: 'sf3', pct: 20 },
+    { id: 'sf4', pct: 16 },
+  ]
+  segs.forEach(({ id, pct }) => {
+    const el = document.getElementById(id)
+    if (el) el.style.width = pct + '%'
+  })
+}
+
+// Trigger after paint
+setTimeout(animateProgress, 200)
+</script>
+</body>
+</html>
