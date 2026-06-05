@@ -30,6 +30,8 @@ export interface GlassSheetProps {
   title?: string
   children: React.ReactNode
   className?: string
+  /** Extra inline styles applied to the sheet panel — useful for overriding max-height */
+  panelStyle?: React.CSSProperties
 }
 
 export function GlassSheet({
@@ -39,6 +41,7 @@ export function GlassSheet({
   title,
   children,
   className,
+  panelStyle,
 }: GlassSheetProps) {
   const sheetRef = useRef<HTMLDivElement>(null)
 
@@ -97,6 +100,7 @@ export function GlassSheet({
           borderColor: "var(--prv-border)",
           boxShadow: "0 24px 64px rgba(0,0,0,0.7), inset 0 1px 0 var(--prv-g2-spec)",
           transitionTimingFunction: "cubic-bezier(0.34,1.56,0.64,1)",
+          ...panelStyle,
         }}
       >
         {/* Drag indicator (bottom sheet only) */}
