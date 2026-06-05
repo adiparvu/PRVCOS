@@ -54,11 +54,21 @@ const ANALYTICS_ROLES = new Set<SystemRole>([
   "qa_tester",
 ])
 
+// Every authenticated employee — for self-service actions (own profile, presence, business card)
+const ALL_EMPLOYEE_ROLES = new Set<SystemRole>([
+  ...SUPERVISOR_ROLES,
+  "worker",
+  "project_worker",
+  "project_team_leader",
+  "seller",
+])
+
 export const RoleSets = {
   admin: ADMIN_ROLES,
   management: MANAGEMENT_ROLES,
   supervisor: SUPERVISOR_ROLES,
   analytics: ANALYTICS_ROLES,
+  employee: ALL_EMPLOYEE_ROLES,
 } as const
 
 export function hasRole(role: SystemRole, set: Set<SystemRole>): boolean {

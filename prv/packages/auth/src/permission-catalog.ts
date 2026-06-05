@@ -146,7 +146,7 @@ export const PERMISSION_CATALOG: Record<PermissionKey, PermissionRule> = {
   // Orders
   "orders.read": { roles: RoleSets.supervisor, scope: "SCOPE_STORE" },
   "orders.create": { roles: RoleSets.supervisor, scope: "SCOPE_STORE" },
-  "orders.update": { roles: RoleSets.management, scope: "SCOPE_STORE" },
+  "orders.update": { roles: RoleSets.supervisor, scope: "SCOPE_STORE" },
   "orders.cancel": { roles: RoleSets.management, scope: "SCOPE_STORE" },
 
   // Invoices
@@ -192,25 +192,25 @@ export const PERMISSION_CATALOG: Record<PermissionKey, PermissionRule> = {
 
   // Analytics
   "analytics.read": { roles: RoleSets.analytics, scope: "SCOPE_COMPANY" },
-  "analytics.export": { roles: RoleSets.management, scope: "SCOPE_COMPANY" },
+  "analytics.export": { roles: RoleSets.analytics, scope: "SCOPE_COMPANY" },
 
   // Social profiles
-  "social_profiles.view": { roles: RoleSets.supervisor, scope: "SCOPE_TEAM" },
-  "social_profiles.edit_own": { roles: RoleSets.supervisor, scope: "SCOPE_RECORD" },
+  "social_profiles.view": { roles: RoleSets.employee, scope: "SCOPE_TEAM" },
+  "social_profiles.edit_own": { roles: RoleSets.employee, scope: "SCOPE_RECORD" },
   "social_profiles.edit_others": { roles: RoleSets.management, scope: "SCOPE_DEPARTMENT" },
-  "social_profiles.delete_own": { roles: RoleSets.supervisor, scope: "SCOPE_RECORD" },
+  "social_profiles.delete_own": { roles: RoleSets.employee, scope: "SCOPE_RECORD" },
   "social_profiles.delete_others": { roles: RoleSets.management, scope: "SCOPE_DEPARTMENT" },
 
   // Presence
-  "presence.view_team": { roles: RoleSets.supervisor, scope: "SCOPE_TEAM" },
+  "presence.view_team": { roles: RoleSets.employee, scope: "SCOPE_TEAM" },
   "presence.view_company": { roles: RoleSets.management, scope: "SCOPE_COMPANY" },
-  "presence.set_manual": { roles: RoleSets.supervisor, scope: "SCOPE_RECORD" },
+  "presence.set_manual": { roles: RoleSets.employee, scope: "SCOPE_RECORD" },
   "presence.override_others": { roles: RoleSets.management, scope: "SCOPE_DEPARTMENT" },
 
   // Business cards
-  "business_card.view_own": { roles: RoleSets.supervisor, scope: "SCOPE_RECORD" },
-  "business_card.view_others": { roles: RoleSets.supervisor, scope: "SCOPE_TEAM" },
-  "business_card.share": { roles: RoleSets.supervisor, scope: "SCOPE_RECORD" },
+  "business_card.view_own": { roles: RoleSets.employee, scope: "SCOPE_RECORD" },
+  "business_card.view_others": { roles: RoleSets.employee, scope: "SCOPE_TEAM" },
+  "business_card.share": { roles: RoleSets.employee, scope: "SCOPE_RECORD" },
   "business_card.public_link": { roles: RoleSets.management, scope: "SCOPE_RECORD" },
 
   // GDPR

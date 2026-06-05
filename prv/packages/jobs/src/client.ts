@@ -35,6 +35,9 @@ export type PRVEvents = {
   "prv/kpi.snapshot.requested": {
     data: { companyId: string; period: string }
   }
+  "prv/grant.issued": {
+    data: { grantId: string; expiresAt: string }
+  }
 }
 
 export const inngest = new Inngest({

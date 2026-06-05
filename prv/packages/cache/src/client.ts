@@ -29,6 +29,9 @@ export const cacheKey = {
   // Company context (cached for performance)
   companyContext: (companyId: string) => `company_ctx:${companyId}`,
 
+  // Permission set for a user within a company (30s TTL)
+  permissionSet: (userId: string, companyId: string) => `perms:${userId}:${companyId}`,
+
   // Realtime channels (Redis pub/sub)
   companyChannel: (companyId: string, eventType: string) => `company:${companyId}:${eventType}`,
   chatChannel: (companyId: string, channelId: string) => `company:${companyId}:chat:${channelId}`,

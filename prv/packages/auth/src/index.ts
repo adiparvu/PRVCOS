@@ -49,3 +49,29 @@ export type { RouteConfig, GateContext } from "./gate-chain"
 
 export { hasPermission, requirePermission, PERMISSION_CATALOG } from "./permission-catalog"
 export type { PermissionKey } from "./permission-catalog"
+
+export {
+  checkLockout,
+  recordFailedAttempt,
+  clearFailedAttempts,
+  issueUnlockToken,
+  consumeUnlockToken,
+} from "./lockout"
+export type { LockoutStatus } from "./lockout"
+
+export {
+  getEffectivePermissions,
+  hasDbPermission,
+  requireDbPermission,
+  invalidatePermissionCache,
+} from "./permission-engine"
+export type { EffectivePermissions } from "./permission-engine"
+
+export {
+  resolveVisibleCompanies,
+  resolveVisibleCompanyIds,
+  resolveGroupContext,
+  assertCompanyAccess,
+  crossCompanyScopeRequired,
+} from "./scope-resolver"
+export type { CompanyRef, GroupContext } from "./scope-resolver"
