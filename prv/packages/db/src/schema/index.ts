@@ -25,3 +25,7 @@ export * from "./social"
 export * from "./auth"
 // Sprint 07: Multi-Company Architecture — settings, profiles, memberships
 export * from "./multi-tenancy"
+// Sprint 11: RBAC — roles, permissions, role assignments, temp grants, auth lockouts, backup codes
+export * from "./rbac"
+// Sprint 11: Group Architecture — company groups, memberships, KPI snapshots
+export * from "./groups"

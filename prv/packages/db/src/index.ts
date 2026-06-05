@@ -5,3 +5,5 @@ export { StorageBucket, BucketMaxSize, buildStoragePath, getSignedUrl, deleteFil
 export type { StorageBucket as StorageBucketType } from "./storage"
 export { queryCompanyKpis } from "./queries/kpis"
 export type { CompanyKpis } from "./queries/kpis"
+export { queryGroupKpis } from "./queries/group-kpis"
+export type { GroupKpis } from "./queries/group-kpis"
