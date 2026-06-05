@@ -43,6 +43,32 @@ export type { ToastSeverity, ToastOptions } from "./glass-toast"
 export { NavigationShell, HeaderIconButton } from "./navigation-shell"
 export type { NavigationShellProps, HeaderIconButtonProps } from "./navigation-shell"
 
+export { GlassSearchOverlay, GlassSearchBar } from "./glass-search-overlay"
+export type {
+  GlassSearchOverlayProps,
+  GlassSearchBarProps,
+  SearchResultItem,
+  SearchResultSection,
+  SearchScope,
+} from "./glass-search-overlay"
+
+export { GlassExpandableCard } from "./glass-expandable-card"
+export type { GlassExpandableCardProps } from "./glass-expandable-card"
+
+export { GlassQuickActionsPanel } from "./glass-quick-actions-panel"
+export type { GlassQuickActionsPanelProps, QAPAction } from "./glass-quick-actions-panel"
+
+export { GlassAvatar, GlassAvatarGroup } from "./glass-avatar"
+export type {
+  GlassAvatarProps,
+  GlassAvatarGroupProps,
+  AvatarPresence,
+  AvatarSize,
+} from "./glass-avatar"
+
+export { GlassStatCard } from "./glass-stat-card"
+export type { GlassStatCardProps, StatTrend } from "./glass-stat-card"
+
 export {
   ActionSheet,
   ConfirmationSheet,
