@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PRV · Sprint 19 — Charts & Visualization</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --prv-bg:            #000;
+    --prv-g1:            rgba(255,255,255,0.06);
+    --prv-g2:            rgba(255,255,255,0.10);
+    --prv-g3:            rgba(255,255,255,0.15);
+    --prv-text-1:        rgba(255,255,255,0.95);
+    --prv-text-2:        rgba(255,255,255,0.65);
+    --prv-text-3:        rgba(255,255,255,0.35);
+    --prv-text-4:        rgba(255,255,255,0.15);
+    --prv-border:        rgba(255,255,255,0.12);
+    --prv-border-subtle: rgba(255,255,255,0.07);
+    --c0: rgba(255,255,255,0.85);
+    --c1: rgba(10,132,255,0.85);
+    --c2: rgba(48,209,88,0.85);
+    --c3: rgba(255,149,0,0.85);
+    --c4: rgba(255,59,48,0.85);
+    --c5: rgba(191,90,242,0.85);
+  }
+
+  html, body {
+    background: var(--prv-bg);
+    color: var(--prv-text-1);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page { max-width: 960px; margin: 0 auto; padding: 48px 24px 96px; }
+
+  .sprint-header { margin-bottom: 52px; }
+  .chips { display: flex; gap: 8px; margin-bottom: 10px; }
+  .chip { padding: 3px 10px; border-radius: 100px; background: var(--prv-g2); border: 1px solid var(--prv-border-subtle); font-size: 11px; font-weight: 600; color: var(--prv-text-3); letter-spacing: .06em; text-transform: uppercase; }
+  h1 { font-size: 28px; font-weight: 700; letter-spacing: -.02em; }
+  .sub { font-size: 14px; color: var(--prv-text-3); margin-top: 4px; }
+
+  .section { margin-bottom: 60px; }
+  .sl { font-size: 11px; font-weight: 600; color: var(--prv-text-3); letter-spacing: .07em; text-transform: uppercase; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+  .sl::after { content: ""; flex: 1; height: 1px; background: var(--prv-border-subtle); }
+
+  /* ── Chart card ── */
+  .chart-card {
+    position: relative; overflow: hidden;
+    background: var(--prv-g1); border: 1px solid var(--prv-border-subtle);
+    border-radius: 20px; padding: 20px 20px 16px;
+  }
+  .chart-card::before {
+    content: ""; position: absolute; inset: 0 0 auto; height: 1px;
+    background: linear-gradient(90deg,transparent,rgba(255,255,255,0.09),transparent);
+    pointer-events: none;
+  }
+  .chart-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 16px; }
+  .chart-title { font-size: 14px; font-weight: 600; color: var(--prv-text-1); }
+  .chart-sub   { font-size: 12px; color: var(--prv-text-3); margin-top: 2px; }
+
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--prv-text-2); }
+  .legend-dot  { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .legend-line { width: 16px; height: 2px; border-radius: 1px; flex-shrink: 0; }
+
+  /* ── Tooltip ── */
+  .chart-tooltip {
+    position: absolute; pointer-events: none; z-index: 20;
+    background: var(--prv-g3); border: 1px solid var(--prv-border);
+    border-radius: 12px; padding: 10px 12px;
+    backdrop-filter: blur(32px) saturate(160%);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    min-width: 120px; opacity: 0;
+    transition: opacity 120ms;
+    font-size: 12px;
+  }
+  .tt-label { font-size: 11px; color: var(--prv-text-3); margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+  .tt-row   { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+  .tt-dot   { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .tt-name  { flex: 1; color: var(--prv-text-2); }
+  .tt-val   { font-weight: 600; color: var(--prv-text-1); }
+
+  /* ── Two-col grid ── */
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 640px) { .grid2 { grid-template-columns: 1fr; } }
+
+  /* ── Crosshair ── */
+  .crosshair { stroke: rgba(255,255,255,0.15); stroke-width: 1; stroke-dasharray: 4 3; pointer-events: none; opacity: 0; transition: opacity 80ms; }
+
+  /* ── Axis labels ── */
+  .axis-label { fill: rgba(255,255,255,0.3); font-size: 10px; font-family: -apple-system, sans-serif; }
+
+  /* ── Draw animation ── */
+  @keyframes drawLine { to { stroke-dashoffset: 0; } }
+  @keyframes fillUp   { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+  @keyframes fadeIn   { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes donutIn  { to { stroke-dashoffset: var(--target-offset); } }
+
+  /* ── Delivery table ── */
+  .dt { width: 100%; border-collapse: collapse; }
+  .dt th, .dt td { text-align: left; padding: 10px 14px; font-size: 13px; border-bottom: 1px solid var(--prv-border-subtle); }
+  .dt th { font-size: 11px; font-weight: 600; color: var(--prv-text-3); letter-spacing: .06em; text-transform: uppercase; }
+  .dt td { color: var(--prv-text-1); }
+  .dt td:nth-child(2) { color: var(--prv-text-3); font-family: "SF Mono", monospace; font-size: 11px; }
+  .dt tr:last-child td { border-bottom: none; }
+  .tag { display: inline-flex; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 500; background: var(--prv-g2); color: var(--prv-text-3); border: 1px solid var(--prv-border-subtle); }
+  .tag.new { background: rgba(10,132,255,.12); color: rgba(10,132,255,.9); border-color: rgba(10,132,255,.2); }
+  .demo-card { background: var(--prv-g1); border: 1px solid var(--prv-border-subtle); border-radius: 20px; overflow: hidden; position: relative; }
+  .demo-card::before { content: ""; position: absolute; inset: 0 0 auto; height: 1px; background: linear-gradient(90deg,transparent,rgba(255,255,255,0.08),transparent); pointer-events: none; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="sprint-header">
+    <div class="chips"><span class="chip">Sprint 19</span><span class="chip">Preview</span><span class="chip">Phase 1 · M8</span></div>
+    <h1>Charts &amp; Visualization</h1>
+    <div class="sub">GlassLineChart · GlassAreaChart · GlassBarChart · GlassDonutChart</div>
+  </div>
+
+  <!-- ── Line Chart ── -->
+  <div class="section">
+    <div class="sl">GlassLineChart — Multi-series with crosshair tooltip</div>
+    <div class="chart-card" id="line-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Monthly Revenue</div>
+          <div class="chart-sub">Jan – Jun 2026 · All stores</div>
+        </div>
+        <div class="legend">
+          <div class="legend-item"><div class="legend-line" style="background:var(--c0)"></div>2026</div>
+          <div class="legend-item"><div class="legend-line" style="background:var(--c1);opacity:.7"></div>2025</div>
+        </div>
+      </div>
+      <svg id="line-svg" style="width:100%;height:220px;overflow:visible" viewBox="0 0 880 200"></svg>
+      <div class="chart-tooltip" id="line-tt"></div>
+    </div>
+  </div>
+
+  <!-- ── Area Chart ── -->
+  <div class="section">
+    <div class="sl">GlassAreaChart — Gradient fill, stacked-style</div>
+    <div class="chart-card" id="area-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Store Performance</div>
+          <div class="chart-sub">Cumulative revenue · Q1–Q2 2026</div>
+        </div>
+        <div class="legend">
+          <div class="legend-item"><div class="legend-dot" style="background:var(--c1)"></div>Cluj</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--c2)"></div>București</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--c3)"></div>Timișoara</div>
+        </div>
+      </div>
+      <svg id="area-svg" style="width:100%;height:220px;overflow:visible" viewBox="0 0 880 200"></svg>
+      <div class="chart-tooltip" id="area-tt"></div>
+    </div>
+  </div>
+
+  <!-- ── Bar + Donut grid ── -->
+  <div class="section">
+    <div class="sl">GlassBarChart &amp; GlassDonutChart</div>
+    <div class="grid2">
+
+      <!-- Bar -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Department Budget</div>
+            <div class="chart-sub">Q2 2026 · €k</div>
+          </div>
+          <div class="legend">
+            <div class="legend-item"><div class="legend-dot" style="background:var(--c0)"></div>Allocated</div>
+            <div class="legend-item"><div class="legend-dot" style="background:var(--c1)"></div>Spent</div>
+          </div>
+        </div>
+        <svg id="bar-svg" style="width:100%;height:220px;overflow:visible" viewBox="0 0 400 200"></svg>
+        <div class="chart-tooltip" id="bar-tt"></div>
+      </div>
+
+      <!-- Donut -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Revenue Breakdown</div>
+            <div class="chart-sub">By service category</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:20px">
+          <svg id="donut-svg" style="flex-shrink:0" viewBox="0 0 180 180" width="180" height="180"></svg>
+          <div id="donut-legend" style="flex:1;display:flex;flex-direction:column;gap:10px"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── Delivery ── -->
+  <div class="section">
+    <div class="sl">Sprint 19 Delivery</div>
+    <div class="demo-card">
+      <table class="dt">
+        <thead><tr><th>Component</th><th>File</th><th>Key Props</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>GlassLineChart</td><td>glass-line-chart.tsx</td><td>series[], labels[], height, showDots, showGrid, animated, onHover</td><td><span class="tag new">New</span></td></tr>
+          <tr><td>GlassAreaChart</td><td>glass-area-chart.tsx</td><td>series[], labels[], height, filled, gradient, stacked, animated</td><td><span class="tag new">New</span></td></tr>
+          <tr><td>GlassBarChart</td><td>glass-bar-chart.tsx</td><td>series[], labels[], height, grouped, showValues, animated, onBarClick</td><td><span class="tag new">New</span></td></tr>
+          <tr><td>GlassDonutChart</td><td>glass-donut-chart.tsx</td><td>segments[], size, strokeWidth, centerLabel, centerValue, animated, onSegmentClick</td><td><span class="tag new">New</span></td></tr>
+          <tr><td>index.ts</td><td>components/index.ts</td><td>Export all chart components + series/segment types</td><td><span class="tag">Update</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ────────────────────────────────────────────────────────────────
+// Helpers
+// ────────────────────────────────────────────────────────────────
+
+const COLORS = ['rgba(255,255,255,0.85)','rgba(10,132,255,0.85)','rgba(48,209,88,0.85)','rgba(255,149,0,0.85)','rgba(255,59,48,0.85)','rgba(191,90,242,0.85)']
+
+function svgEl(tag, attrs={}, parent) {
+  const el = document.createElementNS('http://www.w3.org/2000/svg', tag)
+  for (const [k,v] of Object.entries(attrs)) el.setAttribute(k,v)
+  if (parent) parent.appendChild(el)
+  return el
+}
+
+function smoothPath(pts) {
+  if (pts.length < 2) return ''
+  let d = `M ${pts[0].x} ${pts[0].y}`
+  for (let i=1; i<pts.length; i++) {
+    const p = pts[i-1], c = pts[i]
+    const mx = (p.x + c.x) / 2
+    d += ` C ${mx} ${p.y}, ${mx} ${c.y}, ${c.x} ${c.y}`
+  }
+  return d
+}
+
+function pathLength(d) {
+  const tmp = svgEl('path', {d})
+  document.body.appendChild(tmp)
+  const len = tmp.getTotalLength()
+  document.body.removeChild(tmp)
+  return len
+}
+
+// ────────────────────────────────────────────────────────────────
+// LINE CHART
+// ────────────────────────────────────────────────────────────────
+(function() {
+  const svg = document.getElementById('line-svg')
+  const tt  = document.getElementById('line-tt')
+  const W=880, H=200, PL=48, PR=12, PT=8, PB=32
+  const cW = W-PL-PR, cH = H-PT-PB
+
+  const labels = ['Jan','Feb','Mar','Apr','May','Jun']
+  const series = [
+    { label:'2026', color: COLORS[0], data:[142,168,155,210,195,243] },
+    { label:'2025', color: COLORS[1], data:[108,122,140,158,168,180] },
+  ]
+
+  const maxV = Math.max(...series.flatMap(s=>s.data))
+  const minV = 80
+
+  function xPos(i) { return PL + i * cW / (labels.length-1) }
+  function yPos(v) { return PT + cH - (v-minV)/(maxV-minV)*cH }
+
+  // grid
+  const gridVals = [100,150,200,250]
+  gridVals.forEach(v => {
+    const y = yPos(v)
+    if (y < PT || y > PT+cH) return
+    svgEl('line',{x1:PL,y1:y,x2:W-PR,y2:y,stroke:'rgba(255,255,255,0.06)',['stroke-width']:1},svg)
+    svgEl('text',{x:PL-6,y:y+4,class:'axis-label','text-anchor':'end'},svg).textContent=v
+  })
+
+  // x labels
+  labels.forEach((l,i) => {
+    const x = xPos(i)
+    svgEl('text',{x,y:H-6,class:'axis-label','text-anchor':'middle'},svg).textContent=l
+  })
+
+  // crosshair
+  const xhair = svgEl('line',{x1:0,y1:PT,x2:0,y2:PT+cH,class:'crosshair',id:'lc-xh'},svg)
+
+  // series lines + dots
+  series.forEach((s,si) => {
+    const pts = s.data.map((v,i) => ({x:xPos(i), y:yPos(v)}))
+    const d   = smoothPath(pts)
+    const len = pathLength(d)
+
+    const path = svgEl('path',{
+      d, fill:'none', stroke:s.color,
+      ['stroke-width']: si===0?2:1.5,
+      ['stroke-dasharray']:len,
+      ['stroke-dashoffset']:len,
+      ['stroke-linecap']:'round',
+      style:`animation:drawLine 900ms cubic-bezier(0.4,0,0.2,1) ${si*200}ms forwards`
+    },svg)
+
+    pts.forEach(p => {
+      svgEl('circle',{
+        cx:p.x, cy:p.y, r:si===0?3.5:2.5,
+        fill:s.color, stroke:'#000', ['stroke-width']:1.5,
+        style:`animation:fadeIn 300ms ease ${si*200+800}ms both`
+      },svg)
+    })
+  })
+
+  // hover overlay
+  const hitW = cW / (labels.length-1)
+  labels.forEach((l,i) => {
+    const rect = svgEl('rect',{
+      x: xPos(i) - hitW/2, y: PT,
+      width: hitW, height: cH,
+      fill:'transparent', style:'cursor:default'
+    },svg)
+    rect.addEventListener('mouseenter', e => {
+      const x = xPos(i)
+      xhair.setAttribute('x1',x); xhair.setAttribute('x2',x); xhair.style.opacity='1'
+      tt.style.opacity='1'
+      const rows = series.map(s=>`<div class="tt-row"><div class="tt-dot" style="background:${s.color}"></div><span class="tt-name">${s.label}</span><span class="tt-val">€${s.data[i]}k</span></div>`).join('')
+      tt.innerHTML=`<div class="tt-label">${l}</div>${rows}`
+      const svgR = svg.getBoundingClientRect()
+      const cardR = document.getElementById('line-card').getBoundingClientRect()
+      const relX = xPos(i)/W * svgR.width
+      const relY = 20
+      let left = relX + 12
+      if (left + 140 > cardR.width - 20) left = relX - 152
+      tt.style.left = left+'px'
+      tt.style.top  = relY+'px'
+    })
+    rect.addEventListener('mouseleave', () => { xhair.style.opacity='0'; tt.style.opacity='0' })
+  })
+})()
+
+// ────────────────────────────────────────────────────────────────
+// AREA CHART
+// ────────────────────────────────────────────────────────────────
+(function() {
+  const svg = document.getElementById('area-svg')
+  const tt  = document.getElementById('area-tt')
+  const W=880, H=200, PL=48, PR=12, PT=8, PB=32
+  const cW = W-PL-PR, cH = H-PT-PB
+
+  const labels = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug']
+  const series = [
+    { label:'Cluj',      color:'rgba(10,132,255,0.85)',  data:[88,102,95,118,128,142,135,158] },
+    { label:'București', color:'rgba(48,209,88,0.85)',   data:[72,80,88,96,105,110,120,132]   },
+    { label:'Timișoara', color:'rgba(255,149,0,0.85)',   data:[55,60,68,72,78,85,90,98]        },
+  ]
+
+  const maxV = 170, minV = 0
+  function xPos(i) { return PL + i * cW / (labels.length-1) }
+  function yPos(v) { return PT + cH - v/maxV*cH }
+
+  // defs for gradients
+  const defs = svgEl('defs',{},svg)
+  series.forEach((s,si) => {
+    const grad = svgEl('linearGradient',{id:`ag${si}`,x1:'0',y1:'0',x2:'0',y2:'1'},defs)
+    const c = s.color.replace('0.85','')
+    svgEl('stop',{offset:'0%','stop-color':c+'0.3)'},grad)
+    svgEl('stop',{offset:'100%','stop-color':c+'0)'},grad)
+  })
+
+  // grid
+  [50,100,150].forEach(v => {
+    const y = yPos(v)
+    svgEl('line',{x1:PL,y1:y,x2:W-PR,y2:y,stroke:'rgba(255,255,255,0.06)',['stroke-width']:1},svg)
+    svgEl('text',{x:PL-6,y:y+4,class:'axis-label','text-anchor':'end'},svg).textContent=v
+  })
+  labels.forEach((l,i)=>{
+    svgEl('text',{x:xPos(i),y:H-6,class:'axis-label','text-anchor':'middle'},svg).textContent=l
+  })
+
+  const xhair = svgEl('line',{x1:0,y1:PT,x2:0,y2:PT+cH,class:'crosshair'},svg)
+
+  series.forEach((s,si) => {
+    const pts = s.data.map((v,i)=>({x:xPos(i),y:yPos(v)}))
+    const linePath = smoothPath(pts)
+
+    // area (closed path)
+    const areaD = linePath + ` L ${pts[pts.length-1].x} ${yPos(0)} L ${pts[0].x} ${yPos(0)} Z`
+    svgEl('path',{
+      d:areaD, fill:`url(#ag${si})`,
+      style:`animation:fadeIn 600ms ease ${si*150+200}ms both; transform-origin: bottom`
+    },svg)
+
+    // line
+    const len = pathLength(linePath)
+    svgEl('path',{
+      d:linePath, fill:'none', stroke:s.color,
+      ['stroke-width']:2, ['stroke-dasharray']:len, ['stroke-dashoffset']:len,
+      ['stroke-linecap']:'round',
+      style:`animation:drawLine 900ms cubic-bezier(0.4,0,0.2,1) ${si*150}ms forwards`
+    },svg)
+  })
+
+  const hitW = cW / (labels.length-1)
+  labels.forEach((l,i) => {
+    const rect = svgEl('rect',{
+      x:xPos(i)-hitW/2, y:PT, width:hitW, height:cH, fill:'transparent'
+    },svg)
+    rect.addEventListener('mouseenter', () => {
+      const x = xPos(i)
+      xhair.setAttribute('x1',x); xhair.setAttribute('x2',x); xhair.style.opacity='1'
+      tt.style.opacity='1'
+      const rows = series.map(s=>`<div class="tt-row"><div class="tt-dot" style="background:${s.color}"></div><span class="tt-name">${s.label}</span><span class="tt-val">€${s.data[i]}k</span></div>`).join('')
+      tt.innerHTML=`<div class="tt-label">${l}</div>${rows}`
+      const svgR = svg.getBoundingClientRect()
+      const relX = xPos(i)/W*svgR.width
+      let left = relX+12
+      if (left+140 > svgR.width-20) left = relX-152
+      tt.style.left=left+'px'; tt.style.top='20px'
+    })
+    rect.addEventListener('mouseleave',()=>{ xhair.style.opacity='0'; tt.style.opacity='0' })
+  })
+})()
+
+// ────────────────────────────────────────────────────────────────
+// BAR CHART
+// ────────────────────────────────────────────────────────────────
+(function() {
+  const svg = document.getElementById('bar-svg')
+  const tt  = document.getElementById('bar-tt')
+  const W=400, H=200, PL=36, PR=8, PT=8, PB=32
+  const cW = W-PL-PR, cH = H-PT-PB
+
+  const labels = ['Ops','HR','Finance','Dev','Sales']
+  const series = [
+    { label:'Allocated', color:COLORS[0], data:[120,60,90,80,55] },
+    { label:'Spent',     color:COLORS[1], data:[105,52,78,65,48]  },
+  ]
+
+  const maxV = 140
+  function yPos(v) { return PT + cH - v/maxV*cH }
+
+  const barW   = 12
+  const groupW = series.length * barW + (series.length-1)*4
+  const groupGap = (cW - groupW * labels.length) / (labels.length + 1)
+
+  // grid
+  [0,50,100].forEach(v => {
+    const y = yPos(v)
+    svgEl('line',{x1:PL,y1:y,x2:W-PR,y2:y,stroke:'rgba(255,255,255,0.06)',['stroke-width']:1},svg)
+    svgEl('text',{x:PL-5,y:y+4,class:'axis-label','text-anchor':'end'},svg).textContent=v
+  })
+
+  labels.forEach((l,gi) => {
+    const gx = PL + groupGap + gi*(groupW+groupGap) + groupGap*(gi)
+
+    // x label
+    svgEl('text',{x:gx+groupW/2,y:H-6,class:'axis-label','text-anchor':'middle'},svg).textContent=l
+
+    series.forEach((s,si) => {
+      const bx   = gx + si*(barW+4)
+      const val  = s.data[gi]
+      const barH = (val/maxV)*cH
+      const by   = PT+cH-barH
+
+      const rect = svgEl('rect',{
+        x:bx, y:by, width:barW, height:barH,
+        rx:3, fill:s.color,
+        style:`transform-origin:${bx}px ${PT+cH}px; animation:fillUp 600ms cubic-bezier(0.34,1.56,0.64,1) ${gi*60+si*30}ms both`
+      },svg)
+
+      // value label
+      const vtxt = svgEl('text',{
+        x:bx+barW/2, y:by-4,
+        class:'axis-label','text-anchor':'middle',
+        style:`animation:fadeIn 300ms ease ${gi*60+si*30+500}ms both; opacity:0`
+      },svg)
+      vtxt.textContent=val
+
+      rect.addEventListener('mouseenter', e => {
+        rect.setAttribute('opacity','0.75')
+        tt.style.opacity='1'
+        tt.innerHTML=`<div class="tt-label">${l}</div><div class="tt-row"><div class="tt-dot" style="background:${s.color}"></div><span class="tt-name">${s.label}</span><span class="tt-val">€${val}k</span></div>`
+        const svgR = svg.parentElement.getBoundingClientRect()
+        tt.style.left = (bx/W*svgR.width+20)+'px'
+        tt.style.top  = (by/H*(svgR.height-60)+20)+'px'
+      })
+      rect.addEventListener('mouseleave',()=>{ rect.setAttribute('opacity','1'); tt.style.opacity='0' })
+    })
+  })
+})()
+
+// ────────────────────────────────────────────────────────────────
+// DONUT CHART
+// ────────────────────────────────────────────────────────────────
+(function() {
+  const svg  = document.getElementById('donut-svg')
+  const legEl= document.getElementById('donut-legend')
+  const CX=90, CY=90, R=62, SW=22
+  const circ = 2*Math.PI*R
+
+  const segments = [
+    { label:'Bathrooms',   value:38, color:COLORS[0] },
+    { label:'Kitchens',    value:24, color:COLORS[1] },
+    { label:'Flooring',    value:18, color:COLORS[2] },
+    { label:'Painting',    value:12, color:COLORS[3] },
+    { label:'Other',       value:8,  color:COLORS[4] },
+  ]
+  const total = segments.reduce((s,x)=>s+x.value,0)
+
+  // center
+  const defs = svgEl('defs',{},svg)
+  // track
+  svgEl('circle',{cx:CX,cy:CY,r:R,fill:'none',stroke:'rgba(255,255,255,0.07)',['stroke-width']:SW},svg)
+
+  let offset = 0
+  segments.forEach((seg,i) => {
+    const frac = seg.value/total
+    const len  = frac*circ
+    const gap  = 3
+    const dash = `${len-gap} ${circ-(len-gap)}`
+    const targetOffset = circ - offset
+
+    const circle = svgEl('circle',{
+      cx:CX, cy:CY, r:R,
+      fill:'none', stroke:seg.color,
+      ['stroke-width']:SW,
+      ['stroke-dasharray']:dash,
+      ['stroke-dashoffset']:circ,  // start hidden
+      ['stroke-linecap']:'round',
+      transform:`rotate(-90 ${CX} ${CY})`,
+      style:`--target-offset:${circ-offset}; animation:donutIn 700ms cubic-bezier(0.4,0,0.2,1) ${i*100+100}ms forwards`
+    },svg)
+    circle.style.strokeDashoffset = circ
+    setTimeout(()=>{ circle.style.transition=`stroke-dashoffset 700ms cubic-bezier(0.4,0,0.2,1)`; circle.style.strokeDashoffset=circ-offset }, i*100+100)
+
+    offset += len
+
+    // hover
+    circle.addEventListener('mouseenter',()=>{
+      circle.setAttribute('stroke-width',SW+4)
+      centerVal.textContent=seg.value+'%'
+      centerLabel.textContent=seg.label
+    })
+    circle.addEventListener('mouseleave',()=>{
+      circle.setAttribute('stroke-width',SW)
+      centerVal.textContent=total+'%'
+      centerLabel.textContent='Total'
+    })
+  })
+
+  // center labels
+  const centerVal   = svgEl('text',{x:CX,y:CY+2,'text-anchor':'middle',fill:'rgba(255,255,255,0.95)','font-size':'20','font-weight':'700','font-family':'-apple-system,sans-serif','letter-spacing':'-0.02em'},svg)
+  const centerLabel = svgEl('text',{x:CX,y:CY+17,'text-anchor':'middle',fill:'rgba(255,255,255,0.35)','font-size':'10','font-family':'-apple-system,sans-serif'},svg)
+  centerVal.textContent   = total+'%'
+  centerLabel.textContent = 'Total'
+
+  // legend
+  segments.forEach(seg => {
+    const row = document.createElement('div')
+    row.className = 'legend-item'
+    row.style.justifyContent = 'space-between'
+    row.innerHTML = `
+      <div style="display:flex;align-items:center;gap:7px">
+        <div class="legend-dot" style="background:${seg.color}"></div>
+        <span>${seg.label}</span>
+      </div>
+      <span style="font-weight:600;color:var(--prv-text-1)">${seg.value}%</span>
+    `
+    legEl.appendChild(row)
+  })
+})()
+</script>
+</body>
+</html>
