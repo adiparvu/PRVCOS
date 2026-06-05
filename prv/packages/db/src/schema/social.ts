@@ -91,6 +91,12 @@ export const userPresence = pgTable(
     isManualOverride: boolean("is_manual_override").notNull().default(false),
     manualOverrideExpiresAt: timestamp("manual_override_expires_at", { withTimezone: true }),
 
+    // Active context — populated by heartbeat
+    platform: varchar("platform", { length: 20 }), // "web" | "mobile" | "desktop"
+    activeRoute: varchar("active_route", { length: 500 }), // current page path
+    activeEntityType: varchar("active_entity_type", { length: 100 }),
+    activeEntityId: uuid("active_entity_id"),
+
     lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },

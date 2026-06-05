@@ -1,6 +1,6 @@
 import { withGates } from "@/lib/with-gates"
 import { NextRequest, NextResponse } from "next/server"
-import { eq, and, gt } from "drizzle-orm"
+import { eq, and, gt, desc } from "drizzle-orm"
 import { db } from "@prv/db"
 import { userPresence } from "@prv/db/schema"
 import { z } from "zod"
@@ -11,25 +11,36 @@ export const runtime = "nodejs"
 
 // Presence considered stale after 90 seconds
 const PRESENCE_TTL_SECONDS = 90
+const MAX_PAGE_SIZE = 50
 
 const upsertSchema = z.object({
-  status: z.enum(["online", "away", "busy", "offline"]).default("online"),
+  status: z
+    .enum(["online", "away", "busy", "offline", "in_meeting", "on_break", "do_not_disturb"])
+    .default("online"),
   platform: z.enum(["web", "mobile", "desktop"]).default("web"),
   activeRoute: z.string().max(500).optional(),
   activeEntityType: z.string().max(100).optional(),
   activeEntityId: z.string().uuid().optional(),
 })
 
-// GET /api/presence — return online members in the caller's company
+// GET /api/presence — paginated list of non-stale company members
+// Query: ?limit=50&status=online (status filter optional)
 export const GET = withGates(
-  { action: "presence.read", endpointClass: "api_read" },
-  async (_req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
+  { action: "presence.view_team", endpointClass: "api_read" },
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
+    const { searchParams } = req.nextUrl
+    const limit = Math.min(
+      parseInt(searchParams.get("limit") ?? "50", 10) || MAX_PAGE_SIZE,
+      MAX_PAGE_SIZE
+    )
+    const statusFilter = searchParams.get("status")
     const cutoff = new Date(Date.now() - PRESENCE_TTL_SECONDS * 1000)
 
     const rows = await db
       .select({
         userId: userPresence.userId,
         status: userPresence.status,
+        statusMessage: userPresence.statusMessage,
         platform: userPresence.platform,
         activeRoute: userPresence.activeRoute,
         activeEntityType: userPresence.activeEntityType,
@@ -38,10 +49,17 @@ export const GET = withGates(
       })
       .from(userPresence)
       .where(
-        and(eq(userPresence.companyId, ctx.session.companyId), gt(userPresence.lastSeenAt, cutoff))
+        and(
+          eq(userPresence.companyId, ctx.session.companyId),
+          gt(userPresence.lastSeenAt, cutoff),
+          // Optional status filter
+          statusFilter ? eq(userPresence.status, statusFilter as "online") : undefined
+        )
       )
+      .orderBy(desc(userPresence.lastSeenAt))
+      .limit(limit)
 
-    return NextResponse.json({ members: rows })
+    return NextResponse.json({ members: rows, count: rows.length })
   }
 )
 
@@ -76,6 +94,7 @@ export const POST = withGates(
         activeEntityType: parsed.data.activeEntityType,
         activeEntityId: parsed.data.activeEntityId,
         lastSeenAt: now,
+        updatedAt: now,
       })
       .onConflictDoUpdate({
         target: [userPresence.userId, userPresence.companyId],
@@ -86,6 +105,7 @@ export const POST = withGates(
           activeEntityType: parsed.data.activeEntityType,
           activeEntityId: parsed.data.activeEntityId,
           lastSeenAt: now,
+          updatedAt: now,
         },
       })
 
