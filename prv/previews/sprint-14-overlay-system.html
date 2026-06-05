@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PRV · Sprint 14 — Overlay System Preview</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #000000;
+    --g1: rgba(255,255,255,0.06);
+    --g2: rgba(255,255,255,0.10);
+    --g3: rgba(255,255,255,0.16);
+    --g4: rgba(255,255,255,0.22);
+    --text-1: rgba(255,255,255,0.95);
+    --text-2: rgba(255,255,255,0.65);
+    --text-3: rgba(255,255,255,0.35);
+    --text-4: rgba(255,255,255,0.15);
+    --border: rgba(255,255,255,0.12);
+    --border-subtle: rgba(255,255,255,0.07);
+    --border-strong: rgba(255,255,255,0.22);
+    --spec: rgba(255,255,255,0.25);
+    --spec2: rgba(255,255,255,0.20);
+    --scrim: rgba(0,0,0,0.72);
+    --shadow-e2: 0 4px 16px rgba(0,0,0,0.5);
+    --shadow-e4: 0 24px 64px rgba(0,0,0,0.7), 0 8px 24px rgba(0,0,0,0.4);
+    --spring: cubic-bezier(0.34,1.56,0.64,1);
+    --smooth: cubic-bezier(0.4,0,0.2,1);
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-base: 16px;
+    --radius-card: 20px;
+    --radius-panel: 24px;
+    --radius-sheet: 32px;
+    --radius-pill: 100px;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text-1);
+    font-family: -apple-system, "SF Pro Text", "SF Pro Display", sans-serif;
+    min-height: 100vh;
+    padding: 40px 24px 120px;
+    overflow-x: hidden;
+  }
+
+  /* ── Header ── */
+  .page-header { text-align: center; margin-bottom: 56px; }
+  .sprint-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--g2); border: 1px solid var(--border);
+    border-radius: var(--radius-pill); padding: 4px 12px;
+    font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--text-2); margin-bottom: 16px;
+  }
+  .page-title { font-size: 34px; font-weight: 700; letter-spacing: -0.02em; color: var(--text-1); margin-bottom: 8px; }
+  .page-sub { font-size: 16px; color: var(--text-3); }
+
+  /* ── Section ── */
+  .section { margin-bottom: 72px; }
+  .section-label {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--text-3);
+    margin-bottom: 24px; display: flex; align-items: center; gap: 8px;
+  }
+  .section-label::after { content: ""; flex: 1; height: 1px; background: var(--border-subtle); }
+
+  /* ── Glass utility ── */
+  .glass {
+    background: var(--g2); border: 1px solid var(--border);
+    backdrop-filter: blur(48px) saturate(180%);
+    -webkit-backdrop-filter: blur(48px) saturate(180%);
+    box-shadow: var(--shadow-e4), inset 0 1px 0 var(--spec2);
+  }
+  .glass3 {
+    background: var(--g3); border: 1px solid var(--border);
+    backdrop-filter: blur(64px) saturate(200%);
+    -webkit-backdrop-filter: blur(64px) saturate(200%);
+    box-shadow: 0 32px 80px rgba(0,0,0,0.8), 0 8px 32px rgba(0,0,0,0.5), inset 0 1px 0 var(--spec);
+  }
+
+  /* ── API table ── */
+  .api-table {
+    width: 100%; border-collapse: separate; border-spacing: 0;
+    border: 1px solid var(--border-subtle); border-radius: var(--radius-panel); overflow: hidden;
+    margin-top: 16px;
+  }
+  .api-table th {
+    padding: 9px 14px; text-align: left; font-size: 10px; font-weight: 700;
+    letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-3);
+    background: var(--g1); border-bottom: 1px solid var(--border-subtle);
+  }
+  .api-table td {
+    padding: 10px 14px; font-size: 12px; color: var(--text-2);
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .api-table tr:last-child td { border-bottom: none; }
+  .api-table tr:hover td { background: var(--g1); }
+  code { font-family: "SF Mono", ui-monospace, monospace; font-size: 11px; color: var(--text-1); background: var(--g2); padding: 1px 5px; border-radius: 4px; }
+  .req { color: rgba(255,149,0,0.8); font-size: 10px; font-weight: 600; }
+  .opt { color: var(--text-4); font-size: 10px; }
+
+  /* ══════════════════════════════════════════════
+     COMPONENT 1 — GLASS CONTEXT MENU
+  ══════════════════════════════════════════════ */
+  .ctx-demo {
+    position: relative;
+    height: 280px;
+    background: var(--g1);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-panel);
+    overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+    user-select: none;
+  }
+  .ctx-target {
+    background: var(--g2); border: 1px solid var(--border);
+    border-radius: var(--radius-card); padding: 20px 28px;
+    text-align: center;
+    box-shadow: var(--shadow-e2), inset 0 1px 0 rgba(255,255,255,0.14);
+    cursor: context-menu; min-width: 200px;
+    transition: all 0.2s var(--spring);
+  }
+  .ctx-target:hover { background: var(--g3); }
+  .ctx-target:active { transform: scale(0.97); }
+  .ctx-target-name { font-size: 15px; font-weight: 600; color: var(--text-1); margin-bottom: 3px; }
+  .ctx-target-sub { font-size: 12px; color: var(--text-3); }
+  .ctx-hint { position: absolute; bottom: 14px; left: 0; right: 0; text-align: center; font-size: 11px; color: var(--text-4); }
+
+  .ctx-menu {
+    position: absolute;
+    background: var(--g3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-panel);
+    backdrop-filter: blur(64px) saturate(200%);
+    -webkit-backdrop-filter: blur(64px) saturate(200%);
+    box-shadow: 0 16px 48px rgba(0,0,0,0.7), 0 4px 16px rgba(0,0,0,0.4), inset 0 1px 0 var(--spec);
+    padding: 6px;
+    min-width: 210px;
+    z-index: 50;
+    opacity: 0;
+    transform: scale(0.88) translateY(-8px);
+    transform-origin: top left;
+    pointer-events: none;
+    transition: opacity 0.18s var(--smooth), transform 0.22s var(--spring);
+  }
+  .ctx-menu.open {
+    opacity: 1; transform: scale(1) translateY(0); pointer-events: auto;
+  }
+  .ctx-item {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 9px 12px; border-radius: var(--radius-md); cursor: pointer;
+    transition: background 0.12s;
+  }
+  .ctx-item:hover { background: var(--g1); }
+  .ctx-item-left { display: flex; align-items: center; gap: 10px; }
+  .ctx-item-icon { color: var(--text-2); display: flex; align-items: center; }
+  .ctx-item-label { font-size: 14px; color: var(--text-1); }
+  .ctx-shortcut { font-size: 11px; color: var(--text-4); }
+  .ctx-item.destructive .ctx-item-label { color: rgba(255,80,80,0.85); }
+  .ctx-item.destructive .ctx-item-icon { color: rgba(255,80,80,0.7); }
+  .ctx-sep { height: 1px; background: var(--border-subtle); margin: 4px 6px; }
+
+  /* submenu indicator */
+  .ctx-item-arrow { color: var(--text-4); display: flex; }
+
+  /* API callout box */
+  .api-callout {
+    background: var(--g1); border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-panel); padding: 18px 20px;
+    margin-top: 16px; font-size: 13px; color: var(--text-3); line-height: 1.65;
+  }
+  .api-callout strong { color: var(--text-2); }
+
+  /* ══════════════════════════════════════════════
+     COMPONENT 2 — COMMAND PALETTE
+  ══════════════════════════════════════════════ */
+  .cmd-trigger-area {
+    display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px;
+  }
+  .cmd-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 18px; border-radius: var(--radius-pill);
+    background: var(--g2); border: 1px solid var(--border);
+    color: var(--text-1); font-size: 14px; font-weight: 500;
+    cursor: pointer; font-family: inherit;
+    transition: all 0.2s var(--spring);
+    box-shadow: inset 0 1px 0 var(--spec2);
+  }
+  .cmd-btn:hover { background: var(--g3); }
+  .cmd-btn kbd {
+    font-size: 11px; color: var(--text-4); background: var(--g2);
+    border: 1px solid var(--border); border-radius: 5px; padding: 1px 6px;
+  }
+
+  /* palette overlay */
+  .cmd-overlay {
+    position: fixed; inset: 0; z-index: 300;
+    display: flex; align-items: flex-start; justify-content: center;
+    padding-top: 10vh;
+    pointer-events: none; opacity: 0;
+    transition: opacity 0.18s var(--smooth);
+  }
+  .cmd-overlay.open { pointer-events: auto; opacity: 1; }
+  .cmd-backdrop {
+    position: absolute; inset: 0;
+    background: rgba(0,0,0,0.65);
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  }
+  .cmd-panel {
+    position: relative; width: 100%; max-width: 560px;
+    background: var(--g3); border: 1px solid var(--border);
+    border-radius: var(--radius-sheet);
+    backdrop-filter: blur(64px) saturate(200%);
+    -webkit-backdrop-filter: blur(64px) saturate(200%);
+    box-shadow: 0 32px 80px rgba(0,0,0,0.8), 0 8px 32px rgba(0,0,0,0.5), inset 0 1px 0 var(--spec);
+    overflow: hidden;
+    transform: scale(0.92) translateY(-16px);
+    transition: transform 0.28s var(--spring);
+    max-height: 70vh;
+    display: flex; flex-direction: column;
+  }
+  .cmd-overlay.open .cmd-panel { transform: scale(1) translateY(0); }
+  .cmd-search-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 16px 20px; border-bottom: 1px solid var(--border-subtle);
+    flex-shrink: 0;
+  }
+  .cmd-search-icon { flex-shrink: 0; color: var(--text-3); }
+  .cmd-input {
+    flex: 1; background: transparent; border: none; outline: none;
+    color: var(--text-1); font-size: 17px; font-family: inherit;
+  }
+  .cmd-input::placeholder { color: var(--text-4); }
+  .cmd-esc-kbd {
+    font-size: 11px; color: var(--text-4); background: var(--g2);
+    border: 1px solid var(--border); border-radius: 6px; padding: 2px 8px; flex-shrink: 0;
+  }
+  .cmd-body { overflow-y: auto; flex: 1; }
+  .cmd-section-title {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase;
+    color: var(--text-3); padding: 12px 20px 5px;
+  }
+  .cmd-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 12px; margin: 2px 8px; border-radius: var(--radius-md);
+    cursor: pointer; transition: background 0.1s;
+  }
+  .cmd-item:hover, .cmd-item.active { background: var(--g2); }
+  .cmd-item-icon {
+    width: 32px; height: 32px; border-radius: 9px;
+    background: var(--g1); border: 1px solid var(--border-subtle);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; color: var(--text-2);
+  }
+  .cmd-item-text { flex: 1; }
+  .cmd-item-label { font-size: 14px; color: var(--text-1); }
+  .cmd-item-cat { font-size: 11px; color: var(--text-3); margin-top: 1px; }
+  .cmd-item-shortcut { font-size: 11px; color: var(--text-4); white-space: nowrap; }
+  .cmd-footer {
+    padding: 10px 20px; border-top: 1px solid var(--border-subtle);
+    display: flex; align-items: center; gap: 16px; flex-shrink: 0;
+  }
+  .cmd-footer-hint { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-4); }
+  .cmd-footer-hint kbd {
+    background: var(--g2); border: 1px solid var(--border);
+    border-radius: 4px; padding: 1px 5px; font-size: 10px;
+  }
+
+  /* ══════════════════════════════════════════════
+     COMPONENT 3 — DYNAMIC ISLAND
+  ══════════════════════════════════════════════ */
+  .di-states-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+  }
+  .di-state-card {
+    background: var(--g1); border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-card); padding: 18px;
+  }
+  .di-state-label {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--text-3); margin-bottom: 14px;
+  }
+  .di-chip {
+    background: #000; border-radius: 20px; padding: 7px 14px;
+    display: inline-flex; align-items: center; gap: 8px;
+    border: 1px solid rgba(255,255,255,0.07);
+    font-size: 11px; font-weight: 500;
+  }
+  .di-chip-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.2); }
+  .di-chip.compact { padding: 6px 12px; }
+  .di-chip.expanded {
+    border-radius: 22px; padding: 10px 14px; flex-direction: column;
+    align-items: flex-start; gap: 6px; width: 100%;
+  }
+  .di-live-dot { width: 6px; height: 6px; border-radius: 50%; background: #30d158; animation: pulse 2s infinite; flex-shrink: 0; }
+  @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity: 0.4; } }
+  .di-exp-header { display: flex; align-items: center; gap: 7px; width: 100%; }
+  .di-exp-title { font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.9); flex: 1; }
+  .di-exp-val { font-size: 12px; font-weight: 700; color: #fff; }
+  .di-progress { height: 3px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden; width: 100%; }
+  .di-progress-bar { height: 100%; background: #30d158; border-radius: 2px; }
+
+  /* click toggle demo */
+  .di-interactive {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 12px; padding: 24px;
+    background: var(--g1); border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-panel);
+    margin-top: 16px;
+  }
+  .di-island {
+    width: 96px; height: 28px;
+    background: #000; border-radius: 20px;
+    border: 1px solid rgba(255,255,255,0.07);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: all 0.4s var(--spring);
+    overflow: hidden; position: relative;
+  }
+  .di-island.compact { width: 144px; height: 32px; }
+  .di-island.expanded { width: 260px; height: 72px; border-radius: 24px; }
+  .di-idle-dots { display: flex; gap: 4px; }
+  .di-idle-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.12); }
+  .di-island.compact .di-idle-dots,
+  .di-island.expanded .di-idle-dots { display: none; }
+
+  .di-compact-inner {
+    display: none; align-items: center; justify-content: space-between;
+    padding: 0 12px; width: 100%;
+  }
+  .di-island.compact .di-compact-inner { display: flex; }
+  .di-compact-lbl { font-size: 11px; font-weight: 500; color: rgba(255,255,255,0.75); }
+  .di-compact-val { font-size: 12px; font-weight: 700; color: #fff; }
+
+  .di-expanded-inner {
+    display: none; padding: 10px 14px; width: 100%;
+  }
+  .di-island.expanded .di-expanded-inner { display: block; }
+  .di-exp-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; }
+  .di-exp-lbl { font-size: 10px; color: rgba(255,255,255,0.45); }
+  .di-exp-number { font-size: 11px; font-weight: 700; color: #fff; }
+  .di-exp-name { font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.9); }
+
+  .di-hint { font-size: 11px; color: var(--text-4); text-align: center; }
+
+  /* ══════════════════════════════════════════════
+     COMPONENT 4 — GLASS TOAST
+  ══════════════════════════════════════════════ */
+  .toast-trigger-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px; }
+  .toast-btn {
+    padding: 8px 16px; border-radius: var(--radius-pill);
+    background: var(--g2); border: 1px solid var(--border);
+    color: var(--text-1); font-size: 13px; font-weight: 500;
+    cursor: pointer; font-family: inherit; transition: all 0.2s;
+  }
+  .toast-btn:hover { background: var(--g3); }
+  .toast-btn.success { border-color: rgba(48,209,88,0.3); color: rgba(48,209,88,0.9); }
+  .toast-btn.error   { border-color: rgba(255,59,48,0.3);  color: rgba(255,80,80,0.9); }
+  .toast-btn.warning { border-color: rgba(255,149,0,0.3);  color: rgba(255,149,0,0.9); }
+  .toast-btn.info    { border-color: rgba(10,132,255,0.3);  color: rgba(100,180,255,0.9); }
+
+  /* live toast area */
+  .toast-stage {
+    position: fixed; bottom: 24px; left: 50%;
+    transform: translateX(-50%);
+    display: flex; flex-direction: column-reverse; gap: 8px;
+    align-items: center;
+    z-index: 400; pointer-events: none;
+    width: 100%; max-width: 400px; padding: 0 16px;
+  }
+  .toast-item {
+    width: 100%;
+    display: flex; align-items: center; gap: 12px;
+    padding: 13px 16px;
+    background: var(--g3); border: 1px solid var(--border);
+    border-radius: 18px;
+    backdrop-filter: blur(48px) saturate(180%);
+    -webkit-backdrop-filter: blur(48px) saturate(180%);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.6), inset 0 1px 0 var(--spec2);
+    transform: translateY(24px) scale(0.94);
+    opacity: 0;
+    transition: transform 0.4s var(--spring), opacity 0.3s var(--smooth);
+    pointer-events: auto;
+    position: relative; overflow: hidden;
+  }
+  .toast-item.show { transform: translateY(0) scale(1); opacity: 1; }
+  .toast-item.exit { transform: translateY(12px) scale(0.96); opacity: 0; }
+  .toast-icon {
+    width: 32px; height: 32px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .toast-icon.success { background: rgba(48,209,88,0.14); border: 1px solid rgba(48,209,88,0.24); }
+  .toast-icon.error   { background: rgba(255,59,48,0.14);  border: 1px solid rgba(255,59,48,0.24); }
+  .toast-icon.warning { background: rgba(255,149,0,0.14);  border: 1px solid rgba(255,149,0,0.24); }
+  .toast-icon.info    { background: rgba(10,132,255,0.14); border: 1px solid rgba(10,132,255,0.24); }
+  .toast-text { flex: 1; }
+  .toast-title { font-size: 14px; font-weight: 600; color: var(--text-1); }
+  .toast-desc  { font-size: 12px; color: var(--text-3); margin-top: 1px; }
+  .toast-close { color: var(--text-4); cursor: pointer; display: flex; align-items: center; transition: color 0.15s; }
+  .toast-close:hover { color: var(--text-2); }
+  .toast-bar {
+    position: absolute; bottom: 0; left: 0; height: 2px;
+    border-radius: 0 0 0 18px; transition: width 3.5s linear;
+  }
+  .toast-bar.success { background: #30d158; }
+  .toast-bar.error   { background: #ff3b30; }
+  .toast-bar.warning { background: #ff9500; }
+  .toast-bar.info    { background: #0a84ff; }
+
+  /* static showcase */
+  .toast-showcase { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
+  .toast-static {
+    display: flex; align-items: center; gap: 12px; padding: 13px 16px;
+    background: var(--g2); border: 1px solid var(--border);
+    border-radius: 18px; box-shadow: inset 0 1px 0 var(--spec2);
+    position: relative; overflow: hidden;
+  }
+
+  /* ══════════════════════════════════════════════
+     COMPONENT 5 — NAVIGATION SHELL
+  ══════════════════════════════════════════════ */
+  .shell-demo {
+    position: relative;
+    height: 520px;
+    background: #050505;
+    border-radius: var(--radius-sheet);
+    border: 1px solid rgba(255,255,255,0.06);
+    overflow: hidden;
+  }
+  /* floating header */
+  .shell-header {
+    position: absolute; top: 14px; left: 14px; right: 14px;
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 16px;
+    background: var(--g2); border: 1px solid var(--border);
+    border-radius: var(--radius-pill);
+    backdrop-filter: blur(48px) saturate(180%);
+    -webkit-backdrop-filter: blur(48px) saturate(180%);
+    box-shadow: var(--shadow-e2), inset 0 1px 0 rgba(255,255,255,0.14);
+    z-index: 10;
+  }
+  .shell-header-back {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--g1); border: 1px solid var(--border-subtle);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: var(--text-2); transition: background 0.15s;
+    flex-shrink: 0;
+  }
+  .shell-header-back:hover { background: var(--g2); }
+  .shell-header-title { font-size: 15px; font-weight: 600; color: var(--text-1); flex: 1; }
+  .shell-header-actions { display: flex; gap: 6px; }
+  .shell-icon-btn {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--g1); border: 1px solid var(--border-subtle);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: var(--text-2); transition: background 0.15s;
+  }
+  .shell-icon-btn:hover { background: var(--g2); }
+
+  /* content area */
+  .shell-content {
+    position: absolute; inset: 0;
+    padding: 78px 14px 96px;
+    overflow-y: auto;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-content: start;
+  }
+  .shell-card {
+    background: var(--g1); border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-card);
+  }
+  .shell-card:first-child { grid-column: 1 / -1; height: 110px; }
+  .shell-card:not(:first-child) { height: 80px; }
+
+  /* floating tab bar */
+  .shell-tab-bar {
+    position: absolute; bottom: 14px; left: 50%;
+    transform: translateX(-50%);
+    display: flex; align-items: center; gap: 3px;
+    padding: 7px 8px;
+    background: var(--g3); border: 1px solid var(--border);
+    border-radius: var(--radius-pill);
+    backdrop-filter: blur(48px) saturate(180%);
+    -webkit-backdrop-filter: blur(48px) saturate(180%);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.18);
+    z-index: 10;
+  }
+  .shell-tab {
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    padding: 7px 14px; border-radius: var(--radius-pill);
+    cursor: pointer; transition: all 0.3s var(--spring);
+    min-width: 48px;
+  }
+  .shell-tab.active {
+    background: rgba(255,255,255,0.14);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.20);
+  }
+  .shell-tab-icon { width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; }
+  .shell-tab-label { font-size: 9px; font-weight: 500; color: var(--text-3); }
+  .shell-tab.active .shell-tab-label { color: var(--text-1); font-weight: 600; }
+  .shell-tab-icon svg { transition: transform 0.3s var(--spring); }
+  .shell-tab.active .shell-tab-icon svg { transform: scale(1.12); }
+
+  /* ── Props legend ── */
+  .props-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+  @media (max-width: 600px) { .props-row { grid-template-columns: 1fr; } }
+
+  /* ── Delivery table ── */
+  .delivery-table {
+    width: 100%; border-collapse: separate; border-spacing: 0;
+    border: 1px solid var(--border-subtle); border-radius: var(--radius-panel); overflow: hidden;
+  }
+  .delivery-table th {
+    padding: 10px 16px; text-align: left; font-size: 10px; font-weight: 700;
+    letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-3);
+    background: var(--g1); border-bottom: 1px solid var(--border-subtle);
+  }
+  .delivery-table td {
+    padding: 12px 16px; font-size: 13px; color: var(--text-2);
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .delivery-table tr:last-child td { border-bottom: none; }
+  .delivery-table tr:hover td { background: var(--g1); }
+  .tag {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 8px; border-radius: 6px;
+    font-size: 10px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase;
+  }
+  .tag.new     { background: rgba(48,209,88,0.12); border: 1px solid rgba(48,209,88,0.2); color: #30d158; }
+  .tag.comp    { background: rgba(10,132,255,0.10); border: 1px solid rgba(10,132,255,0.2); color: #0a84ff; }
+  .tag.infra   { background: rgba(255,149,0,0.10); border: 1px solid rgba(255,149,0,0.2); color: #ff9500; }
+</style>
+</head>
+<body>
+
+<!-- ─── PAGE HEADER ─────────────────────────────────────────────────── -->
+<div class="page-header">
+  <div class="sprint-badge">Sprint 14 · Navigation System</div>
+  <h1 class="page-title">Overlay System</h1>
+  <p class="page-sub">Context Menu · Command Palette · Dynamic Island · Glass Toast · Navigation Shell</p>
+</div>
+
+<!-- ─── 1. GLASS CONTEXT MENU ────────────────────────────────────────── -->
+<div class="section">
+  <div class="section-label">01 — Glass Context Menu</div>
+
+  <div class="ctx-demo" oncontextmenu="openCtx(event)" onclick="closeCtx()">
+    <div class="ctx-target" oncontextmenu="openCtx(event)" onclick="event.stopPropagation(); closeCtx()">
+      <div class="ctx-target-name">Alexandru Popescu</div>
+      <div class="ctx-target-sub">Store Manager · Cluj-Napoca</div>
+    </div>
+    <div class="ctx-hint">Right-click or long-press to open</div>
+
+    <div class="ctx-menu" id="ctxMenu">
+      <div class="ctx-item" onclick="closeCtx()">
+        <div class="ctx-item-left">
+          <div class="ctx-item-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+          </div>
+          <span class="ctx-item-label">Edit Employee</span>
+        </div>
+        <span class="ctx-shortcut">⌘E</span>
+      </div>
+      <div class="ctx-item" onclick="closeCtx()">
+        <div class="ctx-item-left">
+          <div class="ctx-item-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+              <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+              <line x1="8.59" x2="15.42" y1="13.51" y2="17.49"/><line x1="15.41" x2="8.59" y1="6.51" y2="10.49"/>
+            </svg>
+          </div>
+          <span class="ctx-item-label">Share Profile</span>
+        </div>
+        <span class="ctx-shortcut">⌘S</span>
+      </div>
+      <div class="ctx-item" onclick="closeCtx()">
+        <div class="ctx-item-left">
+          <div class="ctx-item-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+              <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+              <polyline points="16 6 12 2 8 6"/><line x1="12" x2="12" y1="2" y2="15"/>
+            </svg>
+          </div>
+          <span class="ctx-item-label">Export Data</span>
+        </div>
+        <div class="ctx-item-arrow">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </div>
+      </div>
+      <div class="ctx-sep"></div>
+      <div class="ctx-item" onclick="closeCtx()">
+        <div class="ctx-item-left">
+          <div class="ctx-item-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+              <path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/>
+              <line x1="6" x2="6" y1="1" y2="4"/><line x1="10" x2="10" y1="1" y2="4"/><line x1="14" x2="14" y1="1" y2="4"/>
+            </svg>
+          </div>
+          <span class="ctx-item-label">Change Role</span>
+        </div>
+      </div>
+      <div class="ctx-sep"></div>
+      <div class="ctx-item destructive" onclick="closeCtx()">
+        <div class="ctx-item-left">
+          <div class="ctx-item-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+              <polyline points="3 6 5 6 21 6"/>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+            </svg>
+          </div>
+          <span class="ctx-item-label">Remove Employee</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="api-callout">
+    <strong>Component:</strong> <code>GlassContextMenu</code> — glass panel that positions itself relative to trigger point.<br>
+    <strong>Items:</strong> icon · label · keyboard shortcut · submenu arrow · destructive flag · separator.<br>
+    <strong>Trigger:</strong> <code>onContextMenu</code> / long-press (mobile) — receives <code>{ x, y }</code> coords, auto-flips near viewport edges.<br>
+    <strong>a11y:</strong> <code>role="menu"</code>, <code>role="menuitem"</code>, keyboard: ↑↓ navigate · Enter confirm · Esc dismiss.
+  </div>
+
+  <table class="api-table">
+    <thead><tr><th>Prop</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>open</code></td><td><code>boolean</code></td><td>—</td><td><span class="req">required</span></td></tr>
+      <tr><td><code>onClose</code></td><td><code>() =&gt; void</code></td><td>—</td><td><span class="req">required</span></td></tr>
+      <tr><td><code>position</code></td><td><code>&#123; x: number; y: number &#125;</code></td><td>—</td><td><span class="req">required</span> — client coords from event</td></tr>
+      <tr><td><code>items</code></td><td><code>ContextMenuItem[]</code></td><td>—</td><td><span class="req">required</span></td></tr>
+      <tr><td><code>onSelect</code></td><td><code>(id: string) =&gt; void</code></td><td>—</td><td><span class="req">required</span></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ─── 2. COMMAND PALETTE ───────────────────────────────────────────── -->
+<div class="section">
+  <div class="section-label">02 — Command Palette · ⌘K</div>
+
+  <div class="cmd-trigger-area">
+    <button class="cmd-btn" onclick="openCmd()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" x2="16.65" y1="21" y2="16.65"/></svg>
+      Open Command Palette
+      <kbd>⌘K</kbd>
+    </button>
+  </div>
+
+  <!-- palette portal -->
+  <div class="cmd-overlay" id="cmdOverlay" onclick="closeCmd()">
+    <div class="cmd-backdrop"></div>
+    <div class="cmd-panel" onclick="event.stopPropagation()">
+      <div class="cmd-search-row">
+        <div class="cmd-search-icon">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" x2="16.65" y1="21" y2="16.65"/></svg>
+        </div>
+        <input class="cmd-input" placeholder="Search or type a command…" autofocus />
+        <span class="cmd-esc-kbd">esc</span>
+      </div>
+      <div class="cmd-body">
+        <div class="cmd-section-title">Recent</div>
+        <div class="cmd-item active">
+          <div class="cmd-item-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+          </div>
+          <div class="cmd-item-text">
+            <div class="cmd-item-label">View Employee Directory</div>
+            <div class="cmd-item-cat">People → HR</div>
+          </div>
+          <span class="cmd-item-shortcut">↵</span>
+        </div>
+        <div class="cmd-item">
+          <div class="cmd-item-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="12" x2="12" y1="1" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          </div>
+          <div class="cmd-item-text">
+            <div class="cmd-item-label">Monthly Revenue Report</div>
+            <div class="cmd-item-cat">Finance → Reports</div>
+          </div>
+        </div>
+
+        <div class="cmd-section-title">Navigation</div>
+        <div class="cmd-item">
+          <div class="cmd-item-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          </div>
+          <div class="cmd-item-text">
+            <div class="cmd-item-label">Command Dashboard</div>
+            <div class="cmd-item-cat">Tab 1</div>
+          </div>
+          <span class="cmd-item-shortcut">⌘1</span>
+        </div>
+        <div class="cmd-item">
+          <div class="cmd-item-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
+          </div>
+          <div class="cmd-item-text">
+            <div class="cmd-item-label">Operations</div>
+            <div class="cmd-item-cat">Tab 2</div>
+          </div>
+          <span class="cmd-item-shortcut">⌘2</span>
+        </div>
+
+        <div class="cmd-section-title">Actions</div>
+        <div class="cmd-item">
+          <div class="cmd-item-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/></svg>
+          </div>
+          <div class="cmd-item-text">
+            <div class="cmd-item-label">Add New Employee</div>
+            <div class="cmd-item-cat">People → HR</div>
+          </div>
+        </div>
+        <div class="cmd-item">
+          <div class="cmd-item-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" x2="12" y1="2" y2="15"/></svg>
+          </div>
+          <div class="cmd-item-text">
+            <div class="cmd-item-label">Export All Reports</div>
+            <div class="cmd-item-cat">Finance → Export</div>
+          </div>
+          <span class="cmd-item-shortcut">⌘⇧E</span>
+        </div>
+      </div>
+      <div class="cmd-footer">
+        <div class="cmd-footer-hint"><kbd>↑↓</kbd> navigate</div>
+        <div class="cmd-footer-hint"><kbd>↵</kbd> select</div>
+        <div class="cmd-footer-hint"><kbd>esc</kbd> close</div>
+        <div class="cmd-footer-hint" style="margin-left:auto;"><kbd>⌘K</kbd> toggle</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="api-callout">
+    <strong>Component:</strong> <code>GlassCommandPalette</code> — global search + action overlay, always rendered in a React portal.<br>
+    <strong>Sections:</strong> Recent · Navigation · Actions · People · Settings — each independently queryable.<br>
+    <strong>Search:</strong> fuzzy-match across all registered commands via <code>registerCommands(items[])</code>.<br>
+    <strong>Keyboard:</strong> ⌘K toggle · ↑↓ navigate · Enter select · Esc close · ⌘1–5 jump to tab.
+  </div>
+
+  <table class="api-table">
+    <thead><tr><th>Prop</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>open</code></td><td><code>boolean</code></td><td>—</td><td><span class="req">required</span></td></tr>
+      <tr><td><code>onClose</code></td><td><code>() =&gt; void</code></td><td>—</td><td><span class="req">required</span></td></tr>
+      <tr><td><code>sections</code></td><td><code>CommandSection[]</code></td><td>—</td><td><span class="req">required</span> — grouped command registry</td></tr>
+      <tr><td><code>onSelect</code></td><td><code>(id: string) =&gt; void</code></td><td>—</td><td><span class="req">required</span></td></tr>
+      <tr><td><code>placeholder</code></td><td><code>string</code></td><td><code>"Search or type a command…"</code></td><td><span class="opt">optional</span></td></tr>
+      <tr><td><code>recentIds</code></td><td><code>string[]</code></td><td><code>[]</code></td><td><span class="opt">optional</span> — surfaced in Recent section</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ─── 3. DYNAMIC ISLAND ────────────────────────────────────────────── -->
+<div class="section">
+  <div class="section-label">03 — Dynamic Island Framework</div>
+
+  <!-- interactive click-through -->
+  <div class="di-interactive">
+    <div class="di-island" id="diIsland" onclick="cycleDI()">
+      <div class="di-idle-dots"><div class="di-idle-dot"></div><div class="di-idle-dot"></div><div class="di-idle-dot"></div></div>
+      <div class="di-compact-inner">
+        <div class="di-live-dot"></div>
+        <span class="di-compact-lbl">Project</span>
+        <span class="di-compact-val">67%</span>
+      </div>
+      <div class="di-expanded-inner">
+        <div class="di-exp-row">
+          <div class="di-live-dot"></div>
+          <span class="di-exp-name">Renovation Cluj S2</span>
+          <span class="di-exp-val">67%</span>
+        </div>
+        <div class="di-progress"><div class="di-progress-bar" style="width:67%"></div></div>
+        <div class="di-exp-row" style="margin-top:5px">
+          <span class="di-exp-lbl">On-site crew</span>
+          <span style="font-size:11px;color:rgba(255,255,255,0.7)">8 people</span>
+        </div>
+      </div>
+    </div>
+    <div class="di-hint">Click to cycle: idle → compact → expanded → idle</div>
+  </div>
+
+  <!-- state cards grid -->
+  <div class="di-states-grid" style="margin-top:16px">
+    <div class="di-state-card">
+      <div class="di-state-label">Idle</div>
+      <div class="di-chip"><div class="di-idle-dot"></div><div class="di-idle-dot"></div><div class="di-idle-dot"></div></div>
+    </div>
+    <div class="di-state-card">
+      <div class="di-state-label">Compact · Live Activity</div>
+      <div class="di-chip compact">
+        <div class="di-live-dot"></div>
+        <span style="font-size:11px;font-weight:500;color:rgba(255,255,255,0.8)">Project</span>
+        <span style="font-size:12px;font-weight:700;color:#fff;margin-left:4px">67%</span>
+      </div>
+    </div>
+    <div class="di-state-card">
+      <div class="di-state-label">Compact · Clock-in</div>
+      <div class="di-chip compact">
+        <div class="di-live-dot"></div>
+        <span style="font-size:11px;font-weight:500;color:rgba(255,255,255,0.8)">On site</span>
+        <span style="font-size:12px;font-weight:700;color:#fff;margin-left:4px">08:32</span>
+      </div>
+    </div>
+    <div class="di-state-card">
+      <div class="di-state-label">Expanded · Project</div>
+      <div class="di-chip expanded">
+        <div class="di-exp-header">
+          <div class="di-live-dot"></div>
+          <span class="di-exp-title">Renovation Cluj S2</span>
+          <span class="di-exp-val">67%</span>
+        </div>
+        <div class="di-progress"><div class="di-progress-bar" style="width:67%"></div></div>
+      </div>
+    </div>
+    <div class="di-state-card">
+      <div class="di-state-label">Expanded · Attendance</div>
+      <div class="di-chip expanded">
+        <div class="di-exp-header">
+          <div class="di-live-dot"></div>
+          <span class="di-exp-title">Team On-Site</span>
+          <span class="di-exp-val">12/15</span>
+        </div>
+        <div class="di-exp-row" style="margin-top:5px">
+          <span style="font-size:10px;color:rgba(255,255,255,0.4)">Shift ends</span>
+          <span style="font-size:10px;font-weight:600;color:rgba(255,255,255,0.8)">17:00</span>
+        </div>
+      </div>
+    </div>
+    <div class="di-state-card">
+      <div class="di-state-label">Expanded · Alert</div>
+      <div class="di-chip expanded" style="border-color:rgba(255,59,48,0.25)">
+        <div class="di-exp-header">
+          <div class="di-live-dot" style="background:#ff3b30"></div>
+          <span class="di-exp-title">Low Inventory</span>
+          <span class="di-exp-val" style="color:#ff6b6b">3 items</span>
+        </div>
+        <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:4px">Tap to review</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="api-callout">
+    <strong>Component:</strong> <code>DynamicIsland</code> — CSS-positioned pseudo-island at top-center, spring-animated state transitions.<br>
+    <strong>States:</strong> <code>idle</code> · <code>compact</code> (live activity chip) · <code>expanded</code> (rich card).<br>
+    <strong>Content:</strong> provided as slot per state via <code>idleContent</code> / <code>compactContent</code> / <code>expandedContent</code> props.<br>
+    <strong>Uses:</strong> clock-in timer · project progress · attendance status · critical alerts · live KPIs.
+  </div>
+
+  <table class="api-table">
+    <thead><tr><th>Prop</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>state</code></td><td><code>"idle" | "compact" | "expanded"</code></td><td><code>"idle"</code></td><td><span class="opt">optional</span></td></tr>
+      <tr><td><code>onToggle</code></td><td><code>() =&gt; void</code></td><td>—</td><td><span class="opt">optional</span> — tap handler</td></tr>
+      <tr><td><code>compactContent</code></td><td><code>ReactNode</code></td><td>—</td><td><span class="opt">optional</span></td></tr>
+      <tr><td><code>expandedContent</code></td><td><code>ReactNode</code></td><td>—</td><td><span class="opt">optional</span></td></tr>
+      <tr><td><code>liveActivity</code></td><td><code>boolean</code></td><td><code>false</code></td><td><span class="opt">optional</span> — shows green pulse dot</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ─── 4. GLASS TOAST ────────────────────────────────────────────────── -->
+<div class="section">
+  <div class="section-label">04 — Glass Toast · 4 Severity Levels</div>
+
+  <div class="toast-trigger-row">
+    <button class="toast-btn success" onclick="showToast('success','Saved successfully','Employee record has been updated.')">Success</button>
+    <button class="toast-btn error"   onclick="showToast('error','Action failed','Unable to connect — please retry.')">Error</button>
+    <button class="toast-btn warning" onclick="showToast('warning','Low inventory','Gresia Gri 60×60 below threshold.')">Warning</button>
+    <button class="toast-btn info"    onclick="showToast('info','Sync in progress','Fetching latest data from server…')">Info</button>
+  </div>
+
+  <!-- static showcase -->
+  <div class="toast-showcase">
+
+    <div class="toast-static">
+      <div class="toast-icon success">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#30d158" stroke-width="2.2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <div class="toast-text">
+        <div class="toast-title">Saved successfully</div>
+        <div class="toast-desc">Employee record updated.</div>
+      </div>
+      <div class="toast-bar success" style="width:60%"></div>
+    </div>
+
+    <div class="toast-static">
+      <div class="toast-icon error">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ff3b30" stroke-width="2.2" stroke-linecap="round"><line x1="18" x2="6" y1="6" y2="18"/><line x1="6" x2="18" y1="6" y2="18"/></svg>
+      </div>
+      <div class="toast-text">
+        <div class="toast-title">Action failed</div>
+        <div class="toast-desc">Unable to connect — please retry.</div>
+      </div>
+      <div class="toast-bar error" style="width:35%"></div>
+    </div>
+
+    <div class="toast-static">
+      <div class="toast-icon warning">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ff9500" stroke-width="2.2" stroke-linecap="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
+      </div>
+      <div class="toast-text">
+        <div class="toast-title">Low inventory</div>
+        <div class="toast-desc">Gresia Gri 60×60 below threshold.</div>
+      </div>
+      <div class="toast-bar warning" style="width:80%"></div>
+    </div>
+
+    <div class="toast-static">
+      <div class="toast-icon info">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0a84ff" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
+      </div>
+      <div class="toast-text">
+        <div class="toast-title">Sync in progress</div>
+        <div class="toast-desc">Fetching latest data from server…</div>
+      </div>
+      <div class="toast-bar info" style="width:55%"></div>
+    </div>
+
+  </div>
+
+  <div class="api-callout" style="margin-top:16px">
+    <strong>Component:</strong> <code>GlassToast</code> + <code>useToast()</code> hook — rendered via React portal into <code>#toast-root</code>.<br>
+    <strong>Severities:</strong> <code>success</code> · <code>error</code> · <code>warning</code> · <code>info</code> — each has tinted icon + progress bar color.<br>
+    <strong>Auto-dismiss:</strong> 3.5 s default (configurable). Progress bar depletes in real-time. Pause on hover.<br>
+    <strong>Queue:</strong> up to 3 toasts stacked. Oldest exits when 4th appears. Spring entry + spring exit.
+  </div>
+
+  <table class="api-table">
+    <thead><tr><th>API</th><th>Signature</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>useToast()</code></td><td><code>{ toast }</code></td><td>Hook — call <code>toast.success(title, desc?)</code> from anywhere</td></tr>
+      <tr><td><code>toast.success</code></td><td><code>(title, desc?, opts?) =&gt; void</code></td><td>Green check icon</td></tr>
+      <tr><td><code>toast.error</code></td><td><code>(title, desc?, opts?) =&gt; void</code></td><td>Red × icon</td></tr>
+      <tr><td><code>toast.warning</code></td><td><code>(title, desc?, opts?) =&gt; void</code></td><td>Orange triangle icon</td></tr>
+      <tr><td><code>toast.info</code></td><td><code>(title, desc?, opts?) =&gt; void</code></td><td>Blue ⓘ icon</td></tr>
+      <tr><td><code>ToastProvider</code></td><td><code>&#123; children &#125;</code></td><td>Wraps app, renders portal + manages queue</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ─── 5. NAVIGATION SHELL ──────────────────────────────────────────── -->
+<div class="section">
+  <div class="section-label">05 — Navigation Shell</div>
+
+  <div class="shell-demo">
+    <!-- floating header -->
+    <div class="shell-header">
+      <div class="shell-header-back">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </div>
+      <span class="shell-header-title">Operations</span>
+      <div class="shell-header-actions">
+        <div class="shell-icon-btn">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" x2="16.65" y1="21" y2="16.65"/></svg>
+        </div>
+        <div class="shell-icon-btn">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- content -->
+    <div class="shell-content">
+      <div class="shell-card"></div>
+      <div class="shell-card"></div>
+      <div class="shell-card"></div>
+      <div class="shell-card"></div>
+      <div class="shell-card"></div>
+    </div>
+
+    <!-- floating tab bar -->
+    <div class="shell-tab-bar">
+      <div class="shell-tab" onclick="setShellTab(this)">
+        <div class="shell-tab-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.8" stroke-linecap="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        </div>
+        <span class="shell-tab-label">Command</span>
+      </div>
+      <div class="shell-tab active" onclick="setShellTab(this)">
+        <div class="shell-tab-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.95)" stroke-width="1.8" stroke-linecap="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
+        </div>
+        <span class="shell-tab-label">Operations</span>
+      </div>
+      <div class="shell-tab" onclick="setShellTab(this)">
+        <div class="shell-tab-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.8" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+        </div>
+        <span class="shell-tab-label">People</span>
+      </div>
+      <div class="shell-tab" onclick="setShellTab(this)">
+        <div class="shell-tab-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.8" stroke-linecap="round"><line x1="12" x2="12" y1="1" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        </div>
+        <span class="shell-tab-label">Finance</span>
+      </div>
+      <div class="shell-tab" onclick="setShellTab(this)">
+        <div class="shell-tab-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.8" stroke-linecap="round"><path d="M2 20h.01"/><path d="M7 20v-4"/><path d="M12 20v-8"/><path d="M17 20V8"/><path d="M22 4v16"/></svg>
+        </div>
+        <span class="shell-tab-label">Intelligence</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="api-callout">
+    <strong>Component:</strong> <code>NavigationShell</code> — composes <code>GlassTabBar</code> + floating header + safe-area-aware content slot.<br>
+    <strong>Header:</strong> optional back button, title, right-side icon actions (search, filter, more).<br>
+    <strong>Content:</strong> padding accounts for both header and tab bar — no overlap without manual measurement.<br>
+    <strong>Role-aware:</strong> <code>variant="business"</code> / <code>"public"</code> — drives which 5 tabs appear.
+  </div>
+
+  <table class="api-table">
+    <thead><tr><th>Prop</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>tabs</code></td><td><code>GlassTabItem[]</code></td><td>—</td><td><span class="req">required</span></td></tr>
+      <tr><td><code>activeTabId</code></td><td><code>string</code></td><td>—</td><td><span class="req">required</span></td></tr>
+      <tr><td><code>onTabChange</code></td><td><code>(id: string) =&gt; void</code></td><td>—</td><td><span class="req">required</span></td></tr>
+      <tr><td><code>title</code></td><td><code>string</code></td><td>—</td><td><span class="opt">optional</span></td></tr>
+      <tr><td><code>onBack</code></td><td><code>() =&gt; void</code></td><td>—</td><td><span class="opt">optional</span> — shows back button when set</td></tr>
+      <tr><td><code>headerActions</code></td><td><code>ReactNode</code></td><td>—</td><td><span class="opt">optional</span> — right-side icon buttons</td></tr>
+      <tr><td><code>children</code></td><td><code>ReactNode</code></td><td>—</td><td><span class="req">required</span> — page content</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ─── DELIVERY TABLE ────────────────────────────────────────────────── -->
+<div class="section">
+  <div class="section-label">Sprint 14 · Delivery Scope</div>
+  <table class="delivery-table">
+    <thead>
+      <tr>
+        <th>#</th><th>Component</th><th>File</th><th>Type</th><th>Exports</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>1</td>
+        <td>GlassContextMenu</td>
+        <td><code>glass-context-menu.tsx</code></td>
+        <td><span class="tag new">new</span></td>
+        <td><code>GlassContextMenu</code> · <code>GlassContextMenuItem</code></td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td>GlassCommandPalette</td>
+        <td><code>glass-command-palette.tsx</code></td>
+        <td><span class="tag new">new</span></td>
+        <td><code>GlassCommandPalette</code> · <code>CommandSection</code> · <code>CommandItem</code></td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td>DynamicIsland</td>
+        <td><code>dynamic-island.tsx</code></td>
+        <td><span class="tag new">new</span></td>
+        <td><code>DynamicIsland</code> · <code>DynamicIslandState</code></td>
+      </tr>
+      <tr>
+        <td>4</td>
+        <td>GlassToast + useToast</td>
+        <td><code>glass-toast.tsx</code></td>
+        <td><span class="tag new">new</span></td>
+        <td><code>ToastProvider</code> · <code>useToast</code> · <code>ToastSeverity</code></td>
+      </tr>
+      <tr>
+        <td>5</td>
+        <td>NavigationShell</td>
+        <td><code>navigation-shell.tsx</code></td>
+        <td><span class="tag comp">composite</span></td>
+        <td><code>NavigationShell</code> · <code>NavigationShellProps</code></td>
+      </tr>
+      <tr>
+        <td>6</td>
+        <td>components/index.ts</td>
+        <td><code>components/index.ts</code></td>
+        <td><span class="tag infra">infra</span></td>
+        <td>All new public symbols re-exported</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ── LIVE TOAST STAGE (portal target) ──────────────────────────────── -->
+<div class="toast-stage" id="toastStage"></div>
+
+<script>
+/* ── Context Menu ── */
+function openCtx(e) {
+  e.preventDefault();
+  const menu = document.getElementById('ctxMenu');
+  const demo = menu.closest('.ctx-demo');
+  const rect = demo.getBoundingClientRect();
+  const x = Math.min(e.clientX - rect.left, rect.width - 220);
+  const y = Math.min(e.clientY - rect.top, rect.height - 200);
+  menu.style.left = x + 'px';
+  menu.style.top  = y + 'px';
+  menu.classList.add('open');
+}
+function closeCtx() { document.getElementById('ctxMenu').classList.remove('open'); }
+
+/* ── Command Palette ── */
+function openCmd() { document.getElementById('cmdOverlay').classList.add('open'); }
+function closeCmd() { document.getElementById('cmdOverlay').classList.remove('open'); }
+document.addEventListener('keydown', e => {
+  if ((e.metaKey||e.ctrlKey) && e.key === 'k') { e.preventDefault(); openCmd(); }
+  if (e.key === 'Escape') { closeCmd(); closeCtx(); }
+});
+
+/* ── Dynamic Island ── */
+const diStates = ['', 'compact', 'expanded'];
+let diIdx = 0;
+function cycleDI() {
+  diIdx = (diIdx + 1) % 3;
+  const el = document.getElementById('diIsland');
+  el.className = 'di-island ' + diStates[diIdx];
+}
+
+/* ── Shell tabs ── */
+function setShellTab(el) {
+  el.closest('.shell-tab-bar').querySelectorAll('.shell-tab').forEach(t => {
+    t.classList.remove('active');
+    t.querySelector('svg').setAttribute('stroke','rgba(255,255,255,0.35)');
+    t.querySelector('.shell-tab-label').style.color = 'var(--text-3)';
+    t.querySelector('.shell-tab-label').style.fontWeight = '500';
+  });
+  el.classList.add('active');
+  el.querySelector('svg').setAttribute('stroke','rgba(255,255,255,0.95)');
+  el.querySelector('.shell-tab-label').style.color = 'var(--text-1)';
+  el.querySelector('.shell-tab-label').style.fontWeight = '600';
+}
+
+/* ── Toast ── */
+const svgs = {
+  success: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#30d158" stroke-width="2.2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>',
+  error:   '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ff3b30" stroke-width="2.2" stroke-linecap="round"><line x1="18" x2="6" y1="6" y2="18"/><line x1="6" x2="18" y1="6" y2="18"/></svg>',
+  warning: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ff9500" stroke-width="2.2" stroke-linecap="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>',
+  info:    '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0a84ff" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>',
+};
+
+function showToast(type, title, desc) {
+  const stage = document.getElementById('toastStage');
+  if (stage.children.length >= 3) stage.removeChild(stage.firstChild);
+  const t = document.createElement('div');
+  t.className = 'toast-item';
+  t.innerHTML = `
+    <div class="toast-icon ${type}">${svgs[type]}</div>
+    <div class="toast-text">
+      <div class="toast-title">${title}</div>
+      <div class="toast-desc">${desc}</div>
+    </div>
+    <div class="toast-close" onclick="dismissToast(this.parentElement)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" x2="6" y1="6" y2="18"/><line x1="6" x2="18" y1="6" y2="18"/></svg>
+    </div>
+    <div class="toast-bar ${type}" style="width:100%"></div>
+  `;
+  stage.appendChild(t);
+  requestAnimationFrame(() => {
+    t.classList.add('show');
+    const bar = t.querySelector('.toast-bar');
+    requestAnimationFrame(() => { bar.style.width = '0%'; });
+  });
+  setTimeout(() => dismissToast(t), 3500);
+}
+function dismissToast(el) {
+  if (!el || !el.parentElement) return;
+  el.classList.remove('show');
+  el.classList.add('exit');
+  setTimeout(() => el.remove(), 400);
+}
+</script>
+</body>
+</html>
