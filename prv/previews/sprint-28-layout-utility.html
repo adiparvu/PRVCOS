@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PRV · Sprint 28 — Layout & Utility</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --prv-bg:            #000;
+    --prv-g1:            rgba(255,255,255,0.06);
+    --prv-g2:            rgba(255,255,255,0.10);
+    --prv-g3:            rgba(255,255,255,0.15);
+    --prv-g4:            rgba(255,255,255,0.22);
+    --prv-text-1:        rgba(255,255,255,0.95);
+    --prv-text-2:        rgba(255,255,255,0.65);
+    --prv-text-3:        rgba(255,255,255,0.35);
+    --prv-text-4:        rgba(255,255,255,0.15);
+    --prv-border:        rgba(255,255,255,0.12);
+    --prv-border-subtle: rgba(255,255,255,0.07);
+    --prv-accent:        rgba(10,132,255,0.9);
+    --prv-green:         rgba(48,209,88,0.95);
+  }
+
+  html, body {
+    background: var(--prv-bg);
+    color: var(--prv-text-1);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page { max-width: 960px; margin: 0 auto; padding: 48px 24px 96px; }
+
+  .sprint-header { margin-bottom: 52px; }
+  .chips { display: flex; gap: 8px; margin-bottom: 10px; }
+  .chip { padding: 3px 10px; border-radius: 100px; background: var(--prv-g2); border: 1px solid var(--prv-border-subtle); font-size: 11px; font-weight: 600; color: var(--prv-text-3); letter-spacing: .06em; text-transform: uppercase; }
+  h1 { font-size: 28px; font-weight: 700; letter-spacing: -.02em; }
+  .sub { font-size: 14px; color: var(--prv-text-3); margin-top: 4px; }
+
+  .section { margin-bottom: 60px; }
+  .sl { font-size: 11px; font-weight: 600; color: var(--prv-text-3); letter-spacing: .07em; text-transform: uppercase; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+  .sl::after { content: ""; flex: 1; height: 1px; background: var(--prv-border-subtle); }
+
+  /* Delivery table */
+  .dt { width: 100%; border-collapse: collapse; }
+  .dt th, .dt td { text-align: left; padding: 10px 14px; font-size: 13px; border-bottom: 1px solid var(--prv-border-subtle); }
+  .dt th { font-size: 11px; font-weight: 600; color: var(--prv-text-3); letter-spacing: .06em; text-transform: uppercase; }
+  .dt td { color: var(--prv-text-1); }
+  .dt td:nth-child(2) { color: var(--prv-text-3); font-family: "SF Mono", monospace; font-size: 11px; }
+  .dt tr:last-child td { border-bottom: none; }
+  .tag { display: inline-flex; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 500; background: var(--prv-g2); color: var(--prv-text-3); border: 1px solid var(--prv-border-subtle); }
+  .tag.new { background: rgba(10,132,255,.12); color: rgba(10,132,255,.9); border-color: rgba(10,132,255,.2); }
+
+  .glass-surface { position: relative; overflow: hidden; background: var(--prv-g1); border: 1px solid var(--prv-border-subtle); border-radius: 20px; }
+  .glass-surface::before { content: ""; position: absolute; inset: 0 0 auto; height: 1px; background: linear-gradient(90deg,transparent,rgba(255,255,255,0.09),transparent); pointer-events: none; }
+
+  .demo-pad { padding: 32px 28px; }
+  .blurb { font-size: 13px; color: var(--prv-text-2); line-height: 1.65; }
+
+  /* ════════════════════════════════════════════════
+     GLASS DIVIDER
+  ════════════════════════════════════════════════ */
+  .dv { border: none; height: 1px; background: var(--prv-border-subtle); margin: 0; }
+  .dv-dashed { height: 0; border-top: 1px dashed var(--prv-border); background: none; }
+  .dv-label { display: flex; align-items: center; gap: 14px; color: var(--prv-text-3); font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
+  .dv-label::before, .dv-label::after { content: ""; flex: 1; height: 1px; background: var(--prv-border-subtle); }
+  .dv-vert { display: inline-flex; align-items: center; height: 60px; }
+  .dv-vert span { width: 1px; height: 100%; background: var(--prv-border-subtle); }
+
+  /* ════════════════════════════════════════════════
+     GLASS SCROLL AREA
+  ════════════════════════════════════════════════ */
+  .sa { max-height: 200px; overflow-y: auto; padding-right: 6px; }
+  .sa::-webkit-scrollbar { width: 8px; }
+  .sa::-webkit-scrollbar-track { background: transparent; }
+  .sa::-webkit-scrollbar-thumb { background: var(--prv-g3); border-radius: 100px; border: 2px solid transparent; background-clip: padding-box; }
+  .sa::-webkit-scrollbar-thumb:hover { background: var(--prv-g4); background-clip: padding-box; }
+  .sa-row { padding: 12px 14px; border-radius: 10px; background: var(--prv-g1); border: 1px solid var(--prv-border-subtle); margin-bottom: 8px; font-size: 13px; color: var(--prv-text-2); display: flex; justify-content: space-between; }
+  .sa-row:last-child { margin-bottom: 0; }
+
+  /* ════════════════════════════════════════════════
+     GLASS ASPECT RATIO
+  ════════════════════════════════════════════════ */
+  .ar-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .ar { position: relative; width: 100%; border-radius: 14px; overflow: hidden; border: 1px solid var(--prv-border-subtle); }
+  .ar-16-9 { aspect-ratio: 16/9; } .ar-1-1 { aspect-ratio: 1/1; } .ar-4-3 { aspect-ratio: 4/3; }
+  .ar-fill { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; color: #fff; }
+
+  /* ════════════════════════════════════════════════
+     GLASS COPY BUTTON + KBD
+  ════════════════════════════════════════════════ */
+  .cpb { display: inline-flex; align-items: center; gap: 8px; padding: 9px 14px; border-radius: 11px; background: var(--prv-g2); border: 1px solid var(--prv-border); color: var(--prv-text-1); font-size: 13px; font-weight: 600; font-family: inherit; cursor: pointer; transition: background 150ms; }
+  .cpb:hover { background: var(--prv-g3); }
+  .cpb.done { color: var(--prv-green); border-color: rgba(48,209,88,0.3); }
+  .cpb-mono { font-family: "SF Mono", monospace; font-size: 12px; color: var(--prv-text-3); }
+
+  .kbd { display: inline-flex; align-items: center; justify-content: center; min-width: 24px; height: 24px; padding: 0 7px; border-radius: 7px; background: var(--prv-g2); border: 1px solid var(--prv-border); border-bottom-width: 2px; font-family: "SF Mono", monospace; font-size: 12px; font-weight: 600; color: var(--prv-text-2); }
+  .kbd-combo { display: inline-flex; align-items: center; gap: 4px; }
+  .kbd-plus { color: var(--prv-text-4); font-size: 11px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="sprint-header">
+    <div class="chips"><span class="chip">Sprint 28</span><span class="chip">Preview</span><span class="chip">Phase 1 · M9</span></div>
+    <h1>Layout &amp; Utility</h1>
+    <div class="sub">GlassDivider · GlassScrollArea · GlassAspectRatio · GlassCopyButton + GlassKbd</div>
+  </div>
+
+  <!-- ── DIVIDER ── -->
+  <div class="section">
+    <div class="sl">GlassDivider — Horizontal &amp; vertical, solid/dashed, optional centered label</div>
+    <div class="glass-surface">
+      <div class="demo-pad">
+        <p class="blurb" style="margin-bottom:18px">Solid horizontal divider below.</p>
+        <hr class="dv" />
+        <p class="blurb" style="margin:18px 0">Dashed divider below.</p>
+        <hr class="dv dv-dashed" />
+        <div class="dv-label" style="margin:22px 0">Section Label</div>
+        <div style="display:flex;align-items:center;gap:18px">
+          <span class="blurb">Inline content</span>
+          <span class="dv-vert"><span></span></span>
+          <span class="blurb">divided vertically</span>
+          <span class="dv-vert"><span></span></span>
+          <span class="blurb">into columns</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SCROLL AREA ── -->
+  <div class="section">
+    <div class="sl">GlassScrollArea — Custom thin glass scrollbar, fade-friendly container</div>
+    <div class="glass-surface">
+      <div class="demo-pad">
+        <div class="sa" id="sa"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── ASPECT RATIO ── -->
+  <div class="section">
+    <div class="sl">GlassAspectRatio — Locks child to a ratio (16:9, 1:1, 4:3 …)</div>
+    <div class="glass-surface">
+      <div class="demo-pad">
+        <div class="ar-grid">
+          <div class="ar ar-16-9"><div class="ar-fill" style="background:linear-gradient(135deg,#0A84FF,#5E5CE6)">16 : 9</div></div>
+          <div class="ar ar-1-1"><div class="ar-fill" style="background:linear-gradient(135deg,#30D158,#00C7BE)">1 : 1</div></div>
+          <div class="ar ar-4-3"><div class="ar-fill" style="background:linear-gradient(135deg,#FF9F0A,#FF375F)">4 : 3</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── COPY BUTTON + KBD ── -->
+  <div class="section">
+    <div class="sl">GlassCopyButton + GlassKbd — Clipboard with confirm, keyboard key caps</div>
+    <div class="glass-surface">
+      <div class="demo-pad">
+        <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:26px">
+          <button class="cpb" id="cpb1" onclick="cp(this,'prv_live_sk_8a2f…')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            <span class="lbl">Copy API key</span>
+          </button>
+          <span class="cpb-mono">prv_live_sk_8a2f…</span>
+          <button class="cpb" id="cpb2" onclick="cp(this,'https://prv.app/card/andrei')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+            <span class="lbl">Copy link</span>
+          </button>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap">
+          <span class="kbd-combo"><span class="kbd">⌘</span><span class="kbd-plus">+</span><span class="kbd">K</span><span class="blurb" style="margin-left:8px">Command palette</span></span>
+          <span class="kbd-combo"><span class="kbd">⌘</span><span class="kbd-plus">+</span><span class="kbd">S</span><span class="blurb" style="margin-left:8px">Save</span></span>
+          <span class="kbd-combo"><span class="kbd">⇧</span><span class="kbd-plus">+</span><span class="kbd">⌘</span><span class="kbd-plus">+</span><span class="kbd">P</span><span class="blurb" style="margin-left:8px">Print</span></span>
+          <span class="kbd-combo"><span class="kbd">Esc</span><span class="blurb" style="margin-left:8px">Close</span></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Delivery ── -->
+  <div class="section">
+    <div class="sl">Sprint 28 Delivery</div>
+    <div class="glass-surface">
+      <table class="dt">
+        <thead><tr><th>Component</th><th>File</th><th>Key Props</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>GlassDivider</td><td>glass-divider.tsx</td><td>orientation, variant (solid|dashed), label, spacing</td><td><span class="tag new">New</span></td></tr>
+          <tr><td>GlassScrollArea</td><td>glass-scroll-area.tsx</td><td>maxHeight, maxWidth, axis, children</td><td><span class="tag new">New</span></td></tr>
+          <tr><td>GlassAspectRatio</td><td>glass-aspect-ratio.tsx</td><td>ratio, children, radius</td><td><span class="tag new">New</span></td></tr>
+          <tr><td>GlassCopyButton + GlassKbd</td><td>glass-copy-button.tsx</td><td>value, label, onCopy · keys[] / combo</td><td><span class="tag new">New</span></td></tr>
+          <tr><td>index.ts</td><td>components/index.ts</td><td>Export all components + types</td><td><span class="tag">Update</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div><!-- /page -->
+
+<script>
+// ── Scroll Area ───────────────────────────────────────────────────────────────
+const ROWS = ['Cluj · Main','Bucharest · Pipera','Iași · Palas','Timișoara · Iulius','Brașov · Coresi','Constanța · City','Sibiu · Promenada','Oradea · Lotus','Craiova · Electroputere','Arad · Atrium']
+document.getElementById('sa').innerHTML = ROWS.map((r,i)=>`<div class="sa-row"><span>${r}</span><span style="color:var(--prv-text-4)">#${String(i+1).padStart(2,'0')}</span></div>`).join('')
+
+// ── Copy Button ───────────────────────────────────────────────────────────────
+function cp(btn, text){
+  navigator.clipboard?.writeText(text)
+  const lbl = btn.querySelector('.lbl'); const orig = lbl.textContent
+  btn.classList.add('done'); lbl.textContent='Copied'
+  const svg = btn.querySelector('svg')
+  setTimeout(()=>{ btn.classList.remove('done'); lbl.textContent=orig }, 1600)
+}
+</script>
+</body>
+</html>
