@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PRV · Screen 09 — Projects</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #000;
+    --g1: rgba(255,255,255,0.06);
+    --g2: rgba(255,255,255,0.10);
+    --g3: rgba(255,255,255,0.16);
+    --t1: rgba(255,255,255,0.95);
+    --t2: rgba(255,255,255,0.65);
+    --t3: rgba(255,255,255,0.35);
+    --t4: rgba(255,255,255,0.12);
+    --bd: rgba(255,255,255,0.12);
+    --bds: rgba(255,255,255,0.07);
+    --green: rgba(48,209,88,0.95);
+    --red: rgba(255,69,58,0.95);
+    --amber: rgba(255,159,10,0.95);
+    --blue: rgba(10,132,255,0.9);
+    --purple: rgba(191,90,242,0.9);
+  }
+  html, body { background: var(--bg); color: var(--t1); font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif; -webkit-font-smoothing: antialiased; min-height: 100vh; }
+  body { background: radial-gradient(ellipse 80% 30% at 60% -5%, rgba(10,132,255,0.05), transparent), #000; }
+
+  .tag { max-width: 460px; margin: 24px auto 0; padding: 0 16px; display: flex; gap: 8px; }
+  .chip { padding: 3px 10px; border-radius: 100px; background: var(--g2); border: 1px solid var(--bds); font-size: 11px; font-weight: 600; color: var(--t3); letter-spacing: .06em; text-transform: uppercase; }
+  .frame { max-width: 460px; margin: 0 auto; padding: 32px 16px 120px; }
+
+  .sep { height: 1px; background: var(--bds); margin: 32px 0; }
+  .view-label { font-size: 10px; font-weight: 700; color: var(--t3); text-transform: uppercase; letter-spacing: .1em; margin-bottom: 12px; }
+
+  /* ── Header ── */
+  .hdr { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 20px; }
+  .hdr-sub { font-size: 13px; color: var(--t3); font-weight: 500; margin-bottom: 2px; }
+  .hdr-h1 { font-size: 26px; font-weight: 700; letter-spacing: -.02em; }
+  .hdr-right { display: flex; gap: 8px; align-items: center; }
+  .icon-btn { width: 34px; height: 34px; border-radius: 10px; background: var(--g1); border: 1px solid var(--bds); display: flex; align-items: center; justify-content: center; }
+
+  /* ── Segmented ── */
+  .seg { display: flex; gap: 4px; padding: 4px; background: var(--g1); border: 1px solid var(--bds); border-radius: 12px; margin-bottom: 16px; }
+  .seg-btn { flex: 1; padding: 6px 0; border-radius: 8px; font-size: 12px; font-weight: 600; color: var(--t3); text-align: center; }
+  .seg-btn.on { background: var(--g2); color: var(--t1); }
+
+  /* ── KPI strip ── */
+  .kpi-strip { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 16px; }
+  .kpi { padding: 12px 10px; border-radius: 14px; background: var(--g1); border: 1px solid var(--bds); text-align: center; }
+  .kpi-v { font-size: 20px; font-weight: 700; letter-spacing: -.02em; }
+  .kpi-l { font-size: 10px; font-weight: 600; color: var(--t3); text-transform: uppercase; letter-spacing: .06em; margin-top: 3px; }
+
+  /* ── Glass card ── */
+  .card { background: var(--g1); border: 1px solid var(--bds); border-radius: 18px; position: relative; overflow: hidden; margin-bottom: 12px; }
+  .card::before { content: ""; position: absolute; inset: 0 0 auto; height: 1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.09), transparent); }
+
+  /* ── Project card ── */
+  .proj { padding: 14px 16px; border-bottom: 1px solid var(--bds); }
+  .proj:last-child { border-bottom: none; }
+  .proj-top { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px; }
+  .proj-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+  .proj-name { font-size: 15px; font-weight: 700; flex: 1; line-height: 1.3; }
+  .proj-badge { font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 6px; flex-shrink: 0; }
+  .b-active   { background: rgba(10,132,255,0.15);  color: var(--blue);   }
+  .b-review   { background: rgba(255,159,10,0.15);  color: var(--amber);  }
+  .b-done     { background: rgba(48,209,88,0.15);   color: var(--green);  }
+  .b-hold     { background: rgba(255,255,255,0.08); color: var(--t3);     }
+  .proj-meta { display: flex; gap: 12px; margin-bottom: 10px; }
+  .proj-m { font-size: 12px; color: var(--t3); }
+  .proj-m strong { color: var(--t2); font-weight: 600; }
+  /* Progress bar */
+  .prog-wrap { height: 5px; border-radius: 3px; background: var(--g2); overflow: hidden; margin-bottom: 8px; }
+  .prog-fill { height: 100%; border-radius: 3px; }
+  .proj-footer { display: flex; align-items: center; justify-content: space-between; }
+  .avatars { display: flex; }
+  .av { width: 22px; height: 22px; border-radius: 50%; background: var(--g3); border: 1.5px solid var(--bg); display: flex; align-items: center; justify-content: center; font-size: 8px; font-weight: 700; color: var(--t2); margin-left: -6px; }
+  .av:first-child { margin-left: 0; }
+  .proj-date { font-size: 11px; color: var(--t3); }
+
+  /* ── Detail view ── */
+  .detail-hero { padding: 16px; border-radius: 18px; background: var(--g1); border: 1px solid var(--bds); margin-bottom: 12px; position: relative; overflow: hidden; }
+  .detail-hero::before { content: ""; position: absolute; inset: 0 0 auto; height: 1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.10), transparent); }
+  .detail-title { font-size: 20px; font-weight: 700; letter-spacing: -.02em; margin-bottom: 6px; }
+  .detail-meta { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+  .d-chip { padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 600; }
+  .detail-val-row { display: flex; gap: 10px; }
+  .dv { flex: 1; text-align: center; }
+  .dv-v { font-size: 18px; font-weight: 700; }
+  .dv-l { font-size: 10px; font-weight: 600; color: var(--t3); text-transform: uppercase; letter-spacing: .06em; margin-top: 2px; }
+
+  /* Phases */
+  .phase { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--bds); }
+  .phase:last-child { border-bottom: none; }
+  .phase-num { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+  .ph-done { background: rgba(48,209,88,0.15); color: var(--green); }
+  .ph-active { background: rgba(10,132,255,0.15); color: var(--blue); }
+  .ph-pending { background: var(--g2); color: var(--t3); }
+  .phase-info { flex: 1; }
+  .phase-name { font-size: 14px; font-weight: 600; }
+  .phase-dates { font-size: 11px; color: var(--t3); margin-top: 2px; }
+  .phase-right { text-align: right; }
+  .phase-pct { font-size: 14px; font-weight: 700; }
+
+  /* Team row */
+  .team-row { display: flex; align-items: center; gap: 10px; padding: 11px 16px; border-bottom: 1px solid var(--bds); }
+  .team-row:last-child { border-bottom: none; }
+  .team-av { width: 34px; height: 34px; border-radius: 50%; background: var(--g2); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: var(--t2); flex-shrink: 0; }
+  .team-name { font-size: 14px; font-weight: 600; flex: 1; }
+  .team-role { font-size: 11px; color: var(--t3); margin-top: 1px; }
+  .team-status { font-size: 10px; font-weight: 600; }
+
+  /* Financials */
+  .fin-row { display: flex; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--bds); }
+  .fin-row:last-child { border-bottom: none; }
+  .fin-label { font-size: 13px; font-weight: 600; flex: 1; }
+  .fin-val { font-size: 14px; font-weight: 700; }
+  .fin-bar-col { flex: 1.2; margin: 0 12px; }
+  .fin-bar-bg { height: 5px; border-radius: 3px; background: var(--g2); }
+  .fin-bar-fill { height: 100%; border-radius: 3px; }
+
+  /* Lbl */
+  .lbl { font-size: 11px; font-weight: 600; color: var(--t3); text-transform: uppercase; letter-spacing: .07em; margin: 18px 2px 10px; }
+
+  /* Tabbar */
+  .tabbar { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: inline-flex; gap: 2px; padding: 7px; border-radius: 22px; background: rgba(22,22,22,0.7); backdrop-filter: blur(48px); border: 1px solid var(--bd); box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 16px 40px rgba(0,0,0,0.55); }
+  .tab { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 13px; border-radius: 14px; font-size: 10px; font-weight: 600; color: var(--t3); }
+  .tab.on { background: var(--g2); color: var(--t1); }
+</style>
+</head>
+<body>
+
+<div class="tag">
+  <span class="chip">Screen 09</span>
+  <span class="chip">Preview</span>
+  <span class="chip">apps/web · /projects</span>
+</div>
+
+<div class="frame">
+
+  <!-- ══ VIEW A: Projects List ══ -->
+  <div class="view-label">View A — Projects List</div>
+
+  <div class="hdr">
+    <div>
+      <div class="hdr-sub">Operations</div>
+      <h1 class="hdr-h1">Projects</h1>
+    </div>
+    <div class="hdr-right">
+      <div class="icon-btn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="1.8" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="14" y2="12"/><line x1="4" y1="18" x2="10" y2="18"/></svg>
+      </div>
+      <div class="icon-btn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPI strip -->
+  <div class="kpi-strip">
+    <div class="kpi"><div class="kpi-v">24</div><div class="kpi-l">Active</div></div>
+    <div class="kpi"><div class="kpi-v" style="color:var(--amber)">3</div><div class="kpi-l">Review</div></div>
+    <div class="kpi"><div class="kpi-v" style="color:var(--green)">41</div><div class="kpi-l">Done</div></div>
+    <div class="kpi"><div class="kpi-v">€2.4M</div><div class="kpi-l">Pipeline</div></div>
+  </div>
+
+  <!-- Period seg -->
+  <div class="seg">
+    <div class="seg-btn on">All</div>
+    <div class="seg-btn">Renovation</div>
+    <div class="seg-btn">Internal</div>
+    <div class="seg-btn">Archived</div>
+  </div>
+
+  <!-- Project cards -->
+  <div class="card">
+
+    <div class="proj">
+      <div class="proj-top">
+        <div class="proj-dot" style="background:var(--blue);"></div>
+        <div class="proj-name">Renovare Apartament · Cluj Mănăștur</div>
+        <span class="proj-badge b-active">Active</span>
+      </div>
+      <div class="proj-meta">
+        <span class="proj-m">PM: <strong>Andrei P.</strong></span>
+        <span class="proj-m">Value: <strong>€18,400</strong></span>
+        <span class="proj-m">Due: <strong>Jun 28</strong></span>
+      </div>
+      <div class="prog-wrap"><div class="prog-fill" style="width:72%;background:var(--blue);"></div></div>
+      <div class="proj-footer">
+        <div class="avatars">
+          <div class="av">AP</div><div class="av">MR</div><div class="av">LT</div><div class="av">+3</div>
+        </div>
+        <span class="proj-date">72% complete</span>
+      </div>
+    </div>
+
+    <div class="proj">
+      <div class="proj-top">
+        <div class="proj-dot" style="background:var(--blue);"></div>
+        <div class="proj-name">Bucătărie Completă · Timișoara</div>
+        <span class="proj-badge b-active">Active</span>
+      </div>
+      <div class="proj-meta">
+        <span class="proj-m">PM: <strong>Elena M.</strong></span>
+        <span class="proj-m">Value: <strong>€24,200</strong></span>
+        <span class="proj-m">Due: <strong>Jul 15</strong></span>
+      </div>
+      <div class="prog-wrap"><div class="prog-fill" style="width:45%;background:var(--blue);"></div></div>
+      <div class="proj-footer">
+        <div class="avatars">
+          <div class="av">EM</div><div class="av">RC</div><div class="av">+4</div>
+        </div>
+        <span class="proj-date">45% complete</span>
+      </div>
+    </div>
+
+    <div class="proj">
+      <div class="proj-top">
+        <div class="proj-dot" style="background:var(--amber);"></div>
+        <div class="proj-name">Baie Modernă · București Floreasca</div>
+        <span class="proj-badge b-review">Review</span>
+      </div>
+      <div class="proj-meta">
+        <span class="proj-m">PM: <strong>Radu D.</strong></span>
+        <span class="proj-m">Value: <strong>€12,800</strong></span>
+        <span class="proj-m">Due: <strong>Jun 20</strong></span>
+      </div>
+      <div class="prog-wrap"><div class="prog-fill" style="width:90%;background:var(--amber);"></div></div>
+      <div class="proj-footer">
+        <div class="avatars">
+          <div class="av">RD</div><div class="av">IN</div>
+        </div>
+        <span class="proj-date">90% · awaiting sign-off</span>
+      </div>
+    </div>
+
+    <div class="proj">
+      <div class="proj-top">
+        <div class="proj-dot" style="background:var(--blue);"></div>
+        <div class="proj-name">Spațiu Comercial · Brașov</div>
+        <span class="proj-badge b-active">Active</span>
+      </div>
+      <div class="proj-meta">
+        <span class="proj-m">PM: <strong>Vlad N.</strong></span>
+        <span class="proj-m">Value: <strong>€67,000</strong></span>
+        <span class="proj-m">Due: <strong>Aug 30</strong></span>
+      </div>
+      <div class="prog-wrap"><div class="prog-fill" style="width:28%;background:var(--blue);"></div></div>
+      <div class="proj-footer">
+        <div class="avatars">
+          <div class="av">VN</div><div class="av">TM</div><div class="av">+8</div>
+        </div>
+        <span class="proj-date">28% complete</span>
+      </div>
+    </div>
+
+    <div class="proj">
+      <div class="proj-top">
+        <div class="proj-dot" style="background:var(--green);"></div>
+        <div class="proj-name">Pardoseli · Iași Copou</div>
+        <span class="proj-badge b-done">Done</span>
+      </div>
+      <div class="proj-meta">
+        <span class="proj-m">PM: <strong>Maria I.</strong></span>
+        <span class="proj-m">Value: <strong>€9,600</strong></span>
+        <span class="proj-m">Closed: <strong>Jun 3</strong></span>
+      </div>
+      <div class="prog-wrap"><div class="prog-fill" style="width:100%;background:var(--green);"></div></div>
+      <div class="proj-footer">
+        <div class="avatars">
+          <div class="av">MI</div><div class="av">DD</div>
+        </div>
+        <span class="proj-date" style="color:var(--green)">Completed ✓</span>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="sep"></div>
+
+  <!-- ══ VIEW B: Project Detail ══ -->
+  <div class="view-label">View B — Project Detail (Bottom Sheet / Drill-down)</div>
+
+  <!-- Hero card -->
+  <div class="detail-hero">
+    <div class="detail-title">Renovare Apartament · Cluj Mănăștur</div>
+    <div class="detail-meta">
+      <span class="d-chip b-active">Active</span>
+      <span class="d-chip" style="background:var(--g2);color:var(--t3);">Renovation</span>
+      <span class="d-chip" style="background:var(--g2);color:var(--t3);">Cluj</span>
+    </div>
+    <div class="prog-wrap" style="height:7px;border-radius:4px;margin-bottom:14px;">
+      <div class="prog-fill" style="width:72%;background:linear-gradient(90deg,rgba(10,132,255,0.9),rgba(10,132,255,0.5));"></div>
+    </div>
+    <div class="detail-val-row">
+      <div class="dv"><div class="dv-v">€18,400</div><div class="dv-l">Value</div></div>
+      <div class="dv"><div class="dv-v">72%</div><div class="dv-l">Progress</div></div>
+      <div class="dv"><div class="dv-v">Jun 28</div><div class="dv-l">Deadline</div></div>
+      <div class="dv"><div class="dv-v">6</div><div class="dv-l">Workers</div></div>
+    </div>
+  </div>
+
+  <!-- Phases -->
+  <div class="lbl">Project Phases</div>
+  <div class="card">
+    <div class="phase">
+      <div class="phase-num ph-done">1</div>
+      <div class="phase-info">
+        <div class="phase-name">Demolition & Prep</div>
+        <div class="phase-dates">May 12 – May 18</div>
+      </div>
+      <div class="phase-right">
+        <div class="phase-pct" style="color:var(--green);">100%</div>
+      </div>
+    </div>
+    <div class="phase">
+      <div class="phase-num ph-done">2</div>
+      <div class="phase-info">
+        <div class="phase-name">Electrical & Plumbing</div>
+        <div class="phase-dates">May 19 – Jun 2</div>
+      </div>
+      <div class="phase-right">
+        <div class="phase-pct" style="color:var(--green);">100%</div>
+      </div>
+    </div>
+    <div class="phase">
+      <div class="phase-num ph-active">3</div>
+      <div class="phase-info">
+        <div class="phase-name">Finishes & Tiling</div>
+        <div class="phase-dates">Jun 3 – Jun 22 · Active</div>
+      </div>
+      <div class="phase-right">
+        <div class="phase-pct" style="color:var(--blue);">58%</div>
+      </div>
+    </div>
+    <div class="phase">
+      <div class="phase-num ph-pending">4</div>
+      <div class="phase-info">
+        <div class="phase-name">Painting & Fixtures</div>
+        <div class="phase-dates">Jun 23 – Jun 27</div>
+      </div>
+      <div class="phase-right">
+        <div class="phase-pct" style="color:var(--t3);">0%</div>
+      </div>
+    </div>
+    <div class="phase">
+      <div class="phase-num ph-pending">5</div>
+      <div class="phase-info">
+        <div class="phase-name">Client Handover</div>
+        <div class="phase-dates">Jun 28</div>
+      </div>
+      <div class="phase-right">
+        <div class="phase-pct" style="color:var(--t3);">0%</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Team -->
+  <div class="lbl">Team</div>
+  <div class="card">
+    <div class="team-row">
+      <div class="team-av">AP</div>
+      <div>
+        <div class="team-name">Andrei Popescu</div>
+        <div class="team-role">Project Manager</div>
+      </div>
+      <div class="team-status" style="color:var(--green);">On Site</div>
+    </div>
+    <div class="team-row">
+      <div class="team-av">MR</div>
+      <div>
+        <div class="team-name">Marius Roșu</div>
+        <div class="team-role">Site Supervisor</div>
+      </div>
+      <div class="team-status" style="color:var(--green);">On Site</div>
+    </div>
+    <div class="team-row">
+      <div class="team-av">LT</div>
+      <div>
+        <div class="team-name">Liviu Toma</div>
+        <div class="team-role">Tile Specialist</div>
+      </div>
+      <div class="team-status" style="color:var(--green);">On Site</div>
+    </div>
+    <div class="team-row">
+      <div class="team-av">DP</div>
+      <div>
+        <div class="team-name">Dan Pop</div>
+        <div class="team-role">Electrician</div>
+      </div>
+      <div class="team-status" style="color:var(--amber);">En Route</div>
+    </div>
+    <div class="team-row">
+      <div class="team-av">IC</div>
+      <div>
+        <div class="team-name">Ion Crișan</div>
+        <div class="team-role">Plumber</div>
+      </div>
+      <div class="team-status" style="color:var(--t3);">Off Shift</div>
+    </div>
+  </div>
+
+  <!-- Financials -->
+  <div class="lbl">Financials</div>
+  <div class="card">
+    <div class="fin-row">
+      <div class="fin-label">Estimated</div>
+      <div class="fin-bar-col"><div class="fin-bar-bg"><div class="fin-bar-fill" style="width:100%;background:rgba(255,255,255,0.25);"></div></div></div>
+      <div class="fin-val">€18,400</div>
+    </div>
+    <div class="fin-row">
+      <div class="fin-label">Actual Spent</div>
+      <div class="fin-bar-col"><div class="fin-bar-bg"><div class="fin-bar-fill" style="width:71%;background:rgba(10,132,255,0.70);"></div></div></div>
+      <div class="fin-val" style="color:var(--blue);">€13,080</div>
+    </div>
+    <div class="fin-row">
+      <div class="fin-label">Invoiced</div>
+      <div class="fin-bar-col"><div class="fin-bar-bg"><div class="fin-bar-fill" style="width:54%;background:rgba(48,209,88,0.65);"></div></div></div>
+      <div class="fin-val" style="color:var(--green);">€9,800</div>
+    </div>
+    <div class="fin-row">
+      <div class="fin-label">Remaining</div>
+      <div class="fin-bar-col"><div class="fin-bar-bg"><div class="fin-bar-fill" style="width:29%;background:rgba(255,159,10,0.65);"></div></div></div>
+      <div class="fin-val" style="color:var(--amber);">€5,320</div>
+    </div>
+  </div>
+
+</div><!-- /frame -->
+
+<!-- Floating Tab Bar — Operations active -->
+<div class="tabbar">
+  <div class="tab">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="6" height="6" rx="1"/><path d="M9 9V6a3 3 0 1 0-3 3h3"/><path d="M15 9h3a3 3 0 1 0-3-3v3"/><path d="M9 15H6a3 3 0 1 0 3 3v-3"/><path d="M15 15v3a3 3 0 1 0 3-3h-3"/></svg>
+    Command
+  </div>
+  <div class="tab on">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+    Operations
+  </div>
+  <div class="tab">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="3"/><path d="M3 20v-1a6 6 0 0 1 6-6"/><circle cx="17" cy="9" r="2.5"/><path d="M13 20v-1a4 4 0 0 1 4-4h0a4 4 0 0 1 4 4v1"/></svg>
+    People
+  </div>
+  <div class="tab">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18"/><path d="M5 20V10l4-4 4 4 4-6v16"/></svg>
+    Finance
+  </div>
+  <div class="tab">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a6 6 0 0 1 6 6c0 2.5-1.5 4.7-3.7 5.7L14 16H10l-.3-2.3A6.01 6.01 0 0 1 6 8a6 6 0 0 1 6-6z"/><path d="M10 19h4"/><path d="M11 22h2"/></svg>
+    Intelligence
+  </div>
+</div>
+
+</body>
+</html>
