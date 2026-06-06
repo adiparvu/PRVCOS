@@ -190,6 +190,9 @@ export type { GlassNumberStepperProps } from "./glass-number-stepper"
 export { GlassOTPInput } from "./glass-otp-input"
 export type { GlassOTPInputProps } from "./glass-otp-input"
 
+export { GlassColorPicker } from "./glass-color-picker"
+export type { GlassColorPickerProps } from "./glass-color-picker"
+
 export {
   ActionSheet,
   ConfirmationSheet,
