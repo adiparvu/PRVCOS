@@ -84,11 +84,13 @@ const ORDERS: PurchaseOrder[] = [
 
 const FILTERS: FilterType[] = ["All", "Pending", "Approved", "Received"]
 
-const g1 = "rgba(255,255,255,0.06)"
-const g2 = "rgba(255,255,255,0.10)"
-const bds = "rgba(255,255,255,0.07)"
-const t2 = "rgba(255,255,255,0.65)"
-const t3 = "rgba(255,255,255,0.35)"
+const g1  = "var(--prv-g1)"
+const g2  = "var(--prv-g2)"
+const bds = "var(--prv-border-subtle)"
+const bd  = "var(--prv-border)"
+const t1  = "var(--prv-text-1)"
+const t2  = "var(--prv-text-2)"
+const t3  = "var(--prv-text-3)"
 const green = "rgba(48,209,88,0.95)"
 const red = "rgba(255,69,58,0.95)"
 const amber = "rgba(255,159,10,0.95)"
@@ -104,14 +106,14 @@ const card: React.CSSProperties = {
 }
 
 function TopEdge() {
-  return <div style={{ position: "absolute", inset: "0 0 auto", height: 1, background: "linear-gradient(90deg,transparent,rgba(255,255,255,0.09),transparent)" }} />
+  return <div style={{ position: "absolute", inset: "0 0 auto", height: 1, background: "linear-gradient(90deg,transparent,var(--prv-border),transparent)" }} />
 }
 
 function StatusPill({ status }: { status: POStatus }) {
   const styles: Record<POStatus, React.CSSProperties> = {
     Approved: { background: "rgba(48,209,88,0.13)", color: green },
     Pending: { background: "rgba(255,159,10,0.13)", color: amber },
-    Draft: { background: "rgba(255,255,255,0.08)", color: t2 },
+    Draft: { background: "var(--prv-border)", color: t2 },
     Rejected: { background: "rgba(255,69,58,0.12)", color: red },
     "In Transit": { background: "rgba(10,132,255,0.12)", color: blue },
   }
@@ -142,8 +144,8 @@ function POIcon({ status }: { status: POStatus }) {
       </div>
     )
   return (
-    <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(255,255,255,0.06)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.35)" strokeWidth="1.8" strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
+    <div style={{ width: 36, height: 36, borderRadius: 10, background: "var(--prv-g1)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--prv-text-3)" strokeWidth="1.8" strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
     </div>
   )
 }
@@ -179,7 +181,7 @@ export function ProcurementWorkspace() {
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 16 }}>
           <div>
             <p style={{ fontSize: 13, color: t3, marginBottom: 2 }}>Purchase Order</p>
-            <h1 style={{ fontSize: 22, fontWeight: 700, color: "rgba(255,255,255,0.95)" }}>{po.ref}</h1>
+            <h1 style={{ fontSize: 22, fontWeight: 700, color: "var(--prv-text-1)" }}>{po.ref}</h1>
           </div>
           <StatusPill status={resolvedStatus} />
         </div>
@@ -193,7 +195,7 @@ export function ProcurementWorkspace() {
               {po.supplier.slice(0, 2).toUpperCase()}
             </div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 15, fontWeight: 700, color: "rgba(255,255,255,0.95)" }}>{po.supplier}</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: "var(--prv-text-1)" }}>{po.supplier}</div>
               <div style={{ fontSize: 12, color: t3, marginTop: 2 }}>4.8 ★ · 24 orders · 3–5 days lead time</div>
             </div>
           </div>
@@ -212,7 +214,7 @@ export function ProcurementWorkspace() {
           ].map((row, i, arr) => (
             <div key={row.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "11px 16px", borderBottom: i < arr.length - 1 ? `1px solid ${bds}` : "none" }}>
               <span style={{ fontSize: 13, color: t2 }}>{row.label}</span>
-              <span style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.95)" }}>{row.val}</span>
+              <span style={{ fontSize: 13, fontWeight: 600, color: "var(--prv-text-1)" }}>{row.val}</span>
             </div>
           ))}
         </div>
@@ -224,16 +226,16 @@ export function ProcurementWorkspace() {
           {po.items.map((item, i) => (
             <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 16px", borderBottom: `1px solid ${bds}` }}>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.95)" }}>{item.name}</div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: "var(--prv-text-1)" }}>{item.name}</div>
                 <div style={{ fontSize: 11, color: t3, marginTop: 2 }}>{item.ref}</div>
               </div>
               <div style={{ fontSize: 12, color: t3, width: 52, textAlign: "center" }}>{item.qty}</div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.95)", width: 60, textAlign: "right" }}>€{item.price.toLocaleString()}</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "var(--prv-text-1)", width: 60, textAlign: "right" }}>€{item.price.toLocaleString()}</div>
             </div>
           ))}
-          <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 16px", background: "rgba(255,255,255,0.03)" }}>
-            <span style={{ fontSize: 14, fontWeight: 700, color: "rgba(255,255,255,0.95)" }}>Total</span>
-            <span style={{ fontSize: 16, fontWeight: 700, color: "rgba(255,255,255,0.95)" }}>€{total.toLocaleString()}</span>
+          <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 16px", background: "var(--prv-border-subtle)" }}>
+            <span style={{ fontSize: 14, fontWeight: 700, color: "var(--prv-text-1)" }}>Total</span>
+            <span style={{ fontSize: 16, fontWeight: 700, color: "var(--prv-text-1)" }}>€{total.toLocaleString()}</span>
           </div>
         </div>
 
@@ -274,7 +276,7 @@ export function ProcurementWorkspace() {
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 }}>
         <div>
           <p style={{ fontSize: 13, color: t3, marginBottom: 2 }}>Operations</p>
-          <h1 style={{ fontSize: 26, fontWeight: 700, letterSpacing: "-0.02em", color: "rgba(255,255,255,0.95)" }}>Procurement</h1>
+          <h1 style={{ fontSize: 26, fontWeight: 700, letterSpacing: "-0.02em", color: "var(--prv-text-1)" }}>Procurement</h1>
         </div>
         <div style={{ padding: "6px 12px", borderRadius: 10, background: g1, border: `1px solid ${bds}`, fontSize: 12, fontWeight: 500, color: t2 }}>
           {monthLabel}
@@ -290,7 +292,7 @@ export function ProcurementWorkspace() {
           { val: "94%", label: "On Budget", color: green },
         ].map(k => (
           <div key={k.label} style={{ padding: "12px 8px", borderRadius: 14, background: g1, border: `1px solid ${bds}`, textAlign: "center" }}>
-            <div style={{ fontSize: 17, fontWeight: 700, color: k.color ?? "rgba(255,255,255,0.95)" }}>{k.val}</div>
+            <div style={{ fontSize: 17, fontWeight: 700, color: k.color ?? "var(--prv-text-1)" }}>{k.val}</div>
             <div style={{ fontSize: 10, fontWeight: 600, color: t3, textTransform: "uppercase", letterSpacing: "0.06em", marginTop: 3 }}>{k.label}</div>
           </div>
         ))}
@@ -302,9 +304,9 @@ export function ProcurementWorkspace() {
         <div style={{ padding: "14px 16px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12, fontWeight: 600, color: t2, marginBottom: 8 }}>
             <span>Monthly Budget</span>
-            <span style={{ color: "rgba(255,255,255,0.95)", fontWeight: 700 }}>€84,200 / €90,000</span>
+            <span style={{ color: "var(--prv-text-1)", fontWeight: 700 }}>€84,200 / €90,000</span>
           </div>
-          <div style={{ height: 8, background: "rgba(255,255,255,0.08)", borderRadius: 4, overflow: "hidden", marginBottom: 6 }}>
+          <div style={{ height: 8, background: "var(--prv-border)", borderRadius: 4, overflow: "hidden", marginBottom: 6 }}>
             <div style={{ width: "93.5%", height: "100%", borderRadius: 4, background: "linear-gradient(90deg,rgba(48,209,88,0.6),rgba(255,159,10,0.7))" }} />
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: t3 }}>
@@ -330,7 +332,7 @@ export function ProcurementWorkspace() {
       {/* Filter */}
       <div style={{ display: "flex", gap: 4, padding: 4, background: g1, border: `1px solid ${bds}`, borderRadius: 12, marginBottom: 14 }}>
         {FILTERS.map(f => (
-          <button key={f} onClick={() => setFilter(f)} style={{ flex: 1, padding: "6px 0", borderRadius: 8, fontSize: 12, fontWeight: 600, color: filter === f ? "rgba(255,255,255,0.95)" : t3, background: filter === f ? g2 : "transparent", border: "none", cursor: "pointer", transition: "all 0.15s" }}>
+          <button key={f} onClick={() => setFilter(f)} style={{ flex: 1, padding: "6px 0", borderRadius: 8, fontSize: 12, fontWeight: 600, color: filter === f ? "var(--prv-text-1)" : t3, background: filter === f ? g2 : "transparent", border: "none", cursor: "pointer", transition: "all 0.15s" }}>
             {f}
           </button>
         ))}
@@ -343,11 +345,11 @@ export function ProcurementWorkspace() {
           <button key={po.id} onClick={() => setSelected(po)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", borderBottom: i < filtered.length - 1 ? `1px solid ${bds}` : "none", width: "100%", background: "none", border: "none", cursor: "pointer", textAlign: "left" }}>
             <POIcon status={decided[po.id] ?? po.status} />
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: "rgba(255,255,255,0.95)" }}>{po.ref}</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "var(--prv-text-1)" }}>{po.ref}</div>
               <div style={{ fontSize: 12, color: t3, marginTop: 2 }}>{po.description} · {po.supplier} · {po.date}</div>
             </div>
             <div style={{ textAlign: "right", flexShrink: 0 }}>
-              <div style={{ fontSize: 15, fontWeight: 700, color: "rgba(255,255,255,0.95)", marginBottom: 4 }}>€{po.amount.toLocaleString()}</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: "var(--prv-text-1)", marginBottom: 4 }}>€{po.amount.toLocaleString()}</div>
               <StatusPill status={decided[po.id] ?? po.status} />
             </div>
           </button>

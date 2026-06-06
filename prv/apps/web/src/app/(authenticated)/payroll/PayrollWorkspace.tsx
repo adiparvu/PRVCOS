@@ -50,12 +50,12 @@ const CHART_MONTHS = [
 
 const FILTERS: FilterType[] = ["All Runs", "Weekly", "Monthly", "Special"]
 
-const g1 = "rgba(255,255,255,0.06)"
-const g2 = "rgba(255,255,255,0.10)"
-const bds = "rgba(255,255,255,0.07)"
-const bd = "rgba(255,255,255,0.12)"
-const t2 = "rgba(255,255,255,0.65)"
-const t3 = "rgba(255,255,255,0.35)"
+const g1 = "var(--prv-g1)"
+const g2 = "var(--prv-g2)"
+const bds = "var(--prv-border-subtle)"
+const bd = "var(--prv-border)"
+const t2 = "var(--prv-text-2)"
+const t3 = "var(--prv-text-3)"
 const green = "rgba(48,209,88,0.95)"
 const red = "rgba(255,69,58,0.95)"
 const amber = "rgba(255,159,10,0.95)"
@@ -112,7 +112,7 @@ function RunIcon({ status }: { status: RunStatus }) {
 
 function TopEdge() {
   return (
-    <div style={{ position: "absolute", inset: "0 0 auto", height: 1, background: "linear-gradient(90deg,transparent,rgba(255,255,255,0.09),transparent)" }} />
+    <div style={{ position: "absolute", inset: "0 0 auto", height: 1, background: "linear-gradient(90deg,transparent,var(--prv-border),transparent)" }} />
   )
 }
 
@@ -142,7 +142,7 @@ export function PayrollWorkspace() {
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 }}>
           <div>
             <p style={{ fontSize: 13, color: t3, marginBottom: 2 }}>Run Detail</p>
-            <h1 style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.02em", color: "rgba(255,255,255,0.95)" }}>
+            <h1 style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.02em", color: "var(--prv-text-1)" }}>
               {selectedRun.title.split(" — ")[0]}
             </h1>
             <p style={{ fontSize: 13, color: t2, marginTop: 4 }}>{selectedRun.subtitle}</p>
@@ -163,7 +163,7 @@ export function PayrollWorkspace() {
           ].map((row, i, arr) => (
             <div key={row.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", borderBottom: i < arr.length - 1 ? `1px solid ${bds}` : "none" }}>
               <span style={{ fontSize: 13, color: t2 }}>{row.label}</span>
-              <span style={{ fontSize: 14, fontWeight: 700, color: row.valColor ?? "rgba(255,255,255,0.95)" }}>{row.val}</span>
+              <span style={{ fontSize: 14, fontWeight: 700, color: row.valColor ?? "var(--prv-text-1)" }}>{row.val}</span>
             </div>
           ))}
         </div>
@@ -178,7 +178,7 @@ export function PayrollWorkspace() {
                 {emp.initials}
               </div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.95)" }}>{emp.name}</div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: "var(--prv-text-1)" }}>{emp.name}</div>
                 <div style={{ fontSize: 12, color: t3, marginTop: 1 }}>{emp.role} · {emp.location}</div>
               </div>
               <div style={{ textAlign: "right" }}>
@@ -202,7 +202,7 @@ export function PayrollWorkspace() {
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 }}>
         <div>
           <p style={{ fontSize: 13, color: t3, marginBottom: 2 }}>People</p>
-          <h1 style={{ fontSize: 26, fontWeight: 700, letterSpacing: "-0.02em", color: "rgba(255,255,255,0.95)" }}>Payroll</h1>
+          <h1 style={{ fontSize: 26, fontWeight: 700, letterSpacing: "-0.02em", color: "var(--prv-text-1)" }}>Payroll</h1>
         </div>
         <div style={{ padding: "6px 12px", borderRadius: 10, background: g1, border: `1px solid ${bds}`, fontSize: 12, fontWeight: 500, color: t2 }}>
           {monthLabel}
@@ -218,7 +218,7 @@ export function PayrollWorkspace() {
           { val: "€312K", label: "YTD Cost", color: undefined },
         ].map(k => (
           <div key={k.label} style={{ padding: "12px 8px", borderRadius: 14, background: g1, border: `1px solid ${bds}`, textAlign: "center" }}>
-            <div style={{ fontSize: 17, fontWeight: 700, color: k.color ?? "rgba(255,255,255,0.95)" }}>{k.val}</div>
+            <div style={{ fontSize: 17, fontWeight: 700, color: k.color ?? "var(--prv-text-1)" }}>{k.val}</div>
             <div style={{ fontSize: 10, fontWeight: 600, color: t3, textTransform: "uppercase", letterSpacing: "0.06em", marginTop: 3 }}>{k.label}</div>
           </div>
         ))}
@@ -230,7 +230,7 @@ export function PayrollWorkspace() {
         <p style={{ fontSize: 11, fontWeight: 600, color: t3, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 12 }}>Monthly Payroll Cost</p>
         <div style={{ display: "flex", alignItems: "flex-end", gap: 5, height: 60, marginBottom: 8 }}>
           {CHART_MONTHS.map(m => (
-            <div key={m.label} style={{ flex: 1, borderRadius: "3px 3px 0 0", height: `${m.height}%`, background: m.height === 100 ? "rgba(255,255,255,0.60)" : "rgba(255,255,255,0.20)" }} />
+            <div key={m.label} style={{ flex: 1, borderRadius: "3px 3px 0 0", height: `${m.height}%`, background: m.height === 100 ? "var(--prv-text-2)" : "var(--prv-text-3)" }} />
           ))}
         </div>
         <div style={{ display: "flex", gap: 5 }}>
@@ -246,7 +246,7 @@ export function PayrollWorkspace() {
           <button
             key={f}
             onClick={() => setFilter(f)}
-            style={{ flex: 1, padding: "6px 0", borderRadius: 8, fontSize: 12, fontWeight: 600, color: filter === f ? "rgba(255,255,255,0.95)" : t3, background: filter === f ? g2 : "transparent", border: "none", cursor: "pointer", transition: "all 0.15s" }}
+            style={{ flex: 1, padding: "6px 0", borderRadius: 8, fontSize: 12, fontWeight: 600, color: filter === f ? "var(--prv-text-1)" : t3, background: filter === f ? g2 : "transparent", border: "none", cursor: "pointer", transition: "all 0.15s" }}
           >
             {f}
           </button>
@@ -267,11 +267,11 @@ export function PayrollWorkspace() {
             >
               <RunIcon status={run.status} />
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: "rgba(255,255,255,0.95)" }}>{run.title}</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "var(--prv-text-1)" }}>{run.title}</div>
                 <div style={{ fontSize: 12, color: t3, marginTop: 2 }}>{run.subtitle}</div>
               </div>
               <div style={{ textAlign: "right", flexShrink: 0 }}>
-                <div style={{ fontSize: 15, fontWeight: 700, color: "rgba(255,255,255,0.95)", marginBottom: 4 }}>€{run.amount.toLocaleString()}</div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: "var(--prv-text-1)", marginBottom: 4 }}>€{run.amount.toLocaleString()}</div>
                 <StatusPill status={run.status} />
               </div>
             </button>

@@ -84,11 +84,13 @@ const CATEGORIES = [
   { label: "FAQs", count: 94, bg: "rgba(255,159,10,0.10)", stroke: "rgba(255,159,10,0.9)" },
 ]
 
-const g1 = "rgba(255,255,255,0.06)"
-const g2 = "rgba(255,255,255,0.10)"
-const bds = "rgba(255,255,255,0.07)"
-const t2 = "rgba(255,255,255,0.65)"
-const t3 = "rgba(255,255,255,0.35)"
+const g1  = "var(--prv-g1)"
+const g2  = "var(--prv-g2)"
+const bds = "var(--prv-border-subtle)"
+const bd  = "var(--prv-border)"
+const t1  = "var(--prv-text-1)"
+const t2  = "var(--prv-text-2)"
+const t3  = "var(--prv-text-3)"
 const green = "rgba(48,209,88,0.95)"
 
 const card: React.CSSProperties = {
@@ -101,7 +103,7 @@ const card: React.CSSProperties = {
 }
 
 function TopEdge() {
-  return <div style={{ position: "absolute", inset: "0 0 auto", height: 1, background: "linear-gradient(90deg,transparent,rgba(255,255,255,0.09),transparent)" }} />
+  return <div style={{ position: "absolute", inset: "0 0 auto", height: 1, background: "linear-gradient(90deg,transparent,var(--prv-border),transparent)" }} />
 }
 
 function TypePill({ type }: { type: ArticleType }) {
@@ -165,7 +167,7 @@ export function KnowledgeWorkspace() {
             <TypePill type={art.type} />
             <span style={{ fontSize: 11, color: t3 }}>{art.category} · {art.readMin} min read</span>
           </div>
-          <h1 style={{ fontSize: 22, fontWeight: 800, lineHeight: 1.2, letterSpacing: "-0.01em", color: "rgba(255,255,255,0.95)", marginBottom: 8 }}>{art.title}</h1>
+          <h1 style={{ fontSize: 22, fontWeight: 800, lineHeight: 1.2, letterSpacing: "-0.01em", color: "var(--prv-text-1)", marginBottom: 8 }}>{art.title}</h1>
           <p style={{ fontSize: 12, color: t3 }}>Last updated {art.updated}, 2026 · by {art.author}{art.version ? ` · ${art.version}` : ""}</p>
         </div>
 
@@ -176,7 +178,7 @@ export function KnowledgeWorkspace() {
           {art.toc.map((item, i) => (
             <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 16px", borderBottom: i < art.toc.length - 1 ? `1px solid ${bds}` : "none" }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: t3, width: 20 }}>{i + 1}</div>
-              <div style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.95)" }}>{item}</div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--prv-text-1)" }}>{item}</div>
             </div>
           ))}
         </div>
@@ -187,25 +189,25 @@ export function KnowledgeWorkspace() {
           <TopEdge />
           {art.toc.slice(0, 2).map((section, si) => (
             <div key={si}>
-              <div style={{ fontSize: 15, fontWeight: 700, color: "rgba(255,255,255,0.95)", margin: si > 0 ? "18px 0 10px" : "0 0 10px" }}>{si + 1}. {section}</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: "var(--prv-text-1)", margin: si > 0 ? "18px 0 10px" : "0 0 10px" }}>{si + 1}. {section}</div>
               {si === 1 && art.checklist ? (
                 <div style={{ display: "flex", flexDirection: "column", gap: 7, marginBottom: 8 }}>
                   {art.checklist.map((item, idx) => {
                     const done = isChecked(art, idx)
                     return (
-                      <button key={idx} onClick={() => toggleCheck(art.id, idx)} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", borderRadius: 10, background: done ? "rgba(48,209,88,0.07)" : "rgba(255,255,255,0.04)", border: `1px solid ${done ? "rgba(48,209,88,0.12)" : bds}`, cursor: "pointer", textAlign: "left", width: "100%" }}>
+                      <button key={idx} onClick={() => toggleCheck(art.id, idx)} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", borderRadius: 10, background: done ? "rgba(48,209,88,0.07)" : "var(--prv-border-subtle)", border: `1px solid ${done ? "rgba(48,209,88,0.12)" : bds}`, cursor: "pointer", textAlign: "left", width: "100%" }}>
                         {done
                           ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(48,209,88,0.85)" strokeWidth="2.2" strokeLinecap="round"><polyline points="20 6 9 17 4 12" /></svg>
                           : <div style={{ width: 14, height: 14, borderRadius: 3, border: `1.5px solid ${bds}` }} />
                         }
-                        <span style={{ fontSize: 13, fontWeight: 600, color: done ? "rgba(255,255,255,0.95)" : t2 }}>{item.label}</span>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: done ? "var(--prv-text-1)" : t2 }}>{item.label}</span>
                       </button>
                     )
                   })}
                 </div>
               ) : (
                 [100, 90, 95, 70].slice(0, si === 0 ? 4 : 3).map((w, i) => (
-                  <div key={i} style={{ height: 9, borderRadius: 3, background: "rgba(255,255,255,0.08)", width: `${w}%`, marginBottom: 7 }} />
+                  <div key={i} style={{ height: 9, borderRadius: 3, background: "var(--prv-border)", width: `${w}%`, marginBottom: 7 }} />
                 ))
               )}
             </div>
@@ -232,7 +234,7 @@ export function KnowledgeWorkspace() {
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 }}>
         <div>
           <p style={{ fontSize: 13, color: t3, marginBottom: 2 }}>PRV OS</p>
-          <h1 style={{ fontSize: 26, fontWeight: 700, letterSpacing: "-0.02em", color: "rgba(255,255,255,0.95)" }}>Knowledge</h1>
+          <h1 style={{ fontSize: 26, fontWeight: 700, letterSpacing: "-0.02em", color: "var(--prv-text-1)" }}>Knowledge</h1>
         </div>
         <div style={{ padding: "6px 12px", borderRadius: 10, background: g1, border: `1px solid ${bds}`, fontSize: 12, fontWeight: 500, color: t2 }}>
           248 articles
@@ -241,8 +243,8 @@ export function KnowledgeWorkspace() {
 
       {/* Search */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 14px", background: g1, border: `1px solid ${bds}`, borderRadius: 14, marginBottom: 18 }}>
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.35)" strokeWidth="1.8" strokeLinecap="round"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
-        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search procedures, guides, SOPs…" style={{ flex: 1, background: "none", border: "none", outline: "none", fontSize: 15, color: "rgba(255,255,255,0.95)", fontFamily: "inherit" }} />
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--prv-text-3)" strokeWidth="1.8" strokeLinecap="round"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search procedures, guides, SOPs…" style={{ flex: 1, background: "none", border: "none", outline: "none", fontSize: 15, color: "var(--prv-text-1)", fontFamily: "inherit" }} />
         {search && <button onClick={() => setSearch("")} style={{ background: "none", border: "none", color: t3, cursor: "pointer", fontSize: 16 }}>×</button>}
       </div>
 
@@ -257,7 +259,7 @@ export function KnowledgeWorkspace() {
                 <ArticleIcon type={art.type} />
                 <div style={{ flex: 1 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 2 }}>
-                    <span style={{ fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.95)" }}>{art.title}</span>
+                    <span style={{ fontSize: 14, fontWeight: 600, color: "var(--prv-text-1)" }}>{art.title}</span>
                     <TypePill type={art.type} />
                   </div>
                   <div style={{ fontSize: 11, color: t3 }}>{art.category} · {art.readMin} min read</div>
@@ -274,13 +276,13 @@ export function KnowledgeWorkspace() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 10, marginBottom: 18 }}>
             {CATEGORIES.map(cat => (
               <div key={cat.label} style={{ padding: 16, borderRadius: 16, background: g1, border: `1px solid ${bds}`, position: "relative", overflow: "hidden", cursor: "pointer" }}>
-                <div style={{ position: "absolute", inset: "0 0 auto", height: 1, background: "linear-gradient(90deg,transparent,rgba(255,255,255,0.09),transparent)" }} />
+                <div style={{ position: "absolute", inset: "0 0 auto", height: 1, background: "linear-gradient(90deg,transparent,var(--prv-border),transparent)" }} />
                 <div style={{ width: 36, height: 36, borderRadius: 10, background: cat.bg, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 10 }}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={cat.stroke} strokeWidth="1.8" strokeLinecap="round">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" />
                   </svg>
                 </div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: "rgba(255,255,255,0.95)", marginBottom: 3 }}>{cat.label}</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "var(--prv-text-1)", marginBottom: 3 }}>{cat.label}</div>
                 <div style={{ fontSize: 11, color: t3 }}>{cat.count} {cat.label === "FAQs" ? "answers" : cat.label === "Onboarding" ? "guides" : "documents"}</div>
               </div>
             ))}
@@ -295,7 +297,7 @@ export function KnowledgeWorkspace() {
                 <ArticleIcon type={art.type} />
                 <div style={{ flex: 1 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 2 }}>
-                    <span style={{ fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.95)" }}>{art.title}</span>
+                    <span style={{ fontSize: 14, fontWeight: 600, color: "var(--prv-text-1)" }}>{art.title}</span>
                     <TypePill type={art.type} />
                   </div>
                   <div style={{ fontSize: 11, color: t3 }}>{art.category} · Updated {art.updated} · {art.readMin} min read</div>
@@ -312,7 +314,7 @@ export function KnowledgeWorkspace() {
               <button key={art.id} onClick={() => setSelected(art)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", borderBottom: i < POPULAR.length - 1 ? `1px solid ${bds}` : "none", width: "100%", background: "none", border: "none", cursor: "pointer", textAlign: "left" }}>
                 <div style={{ width: 28, textAlign: "center", fontSize: 16, fontWeight: 800, color: t3, flexShrink: 0 }}>{i + 1}</div>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.95)" }}>{art.title}</div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: "var(--prv-text-1)" }}>{art.title}</div>
                   <div style={{ fontSize: 11, color: t3, marginTop: 2 }}>{art.category} · <span style={{ color: green }}>{art.views?.toLocaleString()} views</span></div>
                 </div>
                 <TypePill type={art.type} />

@@ -43,7 +43,7 @@ const TIMELINE: TimelineEvent[] = [
   { time: "10:45", label: "Break End", sub: "Resumed work", color: "rgba(48,209,88,0.95)" },
   { time: "12:00", label: "Lunch Break", sub: "57 min · Off-site", color: "rgba(255,159,10,0.95)" },
   { time: "12:57", label: "Resumed", sub: "Back at Cluj HQ", color: "rgba(48,209,88,0.95)" },
-  { time: "—", label: "Clock Out", sub: "Still active", color: "rgba(255,255,255,0.20)" },
+  { time: "—", label: "Clock Out", sub: "Still active", color: "var(--prv-text-3)" },
 ]
 
 const WEEK_DAYS = [
@@ -56,11 +56,13 @@ const WEEK_DAYS = [
 
 const FILTERS: FilterType[] = ["All", "Present", "Late", "Absent"]
 
-const g1 = "rgba(255,255,255,0.06)"
-const g2 = "rgba(255,255,255,0.10)"
-const bds = "rgba(255,255,255,0.07)"
-const t2 = "rgba(255,255,255,0.65)"
-const t3 = "rgba(255,255,255,0.35)"
+const g1  = "var(--prv-g1)"
+const g2  = "var(--prv-g2)"
+const bds = "var(--prv-border-subtle)"
+const bd  = "var(--prv-border)"
+const t1  = "var(--prv-text-1)"
+const t2  = "var(--prv-text-2)"
+const t3  = "var(--prv-text-3)"
 const green = "rgba(48,209,88,0.95)"
 const red = "rgba(255,69,58,0.95)"
 const amber = "rgba(255,159,10,0.95)"
@@ -76,7 +78,7 @@ const card: React.CSSProperties = {
 }
 
 function TopEdge() {
-  return <div style={{ position: "absolute", inset: "0 0 auto", height: 1, background: "linear-gradient(90deg,transparent,rgba(255,255,255,0.09),transparent)" }} />
+  return <div style={{ position: "absolute", inset: "0 0 auto", height: 1, background: "linear-gradient(90deg,transparent,var(--prv-border),transparent)" }} />
 }
 
 function StatusPill({ status, clockIn, clockOut, lateMin, leaveRange }: { status: AttendanceStatus; clockIn?: string; clockOut?: string; lateMin?: number; leaveRange?: string }) {
@@ -84,7 +86,7 @@ function StatusPill({ status, clockIn, clockOut, lateMin, leaveRange }: { status
   if (status === "Late") return <span style={{ fontSize: 10, fontWeight: 600, padding: "3px 8px", borderRadius: 6, background: "rgba(255,159,10,0.13)", color: amber, whiteSpace: "nowrap" }}>{clockIn} →</span>
   if (status === "Absent") return <span style={{ fontSize: 10, fontWeight: 600, padding: "3px 8px", borderRadius: 6, background: "rgba(255,69,58,0.12)", color: red, whiteSpace: "nowrap" }}>Absent</span>
   if (status === "On Leave") return <span style={{ fontSize: 10, fontWeight: 600, padding: "3px 8px", borderRadius: 6, background: "rgba(10,132,255,0.12)", color: blue, whiteSpace: "nowrap" }}>On Leave</span>
-  return <span style={{ fontSize: 10, fontWeight: 600, padding: "3px 8px", borderRadius: 6, background: "rgba(255,255,255,0.08)", color: t2, whiteSpace: "nowrap" }}>{clockIn} – {clockOut}</span>
+  return <span style={{ fontSize: 10, fontWeight: 600, padding: "3px 8px", borderRadius: 6, background: "var(--prv-border)", color: t2, whiteSpace: "nowrap" }}>{clockIn} – {clockOut}</span>
 }
 
 function TimeBar({ status, barLeft, barWidth }: { status: AttendanceStatus; barLeft: number; barWidth: number }) {
@@ -93,10 +95,10 @@ function TimeBar({ status, barLeft, barWidth }: { status: AttendanceStatus; barL
     Late: "rgba(255,159,10,0.45)",
     Absent: "transparent",
     "On Leave": "rgba(10,132,255,0.18)",
-    "Clocked Out": "rgba(255,255,255,0.20)",
+    "Clocked Out": "var(--prv-text-3)",
   }
   return (
-    <div style={{ position: "relative", height: 6, background: "rgba(255,255,255,0.07)", borderRadius: 3, marginTop: 6, width: "100%" }}>
+    <div style={{ position: "relative", height: 6, background: "var(--prv-border-subtle)", borderRadius: 3, marginTop: 6, width: "100%" }}>
       <div style={{ position: "absolute", top: 0, left: `${barLeft}%`, width: `${barWidth}%`, height: 6, borderRadius: 3, background: colors[status] }} />
     </div>
   )
@@ -137,7 +139,7 @@ export function AttendanceWorkspace() {
             {emp.initials}
           </div>
           <div>
-            <div style={{ fontSize: 18, fontWeight: 700, color: "rgba(255,255,255,0.95)" }}>{emp.name}</div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: "var(--prv-text-1)" }}>{emp.name}</div>
             <div style={{ fontSize: 13, color: t3, marginTop: 2 }}>{emp.role} · {emp.location} · {dateLabel}</div>
           </div>
           <div style={{ marginLeft: "auto" }}>
@@ -152,7 +154,7 @@ export function AttendanceWorkspace() {
             { val: "1h 12m", label: "Breaks", color: amber },
           ].map(s => (
             <div key={s.label} style={{ padding: "12px 10px", borderRadius: 14, background: g1, border: `1px solid ${bds}`, textAlign: "center" }}>
-              <div style={{ fontSize: 18, fontWeight: 700, color: s.color ?? "rgba(255,255,255,0.95)" }}>{s.val}</div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: s.color ?? "var(--prv-text-1)" }}>{s.val}</div>
               <div style={{ fontSize: 10, fontWeight: 600, color: t3, textTransform: "uppercase", letterSpacing: "0.06em", marginTop: 3 }}>{s.label}</div>
             </div>
           ))}
@@ -166,7 +168,7 @@ export function AttendanceWorkspace() {
               <div style={{ width: 8, height: 8, borderRadius: "50%", background: ev.color, marginTop: 5, flexShrink: 0 }} />
               <div style={{ width: 46, flexShrink: 0, fontSize: 12, color: t3, marginTop: 1 }}>{ev.time}</div>
               <div>
-                <div style={{ fontSize: 13, fontWeight: 600, color: ev.time === "—" ? t3 : "rgba(255,255,255,0.95)" }}>{ev.label}</div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: ev.time === "—" ? t3 : "var(--prv-text-1)" }}>{ev.label}</div>
                 <div style={{ fontSize: 12, color: t3, marginTop: 1 }}>{ev.sub}</div>
               </div>
             </div>
@@ -186,7 +188,7 @@ export function AttendanceWorkspace() {
           </div>
           <div style={{ display: "flex", gap: 6 }}>
             {WEEK_DAYS.map(d => (
-              <div key={d.label} style={{ flex: 1, fontSize: 9, color: d.today ? "rgba(255,255,255,0.95)" : t3, textAlign: "center", fontWeight: d.today ? 700 : 400 }}>{d.label}</div>
+              <div key={d.label} style={{ flex: 1, fontSize: 9, color: d.today ? "var(--prv-text-1)" : t3, textAlign: "center", fontWeight: d.today ? 700 : 400 }}>{d.label}</div>
             ))}
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 12, paddingTop: 12, borderTop: `1px solid ${bds}` }}>
@@ -204,7 +206,7 @@ export function AttendanceWorkspace() {
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 }}>
         <div>
           <p style={{ fontSize: 13, color: t3, marginBottom: 2 }}>People</p>
-          <h1 style={{ fontSize: 26, fontWeight: 700, letterSpacing: "-0.02em", color: "rgba(255,255,255,0.95)" }}>Attendance</h1>
+          <h1 style={{ fontSize: 26, fontWeight: 700, letterSpacing: "-0.02em", color: "var(--prv-text-1)" }}>Attendance</h1>
         </div>
         <div style={{ padding: "6px 12px", borderRadius: 10, background: g1, border: `1px solid ${bds}`, fontSize: 12, fontWeight: 500, color: t2 }}>
           {dateLabel}
@@ -229,7 +231,7 @@ export function AttendanceWorkspace() {
       {/* Clock-in banner */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderRadius: 16, background: "rgba(48,209,88,0.08)", border: "1px solid rgba(48,209,88,0.15)", marginBottom: 14 }}>
         <div>
-          <div style={{ fontSize: 14, fontWeight: 700, color: "rgba(255,255,255,0.95)" }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: "var(--prv-text-1)" }}>
             {clockedIn ? "Clocked In Since 08:42" : "Not Clocked In"}
           </div>
           <div style={{ fontSize: 12, color: "rgba(48,209,88,0.75)", marginTop: 2 }}>
@@ -252,12 +254,12 @@ export function AttendanceWorkspace() {
           { name: "Wed", num: 4, dot: green, today: false },
           { name: "Thu", num: 5, dot: green, today: false },
           { name: "Fri", num: 6, dot: green, today: true },
-          { name: "Sat", num: 7, dot: "rgba(255,255,255,0.12)", today: false },
-          { name: "Sun", num: 8, dot: "rgba(255,255,255,0.12)", today: false },
+          { name: "Sat", num: 7, dot: "var(--prv-border)", today: false },
+          { name: "Sun", num: 8, dot: "var(--prv-border)", today: false },
         ].map(d => (
-          <div key={d.name} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4, padding: "8px 4px", borderRadius: 12, background: d.today ? g2 : "transparent", border: d.today ? `1px solid rgba(255,255,255,0.10)` : "1px solid transparent" }}>
-            <div style={{ fontSize: 10, fontWeight: 600, color: d.today ? "rgba(255,255,255,0.95)" : t3 }}>{d.name}</div>
-            <div style={{ fontSize: 15, fontWeight: 700, color: d.today ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.95)" }}>{d.num}</div>
+          <div key={d.name} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4, padding: "8px 4px", borderRadius: 12, background: d.today ? g2 : "transparent", border: d.today ? `1px solid var(--prv-g2)` : "1px solid transparent" }}>
+            <div style={{ fontSize: 10, fontWeight: 600, color: d.today ? "var(--prv-text-1)" : t3 }}>{d.name}</div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: d.today ? "var(--prv-text-1)" : "var(--prv-text-1)" }}>{d.num}</div>
             <div style={{ width: 5, height: 5, borderRadius: "50%", background: d.dot }} />
           </div>
         ))}
@@ -266,7 +268,7 @@ export function AttendanceWorkspace() {
       {/* Filter */}
       <div style={{ display: "flex", gap: 4, padding: 4, background: g1, border: `1px solid ${bds}`, borderRadius: 12, marginBottom: 14 }}>
         {FILTERS.map(f => (
-          <button key={f} onClick={() => setFilter(f)} style={{ flex: 1, padding: "6px 0", borderRadius: 8, fontSize: 12, fontWeight: 600, color: filter === f ? "rgba(255,255,255,0.95)" : t3, background: filter === f ? g2 : "transparent", border: "none", cursor: "pointer", transition: "all 0.15s" }}>
+          <button key={f} onClick={() => setFilter(f)} style={{ flex: 1, padding: "6px 0", borderRadius: 8, fontSize: 12, fontWeight: 600, color: filter === f ? "var(--prv-text-1)" : t3, background: filter === f ? g2 : "transparent", border: "none", cursor: "pointer", transition: "all 0.15s" }}>
             {f}
           </button>
         ))}
@@ -281,7 +283,7 @@ export function AttendanceWorkspace() {
               {emp.initials}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.95)" }}>{emp.name}</div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: "var(--prv-text-1)" }}>{emp.name}</div>
               <div style={{ fontSize: 12, color: t3, marginTop: 2 }}>{emp.role} · {emp.location}</div>
               <TimeBar status={emp.status} barLeft={emp.barLeft} barWidth={emp.barWidth} />
             </div>

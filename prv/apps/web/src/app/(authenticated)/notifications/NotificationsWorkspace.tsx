@@ -27,11 +27,13 @@ interface ModuleToggle {
   enabled: boolean
 }
 
-const g1 = "rgba(255,255,255,0.06)"
-const g2 = "rgba(255,255,255,0.10)"
-const bds = "rgba(255,255,255,0.07)"
-const t2 = "rgba(255,255,255,0.65)"
-const t3 = "rgba(255,255,255,0.35)"
+const g1  = "var(--prv-g1)"
+const g2  = "var(--prv-g2)"
+const bds = "var(--prv-border-subtle)"
+const bd  = "var(--prv-border)"
+const t1  = "var(--prv-text-1)"
+const t2  = "var(--prv-text-2)"
+const t3  = "var(--prv-text-3)"
 const green = "rgba(48,209,88,0.95)"
 const red = "rgba(255,69,58,0.95)"
 const amber = "rgba(255,159,10,0.95)"
@@ -47,7 +49,7 @@ const card: React.CSSProperties = {
 }
 
 function TopEdge() {
-  return <div style={{ position: "absolute", inset: "0 0 auto", height: 1, background: "linear-gradient(90deg,transparent,rgba(255,255,255,0.09),transparent)" }} />
+  return <div style={{ position: "absolute", inset: "0 0 auto", height: 1, background: "linear-gradient(90deg,transparent,var(--prv-border),transparent)" }} />
 }
 
 function SeverityPill({ severity }: { severity: NotifSeverity }) {
@@ -63,7 +65,7 @@ function SeverityPill({ severity }: { severity: NotifSeverity }) {
 
 function Toggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
   return (
-    <div onClick={onToggle} style={{ width: 44, height: 26, borderRadius: 13, position: "relative", cursor: "pointer", background: on ? "rgba(48,209,88,0.70)" : "rgba(255,255,255,0.15)", transition: "background 0.2s", flexShrink: 0 }}>
+    <div onClick={onToggle} style={{ width: 44, height: 26, borderRadius: 13, position: "relative", cursor: "pointer", background: on ? "rgba(48,209,88,0.70)" : "var(--prv-text-3)", transition: "background 0.2s", flexShrink: 0 }}>
       <div style={{ position: "absolute", top: 3, left: on ? 21 : 3, width: 20, height: 20, borderRadius: "50%", background: "#fff", transition: "left 0.2s", boxShadow: "0 1px 4px rgba(0,0,0,0.4)" }} />
     </div>
   )
@@ -190,7 +192,7 @@ export function NotificationsWorkspace() {
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 }}>
         <div>
           <p style={{ fontSize: 13, color: t3, marginBottom: 2 }}>PRV OS</p>
-          <h1 style={{ fontSize: 26, fontWeight: 700, letterSpacing: "-0.02em", color: "rgba(255,255,255,0.95)" }}>Notifications</h1>
+          <h1 style={{ fontSize: 26, fontWeight: 700, letterSpacing: "-0.02em", color: "var(--prv-text-1)" }}>Notifications</h1>
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           {unreadCount > 0 && (
@@ -207,7 +209,7 @@ export function NotificationsWorkspace() {
       {/* Tab toggle — Feed vs Preferences */}
       <div style={{ display: "flex", gap: 4, padding: 4, background: g1, border: `1px solid ${bds}`, borderRadius: 12, marginBottom: 14 }}>
         {(["Feed", "Preferences"] as PrefsTab[]).map(tab => (
-          <button key={tab} onClick={() => setActiveTab(tab)} style={{ flex: 1, padding: "6px 0", borderRadius: 8, fontSize: 12, fontWeight: 600, color: activeTab === tab ? "rgba(255,255,255,0.95)" : t3, background: activeTab === tab ? g2 : "transparent", border: "none", cursor: "pointer", transition: "all 0.15s" }}>
+          <button key={tab} onClick={() => setActiveTab(tab)} style={{ flex: 1, padding: "6px 0", borderRadius: 8, fontSize: 12, fontWeight: 600, color: activeTab === tab ? "var(--prv-text-1)" : t3, background: activeTab === tab ? g2 : "transparent", border: "none", cursor: "pointer", transition: "all 0.15s" }}>
             {tab}
           </button>
         ))}
@@ -220,7 +222,7 @@ export function NotificationsWorkspace() {
             {FILTERS.map(f => {
               const count = f === "All" ? unreadCount : notifications.filter(n => n.category === f && n.unread).length
               return (
-                <button key={f} onClick={() => setFilter(f)} style={{ flex: 1, padding: "6px 0", borderRadius: 8, fontSize: 12, fontWeight: 600, color: filter === f ? "rgba(255,255,255,0.95)" : t3, background: filter === f ? g2 : "transparent", border: "none", cursor: "pointer", transition: "all 0.15s", position: "relative" }}>
+                <button key={f} onClick={() => setFilter(f)} style={{ flex: 1, padding: "6px 0", borderRadius: 8, fontSize: 12, fontWeight: 600, color: filter === f ? "var(--prv-text-1)" : t3, background: filter === f ? g2 : "transparent", border: "none", cursor: "pointer", transition: "all 0.15s", position: "relative" }}>
                   {f}
                   {count > 0 && (
                     <span style={{ position: "absolute", top: -3, right: 6, width: 16, height: 16, borderRadius: "50%", background: red, color: "#fff", fontSize: 9, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{count}</span>
@@ -234,14 +236,14 @@ export function NotificationsWorkspace() {
           {todayNotifs.length > 0 && (
             <div style={card}>
               <TopEdge />
-              <div style={{ padding: "8px 16px 6px", fontSize: 11, fontWeight: 700, color: t3, textTransform: "uppercase", letterSpacing: "0.07em", borderBottom: `1px solid ${bds}`, background: "rgba(255,255,255,0.02)" }}>Today</div>
+              <div style={{ padding: "8px 16px 6px", fontSize: 11, fontWeight: 700, color: t3, textTransform: "uppercase", letterSpacing: "0.07em", borderBottom: `1px solid ${bds}`, background: "var(--prv-border-subtle)" }}>Today</div>
               {todayNotifs.map((n, i) => (
-                <div key={n.id} style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "14px 16px", borderBottom: i < todayNotifs.length - 1 ? `1px solid ${bds}` : "none", position: "relative", background: n.unread ? "rgba(255,255,255,0.025)" : "transparent" }}>
+                <div key={n.id} style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "14px 16px", borderBottom: i < todayNotifs.length - 1 ? `1px solid ${bds}` : "none", position: "relative", background: n.unread ? "var(--prv-border-subtle)" : "transparent" }}>
                   {n.unread && <div style={{ position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)", width: 3, height: "60%", borderRadius: "0 2px 2px 0", background: blue }} />}
                   <div style={{ width: 38, height: 38, borderRadius: 12, background: n.iconBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{n.icon}</div>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2, flexWrap: "wrap" }}>
-                      <div style={{ fontSize: 14, fontWeight: 600, color: n.unread ? "rgba(255,255,255,0.95)" : t2 }}>{n.title}</div>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: n.unread ? "var(--prv-text-1)" : t2 }}>{n.title}</div>
                       {n.severity && <SeverityPill severity={n.severity} />}
                     </div>
                     <div style={{ fontSize: 12, color: t2, marginTop: 3, lineHeight: 1.4 }}>{n.body}</div>
@@ -265,7 +267,7 @@ export function NotificationsWorkspace() {
           {yesterdayNotifs.length > 0 && (
             <div style={card}>
               <TopEdge />
-              <div style={{ padding: "8px 16px 6px", fontSize: 11, fontWeight: 700, color: t3, textTransform: "uppercase", letterSpacing: "0.07em", borderBottom: `1px solid ${bds}`, background: "rgba(255,255,255,0.02)" }}>Yesterday</div>
+              <div style={{ padding: "8px 16px 6px", fontSize: 11, fontWeight: 700, color: t3, textTransform: "uppercase", letterSpacing: "0.07em", borderBottom: `1px solid ${bds}`, background: "var(--prv-border-subtle)" }}>Yesterday</div>
               {yesterdayNotifs.map((n, i) => (
                 <div key={n.id} style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "14px 16px", borderBottom: i < yesterdayNotifs.length - 1 ? `1px solid ${bds}` : "none" }}>
                   <div style={{ width: 38, height: 38, borderRadius: 12, background: n.iconBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{n.icon}</div>
@@ -296,7 +298,7 @@ export function NotificationsWorkspace() {
             ].map((row, i, arr) => (
               <div key={row.label} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "13px 16px", borderBottom: i < arr.length - 1 ? `1px solid ${bds}` : "none" }}>
                 <div>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.95)" }}>{row.label}</div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: "var(--prv-text-1)" }}>{row.label}</div>
                   {row.sub && <div style={{ fontSize: 12, color: t3, marginTop: 2 }}>{row.sub}</div>}
                 </div>
                 <Toggle on={row.val} onToggle={() => row.set(v => !v)} />
@@ -309,7 +311,7 @@ export function NotificationsWorkspace() {
             <TopEdge />
             {modules.map((m, i) => (
               <div key={m.label} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "13px 16px", borderBottom: i < modules.length - 1 ? `1px solid ${bds}` : "none" }}>
-                <div style={{ fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.95)" }}>{m.label}</div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: "var(--prv-text-1)" }}>{m.label}</div>
                 <Toggle on={m.enabled} onToggle={() => toggleModule(i)} />
               </div>
             ))}
@@ -320,14 +322,14 @@ export function NotificationsWorkspace() {
             <TopEdge />
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "13px 16px", borderBottom: `1px solid ${bds}` }}>
               <div>
-                <div style={{ fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.95)" }}>Enable Quiet Hours</div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: "var(--prv-text-1)" }}>Enable Quiet Hours</div>
                 <div style={{ fontSize: 12, color: t3, marginTop: 2 }}>22:00 – 07:00</div>
               </div>
               <Toggle on={quietHours} onToggle={() => setQuietHours(v => !v)} />
             </div>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "13px 16px" }}>
               <div>
-                <div style={{ fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.95)" }}>Allow Critical Alerts</div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: "var(--prv-text-1)" }}>Allow Critical Alerts</div>
                 <div style={{ fontSize: 12, color: t3, marginTop: 2 }}>Even during quiet hours</div>
               </div>
               <Toggle on={allowCritical} onToggle={() => setAllowCritical(v => !v)} />

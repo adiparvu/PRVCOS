@@ -78,10 +78,17 @@ const HISTORY: HistoryItem[] = [
 
 // ── Style helpers ─────────────────────────────────────────────────────────────
 
+const g1  = "var(--prv-g1)"
+const bds = "var(--prv-border-subtle)"
+const t1  = "var(--prv-text-1)"
+const t2  = "var(--prv-text-2)"
+const t3  = "var(--prv-text-3)"
+
+
 const URGENCY_STYLE: Record<Urgency, { bg: string; color: string; label: string }> = {
   urgent: { bg: "rgba(255,69,58,0.15)",   color: "rgba(255,69,58,0.95)",  label: "Urgent" },
   medium: { bg: "rgba(255,159,10,0.15)",  color: "rgba(255,159,10,0.95)", label: "Medium" },
-  low:    { bg: "rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.35)",label: "Low"    },
+  low:    { bg: bds, color: t3, label: "Low" },
 }
 
 const TYPE_ICON: Record<ApprovalType, { path: string; bg: string; stroke: string }> = {
@@ -89,7 +96,7 @@ const TYPE_ICON: Record<ApprovalType, { path: string; bg: string; stroke: string
   leave:      { path: "M3 4h18v18H3ZM16 2v4M8 2v4M3 10h18",                                            bg: "rgba(255,159,10,0.12)",   stroke: "rgba(255,159,10,0.9)"  },
   invoice:    { path: "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8ZM14 2v6h6",          bg: "rgba(10,132,255,0.12)",   stroke: "rgba(10,132,255,0.9)"  },
   overtime:   { path: "M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20ZM12 6v6l4 2",                           bg: "rgba(255,159,10,0.10)",   stroke: "rgba(255,159,10,0.85)" },
-  onboarding: { path: "M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z",bg: "rgba(255,255,255,0.06)",  stroke: "rgba(255,255,255,0.45)"},
+  onboarding: { path: "M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z",bg: g1, stroke: t2},
 }
 
 const DECISION_STYLE: Record<"approved" | "rejected", { bg: string; color: string; label: string }> = {
@@ -271,7 +278,7 @@ export function ApprovalsWorkspace() {
           { v: String(pending.length),  l: "Pending",  c: "rgba(255,69,58,0.95)"   },
           { v: String(urgentCount),     l: "Urgent",   c: "rgba(255,159,10,0.95)"  },
           { v: String(approvedCount),   l: "Approved", c: "rgba(48,209,88,0.95)"   },
-          { v: String(rejectedCount),   l: "Rejected", c: "rgba(255,255,255,0.90)" },
+          { v: String(rejectedCount),   l: "Rejected", c: t1 },
         ].map(({ v, l, c }) => (
           <div key={l} className="py-3 rounded-[14px] text-center"
             style={{ background: "var(--prv-g1)", border: "1px solid var(--prv-border-subtle)" }}>
