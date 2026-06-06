@@ -307,6 +307,9 @@ export type { GlassCartLineItemProps } from "./glass-cart-line-item"
 export { GlassScheduler } from "./glass-scheduler"
 export type { GlassSchedulerProps, SchedulerDay, SchedulerShift } from "./glass-scheduler"
 
+export { GlassTimeSlotPicker } from "./glass-time-slot-picker"
+export type { GlassTimeSlotPickerProps } from "./glass-time-slot-picker"
+
 export {
   ActionSheet,
   ConfirmationSheet,
