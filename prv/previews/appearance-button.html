@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PRV — Appearance Button Preview</title>
+<style>
+  /* ── Tokens ────────────────────────────────────────────────── */
+  :root, [data-theme="dark"] {
+    --prv-bg: #000000;
+    --prv-g1: rgba(255,255,255,0.06);
+    --prv-g2: rgba(255,255,255,0.10);
+    --prv-g3: rgba(255,255,255,0.16);
+    --prv-text-1: rgba(255,255,255,0.95);
+    --prv-text-2: rgba(255,255,255,0.65);
+    --prv-text-3: rgba(255,255,255,0.35);
+    --prv-border: rgba(255,255,255,0.12);
+    --prv-border-subtle: rgba(255,255,255,0.06);
+    --prv-border-strong: rgba(255,255,255,0.28);
+    --prv-g2-spec: rgba(255,255,255,0.18);
+    --prv-shadow-e2: 0 4px 16px rgba(0,0,0,0.5);
+    --prv-shadow-e4: 0 24px 64px rgba(0,0,0,0.70), 0 8px 24px rgba(0,0,0,0.40);
+  }
+  [data-theme="light"] {
+    --prv-bg: #f2f2f7;
+    --prv-g1: rgba(255,255,255,0.72);
+    --prv-g2: rgba(255,255,255,0.80);
+    --prv-g3: rgba(255,255,255,0.92);
+    --prv-text-1: rgba(0,0,0,0.90);
+    --prv-text-2: rgba(0,0,0,0.60);
+    --prv-text-3: rgba(0,0,0,0.35);
+    --prv-border: rgba(0,0,0,0.08);
+    --prv-border-subtle: rgba(0,0,0,0.04);
+    --prv-border-strong: rgba(0,0,0,0.22);
+    --prv-g2-spec: rgba(255,255,255,0.90);
+    --prv-shadow-e2: 0 4px 16px rgba(0,0,0,0.12);
+    --prv-shadow-e4: 0 24px 64px rgba(0,0,0,0.18), 0 8px 24px rgba(0,0,0,0.10);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--prv-bg);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", sans-serif;
+    min-height: 100vh;
+    transition: background 0.35s ease;
+  }
+
+  /* ── Page scaffold (fake screen behind) ──────────────────── */
+  .page-bg {
+    position: fixed; inset: 0; z-index: 0;
+    background: radial-gradient(ellipse 100% 40% at 50% -10%, var(--prv-border-subtle) 0%, transparent 100%);
+    transition: background 0.35s ease;
+  }
+
+  /* ── Demo label ─────────────────────────────────────────── */
+  .demo-label {
+    position: fixed; top: 18px; left: 50%; transform: translateX(-50%);
+    font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--prv-text-3); z-index: 200; pointer-events: none;
+    transition: color 0.35s ease;
+  }
+
+  /* ── Fake screen content ────────────────────────────────── */
+  .fake-screen {
+    position: relative; z-index: 1;
+    max-width: 390px; margin: 0 auto;
+    padding: 80px 20px 140px;
+    min-height: 100vh;
+  }
+
+  .fake-card {
+    background: var(--prv-g1);
+    border: 1px solid var(--prv-border);
+    border-radius: 20px;
+    padding: 16px;
+    margin-bottom: 12px;
+    transition: background 0.35s ease, border-color 0.35s ease;
+  }
+  .fake-card-title {
+    font-size: 13px; font-weight: 600;
+    color: var(--prv-text-1); margin-bottom: 4px;
+    transition: color 0.35s ease;
+  }
+  .fake-card-sub {
+    font-size: 11px; color: var(--prv-text-3);
+    transition: color 0.35s ease;
+  }
+  .fake-bar {
+    height: 6px; border-radius: 3px; margin-top: 10px;
+    background: var(--prv-border);
+    transition: background 0.35s ease;
+  }
+  .fake-bar-fill {
+    height: 100%; border-radius: 3px;
+  }
+  .fake-stat-row {
+    display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 12px;
+  }
+  .fake-stat {
+    background: var(--prv-g1); border: 1px solid var(--prv-border);
+    border-radius: 16px; padding: 12px; text-align: center;
+    transition: background 0.35s ease, border-color 0.35s ease;
+  }
+  .fake-stat-val { font-size: 20px; font-weight: 700; color: var(--prv-text-1); transition: color .35s; }
+  .fake-stat-lbl { font-size: 9px; font-weight: 600; letter-spacing:.05em; text-transform:uppercase; color: var(--prv-text-3); margin-top:2px; transition: color .35s; }
+
+  /* ── Tab bar ─────────────────────────────────────────────── */
+  .tab-bar {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    width: calc(100% - 40px); max-width: 350px;
+    background: var(--prv-g2); border: 1px solid var(--prv-border);
+    border-radius: 100px; padding: 8px 12px;
+    display: flex; justify-content: space-around; align-items: center;
+    backdrop-filter: blur(32px); -webkit-backdrop-filter: blur(32px);
+    box-shadow: var(--prv-shadow-e2);
+    z-index: 40; transition: background .35s, border-color .35s;
+  }
+  .tab-item {
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    font-size: 9px; font-weight: 600; letter-spacing:.04em;
+    color: var(--prv-text-3); padding: 4px 10px; border-radius: 80px;
+    transition: color .35s, background .35s;
+    border: none; background: none; cursor: default;
+  }
+  .tab-item.active {
+    background: var(--prv-g2); color: var(--prv-text-1);
+  }
+
+  /* ── Appearance button ───────────────────────────────────── */
+  #app-btn {
+    position: fixed; top: 14px; right: 16px; z-index: 60;
+    width: 36px; height: 36px; border-radius: 50%;
+    background: var(--prv-g2); border: 1px solid var(--prv-border);
+    backdrop-filter: blur(32px); -webkit-backdrop-filter: blur(32px);
+    box-shadow: inset 0 1px 0 var(--prv-g2-spec), var(--prv-shadow-e2);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: opacity .15s, transform .15s, background .35s, border-color .35s;
+  }
+  #app-btn:hover { opacity: .85; transform: scale(1.05); }
+  #app-btn:active { transform: scale(.95); }
+  #app-btn svg { transition: stroke .35s; }
+
+  /* ── Overlay ─────────────────────────────────────────────── */
+  #overlay {
+    position: fixed; inset: 0; z-index: 55;
+    background: rgba(0,0,0,0.45); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    display: flex; align-items: flex-end; justify-content: center;
+    padding: 0 16px 28px;
+    opacity: 0; pointer-events: none;
+    transition: opacity .2s ease;
+  }
+  #overlay.open {
+    opacity: 1; pointer-events: all;
+  }
+
+  /* ── Panel ───────────────────────────────────────────────── */
+  #panel {
+    width: 100%; max-width: 480px;
+    transform: translateY(40px); opacity: 0;
+    transition: transform .32s cubic-bezier(0.34,1.56,0.64,1), opacity .22s ease;
+  }
+  #overlay.open #panel {
+    transform: translateY(0); opacity: 1;
+  }
+
+  .panel-inner {
+    position: relative; overflow: hidden; border-radius: 24px;
+    border: 1px solid var(--prv-border); border-color: var(--prv-border);
+    backdrop-filter: blur(48px) saturate(180%); -webkit-backdrop-filter: blur(48px) saturate(180%);
+    background: var(--prv-g2);
+    box-shadow: var(--prv-shadow-e4);
+    transition: background .35s, border-color .35s, box-shadow .35s;
+  }
+
+  .panel-specular {
+    position: absolute; inset-x: 0; top: 0; height: 1px;
+    background: var(--prv-g2-spec);
+    transition: background .35s;
+  }
+
+  /* header */
+  .panel-header {
+    display: flex; align-items: center; gap: 12px;
+    padding: 20px 20px 4px;
+  }
+  .panel-icon-box {
+    width: 36px; height: 36px; border-radius: 10px;
+    border: 1px solid var(--prv-border); background: var(--prv-g2);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; transition: border-color .35s, background .35s;
+  }
+  .panel-title { font-size: 16px; font-weight: 600; color: var(--prv-text-1); transition: color .35s; }
+  .panel-sub { font-size: 12px; color: var(--prv-text-3); transition: color .35s; }
+
+  /* section */
+  .section { padding: 16px 20px 8px; }
+  .section-label {
+    font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--prv-text-3); margin-bottom: 10px; transition: color .35s;
+  }
+  .divider {
+    height: 1px; margin: 0 20px; background: var(--prv-border-subtle);
+    transition: background .35s;
+  }
+
+  /* theme grid */
+  .theme-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; }
+  .theme-option {
+    position: relative; display: flex; flex-direction: column; align-items: center;
+    gap: 8px; border-radius: 14px; border: 1px solid var(--prv-border-subtle);
+    background: var(--prv-g1); padding: 10px 8px 10px;
+    cursor: pointer; transition: all .2s; user-select: none;
+  }
+  .theme-option.active {
+    border-color: var(--prv-border-strong); background: var(--prv-g2);
+    box-shadow: 0 0 0 1px var(--prv-border);
+  }
+  .check-badge {
+    position: absolute; top: 6px; right: 6px;
+    width: 14px; height: 14px; border-radius: 50%;
+    background: var(--prv-text-1);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; transform: scale(.6); transition: opacity .15s, transform .2s;
+  }
+  .theme-option.active .check-badge { opacity: 1; transform: scale(1); }
+  .theme-preview {
+    width: 100%; height: 32px; border-radius: 10px; overflow: hidden; border: 1px solid;
+    position: relative;
+  }
+  .theme-preview-bar {
+    position: absolute; top: 6px; left: 6px; right: 6px; height: 6px; border-radius: 3px;
+  }
+  .theme-name {
+    font-size: 11px; font-weight: 600;
+    transition: color .35s;
+  }
+  .theme-option .theme-name { color: var(--prv-text-2); }
+  .theme-option.active .theme-name { color: var(--prv-text-1); }
+
+  /* Dark preview — always literal */
+  .preview-dark { background: #000; border-color: rgba(255,255,255,.12); }
+  .preview-dark .theme-preview-bar { background: rgba(255,255,255,.15); }
+  /* Light preview — always literal */
+  .preview-light { background: #f2f2f7; border-color: rgba(0,0,0,.08); }
+  .preview-light .theme-preview-bar { background: rgba(0,0,0,.10); }
+  /* System preview — always literal split */
+  .preview-system { background: linear-gradient(135deg,#000 50%,#f2f2f7 50%); border-color: rgba(255,255,255,.10); }
+  .preview-system .theme-preview-bar { background: linear-gradient(90deg,rgba(255,255,255,.15) 50%,rgba(0,0,0,.10) 50%); }
+
+  /* glass grid */
+  .glass-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; }
+  .glass-option {
+    position: relative; display: flex; flex-direction: column; gap: 8px;
+    border-radius: 14px; border: 1px solid var(--prv-border-subtle);
+    background: var(--prv-g1); padding: 10px;
+    cursor: pointer; transition: all .2s; user-select: none; text-align: left;
+  }
+  .glass-option.active {
+    border-color: var(--prv-border-strong); background: var(--prv-g2);
+    box-shadow: 0 0 0 1px var(--prv-border);
+  }
+  .glass-swatch {
+    height: 36px; border-radius: 10px; border: 1px solid var(--prv-border-subtle);
+    transition: background .35s, border-color .35s;
+  }
+  .glass-swatch.translucid { background: var(--prv-g1); backdrop-filter: blur(40px); }
+  .glass-swatch.tinted { background: var(--prv-g2); backdrop-filter: blur(32px); }
+  .glass-swatch.adaptive { background: var(--prv-g2); backdrop-filter: blur(32px); }
+  .glass-name {
+    font-size: 12px; font-weight: 600; margin-bottom: 1px;
+    transition: color .35s;
+  }
+  .glass-option .glass-name { color: var(--prv-text-2); }
+  .glass-option.active .glass-name { color: var(--prv-text-1); }
+  .glass-desc { font-size: 10px; color: var(--prv-text-3); line-height: 1.3; transition: color .35s; }
+  .smart-badge {
+    display: inline-flex; align-items: center; gap: 4px; margin-top: 4px;
+    border: 1px solid var(--prv-border); background: var(--prv-g1);
+    color: var(--prv-text-3); border-radius: 5px; padding: 2px 6px;
+    font-size: 9px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+    transition: border-color .35s, background .35s, color .35s;
+  }
+  .smart-dot { width: 4px; height: 4px; border-radius: 50%; background: currentColor; }
+
+  /* sync row */
+  .sync-section { padding: 16px 20px; }
+  .sync-row {
+    display: flex; align-items: center; justify-content: space-between;
+    border-radius: 12px; border: 1px solid var(--prv-border-subtle);
+    background: var(--prv-g1); padding: 12px 16px;
+    transition: background .35s, border-color .35s;
+  }
+  .sync-left { display: flex; align-items: center; gap: 10px; }
+  .sync-text-title { font-size: 13px; font-weight: 500; color: var(--prv-text-1); transition: color .35s; }
+  .sync-text-sub { font-size: 11px; color: var(--prv-text-3); margin-top: 1px; transition: color .35s; }
+
+  /* toggle */
+  .toggle {
+    position: relative; width: 42px; height: 24px; border-radius: 100px;
+    background: var(--prv-g3); cursor: pointer; transition: background .2s;
+    border: none; flex-shrink: 0;
+  }
+  .toggle.on { background: var(--prv-text-1); }
+  .toggle-knob {
+    position: absolute; top: 2px; left: 2px;
+    width: 20px; height: 20px; border-radius: 50%;
+    background: var(--prv-bg); box-shadow: 0 2px 4px rgba(0,0,0,.3);
+    transition: transform .2s, background .35s;
+  }
+  .toggle.on .toggle-knob { transform: translateX(18px); }
+
+  /* done */
+  .done-section { padding: 0 20px 20px; }
+  .done-btn {
+    width: 100%; border-radius: 14px; padding: 14px;
+    font-size: 14px; font-weight: 600;
+    background: var(--prv-text-1); color: var(--prv-bg);
+    border: none; cursor: pointer; transition: background .35s, color .35s, opacity .15s, transform .1s;
+  }
+  .done-btn:hover { opacity: .9; }
+  .done-btn:active { transform: scale(.98); opacity: .85; }
+
+  /* ── Annotations ─────────────────────────────────────────── */
+  .ann-container { position: fixed; right: 20px; top: 64px; z-index: 200; display: flex; flex-direction: column; gap: 8px; max-width: 200px; }
+  .ann {
+    background: rgba(10,10,10,0.8); border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 10px; padding: 8px 12px; backdrop-filter: blur(20px);
+    font-size: 10px; font-weight: 500; color: rgba(255,255,255,0.65);
+    line-height: 1.4;
+  }
+  [data-theme="light"] .ann {
+    background: rgba(240,240,245,0.9); border-color: rgba(0,0,0,0.1); color: rgba(0,0,0,0.5);
+  }
+  .ann strong { color: rgba(255,255,255,.9); display: block; margin-bottom: 2px; font-size: 11px; }
+  [data-theme="light"] .ann strong { color: rgba(0,0,0,.8); }
+
+  /* ── Theme switcher bar (demo control) ───────────────────── */
+  .demo-bar {
+    position: fixed; bottom: 92px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 6px; z-index: 200;
+    background: rgba(20,20,20,.8); border: 1px solid rgba(255,255,255,.1);
+    border-radius: 100px; padding: 5px 8px;
+    backdrop-filter: blur(24px);
+  }
+  [data-theme="light"] .demo-bar {
+    background: rgba(240,240,245,.9); border-color: rgba(0,0,0,.1);
+  }
+  .demo-theme-btn {
+    font-size: 10px; font-weight: 600; letter-spacing: .04em;
+    padding: 4px 12px; border-radius: 100px; border: none; cursor: pointer;
+    background: transparent; color: rgba(255,255,255,.45);
+    transition: background .2s, color .2s;
+  }
+  [data-theme="light"] .demo-theme-btn { color: rgba(0,0,0,.35); }
+  .demo-theme-btn.active { background: rgba(255,255,255,.15); color: rgba(255,255,255,.95); }
+  [data-theme="light"] .demo-theme-btn.active { background: rgba(0,0,0,.1); color: rgba(0,0,0,.85); }
+
+  @media (prefers-color-scheme: dark) { :root:not([data-theme]) { color-scheme: dark; } }
+  @media (prefers-color-scheme: light) { :root:not([data-theme]) { color-scheme: light; } }
+</style>
+</head>
+<body data-theme="dark">
+
+<div class="page-bg"></div>
+<div class="demo-label">PRV · Appearance Button</div>
+
+<!-- ── Fake screen content ─────────────────────────────────── -->
+<div class="fake-screen">
+  <div class="fake-stat-row">
+    <div class="fake-stat"><div class="fake-stat-val">24</div><div class="fake-stat-lbl">Clients</div></div>
+    <div class="fake-stat"><div class="fake-stat-val">8</div><div class="fake-stat-lbl">Active</div></div>
+    <div class="fake-stat"><div class="fake-stat-val">€1.2M</div><div class="fake-stat-lbl">Total</div></div>
+  </div>
+  <div class="fake-card">
+    <div class="fake-card-title">Renovations SRL</div>
+    <div class="fake-card-sub">Contract · €148,000 · Active</div>
+    <div class="fake-bar"><div class="fake-bar-fill" style="width:72%;background:rgba(48,209,88,0.6)"></div></div>
+  </div>
+  <div class="fake-card">
+    <div class="fake-card-title">Tech Park Group</div>
+    <div class="fake-card-sub">Contract · €86,500 · Pending Quote</div>
+    <div class="fake-bar"><div class="fake-bar-fill" style="width:35%;background:rgba(10,132,255,0.6)"></div></div>
+  </div>
+  <div class="fake-card">
+    <div class="fake-card-title">Arcadia Living</div>
+    <div class="fake-card-sub">Contract · €220,000 · Active</div>
+    <div class="fake-bar"><div class="fake-bar-fill" style="width:88%;background:rgba(48,209,88,0.6)"></div></div>
+  </div>
+  <div class="fake-card">
+    <div class="fake-card-title">Nova Construct</div>
+    <div class="fake-card-sub">Contract · €55,000 · On Hold</div>
+    <div class="fake-bar"><div class="fake-bar-fill" style="width:20%;background:rgba(255,159,10,0.6)"></div></div>
+  </div>
+</div>
+
+<!-- ── Tab bar ────────────────────────────────────────────── -->
+<nav class="tab-bar">
+  <div class="tab-item">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+    Ops
+  </div>
+  <div class="tab-item active">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    People
+  </div>
+  <div class="tab-item">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+    Finance
+  </div>
+  <div class="tab-item">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h.01"/><path d="M7 20v-4"/><path d="M12 20v-8"/><path d="M17 20v-12"/><path d="M22 20V4"/></svg>
+    Intel
+  </div>
+</nav>
+
+<!-- ── Appearance button ───────────────────────────────────── -->
+<button id="app-btn" onclick="togglePanel()" aria-label="Appearance settings">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+    stroke="var(--prv-text-2)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M18.37 2.63 14 7l-1.59-1.59a2 2 0 0 0-2.82 0L8 7l9 9 1.59-1.59a2 2 0 0 0 0-2.82L17 10l4.37-4.37a2.12 2.12 0 1 0-3-3Z"/>
+    <path d="M9 8c-2 3-4 3.5-7 4l8 10c2-1 6-5 6-7"/>
+    <path d="M14.5 17.5 4.5 15"/>
+  </svg>
+</button>
+
+<!-- ── Overlay + Panel ─────────────────────────────────────── -->
+<div id="overlay" onclick="handleOverlayClick(event)">
+  <div id="panel">
+    <div class="panel-inner">
+      <div class="panel-specular"></div>
+
+      <!-- header -->
+      <div class="panel-header">
+        <div class="panel-icon-box">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+            stroke="var(--prv-text-2)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18.37 2.63 14 7l-1.59-1.59a2 2 0 0 0-2.82 0L8 7l9 9 1.59-1.59a2 2 0 0 0 0-2.82L17 10l4.37-4.37a2.12 2.12 0 1 0-3-3Z"/>
+            <path d="M9 8c-2 3-4 3.5-7 4l8 10c2-1 6-5 6-7"/>
+            <path d="M14.5 17.5 4.5 15"/>
+          </svg>
+        </div>
+        <div>
+          <div class="panel-title">Appearance</div>
+          <div class="panel-sub">Personalize your experience</div>
+        </div>
+      </div>
+
+      <!-- theme -->
+      <div class="section">
+        <div class="section-label">Theme</div>
+        <div class="theme-grid">
+
+          <div class="theme-option active" id="opt-dark" onclick="selectTheme('dark')">
+            <div class="check-badge">
+              <svg width="7" height="5" viewBox="0 0 7 5" fill="none">
+                <path d="M1 2.5L2.8 4.3L6 1" stroke="var(--prv-bg)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <div class="theme-preview preview-dark">
+              <div class="theme-preview-bar"></div>
+            </div>
+            <span class="theme-name">Dark</span>
+          </div>
+
+          <div class="theme-option" id="opt-light" onclick="selectTheme('light')">
+            <div class="check-badge">
+              <svg width="7" height="5" viewBox="0 0 7 5" fill="none">
+                <path d="M1 2.5L2.8 4.3L6 1" stroke="var(--prv-bg)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <div class="theme-preview preview-light">
+              <div class="theme-preview-bar"></div>
+            </div>
+            <span class="theme-name">Light</span>
+          </div>
+
+          <div class="theme-option" id="opt-system" onclick="selectTheme('system')">
+            <div class="check-badge">
+              <svg width="7" height="5" viewBox="0 0 7 5" fill="none">
+                <path d="M1 2.5L2.8 4.3L6 1" stroke="var(--prv-bg)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <div class="theme-preview preview-system">
+              <div class="theme-preview-bar"></div>
+            </div>
+            <span class="theme-name">System</span>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- glass style -->
+      <div class="section">
+        <div class="section-label">Liquid Glass Style</div>
+        <div class="glass-grid">
+
+          <div class="glass-option" id="gopt-translucid" onclick="selectGlass('translucid')">
+            <div class="glass-swatch translucid"></div>
+            <div>
+              <div class="glass-name">Translucid</div>
+              <div class="glass-desc">Maximum transparency</div>
+            </div>
+          </div>
+
+          <div class="glass-option active" id="gopt-tinted" onclick="selectGlass('tinted')">
+            <div class="check-badge">
+              <svg width="7" height="5" viewBox="0 0 7 5" fill="none">
+                <path d="M1 2.5L2.8 4.3L6 1" stroke="var(--prv-bg)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <div class="glass-swatch tinted"></div>
+            <div>
+              <div class="glass-name">Tinted</div>
+              <div class="glass-desc">Subtle color wash</div>
+            </div>
+          </div>
+
+          <div class="glass-option" id="gopt-adaptive" onclick="selectGlass('adaptive')">
+            <div class="glass-swatch adaptive"></div>
+            <div>
+              <div class="glass-name">Adaptive</div>
+              <div class="glass-desc">Adjusts to context</div>
+              <span class="smart-badge"><span class="smart-dot"></span>Smart</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- sync -->
+      <div class="sync-section">
+        <div class="section-label" style="margin-bottom:10px">Sync</div>
+        <div class="sync-row">
+          <div class="sync-left">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+              stroke="var(--prv-text-2)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>
+            </svg>
+            <div>
+              <div class="sync-text-title">Sync across devices</div>
+              <div class="sync-text-sub">iPhone · iPad · Mac · Web · Android</div>
+            </div>
+          </div>
+          <button class="toggle on" id="sync-toggle" onclick="toggleSync()">
+            <div class="toggle-knob"></div>
+          </button>
+        </div>
+      </div>
+
+      <!-- done -->
+      <div class="done-section">
+        <button class="done-btn" onclick="togglePanel()">Done</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Annotations (visible when panel closed) ─────────────── -->
+<div class="ann-container" id="annotations">
+  <div class="ann">
+    <strong>Appearance Button</strong>
+    Fixed top-right · 36px glass circle · paintbrush icon · z-index 60
+  </div>
+  <div class="ann">
+    <strong>Tap to open</strong>
+    Blurred overlay + spring bottom-sheet animation
+  </div>
+  <div class="ann">
+    <strong>Panel contents</strong>
+    Theme (Dark/Light/System) · Glass style · Cross-device sync · Done
+  </div>
+</div>
+
+<!-- ── Demo control bar ────────────────────────────────────── -->
+<div class="demo-bar">
+  <button class="demo-theme-btn active" id="dbtn-dark" onclick="applyTheme('dark')">Dark</button>
+  <button class="demo-theme-btn" id="dbtn-light" onclick="applyTheme('light')">Light</button>
+  <button class="demo-theme-btn" id="dbtn-system" onclick="applyTheme('system')">System</button>
+</div>
+
+<script>
+  let panelOpen = false
+  let currentTheme = 'dark'
+  let currentGlass = 'tinted'
+  let syncOn = true
+
+  // ── Panel toggle ───────────────────────────────────────────
+  function togglePanel() {
+    panelOpen = !panelOpen
+    document.getElementById('overlay').classList.toggle('open', panelOpen)
+    document.getElementById('annotations').style.display = panelOpen ? 'none' : 'flex'
+  }
+
+  function handleOverlayClick(e) {
+    if (e.target === document.getElementById('overlay')) togglePanel()
+  }
+
+  // ── Theme selection (inside panel) ─────────────────────────
+  function selectTheme(t) {
+    currentTheme = t
+    ;['dark','light','system'].forEach(v => {
+      document.getElementById('opt-'+v).classList.toggle('active', v === t)
+    })
+    // Actually apply theme immediately
+    if (t === 'system') {
+      const pref = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
+      applyTheme(pref, false)
+    } else {
+      applyTheme(t, false)
+    }
+    // Update demo bar
+    syncDemoBar(t === 'system' ? 'system' : t)
+  }
+
+  // ── Glass selection ─────────────────────────────────────────
+  function selectGlass(g) {
+    currentGlass = g
+    ;['translucid','tinted','adaptive'].forEach(v => {
+      document.getElementById('gopt-'+v).classList.toggle('active', v === g)
+    })
+  }
+
+  // ── Sync toggle ─────────────────────────────────────────────
+  function toggleSync() {
+    syncOn = !syncOn
+    document.getElementById('sync-toggle').classList.toggle('on', syncOn)
+  }
+
+  // ── Apply theme to DOM (CSS variable swap) ─────────────────
+  function applyTheme(t, updatePanel = true) {
+    if (t === 'system') {
+      const pref = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
+      document.body.setAttribute('data-theme', pref)
+    } else {
+      document.body.setAttribute('data-theme', t)
+    }
+    if (updatePanel) syncDemoBar(t)
+  }
+
+  function syncDemoBar(t) {
+    ;['dark','light','system'].forEach(v => {
+      document.getElementById('dbtn-'+v).classList.toggle('active', v === t)
+    })
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && panelOpen) togglePanel()
+  })
+</script>
+</body>
+</html>
