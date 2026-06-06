@@ -301,6 +301,9 @@ export type { GlassQuantityStepperProps } from "./glass-quantity-stepper"
 export { GlassProductCard } from "./glass-product-card"
 export type { GlassProductCardProps, ProductBadge } from "./glass-product-card"
 
+export { GlassCartLineItem } from "./glass-cart-line-item"
+export type { GlassCartLineItemProps } from "./glass-cart-line-item"
+
 export {
   ActionSheet,
   ConfirmationSheet,
