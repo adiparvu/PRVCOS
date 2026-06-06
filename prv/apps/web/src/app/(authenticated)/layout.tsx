@@ -2,6 +2,8 @@ import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import { getSession } from "@prv/auth"
 import { FloatingTabBar } from "./floating-tab-bar"
+import { FloatingSearchBar } from "./floating-search-bar"
+import { DynamicIslandBar } from "./dynamic-island-bar"
 import { AppearanceButton } from "./appearance-button"
 
 export const dynamic = "force-dynamic"
@@ -29,17 +31,23 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
         className="pointer-events-none fixed inset-0 z-0"
         style={{
           background:
-            "radial-gradient(ellipse 100% 40% at 50% -10%, var(--prv-border-subtle) 0%, transparent 100%)",
+            "radial-gradient(ellipse 100% 40% at 50% -10%, rgba(255,255,255,0.03) 0%, transparent 100%)",
         }}
       />
 
-      {/* Main content — padded bottom for floating tab bar */}
-      <main className="relative z-10 min-h-screen pb-32">{children}</main>
+      {/* Dynamic Island — fixed top, role-aware live context */}
+      <DynamicIslandBar role={session.role} />
+
+      {/* Floating Search Bar — fixed below DI, pill-shaped glass */}
+      <FloatingSearchBar role={session.role} />
+
+      {/* Main content — padded top for search bar, bottom for tab bar */}
+      <main className="relative z-10 min-h-screen pt-24 pb-32">{children}</main>
 
       {/* Appearance settings toggle — fixed top-right */}
       <AppearanceButton />
 
-      {/* Floating Tab Bar — fixed at bottom, above content */}
+      {/* Floating Tab Bar — fixed at bottom */}
       <FloatingTabBar role={session.role} />
     </div>
   )

@@ -3,106 +3,11 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import type { SystemRole } from "@prv/auth"
-
-// SF Symbol-style SVG icons — stroke-width 1.6, round caps
-const CommandIcon = () => (
-  <svg
-    width="22"
-    height="22"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.6"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <rect x="9" y="9" width="6" height="6" rx="1" />
-    <path d="M9 9V6a3 3 0 1 0-3 3h3" />
-    <path d="M15 9h3a3 3 0 1 0-3-3v3" />
-    <path d="M9 15H6a3 3 0 1 0 3 3v-3" />
-    <path d="M15 15v3a3 3 0 1 0 3-3h-3" />
-  </svg>
-)
-
-const OperationsIcon = () => (
-  <svg
-    width="22"
-    height="22"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.6"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <rect x="3" y="3" width="7" height="7" rx="1" />
-    <rect x="14" y="3" width="7" height="7" rx="1" />
-    <rect x="3" y="14" width="7" height="7" rx="1" />
-    <rect x="14" y="14" width="7" height="7" rx="1" />
-  </svg>
-)
-
-const PeopleIcon = () => (
-  <svg
-    width="22"
-    height="22"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.6"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <circle cx="9" cy="7" r="3" />
-    <path d="M3 20v-1a6 6 0 0 1 6-6" />
-    <circle cx="17" cy="9" r="2.5" />
-    <path d="M13 20v-1a4 4 0 0 1 4-4h0a4 4 0 0 1 4 4v1" />
-  </svg>
-)
-
-const FinanceIcon = () => (
-  <svg
-    width="22"
-    height="22"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.6"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M3 20h18" />
-    <path d="M5 20V10l4-4 4 4 4-6v16" />
-  </svg>
-)
-
-const IntelligenceIcon = () => (
-  <svg
-    width="22"
-    height="22"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.6"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M12 2a6 6 0 0 1 6 6c0 2.5-1.5 4.7-3.7 5.7L14 16H10l-.3-2.3A6.01 6.01 0 0 1 6 8a6 6 0 0 1 6-6z" />
-    <path d="M10 19h4" />
-    <path d="M11 22h2" />
-  </svg>
-)
-
-const tabs = [
-  { href: "/dashboard", label: "Command", Icon: CommandIcon },
-  { href: "/operations", label: "Operations", Icon: OperationsIcon },
-  { href: "/people", label: "People", Icon: PeopleIcon },
-  { href: "/finance", label: "Finance", Icon: FinanceIcon },
-  { href: "/intelligence", label: "Intelligence", Icon: IntelligenceIcon },
-]
+import { resolveShell } from "@/lib/shell-config"
 
 export function FloatingTabBar({ role }: { role: SystemRole }) {
   const pathname = usePathname()
+  const { tabs } = resolveShell(role)
 
   return (
     <div
@@ -110,37 +15,49 @@ export function FloatingTabBar({ role }: { role: SystemRole }) {
       style={{ width: "min(calc(100vw - 32px), 480px)" }}
     >
       <nav
-        className="flex items-center justify-around px-2 py-2 rounded-[28px]"
+        className="flex items-center justify-around px-2 py-2 rounded-[32px]"
         style={{
-          background: "var(--prv-border)",
-          border: "1px solid var(--prv-border)",
-          backdropFilter: "blur(48px)",
-          WebkitBackdropFilter: "blur(48px)",
+          background: "rgba(20,20,20,0.82)",
+          border: "1px solid rgba(255,255,255,0.10)",
+          backdropFilter: "blur(48px) saturate(200%)",
+          WebkitBackdropFilter: "blur(48px) saturate(200%)",
           boxShadow:
-            "inset 0 1px 0 var(--prv-g3), 0 24px 64px rgba(0,0,0,0.7), 0 8px 24px rgba(0,0,0,0.4)",
+            "inset 0 1px 0 rgba(255,255,255,0.14), 0 24px 64px rgba(0,0,0,0.7), 0 8px 24px rgba(0,0,0,0.4)",
         }}
         aria-label="Main navigation"
       >
-        {tabs.map(({ href, label, Icon }) => {
-          const isActive = pathname === href || pathname.startsWith(href + "/")
+        {tabs.map((tab) => {
+          const isActive = pathname === tab.href || pathname.startsWith(tab.href + "/")
           return (
             <Link
-              key={href}
-              href={href}
-              aria-label={label}
+              key={tab.id}
+              href={tab.href}
+              aria-label={tab.label}
               aria-current={isActive ? "page" : undefined}
-              className="relative flex flex-col items-center justify-center gap-1 w-16 h-14 rounded-[20px] transition-all duration-200"
+              className="relative flex flex-col items-center justify-center gap-[3px] min-w-[56px] h-14 px-2 rounded-[24px]"
               style={{
-                color: isActive ? "var(--prv-text-1)" : "var(--prv-text-3)",
-                background: isActive ? "var(--prv-g2)" : "transparent",
+                color: isActive ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.40)",
+                background: isActive ? "rgba(255,255,255,0.10)" : "transparent",
+                boxShadow: isActive ? "inset 0 1px 0 rgba(255,255,255,0.18)" : "none",
+                transition:
+                  "color 300ms cubic-bezier(0.34,1.56,0.64,1), background 300ms cubic-bezier(0.34,1.56,0.64,1), box-shadow 300ms cubic-bezier(0.34,1.56,0.64,1)",
               }}
             >
-              <Icon />
-              <span className="text-[10px] font-medium tracking-tight leading-none">{label}</span>
+              {tab.icon}
+              <span
+                className="text-[9px] font-medium tracking-tight leading-none whitespace-nowrap"
+                style={{ opacity: isActive ? 0.9 : 0.5 }}
+              >
+                {tab.label}
+              </span>
               {isActive && (
                 <span
-                  className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-white/70"
                   aria-hidden="true"
+                  className="absolute -bottom-[2px] left-1/2 -translate-x-1/2 w-[18px] h-[3px] rounded-full"
+                  style={{
+                    background: "rgba(255,255,255,0.65)",
+                    boxShadow: "0 0 6px rgba(255,255,255,0.5)",
+                  }}
                 />
               )}
             </Link>
