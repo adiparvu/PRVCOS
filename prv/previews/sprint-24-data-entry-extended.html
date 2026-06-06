@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PRV · Sprint 24 — Data Entry Extended</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --prv-bg:            #000;
+    --prv-g1:            rgba(255,255,255,0.06);
+    --prv-g2:            rgba(255,255,255,0.10);
+    --prv-g3:            rgba(255,255,255,0.15);
+    --prv-g4:            rgba(255,255,255,0.22);
+    --prv-text-1:        rgba(255,255,255,0.95);
+    --prv-text-2:        rgba(255,255,255,0.65);
+    --prv-text-3:        rgba(255,255,255,0.35);
+    --prv-text-4:        rgba(255,255,255,0.15);
+    --prv-border:        rgba(255,255,255,0.12);
+    --prv-border-subtle: rgba(255,255,255,0.07);
+    --prv-accent:        rgba(10,132,255,0.9);
+  }
+
+  html, body {
+    background: var(--prv-bg);
+    color: var(--prv-text-1);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page { max-width: 960px; margin: 0 auto; padding: 48px 24px 96px; }
+
+  .sprint-header { margin-bottom: 52px; }
+  .chips { display: flex; gap: 8px; margin-bottom: 10px; }
+  .chip { padding: 3px 10px; border-radius: 100px; background: var(--prv-g2); border: 1px solid var(--prv-border-subtle); font-size: 11px; font-weight: 600; color: var(--prv-text-3); letter-spacing: .06em; text-transform: uppercase; }
+  h1 { font-size: 28px; font-weight: 700; letter-spacing: -.02em; }
+  .sub { font-size: 14px; color: var(--prv-text-3); margin-top: 4px; }
+
+  .section { margin-bottom: 60px; }
+  .sl { font-size: 11px; font-weight: 600; color: var(--prv-text-3); letter-spacing: .07em; text-transform: uppercase; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+  .sl::after { content: ""; flex: 1; height: 1px; background: var(--prv-border-subtle); }
+
+  /* Delivery table */
+  .dt { width: 100%; border-collapse: collapse; }
+  .dt th, .dt td { text-align: left; padding: 10px 14px; font-size: 13px; border-bottom: 1px solid var(--prv-border-subtle); }
+  .dt th { font-size: 11px; font-weight: 600; color: var(--prv-text-3); letter-spacing: .06em; text-transform: uppercase; }
+  .dt td { color: var(--prv-text-1); }
+  .dt td:nth-child(2) { color: var(--prv-text-3); font-family: "SF Mono", monospace; font-size: 11px; }
+  .dt tr:last-child td { border-bottom: none; }
+  .tag { display: inline-flex; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 500; background: var(--prv-g2); color: var(--prv-text-3); border: 1px solid var(--prv-border-subtle); }
+  .tag.new { background: rgba(10,132,255,.12); color: rgba(10,132,255,.9); border-color: rgba(10,132,255,.2); }
+
+  .glass-surface { position: relative; overflow: hidden; background: var(--prv-g1); border: 1px solid var(--prv-border-subtle); border-radius: 20px; }
+  .glass-surface::before { content: ""; position: absolute; inset: 0 0 auto; height: 1px; background: linear-gradient(90deg,transparent,rgba(255,255,255,0.09),transparent); pointer-events: none; }
+
+  .demo-pad { padding: 40px 28px; }
+  .field-label { font-size: 12px; font-weight: 600; color: var(--prv-text-3); margin-bottom: 12px; }
+
+  /* ════════════════════════════════════════════════
+     GLASS OTP INPUT
+  ════════════════════════════════════════════════ */
+  .otp { display: inline-flex; gap: 10px; }
+  .otp-cell {
+    width: 48px; height: 56px; text-align: center;
+    font-size: 22px; font-weight: 700; color: var(--prv-text-1);
+    background: var(--prv-g2); border: 1px solid var(--prv-border);
+    border-radius: 13px; outline: none; font-family: inherit;
+    transition: border-color 150ms, background 150ms, transform 150ms;
+    caret-color: var(--prv-accent);
+  }
+  .otp-cell:focus { border-color: var(--prv-accent); background: var(--prv-g3); transform: translateY(-2px); }
+  .otp-cell.filled { border-color: var(--prv-border); }
+  .otp-sep { display: flex; align-items: center; color: var(--prv-text-4); font-size: 22px; }
+  .otp-msg { font-size: 12px; margin-top: 14px; }
+  .otp-msg.ok { color: rgba(48,209,88,0.9); }
+  .otp-msg.err { color: rgba(255,59,48,0.9); }
+  .otp-msg.idle { color: var(--prv-text-3); }
+  .otp.err .otp-cell { border-color: rgba(255,59,48,0.5); animation: shake 360ms; }
+  @keyframes shake { 0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-5px)} 40%,80%{transform:translateX(5px)} }
+
+  /* ════════════════════════════════════════════════
+     GLASS COLOR PICKER
+  ════════════════════════════════════════════════ */
+  .cp { display: flex; gap: 28px; flex-wrap: wrap; align-items: flex-start; }
+  .cp-swatches { display: grid; grid-template-columns: repeat(8, 1fr); gap: 10px; max-width: 340px; }
+  .cp-sw {
+    width: 34px; height: 34px; border-radius: 10px; cursor: pointer;
+    border: 2px solid transparent; position: relative; transition: transform 150ms cubic-bezier(0.34,1.56,0.64,1);
+  }
+  .cp-sw:hover { transform: scale(1.12); }
+  .cp-sw.sel { border-color: #fff; box-shadow: 0 0 0 2px rgba(0,0,0,0.6); }
+  .cp-sw.sel::after { content: "✓"; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 14px; font-weight: 700; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
+  .cp-side { display: flex; flex-direction: column; gap: 14px; }
+  .cp-preview { width: 120px; height: 120px; border-radius: 18px; border: 1px solid var(--prv-border); box-shadow: inset 0 1px 0 rgba(255,255,255,0.25); }
+  .cp-hue { width: 220px; height: 14px; border-radius: 100px; background: linear-gradient(90deg,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00); position: relative; cursor: pointer; }
+  .cp-hue-knob { position: absolute; top: 50%; width: 18px; height: 18px; border-radius: 50%; background: #fff; border: 2px solid rgba(0,0,0,0.3); transform: translate(-50%,-50%); pointer-events: none; }
+  .cp-hex { display: flex; align-items: center; gap: 8px; }
+  .cp-hex input { width: 110px; padding: 9px 12px; border-radius: 10px; background: var(--prv-g2); border: 1px solid var(--prv-border); color: var(--prv-text-1); font-size: 13px; font-family: "SF Mono", monospace; outline: none; text-transform: uppercase; }
+  .cp-hex input:focus { border-color: var(--prv-accent); }
+
+  /* ════════════════════════════════════════════════
+     GLASS RANGE SLIDER
+  ════════════════════════════════════════════════ */
+  .rs { width: 100%; max-width: 440px; }
+  .rs-vals { display: flex; justify-content: space-between; margin-bottom: 14px; }
+  .rs-pill { padding: 5px 12px; border-radius: 100px; background: var(--prv-g2); border: 1px solid var(--prv-border-subtle); font-size: 13px; font-weight: 600; color: var(--prv-text-1); font-variant-numeric: tabular-nums; }
+  .rs-track { position: relative; height: 6px; border-radius: 100px; background: var(--prv-g2); }
+  .rs-fill { position: absolute; top: 0; height: 100%; border-radius: 100px; background: var(--prv-accent); }
+  .rs-knob {
+    position: absolute; top: 50%; width: 22px; height: 22px; border-radius: 50%;
+    background: #fff; border: 1px solid rgba(0,0,0,0.2);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4); transform: translate(-50%,-50%); cursor: grab;
+    transition: transform 120ms;
+  }
+  .rs-knob:hover { transform: translate(-50%,-50%) scale(1.15); }
+  .rs-knob:active { cursor: grabbing; }
+  .rs-scale { display: flex; justify-content: space-between; margin-top: 12px; font-size: 11px; color: var(--prv-text-4); }
+
+  /* ════════════════════════════════════════════════
+     GLASS RICH TEXT TOOLBAR
+  ════════════════════════════════════════════════ */
+  .rtt { display: inline-flex; align-items: center; gap: 4px; padding: 6px; border-radius: 14px; background: rgba(22,22,22,0.6); border: 1px solid var(--prv-border); flex-wrap: wrap; }
+  .rtt-btn {
+    min-width: 34px; height: 34px; padding: 0 8px; border-radius: 9px;
+    background: transparent; border: none; color: var(--prv-text-2);
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+    font-size: 14px; font-family: inherit; transition: background 130ms, color 130ms;
+  }
+  .rtt-btn:hover { background: var(--prv-g2); color: var(--prv-text-1); }
+  .rtt-btn.active { background: var(--prv-g3); color: var(--prv-text-1); }
+  .rtt-sep { width: 1px; height: 22px; background: var(--prv-border-subtle); margin: 0 4px; }
+  .rtt-editor { margin-top: 16px; min-height: 120px; padding: 16px; border-radius: 14px; background: var(--prv-g1); border: 1px solid var(--prv-border-subtle); font-size: 14px; line-height: 1.6; color: var(--prv-text-1); outline: none; }
+  .rtt-editor:focus { border-color: var(--prv-border); }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="sprint-header">
+    <div class="chips"><span class="chip">Sprint 24</span><span class="chip">Preview</span><span class="chip">Phase 1 · M9</span></div>
+    <h1>Data Entry Extended</h1>
+    <div class="sub">GlassOTPInput · GlassColorPicker · GlassRangeSlider · GlassRichTextToolbar</div>
+  </div>
+
+  <!-- ── OTP INPUT ── -->
+  <div class="section">
+    <div class="sl">GlassOTPInput — Segmented code entry, auto-advance, paste, masked option, validation</div>
+    <div class="glass-surface">
+      <div class="demo-pad">
+        <div class="field-label">Enter the 6-digit code from your authenticator</div>
+        <div class="otp" id="otp">
+          <input class="otp-cell" maxlength="1" inputmode="numeric" />
+          <input class="otp-cell" maxlength="1" inputmode="numeric" />
+          <input class="otp-cell" maxlength="1" inputmode="numeric" />
+          <span class="otp-sep">·</span>
+          <input class="otp-cell" maxlength="1" inputmode="numeric" />
+          <input class="otp-cell" maxlength="1" inputmode="numeric" />
+          <input class="otp-cell" maxlength="1" inputmode="numeric" />
+        </div>
+        <div class="otp-msg idle" id="otp-msg">Try <b>123456</b> to see success · anything else shakes</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── COLOR PICKER ── -->
+  <div class="section">
+    <div class="sl">GlassColorPicker — Swatch palette, hue strip, hex input, live preview</div>
+    <div class="glass-surface">
+      <div class="demo-pad">
+        <div class="cp">
+          <div class="cp-swatches" id="cp-swatches"></div>
+          <div class="cp-side">
+            <div class="cp-preview" id="cp-preview" style="background:#0A84FF"></div>
+            <div>
+              <div class="field-label" style="margin-bottom:8px">Hue</div>
+              <div class="cp-hue" id="cp-hue"><div class="cp-hue-knob" id="cp-hue-knob" style="left:58%"></div></div>
+            </div>
+            <div class="cp-hex">
+              <span style="font-size:13px;color:var(--prv-text-3)">#</span>
+              <input id="cp-hex" value="0A84FF" maxlength="6" oninput="cpHex(this.value)" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── RANGE SLIDER ── -->
+  <div class="section">
+    <div class="sl">GlassRangeSlider — Dual-handle min/max, filled track, drag, value pills</div>
+    <div class="glass-surface">
+      <div class="demo-pad">
+        <div class="field-label">Price range filter</div>
+        <div class="rs">
+          <div class="rs-vals">
+            <span class="rs-pill" id="rs-lo">€120</span>
+            <span class="rs-pill" id="rs-hi">€680</span>
+          </div>
+          <div class="rs-track" id="rs-track">
+            <div class="rs-fill" id="rs-fill"></div>
+            <div class="rs-knob" id="rs-knob-lo" data-h="lo"></div>
+            <div class="rs-knob" id="rs-knob-hi" data-h="hi"></div>
+          </div>
+          <div class="rs-scale"><span>€0</span><span>€250</span><span>€500</span><span>€750</span><span>€1000</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── RICH TEXT TOOLBAR ── -->
+  <div class="section">
+    <div class="sl">GlassRichTextToolbar — Format toggles, groups &amp; dividers, contenteditable demo</div>
+    <div class="glass-surface">
+      <div class="demo-pad">
+        <div class="rtt" id="rtt">
+          <button class="rtt-btn" data-cmd="bold" title="Bold" style="font-weight:800">B</button>
+          <button class="rtt-btn" data-cmd="italic" title="Italic" style="font-style:italic">I</button>
+          <button class="rtt-btn" data-cmd="underline" title="Underline" style="text-decoration:underline">U</button>
+          <button class="rtt-btn" data-cmd="strikeThrough" title="Strikethrough" style="text-decoration:line-through">S</button>
+          <span class="rtt-sep"></span>
+          <button class="rtt-btn" data-cmd="formatBlock" data-val="h2" title="Heading">H</button>
+          <button class="rtt-btn" data-cmd="insertUnorderedList" title="Bullet list"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg></button>
+          <button class="rtt-btn" data-cmd="insertOrderedList" title="Numbered list"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><path d="M4 6h1v4"/><path d="M4 10h2"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg></button>
+          <span class="rtt-sep"></span>
+          <button class="rtt-btn" data-cmd="createLink" title="Insert link"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></button>
+          <button class="rtt-btn" data-cmd="formatBlock" data-val="blockquote" title="Quote"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.75-2-2-2H4c-1.25 0-2 .75-2 2v6c0 1.25.75 2 2 2h2"/><path d="M14 21c3 0 7-1 7-8V5c0-1.25-.75-2-2-2h-4c-1.25 0-2 .75-2 2v6c0 1.25.75 2 2 2h2"/></svg></button>
+          <span class="rtt-sep"></span>
+          <button class="rtt-btn" data-cmd="removeFormat" title="Clear formatting"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7V4h16v3"/><path d="M5 20h6"/><path d="M13 4 8 20"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="21" y1="15" x2="15" y2="21"/></svg></button>
+        </div>
+        <div class="rtt-editor" id="rtt-editor" contenteditable="true">Edit me — select text and apply <b>bold</b>, <i>italic</i>, lists, links, or a quote. The toolbar reflects the active format at the cursor.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Delivery ── -->
+  <div class="section">
+    <div class="sl">Sprint 24 Delivery</div>
+    <div class="glass-surface">
+      <table class="dt">
+        <thead><tr><th>Component</th><th>File</th><th>Key Props</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>GlassOTPInput</td><td>glass-otp-input.tsx</td><td>length, value, onChange, onComplete, masked, error, autoFocus</td><td><span class="tag new">New</span></td></tr>
+          <tr><td>GlassColorPicker</td><td>glass-color-picker.tsx</td><td>value, onChange, swatches[], showHue, showHex</td><td><span class="tag new">New</span></td></tr>
+          <tr><td>GlassRangeSlider</td><td>glass-range-slider.tsx</td><td>min, max, step, value [lo,hi], onChange, formatLabel</td><td><span class="tag new">New</span></td></tr>
+          <tr><td>GlassRichTextToolbar</td><td>glass-rich-text-toolbar.tsx</td><td>actions[], activeFormats, onCommand, groups</td><td><span class="tag new">New</span></td></tr>
+          <tr><td>index.ts</td><td>components/index.ts</td><td>Export all 4 components + types</td><td><span class="tag">Update</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div><!-- /page -->
+
+<script>
+// ── OTP ───────────────────────────────────────────────────────────────────────
+const otp = document.getElementById('otp')
+const cells = [...otp.querySelectorAll('.otp-cell')]
+const otpMsg = document.getElementById('otp-msg')
+function otpValue() { return cells.map(c => c.value).join('') }
+function otpCheck() {
+  const v = otpValue()
+  if (v.length < 6) { otpMsg.className = 'otp-msg idle'; otpMsg.innerHTML = 'Try <b>123456</b> to see success · anything else shakes'; return }
+  if (v === '123456') { otpMsg.className = 'otp-msg ok'; otpMsg.textContent = '✓ Code verified' }
+  else { otpMsg.className = 'otp-msg err'; otpMsg.textContent = '✗ Invalid code'; otp.classList.add('err'); setTimeout(()=>otp.classList.remove('err'), 400) }
+}
+cells.forEach((cell, i) => {
+  cell.addEventListener('input', () => {
+    cell.value = cell.value.replace(/[^0-9]/g,'').slice(0,1)
+    cell.classList.toggle('filled', !!cell.value)
+    if (cell.value && i < cells.length-1) cells[i+1].focus()
+    otpCheck()
+  })
+  cell.addEventListener('keydown', e => {
+    if (e.key==='Backspace' && !cell.value && i>0) cells[i-1].focus()
+    if (e.key==='ArrowLeft' && i>0) cells[i-1].focus()
+    if (e.key==='ArrowRight' && i<cells.length-1) cells[i+1].focus()
+  })
+  cell.addEventListener('paste', e => {
+    e.preventDefault()
+    const digits = (e.clipboardData.getData('text')||'').replace(/[^0-9]/g,'').slice(0,6)
+    digits.split('').forEach((d,j)=>{ if(cells[j]){cells[j].value=d; cells[j].classList.add('filled')} })
+    cells[Math.min(digits.length, cells.length-1)].focus()
+    otpCheck()
+  })
+})
+
+// ── Color Picker ──────────────────────────────────────────────────────────────
+const SWATCHES = ['#0A84FF','#30D158','#FF9F0A','#FF375F','#BF5AF2','#64D2FF','#FFD60A','#FF453A',
+  '#5E5CE6','#AC8E68','#98989D','#FFFFFF','#1C1C1E','#8E8E93','#00C7BE','#FF6482']
+const cpSw = document.getElementById('cp-swatches')
+let cpSel = '#0A84FF'
+function cpRender() {
+  cpSw.innerHTML = SWATCHES.map(c => `<div class="cp-sw ${c===cpSel?'sel':''}" style="background:${c}" onclick="cpPick('${c}')"></div>`).join('')
+  document.getElementById('cp-preview').style.background = cpSel
+  document.getElementById('cp-hex').value = cpSel.replace('#','')
+}
+function cpPick(c) { cpSel = c.toUpperCase(); cpRender() }
+function cpHex(v) { v = v.replace(/[^0-9a-fA-F]/g,'').slice(0,6); if (v.length===6){ cpSel='#'+v.toUpperCase(); document.getElementById('cp-preview').style.background=cpSel; document.querySelectorAll('.cp-sw').forEach(s=>s.classList.remove('sel')) } }
+document.getElementById('cp-hue').addEventListener('click', e => {
+  const r = e.currentTarget.getBoundingClientRect(); const pct = (e.clientX-r.left)/r.width
+  document.getElementById('cp-hue-knob').style.left = (pct*100)+'%'
+  const hue = Math.round(pct*360); const c = hslToHex(hue, 90, 55); cpSel=c; document.getElementById('cp-preview').style.background=c; document.getElementById('cp-hex').value=c.replace('#',''); document.querySelectorAll('.cp-sw').forEach(s=>s.classList.remove('sel'))
+})
+function hslToHex(h,s,l){ s/=100;l/=100; const k=n=>(n+h/30)%12; const a=s*Math.min(l,1-l); const f=n=>l-a*Math.max(-1,Math.min(k(n)-3,Math.min(9-k(n),1))); const to=x=>Math.round(255*x).toString(16).padStart(2,'0'); return '#'+to(f(0))+to(f(8))+to(f(4)) }
+cpRender()
+
+// ── Range Slider ──────────────────────────────────────────────────────────────
+const MINV=0, MAXV=1000, STEP=10
+let lo=120, hi=680
+const track=document.getElementById('rs-track'), fill=document.getElementById('rs-fill')
+const knobLo=document.getElementById('rs-knob-lo'), knobHi=document.getElementById('rs-knob-hi')
+function pct(v){ return ((v-MINV)/(MAXV-MINV))*100 }
+function rsRender(){
+  knobLo.style.left=pct(lo)+'%'; knobHi.style.left=pct(hi)+'%'
+  fill.style.left=pct(lo)+'%'; fill.style.width=(pct(hi)-pct(lo))+'%'
+  document.getElementById('rs-lo').textContent='€'+lo; document.getElementById('rs-hi').textContent='€'+hi
+}
+let drag=null
+function startDrag(e){ drag=e.target.dataset.h; e.preventDefault() }
+function moveDrag(e){
+  if(!drag) return
+  const r=track.getBoundingClientRect(); const x=(e.touches?e.touches[0].clientX:e.clientX)
+  let v=MINV+((x-r.left)/r.width)*(MAXV-MINV); v=Math.round(v/STEP)*STEP; v=Math.max(MINV,Math.min(MAXV,v))
+  if(drag==='lo') lo=Math.min(v,hi-STEP); else hi=Math.max(v,lo+STEP)
+  rsRender()
+}
+function endDrag(){ drag=null }
+knobLo.addEventListener('mousedown',startDrag); knobHi.addEventListener('mousedown',startDrag)
+knobLo.addEventListener('touchstart',startDrag); knobHi.addEventListener('touchstart',startDrag)
+document.addEventListener('mousemove',moveDrag); document.addEventListener('touchmove',moveDrag)
+document.addEventListener('mouseup',endDrag); document.addEventListener('touchend',endDrag)
+rsRender()
+
+// ── Rich Text Toolbar ─────────────────────────────────────────────────────────
+const rtt=document.getElementById('rtt'), editor=document.getElementById('rtt-editor')
+rtt.querySelectorAll('.rtt-btn').forEach(btn => {
+  btn.addEventListener('mousedown', e => e.preventDefault())
+  btn.addEventListener('click', () => {
+    const cmd=btn.dataset.cmd, val=btn.dataset.val
+    editor.focus()
+    if(cmd==='createLink'){ const url=prompt('Link URL:','https://'); if(url) document.execCommand(cmd,false,url) }
+    else if(cmd==='formatBlock'){ document.execCommand(cmd,false,val) }
+    else document.execCommand(cmd,false,null)
+    syncActive()
+  })
+})
+function syncActive(){
+  ['bold','italic','underline','strikeThrough'].forEach(c=>{
+    const b=rtt.querySelector(`[data-cmd="${c}"]`); if(b){ try{ b.classList.toggle('active', document.queryCommandState(c)) }catch(e){} }
+  })
+}
+editor.addEventListener('keyup', syncActive)
+editor.addEventListener('mouseup', syncActive)
+</script>
+</body>
+</html>
