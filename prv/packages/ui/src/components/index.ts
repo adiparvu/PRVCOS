@@ -268,6 +268,9 @@ export type { GlassFunnelProps, FunnelStage } from "./glass-funnel"
 export { GlassRadarChart } from "./glass-radar-chart"
 export type { GlassRadarChartProps, RadarSeries } from "./glass-radar-chart"
 
+export { GlassChatBubble } from "./glass-chat-bubble"
+export type { GlassChatBubbleProps, ChatRole, ChatStatus } from "./glass-chat-bubble"
+
 export {
   ActionSheet,
   ConfirmationSheet,
