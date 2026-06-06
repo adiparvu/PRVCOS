@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PRV · Sprint 33 — Scheduling</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --prv-bg:            #000;
+    --prv-g1:            rgba(255,255,255,0.06);
+    --prv-g2:            rgba(255,255,255,0.10);
+    --prv-g3:            rgba(255,255,255,0.15);
+    --prv-g4:            rgba(255,255,255,0.22);
+    --prv-text-1:        rgba(255,255,255,0.95);
+    --prv-text-2:        rgba(255,255,255,0.65);
+    --prv-text-3:        rgba(255,255,255,0.35);
+    --prv-text-4:        rgba(255,255,255,0.15);
+    --prv-border:        rgba(255,255,255,0.12);
+    --prv-border-subtle: rgba(255,255,255,0.07);
+    --prv-accent:        rgba(10,132,255,0.9);
+    --prv-green:         rgba(48,209,88,0.95);
+    --prv-amber:         rgba(255,159,10,0.95);
+    --prv-purple:        rgba(191,90,242,0.95);
+  }
+
+  html, body {
+    background: var(--prv-bg);
+    color: var(--prv-text-1);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page { max-width: 960px; margin: 0 auto; padding: 48px 24px 96px; }
+
+  .sprint-header { margin-bottom: 52px; }
+  .chips { display: flex; gap: 8px; margin-bottom: 10px; }
+  .chip { padding: 3px 10px; border-radius: 100px; background: var(--prv-g2); border: 1px solid var(--prv-border-subtle); font-size: 11px; font-weight: 600; color: var(--prv-text-3); letter-spacing: .06em; text-transform: uppercase; }
+  h1 { font-size: 28px; font-weight: 700; letter-spacing: -.02em; }
+  .sub { font-size: 14px; color: var(--prv-text-3); margin-top: 4px; }
+
+  .section { margin-bottom: 60px; }
+  .sl { font-size: 11px; font-weight: 600; color: var(--prv-text-3); letter-spacing: .07em; text-transform: uppercase; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+  .sl::after { content: ""; flex: 1; height: 1px; background: var(--prv-border-subtle); }
+
+  /* Delivery table */
+  .dt { width: 100%; border-collapse: collapse; }
+  .dt th, .dt td { text-align: left; padding: 10px 14px; font-size: 13px; border-bottom: 1px solid var(--prv-border-subtle); }
+  .dt th { font-size: 11px; font-weight: 600; color: var(--prv-text-3); letter-spacing: .06em; text-transform: uppercase; }
+  .dt td { color: var(--prv-text-1); }
+  .dt td:nth-child(2) { color: var(--prv-text-3); font-family: "SF Mono", monospace; font-size: 11px; }
+  .dt tr:last-child td { border-bottom: none; }
+  .tag { display: inline-flex; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 500; background: var(--prv-g2); color: var(--prv-text-3); border: 1px solid var(--prv-border-subtle); }
+  .tag.new { background: rgba(10,132,255,.12); color: rgba(10,132,255,.9); border-color: rgba(10,132,255,.2); }
+
+  .glass-surface { position: relative; overflow: hidden; background: var(--prv-g1); border: 1px solid var(--prv-border-subtle); border-radius: 20px; }
+  .glass-surface::before { content: ""; position: absolute; inset: 0 0 auto; height: 1px; background: linear-gradient(90deg,transparent,rgba(255,255,255,0.09),transparent); pointer-events: none; }
+
+  .demo-pad { padding: 24px; }
+
+  /* ════════════════════════════════════════════════
+     GLASS SCHEDULER (weekly grid)
+  ════════════════════════════════════════════════ */
+  .sch { overflow-x: auto; }
+  .sch-grid { display: grid; grid-template-columns: 60px repeat(7, minmax(90px,1fr)); min-width: 660px; }
+  .sch-head { font-size: 11px; font-weight: 600; color: var(--prv-text-3); text-align: center; padding: 8px 0; text-transform: uppercase; letter-spacing: .04em; }
+  .sch-head .dnum { display: block; font-size: 15px; font-weight: 700; color: var(--prv-text-1); margin-top: 2px; }
+  .sch-head.today .dnum { color: var(--prv-accent); }
+  .sch-time { font-size: 11px; color: var(--prv-text-4); text-align: right; padding: 0 8px; height: 52px; }
+  .sch-cell { height: 52px; border-top: 1px solid var(--prv-border-subtle); border-left: 1px solid var(--prv-border-subtle); position: relative; }
+  .sch-cell:nth-child(7n+2) { } /* first day col */
+  .sch-shift { position: absolute; left: 3px; right: 3px; border-radius: 8px; padding: 5px 7px; font-size: 11px; font-weight: 600; color: #fff; overflow: hidden; cursor: pointer; }
+  .sch-shift .t { font-size: 10px; opacity: .85; font-weight: 500; }
+
+  /* ════════════════════════════════════════════════
+     GLASS TIME SLOT PICKER
+  ════════════════════════════════════════════════ */
+  .ts-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(86px,1fr)); gap: 8px; }
+  .ts { padding: 11px 0; text-align: center; border-radius: 11px; background: var(--prv-g2); border: 1px solid var(--prv-border-subtle); font-size: 13px; font-weight: 600; cursor: pointer; transition: background 150ms, border-color 150ms; }
+  .ts:hover { background: var(--prv-g3); }
+  .ts.sel { background: var(--prv-accent); border-color: var(--prv-accent); color: #fff; }
+  .ts.taken { opacity: .35; text-decoration: line-through; cursor: not-allowed; }
+
+  /* ════════════════════════════════════════════════
+     GLASS SHIFT CARD
+  ════════════════════════════════════════════════ */
+  .shift-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 600px){ .shift-grid { grid-template-columns: 1fr; } }
+  .shift { padding: 16px; border-radius: 16px; background: var(--prv-g1); border: 1px solid var(--prv-border-subtle); position: relative; display: flex; gap: 14px; }
+  .shift::before { content:""; position:absolute; inset:0 0 auto; height:1px; background:linear-gradient(90deg,transparent,rgba(255,255,255,0.08),transparent); }
+  .shift-stripe { width: 4px; border-radius: 100px; flex-shrink: 0; }
+  .shift-body { flex: 1; }
+  .shift-role { font-size: 14px; font-weight: 700; }
+  .shift-time { font-size: 13px; color: var(--prv-text-2); margin-top: 2px; }
+  .shift-meta { display: flex; gap: 14px; margin-top: 12px; font-size: 12px; color: var(--prv-text-3); }
+  .shift-people { display: flex; margin-top: 12px; }
+  .shift-ava { width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--prv-bg); background: var(--prv-g3); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: var(--prv-text-2); margin-left: -7px; }
+  .shift-ava:first-child { margin-left: 0; }
+  .shift-status { position: absolute; top: 14px; right: 14px; font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 6px; text-transform: uppercase; }
+  .st-confirmed { background: rgba(48,209,88,0.14); color: var(--prv-green); }
+  .st-open { background: rgba(255,159,10,0.14); color: var(--prv-amber); }
+
+  /* ════════════════════════════════════════════════
+     GLASS AVAILABILITY GRID
+  ════════════════════════════════════════════════ */
+  .av-grid { display: grid; grid-template-columns: 90px repeat(7, 1fr); gap: 5px; }
+  .av-h { font-size: 11px; font-weight: 600; color: var(--prv-text-3); text-align: center; padding-bottom: 4px; }
+  .av-name { font-size: 12px; color: var(--prv-text-2); display: flex; align-items: center; }
+  .av-cell { height: 30px; border-radius: 7px; cursor: pointer; transition: transform 120ms; }
+  .av-cell:hover { transform: scale(1.08); }
+  .av-yes { background: rgba(48,209,88,0.7); }
+  .av-maybe { background: rgba(255,159,10,0.6); }
+  .av-no { background: var(--prv-g2); }
+  .av-legend { display: flex; gap: 16px; margin-top: 16px; font-size: 12px; color: var(--prv-text-3); }
+  .av-leg { display: flex; align-items: center; gap: 7px; }
+  .av-sw { width: 13px; height: 13px; border-radius: 4px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="sprint-header">
+    <div class="chips"><span class="chip">Sprint 33</span><span class="chip">Preview</span><span class="chip">Phase 1 · M9</span></div>
+    <h1>Scheduling</h1>
+    <div class="sub">GlassScheduler · GlassTimeSlotPicker · GlassShiftCard · GlassAvailabilityGrid</div>
+  </div>
+
+  <!-- ── SCHEDULER ── -->
+  <div class="section">
+    <div class="sl">GlassScheduler — Weekly time-grid, positioned shift blocks, color by type</div>
+    <div class="glass-surface">
+      <div class="demo-pad">
+        <div class="sch">
+          <div class="sch-grid" id="sch"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TIME SLOT PICKER ── -->
+  <div class="section">
+    <div class="sl">GlassTimeSlotPicker — Selectable slots, taken/disabled state</div>
+    <div class="glass-surface">
+      <div class="demo-pad">
+        <div class="ts-grid" id="tsg"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SHIFT CARD ── -->
+  <div class="section">
+    <div class="sl">GlassShiftCard — Role, time range, location, assignees, status</div>
+    <div class="glass-surface">
+      <div class="demo-pad">
+        <div class="shift-grid">
+          <div class="shift">
+            <div class="shift-stripe" style="background:var(--prv-accent)"></div>
+            <div class="shift-body">
+              <span class="shift-status st-confirmed">Confirmed</span>
+              <div class="shift-role">Morning · Sales Floor</div>
+              <div class="shift-time">08:00 – 16:00 · 8h</div>
+              <div class="shift-meta"><span>📍 Cluj · Main</span><span>☕ 1h break</span></div>
+              <div class="shift-people"><div class="shift-ava">AP</div><div class="shift-ava">MI</div><div class="shift-ava">RD</div><div class="shift-ava">+2</div></div>
+            </div>
+          </div>
+          <div class="shift">
+            <div class="shift-stripe" style="background:var(--prv-amber)"></div>
+            <div class="shift-body">
+              <span class="shift-status st-open">2 open</span>
+              <div class="shift-role">Evening · Warehouse</div>
+              <div class="shift-time">16:00 – 00:00 · 8h</div>
+              <div class="shift-meta"><span>📍 Bucharest</span><span>🌙 Night rate</span></div>
+              <div class="shift-people"><div class="shift-ava">VG</div><div class="shift-ava" style="background:var(--prv-g1);border-style:dashed">?</div><div class="shift-ava" style="background:var(--prv-g1);border-style:dashed">?</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── AVAILABILITY GRID ── -->
+  <div class="section">
+    <div class="sl">GlassAvailabilityGrid — Team × days, yes/maybe/no cells, tap to cycle</div>
+    <div class="glass-surface">
+      <div class="demo-pad">
+        <div class="av-grid" id="avg"></div>
+        <div class="av-legend">
+          <span class="av-leg"><span class="av-sw av-yes"></span>Available</span>
+          <span class="av-leg"><span class="av-sw av-maybe"></span>Maybe</span>
+          <span class="av-leg"><span class="av-sw av-no"></span>Unavailable</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Delivery ── -->
+  <div class="section">
+    <div class="sl">Sprint 33 Delivery</div>
+    <div class="glass-surface">
+      <table class="dt">
+        <thead><tr><th>Component</th><th>File</th><th>Key Props</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>GlassScheduler</td><td>glass-scheduler.tsx</td><td>days[], hours, shifts[], onShiftClick, startHour, endHour</td><td><span class="tag new">New</span></td></tr>
+          <tr><td>GlassTimeSlotPicker</td><td>glass-time-slot-picker.tsx</td><td>slots[], value, onChange, takenSlots[]</td><td><span class="tag new">New</span></td></tr>
+          <tr><td>GlassShiftCard</td><td>glass-shift-card.tsx</td><td>role, time, duration, location, assignees[], status, color</td><td><span class="tag new">New</span></td></tr>
+          <tr><td>GlassAvailabilityGrid</td><td>glass-availability-grid.tsx</td><td>people[], days[], value, onChange, states</td><td><span class="tag new">New</span></td></tr>
+          <tr><td>index.ts</td><td>components/index.ts</td><td>Export all 4 components + types</td><td><span class="tag">Update</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div><!-- /page -->
+
+<script>
+// ── Scheduler ─────────────────────────────────────────────────────────────────
+const DAYS=[['Mon',9],['Tue',10],['Wed',11],['Thu',12],['Fri',13],['Sat',14],['Sun',15]]
+const TODAY=2
+const HOURS=[8,10,12,14,16,18]
+const SHIFTS=[
+  { day:0, start:8, end:12, role:'Sales', color:'var(--prv-accent)' },
+  { day:0, start:13, end:18, role:'Floor', color:'var(--prv-purple)' },
+  { day:2, start:8, end:16, role:'Manager', color:'var(--prv-green)' },
+  { day:3, start:10, end:14, role:'Cashier', color:'var(--prv-accent)' },
+  { day:5, start:16, end:18, role:'Stock', color:'var(--prv-amber)' },
+]
+function buildScheduler(){
+  const el=document.getElementById('sch'); let h='<div class="sch-head"></div>'
+  DAYS.forEach((d,i)=>{ h+=`<div class="sch-head ${i===TODAY?'today':''}">${d[0]}<span class="dnum">${d[1]}</span></div>` })
+  HOURS.forEach((hr)=>{
+    h+=`<div class="sch-time">${hr}:00</div>`
+    for(let dy=0; dy<7; dy++){
+      let inner=''
+      SHIFTS.filter(s=>s.day===dy && s.start===hr).forEach(s=>{
+        const span=(s.end-s.start)/2*52
+        inner=`<div class="sch-shift" style="top:2px;height:${span-4}px;background:linear-gradient(180deg,${s.color},${s.color}cc)">${s.role}<div class="t">${s.start}:00–${s.end}:00</div></div>`
+      })
+      h+=`<div class="sch-cell">${inner}</div>`
+    }
+  })
+  el.innerHTML=h
+}
+buildScheduler()
+
+// ── Time Slot Picker ──────────────────────────────────────────────────────────
+const SLOTS=['08:00','08:30','09:00','09:30','10:00','10:30','11:00','11:30','12:00','13:00','13:30','14:00']
+const TAKEN=['09:30','11:00','13:30']
+let tsSel='10:00'
+function buildSlots(){
+  document.getElementById('tsg').innerHTML=SLOTS.map(s=>{
+    const taken=TAKEN.includes(s); const sel=s===tsSel
+    return `<div class="ts ${sel?'sel':''} ${taken?'taken':''}" ${taken?'':`onclick="pickSlot('${s}')"`}>${s}</div>`
+  }).join('')
+}
+function pickSlot(s){ tsSel=s; buildSlots() }
+buildSlots()
+
+// ── Availability Grid ─────────────────────────────────────────────────────────
+const PEOPLE=['Andrei','Maria','Radu','Elena','Victor']
+const DOW=['M','T','W','T','F','S','S']
+const STATES=['av-yes','av-maybe','av-no']
+let avState={}
+function buildAvail(){
+  const el=document.getElementById('avg'); let h='<div class="av-h"></div>'
+  DOW.forEach(d=>h+=`<div class="av-h">${d}</div>`)
+  PEOPLE.forEach((p,r)=>{
+    h+=`<div class="av-name">${p}</div>`
+    for(let c=0;c<7;c++){
+      const key=r+'-'+c
+      if(avState[key]===undefined) avState[key]=(c>=5)?2:(Math.random()>0.7?1:0)
+      h+=`<div class="av-cell ${STATES[avState[key]]}" onclick="cycleAv(${r},${c})"></div>`
+    }
+  })
+  el.innerHTML=h
+}
+function cycleAv(r,c){ const key=r+'-'+c; avState[key]=(avState[key]+1)%3; buildAvail() }
+buildAvail()
+</script>
+</body>
+</html>
