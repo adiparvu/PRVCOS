@@ -57,15 +57,39 @@ function LoginForm() {
     }
     setError(null)
     startTransition(async () => {
-      const { error: authError } = await supabase.auth.signInWithPassword({ email, password })
-      if (authError) {
-        setError(
-          authError.message === "Invalid login credentials"
-            ? "Incorrect email or password."
-            : authError.message
-        )
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      })
+      const data = (await res.json()) as {
+        error?: string
+        code?: string
+        retryAfterSeconds?: number
+        attemptsRemaining?: number
+        requiresMfa?: boolean
+        factorId?: string
+      }
+
+      if (!res.ok) {
+        if (data.code === "ACCOUNT_LOCKED") {
+          const minutes = data.retryAfterSeconds ? Math.ceil(data.retryAfterSeconds / 60) : 15
+          setError(`Account locked. Try again in ${minutes} minute${minutes === 1 ? "" : "s"}.`)
+        } else {
+          const attemptsMsg =
+            data.attemptsRemaining != null && data.attemptsRemaining > 0
+              ? ` ${data.attemptsRemaining} attempt${data.attemptsRemaining === 1 ? "" : "s"} remaining.`
+              : ""
+          setError((data.error ?? "Incorrect email or password.") + attemptsMsg)
+        }
         return
       }
+
+      if (data.requiresMfa && data.factorId) {
+        router.push(`/auth/verify?factorId=${data.factorId}&next=${encodeURIComponent(next)}`)
+        return
+      }
+
       router.push(next)
       router.refresh()
     })

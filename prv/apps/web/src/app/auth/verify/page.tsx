@@ -58,6 +58,14 @@ function VerifyMfaForm() {
         return
       }
 
+      // Hydrate PRV session now that MFA is verified (Supabase AAL2)
+      const sessionRes = await fetch("/api/auth/session", { method: "POST" })
+      if (!sessionRes.ok) {
+        const body = (await sessionRes.json().catch(() => ({}))) as { error?: string }
+        setError(body.error ?? "Session error. Please sign in again.")
+        return
+      }
+
       router.push(next)
       router.refresh()
     })
