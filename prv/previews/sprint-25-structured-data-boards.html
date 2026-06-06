@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PRV · Sprint 25 — Structured Data & Boards</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --prv-bg:            #000;
+    --prv-g1:            rgba(255,255,255,0.06);
+    --prv-g2:            rgba(255,255,255,0.10);
+    --prv-g3:            rgba(255,255,255,0.15);
+    --prv-g4:            rgba(255,255,255,0.22);
+    --prv-text-1:        rgba(255,255,255,0.95);
+    --prv-text-2:        rgba(255,255,255,0.65);
+    --prv-text-3:        rgba(255,255,255,0.35);
+    --prv-text-4:        rgba(255,255,255,0.15);
+    --prv-border:        rgba(255,255,255,0.12);
+    --prv-border-subtle: rgba(255,255,255,0.07);
+    --prv-accent:        rgba(10,132,255,0.9);
+  }
+
+  html, body {
+    background: var(--prv-bg);
+    color: var(--prv-text-1);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page { max-width: 960px; margin: 0 auto; padding: 48px 24px 96px; }
+
+  .sprint-header { margin-bottom: 52px; }
+  .chips { display: flex; gap: 8px; margin-bottom: 10px; }
+  .chip { padding: 3px 10px; border-radius: 100px; background: var(--prv-g2); border: 1px solid var(--prv-border-subtle); font-size: 11px; font-weight: 600; color: var(--prv-text-3); letter-spacing: .06em; text-transform: uppercase; }
+  h1 { font-size: 28px; font-weight: 700; letter-spacing: -.02em; }
+  .sub { font-size: 14px; color: var(--prv-text-3); margin-top: 4px; }
+
+  .section { margin-bottom: 60px; }
+  .sl { font-size: 11px; font-weight: 600; color: var(--prv-text-3); letter-spacing: .07em; text-transform: uppercase; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+  .sl::after { content: ""; flex: 1; height: 1px; background: var(--prv-border-subtle); }
+
+  /* Delivery table */
+  .dt { width: 100%; border-collapse: collapse; }
+  .dt th, .dt td { text-align: left; padding: 10px 14px; font-size: 13px; border-bottom: 1px solid var(--prv-border-subtle); }
+  .dt th { font-size: 11px; font-weight: 600; color: var(--prv-text-3); letter-spacing: .06em; text-transform: uppercase; }
+  .dt td { color: var(--prv-text-1); }
+  .dt td:nth-child(2) { color: var(--prv-text-3); font-family: "SF Mono", monospace; font-size: 11px; }
+  .dt tr:last-child td { border-bottom: none; }
+  .tag { display: inline-flex; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 500; background: var(--prv-g2); color: var(--prv-text-3); border: 1px solid var(--prv-border-subtle); }
+  .tag.new { background: rgba(10,132,255,.12); color: rgba(10,132,255,.9); border-color: rgba(10,132,255,.2); }
+
+  .glass-surface { position: relative; overflow: hidden; background: var(--prv-g1); border: 1px solid var(--prv-border-subtle); border-radius: 20px; }
+  .glass-surface::before { content: ""; position: absolute; inset: 0 0 auto; height: 1px; background: linear-gradient(90deg,transparent,rgba(255,255,255,0.09),transparent); pointer-events: none; }
+
+  /* ════════════════════════════════════════════════
+     GLASS TREE VIEW
+  ════════════════════════════════════════════════ */
+  .tree { padding: 14px; }
+  .tree-node { user-select: none; }
+  .tree-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 10px; border-radius: 9px; cursor: pointer;
+    font-size: 13px; color: var(--prv-text-1); transition: background 120ms;
+  }
+  .tree-row:hover { background: var(--prv-g2); }
+  .tree-row.sel { background: rgba(10,132,255,0.14); color: #fff; }
+  .tree-chevron { width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; color: var(--prv-text-3); transition: transform 220ms cubic-bezier(0.4,0,0.2,1); flex-shrink: 0; }
+  .tree-node.open > .tree-row .tree-chevron { transform: rotate(90deg); }
+  .tree-chevron.leaf { visibility: hidden; }
+  .tree-icon { width: 18px; display: flex; align-items: center; justify-content: center; color: var(--prv-text-2); flex-shrink: 0; }
+  .tree-label { flex: 1; }
+  .tree-count { font-size: 11px; color: var(--prv-text-4); font-variant-numeric: tabular-nums; }
+  .tree-children { overflow: hidden; max-height: 0; transition: max-height 280ms cubic-bezier(0.4,0,0.2,1); padding-left: 22px; }
+  .tree-node.open > .tree-children { max-height: 600px; }
+
+  /* ════════════════════════════════════════════════
+     GLASS KANBAN
+  ════════════════════════════════════════════════ */
+  .kb { display: flex; gap: 14px; padding: 18px; overflow-x: auto; }
+  .kb-col { flex: 0 0 240px; display: flex; flex-direction: column; background: var(--prv-g1); border: 1px solid var(--prv-border-subtle); border-radius: 16px; min-height: 320px; }
+  .kb-col.drop { border-color: var(--prv-accent); background: rgba(10,132,255,0.06); }
+  .kb-col-head { display: flex; align-items: center; gap: 8px; padding: 14px 14px 10px; }
+  .kb-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+  .kb-col-title { font-size: 13px; font-weight: 700; color: var(--prv-text-1); flex: 1; }
+  .kb-col-count { font-size: 11px; font-weight: 600; color: var(--prv-text-3); background: var(--prv-g2); border-radius: 100px; padding: 2px 8px; }
+  .kb-cards { flex: 1; display: flex; flex-direction: column; gap: 8px; padding: 4px 10px 10px; }
+  .kb-card {
+    background: var(--prv-g2); border: 1px solid var(--prv-border-subtle);
+    border-radius: 12px; padding: 11px 12px; cursor: grab; position: relative;
+    transition: transform 150ms, box-shadow 150ms, opacity 150ms;
+  }
+  .kb-card::before { content: ""; position: absolute; inset: 0 0 auto; height: 1px; background: linear-gradient(90deg,transparent,rgba(255,255,255,0.08),transparent); }
+  .kb-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.4); }
+  .kb-card.dragging { opacity: 0.4; cursor: grabbing; }
+  .kb-card-title { font-size: 13px; font-weight: 600; color: var(--prv-text-1); margin-bottom: 7px; }
+  .kb-card-meta { display: flex; align-items: center; justify-content: space-between; }
+  .kb-badge { font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 6px; }
+  .kb-badge.high { background: rgba(255,59,48,0.15); color: rgba(255,99,90,0.95); }
+  .kb-badge.med  { background: rgba(255,159,10,0.15); color: rgba(255,179,64,0.95); }
+  .kb-badge.low  { background: rgba(48,209,88,0.15); color: rgba(80,220,120,0.95); }
+  .kb-ava { width: 22px; height: 22px; border-radius: 50%; background: var(--prv-g3); border: 1px solid var(--prv-border); display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; color: var(--prv-text-2); }
+
+  /* ════════════════════════════════════════════════
+     GLASS SPLIT VIEW
+  ════════════════════════════════════════════════ */
+  .sv { display: flex; height: 300px; }
+  .sv-pane { overflow: auto; padding: 18px; }
+  .sv-left { flex: 0 0 38%; }
+  .sv-divider { flex: 0 0 9px; cursor: col-resize; position: relative; display: flex; align-items: center; justify-content: center; }
+  .sv-divider::before { content: ""; width: 1px; height: 100%; background: var(--prv-border-subtle); transition: background 150ms, width 150ms; }
+  .sv-divider:hover::before { background: var(--prv-accent); width: 2px; }
+  .sv-divider-grip { position: absolute; width: 4px; height: 34px; border-radius: 100px; background: var(--prv-g3); border: 1px solid var(--prv-border-subtle); }
+  .sv-right { flex: 1; }
+  .sv-item { padding: 9px 12px; border-radius: 9px; font-size: 13px; color: var(--prv-text-2); cursor: pointer; transition: background 120ms; }
+  .sv-item:hover { background: var(--prv-g2); }
+  .sv-item.sel { background: rgba(10,132,255,0.14); color: #fff; }
+  .sv-detail-title { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+  .sv-detail-body { font-size: 13px; color: var(--prv-text-3); line-height: 1.6; }
+
+  /* ════════════════════════════════════════════════
+     GLASS CAROUSEL
+  ════════════════════════════════════════════════ */
+  .cr { position: relative; }
+  .cr-viewport { overflow: hidden; border-radius: 16px; }
+  .cr-track { display: flex; transition: transform 420ms cubic-bezier(0.34,1.56,0.64,1); }
+  .cr-slide { flex: 0 0 100%; height: 220px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; }
+  .cr-slide h3 { font-size: 22px; font-weight: 700; }
+  .cr-slide p { font-size: 13px; color: rgba(255,255,255,0.7); }
+  .cr-arrow {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    width: 38px; height: 38px; border-radius: 50%;
+    background: rgba(22,22,22,0.6); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+    border: 1px solid var(--prv-border); color: var(--prv-text-1);
+    display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 2;
+    transition: background 150ms;
+  }
+  .cr-arrow:hover { background: rgba(40,40,40,0.8); }
+  .cr-arrow.prev { left: 12px; } .cr-arrow.next { right: 12px; }
+  .cr-dots { display: flex; gap: 7px; justify-content: center; margin-top: 16px; }
+  .cr-dot { width: 7px; height: 7px; border-radius: 100px; background: var(--prv-text-4); cursor: pointer; transition: width 250ms, background 250ms; }
+  .cr-dot.active { width: 22px; background: var(--prv-text-1); }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="sprint-header">
+    <div class="chips"><span class="chip">Sprint 25</span><span class="chip">Preview</span><span class="chip">Phase 1 · M9</span></div>
+    <h1>Structured Data &amp; Boards</h1>
+    <div class="sub">GlassTreeView · GlassKanban · GlassSplitView · GlassCarousel</div>
+  </div>
+
+  <!-- ── TREE VIEW ── -->
+  <div class="section">
+    <div class="sl">GlassTreeView — Expandable hierarchy, icons, counts, selection (org chart / categories)</div>
+    <div class="glass-surface">
+      <div class="tree" id="tree"></div>
+    </div>
+  </div>
+
+  <!-- ── KANBAN ── -->
+  <div class="section">
+    <div class="sl">GlassKanban — Columns with counts, draggable cards, priority badges, assignees</div>
+    <div class="glass-surface">
+      <div class="kb" id="kb"></div>
+    </div>
+  </div>
+
+  <!-- ── SPLIT VIEW ── -->
+  <div class="section">
+    <div class="sl">GlassSplitView — Resizable two-pane master/detail, draggable divider</div>
+    <div class="glass-surface">
+      <div class="sv" id="sv">
+        <div class="sv-pane sv-left" id="sv-left">
+          <div style="font-size:11px;font-weight:600;color:var(--prv-text-4);letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px">Stores</div>
+        </div>
+        <div class="sv-divider" id="sv-divider"><div class="sv-divider-grip"></div></div>
+        <div class="sv-pane sv-right" id="sv-right"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── CAROUSEL ── -->
+  <div class="section">
+    <div class="sl">GlassCarousel — Snapping slides, arrows, dot indicators, spring transition</div>
+    <div class="glass-surface" style="padding:18px">
+      <div class="cr" id="cr">
+        <button class="cr-arrow prev" onclick="crMove(-1)" aria-label="Previous"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+        <div class="cr-viewport">
+          <div class="cr-track" id="cr-track">
+            <div class="cr-slide" style="background:linear-gradient(135deg,#0A84FF,#5E5CE6)"><h3>Revenue +24%</h3><p>Q2 outperformed forecast</p></div>
+            <div class="cr-slide" style="background:linear-gradient(135deg,#30D158,#00C7BE)"><h3>98% Uptime</h3><p>All systems operational</p></div>
+            <div class="cr-slide" style="background:linear-gradient(135deg,#FF9F0A,#FF375F)"><h3>312 Projects</h3><p>Active across 18 stores</p></div>
+            <div class="cr-slide" style="background:linear-gradient(135deg,#BF5AF2,#FF6482)"><h3>4.8 ★ Rating</h3><p>From 1,204 client reviews</p></div>
+          </div>
+        </div>
+        <button class="cr-arrow next" onclick="crMove(1)" aria-label="Next"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+        <div class="cr-dots" id="cr-dots"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Delivery ── -->
+  <div class="section">
+    <div class="sl">Sprint 25 Delivery</div>
+    <div class="glass-surface">
+      <table class="dt">
+        <thead><tr><th>Component</th><th>File</th><th>Key Props</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>GlassTreeView</td><td>glass-tree-view.tsx</td><td>nodes[], selectedId, onSelect, defaultExpanded, onToggle</td><td><span class="tag new">New</span></td></tr>
+          <tr><td>GlassKanban</td><td>glass-kanban.tsx</td><td>columns[], onCardMove, renderCard, onAddCard</td><td><span class="tag new">New</span></td></tr>
+          <tr><td>GlassSplitView</td><td>glass-split-view.tsx</td><td>left, right, defaultSize, min, max, onResize</td><td><span class="tag new">New</span></td></tr>
+          <tr><td>GlassCarousel</td><td>glass-carousel.tsx</td><td>slides[], index, onChange, autoPlay, loop, showDots, showArrows</td><td><span class="tag new">New</span></td></tr>
+          <tr><td>index.ts</td><td>components/index.ts</td><td>Export all 4 components + types</td><td><span class="tag">Update</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div><!-- /page -->
+
+<script>
+// ── Tree View ─────────────────────────────────────────────────────────────────
+const TREE = [
+  { id:'grp', label:'PRV Group', icon:'building', count:3, open:true, children:[
+    { id:'ren', label:'PRV Renovations', icon:'wrench', count:2, open:true, children:[
+      { id:'cluj', label:'Cluj Store', icon:'store', count:12 },
+      { id:'buc', label:'Bucharest Store', icon:'store', count:18 },
+    ]},
+    { id:'proj', label:'PRV Projects', icon:'folder', count:1, children:[
+      { id:'west', label:'West Region', icon:'map', count:7 },
+    ]},
+    { id:'shop', label:'PRV Shop', icon:'cart', count:0, children:[] },
+  ]},
+]
+const ICONS = {
+  building:'<path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4"/>',
+  wrench:'<path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18v3h3l6.3-6.3a4 4 0 0 0 5.4-5.4l-2.1 2.1-2.4-2.4 2.1-2.1z"/>',
+  store:'<path d="M3 9l1-5h16l1 5M4 9v11h16V9M4 9h16"/>',
+  folder:'<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+  map:'<polygon points="1 6 8 3 16 6 23 3 23 18 16 21 8 18 1 21"/>',
+  cart:'<circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.7 13H19l3-8H6"/>',
+}
+function svg(p){ return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${p}</svg>` }
+let treeSel = 'cluj'
+function renderNode(node) {
+  const hasKids = node.children && node.children.length > 0
+  const open = node.open ? 'open' : ''
+  const sel = node.id === treeSel ? 'sel' : ''
+  return `<div class="tree-node ${open}" data-id="${node.id}">
+    <div class="tree-row ${sel}" onclick="treeClick(event,'${node.id}',${hasKids})">
+      <span class="tree-chevron ${hasKids?'':'leaf'}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg></span>
+      <span class="tree-icon">${svg(ICONS[node.icon]||'')}</span>
+      <span class="tree-label">${node.label}</span>
+      ${node.count!=null?`<span class="tree-count">${node.count}</span>`:''}
+    </div>
+    ${hasKids?`<div class="tree-children">${node.children.map(renderNode).join('')}</div>`:''}
+  </div>`
+}
+function renderTree(){ document.getElementById('tree').innerHTML = TREE.map(renderNode).join('') }
+function findNode(id, list){ for(const n of list){ if(n.id===id) return n; if(n.children){ const f=findNode(id,n.children); if(f) return f } } return null }
+function treeClick(e, id, hasKids){
+  e.stopPropagation(); treeSel = id
+  if(hasKids){ const n = findNode(id, TREE); n.open = !n.open }
+  renderTree()
+}
+renderTree()
+
+// ── Kanban ────────────────────────────────────────────────────────────────────
+const COLS = [
+  { id:'todo', title:'To Do', color:'#8E8E93', cards:[
+    { id:'c1', title:'Site survey — Cluj kitchen', pri:'high', who:'AP' },
+    { id:'c2', title:'Order tiles for bathroom', pri:'med', who:'MI' },
+  ]},
+  { id:'prog', title:'In Progress', color:'#0A84FF', cards:[
+    { id:'c3', title:'Demolition phase 1', pri:'high', who:'VG' },
+    { id:'c4', title:'Electrical rewiring', pri:'med', who:'RD' },
+    { id:'c5', title:'Client approval — layout', pri:'low', who:'ES' },
+  ]},
+  { id:'rev', title:'Review', color:'#FF9F0A', cards:[
+    { id:'c6', title:'Plumbing inspection', pri:'high', who:'VG' },
+  ]},
+  { id:'done', title:'Done', color:'#30D158', cards:[
+    { id:'c7', title:'Initial quote signed', pri:'low', who:'CN' },
+    { id:'c8', title:'Permits filed', pri:'med', who:'CN' },
+  ]},
+]
+function renderKb(){
+  document.getElementById('kb').innerHTML = COLS.map(col => `
+    <div class="kb-col" data-col="${col.id}" ondragover="kbOver(event)" ondragleave="kbLeave(event)" ondrop="kbDrop(event,'${col.id}')">
+      <div class="kb-col-head"><span class="kb-dot" style="background:${col.color}"></span><span class="kb-col-title">${col.title}</span><span class="kb-col-count">${col.cards.length}</span></div>
+      <div class="kb-cards">
+        ${col.cards.map(c=>`<div class="kb-card" draggable="true" data-card="${c.id}" ondragstart="kbStart(event,'${c.id}','${col.id}')" ondragend="kbEnd(event)">
+          <div class="kb-card-title">${c.title}</div>
+          <div class="kb-card-meta"><span class="kb-badge ${c.pri}">${c.pri.toUpperCase()}</span><span class="kb-ava">${c.who}</span></div>
+        </div>`).join('')}
+      </div>
+    </div>`).join('')
+}
+let drag = null
+function kbStart(e,cardId,colId){ drag={cardId,colId}; e.target.classList.add('dragging') }
+function kbEnd(e){ e.target.classList.remove('dragging') }
+function kbOver(e){ e.preventDefault(); e.currentTarget.classList.add('drop') }
+function kbLeave(e){ e.currentTarget.classList.remove('drop') }
+function kbDrop(e,colId){
+  e.preventDefault(); e.currentTarget.classList.remove('drop')
+  if(!drag) return
+  const from = COLS.find(c=>c.id===drag.colId); const to = COLS.find(c=>c.id===colId)
+  const idx = from.cards.findIndex(c=>c.id===drag.cardId)
+  const [card] = from.cards.splice(idx,1); to.cards.push(card)
+  drag=null; renderKb()
+}
+renderKb()
+
+// ── Split View ────────────────────────────────────────────────────────────────
+const STORES = [
+  { id:'cluj', name:'Cluj · Main', body:'Str. Horea 12. Revenue MTD €48,290. 12 staff. 7 open tasks. Manager: Andrei Popescu.' },
+  { id:'buc', name:'Bucharest · Pipera', body:'Bd. Pipera 1A. Revenue MTD €72,140. 18 staff. 11 open tasks. Manager: Maria Ionescu.' },
+  { id:'iasi', name:'Iași · Palas', body:'Palas Mall. Revenue MTD €31,560. 8 staff. 3 open tasks. Manager: Radu Dumitru.' },
+  { id:'tm', name:'Timișoara · Iulius', body:'Iulius Town. Revenue MTD €40,910. 10 staff. 5 open tasks. Manager: Elena Stan.' },
+]
+let svSel = 'cluj'
+function renderSv(){
+  const left = document.getElementById('sv-left')
+  left.querySelectorAll('.sv-item').forEach(n=>n.remove())
+  STORES.forEach(s=>{
+    const d = document.createElement('div'); d.className='sv-item'+(s.id===svSel?' sel':''); d.textContent=s.name
+    d.onclick=()=>{ svSel=s.id; renderSv() }; left.appendChild(d)
+  })
+  const s = STORES.find(x=>x.id===svSel)
+  document.getElementById('sv-right').innerHTML = `<div class="sv-detail-title">${s.name}</div><div class="sv-detail-body">${s.body}</div>`
+}
+renderSv()
+// resizable divider
+const sv=document.getElementById('sv'), left=document.getElementById('sv-left'), divider=document.getElementById('sv-divider')
+let resizing=false
+divider.addEventListener('mousedown',()=>{resizing=true; document.body.style.cursor='col-resize'})
+document.addEventListener('mousemove',e=>{ if(!resizing) return; const r=sv.getBoundingClientRect(); let pct=((e.clientX-r.left)/r.width)*100; pct=Math.max(20,Math.min(70,pct)); left.style.flex='0 0 '+pct+'%' })
+document.addEventListener('mouseup',()=>{resizing=false; document.body.style.cursor=''})
+
+// ── Carousel ──────────────────────────────────────────────────────────────────
+let crIdx=0; const CR_N=4
+function renderDots(){ document.getElementById('cr-dots').innerHTML = Array.from({length:CR_N},(_, i)=>`<span class="cr-dot ${i===crIdx?'active':''}" onclick="crGo(${i})"></span>`).join('') }
+function crApply(){ document.getElementById('cr-track').style.transform=`translateX(-${crIdx*100}%)`; renderDots() }
+function crMove(d){ crIdx=(crIdx+d+CR_N)%CR_N; crApply() }
+function crGo(i){ crIdx=i; crApply() }
+renderDots(); crApply()
+</script>
+</body>
+</html>
