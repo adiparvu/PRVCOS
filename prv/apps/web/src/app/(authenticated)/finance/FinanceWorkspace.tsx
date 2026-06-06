@@ -23,6 +23,7 @@ interface TxRow {
   date: string
   amount: string
   kind: "credit" | "debit"
+  [key: string]: unknown
 }
 
 interface InvoiceRow {
@@ -32,6 +33,7 @@ interface InvoiceRow {
   amount: string
   due: string
   status: "paid" | "due" | "overdue"
+  [key: string]: unknown
 }
 
 // ── Static data ───────────────────────────────────────────────────────────────
@@ -210,7 +212,7 @@ const INV_COLUMNS: TableColumn<InvoiceRow>[] = [
     label: "Status",
     align: "center",
     render: (row) => {
-      const s = STATUS_STYLE[row.status]
+      const s = STATUS_STYLE[row.status]!
       return (
         <span
           className="text-[10px] font-semibold px-2 py-0.5 rounded-[6px]"
@@ -296,7 +298,7 @@ export function FinanceWorkspace() {
   const [period, setPeriod] = useState("3m")
   const [activeTab, setActiveTab] = useState("overview")
 
-  const chart = CHART_DATA[period]
+  const chart = CHART_DATA[period]!
 
   return (
     <div className="px-4 pt-14 pb-28 max-w-2xl mx-auto">
@@ -354,12 +356,7 @@ export function FinanceWorkspace() {
       </div>
 
       {/* Main tabs */}
-      <GlassTabs
-        tabs={MAIN_TABS}
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        className="mb-4"
-      />
+      <GlassTabs tabs={MAIN_TABS} value={activeTab} onChange={setActiveTab} className="mb-4" />
 
       {/* ── Overview tab ── */}
       {activeTab === "overview" && (

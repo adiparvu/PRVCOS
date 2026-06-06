@@ -18,12 +18,8 @@ export const GET = withGates(
     requiredRoles: RoleSets.management,
     requiredScope: "SCOPE_COMPANY",
   },
-  async (
-    _req: NextRequest,
-    ctx: GateContext,
-    { params }: { params: Promise<{ roleId: string }> }
-  ): Promise<NextResponse> => {
-    const { roleId } = await params
+  async (_req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
+    const roleId = _req.nextUrl.pathname.split("/").at(-2)!
 
     // Verify role is accessible
     const [role] = await db
@@ -63,12 +59,8 @@ export const PATCH = withGates(
     requiredScope: "SCOPE_COMPANY",
     requireReauth: true,
   },
-  async (
-    req: NextRequest,
-    ctx: GateContext,
-    { params }: { params: Promise<{ roleId: string }> }
-  ): Promise<NextResponse> => {
-    const { roleId } = await params
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
+    const roleId = req.nextUrl.pathname.split("/").at(-2)!
 
     // Only custom roles can have permissions modified
     const [role] = await db

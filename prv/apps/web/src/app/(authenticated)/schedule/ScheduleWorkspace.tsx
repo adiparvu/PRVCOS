@@ -10,32 +10,32 @@ import {
 } from "@prv/ui"
 
 // ── Semantic status colors — intentionally hardcoded ──────────────────────────
-const BLUE   = "rgba(10,132,255,0.9)"
-const GREEN  = "rgba(48,209,88,0.95)"
+const BLUE = "rgba(10,132,255,0.9)"
+const GREEN = "rgba(48,209,88,0.95)"
 const PURPLE = "rgba(191,90,242,0.95)"
-const AMBER  = "rgba(255,159,10,0.95)"
-const RED    = "rgba(255,69,58,0.9)"
+const AMBER = "rgba(255,159,10,0.95)"
+const RED = "rgba(255,69,58,0.9)"
 
 // ── CSS variable shorthands ───────────────────────────────────────────────────
-const g1  = "var(--prv-g1)"
-const g2  = "var(--prv-g2)"
+const g1 = "var(--prv-g1)"
+const g2 = "var(--prv-g2)"
 const bds = "var(--prv-border-subtle)"
-const bd  = "var(--prv-border)"
-const t1  = "var(--prv-text-1)"
-const t2  = "var(--prv-text-2)"
-const t3  = "var(--prv-text-3)"
+const bd = "var(--prv-border)"
+const t1 = "var(--prv-text-1)"
+const t2 = "var(--prv-text-2)"
+const t3 = "var(--prv-text-3)"
 
 // ── Data ──────────────────────────────────────────────────────────────────────
 
 const STATS = [
-  { val: "18",  label: "Shifts" },
-  { val: "3",   label: "Open",     color: AMBER },
+  { val: "18", label: "Shifts" },
+  { val: "3", label: "Open", color: AMBER },
   { val: "94%", label: "Coverage" },
-  { val: "142h",label: "This week" },
+  { val: "142h", label: "This week" },
 ]
 
 const WEEK_DAYS = [
-  { label: "MON", date: 9,  pips: [BLUE] },
+  { label: "MON", date: 9, pips: [BLUE] },
   { label: "TUE", date: 10, pips: [GREEN, PURPLE] },
   { label: "WED", date: 11, today: true, pips: [GREEN] },
   { label: "THU", date: 12, pips: [PURPLE] },
@@ -50,7 +50,7 @@ interface ShiftData {
   day: string
   time: string
   duration: string
-  status: "confirmed" | "open" | "pending"
+  status: "confirmed" | "open" | "draft"
   statusLabel?: string
   color: string
   location: string
@@ -101,7 +101,7 @@ const SHIFTS: ShiftData[] = [
     location: "Cluj · Main Store",
     rate: "Weekend rate",
     metaLabels: ["📍 Cluj · Main", "2 slots open"],
-    assignees: [{ initials: "SI" }, {}, {}],
+    assignees: [{ initials: "SI" }, { initials: "" }, { initials: "" }],
     openSlots: 2,
     suitableFor: "Stock · Warehouse roles",
     availableStaff: "Andrei, Elena, Radu",
@@ -117,105 +117,166 @@ interface LeaveRequest {
 }
 
 const LEAVE_REQUESTS: LeaveRequest[] = [
-  { id: "l1", initials: "MI", name: "Maria Ionescu", type: "Annual leave", dates: "Jun 18–22 · 5 days" },
-  { id: "l2", initials: "RP", name: "Radu Pop",      type: "Medical",      dates: "Jun 15 · 1 day" },
+  {
+    id: "l1",
+    initials: "MI",
+    name: "Maria Ionescu",
+    type: "Annual leave",
+    dates: "Jun 18–22 · 5 days",
+  },
+  { id: "l2", initials: "RP", name: "Radu Pop", type: "Medical", dates: "Jun 15 · 1 day" },
 ]
 
 const AVAIL_PEOPLE = ["Andrei", "Maria", "Radu", "Elena"]
-const AVAIL_DAYS   = ["M", "T", "W", "T", "F", "S", "S"]
+const AVAIL_DAYS = ["M", "T", "W", "T", "F", "S", "S"]
 
 const INITIAL_AVAIL: Record<string, Availability> = (() => {
   const seed: Availability[][] = [
-    ["yes", "yes",   "yes", "maybe", "yes",   "no",    "no"],
-    ["yes", "maybe", "yes", "yes",   "yes",   "yes",   "no"],
-    ["maybe","yes",  "yes", "no",    "yes",   "maybe", "no"],
-    ["yes", "yes",   "no",  "yes",   "maybe", "no",    "no"],
+    ["yes", "yes", "yes", "maybe", "yes", "no", "no"],
+    ["yes", "maybe", "yes", "yes", "yes", "yes", "no"],
+    ["maybe", "yes", "yes", "no", "yes", "maybe", "no"],
+    ["yes", "yes", "no", "yes", "maybe", "no", "no"],
   ]
   const map: Record<string, Availability> = {}
   seed.forEach((row, r) => row.forEach((v, c) => (map[`${r}-${c}`] = v)))
   return map
 })()
 
-const SLOTS      = ["08:00","08:30","09:00","09:30","10:00","10:30","11:00","11:30"]
-const TAKEN_SLOTS = ["08:30","10:30"]
+const SLOTS = ["08:00", "08:30", "09:00", "09:30", "10:00", "10:30", "11:00", "11:30"]
+const TAKEN_SLOTS = ["08:30", "10:30"]
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="text-[11px] font-semibold uppercase tracking-widest mx-1 mt-5 mb-2.5"
-       style={{ color: t3 }}>
+    <p
+      className="text-[11px] font-semibold uppercase tracking-widest mx-1 mt-5 mb-2.5"
+      style={{ color: t3 }}
+    >
       {children}
     </p>
   )
 }
 
-function ShiftDetailSheet({
-  shift,
-  onClose,
-}: {
-  shift: ShiftData | null
-  onClose: () => void
-}) {
+function ShiftDetailSheet({ shift, onClose }: { shift: ShiftData | null; onClose: () => void }) {
   if (!shift) return null
 
   const isOpen = shift.status === "open"
 
   return (
     <div
-      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose()
+      }}
       style={{
-        position: "fixed", inset: 0, zIndex: 55,
+        position: "fixed",
+        inset: 0,
+        zIndex: 55,
         background: "rgba(0,0,0,0.45)",
         backdropFilter: "blur(6px)",
         WebkitBackdropFilter: "blur(6px)",
-        display: "flex", alignItems: "flex-end", justifyContent: "center",
+        display: "flex",
+        alignItems: "flex-end",
+        justifyContent: "center",
         padding: "0 16px 28px",
         animation: "prvFadeIn 0.2s ease",
       }}
     >
-      <div style={{ width: "100%", maxWidth: 480, animation: "prvSlideUp 0.32s cubic-bezier(0.34,1.56,0.64,1)" }}>
-        <div style={{
-          position: "relative", overflow: "hidden", borderRadius: 24,
-          background: g2, border: `1px solid ${bd}`,
-          backdropFilter: "blur(48px)", WebkitBackdropFilter: "blur(48px)",
-          boxShadow: "var(--prv-shadow-e4)",
-        }}>
+      <div
+        style={{
+          width: "100%",
+          maxWidth: 480,
+          animation: "prvSlideUp 0.32s cubic-bezier(0.34,1.56,0.64,1)",
+        }}
+      >
+        <div
+          style={{
+            position: "relative",
+            overflow: "hidden",
+            borderRadius: 24,
+            background: g2,
+            border: `1px solid ${bd}`,
+            backdropFilter: "blur(48px)",
+            WebkitBackdropFilter: "blur(48px)",
+            boxShadow: "var(--prv-shadow-e4)",
+          }}
+        >
           {/* specular */}
-          <div style={{ position: "absolute", insetInline: 0, top: 0, height: 1, background: "var(--prv-g2-spec)" }} />
+          <div
+            style={{
+              position: "absolute",
+              insetInline: 0,
+              top: 0,
+              height: 1,
+              background: "var(--prv-g2-spec)",
+            }}
+          />
           {/* drag handle */}
-          <div style={{ width: 36, height: 4, borderRadius: 2, background: bd, margin: "12px auto 0" }} />
+          <div
+            style={{ width: 36, height: 4, borderRadius: 2, background: bd, margin: "12px auto 0" }}
+          />
 
           <div style={{ padding: "16px 20px 28px" }}>
             {/* header */}
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
-              <div style={{
-                width: 48, height: 48, borderRadius: 14, flexShrink: 0,
-                background: shift.color.replace("0.9", "0.15").replace("0.95", "0.15"),
-                border: `1px solid ${shift.color.replace("0.9", "0.3").replace("0.95", "0.3")}`,
-                display: "flex", alignItems: "center", justifyContent: "center",
-              }}>
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
-                  stroke={shift.color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  {isOpen
-                    ? <><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></>
-                    : <><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></>
-                  }
+              <div
+                style={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: 14,
+                  flexShrink: 0,
+                  background: shift.color.replace("0.9", "0.15").replace("0.95", "0.15"),
+                  border: `1px solid ${shift.color.replace("0.9", "0.3").replace("0.95", "0.3")}`,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <svg
+                  width="22"
+                  height="22"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke={shift.color}
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  {isOpen ? (
+                    <>
+                      <circle cx="12" cy="12" r="10" />
+                      <path d="M12 8v4M12 16h.01" />
+                    </>
+                  ) : (
+                    <>
+                      <rect x="3" y="4" width="18" height="18" rx="2" />
+                      <path d="M16 2v4M8 2v4M3 10h18" />
+                    </>
+                  )}
                 </svg>
               </div>
               <div>
                 <div style={{ fontSize: 18, fontWeight: 700, color: t1 }}>{shift.role}</div>
-                <div style={{ fontSize: 13, color: t2, marginTop: 2 }}>{shift.day} · {shift.time}</div>
+                <div style={{ fontSize: 13, color: t2, marginTop: 2 }}>
+                  {shift.day} · {shift.time}
+                </div>
               </div>
             </div>
 
             {/* open warning */}
             {isOpen && (
-              <div style={{
-                background: "rgba(255,159,10,0.10)", border: "1px solid rgba(255,159,10,0.25)",
-                borderRadius: 12, padding: "10px 14px", marginBottom: 14,
-                fontSize: 13, fontWeight: 600, color: AMBER,
-              }}>
+              <div
+                style={{
+                  background: "rgba(255,159,10,0.10)",
+                  border: "1px solid rgba(255,159,10,0.25)",
+                  borderRadius: 12,
+                  padding: "10px 14px",
+                  marginBottom: 14,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: AMBER,
+                }}
+              >
                 ⚠️ {shift.openSlots} slot{(shift.openSlots ?? 0) > 1 ? "s" : ""} still unassigned
               </div>
             )}
@@ -223,13 +284,22 @@ function ShiftDetailSheet({
             {/* assignees */}
             <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
               {shift.assignees.map((a, i) => (
-                <div key={i} style={{
-                  width: 40, height: 40, borderRadius: 12,
-                  background: a.initials ? g2 : "transparent",
-                  border: a.initials ? `1px solid ${bd}` : `1px dashed ${bd}`,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: 13, fontWeight: 600, color: a.initials ? t2 : t3,
-                }}>
+                <div
+                  key={i}
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 12,
+                    background: a.initials ? g2 : "transparent",
+                    border: a.initials ? `1px solid ${bd}` : `1px dashed ${bd}`,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 13,
+                    fontWeight: 600,
+                    color: a.initials ? t2 : t3,
+                  }}
+                >
                   {a.initials ?? "+"}
                 </div>
               ))}
@@ -237,28 +307,53 @@ function ShiftDetailSheet({
 
             {/* info rows */}
             {[
-              ["Location",       shift.location],
-              ["Duration",       `${shift.duration}${shift.rate ? ` · ${shift.rate}` : ""}`],
-              ...(isOpen ? [
-                ["Suitable for",  shift.suitableFor ?? ""],
-                ["Available staff", shift.availableStaff ?? ""],
-              ] : [
-                ["Role",          "Staff"],
-                ["Status",        shift.status === "confirmed" ? "✓ Confirmed" : "Pending"],
-              ]),
+              ["Location", shift.location],
+              ["Duration", `${shift.duration}${shift.rate ? ` · ${shift.rate}` : ""}`],
+              ...(isOpen
+                ? [
+                    ["Suitable for", shift.suitableFor ?? ""],
+                    ["Available staff", shift.availableStaff ?? ""],
+                  ]
+                : [
+                    ["Role", "Staff"],
+                    ["Status", shift.status === "confirmed" ? "✓ Confirmed" : "Pending"],
+                  ]),
             ].map(([k, v]) => (
-              <div key={k} style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: `1px solid ${bds}` }}>
+              <div
+                key={k}
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  padding: "10px 0",
+                  borderBottom: `1px solid ${bds}`,
+                }}
+              >
                 <span style={{ fontSize: 13, color: t3 }}>{k}</span>
-                <span style={{ fontSize: 13, fontWeight: 600, color: shift.status === "confirmed" && k === "Status" ? GREEN : t1 }}>{v}</span>
+                <span
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 600,
+                    color: shift.status === "confirmed" && k === "Status" ? GREEN : t1,
+                  }}
+                >
+                  {v}
+                </span>
               </div>
             ))}
 
             <button
               onClick={onClose}
               style={{
-                width: "100%", borderRadius: 14, padding: "14px",
-                fontSize: 15, fontWeight: 600, border: "none", cursor: "pointer", marginTop: 16,
-                background: t1, color: "var(--prv-bg)",
+                width: "100%",
+                borderRadius: 14,
+                padding: "14px",
+                fontSize: 15,
+                fontWeight: 600,
+                border: "none",
+                cursor: "pointer",
+                marginTop: 16,
+                background: t1,
+                color: "var(--prv-bg)",
                 transition: "opacity .15s",
               }}
             >
@@ -279,10 +374,10 @@ function ShiftDetailSheet({
 // ── Main workspace ────────────────────────────────────────────────────────────
 
 export function ScheduleWorkspace({ storeName }: { storeName: string }) {
-  const [slot,           setSlot]      = useState<string | null>("09:00")
-  const [avail,          setAvail]     = useState<Record<string, Availability>>(INITIAL_AVAIL)
-  const [selectedShift,  setSelected]  = useState<ShiftData | null>(null)
-  const [dismissed,      setDismissed] = useState(new Set<string>())
+  const [slot, setSlot] = useState<string | null>("09:00")
+  const [avail, setAvail] = useState<Record<string, Availability>>(INITIAL_AVAIL)
+  const [selectedShift, setSelected] = useState<ShiftData | null>(null)
+  const [dismissed, setDismissed] = useState(new Set<string>())
 
   const activeLeave = LEAVE_REQUESTS.filter((l) => !dismissed.has(l.id))
 
@@ -305,20 +400,36 @@ export function ScheduleWorkspace({ storeName }: { storeName: string }) {
             className="w-8 h-8 rounded-[9px] flex items-center justify-center"
             style={{ background: g2, border: `1px solid ${bds}`, color: t2 }}
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-              strokeWidth="2.5" strokeLinecap="round">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+            >
               <polyline points="15 18 9 12 15 6" />
             </svg>
           </button>
-          <span className="text-[13px] font-semibold" style={{ color: t2 }}>Jun 9–15</span>
+          <span className="text-[13px] font-semibold" style={{ color: t2 }}>
+            Jun 9–15
+          </span>
           <button
             type="button"
             aria-label="Next week"
             className="w-8 h-8 rounded-[9px] flex items-center justify-center"
             style={{ background: g2, border: `1px solid ${bds}`, color: t2 }}
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-              strokeWidth="2.5" strokeLinecap="round">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+            >
               <polyline points="9 18 15 12 9 6" />
             </svg>
           </button>
@@ -328,20 +439,34 @@ export function ScheduleWorkspace({ storeName }: { storeName: string }) {
       {/* Stats row */}
       <div className="grid grid-cols-4 gap-2 mb-3">
         {STATS.map(({ val, label, color }) => (
-          <div key={label} className="rounded-[16px] p-3 text-center"
-               style={{ background: g1, border: `1px solid ${bds}` }}>
-            <div className="text-[18px] font-bold" style={{ color: color ?? t1 }}>{val}</div>
-            <div className="text-[9px] font-semibold uppercase tracking-wider mt-0.5" style={{ color: t3 }}>{label}</div>
+          <div
+            key={label}
+            className="rounded-[16px] p-3 text-center"
+            style={{ background: g1, border: `1px solid ${bds}` }}
+          >
+            <div className="text-[18px] font-bold" style={{ color: color ?? t1 }}>
+              {val}
+            </div>
+            <div
+              className="text-[9px] font-semibold uppercase tracking-wider mt-0.5"
+              style={{ color: t3 }}
+            >
+              {label}
+            </div>
           </div>
         ))}
       </div>
 
       {/* Open-shift alert */}
-      <div className="flex items-start gap-2.5 rounded-[14px] px-3.5 py-3 mb-3"
-           style={{ background: "rgba(255,159,10,0.10)", border: "1px solid rgba(255,159,10,0.28)" }}>
+      <div
+        className="flex items-start gap-2.5 rounded-[14px] px-3.5 py-3 mb-3"
+        style={{ background: "rgba(255,159,10,0.10)", border: "1px solid rgba(255,159,10,0.28)" }}
+      >
         <div className="w-2 h-2 rounded-full mt-1 flex-shrink-0" style={{ background: AMBER }} />
         <div>
-          <p className="text-[13px] font-semibold" style={{ color: AMBER }}>3 open shifts this week</p>
+          <p className="text-[13px] font-semibold" style={{ color: AMBER }}>
+            3 open shifts this week
+          </p>
           <p className="text-[11px] mt-0.5" style={{ color: t2 }}>
             Sat Evening · Sun Morning · Mon Warehouse — need assignment
           </p>
@@ -349,26 +474,35 @@ export function ScheduleWorkspace({ storeName }: { storeName: string }) {
       </div>
 
       {/* Week strip */}
-      <div className="flex gap-1 rounded-[18px] px-2 py-3 mb-3 overflow-x-auto"
-           style={{ background: g1, border: `1px solid ${bds}` }}>
+      <div
+        className="flex gap-1 rounded-[18px] px-2 py-3 mb-3 overflow-x-auto"
+        style={{ background: g1, border: `1px solid ${bds}` }}
+      >
         {WEEK_DAYS.map(({ label, date, today, pips, open }) => (
           <div key={date} className="flex-1 flex flex-col items-center gap-1.5 min-w-[40px]">
-            <span className="text-[10px] font-semibold tracking-wider" style={{ color: t3 }}>{label}</span>
-            <div className="w-7 h-7 rounded-full flex items-center justify-center text-[13px] font-semibold"
-                 style={{
-                   background: today ? t1 : "transparent",
-                   color: today ? "var(--prv-bg)" : t2,
-                 }}>
+            <span className="text-[10px] font-semibold tracking-wider" style={{ color: t3 }}>
+              {label}
+            </span>
+            <div
+              className="w-7 h-7 rounded-full flex items-center justify-center text-[13px] font-semibold"
+              style={{
+                background: today ? t1 : "transparent",
+                color: today ? "var(--prv-bg)" : t2,
+              }}
+            >
               {date}
             </div>
             <div className="flex flex-col gap-0.5 w-full px-1">
               {pips.map((p, i) => (
-                <div key={i} className="h-1 rounded-full w-full"
-                     style={{
-                       background: open ? "transparent" : p,
-                       border: open ? `1px dashed ${p}` : "none",
-                       opacity: 0.75,
-                     }} />
+                <div
+                  key={i}
+                  className="h-1 rounded-full w-full"
+                  style={{
+                    background: open ? "transparent" : p,
+                    border: open ? `1px dashed ${p}` : "none",
+                    opacity: 0.75,
+                  }}
+                />
               ))}
             </div>
           </div>
@@ -420,30 +554,43 @@ export function ScheduleWorkspace({ storeName }: { storeName: string }) {
       {activeLeave.length > 0 && (
         <>
           <SectionLabel>Pending leave requests</SectionLabel>
-          <div className="rounded-[18px] p-4" style={{ background: g1, border: `1px solid ${bds}` }}>
+          <div
+            className="rounded-[18px] p-4"
+            style={{ background: g1, border: `1px solid ${bds}` }}
+          >
             {activeLeave.map((req, idx) => (
-              <div key={req.id}
-                   className="flex items-center gap-3 py-2.5"
-                   style={{ borderBottom: idx < activeLeave.length - 1 ? `1px solid ${bds}` : "none" }}>
-                <div className="w-9 h-9 rounded-[11px] flex items-center justify-center flex-shrink-0 text-[14px] font-semibold"
-                     style={{ background: g2, border: `1px solid ${bd}`, color: t2 }}>
+              <div
+                key={req.id}
+                className="flex items-center gap-3 py-2.5"
+                style={{ borderBottom: idx < activeLeave.length - 1 ? `1px solid ${bds}` : "none" }}
+              >
+                <div
+                  className="w-9 h-9 rounded-[11px] flex items-center justify-center flex-shrink-0 text-[14px] font-semibold"
+                  style={{ background: g2, border: `1px solid ${bd}`, color: t2 }}
+                >
                   {req.initials}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-[13px] font-semibold truncate" style={{ color: t1 }}>{req.name}</div>
-                  <div className="text-[11px] mt-0.5" style={{ color: t3 }}>{req.type} · {req.dates}</div>
+                  <div className="text-[13px] font-semibold truncate" style={{ color: t1 }}>
+                    {req.name}
+                  </div>
+                  <div className="text-[11px] mt-0.5" style={{ color: t3 }}>
+                    {req.type} · {req.dates}
+                  </div>
                 </div>
                 <div className="flex gap-1.5 flex-shrink-0">
                   <button
                     onClick={() => setDismissed((s) => new Set([...s, req.id]))}
                     className="text-[12px] font-semibold rounded-[8px] px-3 py-1.5 border-none cursor-pointer"
-                    style={{ background: "rgba(48,209,88,0.15)", color: GREEN }}>
+                    style={{ background: "rgba(48,209,88,0.15)", color: GREEN }}
+                  >
                     Approve
                   </button>
                   <button
                     onClick={() => setDismissed((s) => new Set([...s, req.id]))}
                     className="text-[12px] font-semibold rounded-[8px] px-3 py-1.5 border-none cursor-pointer"
-                    style={{ background: "rgba(255,69,58,0.12)", color: RED }}>
+                    style={{ background: "rgba(255,69,58,0.12)", color: RED }}
+                  >
                     Deny
                   </button>
                 </div>

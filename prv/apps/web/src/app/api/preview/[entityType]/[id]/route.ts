@@ -110,28 +110,21 @@ async function resolveEntityPayload(
       const [row] = await db
         .select({
           id: clients.id,
-          firstName: clients.firstName,
-          lastName: clients.lastName,
+          name: clients.name,
           email: clients.email,
           phone: clients.phone,
-          clientType: clients.clientType,
+          type: clients.type,
           status: clients.status,
-          companyName: clients.companyName,
         })
         .from(clients)
         .where(and(eq(clients.id, entityId), eq(clients.companyId, companyId)))
 
       if (!row) return null
 
-      const name =
-        row.clientType === "business" && row.companyName
-          ? row.companyName
-          : `${row.firstName ?? ""} ${row.lastName ?? ""}`.trim()
-
       return {
         entityType: "client",
         id: row.id,
-        name,
+        name: row.name,
         subtitle: row.status,
         avatarUrl: null,
         iconPath: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z",
@@ -139,7 +132,7 @@ async function resolveEntityPayload(
         metadata: [
           ...(row.email ? [{ label: "Email", value: row.email }] : []),
           ...(row.phone ? [{ label: "Phone", value: row.phone }] : []),
-          { label: "Type", value: row.clientType },
+          { label: "Type", value: row.type },
         ],
         socialCount: 0,
         hasBusinessCard: false,
@@ -189,7 +182,7 @@ async function resolveEntityPayload(
           code: projects.code,
           status: projects.status,
           startDate: projects.startDate,
-          endDate: projects.endDate,
+          dueDate: projects.dueDate,
           budget: projects.budget,
         })
         .from(projects)
@@ -208,12 +201,8 @@ async function resolveEntityPayload(
         metadata: [
           { label: "Status", value: row.status },
           ...(row.budget ? [{ label: "Budget", value: `${row.budget} RON` }] : []),
-          ...(row.startDate
-            ? [{ label: "Start", value: row.startDate.toLocaleDateString("ro-RO") }]
-            : []),
-          ...(row.endDate
-            ? [{ label: "End", value: row.endDate.toLocaleDateString("ro-RO") }]
-            : []),
+          ...(row.startDate ? [{ label: "Start", value: String(row.startDate) }] : []),
+          ...(row.dueDate ? [{ label: "Due", value: String(row.dueDate) }] : []),
         ],
         socialCount: 0,
         hasBusinessCard: false,

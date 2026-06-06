@@ -57,7 +57,7 @@ export const GET = withGates(
         entityId: auditLogs.entityId,
         method: auditLogs.method,
         path: auditLogs.path,
-        statusCode: auditLogs.statusCode,
+        gateFailed: auditLogs.gateFailed,
         ipAddress: auditLogs.ipAddress,
         userAgent: auditLogs.userAgent,
         payload: auditLogs.payload,

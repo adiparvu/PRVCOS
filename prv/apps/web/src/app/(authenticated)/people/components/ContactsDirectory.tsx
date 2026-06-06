@@ -35,7 +35,7 @@ export function ContactsDirectory({ companyId, initialStatusFilter = "" }: Conta
   const sectionRefs = useRef<Map<string, HTMLElement>>(new Map())
 
   // Subscribe to presence for live status updates
-  usePresence(companyId)
+  usePresence({ companyId })
   const presenceMap = usePresenceStore((s) => s.members)
 
   const { data, isLoading, error } = useQuery({
@@ -55,7 +55,7 @@ export function ContactsDirectory({ companyId, initialStatusFilter = "" }: Conta
           presence: {
             status: live.status,
             statusMessage: live.statusMessage ?? null,
-            lastSeenAt: live.lastSeenAt?.toISOString() ?? null,
+            lastSeenAt: live.lastSeenAt ?? null,
           },
         }
       }
@@ -137,8 +137,7 @@ export function ContactsDirectory({ companyId, initialStatusFilter = "" }: Conta
               onClick={() => setStatusFilter(value)}
               className="shrink-0 px-3 py-1.5 rounded-full text-[12px] font-medium"
               style={{
-                background:
-                  statusFilter === value ? "var(--prv-g3)" : "var(--prv-g1)",
+                background: statusFilter === value ? "var(--prv-g3)" : "var(--prv-g1)",
                 border: `1px solid ${statusFilter === value ? "var(--prv-g3)" : "var(--prv-border)"}`,
                 color: statusFilter === value ? "var(--prv-text-1)" : "var(--prv-text-2)",
                 transition: "all 150ms",

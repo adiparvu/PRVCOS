@@ -19,12 +19,8 @@ export const DELETE = withGates(
     requiredScope: "SCOPE_COMPANY",
     requireReauth: true,
   },
-  async (
-    _req: NextRequest,
-    ctx: GateContext,
-    { params }: { params: Promise<{ assignmentId: string }> }
-  ): Promise<NextResponse> => {
-    const { assignmentId } = await params
+  async (_req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
+    const assignmentId = _req.nextUrl.pathname.split("/").at(-1)!
 
     const [assignment] = await db
       .select({ userId: userRoleAssignments.userId, companyId: userRoleAssignments.companyId })

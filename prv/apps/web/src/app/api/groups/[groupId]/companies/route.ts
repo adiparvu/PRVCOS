@@ -23,12 +23,8 @@ export const POST = withGates(
     requiredScope: "SCOPE_PLATFORM",
     requireReauth: true,
   },
-  async (
-    req: NextRequest,
-    ctx: GateContext,
-    { params }: { params: Promise<{ groupId: string }> }
-  ): Promise<NextResponse> => {
-    const { groupId } = await params
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
+    const groupId = req.nextUrl.pathname.split("/").at(-2)!
 
     let body: unknown
     try {
@@ -103,12 +99,8 @@ export const DELETE = withGates(
     requiredScope: "SCOPE_PLATFORM",
     requireReauth: true,
   },
-  async (
-    req: NextRequest,
-    ctx: GateContext,
-    { params }: { params: Promise<{ groupId: string }> }
-  ): Promise<NextResponse> => {
-    const { groupId } = await params
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
+    const groupId = req.nextUrl.pathname.split("/").at(-2)!
 
     const url = new URL(req.url)
     const companyId = url.searchParams.get("companyId")

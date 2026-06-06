@@ -35,7 +35,7 @@ export const DELETE = withGates(
   { action: "auth.totp.disable", endpointClass: "auth", requireMfa: true, requireReauth: true },
   async (_req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
     const supabase = await createSupabaseServerClient()
-    const admin = createSupabaseAdminClient()
+    const admin = await createSupabaseAdminClient()
 
     // List TOTP factors
     const { data: factorsData, error: listErr } = await supabase.auth.mfa.listFactors()
@@ -51,7 +51,7 @@ export const DELETE = withGates(
     // Unenroll the factor via admin client so we don't need the user's JWT dance
     const { error: unenrollErr } = await admin.auth.admin.mfa.deleteFactor({
       userId: ctx.session.userId,
-      factorId: totpFactor.id,
+      id: totpFactor.id,
     })
 
     if (unenrollErr) {

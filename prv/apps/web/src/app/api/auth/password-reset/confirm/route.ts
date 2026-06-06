@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  const admin = createSupabaseAdminClient()
+  const admin = await createSupabaseAdminClient()
   const { error: updateErr } = await admin.auth.admin.updateUserById(row.userId, {
     password: newPassword,
   })

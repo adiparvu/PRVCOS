@@ -14,7 +14,7 @@ const SHARE_ICON = "M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2
 const CARD_ICON =
   "M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2ZM16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"
 
-const ENTITY_REGISTRY: Record<EntityType, EntityConfig> = {
+export const ENTITY_REGISTRY: Record<EntityType, EntityConfig> = {
   employee: {
     entityType: "employee",
     requiredPermission: "presence.view_team",

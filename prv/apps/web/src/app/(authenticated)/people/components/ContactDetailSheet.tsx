@@ -70,7 +70,7 @@ export function ContactDetailSheet({ member, onClose }: ContactDetailSheetProps)
           {/* Header */}
           <div className="flex items-start gap-4 pt-1">
             <PresenceRing
-              status={member.presence.status as never}
+              status={member.presence.status}
               size={64}
               avatarUrl={member.avatarUrl}
               name={member.fullName}
@@ -84,8 +84,11 @@ export function ContactDetailSheet({ member, onClose }: ContactDetailSheetProps)
               )}
               <div className="mt-2">
                 <PresenceStatusBadge
-                  status={member.presence.status as never}
-                  statusMessage={member.presence.statusMessage}
+                  status={
+                    member.presence
+                      .status as import("@/components/presence/PresenceDot").PresenceStatus
+                  }
+                  message={member.presence.statusMessage}
                 />
               </div>
             </div>

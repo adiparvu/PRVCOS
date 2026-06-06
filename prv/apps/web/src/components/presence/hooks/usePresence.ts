@@ -9,7 +9,7 @@ const HEARTBEAT_INTERVAL_MS = 30_000
 
 interface UsePresenceOptions {
   companyId: string
-  currentUserId: string
+  currentUserId?: string
   initialMembers?: PresenceMember[]
 }
 
@@ -46,7 +46,7 @@ export function usePresence({ companyId, currentUserId, initialMembers }: UsePre
           table: "user_presence",
           filter: `company_id=eq.${companyId}`,
         },
-        (payload) => {
+        (payload: { eventType: string; new: unknown }) => {
           if (payload.eventType === "DELETE") return
           const row = payload.new as Record<string, unknown>
           upsertMember({

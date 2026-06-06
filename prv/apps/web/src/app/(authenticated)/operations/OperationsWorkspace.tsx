@@ -32,7 +32,7 @@ const STORE_SECTIONS: ListViewSection[] = [
     items: [
       {
         id: "s1",
-        icon: <GlassStatusDot kind="online" />,
+        icon: <GlassStatusDot status="online" />,
         title: "Cluj · Main",
         subtitle: "€34,200 revenue today",
         value: "39% margin",
@@ -40,7 +40,7 @@ const STORE_SECTIONS: ListViewSection[] = [
       },
       {
         id: "s2",
-        icon: <GlassStatusDot kind="online" />,
+        icon: <GlassStatusDot status="online" />,
         title: "București · Floreasca",
         subtitle: "€28,900 revenue today",
         value: "34% margin",
@@ -48,7 +48,7 @@ const STORE_SECTIONS: ListViewSection[] = [
       },
       {
         id: "s3",
-        icon: <GlassStatusDot kind="online" />,
+        icon: <GlassStatusDot status="online" />,
         title: "Timișoara · Iulius",
         subtitle: "€21,400 revenue today",
         value: "31% margin",
@@ -56,7 +56,7 @@ const STORE_SECTIONS: ListViewSection[] = [
       },
       {
         id: "s4",
-        icon: <GlassStatusDot kind="away" />,
+        icon: <GlassStatusDot status="away" />,
         title: "Brașov · Coresi",
         subtitle: "€18,600 revenue today",
         value: "29% margin",
@@ -64,7 +64,7 @@ const STORE_SECTIONS: ListViewSection[] = [
       },
       {
         id: "s5",
-        icon: <GlassStatusDot kind="busy" />,
+        icon: <GlassStatusDot status="busy" />,
         title: "Iași · Palas",
         subtitle: "⚠ Low stock · 3 items",
         value: "27% margin",
@@ -113,14 +113,50 @@ interface OrderRow {
   customer: string
   amount: string
   status: "paid" | "pending" | "shipped"
+  [key: string]: unknown
 }
 
 const ORDERS: OrderRow[] = [
-  { id: "1", ref: "#ORD-4821", store: "Cluj", customer: "Mihai Popescu", amount: "€298", status: "paid" },
-  { id: "2", ref: "#ORD-4820", store: "București", customer: "Ana Ionescu", amount: "€540", status: "shipped" },
-  { id: "3", ref: "#ORD-4819", store: "Timișoara", customer: "Radu Dima", amount: "€120", status: "pending" },
-  { id: "4", ref: "#ORD-4818", store: "Brașov", customer: "Elena Marin", amount: "€76", status: "paid" },
-  { id: "5", ref: "#ORD-4817", store: "Cluj", customer: "Vlad Nicu", amount: "€1,200", status: "shipped" },
+  {
+    id: "1",
+    ref: "#ORD-4821",
+    store: "Cluj",
+    customer: "Mihai Popescu",
+    amount: "€298",
+    status: "paid",
+  },
+  {
+    id: "2",
+    ref: "#ORD-4820",
+    store: "București",
+    customer: "Ana Ionescu",
+    amount: "€540",
+    status: "shipped",
+  },
+  {
+    id: "3",
+    ref: "#ORD-4819",
+    store: "Timișoara",
+    customer: "Radu Dima",
+    amount: "€120",
+    status: "pending",
+  },
+  {
+    id: "4",
+    ref: "#ORD-4818",
+    store: "Brașov",
+    customer: "Elena Marin",
+    amount: "€76",
+    status: "paid",
+  },
+  {
+    id: "5",
+    ref: "#ORD-4817",
+    store: "Cluj",
+    customer: "Vlad Nicu",
+    amount: "€1,200",
+    status: "shipped",
+  },
 ]
 
 const STATUS_COLORS: Record<string, string> = {
@@ -157,14 +193,14 @@ const ORDER_COLUMNS: TableColumn<OrderRow>[] = [
 
 const PRIORITY_COLORS: Record<string, { bg: string; color: string }> = {
   high: { bg: "rgba(255,59,48,0.15)", color: "rgba(255,99,90,0.95)" },
-  med:  { bg: "rgba(255,159,10,0.15)", color: "rgba(255,179,64,0.95)" },
-  low:  { bg: "rgba(48,209,88,0.15)", color: "rgba(80,220,120,0.95)" },
+  med: { bg: "rgba(255,159,10,0.15)", color: "rgba(255,179,64,0.95)" },
+  low: { bg: "rgba(48,209,88,0.15)", color: "rgba(80,220,120,0.95)" },
 }
 
 const MAIN_TABS: TabItem[] = [
-  { id: "stores", label: "Stores" },
-  { id: "tasks", label: "Tasks" },
-  { id: "orders", label: "Orders" },
+  { value: "stores", label: "Stores" },
+  { value: "tasks", label: "Tasks" },
+  { value: "orders", label: "Orders" },
 ]
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -177,7 +213,13 @@ function Label({ children }: { children: React.ReactNode }) {
   )
 }
 
-function GlassCard({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+function GlassCard({
+  children,
+  className = "",
+}: {
+  children: React.ReactNode
+  className?: string
+}) {
   return (
     <div
       className={`rounded-[18px] p-4 relative ${className}`}
@@ -201,11 +243,12 @@ export function OperationsWorkspace() {
     setKanban((prev) => {
       const next = prev.map((col) => ({ ...col, cards: [...col.cards] }))
       const fromCol = next.find((c) => c.id === fromColId)
-      const toCol   = next.find((c) => c.id === toColId)
+      const toCol = next.find((c) => c.id === toColId)
       if (!fromCol || !toCol) return prev
-      const idx  = fromCol.cards.findIndex((c) => c.id === cardId)
+      const idx = fromCol.cards.findIndex((c) => c.id === cardId)
       if (idx === -1) return prev
       const [card] = fromCol.cards.splice(idx, 1)
+      if (!card) return prev
       toCol.cards.push(card)
       return next
     })
@@ -273,12 +316,7 @@ export function OperationsWorkspace() {
       </div>
 
       {/* Main tabs */}
-      <GlassTabs
-        tabs={MAIN_TABS}
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        className="mb-4"
-      />
+      <GlassTabs tabs={MAIN_TABS} value={activeTab} onChange={setActiveTab} className="mb-4" />
 
       {/* ── Stores tab ── */}
       {activeTab === "stores" && (
@@ -296,7 +334,7 @@ export function OperationsWorkspace() {
             onCardMove={handleCardMove}
             renderCard={(card) => {
               const d = card.data as { priority: string; assignee: string }
-              const p = PRIORITY_COLORS[d.priority] ?? PRIORITY_COLORS.low
+              const p = PRIORITY_COLORS[d.priority] ?? PRIORITY_COLORS["low"]!
               return (
                 <div>
                   <p className="text-[13px] font-semibold text-white/90 mb-2 leading-snug">
@@ -328,11 +366,7 @@ export function OperationsWorkspace() {
         <>
           <Label>Recent Orders</Label>
           <GlassCard>
-            <GlassTable<OrderRow>
-              columns={ORDER_COLUMNS}
-              data={ORDERS}
-              keyField="id"
-            />
+            <GlassTable<OrderRow> columns={ORDER_COLUMNS} data={ORDERS} keyField="id" />
           </GlassCard>
         </>
       )}

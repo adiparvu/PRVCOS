@@ -18,12 +18,8 @@ export const GET = withGates(
     requiredRoles: new Set(["group_ceo", "ceo", "system_administrator"] as const),
     requiredScope: "SCOPE_GROUP",
   },
-  async (
-    _req: NextRequest,
-    ctx: GateContext,
-    { params }: { params: Promise<{ groupId: string }> }
-  ): Promise<NextResponse> => {
-    const { groupId } = await params
+  async (_req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
+    const groupId = _req.nextUrl.pathname.split("/").at(-1)!
 
     // Verify the session's company is a member of this group
     const [membership] = await db

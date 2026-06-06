@@ -8,6 +8,7 @@ export interface SocialProfile {
   url: string
   displayName?: string | null
   isPublic: boolean
+  consentGiven?: boolean
 }
 
 type Mode = "chip" | "icon" | "count"

@@ -45,7 +45,7 @@ export function ContactRow({ member, onClick }: ContactRowProps) {
         onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
       >
         <PresenceRing
-          status={member.presence.status as never}
+          status={member.presence.status}
           size={40}
           avatarUrl={member.avatarUrl}
           name={member.fullName}

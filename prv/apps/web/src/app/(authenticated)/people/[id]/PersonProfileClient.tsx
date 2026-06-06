@@ -83,7 +83,7 @@ export function PersonProfileClient({
         {/* Hero header */}
         <div className="flex items-start gap-5 pt-4">
           <PresenceRing
-            status={presence.status as never}
+            status={presence.status}
             size={96}
             avatarUrl={person.avatarUrl}
             name={person.fullName}
@@ -95,8 +95,10 @@ export function PersonProfileClient({
             {person.jobTitle && <p className="text-white/50 text-[15px] mt-1">{person.jobTitle}</p>}
             <div className="mt-2">
               <PresenceStatusBadge
-                status={presence.status as never}
-                statusMessage={presence.statusMessage}
+                status={
+                  presence.status as import("@/components/presence/PresenceDot").PresenceStatus
+                }
+                message={presence.statusMessage}
               />
             </div>
           </div>

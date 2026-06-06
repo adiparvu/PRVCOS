@@ -3,7 +3,7 @@ import { db } from "@prv/db"
 import { passwordResetTokens } from "@prv/db/schema"
 import { eq, and, gt, isNull } from "drizzle-orm"
 import { createSupabaseAdminClient } from "@/lib/supabase/server"
-import { sendEmail } from "@prv/email"
+import { sendEmail, passwordResetEmail } from "@prv/email"
 import { checkRateLimit } from "@prv/cache"
 import { z } from "zod"
 
@@ -62,10 +62,10 @@ export async function POST(req: NextRequest) {
   }
 
   const { email } = parsed.data
-  const admin = createSupabaseAdminClient()
+  const admin = await createSupabaseAdminClient()
 
   const { data: userList } = await admin.auth.admin.listUsers()
-  const user = userList?.users.find((u) => u.email === email)
+  const user = userList?.users.find((u: { email?: string }) => u.email === email)
 
   // Silently succeed if user not found (enumeration prevention)
   if (!user) {
@@ -88,16 +88,13 @@ export async function POST(req: NextRequest) {
 
   const resetUrl = `${process.env["NEXT_PUBLIC_APP_URL"]}/auth/password-reset/confirm?token=${rawToken}`
 
-  await sendEmail({
-    to: email,
-    subject: "Reset your PRV password",
-    templateId: "password-reset",
-    variables: {
-      resetUrl,
-      expiresInMinutes: "15",
-      ipAddress: ip,
-    },
+  const { subject, html } = passwordResetEmail({
+    firstName: user.email?.split("@")[0] ?? "User",
+    resetUrl,
+    expiresInMinutes: 15,
+    ipAddress: ip,
   })
+  await sendEmail({ to: email, subject, html })
 
   return NextResponse.json(
     { message: "If an account exists with that email, a reset link has been sent." },
