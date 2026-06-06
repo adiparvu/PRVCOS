@@ -328,6 +328,9 @@ export type { GlassPricingTableProps, PricingPlan, PricingFeature } from "./glas
 export { GlassTestimonial } from "./glass-testimonial"
 export type { GlassTestimonialProps } from "./glass-testimonial"
 
+export { GlassPullToRefresh } from "./glass-pull-to-refresh"
+export type { GlassPullToRefreshProps } from "./glass-pull-to-refresh"
+
 export {
   ActionSheet,
   ConfirmationSheet,
