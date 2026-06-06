@@ -363,3 +363,9 @@ export type {
   FullscreenSheetProps,
   StandardSheetProps,
 } from "./glass-bottom-sheet"
+
+export { SnapSheet } from "./glass-snap-sheet"
+export type { SnapSheetProps, SnapPoint } from "./glass-snap-sheet"
+
+export { SheetStackProvider, useSheetStack } from "./glass-sheet-context"
+export type { SheetConfig } from "./glass-sheet-context"

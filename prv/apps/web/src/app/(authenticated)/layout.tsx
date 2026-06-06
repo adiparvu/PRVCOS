@@ -5,6 +5,7 @@ import { FloatingTabBar } from "./floating-tab-bar"
 import { FloatingSearchBar } from "./floating-search-bar"
 import { DynamicIslandBar } from "./dynamic-island-bar"
 import { AppearanceButton } from "./appearance-button"
+import { SheetStackClient } from "./sheet-stack-client"
 
 export const dynamic = "force-dynamic"
 
@@ -42,7 +43,9 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
       <FloatingSearchBar role={session.role} />
 
       {/* Main content — padded top for search bar, bottom for tab bar */}
-      <main className="relative z-10 min-h-screen pt-24 pb-32">{children}</main>
+      <SheetStackClient>
+        <main className="relative z-10 min-h-screen pt-24 pb-32">{children}</main>
+      </SheetStackClient>
 
       {/* Appearance settings toggle — fixed top-right */}
       <AppearanceButton />
