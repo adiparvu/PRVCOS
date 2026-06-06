@@ -286,6 +286,9 @@ export type { GlassMapViewProps } from "./glass-map-view"
 export { GlassLocationPin } from "./glass-location-pin"
 export type { GlassLocationPinProps, PinColor } from "./glass-location-pin"
 
+export { GlassRoutePreview } from "./glass-route-preview"
+export type { GlassRoutePreviewProps, RouteStat } from "./glass-route-preview"
+
 export {
   ActionSheet,
   ConfirmationSheet,
