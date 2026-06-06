@@ -212,6 +212,9 @@ export type { GlassKanbanProps, KanbanColumn, KanbanCard } from "./glass-kanban"
 export { GlassSplitView } from "./glass-split-view"
 export type { GlassSplitViewProps, SplitOrientation } from "./glass-split-view"
 
+export { GlassCarousel } from "./glass-carousel"
+export type { GlassCarouselProps } from "./glass-carousel"
+
 export {
   ActionSheet,
   ConfirmationSheet,
