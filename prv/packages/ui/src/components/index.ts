@@ -277,6 +277,9 @@ export type { GlassChatComposerProps } from "./glass-chat-composer"
 export { GlassTypingIndicator } from "./glass-typing-indicator"
 export type { GlassTypingIndicatorProps, TypingSize } from "./glass-typing-indicator"
 
+export { GlassAIPromptCard } from "./glass-ai-prompt-card"
+export type { GlassAIPromptCardProps, PromptVariant } from "./glass-ai-prompt-card"
+
 export {
   ActionSheet,
   ConfirmationSheet,
