@@ -319,6 +319,9 @@ export type { GlassAvailabilityGridProps, Availability } from "./glass-availabil
 export { GlassHero } from "./glass-hero"
 export type { GlassHeroProps, HeroAction } from "./glass-hero"
 
+export { GlassFeatureGrid } from "./glass-feature-grid"
+export type { GlassFeatureGridProps, FeatureItem } from "./glass-feature-grid"
+
 export {
   ActionSheet,
   ConfirmationSheet,
