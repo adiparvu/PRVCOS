@@ -221,6 +221,9 @@ export type { GlassImageGalleryProps, GalleryImage } from "./glass-image-gallery
 export { GlassVideoPlayer } from "./glass-video-player"
 export type { GlassVideoPlayerProps } from "./glass-video-player"
 
+export { GlassCodeBlock } from "./glass-code-block"
+export type { GlassCodeBlockProps } from "./glass-code-block"
+
 export {
   ActionSheet,
   ConfirmationSheet,
