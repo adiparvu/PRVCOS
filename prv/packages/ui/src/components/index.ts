@@ -259,6 +259,9 @@ export type { GlassCopyButtonProps, GlassKbdProps } from "./glass-copy-button"
 export { GlassSparkline } from "./glass-sparkline"
 export type { GlassSparklineProps, SparklineTrend } from "./glass-sparkline"
 
+export { GlassHeatmap } from "./glass-heatmap"
+export type { GlassHeatmapProps, HeatmapValue } from "./glass-heatmap"
+
 export {
   ActionSheet,
   ConfirmationSheet,
