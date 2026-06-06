@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PRV · Screen 15 — Fleet</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #000; --g1: rgba(255,255,255,0.06); --g2: rgba(255,255,255,0.10); --g3: rgba(255,255,255,0.15);
+    --t1: rgba(255,255,255,0.95); --t2: rgba(255,255,255,0.65); --t3: rgba(255,255,255,0.35);
+    --bd: rgba(255,255,255,0.12); --bds: rgba(255,255,255,0.07);
+    --green: rgba(48,209,88,0.95); --red: rgba(255,69,58,0.95); --amber: rgba(255,159,10,0.95); --blue: rgba(10,132,255,0.9);
+  }
+  html,body { background:var(--bg); color:var(--t1); font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif; -webkit-font-smoothing:antialiased; min-height:100vh; }
+  body { background: radial-gradient(ellipse 60% 20% at 30% -5%, rgba(255,159,10,0.04), transparent), #000; }
+
+  .tag { max-width:460px; margin:24px auto 0; padding:0 16px; display:flex; gap:8px; }
+  .chip { padding:3px 10px; border-radius:100px; background:var(--g2); border:1px solid var(--bds); font-size:11px; font-weight:600; color:var(--t3); letter-spacing:.06em; text-transform:uppercase; }
+  .frame { max-width:460px; margin:0 auto; padding:32px 16px 120px; }
+  .sep { height:1px; background:var(--bds); margin:28px 0; }
+  .view-label { font-size:10px; font-weight:700; color:var(--t3); text-transform:uppercase; letter-spacing:.1em; margin-bottom:12px; }
+  .lbl { font-size:11px; font-weight:600; color:var(--t3); text-transform:uppercase; letter-spacing:.07em; margin:18px 2px 10px; }
+
+  .hdr { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:20px; }
+  .hdr-k { font-size:13px; color:var(--t3); margin-bottom:2px; }
+  .hdr-h1 { font-size:26px; font-weight:700; letter-spacing:-.02em; }
+
+  .kpis { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:14px; }
+  .kpi { padding:12px 8px; border-radius:14px; background:var(--g1); border:1px solid var(--bds); text-align:center; }
+  .kpi-v { font-size:17px; font-weight:700; }
+  .kpi-l { font-size:10px; font-weight:600; color:var(--t3); text-transform:uppercase; letter-spacing:.06em; margin-top:3px; }
+
+  .seg { display:flex; gap:4px; padding:4px; background:var(--g1); border:1px solid var(--bds); border-radius:12px; margin-bottom:14px; }
+  .seg-btn { flex:1; padding:6px 0; border-radius:8px; font-size:12px; font-weight:600; color:var(--t3); text-align:center; }
+  .seg-btn.on { background:var(--g2); color:var(--t1); }
+
+  .card { background:var(--g1); border:1px solid var(--bds); border-radius:18px; position:relative; overflow:hidden; margin-bottom:12px; }
+  .card::before { content:""; position:absolute; inset:0 0 auto; height:1px; background:linear-gradient(90deg,transparent,rgba(255,255,255,0.09),transparent); }
+
+  /* Vehicle card */
+  .vehicle-row { display:flex; align-items:center; gap:14px; padding:14px 16px; border-bottom:1px solid var(--bds); }
+  .vehicle-row:last-child { border-bottom:none; }
+  .v-icon { width:44px; height:44px; border-radius:12px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .v-plate { font-size:11px; font-weight:800; letter-spacing:.06em; font-family:monospace; color:var(--t1); background:var(--g2); border:1px solid var(--bds); padding:3px 8px; border-radius:6px; display:inline-block; margin-bottom:3px; }
+  .v-model { font-size:13px; font-weight:600; }
+  .v-sub { font-size:11px; color:var(--t3); margin-top:2px; }
+  .pill { font-size:10px; font-weight:600; padding:3px 8px; border-radius:6px; }
+  .p-active   { background:rgba(48,209,88,0.13); color:var(--green); }
+  .p-idle     { background:rgba(255,255,255,0.08); color:var(--t2); }
+  .p-service  { background:rgba(255,159,10,0.13); color:var(--amber); }
+  .p-unavail  { background:rgba(255,69,58,0.12); color:var(--red); }
+
+  /* Fuel bar */
+  .fuel-wrap { margin-top:6px; display:flex; align-items:center; gap:6px; }
+  .fuel-bar { flex:1; height:4px; background:rgba(255,255,255,0.08); border-radius:2px; overflow:hidden; }
+  .fuel-fill { height:100%; border-radius:2px; }
+  .fuel-lbl { font-size:10px; color:var(--t3); width:26px; text-align:right; flex-shrink:0; }
+
+  /* Stat detail row */
+  .det-row { display:flex; justify-content:space-between; align-items:center; padding:11px 16px; border-bottom:1px solid var(--bds); }
+  .det-row:last-child { border-bottom:none; }
+
+  /* Maintenance item */
+  .maint-row { display:flex; align-items:center; gap:12px; padding:12px 16px; border-bottom:1px solid var(--bds); }
+  .maint-row:last-child { border-bottom:none; }
+  .maint-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+
+  /* Activity timeline */
+  .act-row { display:flex; align-items:flex-start; gap:10px; padding:10px 16px; border-bottom:1px solid var(--bds); }
+  .act-row:last-child { border-bottom:none; }
+  .act-dot { width:7px; height:7px; border-radius:50%; margin-top:5px; flex-shrink:0; }
+  .act-time { font-size:11px; color:var(--t3); width:44px; flex-shrink:0; margin-top:1px; }
+
+  /* Alert banner */
+  .alert { display:flex; align-items:center; gap:10px; padding:12px 14px; border-radius:14px; background:rgba(255,159,10,0.07); border:1px solid rgba(255,159,10,0.18); margin-bottom:14px; }
+
+  /* Tabbar */
+  .tabbar { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); display:inline-flex; gap:2px; padding:7px; border-radius:22px; background:rgba(22,22,22,0.7); backdrop-filter:blur(48px); border:1px solid var(--bd); box-shadow:inset 0 1px 0 rgba(255,255,255,0.12),0 16px 40px rgba(0,0,0,0.55); }
+  .tab { display:flex; flex-direction:column; align-items:center; gap:3px; padding:8px 13px; border-radius:14px; font-size:10px; font-weight:600; color:var(--t3); }
+  .tab.on { background:var(--g2); color:var(--t1); }
+</style>
+</head>
+<body>
+
+<div class="tag">
+  <span class="chip">Screen 15</span>
+  <span class="chip">Preview</span>
+  <span class="chip">apps/web · /fleet</span>
+</div>
+
+<div class="frame">
+
+  <!-- ══ VIEW A: Fleet Overview ══ -->
+  <div class="view-label">View A — Fleet Overview</div>
+
+  <div class="hdr">
+    <div><div class="hdr-k">Operations</div><h1 class="hdr-h1">Fleet</h1></div>
+    <div style="padding:6px 12px;border-radius:10px;background:var(--g1);border:1px solid var(--bds);font-size:12px;font-weight:500;color:var(--t2);">24 Vehicles</div>
+  </div>
+
+  <!-- KPI strip -->
+  <div class="kpis">
+    <div class="kpi"><div class="kpi-v" style="color:var(--green)">17</div><div class="kpi-l">Active</div></div>
+    <div class="kpi"><div class="kpi-v">4</div><div class="kpi-l">Idle</div></div>
+    <div class="kpi"><div class="kpi-v" style="color:var(--amber)">2</div><div class="kpi-l">Service</div></div>
+    <div class="kpi"><div class="kpi-v" style="color:var(--red)">1</div><div class="kpi-l">Unavail</div></div>
+  </div>
+
+  <!-- Maintenance alert -->
+  <div class="alert">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,159,10,0.9)" stroke-width="1.8" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    <div>
+      <div style="font-size:13px;font-weight:700;color:rgba(255,159,10,0.95);">3 Services Due</div>
+      <div style="font-size:12px;color:rgba(255,159,10,0.65);margin-top:1px;">B-44-PRV, CJ-12-PRV due this week · CJ-07-PRV overdue</div>
+    </div>
+  </div>
+
+  <!-- Segmented filter -->
+  <div class="seg">
+    <div class="seg-btn on">All</div>
+    <div class="seg-btn">Active</div>
+    <div class="seg-btn">Service</div>
+    <div class="seg-btn">Idle</div>
+  </div>
+
+  <!-- Vehicle list -->
+  <div class="card">
+    <!-- Active, assigned -->
+    <div class="vehicle-row">
+      <div class="v-icon" style="background:rgba(48,209,88,0.10);">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(48,209,88,0.85)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+      </div>
+      <div style="flex:1;">
+        <div class="v-plate">B-44-PRV</div>
+        <div class="v-model">Ford Transit 2023</div>
+        <div class="v-sub">Andrei Popescu · Cluj → Timișoara</div>
+        <div class="fuel-wrap">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" stroke-width="2"><path d="M3 22V7l7-5 7 5v15"/><path d="M17 22v-5h4l2 2v3h-6z"/></svg>
+          <div class="fuel-bar"><div class="fuel-fill" style="width:78%;background:rgba(48,209,88,0.6);"></div></div>
+          <div class="fuel-lbl">78%</div>
+        </div>
+      </div>
+      <div style="text-align:right;flex-shrink:0;">
+        <span class="pill p-active">Active</span>
+        <div style="font-size:11px;color:var(--t3);margin-top:5px;">214 km today</div>
+      </div>
+    </div>
+    <!-- Active -->
+    <div class="vehicle-row">
+      <div class="v-icon" style="background:rgba(48,209,88,0.10);">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(48,209,88,0.85)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v5a2 2 0 0 1-2 2h-2"/><circle cx="9" cy="18" r="2"/><circle cx="17" cy="18" r="2"/><polyline points="9 9 9 14 18 14"/></svg>
+      </div>
+      <div style="flex:1;">
+        <div class="v-plate">CJ-03-PRV</div>
+        <div class="v-model">VW Crafter 2022</div>
+        <div class="v-sub">Elena Marin · Timișoara site</div>
+        <div class="fuel-wrap">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" stroke-width="2"><path d="M3 22V7l7-5 7 5v15"/><path d="M17 22v-5h4l2 2v3h-6z"/></svg>
+          <div class="fuel-bar"><div class="fuel-fill" style="width:45%;background:rgba(255,159,10,0.7);"></div></div>
+          <div class="fuel-lbl">45%</div>
+        </div>
+      </div>
+      <div style="text-align:right;flex-shrink:0;">
+        <span class="pill p-active">Active</span>
+        <div style="font-size:11px;color:var(--t3);margin-top:5px;">88 km today</div>
+      </div>
+    </div>
+    <!-- In service -->
+    <div class="vehicle-row">
+      <div class="v-icon" style="background:rgba(255,159,10,0.10);">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,159,10,0.85)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+      </div>
+      <div style="flex:1;">
+        <div class="v-plate">CJ-12-PRV</div>
+        <div class="v-model">Mercedes Sprinter 2021</div>
+        <div class="v-sub">AutoPro Service · Oil change + brakes</div>
+        <div class="fuel-wrap">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" stroke-width="2"><path d="M3 22V7l7-5 7 5v15"/><path d="M17 22v-5h4l2 2v3h-6z"/></svg>
+          <div class="fuel-bar"><div class="fuel-fill" style="width:60%;background:rgba(48,209,88,0.5);"></div></div>
+          <div class="fuel-lbl">60%</div>
+        </div>
+      </div>
+      <div style="text-align:right;flex-shrink:0;">
+        <span class="pill p-service">Service</span>
+        <div style="font-size:11px;color:var(--t3);margin-top:5px;">Back Jun 8</div>
+      </div>
+    </div>
+    <!-- Idle -->
+    <div class="vehicle-row">
+      <div class="v-icon" style="background:rgba(255,255,255,0.06);">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+      </div>
+      <div style="flex:1;">
+        <div class="v-plate">TM-08-PRV</div>
+        <div class="v-model">Renault Master 2022</div>
+        <div class="v-sub">Unassigned · Warehouse Timișoara</div>
+        <div class="fuel-wrap">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" stroke-width="2"><path d="M3 22V7l7-5 7 5v15"/><path d="M17 22v-5h4l2 2v3h-6z"/></svg>
+          <div class="fuel-bar"><div class="fuel-fill" style="width:92%;background:rgba(48,209,88,0.6);"></div></div>
+          <div class="fuel-lbl">92%</div>
+        </div>
+      </div>
+      <div style="text-align:right;flex-shrink:0;">
+        <span class="pill p-idle">Idle</span>
+        <div style="font-size:11px;color:var(--t3);margin-top:5px;">0 km today</div>
+      </div>
+    </div>
+    <div style="padding:12px 16px;text-align:center;border-top:1px solid var(--bds);">
+      <span style="font-size:12px;color:var(--t3);">20 more vehicles ›</span>
+    </div>
+  </div>
+
+  <div class="sep"></div>
+
+  <!-- ══ VIEW B: Vehicle Detail ══ -->
+  <div class="view-label">View B — Vehicle Detail (Drill-down)</div>
+
+  <!-- Vehicle header -->
+  <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;">
+    <div style="width:52px;height:52px;border-radius:14px;background:rgba(48,209,88,0.10);display:flex;align-items:center;justify-content:center;">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="rgba(48,209,88,0.85)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+    </div>
+    <div style="flex:1;">
+      <div class="v-plate">B-44-PRV</div>
+      <div style="font-size:17px;font-weight:700;margin-top:3px;">Ford Transit 2023</div>
+      <div style="font-size:12px;color:var(--t3);margin-top:2px;">Van · Diesel · Cluj base</div>
+    </div>
+    <span class="pill p-active" style="font-size:11px;padding:5px 10px;">Active</span>
+  </div>
+
+  <!-- Stats row -->
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;">
+    <div style="padding:12px 8px;border-radius:14px;background:var(--g1);border:1px solid var(--bds);text-align:center;">
+      <div style="font-size:18px;font-weight:700;color:var(--green);">78%</div>
+      <div style="font-size:10px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;margin-top:3px;">Fuel</div>
+    </div>
+    <div style="padding:12px 8px;border-radius:14px;background:var(--g1);border:1px solid var(--bds);text-align:center;">
+      <div style="font-size:18px;font-weight:700;">214</div>
+      <div style="font-size:10px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;margin-top:3px;">km Today</div>
+    </div>
+    <div style="padding:12px 8px;border-radius:14px;background:var(--g1);border:1px solid var(--bds);text-align:center;">
+      <div style="font-size:18px;font-weight:700;color:var(--amber);">4,200</div>
+      <div style="font-size:10px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;margin-top:3px;">km/Service</div>
+    </div>
+  </div>
+
+  <!-- Vehicle info -->
+  <div class="lbl">Vehicle Info</div>
+  <div class="card">
+    <div class="det-row"><span style="font-size:13px;color:var(--t2);">Driver</span><span style="font-size:13px;font-weight:600;">Andrei Popescu</span></div>
+    <div class="det-row"><span style="font-size:13px;color:var(--t2);">Assignment</span><span style="font-size:13px;font-weight:600;">Cluj → Timișoara</span></div>
+    <div class="det-row"><span style="font-size:13px;color:var(--t2);">Odometer</span><span style="font-size:13px;font-weight:600;">38,412 km</span></div>
+    <div class="det-row"><span style="font-size:13px;color:var(--t2);">Next service</span><span style="font-size:13px;font-weight:600;color:var(--amber);">42,000 km (+3,588)</span></div>
+    <div class="det-row"><span style="font-size:13px;color:var(--t2);">Insurance</span><span style="font-size:13px;font-weight:600;">Valid · Dec 2026</span></div>
+    <div class="det-row"><span style="font-size:13px;color:var(--t2);">ITP (inspection)</span><span style="font-size:13px;font-weight:600;">Valid · Mar 2027</span></div>
+  </div>
+
+  <!-- Maintenance history -->
+  <div class="lbl">Maintenance</div>
+  <div class="card">
+    <div class="maint-row">
+      <div class="maint-dot" style="background:var(--green);"></div>
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:600;">Full Service</div>
+        <div style="font-size:11px;color:var(--t3);margin-top:1px;">Apr 12 · 34,100 km · €320</div>
+      </div>
+      <span class="pill p-active" style="font-size:10px;">Done</span>
+    </div>
+    <div class="maint-row">
+      <div class="maint-dot" style="background:var(--green);"></div>
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:600;">Tyre Rotation</div>
+        <div style="font-size:11px;color:var(--t3);margin-top:1px;">Feb 3 · 28,600 km · €80</div>
+      </div>
+      <span class="pill p-active" style="font-size:10px;">Done</span>
+    </div>
+    <div class="maint-row">
+      <div class="maint-dot" style="background:var(--amber);"></div>
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:600;">Oil Change + Filter</div>
+        <div style="font-size:11px;color:var(--t3);margin-top:1px;">Due at 42,000 km · ~3,600 km away</div>
+      </div>
+      <span class="pill p-service">Due Soon</span>
+    </div>
+  </div>
+
+  <!-- Today's activity -->
+  <div class="lbl">Today's Activity</div>
+  <div class="card">
+    <div class="act-row">
+      <div class="act-dot" style="background:var(--green);"></div>
+      <div class="act-time">07:48</div>
+      <div><div style="font-size:13px;font-weight:600;">Departed Cluj HQ</div><div style="font-size:11px;color:var(--t3);margin-top:1px;">Odometer: 38,198 km</div></div>
+    </div>
+    <div class="act-row">
+      <div class="act-dot" style="background:var(--blue);"></div>
+      <div class="act-time">09:15</div>
+      <div><div style="font-size:13px;font-weight:600;">Fuelled — Cluj Nord</div><div style="font-size:11px;color:var(--t3);margin-top:1px;">42L · €78.50 · 78% → 100%</div></div>
+    </div>
+    <div class="act-row">
+      <div class="act-dot" style="background:var(--amber);"></div>
+      <div class="act-time">11:30</div>
+      <div><div style="font-size:13px;font-weight:600;">Arrived Timișoara Site</div><div style="font-size:11px;color:var(--t3);margin-top:1px;">Trip: 214 km · 3h 42m</div></div>
+    </div>
+    <div class="act-row" style="border-bottom:none;">
+      <div class="act-dot" style="background:rgba(255,255,255,0.15);"></div>
+      <div class="act-time">—</div>
+      <div style="color:var(--t3);"><div style="font-size:13px;font-weight:600;">Return trip</div><div style="font-size:11px;margin-top:1px;">Expected 17:00</div></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Tabbar — Operations active -->
+<div class="tabbar">
+  <div class="tab"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="6" height="6" rx="1"/><path d="M9 9V6a3 3 0 1 0-3 3h3"/><path d="M15 9h3a3 3 0 1 0-3-3v3"/><path d="M9 15H6a3 3 0 1 0 3 3v-3"/><path d="M15 15v3a3 3 0 1 0 3-3h-3"/></svg>Command</div>
+  <div class="tab on"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Operations</div>
+  <div class="tab"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="3"/><path d="M3 20v-1a6 6 0 0 1 6-6"/><circle cx="17" cy="9" r="2.5"/><path d="M13 20v-1a4 4 0 0 1 4-4h0a4 4 0 0 1 4 4v1"/></svg>People</div>
+  <div class="tab"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18"/><path d="M5 20V10l4-4 4 4 4-6v16"/></svg>Finance</div>
+  <div class="tab"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a6 6 0 0 1 6 6c0 2.5-1.5 4.7-3.7 5.7L14 16H10l-.3-2.3A6.01 6.01 0 0 1 6 8a6 6 0 0 1 6-6z"/><path d="M10 19h4"/><path d="M11 22h2"/></svg>Intelligence</div>
+</div>
+
+</body>
+</html>
