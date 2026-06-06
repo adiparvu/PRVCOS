@@ -262,6 +262,9 @@ export type { GlassSparklineProps, SparklineTrend } from "./glass-sparkline"
 export { GlassHeatmap } from "./glass-heatmap"
 export type { GlassHeatmapProps, HeatmapValue } from "./glass-heatmap"
 
+export { GlassFunnel } from "./glass-funnel"
+export type { GlassFunnelProps, FunnelStage } from "./glass-funnel"
+
 export {
   ActionSheet,
   ConfirmationSheet,
