@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Link from "next/link"
 import {
   GlassStatCard,
   GlassAreaChart,
@@ -328,6 +329,45 @@ export function IntelligenceWorkspace() {
       {/* ── AI tab ── */}
       {activeTab === "ai" && (
         <>
+          {/* Deep-dive entry point */}
+          <Link
+            href="/intelligence/ai"
+            className="flex items-center justify-between px-4 py-3.5 rounded-[16px] mb-4 relative overflow-hidden"
+            style={{
+              background: "var(--prv-g1)",
+              border: "1px solid var(--prv-border-subtle)",
+            }}
+          >
+            <div
+              className="absolute inset-x-0 top-0 h-px"
+              style={{
+                background: "linear-gradient(90deg,transparent,rgba(255,255,255,0.18),transparent)",
+              }}
+            />
+            <div>
+              <p className="text-[11px] font-bold text-white/35 uppercase tracking-[.08em] mb-0.5">
+                Full AI Briefing
+              </p>
+              <p className="text-[15px] font-semibold text-white/88">
+                Morning Brief · Signals · Ask AI · Forecast
+              </p>
+            </div>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="text-white/30 flex-shrink-0"
+            >
+              <line x1="5" y1="12" x2="19" y2="12" />
+              <polyline points="12 5 19 12 12 19" />
+            </svg>
+          </Link>
+
           {/* AI header card */}
           <div
             className="p-4 rounded-[18px] mb-4 relative overflow-hidden"
