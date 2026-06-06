@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Screen 21 — Tool Management</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #000;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", system-ui, sans-serif;
+    color: rgba(255,255,255,0.95);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding-bottom: 120px;
+  }
+  .phone { width: 393px; min-height: 852px; position: relative; padding: 56px 0 0; }
+  .specular { position: absolute; left: 0; right: 0; top: 0; height: 1px; background: linear-gradient(90deg,transparent,rgba(255,255,255,0.09),transparent); }
+
+  .label  { font-size: 11px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: rgba(255,255,255,0.35); }
+  .body   { font-size: 14px; color: rgba(255,255,255,0.65); }
+  .caption{ font-size: 12px; color: rgba(255,255,255,0.35); }
+  .section{ padding: 0 16px; margin-bottom: 20px; }
+
+  /* Search */
+  .search-bar { display:flex; align-items:center; gap:8px; padding:10px 14px; border-radius:14px; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.08); margin:12px 16px 12px; }
+
+  /* Segmented */
+  .seg-wrap { display:flex; gap:4px; padding:3px; background:rgba(255,255,255,0.06); border-radius:10px; margin:0 16px 20px; }
+  .seg-btn { flex:1; padding:6px 0; border-radius:8px; font-size:12px; font-weight:600; text-align:center; border:none; cursor:pointer; color:rgba(255,255,255,0.35); background:transparent; }
+  .seg-btn.active { background:rgba(255,255,255,0.10); color:rgba(255,255,255,0.95); }
+
+  /* Stats */
+  .stat-row { display:flex; gap:8px; padding:0 16px; margin-bottom:20px; }
+  .stat-card { flex:1; padding:14px 10px; border-radius:16px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.07); text-align:center; }
+  .stat-val { font-size:20px; font-weight:700; margin-bottom:2px; }
+  .stat-lbl { font-size:10px; color:rgba(255,255,255,0.35); }
+
+  /* Tool row */
+  .tool-row { display:flex; align-items:center; gap:12px; padding:13px 14px; border-radius:16px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.07); cursor:pointer; margin-bottom:8px; position:relative; }
+  .tool-icon { width:44px; height:44px; border-radius:13px; flex-shrink:0; background:rgba(255,255,255,0.09); display:flex; align-items:center; justify-content:center; }
+
+  /* Pill */
+  .pill { font-size:10px; font-weight:700; padding:3px 8px; border-radius:20px; white-space:nowrap; flex-shrink:0; }
+  .pill-available  { background:rgba(48,209,88,0.12);   color:rgba(48,209,88,0.90); }
+  .pill-in-use     { background:rgba(10,132,255,0.12);  color:rgba(10,132,255,0.90); }
+  .pill-maintenance{ background:rgba(255,159,10,0.15);  color:rgba(255,159,10,0.95); }
+  .pill-missing    { background:rgba(255,69,58,0.14);   color:rgba(255,69,58,0.90); }
+
+  /* Detail sheet */
+  .detail-sheet { position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:393px; background:rgba(255,255,255,0.10); border:1px solid rgba(255,255,255,0.12); border-radius:28px 28px 0 0; backdrop-filter:blur(48px); padding:0 20px 36px; z-index:50; }
+  .drag-handle { display:flex; justify-content:center; padding:10px 0 6px; }
+  .drag-nub { width:36px; height:4px; border-radius:2px; background:rgba(255,255,255,0.12); }
+  .info-row { display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.06); }
+  .info-row:last-child { border-bottom:none; }
+
+  /* Tab bar */
+  .tab-bar { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); width:361px; display:flex; align-items:center; justify-content:space-around; padding:8px; border-radius:28px; background:rgba(255,255,255,0.09); border:1px solid rgba(255,255,255,0.13); backdrop-filter:blur(48px); box-shadow:inset 0 1px 0 rgba(255,255,255,0.20),0 24px 64px rgba(0,0,0,0.7); z-index:100; }
+  .tab-item { display:flex; flex-direction:column; align-items:center; gap:3px; width:64px; height:52px; border-radius:20px; justify-content:center; color:rgba(255,255,255,0.35); font-size:10px; font-weight:500; }
+  .tab-item.active { background:rgba(255,255,255,0.10); color:rgba(255,255,255,0.95); }
+  svg { display:block; }
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="specular"></div>
+
+  <!-- Header -->
+  <div class="section" style="padding-top:6px;margin-bottom:4px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+      <h1 style="font-size:26px;font-weight:700;letter-spacing:-0.02em;">Tool Management</h1>
+      <div style="display:flex;gap:8px;">
+        <div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="1.7" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </div>
+        <div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="1.7" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        </div>
+      </div>
+    </div>
+    <p class="body">142 tools · 3 overdue for maintenance</p>
+  </div>
+
+  <!-- Stats -->
+  <div class="stat-row">
+    <div class="stat-card"><div class="stat-val">142</div><div class="stat-lbl">Total</div></div>
+    <div class="stat-card"><div class="stat-val">98</div><div class="stat-lbl">Available</div></div>
+    <div class="stat-card"><div class="stat-val">31</div><div class="stat-lbl">In Use</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:rgba(255,159,10,0.95);">13</div><div class="stat-lbl">Service</div></div>
+  </div>
+
+  <!-- Search -->
+  <div class="search-bar">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <span style="font-size:14px;color:rgba(255,255,255,0.35);">Search tools, categories, locations…</span>
+  </div>
+
+  <!-- Filter -->
+  <div class="seg-wrap">
+    <div class="seg-btn active">All</div>
+    <div class="seg-btn">Available</div>
+    <div class="seg-btn">In Use</div>
+    <div class="seg-btn">Service</div>
+  </div>
+
+  <!-- Maintenance alert -->
+  <div class="section">
+    <div style="padding:12px 14px;border-radius:14px;background:rgba(255,159,10,0.07);border:1px solid rgba(255,159,10,0.18);display:flex;align-items:center;gap:10px;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,159,10,0.95)" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:600;color:rgba(255,159,10,0.95);">3 tools overdue for maintenance</div>
+        <div style="font-size:12px;color:rgba(255,255,255,0.35);margin-top:1px;">Rotary hammer · Angle grinder · Mixer</div>
+      </div>
+      <div style="font-size:12px;color:rgba(255,255,255,0.35);">View →</div>
+    </div>
+  </div>
+
+  <!-- Tool list -->
+  <div class="section">
+    <div class="label" style="margin-bottom:12px;">All Tools</div>
+
+    <!-- Rotary Hammer — In Use -->
+    <div class="tool-row">
+      <div class="specular"></div>
+      <div class="tool-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="1.7" stroke-linecap="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:14px;font-weight:600;margin-bottom:2px;">Bosch GBH 2-28 · Rotary Hammer</div>
+        <div class="caption">Assigned: Ion Crișan · Site: Cluj Mănăștur</div>
+        <div class="caption" style="margin-top:1px;">Due back: Jun 9</div>
+      </div>
+      <div class="pill pill-in-use">In Use</div>
+    </div>
+
+    <!-- Angle Grinder — Maintenance -->
+    <div class="tool-row" style="border-color:rgba(255,159,10,0.22);">
+      <div class="specular"></div>
+      <div class="tool-icon" style="background:rgba(255,159,10,0.10);">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,159,10,0.80)" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93 4.93 19.07"/><path d="M4.93 4.93 19.07 19.07"/></svg>
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:14px;font-weight:600;margin-bottom:2px;">Makita GA9020 · Angle Grinder</div>
+        <div class="caption">Last used: May 30 · Warehouse</div>
+        <div style="font-size:11px;color:rgba(255,159,10,0.80);margin-top:2px;">⚠ Maintenance overdue by 12 days</div>
+      </div>
+      <div class="pill pill-maintenance">Service</div>
+    </div>
+
+    <!-- Drill — Available -->
+    <div class="tool-row">
+      <div class="specular"></div>
+      <div class="tool-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="1.7" stroke-linecap="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:14px;font-weight:600;margin-bottom:2px;">DeWalt DCD796 · Cordless Drill</div>
+        <div class="caption">Warehouse A · Last used: Jun 3</div>
+        <div class="caption" style="margin-top:1px;">Next service: Aug 15</div>
+      </div>
+      <div class="pill pill-available">Available</div>
+    </div>
+
+    <!-- Laser Level — Available -->
+    <div class="tool-row">
+      <div class="specular"></div>
+      <div class="tool-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="1.7" stroke-linecap="round"><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><circle cx="12" cy="12" r="4"/></svg>
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:14px;font-weight:600;margin-bottom:2px;">Leica Lino L2 · Laser Level</div>
+        <div class="caption">Warehouse B · Last used: Jun 1</div>
+        <div class="caption" style="margin-top:1px;">Next service: Oct 1</div>
+      </div>
+      <div class="pill pill-available">Available</div>
+    </div>
+
+    <!-- Concrete Mixer — In Use -->
+    <div class="tool-row">
+      <div class="specular"></div>
+      <div class="tool-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="1.7" stroke-linecap="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:14px;font-weight:600;margin-bottom:2px;">Altrad M150 · Concrete Mixer</div>
+        <div class="caption">Assigned: Radu Dima · Site: Brașov</div>
+        <div class="caption" style="margin-top:1px;">Due back: Jun 12</div>
+      </div>
+      <div class="pill pill-in-use">In Use</div>
+    </div>
+
+    <!-- Jigsaw — Available -->
+    <div class="tool-row">
+      <div class="specular"></div>
+      <div class="tool-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="1.7" stroke-linecap="round"><path d="M3 3h6v6H3zM15 3h6v6h-6zM15 15h6v6h-6zM3 15h6v6H3z"/></svg>
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:14px;font-weight:600;margin-bottom:2px;">Festool PS 420 · Jigsaw</div>
+        <div class="caption">Warehouse A · Last used: May 28</div>
+        <div class="caption" style="margin-top:1px;">Next service: Jul 20</div>
+      </div>
+      <div class="pill pill-available">Available</div>
+    </div>
+  </div>
+
+  <!-- Category breakdown -->
+  <div class="section">
+    <div class="label" style="margin-bottom:12px;">By Category</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div style="padding:14px;border-radius:16px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.07);">
+        <div style="font-size:22px;font-weight:700;margin-bottom:2px;">38</div>
+        <div style="font-size:12px;font-weight:600;margin-bottom:1px;">Power Tools</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.35);">Drills, grinders, saws</div>
+      </div>
+      <div style="padding:14px;border-radius:16px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.07);">
+        <div style="font-size:22px;font-weight:700;margin-bottom:2px;">27</div>
+        <div style="font-size:12px;font-weight:600;margin-bottom:1px;">Measuring</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.35);">Levels, rulers, sensors</div>
+      </div>
+      <div style="padding:14px;border-radius:16px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.07);">
+        <div style="font-size:22px;font-weight:700;margin-bottom:2px;">41</div>
+        <div style="font-size:12px;font-weight:600;margin-bottom:1px;">Hand Tools</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.35);">Hammers, chisels, clamps</div>
+      </div>
+      <div style="padding:14px;border-radius:16px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.07);">
+        <div style="font-size:22px;font-weight:700;margin-bottom:2px;">36</div>
+        <div style="font-size:12px;font-weight:600;margin-bottom:1px;">Heavy Equipment</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.35);">Mixers, compactors, lifts</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="height:30px;"></div>
+</div>
+
+<!-- Detail Sheet -->
+<div class="detail-sheet">
+  <div class="specular"></div>
+  <div class="drag-handle"><div class="drag-nub"></div></div>
+
+  <div style="display:flex;align-items:flex-start;gap:14px;margin-bottom:16px;">
+    <div style="width:52px;height:52px;border-radius:15px;background:rgba(10,132,255,0.10);border:1px solid rgba(10,132,255,0.20);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(10,132,255,0.90)" stroke-width="1.7" stroke-linecap="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+    </div>
+    <div style="flex:1;">
+      <div style="font-size:10px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:rgba(255,255,255,0.35);margin-bottom:4px;">Power Tools · ID #T-0041</div>
+      <div style="font-size:18px;font-weight:700;margin-bottom:4px;">Bosch GBH 2-28 · Rotary Hammer</div>
+      <div class="pill pill-in-use">In Use</div>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:8px;margin-bottom:16px;">
+    <div style="flex:1;padding:10px 8px;border-radius:12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.07);text-align:center;">
+      <div style="font-size:15px;font-weight:700;margin-bottom:2px;">3.2 yr</div>
+      <div style="font-size:9px;color:rgba(255,255,255,0.35);">Age</div>
+    </div>
+    <div style="flex:1;padding:10px 8px;border-radius:12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.07);text-align:center;">
+      <div style="font-size:15px;font-weight:700;margin-bottom:2px;">94%</div>
+      <div style="font-size:9px;color:rgba(255,255,255,0.35);">Utilisation</div>
+    </div>
+    <div style="flex:1;padding:10px 8px;border-radius:12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.07);text-align:center;">
+      <div style="font-size:15px;font-weight:700;margin-bottom:2px;">12</div>
+      <div style="font-size:9px;color:rgba(255,255,255,0.35);">Uses this mo.</div>
+    </div>
+    <div style="flex:1;padding:10px 8px;border-radius:12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.07);text-align:center;">
+      <div style="font-size:15px;font-weight:700;margin-bottom:2px;">€380</div>
+      <div style="font-size:9px;color:rgba(255,255,255,0.35);">Value</div>
+    </div>
+  </div>
+
+  <div style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.07);border-radius:16px;padding:0 14px;margin-bottom:16px;">
+    <div class="info-row"><span style="font-size:13px;color:rgba(255,255,255,0.35);">Assigned to</span><span style="font-size:13px;font-weight:600;">Ion Crișan</span></div>
+    <div class="info-row"><span style="font-size:13px;color:rgba(255,255,255,0.35);">Current site</span><span style="font-size:13px;font-weight:600;">Cluj Mănăștur</span></div>
+    <div class="info-row"><span style="font-size:13px;color:rgba(255,255,255,0.35);">Due back</span><span style="font-size:13px;font-weight:600;">Jun 9, 2026</span></div>
+    <div class="info-row"><span style="font-size:13px;color:rgba(255,255,255,0.35);">Last service</span><span style="font-size:13px;font-weight:600;">Apr 2, 2026</span></div>
+    <div class="info-row"><span style="font-size:13px;color:rgba(255,255,255,0.35);">Next service</span><span style="font-size:13px;font-weight:600;">Jul 15, 2026</span></div>
+  </div>
+
+  <div style="display:flex;gap:8px;">
+    <button style="flex:1;padding:13px;border-radius:14px;background:rgba(255,255,255,0.10);border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.95);font-size:14px;font-weight:600;cursor:pointer;">Log Issue</button>
+    <button style="flex:1;padding:13px;border-radius:14px;background:rgba(255,255,255,0.95);border:none;color:#000;font-size:14px;font-weight:700;cursor:pointer;">Check In</button>
+  </div>
+</div>
+
+<!-- Tab Bar -->
+<div class="tab-bar">
+  <div class="tab-item">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="9" y="9" width="6" height="6" rx="1"/><path d="M9 9V6a3 3 0 1 0-3 3h3"/><path d="M15 9h3a3 3 0 1 0-3-3v3"/><path d="M9 15H6a3 3 0 1 0 3 3v-3"/><path d="M15 15v3a3 3 0 1 0 3-3h-3"/></svg>
+    Command
+  </div>
+  <div class="tab-item active">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+    Operations
+  </div>
+  <div class="tab-item">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="9" cy="7" r="3"/><path d="M3 20v-1a6 6 0 0 1 6-6"/><circle cx="17" cy="9" r="2.5"/><path d="M13 20v-1a4 4 0 0 1 4-4h0a4 4 0 0 1 4 4v1"/></svg>
+    People
+  </div>
+  <div class="tab-item">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 20h18"/><path d="M5 20V10l4-4 4 4 4-6v16"/></svg>
+    Finance
+  </div>
+  <div class="tab-item">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M12 2a6 6 0 0 1 6 6c0 2.5-1.5 4.7-3.7 5.7L14 16H10l-.3-2.3A6.01 6.01 0 0 1 6 8a6 6 0 0 1 6-6z"/><path d="M10 19h4"/><path d="M11 22h2"/></svg>
+    Intelligence
+  </div>
+</div>
+
+</body>
+</html>
