@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PRV · Screen 07 — Finance</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #000;
+    --g1: rgba(255,255,255,0.06);
+    --g2: rgba(255,255,255,0.10);
+    --g3: rgba(255,255,255,0.15);
+    --t1: rgba(255,255,255,0.95);
+    --t2: rgba(255,255,255,0.65);
+    --t3: rgba(255,255,255,0.35);
+    --t4: rgba(255,255,255,0.15);
+    --bd: rgba(255,255,255,0.12);
+    --bds: rgba(255,255,255,0.07);
+    --green: rgba(48,209,88,0.95);
+    --red: rgba(255,69,58,0.95);
+    --amber: rgba(255,159,10,0.95);
+    --blue: rgba(10,132,255,0.9);
+  }
+  html, body {
+    background: var(--bg);
+    color: var(--t1);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+  body {
+    background: radial-gradient(ellipse 100% 40% at 50% -10%, rgba(255,255,255,0.025), transparent);
+  }
+
+  /* ── Layout ── */
+  .tag { max-width: 460px; margin: 24px auto 0; padding: 0 16px; display: flex; gap: 8px; }
+  .chip { padding: 3px 10px; border-radius: 100px; background: var(--g2); border: 1px solid var(--bds); font-size: 11px; font-weight: 600; color: var(--t3); letter-spacing: .06em; text-transform: uppercase; }
+  .frame { max-width: 460px; margin: 0 auto; padding: 32px 16px 120px; }
+
+  /* ── Header ── */
+  .hdr { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 22px; }
+  .hdr-k { font-size: 13px; color: var(--t3); font-weight: 500; margin-bottom: 2px; }
+  .hdr-h1 { font-size: 26px; font-weight: 700; letter-spacing: -.02em; }
+  .hdr-badge { padding: 6px 12px; border-radius: 10px; background: var(--g1); border: 1px solid var(--bds); font-size: 12px; font-weight: 500; color: var(--t2); }
+
+  /* ── Glass card ── */
+  .card {
+    background: var(--g1);
+    border: 1px solid var(--bds);
+    border-radius: 18px;
+    position: relative;
+    overflow: hidden;
+  }
+  .card::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.09), transparent);
+  }
+
+  /* ── Section label ── */
+  .lbl { font-size: 11px; font-weight: 600; color: var(--t3); text-transform: uppercase; letter-spacing: .07em; margin: 22px 2px 10px; }
+
+  /* ── KPI grid ── */
+  .kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+  .stat { padding: 15px 16px; border-radius: 18px; background: var(--g1); border: 1px solid var(--bds); position: relative; overflow: hidden; }
+  .stat::before { content: ""; position: absolute; inset: 0 0 auto; height: 1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.09), transparent); }
+  .stat-l { font-size: 11px; font-weight: 600; color: var(--t3); text-transform: uppercase; letter-spacing: .08em; }
+  .stat-v { font-size: 24px; font-weight: 700; letter-spacing: -.02em; margin: 5px 0 3px; }
+  .stat-t { font-size: 12px; font-weight: 600; }
+  .up { color: var(--green); }
+  .down { color: var(--red); }
+  .flat { color: var(--t3); }
+
+  /* Sparkline */
+  .spark { margin-top: 8px; }
+  .spark svg { display: block; }
+
+  /* ── Period segmented control ── */
+  .seg { display: flex; gap: 4px; padding: 4px; background: var(--g1); border: 1px solid var(--bds); border-radius: 12px; margin-bottom: 14px; }
+  .seg-btn { flex: 1; padding: 6px 0; border-radius: 8px; font-size: 12px; font-weight: 600; color: var(--t3); text-align: center; cursor: default; }
+  .seg-btn.on { background: var(--g2); color: var(--t1); }
+
+  /* ── Bar chart ── */
+  .chart-wrap { padding: 16px 14px 10px; }
+  .chart-title { font-size: 11px; font-weight: 600; color: var(--t3); text-transform: uppercase; letter-spacing: .07em; margin-bottom: 14px; }
+  .chart-legend { display: flex; gap: 14px; margin-bottom: 12px; }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 2px; }
+  .legend-lbl { font-size: 12px; color: var(--t2); }
+  .bars { display: flex; align-items: flex-end; gap: 6px; height: 100px; }
+  .bar-grp { flex: 1; display: flex; gap: 3px; align-items: flex-end; }
+  .bar { flex: 1; border-radius: 4px 4px 0 0; }
+  .bar-rev { background: rgba(255,255,255,0.55); }
+  .bar-exp { background: rgba(255,255,255,0.18); }
+  .chart-labels { display: flex; gap: 6px; margin-top: 8px; }
+  .chart-lbl { flex: 1; font-size: 10px; color: var(--t3); text-align: center; }
+
+  /* ── P&L summary row ── */
+  .pnl { display: flex; gap: 10px; margin-bottom: 14px; }
+  .pnl-item { flex: 1; padding: 13px 14px; border-radius: 14px; background: var(--g1); border: 1px solid var(--bds); }
+  .pnl-l { font-size: 10px; font-weight: 600; color: var(--t3); text-transform: uppercase; letter-spacing: .07em; margin-bottom: 4px; }
+  .pnl-v { font-size: 16px; font-weight: 700; letter-spacing: -.01em; }
+  .pnl-d { font-size: 11px; font-weight: 600; margin-top: 2px; }
+
+  /* ── Transactions list ── */
+  .tx-list { }
+  .tx-row { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--bds); }
+  .tx-row:last-child { border-bottom: none; }
+  .tx-icon { width: 36px; height: 36px; border-radius: 10px; background: var(--g2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .tx-icon svg { color: var(--t2); }
+  .tx-info { flex: 1; min-width: 0; }
+  .tx-name { font-size: 14px; font-weight: 600; color: var(--t1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tx-meta { font-size: 12px; color: var(--t3); margin-top: 1px; }
+  .tx-right { text-align: right; flex-shrink: 0; }
+  .tx-amount { font-size: 15px; font-weight: 700; }
+  .tx-amount.credit { color: var(--green); }
+  .tx-amount.debit { color: var(--t1); }
+  .tx-status { font-size: 10px; font-weight: 600; margin-top: 2px; }
+
+  /* ── Invoices ── */
+  .inv-row { display: flex; align-items: center; gap: 12px; padding: 11px 16px; border-bottom: 1px solid var(--bds); }
+  .inv-row:last-child { border-bottom: none; }
+  .inv-ref { font-size: 13px; font-weight: 700; color: var(--t1); min-width: 80px; }
+  .inv-name { flex: 1; font-size: 13px; color: var(--t2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .inv-amt { font-size: 13px; font-weight: 700; min-width: 64px; text-align: right; }
+  .pill { font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 6px; min-width: 52px; text-align: center; }
+  .p-paid    { background: rgba(48,209,88,0.14);   color: var(--green); }
+  .p-due     { background: rgba(255,159,10,0.14);  color: var(--amber); }
+  .p-overdue { background: rgba(255,69,58,0.14);   color: var(--red); }
+
+  /* ── Quick actions ── */
+  .qa { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px; }
+  .qa-btn { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 14px 8px; border-radius: 14px; background: var(--g1); border: 1px solid var(--bds); }
+  .qa-btn svg { color: var(--t2); }
+  .qa-lbl { font-size: 11px; font-weight: 500; color: var(--t3); text-align: center; line-height: 1.3; }
+
+  /* ── Alert banner ── */
+  .alert { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 14px; margin-bottom: 14px; background: rgba(255,159,10,0.08); border: 1px solid rgba(255,159,10,0.22); }
+  .alert svg { color: var(--amber); flex-shrink: 0; }
+  .alert-t { font-size: 13px; font-weight: 600; }
+  .alert-d { font-size: 12px; color: var(--t3); margin-top: 1px; }
+
+  /* ── Floating tab bar ── */
+  .tabbar {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    display: inline-flex; gap: 2px; padding: 7px;
+    border-radius: 22px;
+    background: rgba(22,22,22,0.7);
+    backdrop-filter: blur(48px);
+    -webkit-backdrop-filter: blur(48px);
+    border: 1px solid var(--bd);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 16px 40px rgba(0,0,0,0.55);
+  }
+  .tab { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 13px; border-radius: 14px; font-size: 10px; font-weight: 600; color: var(--t3); }
+  .tab.on { background: var(--g2); color: var(--t1); }
+  .tab svg { margin-bottom: 1px; }
+</style>
+</head>
+<body>
+
+<div class="tag">
+  <span class="chip">Screen 07</span>
+  <span class="chip">Preview</span>
+  <span class="chip">apps/web · /finance</span>
+</div>
+
+<div class="frame">
+
+  <!-- Header -->
+  <div class="hdr">
+    <div>
+      <div class="hdr-k">PRV</div>
+      <h1 class="hdr-h1">Finance</h1>
+    </div>
+    <div class="hdr-badge">June 2026</div>
+  </div>
+
+  <!-- KPI grid -->
+  <div class="kpis">
+
+    <div class="stat">
+      <div class="stat-l">Revenue</div>
+      <div class="stat-v">€482K</div>
+      <div class="stat-t up">▲ 12.4% MoM</div>
+      <div class="spark">
+        <svg width="100%" height="28" viewBox="0 0 100 28" fill="none" preserveAspectRatio="none">
+          <polyline points="0,22 16,18 33,16 50,10 66,8 83,5 100,2"
+            stroke="rgba(48,209,88,0.6)" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+    </div>
+
+    <div class="stat">
+      <div class="stat-l">Profit</div>
+      <div class="stat-v">€138K</div>
+      <div class="stat-t up">▲ 8.1% MoM</div>
+      <div class="spark">
+        <svg width="100%" height="28" viewBox="0 0 100 28" fill="none" preserveAspectRatio="none">
+          <polyline points="0,20 16,18 33,14 50,12 66,10 83,9 100,7"
+            stroke="rgba(48,209,88,0.6)" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+    </div>
+
+    <div class="stat">
+      <div class="stat-l">Expenses</div>
+      <div class="stat-v">€344K</div>
+      <div class="stat-t down">▲ 4.2% MoM</div>
+      <div class="spark">
+        <svg width="100%" height="28" viewBox="0 0 100 28" fill="none" preserveAspectRatio="none">
+          <polyline points="0,18 16,17 33,16 50,15 66,16 83,15 100,14"
+            stroke="rgba(255,69,58,0.5)" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+    </div>
+
+    <div class="stat">
+      <div class="stat-l">Cash Flow</div>
+      <div class="stat-v">€94K</div>
+      <div class="stat-t flat">→ stable</div>
+      <div class="spark">
+        <svg width="100%" height="28" viewBox="0 0 100 28" fill="none" preserveAspectRatio="none">
+          <polyline points="0,16 16,14 33,15 50,13 66,12 83,14 100,12"
+            stroke="rgba(255,255,255,0.3)" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Overdue invoice alert -->
+  <div class="alert">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+    </svg>
+    <div>
+      <div class="alert-t">2 invoices overdue</div>
+      <div class="alert-d">Total outstanding: €3,240 · Action required</div>
+    </div>
+  </div>
+
+  <!-- Period selector -->
+  <div class="seg">
+    <div class="seg-btn">1W</div>
+    <div class="seg-btn">1M</div>
+    <div class="seg-btn on">3M</div>
+    <div class="seg-btn">6M</div>
+    <div class="seg-btn">1Y</div>
+  </div>
+
+  <!-- Revenue vs Expenses bar chart -->
+  <div class="card" style="margin-bottom:14px;">
+    <div class="chart-wrap">
+      <div class="chart-title">Revenue vs Expenses</div>
+      <div class="chart-legend">
+        <div style="display:flex;align-items:center;gap:6px;">
+          <div class="legend-dot" style="background:rgba(255,255,255,0.55);"></div>
+          <span class="legend-lbl">Revenue</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <div class="legend-dot" style="background:rgba(255,255,255,0.18);"></div>
+          <span class="legend-lbl">Expenses</span>
+        </div>
+      </div>
+      <div class="bars">
+        <div class="bar-grp"><div class="bar bar-rev" style="height:52%"></div><div class="bar bar-exp" style="height:38%"></div></div>
+        <div class="bar-grp"><div class="bar bar-rev" style="height:58%"></div><div class="bar bar-exp" style="height:40%"></div></div>
+        <div class="bar-grp"><div class="bar bar-rev" style="height:62%"></div><div class="bar bar-exp" style="height:42%"></div></div>
+        <div class="bar-grp"><div class="bar bar-rev" style="height:70%"></div><div class="bar bar-exp" style="height:44%"></div></div>
+        <div class="bar-grp"><div class="bar bar-rev" style="height:78%"></div><div class="bar bar-exp" style="height:46%"></div></div>
+        <div class="bar-grp"><div class="bar bar-rev" style="height:88%"></div><div class="bar bar-exp" style="height:49%"></div></div>
+        <div class="bar-grp"><div class="bar bar-rev" style="height:100%"></div><div class="bar bar-exp" style="height:52%"></div></div>
+      </div>
+      <div class="chart-labels">
+        <div class="chart-lbl">Dec</div>
+        <div class="chart-lbl">Jan</div>
+        <div class="chart-lbl">Feb</div>
+        <div class="chart-lbl">Mar</div>
+        <div class="chart-lbl">Apr</div>
+        <div class="chart-lbl">May</div>
+        <div class="chart-lbl">Jun</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- P&L summary row -->
+  <div class="pnl">
+    <div class="pnl-item">
+      <div class="pnl-l">Gross Margin</div>
+      <div class="pnl-v" style="color:var(--green)">28.6%</div>
+      <div class="pnl-d up">▲ 1.2pp</div>
+    </div>
+    <div class="pnl-item">
+      <div class="pnl-l">EBITDA</div>
+      <div class="pnl-v">€112K</div>
+      <div class="pnl-d up">▲ 9.4%</div>
+    </div>
+    <div class="pnl-item">
+      <div class="pnl-l">Tax Provision</div>
+      <div class="pnl-v" style="color:var(--amber)">€26K</div>
+      <div class="pnl-d flat">→ 16% rate</div>
+    </div>
+  </div>
+
+  <!-- Quick actions -->
+  <div class="qa">
+    <div class="qa-btn">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/>
+      </svg>
+      <span class="qa-lbl">New Invoice</span>
+    </div>
+    <div class="qa-btn">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
+      </svg>
+      <span class="qa-lbl">Add Expense</span>
+    </div>
+    <div class="qa-btn">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 3v18h18"/><polyline points="18 9 12 15 9 12 3 18"/>
+      </svg>
+      <span class="qa-lbl">Reports</span>
+    </div>
+    <div class="qa-btn">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/>
+      </svg>
+      <span class="qa-lbl">Payroll</span>
+    </div>
+  </div>
+
+  <!-- Recent transactions -->
+  <div class="lbl">Recent Transactions</div>
+  <div class="card" style="margin-bottom:14px;">
+    <div class="tx-list">
+
+      <div class="tx-row">
+        <div class="tx-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+          </svg>
+        </div>
+        <div class="tx-info">
+          <div class="tx-name">Invoice #1042 — Mihai Popescu</div>
+          <div class="tx-meta">Cluj · 2 min ago</div>
+        </div>
+        <div class="tx-right">
+          <div class="tx-amount credit">+€298</div>
+          <div class="tx-status" style="color:var(--green)">Paid</div>
+        </div>
+      </div>
+
+      <div class="tx-row">
+        <div class="tx-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+            <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/>
+          </svg>
+        </div>
+        <div class="tx-info">
+          <div class="tx-name">Supplier — Romstal SRL</div>
+          <div class="tx-meta">Procurement · 1 hr ago</div>
+        </div>
+        <div class="tx-right">
+          <div class="tx-amount debit">−€1,840</div>
+          <div class="tx-status" style="color:var(--t3)">Expense</div>
+        </div>
+      </div>
+
+      <div class="tx-row">
+        <div class="tx-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+          </svg>
+        </div>
+        <div class="tx-info">
+          <div class="tx-name">Payroll run — June W1</div>
+          <div class="tx-meta">HR · 3 hr ago</div>
+        </div>
+        <div class="tx-right">
+          <div class="tx-amount debit">−€28,400</div>
+          <div class="tx-status" style="color:var(--t3)">Payroll</div>
+        </div>
+      </div>
+
+      <div class="tx-row">
+        <div class="tx-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+          </svg>
+        </div>
+        <div class="tx-info">
+          <div class="tx-name">Invoice #1041 — Renovare Cluj</div>
+          <div class="tx-meta">Projects · Yesterday</div>
+        </div>
+        <div class="tx-right">
+          <div class="tx-amount credit">+€5,200</div>
+          <div class="tx-status" style="color:var(--green)">Paid</div>
+        </div>
+      </div>
+
+      <div class="tx-row">
+        <div class="tx-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+            <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/>
+          </svg>
+        </div>
+        <div class="tx-info">
+          <div class="tx-name">Rent — Floreasca Office</div>
+          <div class="tx-meta">Fixed cost · Yesterday</div>
+        </div>
+        <div class="tx-right">
+          <div class="tx-amount debit">−€3,600</div>
+          <div class="tx-status" style="color:var(--t3)">Expense</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Invoices -->
+  <div class="lbl">Open Invoices</div>
+  <div class="card">
+    <div class="tx-list">
+
+      <div class="inv-row">
+        <div class="inv-ref">#INV-208</div>
+        <div class="inv-name">Andronic Group SRL</div>
+        <div class="inv-amt">€2,100</div>
+        <span class="pill p-overdue">Overdue</span>
+      </div>
+
+      <div class="inv-row">
+        <div class="inv-ref">#INV-207</div>
+        <div class="inv-name">Biroul Construct</div>
+        <div class="inv-amt">€1,140</div>
+        <span class="pill p-overdue">Overdue</span>
+      </div>
+
+      <div class="inv-row">
+        <div class="inv-ref">#INV-206</div>
+        <div class="inv-name">Mihai Popescu</div>
+        <div class="inv-amt">€540</div>
+        <span class="pill p-due">Due Jun 10</span>
+      </div>
+
+      <div class="inv-row">
+        <div class="inv-ref">#INV-205</div>
+        <div class="inv-name">Radu Construct SRL</div>
+        <div class="inv-amt">€3,800</div>
+        <span class="pill p-paid">Paid</span>
+      </div>
+
+      <div class="inv-row">
+        <div class="inv-ref">#INV-204</div>
+        <div class="inv-name">Ana Ionescu</div>
+        <div class="inv-amt">€760</div>
+        <span class="pill p-paid">Paid</span>
+      </div>
+
+    </div>
+  </div>
+
+</div><!-- /frame -->
+
+<!-- Floating Tab Bar -->
+<div class="tabbar">
+
+  <div class="tab">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="9" y="9" width="6" height="6" rx="1"/>
+      <path d="M9 9V6a3 3 0 1 0-3 3h3"/><path d="M15 9h3a3 3 0 1 0-3-3v3"/>
+      <path d="M9 15H6a3 3 0 1 0 3 3v-3"/><path d="M15 15v3a3 3 0 1 0 3-3h-3"/>
+    </svg>
+    Command
+  </div>
+
+  <div class="tab">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+      <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+    </svg>
+    Operations
+  </div>
+
+  <div class="tab">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="9" cy="7" r="3"/><path d="M3 20v-1a6 6 0 0 1 6-6"/>
+      <circle cx="17" cy="9" r="2.5"/><path d="M13 20v-1a4 4 0 0 1 4-4h0a4 4 0 0 1 4 4v1"/>
+    </svg>
+    People
+  </div>
+
+  <div class="tab on">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 20h18"/><path d="M5 20V10l4-4 4 4 4-6v16"/>
+    </svg>
+    Finance
+  </div>
+
+  <div class="tab">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 2a6 6 0 0 1 6 6c0 2.5-1.5 4.7-3.7 5.7L14 16H10l-.3-2.3A6.01 6.01 0 0 1 6 8a6 6 0 0 1 6-6z"/>
+      <path d="M10 19h4"/><path d="M11 22h2"/>
+    </svg>
+    Intelligence
+  </div>
+
+</div>
+
+</body>
+</html>
