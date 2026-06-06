@@ -295,6 +295,9 @@ export type { GlassGeofenceCardProps, GeofenceStatus, GeofenceRow } from "./glas
 export { GlassPriceTag } from "./glass-price-tag"
 export type { GlassPriceTagProps, PriceTagSize } from "./glass-price-tag"
 
+export { GlassQuantityStepper } from "./glass-quantity-stepper"
+export type { GlassQuantityStepperProps } from "./glass-quantity-stepper"
+
 export {
   ActionSheet,
   ConfirmationSheet,
