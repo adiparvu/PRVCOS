@@ -9,7 +9,6 @@ interface Props {
   children?: React.ReactNode
   size?: 24 | 32 | 40 | 64 | 96
   className?: string
-  // Direct status override — bypasses store lookup (for components that have presence data already)
   status?: string
   avatarUrl?: string | null
   name?: string
@@ -40,7 +39,7 @@ export function PresenceRing({
 
   const isOffline = status === "offline"
 
-  const avatarChild =
+  const avatarContent =
     children ??
     (avatarUrl ? (
       // eslint-disable-next-line @next/next/no-img-element
@@ -57,13 +56,13 @@ export function PresenceRing({
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          fontSize: Math.round(size * 0.35),
+          fontSize: size * 0.35,
           fontWeight: 600,
           color: "rgba(255,255,255,0.7)",
           background: "rgba(255,255,255,0.1)",
         }}
       >
-        {(name ?? "?").charAt(0).toUpperCase()}
+        {name?.charAt(0).toUpperCase() ?? "?"}
       </div>
     ))
 
@@ -72,6 +71,7 @@ export function PresenceRing({
       <div
         style={{
           borderRadius: "50%",
+          overflow: "hidden",
           padding: isOffline ? 0 : cfg.ring,
           background: isOffline
             ? "transparent"
@@ -79,9 +79,7 @@ export function PresenceRing({
           transition: "background 400ms ease",
         }}
       >
-        <div style={{ borderRadius: "50%", overflow: "hidden", width: size, height: size }}>
-          {avatarChild}
-        </div>
+        <div style={{ borderRadius: "50%", overflow: "hidden" }}>{avatarContent}</div>
       </div>
 
       {!isOffline && (
