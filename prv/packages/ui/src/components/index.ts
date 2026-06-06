@@ -325,6 +325,9 @@ export type { GlassFeatureGridProps, FeatureItem } from "./glass-feature-grid"
 export { GlassPricingTable } from "./glass-pricing-table"
 export type { GlassPricingTableProps, PricingPlan, PricingFeature } from "./glass-pricing-table"
 
+export { GlassTestimonial } from "./glass-testimonial"
+export type { GlassTestimonialProps } from "./glass-testimonial"
+
 export {
   ActionSheet,
   ConfirmationSheet,
