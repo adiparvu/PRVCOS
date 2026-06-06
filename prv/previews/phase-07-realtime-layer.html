@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Phase 07 — Realtime Layer</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #000;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", sans-serif;
+    color: rgba(255,255,255,0.95);
+    min-height: 100vh;
+    padding: 40px 24px 80px;
+  }
+
+  /* ── Header ── */
+  .page-header { text-align: center; margin-bottom: 56px; }
+  .phase-badge {
+    display: inline-block; font-size: 11px; font-weight: 700;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    color: rgba(255,255,255,0.45); border: 1px solid rgba(255,255,255,0.15);
+    padding: 4px 14px; border-radius: 100px; margin-bottom: 16px;
+  }
+  .page-title { font-size: 38px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; margin-bottom: 10px; }
+  .page-sub { font-size: 15px; color: rgba(255,255,255,0.42); max-width: 540px; margin: 0 auto; line-height: 1.6; }
+
+  /* ── Section headers ── */
+  .section-title { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; margin-bottom: 6px; }
+  .section-sub { font-size: 13px; color: rgba(255,255,255,0.38); margin-bottom: 28px; }
+
+  /* ── Layout ── */
+  .max-w { max-width: 1100px; margin: 0 auto; }
+  .phones-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 32px; max-width: 1100px; margin: 0 auto 72px; justify-items: center;
+  }
+  .phone-wrap { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+  .phone-role-label {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.10em;
+    text-transform: uppercase; color: rgba(255,255,255,0.35);
+  }
+  .phone {
+    width: 210px; height: 430px; border-radius: 44px;
+    background: #0a0a0a; border: 1.5px solid rgba(255,255,255,0.12);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.10), 0 40px 80px rgba(0,0,0,0.8);
+    overflow: hidden; position: relative; flex-shrink: 0;
+  }
+  .phone-notch {
+    position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+    width: 80px; height: 22px; background: #000; border-radius: 100px;
+    z-index: 10; display: flex; align-items: center; justify-content: center; gap: 5px;
+  }
+  .notch-camera { width: 10px; height: 10px; border-radius: 50%; background: #1a1a1a; }
+  .notch-speaker { width: 28px; height: 5px; border-radius: 3px; background: #1a1a1a; }
+
+  .phone-screen {
+    width: 100%; height: 100%; padding: 50px 12px 80px;
+    overflow: hidden; display: flex; flex-direction: column; gap: 7px;
+  }
+
+  /* ── DI pill variants ── */
+  .di-pill {
+    position: absolute; top: 38px; left: 50%; transform: translateX(-50%);
+    background: rgba(10,10,12,0.90); border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 100px; padding: 4px 12px;
+    display: flex; align-items: center; gap: 6px;
+    font-size: 9px; font-weight: 600; color: rgba(255,255,255,0.80);
+    white-space: nowrap; z-index: 8;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 8px 24px rgba(0,0,0,0.6);
+  }
+  .di-pill.expanded {
+    border-radius: 16px; flex-direction: column; align-items: flex-start;
+    width: calc(100% - 24px); left: 12px; transform: none; gap: 8px;
+    padding: 10px 12px;
+  }
+  .di-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .di-dot.green { background: rgba(80,220,120,0.90); box-shadow: 0 0 5px rgba(80,220,120,0.6); }
+  .di-dot.yellow { background: rgba(255,179,64,0.90); }
+  .di-dot.red { background: rgba(255,99,90,0.90); box-shadow: 0 0 5px rgba(255,99,90,0.6); }
+  .di-dot.blue { background: rgba(80,160,255,0.90); }
+
+  .di-live-value {
+    font-size: 20px; font-weight: 700; letter-spacing: -0.02em;
+    color: rgba(255,255,255,0.92); line-height: 1;
+  }
+  .di-live-label { font-size: 9px; color: rgba(255,255,255,0.40); }
+  .di-ticker {
+    font-size: 10px; color: rgba(80,220,120,0.85); font-weight: 600;
+  }
+  .di-ticker.down { color: rgba(255,99,90,0.85); }
+
+  /* ── Glass cards ── */
+  .g-card {
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 14px; padding: 10px 12px; position: relative;
+  }
+  .g-card::before {
+    content: ''; position: absolute; inset: 0 0 auto;
+    height: 1px; background: rgba(255,255,255,0.16); border-radius: 14px 14px 0 0;
+  }
+  .card-label { font-size: 9px; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase; color: rgba(255,255,255,0.32); margin-bottom: 2px; }
+  .card-value { font-size: 18px; font-weight: 700; letter-spacing: -0.02em; color: rgba(255,255,255,0.92); line-height: 1.1; }
+  .card-trend { font-size: 9px; color: rgba(80,220,120,0.85); margin-top: 2px; display: flex; align-items: center; gap: 3px; }
+  .kpi-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+
+  /* ── Live indicator ── */
+  .live-dot {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 8px; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase; color: rgba(80,220,120,0.80);
+  }
+  .live-dot::before {
+    content: ''; width: 5px; height: 5px; border-radius: 50%;
+    background: rgba(80,220,120,0.90);
+    animation: pulse-live 2s ease-in-out infinite;
+  }
+  @keyframes pulse-live {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.8); }
+  }
+
+  /* ── Notification badge ── */
+  .notif-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 16px; height: 16px; border-radius: 100px; padding: 0 4px;
+    font-size: 8px; font-weight: 800;
+    background: rgba(255,59,48,0.90); color: white;
+  }
+
+  /* ── Tab bar ── */
+  .tab-bar {
+    position: absolute; bottom: 10px; left: 12px; right: 12px; height: 52px;
+    background: rgba(20,20,20,0.88); border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 26px; display: flex; align-items: center;
+    justify-content: space-around; padding: 0 4px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.12); z-index: 5;
+  }
+  .tab-item { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 8px; border-radius: 18px; min-width: 36px; position: relative; }
+  .tab-item.active { background: rgba(255,255,255,0.10); box-shadow: inset 0 1px 0 rgba(255,255,255,0.16); }
+  .tab-icon { width: 14px; height: 14px; opacity: 0.35; }
+  .tab-icon.active { opacity: 0.90; }
+  .tab-label { font-size: 7px; font-weight: 600; color: rgba(255,255,255,0.32); }
+  .tab-label.active { color: rgba(255,255,255,0.88); }
+  .tab-badge { position: absolute; top: 2px; right: 2px; }
+
+  /* ── Activity feed ── */
+  .activity-row {
+    display: flex; align-items: flex-start; gap: 7px;
+    padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .activity-row:last-child { border-bottom: none; }
+  .activity-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; margin-top: 3px; }
+  .activity-dot.green { background: rgba(80,220,120,0.90); }
+  .activity-dot.yellow { background: rgba(255,179,64,0.90); }
+  .activity-dot.blue { background: rgba(80,160,255,0.90); }
+  .activity-text { font-size: 10px; color: rgba(255,255,255,0.65); line-height: 1.4; flex: 1; }
+  .activity-time { font-size: 9px; color: rgba(255,255,255,0.28); white-space: nowrap; }
+
+  /* ── NEW badge ── */
+  .new-badge {
+    display: inline-block; font-size: 7px; font-weight: 800; letter-spacing: 0.08em;
+    text-transform: uppercase; padding: 1px 5px; border-radius: 4px;
+    background: rgba(80,160,255,0.20); color: rgba(80,160,255,0.90);
+    margin-left: 4px;
+  }
+
+  /* ── Architecture diagram ── */
+  .arch-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 2px; max-width: 1100px; margin: 0 auto 72px;
+    background: rgba(255,255,255,0.05); border-radius: 20px; overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  .arch-tier {
+    padding: 20px 22px; background: rgba(0,0,0,0.4);
+    border-right: 1px solid rgba(255,255,255,0.06);
+  }
+  .arch-tier:last-child { border-right: none; }
+  .tier-num {
+    font-size: 10px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase;
+    color: rgba(255,255,255,0.25); margin-bottom: 6px;
+  }
+  .tier-name { font-size: 15px; font-weight: 700; color: rgba(255,255,255,0.85); margin-bottom: 4px; }
+  .tier-desc { font-size: 11px; color: rgba(255,255,255,0.38); line-height: 1.6; }
+  .tier-when {
+    font-size: 10px; color: rgba(255,255,255,0.25); margin-top: 8px;
+    font-style: italic;
+  }
+  .tier-badge {
+    display: inline-block; font-size: 9px; font-weight: 700;
+    padding: 2px 8px; border-radius: 100px; margin-bottom: 6px;
+  }
+  .tier-1 { background: rgba(80,220,120,0.14); color: rgba(80,220,120,0.85); }
+  .tier-2 { background: rgba(80,160,255,0.14); color: rgba(80,160,255,0.85); }
+  .tier-3 { background: rgba(255,179,64,0.14); color: rgba(255,179,64,0.85); }
+  .tier-4 { background: rgba(255,99,90,0.14); color: rgba(255,99,90,0.85); }
+
+  /* ── Channel map table ── */
+  .channel-table {
+    max-width: 1100px; margin: 0 auto 72px;
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 20px; overflow: hidden;
+  }
+  .channel-table table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .channel-table th {
+    text-align: left; padding: 12px 18px; font-size: 10px; font-weight: 700;
+    letter-spacing: 0.09em; text-transform: uppercase; color: rgba(255,255,255,0.28);
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+  }
+  .channel-table td {
+    padding: 10px 18px; color: rgba(255,255,255,0.55);
+    border-bottom: 1px solid rgba(255,255,255,0.05); vertical-align: top; font-size: 12px;
+  }
+  .channel-table tr:last-child td { border-bottom: none; }
+  code {
+    font-family: "SF Mono", "Fira Code", monospace; font-size: 11px;
+    background: rgba(255,255,255,0.07); padding: 1px 5px; border-radius: 4px;
+    color: rgba(255,255,255,0.75);
+  }
+  .scope-chip {
+    display: inline-block; font-size: 10px; font-weight: 600;
+    padding: 2px 7px; border-radius: 100px; margin-right: 4px; margin-bottom: 3px;
+  }
+  .sc-exec { background: rgba(10,132,255,0.14); color: rgba(80,160,255,0.85); }
+  .sc-mgr { background: rgba(48,209,88,0.14); color: rgba(80,220,120,0.85); }
+  .sc-wrkr { background: rgba(255,159,10,0.14); color: rgba(255,179,64,0.85); }
+  .sc-all { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.55); }
+
+  /* ── File structure ── */
+  .code-block {
+    max-width: 1100px; margin: 0 auto 72px;
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 20px; padding: 24px 28px;
+    font-family: "SF Mono", "Fira Code", monospace; font-size: 12px;
+    line-height: 1.8; color: rgba(255,255,255,0.50); overflow-x: auto;
+  }
+  .code-block .hi { color: rgba(255,255,255,0.85); }
+  .code-block .dim { color: rgba(255,255,255,0.25); }
+  .code-block .green { color: rgba(80,220,120,0.85); }
+  .code-block .blue { color: rgba(80,160,255,0.85); }
+  .code-block .purple { color: rgba(140,138,255,0.85); }
+  .code-block .orange { color: rgba(255,179,64,0.85); }
+
+  /* ── Spec cards ── */
+  .spec-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px; max-width: 1100px; margin: 0 auto 72px;
+  }
+  .spec-card {
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 20px; padding: 20px 22px;
+  }
+  .spec-title {
+    font-size: 13px; font-weight: 700; color: rgba(255,255,255,0.80);
+    margin-bottom: 10px; display: flex; align-items: center; gap: 8px;
+  }
+  .spec-icon {
+    width: 26px; height: 26px; border-radius: 8px;
+    background: rgba(255,255,255,0.08);
+    display: flex; align-items: center; justify-content: center; font-size: 13px;
+  }
+  .spec-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+  .spec-list li { font-size: 12px; color: rgba(255,255,255,0.46); display: flex; gap: 7px; line-height: 1.5; }
+  .spec-list li::before { content: '→'; color: rgba(255,255,255,0.20); flex-shrink: 0; }
+</style>
+</head>
+<body>
+
+<!-- ══ Header ══════════════════════════════════════════════════════════════ -->
+<div class="page-header">
+  <div class="phase-badge">Phase 07</div>
+  <h1 class="page-title">Realtime Layer</h1>
+  <p class="page-sub">
+    Live data flowing into the Dynamic Island, dashboard KPIs, notification badge,
+    and activity feed — via Supabase Realtime with Redis pub/sub fallback.
+  </p>
+</div>
+
+<!-- ══ 4-Tier Stack ════════════════════════════════════════════════════════ -->
+<div class="max-w" style="margin-bottom:16px">
+  <p class="section-title">4-Tier Realtime Stack</p>
+  <p class="section-sub">Graceful degradation — each tier falls back to the next</p>
+</div>
+
+<div class="arch-grid">
+  <div class="arch-tier">
+    <div class="tier-badge tier-1">Tier 1 — Primary</div>
+    <div class="tier-name">Supabase Realtime</div>
+    <div class="tier-desc">Postgres <code>postgres_changes</code> listener. Zero polling. Sub-100ms latency. Already used by the presence system.</div>
+    <div class="tier-when">Used when: WebSocket available</div>
+  </div>
+  <div class="arch-tier">
+    <div class="tier-badge tier-2">Tier 2 — Fallback</div>
+    <div class="tier-name">Server-Sent Events</div>
+    <div class="tier-desc">Next.js Route Handler streaming <code>text/event-stream</code>. One-directional, works through proxies. No WebSocket needed.</div>
+    <div class="tier-when">Used when: WebSocket blocked</div>
+  </div>
+  <div class="arch-tier">
+    <div class="tier-badge tier-3">Tier 3 — Bridge</div>
+    <div class="tier-name">Redis Pub/Sub</div>
+    <div class="tier-desc">Upstash Redis pub/sub bridges server-side events to SSE stream. Already implemented in <code>@prv/cache/pubsub</code>.</div>
+    <div class="tier-when">Used when: Server bridge needed</div>
+  </div>
+  <div class="arch-tier" style="border-right:none">
+    <div class="tier-badge tier-4">Tier 4 — Last resort</div>
+    <div class="tier-name">Polling</div>
+    <div class="tier-desc">TanStack Query with adaptive interval (5s active / 30s idle). Automatic when Realtime and SSE both unavailable.</div>
+    <div class="tier-when">Used when: All else fails</div>
+  </div>
+</div>
+
+<!-- ══ Phone Frames — Live UI surfaces ════════════════════════════════════ -->
+<div class="max-w" style="margin-bottom:16px">
+  <p class="section-title">3 Live UI Surfaces</p>
+  <p class="section-sub">Dynamic Island · KPI cards · Notification badge — all ticking in realtime</p>
+</div>
+
+<div class="phones-grid">
+
+  <!-- ── Dynamic Island expanded (Executive) ── -->
+  <div class="phone-wrap">
+    <span class="phone-role-label">DI — Executive</span>
+    <div class="phone">
+      <div class="phone-notch"><div class="notch-camera"></div><div class="notch-speaker"></div></div>
+
+      <!-- DI expanded -->
+      <div class="di-pill expanded" style="top:38px">
+        <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
+          <div style="display:flex;align-items:center;gap:6px">
+            <div class="di-dot green"></div>
+            <span style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.50);letter-spacing:0.08em;text-transform:uppercase">Revenue · Live</span>
+          </div>
+          <div class="live-dot">Live</div>
+        </div>
+        <div style="display:flex;gap:16px;align-items:flex-end">
+          <div>
+            <div class="di-live-value">€1.84M</div>
+            <div class="di-ticker">↑ +€2,400 last 5m</div>
+          </div>
+          <div style="flex:1">
+            <div class="di-live-label">Profit margin</div>
+            <div style="font-size:15px;font-weight:700;color:rgba(255,255,255,0.80)">31.2%</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;width:100%">
+          <div style="background:rgba(255,255,255,0.06);border-radius:8px;padding:6px 8px">
+            <div style="font-size:8px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.08em">Projects</div>
+            <div style="font-size:14px;font-weight:700;color:rgba(255,255,255,0.85)">24</div>
+          </div>
+          <div style="background:rgba(255,255,255,0.06);border-radius:8px;padding:6px 8px">
+            <div style="font-size:8px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.08em">Online</div>
+            <div style="font-size:14px;font-weight:700;color:rgba(255,255,255,0.85)">312</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="phone-screen" style="padding-top:110px">
+        <!-- KPI cards with live tick indicators -->
+        <div class="kpi-row">
+          <div class="g-card">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start">
+              <div class="card-label">Revenue</div>
+              <div class="live-dot">Live</div>
+            </div>
+            <div class="card-value">€1.84M</div>
+            <div class="card-trend">↑ 12.4%</div>
+          </div>
+          <div class="g-card">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start">
+              <div class="card-label">Online</div>
+              <div class="live-dot">Live</div>
+            </div>
+            <div class="card-value">312</div>
+            <div class="card-trend">↑ 8 joined</div>
+          </div>
+        </div>
+
+        <!-- Activity feed with live entries -->
+        <div class="g-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+            <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:rgba(255,255,255,0.28)">Activity</div>
+            <div class="live-dot">Live</div>
+          </div>
+          <div class="activity-row">
+            <div class="activity-dot green"></div>
+            <div class="activity-text">Invoice #1048 paid · €540<span class="new-badge">new</span></div>
+            <div class="activity-time">now</div>
+          </div>
+          <div class="activity-row">
+            <div class="activity-dot blue"></div>
+            <div class="activity-text">Project "Iași Loft" started</div>
+            <div class="activity-time">2m</div>
+          </div>
+          <div class="activity-row">
+            <div class="activity-dot yellow"></div>
+            <div class="activity-text">Leave request · Ion Dima</div>
+            <div class="activity-time">8m</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-bar">
+        <div class="tab-item active">
+          <svg class="tab-icon active" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="9" y="9" width="6" height="6" rx="1"/><path d="M9 9V6a3 3 0 1 0-3 3h3"/><path d="M15 9h3a3 3 0 1 0-3-3v3"/><path d="M9 15H6a3 3 0 1 0 3 3v-3"/><path d="M15 15v3a3 3 0 1 0 3-3h-3"/></svg>
+          <span class="tab-label active">Command</span>
+        </div>
+        <div class="tab-item">
+          <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="3" y="7" width="7" height="13" rx="1"/><rect x="14" y="3" width="7" height="17" rx="1"/></svg>
+          <span class="tab-label">Companies</span>
+        </div>
+        <div class="tab-item">
+          <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M12 2a6 6 0 0 1 6 6c0 2.5-1.5 4.7-3.7 5.7L14 16H10l-.3-2.3A6 6 0 0 1 6 8a6 6 0 0 1 6-6z"/><path d="M10 19h4M11 22h2"/></svg>
+          <span class="tab-label">Intel</span>
+        </div>
+        <div class="tab-item">
+          <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 20h18M5 20V10l4-4 4 4 4-6v16"/></svg>
+          <span class="tab-label">Finance</span>
+        </div>
+        <div class="tab-item" style="position:relative">
+          <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 14h3l2 3h8l2-3h3"/><rect x="3" y="5" width="18" height="14" rx="2"/></svg>
+          <span class="tab-label">Inbox</span>
+          <div class="tab-badge"><span class="notif-badge">3</span></div>
+        </div>
+      </div>
+    </div>
+    <div style="font-size:11px;color:rgba(255,255,255,0.28);text-align:center">DI expanded · live KPIs · live feed</div>
+  </div>
+
+  <!-- ── Worker DI + live shift ── -->
+  <div class="phone-wrap">
+    <span class="phone-role-label">DI — Worker</span>
+    <div class="phone">
+      <div class="phone-notch"><div class="notch-camera"></div><div class="notch-speaker"></div></div>
+
+      <!-- DI collapsed, live shift time -->
+      <div class="di-pill" style="top:38px">
+        <div class="di-dot green"></div>
+        <span>Shift · 6h 24m left</span>
+        <div class="live-dot" style="margin-left:2px">Live</div>
+      </div>
+
+      <div class="phone-screen" style="padding-top:72px">
+        <!-- Shift card with live countdown -->
+        <div class="g-card">
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+            <div>
+              <div style="font-size:20px;font-weight:700;letter-spacing:-0.02em;color:rgba(255,255,255,0.92)">09:00–17:00</div>
+              <div style="font-size:9px;color:rgba(255,255,255,0.38);margin-top:2px">Main Floor · 6h 24m remaining</div>
+            </div>
+            <div class="live-dot">Live</div>
+          </div>
+          <div style="height:4px;border-radius:2px;background:rgba(255,255,255,0.08);overflow:hidden;margin-top:6px">
+            <div style="width:27%;height:100%;background:rgba(255,255,255,0.55);border-radius:2px"></div>
+          </div>
+        </div>
+
+        <!-- Live tasks with incoming -->
+        <div class="g-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+            <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:rgba(255,255,255,0.28)">Tasks</div>
+            <div class="live-dot">Live</div>
+          </div>
+          <div class="activity-row">
+            <span style="width:14px;height:14px;border-radius:50%;border:1.5px solid rgba(80,220,120,0.60);background:rgba(80,220,120,0.20);flex-shrink:0;margin-top:1px"></span>
+            <div class="activity-text" style="text-decoration:line-through;color:rgba(255,255,255,0.30)">Morning briefing</div>
+            <div class="activity-time">09:00</div>
+          </div>
+          <div class="activity-row">
+            <span style="width:14px;height:14px;border-radius:50%;border:1.5px solid rgba(255,255,255,0.20);flex-shrink:0;margin-top:1px"></span>
+            <div class="activity-text">Inventory count — B<span class="new-badge">assigned</span></div>
+            <div class="activity-time">14:00</div>
+          </div>
+          <div class="activity-row">
+            <span style="width:14px;height:14px;border-radius:50%;border:1.5px solid rgba(255,255,255,0.20);flex-shrink:0;margin-top:1px"></span>
+            <div class="activity-text">End-of-day report</div>
+            <div class="activity-time">16:30</div>
+          </div>
+        </div>
+
+        <!-- Live inbox -->
+        <div class="g-card" style="display:flex;align-items:center;justify-content:space-between">
+          <div style="font-size:12px;color:rgba(255,255,255,0.60)">Inbox</div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <div class="live-dot">Live</div>
+            <span class="notif-badge">2</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-bar">
+        <div class="tab-item active">
+          <svg class="tab-icon active" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 9h18"/><path d="M8 2v4M16 2v4"/><circle cx="12" cy="14" r="1.5" fill="currentColor"/></svg>
+          <span class="tab-label active">Today</span>
+        </div>
+        <div class="tab-item">
+          <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M9 11l2 2 4-4"/><rect x="3" y="3" width="18" height="18" rx="3"/></svg>
+          <span class="tab-label">Tasks</span>
+        </div>
+        <div class="tab-item">
+          <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>
+          <span class="tab-label">Schedule</span>
+        </div>
+        <div class="tab-item" style="position:relative">
+          <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 14h3l2 3h8l2-3h3"/><rect x="3" y="5" width="18" height="14" rx="2"/></svg>
+          <span class="tab-label">Inbox</span>
+          <div class="tab-badge"><span class="notif-badge">2</span></div>
+        </div>
+        <div class="tab-item">
+          <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="7" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+          <span class="tab-label">Me</span>
+        </div>
+      </div>
+    </div>
+    <div style="font-size:11px;color:rgba(255,255,255,0.28);text-align:center">DI shift countdown · live tasks · inbox badge</div>
+  </div>
+
+  <!-- ── Store Manager DI + live target ── -->
+  <div class="phone-wrap">
+    <span class="phone-role-label">DI — Store Manager</span>
+    <div class="phone">
+      <div class="phone-notch"><div class="notch-camera"></div><div class="notch-speaker"></div></div>
+
+      <!-- DI with warning -->
+      <div class="di-pill" style="top:38px">
+        <div class="di-dot yellow"></div>
+        <span>Store · €12.4K today</span>
+        <div class="live-dot" style="margin-left:2px">Live</div>
+      </div>
+
+      <div class="phone-screen" style="padding-top:72px">
+        <div class="kpi-row">
+          <div class="g-card">
+            <div style="display:flex;justify-content:space-between">
+              <div class="card-label">Today</div>
+              <div class="live-dot">Live</div>
+            </div>
+            <div class="card-value">€12.4K</div>
+            <div class="card-trend">↑ +€340/h</div>
+          </div>
+          <div class="g-card">
+            <div class="card-label">Target</div>
+            <div class="card-value">69%</div>
+            <div class="card-trend" style="color:rgba(255,179,64,0.85)">€18K goal</div>
+          </div>
+        </div>
+
+        <!-- Live target bar -->
+        <div class="g-card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:rgba(255,255,255,0.28)">Daily target</div>
+            <div class="live-dot">Live</div>
+          </div>
+          <div style="height:6px;border-radius:3px;background:rgba(255,255,255,0.08);overflow:hidden">
+            <div style="width:69%;height:100%;background:rgba(255,255,255,0.55);border-radius:3px;transition:width 1s"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:4px">
+            <span style="font-size:9px;color:rgba(255,255,255,0.35)">€12,400</span>
+            <span style="font-size:9px;color:rgba(255,255,255,0.35)">€18,000</span>
+          </div>
+        </div>
+
+        <!-- Live transaction feed -->
+        <div class="g-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+            <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:rgba(255,255,255,0.28)">Transactions</div>
+            <div class="live-dot">Live</div>
+          </div>
+          <div class="activity-row">
+            <div class="activity-dot green"></div>
+            <div class="activity-text">Mihai P. · €298<span class="new-badge">new</span></div>
+            <div class="activity-time">now</div>
+          </div>
+          <div class="activity-row">
+            <div class="activity-dot green"></div>
+            <div class="activity-text">Ana R. · €76</div>
+            <div class="activity-time">3m</div>
+          </div>
+          <div class="activity-row">
+            <div class="activity-dot yellow"></div>
+            <div class="activity-text">Return · SKU #2841</div>
+            <div class="activity-time">12m</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-bar">
+        <div class="tab-item active">
+          <svg class="tab-icon active" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="9" y="9" width="6" height="6" rx="1"/><path d="M9 9V6a3 3 0 1 0-3 3h3"/><path d="M15 9h3a3 3 0 1 0-3-3v3"/><path d="M9 15H6a3 3 0 1 0 3 3v-3"/><path d="M15 15v3a3 3 0 1 0 3-3h-3"/></svg>
+          <span class="tab-label active">Command</span>
+        </div>
+        <div class="tab-item">
+          <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M2 3h20l-2 8H4z"/><path d="M4 11v10h16V11"/></svg>
+          <span class="tab-label">Store</span>
+        </div>
+        <div class="tab-item">
+          <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="9" cy="7" r="3"/><path d="M3 20v-1a6 6 0 0 1 6-6"/></svg>
+          <span class="tab-label">Staff</span>
+        </div>
+        <div class="tab-item">
+          <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9M15 21V9"/></svg>
+          <span class="tab-label">Inventory</span>
+        </div>
+        <div class="tab-item">
+          <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 17V13M12 17v-5M16 17V9"/></svg>
+          <span class="tab-label">Reports</span>
+        </div>
+      </div>
+    </div>
+    <div style="font-size:11px;color:rgba(255,255,255,0.28);text-align:center">DI live revenue · target bar · transaction feed</div>
+  </div>
+
+</div>
+
+<!-- ══ Channel map ══════════════════════════════════════════════════════════ -->
+<div class="max-w" style="margin-bottom:16px">
+  <p class="section-title">Channel subscription map</p>
+  <p class="section-sub">What each role subscribes to and why</p>
+</div>
+
+<div class="channel-table">
+  <table>
+    <thead>
+      <tr>
+        <th>Channel</th>
+        <th>Event types</th>
+        <th>Roles</th>
+        <th>Surface</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>kpis:{companyId}</code></td>
+        <td>revenue_tick · project_update · workforce_change</td>
+        <td><span class="scope-chip sc-exec">Executive</span><span class="scope-chip sc-mgr">Manager</span></td>
+        <td>DI label + KPI cards</td>
+      </tr>
+      <tr>
+        <td><code>notifications:{userId}</code></td>
+        <td>notification_created · notification_read</td>
+        <td><span class="scope-chip sc-all">All roles</span></td>
+        <td>Inbox badge on tab bar</td>
+      </tr>
+      <tr>
+        <td><code>activity:{companyId}</code></td>
+        <td>invoice_paid · project_created · leave_requested</td>
+        <td><span class="scope-chip sc-exec">Executive</span><span class="scope-chip sc-mgr">Manager</span></td>
+        <td>Activity feed on dashboard</td>
+      </tr>
+      <tr>
+        <td><code>shift:{userId}</code></td>
+        <td>shift_start · shift_update · task_assigned</td>
+        <td><span class="scope-chip sc-wrkr">Worker</span></td>
+        <td>DI shift countdown · task list</td>
+      </tr>
+      <tr>
+        <td><code>store:{storeId}</code></td>
+        <td>transaction · target_update · staff_clockin</td>
+        <td><span class="scope-chip sc-mgr">Store Manager</span></td>
+        <td>DI revenue · target bar · transaction feed</td>
+      </tr>
+      <tr>
+        <td><code>presence:{companyId}</code></td>
+        <td>user_presence (already live)</td>
+        <td><span class="scope-chip sc-exec">Executive</span></td>
+        <td>Online Now panel</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ══ Technical spec ══════════════════════════════════════════════════════ -->
+<div class="max-w" style="margin-bottom:16px">
+  <p class="section-title">Technical spec</p>
+</div>
+
+<div class="spec-grid">
+  <div class="spec-card">
+    <div class="spec-title"><div class="spec-icon">🔌</div> Hooks</div>
+    <ul class="spec-list">
+      <li><code>useLiveKpis(companyId, role)</code> — subscribes to kpis channel, returns live revenue/workforce/projects</li>
+      <li><code>useNotificationCount(userId, companyId)</code> — live unread badge for tab bar</li>
+      <li><code>useActivityFeed(companyId, role)</code> — prepends new events to timeline</li>
+      <li><code>useLiveContext(role, companyId, userId)</code> — replaces placeholder in DynamicIslandBar</li>
+      <li><code>useLiveShift(userId)</code> — live shift countdown + task assignment stream</li>
+    </ul>
+  </div>
+
+  <div class="spec-card">
+    <div class="spec-title"><div class="spec-icon">📡</div> SSE endpoint (Tier 2)</div>
+    <ul class="spec-list">
+      <li><code>GET /api/realtime/stream</code> — auth-gated SSE stream per session</li>
+      <li>Subscribes to Redis pub/sub channels for the session's role + companyId</li>
+      <li>Streams <code>text/event-stream</code> — one JSON event per line</li>
+      <li>Heartbeat every 25s to keep connection alive through proxies</li>
+      <li>Client-side <code>useSSEStream()</code> hook with auto-reconnect</li>
+    </ul>
+  </div>
+
+  <div class="spec-card">
+    <div class="spec-title"><div class="spec-icon">🗄</div> DB triggers (Tier 1 source)</div>
+    <ul class="spec-list">
+      <li>Supabase DB webhook on <code>invoices</code> — fires <code>revenue_tick</code> on INSERT/UPDATE paid</li>
+      <li>Supabase DB webhook on <code>notifications</code> — fires <code>notification_created</code> on INSERT</li>
+      <li>Supabase DB webhook on <code>projects</code> — fires <code>project_update</code> on status change</li>
+      <li>Supabase DB webhook on <code>company_memberships</code> — fires <code>workforce_change</code></li>
+    </ul>
+  </div>
+
+  <div class="spec-card">
+    <div class="spec-title"><div class="spec-icon">⚡</div> Dynamic Island wiring</div>
+    <ul class="spec-list">
+      <li>Replace static <code>useLiveContext</code> stub in <code>dynamic-island-bar.tsx</code></li>
+      <li>Executive: <code>primary="€1.84M"</code> ticking from <code>kpis:{companyId}</code></li>
+      <li>Worker: <code>primary="Shift · 6h 24m"</code> counting down from <code>shift:{userId}</code></li>
+      <li>Store Manager: <code>primary="€12.4K"</code> from <code>store:{storeId}</code></li>
+      <li>Specialist: <code>primary="4.2K/min"</code> from pipeline events</li>
+      <li>Auto-expand to warning state on critical indicator</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ══ File structure ══════════════════════════════════════════════════════ -->
+<div class="max-w" style="margin-bottom:16px">
+  <p class="section-title">Files to create / modify</p>
+</div>
+
+<div class="code-block">
+<span class="dim">apps/web/src/hooks/realtime/</span>
+  <span class="green">useLiveKpis.ts</span>           <span class="dim">← NEW: kpis channel → live revenue/workforce/projects</span>
+  <span class="green">useNotificationCount.ts</span>  <span class="dim">← NEW: notifications channel → unread badge count</span>
+  <span class="green">useActivityFeed.ts</span>       <span class="dim">← NEW: activity channel → prepends events to timeline</span>
+  <span class="green">useLiveContext.ts</span>         <span class="dim">← NEW: role-aware DI label + value (replaces stub)</span>
+  <span class="green">useLiveShift.ts</span>          <span class="dim">← NEW: shift channel → countdown + task assignments</span>
+  <span class="green">useSSEStream.ts</span>          <span class="dim">← NEW: SSE client with auto-reconnect (Tier 2 fallback)</span>
+  <span class="green">index.ts</span>                 <span class="dim">← re-export all hooks</span>
+
+<span class="dim">apps/web/src/app/api/realtime/</span>
+  <span class="green">stream/route.ts</span>          <span class="dim">← NEW: GET SSE endpoint — auth-gated, Redis subscriber</span>
+
+<span class="dim">apps/web/src/app/(authenticated)/</span>
+  <span class="blue">dynamic-island-bar.tsx</span>   <span class="dim">← UPDATE: wire useLiveContext replacing static stub</span>
+  <span class="blue">floating-tab-bar.tsx</span>     <span class="dim">← UPDATE: add useNotificationCount badge</span>
+
+<span class="dim">apps/web/src/app/(authenticated)/dashboard/variants/</span>
+  <span class="blue">ExecutiveDashboard.tsx</span>   <span class="dim">← UPDATE: client wrapper with useLiveKpis + useActivityFeed</span>
+  <span class="blue">ManagerDashboard.tsx</span>     <span class="dim">← UPDATE: client wrapper with useLiveKpis</span>
+  <span class="blue">WorkerDashboard.tsx</span>      <span class="dim">← UPDATE: client wrapper with useLiveShift</span>
+
+<span class="dim">packages/cache/src/</span>
+  <span class="blue">realtime-events.ts</span>       <span class="dim">← NEW: typed event payloads + channel name builders for all event types</span>
+</div>
+
+</body>
+</html>
