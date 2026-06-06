@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Accept Invitation — PRV</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #000;
+    color: #fff;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", system-ui, sans-serif;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+
+  .ambient {
+    position: fixed; inset: 0; pointer-events: none;
+    background: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(255,255,255,0.045) 0%, transparent 100%);
+  }
+
+  .wrap { width: 100%; max-width: 360px; position: relative; z-index: 1; }
+
+  /* Logo */
+  .logo {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 12px; margin-bottom: 40px;
+  }
+  .logo-icon {
+    width: 56px; height: 56px; border-radius: 18px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.12);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.22), 0 12px 32px rgba(0,0,0,0.6);
+  }
+  .logo-text { text-align: center; }
+  .logo-title { font-size: 22px; font-weight: 600; letter-spacing: -0.02em; color: rgba(255,255,255,0.95); }
+  .logo-sub   { font-size: 13px; color: rgba(255,255,255,0.38); margin-top: 2px; }
+
+  /* Card */
+  .card {
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.11);
+    border-radius: 28px;
+    padding: 28px 24px 24px;
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.18),
+      0 32px 80px rgba(0,0,0,0.72),
+      0 8px 24px rgba(0,0,0,0.4);
+    backdrop-filter: blur(48px) saturate(180%);
+    -webkit-backdrop-filter: blur(48px) saturate(180%);
+  }
+
+  .card-header { margin-bottom: 20px; }
+  .card-header h2 {
+    font-size: 18px; font-weight: 600;
+    letter-spacing: -0.02em;
+    color: rgba(255,255,255,0.95);
+  }
+  .card-header p { font-size: 13px; color: rgba(255,255,255,0.42); margin-top: 3px; }
+
+  /* Email badge */
+  .email-badge {
+    background: rgba(255,255,255,0.055);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 11px;
+    padding: 9px 12px;
+    font-size: 13px;
+    color: rgba(255,255,255,0.60);
+    margin-bottom: 20px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .email-badge svg { flex-shrink: 0; }
+  .email-badge span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .email-badge .lock {
+    font-size: 10px; color: rgba(255,255,255,0.25);
+    background: rgba(255,255,255,0.07);
+    border-radius: 5px; padding: 2px 6px;
+    flex-shrink: 0;
+  }
+
+  /* Name row */
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  /* Fields */
+  .field { margin-bottom: 14px; }
+  .field label {
+    display: block;
+    font-size: 11px; font-weight: 500;
+    letter-spacing: 0.07em; text-transform: uppercase;
+    color: rgba(255,255,255,0.42);
+    margin-bottom: 6px;
+  }
+  input {
+    width: 100%; height: 44px;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 12px;
+    padding: 0 14px;
+    font-size: 15px; color: #fff;
+    outline: none;
+    transition: background 0.12s, border-color 0.12s;
+    -webkit-appearance: none;
+  }
+  input:focus {
+    background: rgba(255,255,255,0.10);
+    border-color: rgba(255,255,255,0.22);
+  }
+  input::placeholder { color: rgba(255,255,255,0.18); }
+
+  /* Password */
+  .pw-wrap { position: relative; }
+  .pw-wrap input { padding-right: 42px; }
+  .pw-toggle {
+    position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+    color: rgba(255,255,255,0.28); background: none; border: none; cursor: pointer;
+    padding: 4px; line-height: 0;
+    transition: color 0.12s;
+  }
+  .pw-toggle:hover { color: rgba(255,255,255,0.60); }
+
+  /* Password strength */
+  .strength-wrap { margin-top: 8px; }
+  .strength-bars { display: flex; gap: 4px; }
+  .bar {
+    flex: 1; height: 3px; border-radius: 2px;
+    background: rgba(255,255,255,0.10);
+    transition: background 0.3s;
+  }
+  .bar.weak   { background: rgba(239,68,68,0.75); }
+  .bar.fair   { background: rgba(234,179,8,0.75); }
+  .bar.good   { background: rgba(255,255,255,0.50); }
+  .bar.strong { background: rgba(255,255,255,0.82); }
+  .strength-label {
+    font-size: 11px; color: rgba(255,255,255,0.32);
+    margin-top: 5px; letter-spacing: 0.02em;
+  }
+
+  /* Divider */
+  .divider {
+    height: 1px;
+    background: rgba(255,255,255,0.07);
+    margin: 6px 0 18px;
+  }
+
+  /* Terms */
+  .terms {
+    font-size: 12px; color: rgba(255,255,255,0.30);
+    line-height: 1.55; margin-bottom: 16px;
+    text-align: center;
+  }
+  .terms a { color: rgba(255,255,255,0.50); text-decoration: underline; text-underline-offset: 2px; }
+
+  /* Submit */
+  .btn {
+    width: 100%; height: 44px;
+    background: #fff; color: #000;
+    border: none; border-radius: 12px;
+    font-size: 15px; font-weight: 600;
+    cursor: pointer; letter-spacing: -0.01em;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+    transition: background 0.12s, opacity 0.12s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .btn:disabled { background: rgba(255,255,255,0.25); color: rgba(0,0,0,0.5); cursor: not-allowed; }
+  .btn:not(:disabled):hover { background: rgba(255,255,255,0.92); }
+  .btn:not(:disabled):active { background: rgba(255,255,255,0.80); }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    font-size: 12px; color: rgba(255,255,255,0.16);
+    margin-top: 28px;
+  }
+
+  /* ── State demos (tabs for preview) ─────────────────── */
+  .preview-tabs {
+    display: flex; gap: 8px;
+    justify-content: center;
+    margin-bottom: 28px;
+  }
+  .preview-tab {
+    padding: 6px 14px; border-radius: 20px; font-size: 12px; cursor: pointer;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.5);
+    transition: all 0.15s;
+  }
+  .preview-tab.active {
+    background: rgba(255,255,255,0.14); color: rgba(255,255,255,0.90);
+    border-color: rgba(255,255,255,0.22);
+  }
+</style>
+</head>
+<body>
+<div class="ambient"></div>
+
+<!-- Preview state switcher (not part of final page) -->
+<div class="preview-tabs" id="tabs">
+  <button class="preview-tab active" onclick="setState('empty')">Empty</button>
+  <button class="preview-tab" onclick="setState('filling')">Filling</button>
+  <button class="preview-tab" onclick="setState('strong')">Strong PW</button>
+  <button class="preview-tab" onclick="setState('loading')">Loading</button>
+</div>
+
+<div class="wrap">
+  <div class="logo">
+    <div class="logo-icon">
+      <span style="font-size:20px;font-weight:700;color:rgba(255,255,255,0.95)">P</span>
+    </div>
+    <div class="logo-text">
+      <div class="logo-title">PRV</div>
+      <div class="logo-sub">Company Operating System</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <h2>Accept invitation</h2>
+      <p>Set up your account to get started</p>
+    </div>
+
+    <!-- Pre-filled email (read-only) -->
+    <div class="email-badge">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="1.5">
+        <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+      </svg>
+      <span id="email-display">ion.popescu@prvcompany.ro</span>
+      <span class="lock">invited</span>
+    </div>
+
+    <!-- Name row -->
+    <div class="row">
+      <div class="field">
+        <label>First name</label>
+        <input id="first" type="text" placeholder="Ion" autocomplete="given-name">
+      </div>
+      <div class="field">
+        <label>Last name</label>
+        <input id="last" type="text" placeholder="Popescu" autocomplete="family-name">
+      </div>
+    </div>
+
+    <!-- Password -->
+    <div class="field">
+      <label>Password</label>
+      <div class="pw-wrap">
+        <input id="pw" type="password" placeholder="Minimum 8 characters" autocomplete="new-password"
+               oninput="updateStrength(this.value)">
+        <button class="pw-toggle" type="button" onclick="togglePw()" id="eye-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>
+          </svg>
+        </button>
+      </div>
+      <div class="strength-wrap" id="strength-wrap" style="display:none">
+        <div class="strength-bars">
+          <div class="bar" id="b1"></div>
+          <div class="bar" id="b2"></div>
+          <div class="bar" id="b3"></div>
+          <div class="bar" id="b4"></div>
+        </div>
+        <div class="strength-label" id="strength-label"></div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Terms -->
+    <p class="terms">
+      By creating an account you agree to our<br>
+      <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>
+    </p>
+
+    <!-- Submit -->
+    <button class="btn" id="submit-btn" disabled>Create account</button>
+  </div>
+
+  <div class="footer">PRV — Company Operating System</div>
+</div>
+
+<script>
+  function updateStrength(val) {
+    const wrap = document.getElementById('strength-wrap');
+    const lbl  = document.getElementById('strength-label');
+    const bars = [document.getElementById('b1'), document.getElementById('b2'),
+                  document.getElementById('b3'), document.getElementById('b4')];
+    const btn  = document.getElementById('submit-btn');
+
+    if (!val) { wrap.style.display = 'none'; btn.disabled = true; return; }
+    wrap.style.display = 'block';
+
+    let score = 0;
+    if (val.length >= 8)  score++;
+    if (val.length >= 12) score++;
+    if (/[A-Z]/.test(val) && /[0-9]/.test(val)) score++;
+    if (/[^A-Za-z0-9]/.test(val)) score++;
+
+    const levels = [
+      { cls: 'weak',   label: 'Too short', active: 1 },
+      { cls: 'fair',   label: 'Fair',      active: 2 },
+      { cls: 'good',   label: 'Good',      active: 3 },
+      { cls: 'strong', label: 'Strong',    active: 4 },
+    ];
+    const lvl = levels[score > 0 ? score - 1 : 0];
+
+    bars.forEach((b, i) => {
+      b.className = 'bar';
+      if (i < lvl.active) b.classList.add(lvl.cls);
+    });
+    lbl.textContent = lvl.label;
+    btn.disabled = score < 1;
+  }
+
+  function togglePw() {
+    const pw = document.getElementById('pw');
+    const btn = document.getElementById('eye-btn');
+    pw.type = pw.type === 'password' ? 'text' : 'password';
+    btn.innerHTML = pw.type === 'text'
+      ? `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+           <path d="m17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+           <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+           <line x1="1" y1="1" x2="23" y2="23"/>
+         </svg>`
+      : `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+           <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>
+         </svg>`;
+  }
+
+  // Preview state switcher
+  function setState(state) {
+    document.querySelectorAll('.preview-tab').forEach(t => t.classList.remove('active'));
+    event.target.classList.add('active');
+
+    const first = document.getElementById('first');
+    const last  = document.getElementById('last');
+    const pw    = document.getElementById('pw');
+
+    if (state === 'empty') {
+      first.value = ''; last.value = ''; pw.value = '';
+      updateStrength('');
+    } else if (state === 'filling') {
+      first.value = 'Ion'; last.value = '';
+      pw.value = 'pass123';
+      updateStrength('pass123');
+    } else if (state === 'strong') {
+      first.value = 'Ion'; last.value = 'Popescu';
+      pw.value = 'MySecure@Pass99!';
+      updateStrength('MySecure@Pass99!');
+      document.getElementById('submit-btn').disabled = false;
+    } else if (state === 'loading') {
+      first.value = 'Ion'; last.value = 'Popescu';
+      pw.value = 'MySecure@Pass99!';
+      updateStrength('MySecure@Pass99!');
+      const btn = document.getElementById('submit-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<span style="display:inline-block;width:16px;height:16px;border:2px solid rgba(0,0,0,0.25);border-top-color:rgba(0,0,0,0.8);border-radius:50%;animation:spin 0.7s linear infinite"></span>';
+    }
+  }
+</script>
+<style>
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</body>
+</html>
