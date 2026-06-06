@@ -215,6 +215,9 @@ export type { GlassSplitViewProps, SplitOrientation } from "./glass-split-view"
 export { GlassCarousel } from "./glass-carousel"
 export type { GlassCarouselProps } from "./glass-carousel"
 
+export { GlassImageGallery } from "./glass-image-gallery"
+export type { GlassImageGalleryProps, GalleryImage } from "./glass-image-gallery"
+
 export {
   ActionSheet,
   ConfirmationSheet,
