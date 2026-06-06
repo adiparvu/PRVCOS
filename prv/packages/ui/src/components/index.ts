@@ -289,6 +289,9 @@ export type { GlassLocationPinProps, PinColor } from "./glass-location-pin"
 export { GlassRoutePreview } from "./glass-route-preview"
 export type { GlassRoutePreviewProps, RouteStat } from "./glass-route-preview"
 
+export { GlassGeofenceCard } from "./glass-geofence-card"
+export type { GlassGeofenceCardProps, GeofenceStatus, GeofenceRow } from "./glass-geofence-card"
+
 export {
   ActionSheet,
   ConfirmationSheet,
