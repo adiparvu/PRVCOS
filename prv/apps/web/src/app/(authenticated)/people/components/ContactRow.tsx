@@ -39,9 +39,9 @@ export function ContactRow({ member, onClick }: ContactRowProps) {
         className="w-full flex items-center gap-3 px-4 py-3 text-left"
         style={{
           transition: "background 150ms",
-          borderBottom: "1px solid rgba(255,255,255,0.05)",
+          borderBottom: "1px solid var(--prv-border-subtle)",
         }}
-        onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.04)")}
+        onMouseEnter={(e) => (e.currentTarget.style.background = "var(--prv-border-subtle)")}
         onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
       >
         <PresenceRing
@@ -63,7 +63,7 @@ export function ContactRow({ member, onClick }: ContactRowProps) {
           height="14"
           viewBox="0 0 24 24"
           fill="none"
-          stroke="rgba(255,255,255,0.20)"
+          stroke="var(--prv-text-3)"
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"

@@ -59,8 +59,8 @@ export function PersonProfileClient({
           onClick={() => router.back()}
           className="w-9 h-9 rounded-full flex items-center justify-center"
           style={{
-            background: "rgba(255,255,255,0.07)",
-            border: "1px solid rgba(255,255,255,0.10)",
+            background: "var(--prv-border-subtle)",
+            border: "1px solid var(--prv-g2)",
           }}
         >
           <svg
@@ -68,7 +68,7 @@ export function PersonProfileClient({
             height="16"
             viewBox="0 0 24 24"
             fill="none"
-            stroke="rgba(255,255,255,0.70)"
+            stroke="var(--prv-text-2)"
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -110,8 +110,8 @@ export function PersonProfileClient({
           <div
             className="p-4 rounded-[18px]"
             style={{
-              background: "rgba(255,255,255,0.05)",
-              border: "1px solid rgba(255,255,255,0.08)",
+              background: "var(--prv-border-subtle)",
+              border: "1px solid var(--prv-border)",
             }}
           >
             <p className="text-white/55 text-[14px] leading-relaxed">{person.bio}</p>
@@ -122,8 +122,8 @@ export function PersonProfileClient({
         <div
           className="rounded-[18px] overflow-hidden"
           style={{
-            background: "rgba(255,255,255,0.05)",
-            border: "1px solid rgba(255,255,255,0.08)",
+            background: "var(--prv-border-subtle)",
+            border: "1px solid var(--prv-border)",
           }}
         >
           {[
@@ -149,7 +149,7 @@ export function PersonProfileClient({
                 key={row.label}
                 className="flex items-center justify-between px-4 py-3"
                 style={{
-                  borderBottom: i < arr.length - 1 ? "1px solid rgba(255,255,255,0.05)" : "none",
+                  borderBottom: i < arr.length - 1 ? "1px solid var(--prv-border-subtle)" : "none",
                 }}
               >
                 <span className="text-white/35 text-[13px]">{row.label}</span>

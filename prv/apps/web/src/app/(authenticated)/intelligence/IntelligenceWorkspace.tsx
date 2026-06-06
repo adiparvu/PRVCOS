@@ -90,7 +90,7 @@ interface ForecastRow {
 }
 
 const FORECAST_ROWS: ForecastRow[] = [
-  { label: "Revenue",     value: "€534K",  trend: "▲ 10.8%", trendDir: "up",   pct: 88, color: "rgba(255,255,255,0.50)" },
+  { label: "Revenue",     value: "€534K",  trend: "▲ 10.8%", trendDir: "up",   pct: 88, color: "var(--prv-text-2)" },
   { label: "Orders",      value: "4,280",  trend: "▲ 8.4%",  trendDir: "up",   pct: 76, color: "rgba(10,132,255,0.70)"  },
   { label: "New Clients", value: "148",    trend: "▲ 5.1%",  trendDir: "up",   pct: 62, color: "rgba(191,90,242,0.70)"  },
   { label: "Churn Risk",  value: "12",     trend: "▲ 3",     trendDir: "down",  pct: 28, color: "rgba(255,69,58,0.70)"   },
@@ -107,8 +107,8 @@ interface ReportRow {
 }
 
 const REPORTS: ReportRow[] = [
-  { icon: "M3 3v18h18M18 9l-6 6-3-3-6 6",        iconColor: "rgba(255,255,255,0.55)", name: "Monthly Financial Summary",  sub: "Revenue · Profit · Expenses · Tax",   date: "Jun 1",  badge: "ready" },
-  { icon: "M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75", iconColor: "rgba(255,255,255,0.55)", name: "Workforce Performance",      sub: "Attendance · Productivity · Cost",    date: "Jun 1",  badge: "ready" },
+  { icon: "M3 3v18h18M18 9l-6 6-3-3-6 6",        iconColor: "var(--prv-text-2)", name: "Monthly Financial Summary",  sub: "Revenue · Profit · Expenses · Tax",   date: "Jun 1",  badge: "ready" },
+  { icon: "M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75", iconColor: "var(--prv-text-2)", name: "Workforce Performance",      sub: "Attendance · Productivity · Cost",    date: "Jun 1",  badge: "ready" },
   { icon: "M3 3h7v7H3ZM14 3h7v7h-7ZM3 14h7v7H3ZM14 14h7v7h-7Z", iconColor: "rgba(10,132,255,0.70)",  name: "Store Performance Index",    sub: "All 18 stores · Jun 2026",            date: "Today",  badge: "new"   },
   { icon: "M12 2a6 6 0 0 1 6 6c0 2.5-1.5 4.7-3.7 5.7L14 16H10l-.3-2.3A6.01 6.01 0 0 1 6 8a6 6 0 0 1 6-6zM10 19h4M11 22h2", iconColor: "rgba(191,90,242,0.70)", name: "AI Insights Digest",          sub: "Anomalies · Recommendations · Risks", date: "Today",  badge: "new"   },
 ]
@@ -116,7 +116,7 @@ const REPORTS: ReportRow[] = [
 const TREND_COLOR = {
   up:   "rgba(48,209,88,0.95)",
   down: "rgba(255,69,58,0.95)",
-  flat: "rgba(255,255,255,0.35)",
+  flat: "var(--prv-text-3)",
 }
 
 const BADGE_STYLE = {

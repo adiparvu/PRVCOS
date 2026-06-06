@@ -29,7 +29,7 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
         className="pointer-events-none fixed inset-0 z-0"
         style={{
           background:
-            "radial-gradient(ellipse 100% 40% at 50% -10%, rgba(255,255,255,0.03) 0%, transparent 100%)",
+            "radial-gradient(ellipse 100% 40% at 50% -10%, var(--prv-border-subtle) 0%, transparent 100%)",
         }}
       />
 

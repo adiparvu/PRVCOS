@@ -269,7 +269,7 @@ export function ToolsWorkspace() {
       </div>
 
       {/* ── Search ── */}
-      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", borderRadius: 14, background: "rgba(255,255,255,0.07)", border: `1px solid ${bds}`, margin: "14px 16px 0" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", borderRadius: 14, background: "var(--prv-border-subtle)", border: `1px solid ${bds}`, margin: "14px 16px 0" }}>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={t3} strokeWidth="1.8" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
         <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search tools, categories, locations…" style={{ flex: 1, background: "none", border: "none", outline: "none", fontSize: 14, color: t1, fontFamily: "inherit" }} />
       </div>

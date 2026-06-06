@@ -18,7 +18,7 @@ export function ContactBusinessCard({ userId, companyName }: ContactBusinessCard
     return (
       <div
         className="w-full h-[56px] rounded-[16px]"
-        style={{ background: "rgba(255,255,255,0.05)" }}
+        style={{ background: "var(--prv-border-subtle)" }}
       />
     )
   }
@@ -46,8 +46,8 @@ export function ContactBusinessCard({ userId, companyName }: ContactBusinessCard
           onClick={() => setShowShare(true)}
           className="shrink-0 mt-2 px-4 py-2.5 rounded-[12px] text-[13px] font-medium text-white/65"
           style={{
-            background: "rgba(255,255,255,0.07)",
-            border: "1px solid rgba(255,255,255,0.10)",
+            background: "var(--prv-border-subtle)",
+            border: "1px solid var(--prv-g2)",
           }}
         >
           Share

@@ -103,8 +103,8 @@ export function ContactsDirectory({ companyId, initialStatusFilter = "" }: Conta
         <div
           className="flex items-center gap-2 px-3 rounded-[14px]"
           style={{
-            background: "rgba(255,255,255,0.07)",
-            border: "1px solid rgba(255,255,255,0.10)",
+            background: "var(--prv-border-subtle)",
+            border: "1px solid var(--prv-g2)",
           }}
         >
           <svg
@@ -112,7 +112,7 @@ export function ContactsDirectory({ companyId, initialStatusFilter = "" }: Conta
             height="14"
             viewBox="0 0 24 24"
             fill="none"
-            stroke="rgba(255,255,255,0.35)"
+            stroke="var(--prv-text-3)"
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -138,9 +138,9 @@ export function ContactsDirectory({ companyId, initialStatusFilter = "" }: Conta
               className="shrink-0 px-3 py-1.5 rounded-full text-[12px] font-medium"
               style={{
                 background:
-                  statusFilter === value ? "rgba(255,255,255,0.18)" : "rgba(255,255,255,0.06)",
-                border: `1px solid ${statusFilter === value ? "rgba(255,255,255,0.22)" : "rgba(255,255,255,0.09)"}`,
-                color: statusFilter === value ? "rgba(255,255,255,0.90)" : "rgba(255,255,255,0.40)",
+                  statusFilter === value ? "var(--prv-g3)" : "var(--prv-g1)",
+                border: `1px solid ${statusFilter === value ? "var(--prv-g3)" : "var(--prv-border)"}`,
+                color: statusFilter === value ? "var(--prv-text-1)" : "var(--prv-text-2)",
                 transition: "all 150ms",
               }}
             >
@@ -158,16 +158,16 @@ export function ContactsDirectory({ companyId, initialStatusFilter = "" }: Conta
               <div key={i} className="flex items-center gap-3 py-3">
                 <div
                   className="w-10 h-10 rounded-full shrink-0"
-                  style={{ background: "rgba(255,255,255,0.07)" }}
+                  style={{ background: "var(--prv-border-subtle)" }}
                 />
                 <div className="flex-1 space-y-1.5">
                   <div
                     className="h-3 rounded-full"
-                    style={{ background: "rgba(255,255,255,0.08)", width: `${50 + i * 8}%` }}
+                    style={{ background: "var(--prv-border)", width: `${50 + i * 8}%` }}
                   />
                   <div
                     className="h-2.5 rounded-full w-1/3"
-                    style={{ background: "rgba(255,255,255,0.05)" }}
+                    style={{ background: "var(--prv-border-subtle)" }}
                   />
                 </div>
               </div>

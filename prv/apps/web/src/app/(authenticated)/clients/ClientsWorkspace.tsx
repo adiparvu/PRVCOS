@@ -48,7 +48,7 @@ const CLIENTS: Client[] = [
 const ACTIVITY: ActivityEntry[] = [
   { id: "a1", title: "Invoice #2041 paid",          detail: "Hotel Transilvania SA · €24,000 · Jun 5", color: "rgba(48,209,88,0.90)"  },
   { id: "a2", title: "Quote approved",              detail: "SC Invest-Imob SRL · €210,000 · Jun 4",   color: "rgba(10,132,255,0.90)" },
-  { id: "a3", title: "Progress photos uploaded",    detail: "Mihai & Elena Popescu · 14 photos · Jun 3", color: "rgba(255,255,255,0.35)" },
+  { id: "a3", title: "Progress photos uploaded",    detail: "Mihai & Elena Popescu · 14 photos · Jun 3", color: "var(--prv-text-3)" },
   { id: "a4", title: "Quote sent",                  detail: "Dan & Roxana Ionescu · €42,000 · Jun 2",  color: "rgba(255,159,10,0.90)" },
   { id: "a5", title: "Contract signed",             detail: "Office Max SRL · €67,000 · Apr 20",       color: "rgba(48,209,88,0.90)"  },
 ]
@@ -257,7 +257,7 @@ export function ClientsWorkspace() {
       </div>
 
       {/* ── Search ── */}
-      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", borderRadius: 14, background: "rgba(255,255,255,0.07)", border: `1px solid ${bds}`, margin: "14px 16px 0" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", borderRadius: 14, background: "var(--prv-border-subtle)", border: `1px solid ${bds}`, margin: "14px 16px 0" }}>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={t3} strokeWidth="1.8" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
         <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search clients, projects, cities…" style={{ flex: 1, background: "none", border: "none", outline: "none", fontSize: 14, color: t1, fontFamily: "inherit" }} />
       </div>

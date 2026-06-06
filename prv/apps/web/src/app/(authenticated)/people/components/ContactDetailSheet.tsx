@@ -50,20 +50,20 @@ export function ContactDetailSheet({ member, onClose }: ContactDetailSheetProps)
           right: 0,
           zIndex: 81,
           maxHeight: "85svh",
-          background: "rgba(255,255,255,0.10)",
+          background: "var(--prv-g2)",
           backdropFilter: "blur(48px) saturate(180%)",
           WebkitBackdropFilter: "blur(48px) saturate(180%)",
-          border: "1px solid rgba(255,255,255,0.14)",
+          border: "1px solid var(--prv-border)",
           borderBottom: "none",
           borderRadius: "24px 24px 0 0",
-          boxShadow: "0 -8px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.22)",
+          boxShadow: "0 -8px 32px rgba(0,0,0,0.5), inset 0 1px 0 var(--prv-g3)",
           overflowY: "auto",
           paddingBottom: "env(safe-area-inset-bottom, 28px)",
         }}
       >
         {/* Drag handle */}
         <div className="flex justify-center pt-3 pb-1">
-          <div className="w-10 h-1 rounded-full" style={{ background: "rgba(255,255,255,0.20)" }} />
+          <div className="w-10 h-1 rounded-full" style={{ background: "var(--prv-text-3)" }} />
         </div>
 
         <div className="px-5 pb-4 space-y-5">
@@ -92,7 +92,7 @@ export function ContactDetailSheet({ member, onClose }: ContactDetailSheetProps)
           </div>
 
           {/* Divider */}
-          <div style={{ height: 1, background: "rgba(255,255,255,0.07)" }} />
+          <div style={{ height: 1, background: "var(--prv-border-subtle)" }} />
 
           {/* Quick actions */}
           <ContactActions email={member.email} phone={member.phone} />
@@ -164,8 +164,8 @@ export function ContactDetailSheet({ member, onClose }: ContactDetailSheetProps)
             }}
             className="w-full py-3.5 rounded-[16px] text-[14px] font-medium text-white/55"
             style={{
-              background: "rgba(255,255,255,0.05)",
-              border: "1px solid rgba(255,255,255,0.08)",
+              background: "var(--prv-border-subtle)",
+              border: "1px solid var(--prv-border)",
             }}
           >
             Open Full Profile

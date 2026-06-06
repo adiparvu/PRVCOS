@@ -112,7 +112,7 @@ const TX_COLUMNS: TableColumn<TxRow>[] = [
     align: "right",
     sortable: true,
     render: (row) => (
-      <span style={{ color: row.kind === "credit" ? "rgba(48,209,88,0.95)" : "rgba(255,255,255,0.95)", fontWeight: 700 }}>
+      <span style={{ color: row.kind === "credit" ? "rgba(48,209,88,0.95)" : "var(--prv-text-1)", fontWeight: 700 }}>
         {row.amount}
       </span>
     ),

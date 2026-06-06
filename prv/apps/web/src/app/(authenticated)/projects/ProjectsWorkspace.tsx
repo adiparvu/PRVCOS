@@ -197,7 +197,7 @@ const STATUS_STYLE: Record<ProjectStatus, { bg: string; color: string; label: st
   active: { bg: "rgba(10,132,255,0.15)",  color: "rgba(10,132,255,0.9)",  label: "Active"  },
   review: { bg: "rgba(255,159,10,0.15)",  color: "rgba(255,159,10,0.95)", label: "Review"  },
   done:   { bg: "rgba(48,209,88,0.15)",   color: "rgba(48,209,88,0.95)",  label: "Done"    },
-  hold:   { bg: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.35)",label: "On Hold" },
+  hold:   { bg: "var(--prv-border)", color: "var(--prv-text-3)",label: "On Hold" },
 }
 
 const PROGRESS_COLOR: Record<ProjectStatus, "blue" | "orange" | "green" | "white"> = {
@@ -210,7 +210,7 @@ const PROGRESS_COLOR: Record<ProjectStatus, "blue" | "orange" | "green" | "white
 const PHASE_STYLE: Record<string, { bg: string; color: string }> = {
   done:    { bg: "rgba(48,209,88,0.15)",  color: "rgba(48,209,88,0.95)"  },
   active:  { bg: "rgba(10,132,255,0.15)", color: "rgba(10,132,255,0.9)"  },
-  pending: { bg: "rgba(255,255,255,0.07)",color: "rgba(255,255,255,0.35)"},
+  pending: { bg: "var(--prv-border-subtle)",color: "var(--prv-text-3)"},
 }
 
 const PHASE_PROGRESS_COLOR: Record<string, "green" | "blue" | "white"> = {
@@ -504,10 +504,10 @@ export function ProjectsWorkspace() {
         </div>
         <div className="flex gap-2">
           <div className="w-9 h-9 rounded-[10px] flex items-center justify-center" style={{ background: "var(--prv-g1)", border: "1px solid var(--prv-border-subtle)" }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.55)" strokeWidth="1.8" strokeLinecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="14" y2="12"/><line x1="4" y1="18" x2="10" y2="18"/></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--prv-text-2)" strokeWidth="1.8" strokeLinecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="14" y2="12"/><line x1="4" y1="18" x2="10" y2="18"/></svg>
           </div>
           <div className="w-9 h-9 rounded-[10px] flex items-center justify-center" style={{ background: "var(--prv-g1)", border: "1px solid var(--prv-border-subtle)" }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.55)" strokeWidth="1.8" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--prv-text-2)" strokeWidth="1.8" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           </div>
         </div>
       </div>
@@ -518,7 +518,7 @@ export function ProjectsWorkspace() {
           { v: String(activeCount),  l: "Active",   color: "rgba(10,132,255,0.9)"  },
           { v: String(reviewCount),  l: "Review",   color: "rgba(255,159,10,0.95)" },
           { v: String(doneCount),    l: "Done",     color: "rgba(48,209,88,0.95)"  },
-          { v: "€2.4M",             l: "Pipeline", color: "rgba(255,255,255,0.90)" },
+          { v: "€2.4M",             l: "Pipeline", color: "var(--prv-text-1)" },
         ].map(({ v, l, color }) => (
           <div key={l} className="py-3 rounded-[14px] text-center" style={{ background: "var(--prv-g1)", border: "1px solid var(--prv-border-subtle)" }}>
             <p className="text-[20px] font-bold" style={{ color }}>{v}</p>

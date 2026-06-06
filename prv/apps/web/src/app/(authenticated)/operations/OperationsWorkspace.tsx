@@ -78,7 +78,7 @@ const INITIAL_KANBAN: KanbanColumn[] = [
   {
     id: "todo",
     title: "To Do",
-    color: "rgba(255,255,255,0.35)",
+    color: "var(--prv-text-3)",
     cards: [
       { id: "t1", title: "Restock shelves — Brașov", data: { priority: "high", assignee: "AR" } },
       { id: "t2", title: "HVAC maintenance — Iași", data: { priority: "med", assignee: "MP" } },

@@ -19,8 +19,8 @@ export function AlphabetScrubber({ letters, onJump }: AlphabetScrubberProps) {
     <div
       className="fixed right-2 top-1/2 -translate-y-1/2 z-10 flex flex-col items-center py-2 px-1 rounded-full select-none"
       style={{
-        background: "rgba(255,255,255,0.06)",
-        border: "1px solid rgba(255,255,255,0.08)",
+        background: "var(--prv-g1)",
+        border: "1px solid var(--prv-border)",
         backdropFilter: "blur(16px)",
         WebkitBackdropFilter: "blur(16px)",
         gap: 1,
@@ -36,8 +36,8 @@ export function AlphabetScrubber({ letters, onJump }: AlphabetScrubberProps) {
           onPointerUp={() => setActive(null)}
           className="w-5 h-5 flex items-center justify-center rounded-full text-[10px] font-medium"
           style={{
-            color: active === letter ? "rgba(255,255,255,0.90)" : "rgba(255,255,255,0.35)",
-            background: active === letter ? "rgba(255,255,255,0.14)" : "transparent",
+            color: active === letter ? "var(--prv-text-1)" : "var(--prv-text-3)",
+            background: active === letter ? "var(--prv-border)" : "transparent",
             transition: "color 100ms, background 100ms",
             lineHeight: 1,
           }}

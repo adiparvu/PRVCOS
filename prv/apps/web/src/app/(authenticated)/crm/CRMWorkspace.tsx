@@ -54,7 +54,7 @@ const STATUS_STYLE: Record<ClientStatus, { bg: string; color: string; label: str
   vip:    { bg: "rgba(255,159,10,0.15)",  color: "rgba(255,159,10,0.95)", label: "VIP"    },
   active: { bg: "rgba(48,209,88,0.14)",   color: "rgba(48,209,88,0.95)",  label: "Active" },
   lead:   { bg: "rgba(10,132,255,0.14)",  color: "rgba(10,132,255,0.90)", label: "Lead"   },
-  cold:   { bg: "rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.35)",label: "Cold"   },
+  cold:   { bg: "var(--prv-border-subtle)", color: "var(--prv-text-3)",label: "Cold"   },
 }
 
 const CLIENTS: Client[] = [
@@ -117,7 +117,7 @@ const CLIENTS: Client[] = [
 
 const PIPELINE_COLS: KanbanColumn[] = [
   {
-    id: "lead", title: "Lead", color: "rgba(255,255,255,0.40)",
+    id: "lead", title: "Lead", color: "var(--prv-text-2)",
     cards: [
       { id: "k1", title: "Familia Dinu",  data: { value: "€14,000", sub: "Kitchen" } },
       { id: "k2", title: "Cosmin Vlad",   data: { value: "€8,500",  sub: "Bathroom" } },
@@ -199,7 +199,7 @@ function ClientDetail({ client, onBack }: { client: Client; onBack: () => void }
         </div>
         <div className="grid grid-cols-4 gap-2">
           {[
-            { v: String(client.projects),  l: "Projects", color: "rgba(255,255,255,0.90)" },
+            { v: String(client.projects),  l: "Projects", color: "var(--prv-text-1)" },
             { v: client.value,             l: "LTV",      color: "rgba(48,209,88,0.95)"   },
             { v: client.nps > 0 ? String(client.nps) : "—", l: "NPS", color: "rgba(10,132,255,0.9)" },
             { v: String(client.openQuotes),l: "Quotes",   color: "rgba(255,159,10,0.95)"  },
@@ -308,7 +308,7 @@ export function CRMWorkspace() {
           ].map((path, i) => (
             <div key={i} className="w-9 h-9 rounded-[10px] flex items-center justify-center"
               style={{ background: "var(--prv-g1)", border: "1px solid var(--prv-border-subtle)" }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.55)" strokeWidth="1.8" strokeLinecap="round">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--prv-text-2)" strokeWidth="1.8" strokeLinecap="round">
                 <path d={path} />
               </svg>
             </div>
@@ -319,7 +319,7 @@ export function CRMWorkspace() {
       {/* KPI strip */}
       <div className="grid grid-cols-4 gap-2.5 mb-4">
         {[
-          { v: String(CLIENTS.length),                                            l: "Clients",   c: "rgba(255,255,255,0.90)"  },
+          { v: String(CLIENTS.length),                                            l: "Clients",   c: "var(--prv-text-1)"  },
           { v: String(CLIENTS.filter(c => c.status === "lead").length),           l: "Leads",     c: "rgba(10,132,255,0.9)"    },
           { v: String(CLIENTS.reduce((s, c) => s + c.openQuotes, 0)),             l: "Proposals", c: "rgba(255,159,10,0.95)"   },
           { v: `€${(totalLTV / 1000).toFixed(0)}K`,                              l: "LTV",       c: "rgba(48,209,88,0.95)"    },

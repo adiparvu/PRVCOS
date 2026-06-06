@@ -268,7 +268,7 @@ export function LearningWorkspace() {
       </div>
 
       {/* ── Search ── */}
-      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", borderRadius: 14, background: "rgba(255,255,255,0.07)", border: `1px solid ${bds}`, margin: "14px 16px 0" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", borderRadius: 14, background: "var(--prv-border-subtle)", border: `1px solid ${bds}`, margin: "14px 16px 0" }}>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={t3} strokeWidth="1.8" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
         <input
           value={search}
@@ -323,7 +323,7 @@ export function LearningWorkspace() {
                   <div key={i} style={{ height: 20, borderRadius: 4, background: a ? bd : bds }} />
                 ))}
               </div>
-              <div style={{ position: "absolute", width: 44, height: 44, borderRadius: "50%", background: "rgba(255,255,255,0.14)", border: `1px solid ${bd}`, backdropFilter: "blur(12px)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <div style={{ position: "absolute", width: 44, height: 44, borderRadius: "50%", background: "var(--prv-border)", border: `1px solid ${bd}`, backdropFilter: "blur(12px)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill={t1} stroke="none"><polygon points="5 3 19 12 5 21 5 3"/></svg>
               </div>
             </div>

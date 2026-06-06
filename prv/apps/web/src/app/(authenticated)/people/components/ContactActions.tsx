@@ -29,18 +29,18 @@ export function ContactActions({ email, phone }: ContactActionsProps) {
           onClick={!href ? (e) => e.preventDefault() : undefined}
           className="flex flex-col items-center gap-1.5 py-3 rounded-[16px]"
           style={{
-            background: "rgba(255,255,255,0.07)",
-            border: "1px solid rgba(255,255,255,0.09)",
+            background: "var(--prv-border-subtle)",
+            border: "1px solid var(--prv-border)",
             opacity: href ? 1 : 0.4,
             cursor: href ? "pointer" : "not-allowed",
             transition: "background 150ms",
             textDecoration: "none",
           }}
           onMouseEnter={(e) =>
-            href && ((e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.11)")
+            href && ((e.currentTarget as HTMLElement).style.background = "var(--prv-border)")
           }
           onMouseLeave={(e) =>
-            href && ((e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.07)")
+            href && ((e.currentTarget as HTMLElement).style.background = "var(--prv-border-subtle)")
           }
         >
           <svg
@@ -48,7 +48,7 @@ export function ContactActions({ email, phone }: ContactActionsProps) {
             height="18"
             viewBox="0 0 24 24"
             fill="none"
-            stroke="rgba(255,255,255,0.70)"
+            stroke="var(--prv-text-2)"
             strokeWidth="1.8"
             strokeLinecap="round"
             strokeLinejoin="round"

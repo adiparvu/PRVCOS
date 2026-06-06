@@ -21,8 +21,8 @@ export function CardEditorClient() {
           onClick={() => router.back()}
           className="w-9 h-9 rounded-full flex items-center justify-center"
           style={{
-            background: "rgba(255,255,255,0.07)",
-            border: "1px solid rgba(255,255,255,0.10)",
+            background: "var(--prv-border-subtle)",
+            border: "1px solid var(--prv-g2)",
           }}
         >
           <svg
@@ -30,7 +30,7 @@ export function CardEditorClient() {
             height="16"
             viewBox="0 0 24 24"
             fill="none"
-            stroke="rgba(255,255,255,0.70)"
+            stroke="var(--prv-text-2)"
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -45,7 +45,7 @@ export function CardEditorClient() {
         {isLoading ? (
           <div
             className="rounded-[20px]"
-            style={{ width: 343, height: 200, background: "rgba(255,255,255,0.07)" }}
+            style={{ width: 343, height: 200, background: "var(--prv-border-subtle)" }}
           />
         ) : card ? (
           flipped ? (
@@ -60,7 +60,7 @@ export function CardEditorClient() {
             <button
               onClick={() => setShowEditor(true)}
               className="w-full py-3.5 rounded-[16px] text-[15px] font-semibold text-black"
-              style={{ background: "rgba(255,255,255,0.92)" }}
+              style={{ background: "var(--prv-text-1)" }}
             >
               Edit Card
             </button>
@@ -70,8 +70,8 @@ export function CardEditorClient() {
                 target="_blank"
                 className="w-full py-3.5 rounded-[16px] text-[14px] font-medium text-white/55 text-center block"
                 style={{
-                  background: "rgba(255,255,255,0.06)",
-                  border: "1px solid rgba(255,255,255,0.09)",
+                  background: "var(--prv-g1)",
+                  border: "1px solid var(--prv-border)",
                   textDecoration: "none",
                 }}
               >
