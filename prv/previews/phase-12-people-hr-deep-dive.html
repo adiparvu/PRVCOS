@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PRV — Phase 12: People Deep Dive</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #060606;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 48px 24px 64px;
+    color: white;
+  }
+
+  .page-header { text-align: center; margin-bottom: 52px; }
+  .phase-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 100px; padding: 5px 14px;
+    font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
+    color: rgba(255,255,255,0.5); margin-bottom: 18px;
+  }
+  .phase-chip span { color: rgba(255,255,255,0.85); }
+  .page-title { font-size: 34px; font-weight: 700; letter-spacing: -0.03em; color: rgba(255,255,255,0.95); line-height: 1.1; margin-bottom: 10px; }
+  .page-sub { font-size: 15px; color: rgba(255,255,255,0.4); font-weight: 400; max-width: 480px; line-height: 1.5; }
+
+  .grid { display: grid; grid-template-columns: repeat(4, 280px); gap: 24px; }
+
+  .phone {
+    position: relative; width: 280px; border-radius: 44px;
+    background: #0a0a0a; border: 1px solid rgba(255,255,255,0.13);
+    box-shadow: 0 32px 80px rgba(0,0,0,0.9), 0 8px 24px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.18);
+    overflow: hidden;
+  }
+  .phone-screen { min-height: 580px; background: #000; overflow: hidden; position: relative; display: flex; flex-direction: column; }
+  .di {
+    width: 100px; height: 30px; background: #000; border-radius: 20px;
+    position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+    z-index: 10; border: 1px solid rgba(255,255,255,0.06);
+    display: flex; align-items: center; justify-content: center; gap: 5px;
+  }
+  .di-dot { width: 6px; height: 6px; background: rgba(255,255,255,0.08); border-radius: 50%; }
+  .screen-content { flex: 1; padding: 52px 14px 10px; overflow: hidden; }
+
+  /* Glass */
+  .g1 { background: rgba(255,255,255,0.055); border: 1px solid rgba(255,255,255,0.08); }
+  .g2 { background: rgba(255,255,255,0.10); border: 1px solid rgba(255,255,255,0.12); }
+  .shine::before {
+    content: ''; position: absolute; inset: 0 0 auto 0; height: 1px;
+    background: linear-gradient(90deg,transparent,rgba(255,255,255,0.18),transparent);
+  }
+
+  /* Label */
+  .label { font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: rgba(255,255,255,0.3); margin: 10px 2px 6px; }
+
+  /* Screen heading */
+  .screen-heading { font-size: 22px; font-weight: 700; letter-spacing: -0.03em; color: rgba(255,255,255,0.92); line-height: 1.1; margin-bottom: 2px; }
+  .screen-sub { font-size: 11px; color: rgba(255,255,255,0.3); margin-bottom: 11px; }
+
+  /* KPI row */
+  .kpi-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px; }
+  .kpi { border-radius: 13px; padding: 9px 11px; position: relative; overflow: hidden; }
+  .kpi::before { content: ''; position: absolute; inset: 0 0 auto 0; height: 1px; background: linear-gradient(90deg,transparent,rgba(255,255,255,0.14),transparent); }
+  .kpi-label { font-size: 9px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: rgba(255,255,255,0.3); margin-bottom: 3px; }
+  .kpi-val { font-size: 19px; font-weight: 700; letter-spacing: -0.03em; color: rgba(255,255,255,0.92); line-height: 1; }
+  .kpi-sub { font-size: 10px; font-weight: 500; margin-top: 2px; color: rgba(255,255,255,0.35); }
+
+  /* Employee row */
+  .emp-row {
+    display: flex; align-items: center; gap: 9px; padding: 9px 10px; border-radius: 13px;
+    margin-bottom: 5px; position: relative; overflow: hidden;
+  }
+  .emp-row.g1::before { content: ''; position: absolute; inset: 0 0 auto 0; height: 1px; background: linear-gradient(90deg,transparent,rgba(255,255,255,0.1),transparent); }
+  .avatar {
+    width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
+    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700; color: rgba(255,255,255,0.6);
+  }
+  .emp-name { font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.88); line-height: 1.2; }
+  .emp-role { font-size: 10px; color: rgba(255,255,255,0.35); margin-top: 1px; }
+  .status-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .active-dot { background: rgba(48,209,88,0.9); }
+  .absent-dot { background: rgba(255,159,10,0.9); }
+  .leave-dot { background: rgba(255,255,255,0.3); }
+
+  /* Tab bar */
+  .tab-bar {
+    height: 60px; background: rgba(255,255,255,0.06); border-top: 1px solid rgba(255,255,255,0.08);
+    display: flex; align-items: center; justify-content: space-around; padding: 0 8px 4px;
+  }
+  .tab-item { display: flex; flex-direction: column; align-items: center; gap: 3px; opacity: 0.3; }
+  .tab-item.active { opacity: 1; }
+  .tab-dot { width: 4px; height: 4px; background: white; border-radius: 50%; margin-top: -2px; }
+  .tab-label { font-size: 9px; font-weight: 600; letter-spacing: .04em; }
+
+  /* Segmented */
+  .seg { display: flex; border-radius: 10px; padding: 3px; gap: 2px; margin-bottom: 9px; }
+  .seg-item {
+    flex: 1; text-align: center; padding: 5px 0; border-radius: 7px;
+    font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.35); letter-spacing: .02em;
+  }
+  .seg-item.active { background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.9); }
+
+  /* Action tile */
+  .action-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 9px; }
+  .action-tile {
+    border-radius: 14px; padding: 11px 12px; position: relative; overflow: hidden;
+    cursor: pointer;
+  }
+  .action-tile::before { content: ''; position: absolute; inset: 0 0 auto 0; height: 1px; background: linear-gradient(90deg,transparent,rgba(255,255,255,0.14),transparent); }
+  .tile-label { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.55); line-height: 1.3; }
+  .tile-count { font-size: 22px; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 2px; }
+  .tile-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 16px; height: 16px; border-radius: 8px; padding: 0 4px;
+    font-size: 9px; font-weight: 700; margin-left: 4px; vertical-align: middle;
+  }
+
+  /* Time-off request card */
+  .tof-card {
+    border-radius: 16px; padding: 11px 12px; position: relative; overflow: hidden; margin-bottom: 6px;
+  }
+  .tof-card::before { content: ''; position: absolute; inset: 0 0 auto 0; height: 1px; background: linear-gradient(90deg,transparent,rgba(255,255,255,0.14),transparent); }
+  .tof-header { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
+  .tof-avatar { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.6); background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.1); flex-shrink: 0; }
+  .tof-name { font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.88); }
+  .tof-type { font-size: 10px; color: rgba(255,255,255,0.35); margin-top: 1px; }
+  .tof-dates {
+    display: flex; align-items: center; gap: 5px;
+    font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.55); margin-bottom: 6px;
+  }
+  .tof-dates .arrow { color: rgba(255,255,255,0.25); }
+  .tof-duration {
+    display: inline-flex; align-items: center; padding: 2px 7px; border-radius: 6px;
+    font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+    background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.4);
+    margin-bottom: 7px;
+  }
+  .tof-reason { font-size: 11px; color: rgba(255,255,255,0.4); line-height: 1.4; margin-bottom: 9px; }
+  .tof-actions { display: flex; gap: 6px; }
+  .btn-approve {
+    flex: 1; padding: 6px; border-radius: 9px; text-align: center;
+    font-size: 11px; font-weight: 700; background: rgba(255,255,255,0.88); color: #000;
+  }
+  .btn-decline {
+    flex: 1; padding: 6px; border-radius: 9px; text-align: center;
+    font-size: 11px; font-weight: 600; background: rgba(255,255,255,0.07);
+    color: rgba(255,255,255,0.5); border: 1px solid rgba(255,255,255,0.1);
+  }
+
+  /* Employee profile */
+  .profile-hero {
+    border-radius: 18px; padding: 16px; position: relative; overflow: hidden; margin-bottom: 8px;
+  }
+  .profile-hero::before { content: ''; position: absolute; inset: 0 0 auto 0; height: 1px; background: linear-gradient(90deg,transparent,rgba(255,255,255,0.2),transparent); }
+  .profile-avatar-lg {
+    width: 52px; height: 52px; border-radius: 50%; background: rgba(255,255,255,0.1);
+    border: 2px solid rgba(255,255,255,0.18); display: flex; align-items: center;
+    justify-content: center; font-size: 20px; font-weight: 700; color: rgba(255,255,255,0.7);
+    margin-bottom: 9px;
+  }
+  .profile-name { font-size: 18px; font-weight: 700; color: rgba(255,255,255,0.92); letter-spacing: -0.02em; }
+  .profile-role { font-size: 11px; color: rgba(255,255,255,0.4); margin-top: 2px; margin-bottom: 9px; }
+  .profile-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; }
+  .profile-tag {
+    padding: 3px 8px; border-radius: 6px; font-size: 10px; font-weight: 600;
+    background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1);
+    color: rgba(255,255,255,0.45);
+  }
+  .profile-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+  .pstat { text-align: center; }
+  .pstat-val { font-size: 16px; font-weight: 700; color: rgba(255,255,255,0.88); letter-spacing: -0.02em; }
+  .pstat-label { font-size: 9px; color: rgba(255,255,255,0.3); font-weight: 600; letter-spacing: .06em; text-transform: uppercase; margin-top: 2px; }
+
+  /* Attendance bar */
+  .att-row { display: flex; align-items: center; gap: 4px; margin-bottom: 5px; }
+  .att-label { font-size: 9px; color: rgba(255,255,255,0.3); width: 22px; text-align: center; }
+  .att-bar-wrap { flex: 1; height: 6px; border-radius: 3px; background: rgba(255,255,255,0.06); overflow: hidden; }
+  .att-bar { height: 100%; border-radius: 3px; }
+
+  /* Activity item */
+  .activity-item {
+    display: flex; align-items: flex-start; gap: 7px; padding: 7px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .act-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+  .act-text { font-size: 11px; color: rgba(255,255,255,0.55); line-height: 1.35; flex: 1; }
+  .act-time { font-size: 10px; color: rgba(255,255,255,0.25); flex-shrink: 0; }
+
+  /* Sheet overlay */
+  .sheet-overlay {
+    position: absolute; inset: 0; background: rgba(0,0,0,0.55); backdrop-filter: blur(4px);
+    z-index: 20; display: flex; flex-direction: column; justify-content: flex-end;
+  }
+  .sheet-panel {
+    background: rgba(22,22,24,0.96); backdrop-filter: blur(64px);
+    border: 1px solid rgba(255,255,255,0.12); border-bottom: none;
+    border-radius: 32px 32px 0 0; padding: 16px 16px 28px; position: relative;
+  }
+  .sheet-panel::before { content: ''; position: absolute; inset: 0 0 auto 0; height: 1px; border-radius: 32px 32px 0 0; background: linear-gradient(90deg,transparent,rgba(255,255,255,0.22),transparent); }
+  .sheet-handle { width: 36px; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.18); margin: 0 auto 14px; }
+  .sheet-title { font-size: 15px; font-weight: 700; color: rgba(255,255,255,0.9); text-align: center; margin-bottom: 3px; }
+  .sheet-sub { font-size: 11px; color: rgba(255,255,255,0.35); text-align: center; margin-bottom: 14px; }
+
+  .caption { text-align: center; font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: rgba(255,255,255,0.25); margin-top: 14px; }
+  .divider { height: 1px; background: rgba(255,255,255,0.06); margin: 7px 0; }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <div class="phase-chip">Phase <span>12</span> · Preview</div>
+  <div class="page-title">People &amp; HR Deep Dive</div>
+  <div class="page-sub">Time-off approval workflow, employee profiles with attendance analytics, HR action dashboard, and schedule overview.</div>
+</div>
+
+<div class="grid">
+
+  <!-- PHONE 1: HR Dashboard -->
+  <div>
+    <div class="phone">
+      <div class="phone-screen">
+        <div class="di"><div class="di-dot"></div><div class="di-dot"></div></div>
+        <div class="screen-content">
+          <p style="font-size:10px;color:rgba(255,255,255,0.3);font-weight:600;letter-spacing:.05em;text-transform:uppercase;margin-bottom:3px;">People &amp; HR</p>
+          <div class="screen-heading">People</div>
+          <p class="screen-sub">Jun 6 · Friday</p>
+
+          <!-- KPIs -->
+          <div class="kpi-row">
+            <div class="kpi g1">
+              <div class="kpi-label">Headcount</div>
+              <div class="kpi-val">145</div>
+              <div class="kpi-sub">+3 this month</div>
+            </div>
+            <div class="kpi g1">
+              <div class="kpi-label">Active Today</div>
+              <div class="kpi-val">142</div>
+              <div class="kpi-sub">3 absent</div>
+            </div>
+          </div>
+
+          <!-- Action tiles -->
+          <div class="action-tiles">
+            <div class="action-tile" style="background:rgba(255,159,10,0.08);border:1px solid rgba(255,159,10,0.18);">
+              <div class="tile-count" style="color:rgba(255,159,10,0.95);">3<span class="tile-badge" style="background:rgba(255,159,10,0.2);color:rgba(255,159,10,0.9);">!</span></div>
+              <div class="tile-label" style="color:rgba(255,159,10,0.7);">Time-Off<br>Requests</div>
+            </div>
+            <div class="action-tile" style="background:rgba(255,69,58,0.08);border:1px solid rgba(255,69,58,0.18);">
+              <div class="tile-count" style="color:rgba(255,69,58,0.95);">1</div>
+              <div class="tile-label" style="color:rgba(255,69,58,0.7);">HR Notice<br>Required</div>
+            </div>
+            <div class="action-tile g1">
+              <div class="tile-count" style="color:rgba(255,255,255,0.85);">38</div>
+              <div class="tile-label">Active<br>Projects</div>
+            </div>
+            <div class="action-tile g1">
+              <div class="tile-count" style="color:rgba(48,209,88,0.9);">97%</div>
+              <div class="tile-label">Attendance<br>Rate</div>
+            </div>
+          </div>
+
+          <!-- Segmented -->
+          <div class="seg g1">
+            <div class="seg-item active">All</div>
+            <div class="seg-item">Active</div>
+            <div class="seg-item">Absent</div>
+            <div class="seg-item">Leave</div>
+          </div>
+
+          <!-- Employee list -->
+          <div class="emp-row g1">
+            <div class="avatar">IP</div>
+            <div style="flex:1;min-width:0;">
+              <div class="emp-name">Ion Popa</div>
+              <div class="emp-role">Store Manager · Floreasca</div>
+            </div>
+            <div class="status-dot absent-dot"></div>
+          </div>
+          <div class="emp-row g1">
+            <div class="avatar">AI</div>
+            <div style="flex:1;min-width:0;">
+              <div class="emp-name">Ana Ionescu</div>
+              <div class="emp-role">Accountant · HQ</div>
+            </div>
+            <div class="status-dot active-dot"></div>
+          </div>
+          <div class="emp-row g1">
+            <div class="avatar">MP</div>
+            <div style="flex:1;min-width:0;">
+              <div class="emp-name">Mihai Popescu</div>
+              <div class="emp-role">Field Tech · Timișoara</div>
+            </div>
+            <div class="status-dot leave-dot"></div>
+          </div>
+          <div class="emp-row g1">
+            <div class="avatar">RC</div>
+            <div style="flex:1;min-width:0;">
+              <div class="emp-name">Radu Constantin</div>
+              <div class="emp-role">Project Lead · Cluj</div>
+            </div>
+            <div class="status-dot active-dot"></div>
+          </div>
+        </div>
+        <div class="tab-bar">
+          <div class="tab-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg><div class="tab-label">Command</div></div>
+          <div class="tab-item active"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg><div class="tab-label">People</div><div class="tab-dot"></div></div>
+          <div class="tab-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M16 3v4M8 3v4M3 11h18"/></svg><div class="tab-label">Schedule</div></div>
+          <div class="tab-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4h22v16H1ZM1 10h22"/></svg><div class="tab-label">Finance</div></div>
+          <div class="tab-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg><div class="tab-label">Intel</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="caption">HR Dashboard</div>
+  </div>
+
+  <!-- PHONE 2: Time-Off Approval -->
+  <div>
+    <div class="phone">
+      <div class="phone-screen" style="position:relative;">
+        <div class="di"><div class="di-dot"></div><div class="di-dot"></div></div>
+        <div class="screen-content">
+          <p style="font-size:10px;color:rgba(255,255,255,0.3);font-weight:600;letter-spacing:.05em;text-transform:uppercase;margin-bottom:3px;">People · HR</p>
+          <div class="screen-heading">Time-Off</div>
+          <p class="screen-sub">3 pending approvals</p>
+
+          <!-- Request 1 -->
+          <div class="tof-card g1">
+            <div class="tof-header">
+              <div class="tof-avatar">MP</div>
+              <div>
+                <div class="tof-name">Mihai Popescu</div>
+                <div class="tof-type">Annual Leave</div>
+              </div>
+            </div>
+            <div class="tof-dates">
+              <span>Jun 16</span><span class="arrow">→</span><span>Jun 20</span>
+            </div>
+            <div class="tof-duration">5 working days</div>
+            <div class="tof-reason">"Family holiday — booked in advance"</div>
+            <div class="tof-actions">
+              <div class="btn-approve">Approve</div>
+              <div class="btn-decline">Decline</div>
+            </div>
+          </div>
+
+          <!-- Request 2 -->
+          <div class="tof-card g1">
+            <div class="tof-header">
+              <div class="tof-avatar">EB</div>
+              <div>
+                <div class="tof-name">Elena Badea</div>
+                <div class="tof-type">Sick Leave</div>
+              </div>
+            </div>
+            <div class="tof-dates">
+              <span>Jun 9</span><span class="arrow">→</span><span>Jun 10</span>
+            </div>
+            <div class="tof-duration">2 working days · with certificate</div>
+            <div class="tof-reason">"Medical appointment (attached)"</div>
+            <div class="tof-actions">
+              <div class="btn-approve">Approve</div>
+              <div class="btn-decline">Decline</div>
+            </div>
+          </div>
+
+          <!-- Request 3 -->
+          <div class="tof-card g1">
+            <div class="tof-header">
+              <div class="tof-avatar">GS</div>
+              <div>
+                <div class="tof-name">George Stoica</div>
+                <div class="tof-type">Personal Day</div>
+              </div>
+            </div>
+            <div class="tof-dates">
+              <span>Jun 12</span>
+            </div>
+            <div class="tof-duration">1 working day</div>
+            <div class="tof-actions">
+              <div class="btn-approve">Approve</div>
+              <div class="btn-decline">Decline</div>
+            </div>
+          </div>
+        </div>
+        <div class="tab-bar">
+          <div class="tab-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg><div class="tab-label">Command</div></div>
+          <div class="tab-item active"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg><div class="tab-label">People</div><div class="tab-dot"></div></div>
+          <div class="tab-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M16 3v4M8 3v4M3 11h18"/></svg><div class="tab-label">Schedule</div></div>
+          <div class="tab-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4h22v16H1ZM1 10h22"/></svg><div class="tab-label">Finance</div></div>
+          <div class="tab-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg><div class="tab-label">Intel</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="caption">Time-Off Approvals</div>
+  </div>
+
+  <!-- PHONE 3: Employee Profile -->
+  <div>
+    <div class="phone">
+      <div class="phone-screen">
+        <div class="di"><div class="di-dot"></div><div class="di-dot"></div></div>
+        <div class="screen-content">
+          <p style="font-size:10px;color:rgba(255,255,255,0.3);font-weight:600;letter-spacing:.05em;text-transform:uppercase;margin-bottom:8px;">People · Employee</p>
+
+          <!-- Profile hero -->
+          <div class="profile-hero g1">
+            <div class="profile-avatar-lg">IP</div>
+            <div class="profile-name">Ion Popa</div>
+            <div class="profile-role">Store Manager · Floreasca · Since Mar 2022</div>
+            <div class="profile-tags">
+              <div class="profile-tag">Store Manager</div>
+              <div class="profile-tag">Floreasca</div>
+              <div class="profile-tag" style="background:rgba(255,159,10,0.12);border-color:rgba(255,159,10,0.2);color:rgba(255,159,10,0.8);">Absent Today</div>
+            </div>
+            <div class="profile-stats">
+              <div class="pstat">
+                <div class="pstat-val">94%</div>
+                <div class="pstat-label">Attendance</div>
+              </div>
+              <div class="pstat">
+                <div class="pstat-val">4.2</div>
+                <div class="pstat-label">Performance</div>
+              </div>
+              <div class="pstat">
+                <div class="pstat-val">3</div>
+                <div class="pstat-label">Late Arrivals</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Attendance mini chart -->
+          <div class="label">Attendance — Last 4 Weeks</div>
+          <div style="background:var(--g1,rgba(255,255,255,0.055));border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:10px 12px;margin-bottom:8px;">
+            <div class="att-row"><div class="att-label">W1</div><div class="att-bar-wrap"><div class="att-bar" style="width:100%;background:rgba(48,209,88,0.7);"></div></div></div>
+            <div class="att-row"><div class="att-label">W2</div><div class="att-bar-wrap"><div class="att-bar" style="width:100%;background:rgba(48,209,88,0.7);"></div></div></div>
+            <div class="att-row"><div class="att-label">W3</div><div class="att-bar-wrap"><div class="att-bar" style="width:80%;background:rgba(255,159,10,0.7);"></div></div></div>
+            <div class="att-row"><div class="att-label">W4</div><div class="att-bar-wrap"><div class="att-bar" style="width:60%;background:rgba(255,69,58,0.65);"></div></div></div>
+          </div>
+
+          <!-- Recent activity -->
+          <div class="label">Recent Activity</div>
+          <div>
+            <div class="activity-item">
+              <div class="act-dot" style="background:rgba(255,159,10,0.9);"></div>
+              <div class="act-text">Late arrival — 3rd incident this week</div>
+              <div class="act-time">Today</div>
+            </div>
+            <div class="activity-item">
+              <div class="act-dot" style="background:rgba(255,255,255,0.3);"></div>
+              <div class="act-text">Completed store inventory check</div>
+              <div class="act-time">Jun 5</div>
+            </div>
+            <div class="activity-item">
+              <div class="act-dot" style="background:rgba(48,209,88,0.7);"></div>
+              <div class="act-text">Floreasca — best efficiency score</div>
+              <div class="act-time">Jun 3</div>
+            </div>
+          </div>
+
+          <!-- HR action -->
+          <div style="display:flex;gap:6px;margin-top:10px;">
+            <div style="flex:1;padding:8px;border-radius:10px;text-align:center;font-size:11px;font-weight:700;background:rgba(255,255,255,0.88);color:#000;">HR Review</div>
+            <div style="flex:1;padding:8px;border-radius:10px;text-align:center;font-size:11px;font-weight:600;color:rgba(255,255,255,0.5);background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);">Message</div>
+          </div>
+        </div>
+        <div class="tab-bar">
+          <div class="tab-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg><div class="tab-label">Command</div></div>
+          <div class="tab-item active"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg><div class="tab-label">People</div><div class="tab-dot"></div></div>
+          <div class="tab-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M16 3v4M8 3v4M3 11h18"/></svg><div class="tab-label">Schedule</div></div>
+          <div class="tab-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4h22v16H1ZM1 10h22"/></svg><div class="tab-label">Finance</div></div>
+          <div class="tab-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg><div class="tab-label">Intel</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="caption">Employee Profile</div>
+  </div>
+
+  <!-- PHONE 4: Approval Sheet (bottom sheet overlay) -->
+  <div>
+    <div class="phone">
+      <div class="phone-screen" style="position:relative;">
+        <div class="di"><div class="di-dot"></div><div class="di-dot"></div></div>
+
+        <!-- Background (blurred people list) -->
+        <div class="screen-content" style="filter:blur(2px);opacity:0.4;">
+          <p style="font-size:10px;color:rgba(255,255,255,0.3);font-weight:600;letter-spacing:.05em;text-transform:uppercase;margin-bottom:3px;">People · HR</p>
+          <div class="screen-heading">Time-Off</div>
+          <p class="screen-sub">3 pending approvals</p>
+          <div class="tof-card g1">
+            <div class="tof-header"><div class="tof-avatar">MP</div><div><div class="tof-name">Mihai Popescu</div><div class="tof-type">Annual Leave</div></div></div>
+            <div class="tof-dates"><span>Jun 16</span><span class="arrow">→</span><span>Jun 20</span></div>
+          </div>
+        </div>
+
+        <!-- Bottom sheet -->
+        <div class="sheet-overlay">
+          <div class="sheet-panel">
+            <div class="sheet-handle"></div>
+            <div class="sheet-title">Approve Time-Off</div>
+            <div class="sheet-sub">Mihai Popescu · Annual Leave · 5 days</div>
+
+            <!-- Employee detail in sheet -->
+            <div style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.09);margin-bottom:11px;position:relative;">
+              <div style="position:absolute;inset:0 0 auto 0;height:1px;border-radius:14px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.12),transparent);"></div>
+              <div class="tof-avatar" style="width:40px;height:40px;font-size:14px;">MP</div>
+              <div>
+                <div style="font-size:13px;font-weight:600;color:rgba(255,255,255,0.88);">Mihai Popescu</div>
+                <div style="font-size:10px;color:rgba(255,255,255,0.35);">Field Tech · Timișoara · 14 days balance</div>
+              </div>
+            </div>
+
+            <!-- Details -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:11px;">
+              <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:11px;padding:9px 10px;">
+                <div style="font-size:9px;color:rgba(255,255,255,0.3);font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px;">Period</div>
+                <div style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.8);">Jun 16 → 20</div>
+              </div>
+              <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:11px;padding:9px 10px;">
+                <div style="font-size:9px;color:rgba(255,255,255,0.3);font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px;">Duration</div>
+                <div style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.8);">5 working days</div>
+              </div>
+              <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:11px;padding:9px 10px;">
+                <div style="font-size:9px;color:rgba(255,255,255,0.3);font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px;">Balance After</div>
+                <div style="font-size:12px;font-weight:600;color:rgba(48,209,88,0.9);">9 days left</div>
+              </div>
+              <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:11px;padding:9px 10px;">
+                <div style="font-size:9px;color:rgba(255,255,255,0.3);font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px;">Cover</div>
+                <div style="font-size:12px;font-weight:600;color:rgba(255,159,10,0.9);">Needed</div>
+              </div>
+            </div>
+
+            <!-- Note -->
+            <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:11px;padding:9px 10px;margin-bottom:13px;">
+              <div style="font-size:9px;color:rgba(255,255,255,0.3);font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px;">Employee Note</div>
+              <div style="font-size:11px;color:rgba(255,255,255,0.5);line-height:1.4;">"Family holiday — booked well in advance, cover can be arranged with George Stoica."</div>
+            </div>
+
+            <!-- CTA -->
+            <div style="display:flex;gap:8px;">
+              <div style="flex:1;padding:11px;border-radius:13px;text-align:center;font-size:13px;font-weight:700;background:rgba(255,255,255,0.9);color:#000;">Approve</div>
+              <div style="flex:1;padding:11px;border-radius:13px;text-align:center;font-size:13px;font-weight:600;color:rgba(255,255,255,0.5);background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);">Decline</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-bar">
+          <div class="tab-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg><div class="tab-label">Command</div></div>
+          <div class="tab-item active"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg><div class="tab-label">People</div><div class="tab-dot"></div></div>
+          <div class="tab-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M16 3v4M8 3v4M3 11h18"/></svg><div class="tab-label">Schedule</div></div>
+          <div class="tab-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4h22v16H1ZM1 10h22"/></svg><div class="tab-label">Finance</div></div>
+          <div class="tab-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg><div class="tab-label">Intel</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="caption">Approval Sheet (SnapSheet)</div>
+  </div>
+
+</div>
+</body>
+</html>
