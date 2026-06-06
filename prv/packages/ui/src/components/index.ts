@@ -172,6 +172,9 @@ export type {
 export { GlassCalendar } from "./glass-calendar"
 export type { GlassCalendarProps, CalendarMode, DateRange } from "./glass-calendar"
 
+export { GlassFileUpload } from "./glass-file-upload"
+export type { GlassFileUploadProps, UploadFile, UploadStatus } from "./glass-file-upload"
+
 export {
   ActionSheet,
   ConfirmationSheet,
