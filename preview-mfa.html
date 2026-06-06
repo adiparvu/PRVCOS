@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MFA Enrollment — PRV Preview</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #000;
+    color: #fff;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", system-ui, sans-serif;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+  .ambient {
+    position: fixed; inset: 0; pointer-events: none;
+    background: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(255,255,255,0.045) 0%, transparent 100%);
+  }
+
+  /* Preview tabs */
+  .preview-tabs {
+    display: flex; gap: 6px;
+    justify-content: center;
+    margin-bottom: 28px;
+    position: relative; z-index: 10;
+    flex-wrap: wrap;
+  }
+  .ptab {
+    padding: 6px 14px; border-radius: 20px; font-size: 12px; cursor: pointer;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.45);
+    transition: all 0.15s; white-space: nowrap;
+  }
+  .ptab.active {
+    background: rgba(255,255,255,0.14); color: rgba(255,255,255,0.90);
+    border-color: rgba(255,255,255,0.24);
+  }
+
+  /* Wrap */
+  .wrap { width: 100%; max-width: 360px; position: relative; z-index: 1; }
+
+  /* Logo */
+  .logo { display: flex; flex-direction: column; align-items: center; gap: 12px; margin-bottom: 32px; }
+  .logo-icon {
+    width: 56px; height: 56px; border-radius: 18px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.12);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.22), 0 12px 32px rgba(0,0,0,0.6);
+  }
+  .logo-title { font-size: 22px; font-weight: 600; letter-spacing: -0.02em; color: rgba(255,255,255,0.95); text-align: center; }
+  .logo-sub   { font-size: 13px; color: rgba(255,255,255,0.38); margin-top: 2px; text-align: center; }
+
+  /* Card */
+  .card {
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.11);
+    border-radius: 28px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), 0 32px 80px rgba(0,0,0,0.72), 0 8px 24px rgba(0,0,0,0.4);
+    backdrop-filter: blur(48px) saturate(180%);
+    -webkit-backdrop-filter: blur(48px) saturate(180%);
+    overflow: hidden;
+  }
+
+  /* Step progress */
+  .progress-bar {
+    display: flex; gap: 4px;
+    padding: 20px 24px 0;
+  }
+  .progress-seg {
+    flex: 1; height: 2px; border-radius: 2px;
+    background: rgba(255,255,255,0.10);
+    transition: background 0.4s;
+  }
+  .progress-seg.done  { background: rgba(255,255,255,0.80); }
+  .progress-seg.active { background: rgba(255,255,255,0.40); }
+
+  .card-body { padding: 24px 24px 28px; }
+
+  /* Step header */
+  .step-icon {
+    width: 48px; height: 48px; border-radius: 16px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.12);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 16px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.16);
+  }
+  .step-title { font-size: 18px; font-weight: 600; letter-spacing: -0.02em; color: rgba(255,255,255,0.95); }
+  .step-sub   { font-size: 13px; color: rgba(255,255,255,0.45); margin-top: 4px; line-height: 1.5; }
+
+  /* Divider */
+  .divider { height: 1px; background: rgba(255,255,255,0.07); margin: 20px 0; }
+
+  /* Bullet list */
+  .bullets { list-style: none; display: flex; flex-direction: column; gap: 10px; margin: 0 0 20px; }
+  .bullets li {
+    display: flex; align-items: flex-start; gap: 10px;
+    font-size: 13px; color: rgba(255,255,255,0.55); line-height: 1.4;
+  }
+  .bullet-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: rgba(255,255,255,0.35);
+    flex-shrink: 0; margin-top: 5px;
+  }
+
+  /* App badges */
+  .app-badges { display: flex; gap: 8px; margin-bottom: 20px; }
+  .badge {
+    flex: 1; padding: 10px 12px; border-radius: 12px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.09);
+    font-size: 12px; color: rgba(255,255,255,0.55);
+    display: flex; align-items: center; gap: 8px;
+    cursor: pointer; transition: background 0.12s;
+  }
+  .badge:hover { background: rgba(255,255,255,0.10); }
+  .badge-icon {
+    width: 28px; height: 28px; border-radius: 8px;
+    background: rgba(255,255,255,0.10);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .badge-name { font-size: 12px; font-weight: 500; color: rgba(255,255,255,0.70); }
+  .badge-desc { font-size: 11px; color: rgba(255,255,255,0.35); }
+
+  /* QR code placeholder */
+  .qr-wrap {
+    display: flex; justify-content: center; margin-bottom: 20px;
+  }
+  .qr-box {
+    width: 176px; height: 176px; border-radius: 16px;
+    background: #fff;
+    display: flex; align-items: center; justify-content: center;
+    padding: 12px;
+    box-shadow: 0 4px 24px rgba(255,255,255,0.08);
+  }
+  .qr-box svg { width: 100%; height: 100%; }
+
+  /* Manual secret */
+  .secret-row {
+    display: flex; align-items: center; gap: 8px;
+    background: rgba(255,255,255,0.055);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 12px;
+    padding: 10px 14px;
+    margin-bottom: 20px;
+    cursor: pointer;
+    transition: background 0.12s;
+  }
+  .secret-row:hover { background: rgba(255,255,255,0.09); }
+  .secret-key { font-size: 13px; color: rgba(255,255,255,0.60); font-family: "SF Mono", "Fira Code", monospace; letter-spacing: 0.05em; flex: 1; }
+  .copy-icon { color: rgba(255,255,255,0.30); flex-shrink: 0; }
+
+  /* Code inputs */
+  .code-inputs {
+    display: flex; gap: 8px; justify-content: center;
+    margin-bottom: 8px;
+  }
+  .code-digit {
+    width: 44px; height: 52px; border-radius: 12px; text-align: center;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.10);
+    font-size: 22px; font-weight: 600; color: #fff; outline: none;
+    transition: border-color 0.12s, background 0.12s;
+  }
+  .code-digit:focus { background: rgba(255,255,255,0.11); border-color: rgba(255,255,255,0.28); }
+  .code-digit.filled { border-color: rgba(255,255,255,0.22); }
+  .code-hint { text-align: center; font-size: 12px; color: rgba(255,255,255,0.30); margin-bottom: 20px; }
+
+  /* Backup codes grid */
+  .backup-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
+    margin-bottom: 16px;
+  }
+  .backup-code {
+    background: rgba(255,255,255,0.055);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 10px;
+    padding: 9px 12px;
+    font-family: "SF Mono","Fira Code",monospace;
+    font-size: 13px; letter-spacing: 0.08em;
+    color: rgba(255,255,255,0.75);
+    text-align: center;
+  }
+  .backup-warning {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px; padding: 12px 14px;
+    margin-bottom: 20px;
+    display: flex; align-items: flex-start; gap: 10px;
+  }
+  .backup-warning p { font-size: 12px; color: rgba(255,255,255,0.40); line-height: 1.5; }
+
+  /* Download row */
+  .action-row { display: flex; gap: 8px; margin-bottom: 20px; }
+  .action-btn {
+    flex: 1; height: 40px; border-radius: 10px;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.10);
+    font-size: 13px; color: rgba(255,255,255,0.55);
+    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;
+    transition: background 0.12s;
+  }
+  .action-btn:hover { background: rgba(255,255,255,0.11); }
+
+  /* Success state */
+  .success-icon {
+    width: 64px; height: 64px; border-radius: 50%;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.14);
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 20px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), 0 8px 24px rgba(0,0,0,0.5);
+  }
+
+  /* Buttons */
+  .btn-primary {
+    width: 100%; height: 44px;
+    background: #fff; color: #000;
+    border: none; border-radius: 12px;
+    font-size: 15px; font-weight: 600; letter-spacing: -0.01em;
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+    transition: background 0.12s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .btn-primary:hover { background: rgba(255,255,255,0.92); }
+  .btn-secondary {
+    width: 100%; height: 44px; margin-top: 10px;
+    background: transparent; color: rgba(255,255,255,0.40);
+    border: 1px solid rgba(255,255,255,0.10); border-radius: 12px;
+    font-size: 14px; cursor: pointer;
+    transition: all 0.12s;
+  }
+  .btn-secondary:hover { color: rgba(255,255,255,0.65); border-color: rgba(255,255,255,0.18); }
+
+  .footer { text-align: center; font-size: 12px; color: rgba(255,255,255,0.16); margin-top: 24px; }
+</style>
+</head>
+<body>
+<div class="ambient"></div>
+
+<div class="preview-tabs">
+  <button class="ptab active" onclick="show('intro')">1 · Intro</button>
+  <button class="ptab" onclick="show('scan')">2 · QR Code</button>
+  <button class="ptab" onclick="show('verify')">3 · Verify</button>
+  <button class="ptab" onclick="show('backup')">4 · Backup codes</button>
+  <button class="ptab" onclick="show('done')">5 · Done</button>
+</div>
+
+<div class="wrap">
+  <div class="logo">
+    <div class="logo-icon">
+      <span style="font-size:20px;font-weight:700;color:rgba(255,255,255,0.95)">P</span>
+    </div>
+    <div>
+      <div class="logo-title">PRV</div>
+      <div class="logo-sub">Company Operating System</div>
+    </div>
+  </div>
+
+  <!-- ── Step 1 — Intro ────────────────────────────── -->
+  <div class="card" id="s-intro">
+    <div class="progress-bar">
+      <div class="progress-seg active"></div>
+      <div class="progress-seg"></div>
+      <div class="progress-seg"></div>
+      <div class="progress-seg"></div>
+    </div>
+    <div class="card-body">
+      <div class="step-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.70)" stroke-width="1.5">
+          <rect x="5" y="11" width="14" height="10" rx="2"/>
+          <path d="M8 11V7a4 4 0 018 0v4"/>
+          <circle cx="12" cy="16" r="1" fill="rgba(255,255,255,0.70)" stroke="none"/>
+        </svg>
+      </div>
+      <div class="step-title">Two-factor authentication</div>
+      <div class="step-sub">Add a second layer of security to your account.</div>
+
+      <div class="divider"></div>
+
+      <ul class="bullets">
+        <li><span class="bullet-dot"></span><span>Opens your authenticator app each time you sign in</span></li>
+        <li><span class="bullet-dot"></span><span>Works offline — no phone signal needed</span></li>
+        <li><span class="bullet-dot"></span><span>Required for admin and financial operations</span></li>
+        <li><span class="bullet-dot"></span><span>10 one-time backup codes generated on setup</span></li>
+      </ul>
+
+      <p style="font-size:12px;color:rgba(255,255,255,0.32);margin-bottom:16px">Use any TOTP-compatible app:</p>
+      <div class="app-badges">
+        <div class="badge">
+          <div class="badge-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.60)" stroke-width="1.5">
+              <circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+            </svg>
+          </div>
+          <div>
+            <div class="badge-name">Authenticator</div>
+            <div class="badge-desc">Google / Microsoft</div>
+          </div>
+        </div>
+        <div class="badge">
+          <div class="badge-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.60)" stroke-width="1.5">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+          </div>
+          <div>
+            <div class="badge-name">1Password</div>
+            <div class="badge-desc">Bitwarden · Authy</div>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn-primary" onclick="show('scan')">
+        Set up authenticator
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M5 12h14M12 5l7 7-7 7"/>
+        </svg>
+      </button>
+      <button class="btn-secondary">Maybe later</button>
+    </div>
+  </div>
+
+  <!-- ── Step 2 — QR Scan ─────────────────────────── -->
+  <div class="card" id="s-scan" style="display:none">
+    <div class="progress-bar">
+      <div class="progress-seg done"></div>
+      <div class="progress-seg active"></div>
+      <div class="progress-seg"></div>
+      <div class="progress-seg"></div>
+    </div>
+    <div class="card-body">
+      <div class="step-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.70)" stroke-width="1.5">
+          <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+          <rect x="3" y="14" width="7" height="7" rx="1"/>
+          <path d="M14 14h3v3M17 17h3v3M14 20h3"/>
+        </svg>
+      </div>
+      <div class="step-title">Scan QR code</div>
+      <div class="step-sub">Open your authenticator app and scan the code below.</div>
+
+      <div class="divider"></div>
+
+      <!-- QR Code (real-looking generated pattern) -->
+      <div class="qr-wrap">
+        <div class="qr-box">
+          <svg viewBox="0 0 37 37" xmlns="http://www.w3.org/2000/svg">
+            <!-- Finder pattern TL -->
+            <rect x="1" y="1" width="7" height="7" fill="#000"/>
+            <rect x="2" y="2" width="5" height="5" fill="#fff"/>
+            <rect x="3" y="3" width="3" height="3" fill="#000"/>
+            <!-- Finder pattern TR -->
+            <rect x="29" y="1" width="7" height="7" fill="#000"/>
+            <rect x="30" y="2" width="5" height="5" fill="#fff"/>
+            <rect x="31" y="3" width="3" height="3" fill="#000"/>
+            <!-- Finder pattern BL -->
+            <rect x="1" y="29" width="7" height="7" fill="#000"/>
+            <rect x="2" y="30" width="5" height="5" fill="#fff"/>
+            <rect x="3" y="31" width="3" height="3" fill="#000"/>
+            <!-- Data modules (decorative pattern) -->
+            <rect x="9" y="1" width="1" height="1" fill="#000"/><rect x="11" y="1" width="1" height="1" fill="#000"/>
+            <rect x="13" y="1" width="1" height="1" fill="#000"/><rect x="15" y="1" width="2" height="1" fill="#000"/>
+            <rect x="19" y="1" width="1" height="1" fill="#000"/><rect x="21" y="1" width="1" height="1" fill="#000"/>
+            <rect x="23" y="1" width="1" height="1" fill="#000"/><rect x="25" y="1" width="1" height="1" fill="#000"/>
+            <rect x="27" y="1" width="1" height="1" fill="#000"/>
+            <rect x="9" y="3" width="2" height="1" fill="#000"/><rect x="13" y="3" width="1" height="1" fill="#000"/>
+            <rect x="17" y="3" width="2" height="1" fill="#000"/><rect x="21" y="3" width="1" height="1" fill="#000"/>
+            <rect x="25" y="3" width="2" height="1" fill="#000"/>
+            <rect x="9" y="5" width="1" height="1" fill="#000"/><rect x="12" y="5" width="2" height="1" fill="#000"/>
+            <rect x="16" y="5" width="1" height="1" fill="#000"/><rect x="19" y="5" width="1" height="1" fill="#000"/>
+            <rect x="23" y="5" width="1" height="1" fill="#000"/><rect x="26" y="5" width="1" height="1" fill="#000"/>
+            <rect x="9" y="7" width="2" height="1" fill="#000"/><rect x="13" y="7" width="1" height="1" fill="#000"/>
+            <rect x="15" y="7" width="2" height="1" fill="#000"/><rect x="19" y="7" width="2" height="1" fill="#000"/>
+            <rect x="24" y="7" width="1" height="1" fill="#000"/><rect x="27" y="7" width="1" height="1" fill="#000"/>
+            <rect x="1" y="9" width="1" height="1" fill="#000"/><rect x="3" y="9" width="2" height="1" fill="#000"/>
+            <rect x="7" y="9" width="1" height="1" fill="#000"/><rect x="9" y="9" width="2" height="1" fill="#000"/>
+            <rect x="13" y="9" width="1" height="1" fill="#000"/><rect x="16" y="9" width="2" height="1" fill="#000"/>
+            <rect x="20" y="9" width="1" height="1" fill="#000"/><rect x="23" y="9" width="2" height="1" fill="#000"/>
+            <rect x="27" y="9" width="1" height="1" fill="#000"/><rect x="29" y="9" width="1" height="1" fill="#000"/>
+            <rect x="32" y="9" width="2" height="1" fill="#000"/><rect x="35" y="9" width="1" height="1" fill="#000"/>
+            <rect x="1" y="11" width="2" height="1" fill="#000"/><rect x="5" y="11" width="1" height="1" fill="#000"/>
+            <rect x="8" y="11" width="2" height="1" fill="#000"/><rect x="12" y="11" width="1" height="1" fill="#000"/>
+            <rect x="15" y="11" width="1" height="1" fill="#000"/><rect x="18" y="11" width="2" height="1" fill="#000"/>
+            <rect x="22" y="11" width="2" height="1" fill="#000"/><rect x="26" y="11" width="1" height="1" fill="#000"/>
+            <rect x="30" y="11" width="2" height="1" fill="#000"/><rect x="34" y="11" width="2" height="1" fill="#000"/>
+            <rect x="1" y="13" width="1" height="1" fill="#000"/><rect x="4" y="13" width="2" height="1" fill="#000"/>
+            <rect x="8" y="13" width="1" height="1" fill="#000"/><rect x="11" y="13" width="2" height="1" fill="#000"/>
+            <rect x="14" y="13" width="1" height="1" fill="#000"/><rect x="17" y="13" width="2" height="1" fill="#000"/>
+            <rect x="21" y="13" width="1" height="1" fill="#000"/><rect x="24" y="13" width="2" height="1" fill="#000"/>
+            <rect x="28" y="13" width="1" height="1" fill="#000"/><rect x="31" y="13" width="1" height="1" fill="#000"/>
+            <rect x="34" y="13" width="1" height="1" fill="#000"/>
+            <rect x="2" y="15" width="2" height="1" fill="#000"/><rect x="6" y="15" width="1" height="1" fill="#000"/>
+            <rect x="9" y="15" width="2" height="1" fill="#000"/><rect x="13" y="15" width="1" height="1" fill="#000"/>
+            <rect x="16" y="15" width="2" height="1" fill="#000"/><rect x="20" y="15" width="1" height="1" fill="#000"/>
+            <rect x="23" y="15" width="2" height="1" fill="#000"/><rect x="27" y="15" width="2" height="1" fill="#000"/>
+            <rect x="31" y="15" width="1" height="1" fill="#000"/><rect x="35" y="15" width="1" height="1" fill="#000"/>
+            <rect x="1" y="17" width="1" height="1" fill="#000"/><rect x="4" y="17" width="1" height="1" fill="#000"/>
+            <rect x="7" y="17" width="2" height="1" fill="#000"/><rect x="11" y="17" width="2" height="1" fill="#000"/>
+            <rect x="15" y="17" width="1" height="1" fill="#000"/><rect x="18" y="17" width="1" height="1" fill="#000"/>
+            <rect x="21" y="17" width="2" height="1" fill="#000"/><rect x="25" y="17" width="1" height="1" fill="#000"/>
+            <rect x="28" y="17" width="2" height="1" fill="#000"/><rect x="32" y="17" width="1" height="1" fill="#000"/>
+            <rect x="1" y="19" width="2" height="1" fill="#000"/><rect x="5" y="19" width="2" height="1" fill="#000"/>
+            <rect x="9" y="19" width="1" height="1" fill="#000"/><rect x="12" y="19" width="2" height="1" fill="#000"/>
+            <rect x="16" y="19" width="1" height="1" fill="#000"/><rect x="19" y="19" width="2" height="1" fill="#000"/>
+            <rect x="23" y="19" width="1" height="1" fill="#000"/><rect x="26" y="19" width="2" height="1" fill="#000"/>
+            <rect x="30" y="19" width="1" height="1" fill="#000"/><rect x="33" y="19" width="2" height="1" fill="#000"/>
+            <rect x="1" y="21" width="1" height="1" fill="#000"/><rect x="3" y="21" width="2" height="1" fill="#000"/>
+            <rect x="7" y="21" width="1" height="1" fill="#000"/><rect x="10" y="21" width="2" height="1" fill="#000"/>
+            <rect x="14" y="21" width="1" height="1" fill="#000"/><rect x="17" y="21" width="2" height="1" fill="#000"/>
+            <rect x="21" y="21" width="2" height="1" fill="#000"/><rect x="25" y="21" width="1" height="1" fill="#000"/>
+            <rect x="28" y="21" width="2" height="1" fill="#000"/><rect x="32" y="21" width="1" height="1" fill="#000"/>
+            <rect x="35" y="21" width="1" height="1" fill="#000"/>
+            <rect x="1" y="23" width="2" height="1" fill="#000"/><rect x="5" y="23" width="1" height="1" fill="#000"/>
+            <rect x="8" y="23" width="2" height="1" fill="#000"/><rect x="12" y="23" width="1" height="1" fill="#000"/>
+            <rect x="15" y="23" width="2" height="1" fill="#000"/><rect x="19" y="23" width="1" height="1" fill="#000"/>
+            <rect x="22" y="23" width="2" height="1" fill="#000"/><rect x="26" y="23" width="1" height="1" fill="#000"/>
+            <rect x="29" y="23" width="2" height="1" fill="#000"/><rect x="33" y="23" width="1" height="1" fill="#000"/>
+            <rect x="9" y="25" width="1" height="1" fill="#000"/><rect x="11" y="25" width="2" height="1" fill="#000"/>
+            <rect x="15" y="25" width="1" height="1" fill="#000"/><rect x="18" y="25" width="2" height="1" fill="#000"/>
+            <rect x="22" y="25" width="1" height="1" fill="#000"/><rect x="25" y="25" width="2" height="1" fill="#000"/>
+            <rect x="29" y="25" width="1" height="1" fill="#000"/><rect x="32" y="25" width="2" height="1" fill="#000"/>
+            <rect x="9" y="27" width="2" height="1" fill="#000"/><rect x="13" y="27" width="1" height="1" fill="#000"/>
+            <rect x="16" y="27" width="2" height="1" fill="#000"/><rect x="20" y="27" width="1" height="1" fill="#000"/>
+            <rect x="23" y="27" width="2" height="1" fill="#000"/><rect x="27" y="27" width="1" height="1" fill="#000"/>
+            <rect x="30" y="27" width="2" height="1" fill="#000"/><rect x="34" y="27" width="1" height="1" fill="#000"/>
+            <rect x="9" y="29" width="1" height="1" fill="#000"/><rect x="12" y="29" width="1" height="1" fill="#000"/>
+            <rect x="15" y="29" width="2" height="1" fill="#000"/><rect x="19" y="29" width="1" height="1" fill="#000"/>
+            <rect x="22" y="29" width="2" height="1" fill="#000"/><rect x="26" y="29" width="1" height="1" fill="#000"/>
+            <rect x="9" y="31" width="2" height="1" fill="#000"/><rect x="13" y="31" width="1" height="1" fill="#000"/>
+            <rect x="16" y="31" width="2" height="1" fill="#000"/><rect x="20" y="31" width="1" height="1" fill="#000"/>
+            <rect x="9" y="33" width="1" height="1" fill="#000"/><rect x="12" y="33" width="1" height="1" fill="#000"/>
+            <rect x="15" y="33" width="2" height="1" fill="#000"/>
+            <rect x="9" y="35" width="2" height="1" fill="#000"/><rect x="13" y="35" width="1" height="1" fill="#000"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Manual secret -->
+      <div class="secret-row" onclick="copySecret()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.40)" stroke-width="1.5" style="flex-shrink:0">
+          <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+        </svg>
+        <span class="secret-key">JBSW Y3DP EHPK 3PXP</span>
+        <svg class="copy-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+        </svg>
+      </div>
+
+      <button class="btn-primary" onclick="show('verify')">
+        I've scanned the code
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Step 3 — Verify ──────────────────────────── -->
+  <div class="card" id="s-verify" style="display:none">
+    <div class="progress-bar">
+      <div class="progress-seg done"></div>
+      <div class="progress-seg done"></div>
+      <div class="progress-seg active"></div>
+      <div class="progress-seg"></div>
+    </div>
+    <div class="card-body">
+      <div class="step-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.70)" stroke-width="1.5">
+          <path d="M9 12l2 2 4-4"/><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+      </div>
+      <div class="step-title">Enter verification code</div>
+      <div class="step-sub">Enter the 6-digit code shown in your authenticator app to confirm setup.</div>
+
+      <div class="divider"></div>
+
+      <div class="code-inputs" id="code-inputs">
+        <input class="code-digit filled" maxlength="1" value="4" readonly>
+        <input class="code-digit filled" maxlength="1" value="8" readonly>
+        <input class="code-digit filled" maxlength="1" value="2" readonly>
+        <input class="code-digit" maxlength="1" placeholder="·">
+        <input class="code-digit" maxlength="1" placeholder="·">
+        <input class="code-digit" maxlength="1" placeholder="·">
+      </div>
+      <p class="code-hint">Code refreshes every 30 seconds</p>
+
+      <button class="btn-primary" onclick="show('backup')">
+        Verify
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </button>
+      <button class="btn-secondary" onclick="show('scan')">Back</button>
+    </div>
+  </div>
+
+  <!-- ── Step 4 — Backup codes ────────────────────── -->
+  <div class="card" id="s-backup" style="display:none">
+    <div class="progress-bar">
+      <div class="progress-seg done"></div>
+      <div class="progress-seg done"></div>
+      <div class="progress-seg done"></div>
+      <div class="progress-seg active"></div>
+    </div>
+    <div class="card-body">
+      <div class="step-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.70)" stroke-width="1.5">
+          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+        </svg>
+      </div>
+      <div class="step-title">Save your backup codes</div>
+      <div class="step-sub">Use these if you lose access to your authenticator. Each code can only be used once.</div>
+
+      <div class="divider"></div>
+
+      <div class="backup-grid">
+        <div class="backup-code">A3K9-P2MX</div>
+        <div class="backup-code">Q7R4-N8VZ</div>
+        <div class="backup-code">H2J6-T5WY</div>
+        <div class="backup-code">B9F3-C1DK</div>
+        <div class="backup-code">L4M8-G6XQ</div>
+        <div class="backup-code">S7U2-E9HP</div>
+        <div class="backup-code">W3Z5-J4RB</div>
+        <div class="backup-code">Y8D1-K7NF</div>
+        <div class="backup-code">V6A4-M2TC</div>
+        <div class="backup-code">X5G9-Q1PL</div>
+      </div>
+
+      <div class="backup-warning">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.40)" stroke-width="1.5" style="flex-shrink:0;margin-top:1px">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        <p>Store these in a safe place. They will not be shown again after you leave this screen.</p>
+      </div>
+
+      <div class="action-row">
+        <button class="action-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Download
+        </button>
+        <button class="action-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+          Copy all
+        </button>
+      </div>
+
+      <button class="btn-primary" onclick="show('done')">
+        I've saved my codes
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Step 5 — Done ────────────────────────────── -->
+  <div class="card" id="s-done" style="display:none">
+    <div class="progress-bar">
+      <div class="progress-seg done"></div>
+      <div class="progress-seg done"></div>
+      <div class="progress-seg done"></div>
+      <div class="progress-seg done"></div>
+    </div>
+    <div class="card-body" style="text-align:center;padding-top:32px">
+      <div class="success-icon">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.80)" stroke-width="1.5">
+          <path d="M9 12l2 2 4-4"/><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+      </div>
+      <div class="step-title" style="margin-bottom:8px">Two-factor authentication enabled</div>
+      <p style="font-size:13px;color:rgba(255,255,255,0.42);line-height:1.55;margin-bottom:28px">
+        Your account is now protected with an additional security layer. You'll be asked for a code each time you sign in.
+      </p>
+      <button class="btn-primary" style="max-width:240px;margin:0 auto">
+        Go to dashboard
+      </button>
+    </div>
+  </div>
+
+  <div class="footer">PRV — Company Operating System</div>
+</div>
+
+<script>
+  const steps = ['intro','scan','verify','backup','done'];
+  function show(id) {
+    steps.forEach(s => {
+      const el = document.getElementById('s-' + s);
+      if (el) el.style.display = s === id ? 'block' : 'none';
+    });
+    document.querySelectorAll('.ptab').forEach((t, i) => {
+      t.classList.toggle('active', steps[i] === id);
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+  function copySecret() {
+    const el = document.querySelector('.secret-key');
+    if (el) {
+      navigator.clipboard?.writeText(el.textContent?.replace(/\s/g,'') ?? '');
+      el.style.color = 'rgba(255,255,255,0.90)';
+      setTimeout(() => { el.style.color = ''; }, 800);
+    }
+  }
+</script>
+</body>
+</html>
