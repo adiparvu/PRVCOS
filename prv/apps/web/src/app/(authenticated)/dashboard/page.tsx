@@ -3,8 +3,16 @@ import { redirect } from "next/navigation"
 import { getSession } from "@prv/auth"
 import { queryCompanyKpis } from "@prv/db"
 import { cacheMemo } from "@prv/cache"
+import {
+  GlassStatCard,
+  GlassLineChart,
+  GlassAlertBanner,
+  GlassTimeline,
+  type TimelineEntry,
+} from "@prv/ui"
 import { OnlineNowPanel } from "@/components/presence/OnlineNowPanel"
 import { PinnedContactsRow } from "@/components/dashboard/PinnedContactsRow"
+import { DashboardGreeting } from "@/components/dashboard/DashboardGreeting"
 
 export const dynamic = "force-dynamic"
 export const metadata = { title: "Command" }
@@ -51,6 +59,49 @@ const QUICK_ACTIONS = [
   { label: "View Reports", icon: "M3 3v18h18M18 17V9M13 17V5M8 17v-3" },
 ]
 
+// ── Placeholder data ────────────────────────────────────────────────────────
+// These power the new dashboard regions until backend queries exist for them.
+// Live KPIs (revenue / projects / workforce / alerts) come from queryCompanyKpis.
+
+const REVENUE_SERIES = [320, 348, 360, 402, 438, 482]
+const REVENUE_LABELS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"]
+
+const SPARK = {
+  revenue: [30, 34, 32, 40, 38, 44, 48],
+  profit: [26, 24, 28, 26, 30, 32, 34],
+  projects: [24, 22, 24, 20, 21, 26, 28],
+  workforce: [20, 20, 18, 19, 17, 18, 16],
+}
+
+const ACTIVITY: TimelineEntry[] = [
+  {
+    id: "1",
+    type: "success",
+    title: "Invoice #1042 paid · €298",
+    description: "Finance",
+    timestamp: "2 minutes ago",
+  },
+  {
+    id: "2",
+    type: "info",
+    title: 'New project "Cluj Kitchen" created',
+    description: "Andrei P.",
+    timestamp: "18 minutes ago",
+  },
+  {
+    id: "3",
+    type: "warning",
+    title: "Leave request awaiting approval",
+    description: "Maria I.",
+    timestamp: "1 hour ago",
+  },
+]
+
+const QUOTE = {
+  text: "Simplicity is the ultimate sophistication.",
+  author: "Leonardo da Vinci",
+}
+
 function GlassCard({
   children,
   className = "",
@@ -60,11 +111,10 @@ function GlassCard({
 }) {
   return (
     <div
-      className={`rounded-[20px] p-5 ${className}`}
+      className={`rounded-[18px] p-4 relative ${className}`}
       style={{
-        background: "rgba(255,255,255,0.06)",
-        border: "1px solid rgba(255,255,255,0.10)",
-        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.12)",
+        background: "var(--prv-g1)",
+        border: "1px solid var(--prv-border-subtle)",
       }}
     >
       {children}
@@ -72,31 +122,11 @@ function GlassCard({
   )
 }
 
-function KpiCard({
-  label,
-  value,
-  sublabel,
-  highlight = false,
-}: {
-  label: string
-  value: string
-  sublabel?: string
-  highlight?: boolean
-}) {
+function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <GlassCard>
-      <p className="text-[11px] font-medium text-white/35 uppercase tracking-widest mb-2">
-        {label}
-      </p>
-      <p
-        className={`text-[28px] font-semibold leading-none tracking-tight ${
-          highlight ? "text-white" : "text-white/90"
-        }`}
-      >
-        {value}
-      </p>
-      {sublabel && <p className="text-[12px] text-white/35 mt-1.5">{sublabel}</p>}
-    </GlassCard>
+    <p className="text-[11px] font-semibold text-white/35 uppercase tracking-widest mb-3">
+      {children}
+    </p>
   )
 }
 
@@ -122,7 +152,6 @@ export default async function DashboardPage() {
 
   const roleLabel = ROLE_LABELS[session.role] ?? session.role
   const periodKey = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`
-  const monthName = new Date().toLocaleString("en-US", { month: "long" })
 
   let kpis
   try {
@@ -137,54 +166,118 @@ export default async function DashboardPage() {
     kpis = null
   }
 
+  const alertCount = kpis?.alerts ?? 0
+
   return (
     <div className="px-4 pt-14 pb-28 max-w-2xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-6">
         <div>
           <p className="text-white/35 text-[13px] font-medium mb-0.5">PRV</p>
           <h1 className="text-white/90 text-[26px] font-semibold tracking-tight leading-tight">
-            Command Center
+            Command
           </h1>
         </div>
         <div
           className="px-3 py-1.5 rounded-[10px] text-[12px] font-medium text-white/60"
           style={{
-            background: "rgba(255,255,255,0.07)",
-            border: "1px solid rgba(255,255,255,0.10)",
+            background: "var(--prv-g1)",
+            border: "1px solid var(--prv-border-subtle)",
           }}
         >
           {roleLabel}
         </div>
       </div>
 
-      {/* KPI Grid */}
-      <div className="grid grid-cols-2 gap-3 mb-5">
-        <KpiCard
+      {/* Greeting + Weather */}
+      <DashboardGreeting tasksToday={6} />
+
+      {/* AI Briefing — directly below the greeting */}
+      <div
+        className="flex gap-3 p-4 rounded-[16px] relative overflow-hidden mb-3.5"
+        style={{
+          background:
+            "radial-gradient(circle at 0% 0%, rgba(10,132,255,0.14), transparent 60%), var(--prv-g1)",
+          border: "1px solid var(--prv-border-subtle)",
+        }}
+      >
+        <div
+          className="w-9 h-9 rounded-[11px] flex items-center justify-center shrink-0"
+          style={{ background: "linear-gradient(135deg,#0A84FF,#5E5CE6)" }}
+        >
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#fff"
+            strokeWidth="2"
+            strokeLinecap="round"
+          >
+            <path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4" />
+            <circle cx="12" cy="12" r="3" />
+          </svg>
+        </div>
+        <div>
+          <p className="text-[12px] font-bold text-white/90 mb-0.5">AI BRIEFING</p>
+          <p className="text-[13px] text-white/65 leading-relaxed">
+            Revenue is tracking <span className="text-white/90 font-semibold">+12% MoM</span>. Cluj
+            is your best-margin store (39%). 2 projects risk slipping this week — review staffing.
+          </p>
+        </div>
+      </div>
+
+      {/* Critical alerts */}
+      {alertCount > 0 && (
+        <div className="mb-3.5">
+          <GlassAlertBanner
+            type="error"
+            title={`${alertCount} critical alert${alertCount === 1 ? "" : "s"}`}
+            description="Low stock · overdue invoice · failed payment"
+          />
+        </div>
+      )}
+
+      {/* KPI grid */}
+      <div className="grid grid-cols-2 gap-3 mb-3.5">
+        <GlassStatCard
           label="Revenue"
           value={kpis ? formatCurrency(kpis.revenue) : "—"}
-          sublabel={kpis ? `${monthName} · paid invoices` : undefined}
+          trend={{ direction: "up", value: "12.4%" }}
+          sparkline={SPARK.revenue}
         />
-        <KpiCard
+        <GlassStatCard
+          label="Profit"
+          value="€138K"
+          trend={{ direction: "up", value: "8.1%" }}
+          sparkline={SPARK.profit}
+        />
+        <GlassStatCard
           label="Active Projects"
           value={kpis ? String(kpis.activeProjects) : "—"}
-          sublabel="Across all teams"
+          trend={{ direction: "up", value: "6" }}
+          sparkline={SPARK.projects}
         />
-        <KpiCard
+        <GlassStatCard
           label="Workforce"
           value={kpis ? String(kpis.workforce) : "—"}
-          sublabel="Active members"
-        />
-        <KpiCard
-          label="Alerts"
-          value={kpis ? String(kpis.alerts) : "—"}
-          sublabel="Unread · critical"
-          highlight={(kpis?.alerts ?? 0) > 0}
+          trend={{ direction: "flat", value: "312 online" }}
+          sparkline={SPARK.workforce}
         />
       </div>
 
+      {/* Revenue chart */}
+      <GlassCard className="mb-3.5">
+        <SectionLabel>Revenue · last 6 months</SectionLabel>
+        <GlassLineChart
+          series={[{ label: "Revenue", data: REVENUE_SERIES }]}
+          labels={REVENUE_LABELS}
+          height={140}
+        />
+      </GlassCard>
+
       {/* Online Now — live presence panel (client component) */}
-      <div className="mb-5">
+      <div className="mb-3.5">
         <OnlineNowPanel companyId={session.companyId} />
       </div>
 
@@ -192,18 +285,16 @@ export default async function DashboardPage() {
       <PinnedContactsRow />
 
       {/* Quick Actions */}
-      <GlassCard className="mb-5">
-        <p className="text-[11px] font-medium text-white/35 uppercase tracking-widest mb-4">
-          Quick Actions
-        </p>
+      <GlassCard className="mb-3.5">
+        <SectionLabel>Quick Actions</SectionLabel>
         <div className="grid grid-cols-3 gap-2">
           {QUICK_ACTIONS.map(({ label, icon }) => (
             <div
               key={label}
               className="flex flex-col items-center gap-1.5 h-[68px] rounded-[12px] justify-center cursor-default"
               style={{
-                background: "rgba(255,255,255,0.04)",
-                border: "1px solid rgba(255,255,255,0.07)",
+                background: "var(--prv-g2)",
+                border: "1px solid var(--prv-border-subtle)",
               }}
             >
               <svg
@@ -214,12 +305,12 @@ export default async function DashboardPage() {
                 stroke="currentColor"
                 strokeWidth="1.6"
                 strokeLinecap="round"
-                strokeLinejoin="linejoin"
-                className="text-white/30"
+                strokeLinejoin="round"
+                className="text-white/45"
               >
                 <path d={icon} />
               </svg>
-              <span className="text-[11px] font-medium text-white/30 text-center leading-tight px-1">
+              <span className="text-[11px] font-medium text-white/45 text-center leading-tight px-1">
                 {label}
               </span>
             </div>
@@ -227,31 +318,17 @@ export default async function DashboardPage() {
         </div>
       </GlassCard>
 
-      {/* Recent Activity skeleton */}
+      {/* Quote of the Day */}
+      <GlassCard className="mb-3.5">
+        <SectionLabel>Quote of the day</SectionLabel>
+        <p className="text-[15px] leading-relaxed text-white/90">“{QUOTE.text}”</p>
+        <p className="text-[12px] text-white/35 mt-2">— {QUOTE.author}</p>
+      </GlassCard>
+
+      {/* Recent Activity */}
       <GlassCard>
-        <p className="text-[11px] font-medium text-white/35 uppercase tracking-widest mb-4">
-          Recent Activity
-        </p>
-        <div className="space-y-3">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="flex items-center gap-3">
-              <div
-                className="w-8 h-8 rounded-[10px] shrink-0"
-                style={{ background: "rgba(255,255,255,0.06)" }}
-              />
-              <div className="flex-1 space-y-1.5">
-                <div
-                  className="h-2.5 rounded-full"
-                  style={{ background: "rgba(255,255,255,0.08)", width: `${60 + i * 10}%` }}
-                />
-                <div
-                  className="h-2 rounded-full w-1/2"
-                  style={{ background: "rgba(255,255,255,0.05)" }}
-                />
-              </div>
-            </div>
-          ))}
-        </div>
+        <SectionLabel>Recent Activity</SectionLabel>
+        <GlassTimeline entries={ACTIVITY} compact />
       </GlassCard>
     </div>
   )
