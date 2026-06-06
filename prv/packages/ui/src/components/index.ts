@@ -331,6 +331,9 @@ export type { GlassTestimonialProps } from "./glass-testimonial"
 export { GlassPullToRefresh } from "./glass-pull-to-refresh"
 export type { GlassPullToRefreshProps } from "./glass-pull-to-refresh"
 
+export { GlassSwipeActions } from "./glass-swipe-actions"
+export type { GlassSwipeActionsProps, SwipeAction } from "./glass-swipe-actions"
+
 export {
   ActionSheet,
   ConfirmationSheet,
