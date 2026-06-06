@@ -175,6 +175,9 @@ export type { GlassCalendarProps, CalendarMode, DateRange } from "./glass-calend
 export { GlassFileUpload } from "./glass-file-upload"
 export type { GlassFileUploadProps, UploadFile, UploadStatus } from "./glass-file-upload"
 
+export { GlassComboBox } from "./glass-combobox"
+export type { GlassComboBoxProps, ComboBoxOption } from "./glass-combobox"
+
 export {
   ActionSheet,
   ConfirmationSheet,
