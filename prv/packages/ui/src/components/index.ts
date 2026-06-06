@@ -250,6 +250,9 @@ export type { GlassDividerProps, DividerOrientation, DividerVariant } from "./gl
 export { GlassScrollArea } from "./glass-scroll-area"
 export type { GlassScrollAreaProps, ScrollAxis } from "./glass-scroll-area"
 
+export { GlassAspectRatio } from "./glass-aspect-ratio"
+export type { GlassAspectRatioProps } from "./glass-aspect-ratio"
+
 export {
   ActionSheet,
   ConfirmationSheet,
