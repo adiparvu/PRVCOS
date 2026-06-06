@@ -292,6 +292,9 @@ export type { GlassRoutePreviewProps, RouteStat } from "./glass-route-preview"
 export { GlassGeofenceCard } from "./glass-geofence-card"
 export type { GlassGeofenceCardProps, GeofenceStatus, GeofenceRow } from "./glass-geofence-card"
 
+export { GlassPriceTag } from "./glass-price-tag"
+export type { GlassPriceTagProps, PriceTagSize } from "./glass-price-tag"
+
 export {
   ActionSheet,
   ConfirmationSheet,
