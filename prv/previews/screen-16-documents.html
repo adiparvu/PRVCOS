@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PRV · Screen 16 — Documents</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #000; --g1: rgba(255,255,255,0.06); --g2: rgba(255,255,255,0.10); --g3: rgba(255,255,255,0.15);
+    --t1: rgba(255,255,255,0.95); --t2: rgba(255,255,255,0.65); --t3: rgba(255,255,255,0.35);
+    --bd: rgba(255,255,255,0.12); --bds: rgba(255,255,255,0.07);
+    --green: rgba(48,209,88,0.95); --red: rgba(255,69,58,0.95); --amber: rgba(255,159,10,0.95); --blue: rgba(10,132,255,0.9);
+  }
+  html,body { background:var(--bg); color:var(--t1); font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif; -webkit-font-smoothing:antialiased; min-height:100vh; }
+  body { background: radial-gradient(ellipse 60% 20% at 50% -5%, rgba(10,132,255,0.03), transparent), #000; }
+
+  .tag { max-width:460px; margin:24px auto 0; padding:0 16px; display:flex; gap:8px; }
+  .chip { padding:3px 10px; border-radius:100px; background:var(--g2); border:1px solid var(--bds); font-size:11px; font-weight:600; color:var(--t3); letter-spacing:.06em; text-transform:uppercase; }
+  .frame { max-width:460px; margin:0 auto; padding:32px 16px 120px; }
+  .sep { height:1px; background:var(--bds); margin:28px 0; }
+  .view-label { font-size:10px; font-weight:700; color:var(--t3); text-transform:uppercase; letter-spacing:.1em; margin-bottom:12px; }
+  .lbl { font-size:11px; font-weight:600; color:var(--t3); text-transform:uppercase; letter-spacing:.07em; margin:18px 2px 10px; }
+
+  .hdr { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:20px; }
+  .hdr-k { font-size:13px; color:var(--t3); margin-bottom:2px; }
+  .hdr-h1 { font-size:26px; font-weight:700; letter-spacing:-.02em; }
+
+  .seg { display:flex; gap:4px; padding:4px; background:var(--g1); border:1px solid var(--bds); border-radius:12px; margin-bottom:14px; }
+  .seg-btn { flex:1; padding:6px 0; border-radius:8px; font-size:12px; font-weight:600; color:var(--t3); text-align:center; }
+  .seg-btn.on { background:var(--g2); color:var(--t1); }
+
+  .card { background:var(--g1); border:1px solid var(--bds); border-radius:18px; position:relative; overflow:hidden; margin-bottom:12px; }
+  .card::before { content:""; position:absolute; inset:0 0 auto; height:1px; background:linear-gradient(90deg,transparent,rgba(255,255,255,0.09),transparent); }
+
+  /* Search bar */
+  .search { display:flex; align-items:center; gap:10px; padding:10px 14px; background:var(--g1); border:1px solid var(--bds); border-radius:12px; margin-bottom:14px; }
+  .search-input { flex:1; background:none; border:none; outline:none; font-size:14px; color:var(--t1); font-family:inherit; }
+  .search-input::placeholder { color:var(--t3); }
+
+  /* Category grid */
+  .cat-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:14px; }
+  .cat-item { display:flex; flex-direction:column; align-items:center; gap:6px; padding:12px 4px; border-radius:14px; background:var(--g1); border:1px solid var(--bds); cursor:pointer; }
+  .cat-icon { width:32px; height:32px; border-radius:10px; display:flex; align-items:center; justify-content:center; }
+  .cat-label { font-size:10px; font-weight:600; color:var(--t2); text-align:center; }
+  .cat-count { font-size:10px; color:var(--t3); }
+
+  /* Document row */
+  .doc-row { display:flex; align-items:center; gap:12px; padding:13px 16px; border-bottom:1px solid var(--bds); }
+  .doc-row:last-child { border-bottom:none; }
+  .doc-icon { width:38px; height:38px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:11px; font-weight:800; }
+  .doc-name { font-size:14px; font-weight:600; }
+  .doc-meta { font-size:11px; color:var(--t3); margin-top:2px; }
+  .doc-size { font-size:11px; color:var(--t3); white-space:nowrap; }
+
+  /* Pill */
+  .pill { font-size:10px; font-weight:600; padding:3px 8px; border-radius:6px; }
+  .p-signed   { background:rgba(48,209,88,0.13); color:var(--green); }
+  .p-pending  { background:rgba(255,159,10,0.13); color:var(--amber); }
+  .p-draft    { background:rgba(255,255,255,0.08); color:var(--t2); }
+  .p-expired  { background:rgba(255,69,58,0.12); color:var(--red); }
+
+  /* Preview card */
+  .preview-card { background:var(--g2); border:1px solid var(--bds); border-radius:16px; padding:20px; margin-bottom:12px; position:relative; overflow:hidden; }
+  .preview-card::before { content:""; position:absolute; inset:0 0 auto; height:1px; background:linear-gradient(90deg,transparent,rgba(255,255,255,0.14),transparent); }
+  .preview-lines { display:flex; flex-direction:column; gap:6px; margin-top:14px; }
+  .preview-line { height:8px; border-radius:3px; background:rgba(255,255,255,0.10); }
+  .preview-line.short { width:60%; }
+  .preview-line.med { width:80%; }
+
+  /* Action row */
+  .action-row { display:flex; gap:8px; margin-bottom:14px; }
+  .action-btn { flex:1; display:flex; flex-direction:column; align-items:center; gap:5px; padding:12px 8px; border-radius:14px; background:var(--g1); border:1px solid var(--bds); cursor:pointer; }
+  .action-btn-label { font-size:11px; font-weight:600; color:var(--t2); }
+
+  /* Recent activity */
+  .act-row { display:flex; align-items:flex-start; gap:10px; padding:10px 16px; border-bottom:1px solid var(--bds); }
+  .act-row:last-child { border-bottom:none; }
+  .act-dot { width:7px; height:7px; border-radius:50%; margin-top:5px; flex-shrink:0; }
+
+  /* Tabbar */
+  .tabbar { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); display:inline-flex; gap:2px; padding:7px; border-radius:22px; background:rgba(22,22,22,0.7); backdrop-filter:blur(48px); border:1px solid var(--bd); box-shadow:inset 0 1px 0 rgba(255,255,255,0.12),0 16px 40px rgba(0,0,0,0.55); }
+  .tab { display:flex; flex-direction:column; align-items:center; gap:3px; padding:8px 13px; border-radius:14px; font-size:10px; font-weight:600; color:var(--t3); }
+  .tab.on { background:var(--g2); color:var(--t1); }
+</style>
+</head>
+<body>
+
+<div class="tag">
+  <span class="chip">Screen 16</span>
+  <span class="chip">Preview</span>
+  <span class="chip">apps/web · /documents</span>
+</div>
+
+<div class="frame">
+
+  <!-- ══ VIEW A: Document Library ══ -->
+  <div class="view-label">View A — Document Library</div>
+
+  <div class="hdr">
+    <div><div class="hdr-k">PRV OS</div><h1 class="hdr-h1">Documents</h1></div>
+    <div style="padding:6px 12px;border-radius:10px;background:var(--g1);border:1px solid var(--bds);font-size:12px;font-weight:500;color:var(--t2);">1,284 files</div>
+  </div>
+
+  <!-- Search bar -->
+  <div class="search">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input class="search-input" placeholder="Search documents…" />
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="1.8" stroke-linecap="round"><path d="M3 6h18M6 12h12M9 18h6"/></svg>
+  </div>
+
+  <!-- Category grid -->
+  <div class="cat-grid">
+    <div class="cat-item">
+      <div class="cat-icon" style="background:rgba(10,132,255,0.12);">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(10,132,255,0.9)" stroke-width="1.8" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      </div>
+      <div class="cat-label">Contracts</div>
+      <div class="cat-count">128</div>
+    </div>
+    <div class="cat-item">
+      <div class="cat-icon" style="background:rgba(48,209,88,0.10);">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(48,209,88,0.85)" stroke-width="1.8" stroke-linecap="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+      </div>
+      <div class="cat-label">Invoices</div>
+      <div class="cat-count">412</div>
+    </div>
+    <div class="cat-item">
+      <div class="cat-icon" style="background:rgba(255,159,10,0.10);">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,159,10,0.9)" stroke-width="1.8" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      </div>
+      <div class="cat-label">Projects</div>
+      <div class="cat-count">344</div>
+    </div>
+    <div class="cat-item">
+      <div class="cat-icon" style="background:rgba(191,90,242,0.10);">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(191,90,242,0.85)" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+      </div>
+      <div class="cat-label">HR</div>
+      <div class="cat-count">220</div>
+    </div>
+  </div>
+
+  <!-- Segmented filter -->
+  <div class="seg">
+    <div class="seg-btn on">Recent</div>
+    <div class="seg-btn">Shared</div>
+    <div class="seg-btn">Signed</div>
+    <div class="seg-btn">Pending</div>
+  </div>
+
+  <!-- Document list -->
+  <div class="card">
+    <!-- Contract PDF -->
+    <div class="doc-row">
+      <div class="doc-icon" style="background:rgba(10,132,255,0.12);color:rgba(10,132,255,0.9);">PDF</div>
+      <div style="flex:1;">
+        <div class="doc-name">Contract_Renovare_Cluj14.pdf</div>
+        <div class="doc-meta">Contracts · Andrei P. · Jun 5</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0;">
+        <span class="pill p-signed">Signed</span>
+        <div class="doc-size" style="margin-top:4px;">1.2 MB</div>
+      </div>
+    </div>
+    <!-- Invoice -->
+    <div class="doc-row">
+      <div class="doc-icon" style="background:rgba(48,209,88,0.10);color:rgba(48,209,88,0.85);">PDF</div>
+      <div style="flex:1;">
+        <div class="doc-name">Factura_2026_0194.pdf</div>
+        <div class="doc-meta">Invoices · Auto-generated · Jun 6</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0;">
+        <span class="pill p-pending">Pending</span>
+        <div class="doc-size" style="margin-top:4px;">0.4 MB</div>
+      </div>
+    </div>
+    <!-- Project brief -->
+    <div class="doc-row">
+      <div class="doc-icon" style="background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.55);">DOC</div>
+      <div style="flex:1;">
+        <div class="doc-name">Brief_Proiect_TM07.docx</div>
+        <div class="doc-meta">Projects · Elena M. · Jun 4</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0;">
+        <span class="pill p-draft">Draft</span>
+        <div class="doc-size" style="margin-top:4px;">0.8 MB</div>
+      </div>
+    </div>
+    <!-- HR contract -->
+    <div class="doc-row">
+      <div class="doc-icon" style="background:rgba(191,90,242,0.10);color:rgba(191,90,242,0.85);">PDF</div>
+      <div style="flex:1;">
+        <div class="doc-name">Contract_Munca_LT_2026.pdf</div>
+        <div class="doc-meta">HR · Maria I. · Jun 3</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0;">
+        <span class="pill p-signed">Signed</span>
+        <div class="doc-size" style="margin-top:4px;">0.6 MB</div>
+      </div>
+    </div>
+    <!-- Expired -->
+    <div class="doc-row">
+      <div class="doc-icon" style="background:rgba(255,69,58,0.10);color:rgba(255,69,58,0.85);">PDF</div>
+      <div style="flex:1;">
+        <div class="doc-name">Asigurare_B44PRV_2025.pdf</div>
+        <div class="doc-meta">Fleet · System · Dec 31 2025</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0;">
+        <span class="pill p-expired">Expired</span>
+        <div class="doc-size" style="margin-top:4px;">0.3 MB</div>
+      </div>
+    </div>
+    <div style="padding:12px 16px;text-align:center;border-top:1px solid var(--bds);">
+      <span style="font-size:12px;color:var(--t3);">1,279 more files ›</span>
+    </div>
+  </div>
+
+  <div class="sep"></div>
+
+  <!-- ══ VIEW B: Document Detail ══ -->
+  <div class="view-label">View B — Document Detail (Drill-down)</div>
+
+  <!-- Doc header -->
+  <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;">
+    <div class="doc-icon" style="width:52px;height:52px;border-radius:14px;background:rgba(10,132,255,0.12);color:rgba(10,132,255,0.9);font-size:13px;">PDF</div>
+    <div style="flex:1;">
+      <div style="font-size:17px;font-weight:700;">Contract_Renovare_Cluj14</div>
+      <div style="font-size:12px;color:var(--t3);margin-top:2px;">PDF · 1.2 MB · Contracts</div>
+    </div>
+    <span class="pill p-signed" style="font-size:11px;padding:5px 10px;">Signed</span>
+  </div>
+
+  <!-- Document preview mockup -->
+  <div class="preview-card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <div style="font-size:13px;font-weight:700;">CONTRACT DE PRESTĂRI SERVICII</div>
+      <div style="font-size:10px;color:var(--t3);">p.1 / 8</div>
+    </div>
+    <div style="font-size:10px;color:var(--t3);margin-bottom:10px;">Nr. 2026-0194 · Data: 05.06.2026</div>
+    <div class="preview-lines">
+      <div class="preview-line med"></div>
+      <div class="preview-line"></div>
+      <div class="preview-line short"></div>
+      <div class="preview-line med"></div>
+      <div class="preview-line"></div>
+      <div class="preview-line short"></div>
+      <div class="preview-line med"></div>
+    </div>
+  </div>
+
+  <!-- Action buttons -->
+  <div class="action-row">
+    <div class="action-btn">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.65)" stroke-width="1.7" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      <div class="action-btn-label">Download</div>
+    </div>
+    <div class="action-btn">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.65)" stroke-width="1.7" stroke-linecap="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+      <div class="action-btn-label">Share</div>
+    </div>
+    <div class="action-btn">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.65)" stroke-width="1.7" stroke-linecap="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      <div class="action-btn-label">Sign</div>
+    </div>
+    <div class="action-btn">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.65)" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+      <div class="action-btn-label">More</div>
+    </div>
+  </div>
+
+  <!-- Metadata -->
+  <div class="lbl">Details</div>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;padding:11px 16px;border-bottom:1px solid var(--bds);"><span style="font-size:13px;color:var(--t2);">Uploaded by</span><span style="font-size:13px;font-weight:600;">Andrei Popescu</span></div>
+    <div style="display:flex;justify-content:space-between;padding:11px 16px;border-bottom:1px solid var(--bds);"><span style="font-size:13px;color:var(--t2);">Project</span><span style="font-size:13px;font-weight:600;">Renovation Cluj #14</span></div>
+    <div style="display:flex;justify-content:space-between;padding:11px 16px;border-bottom:1px solid var(--bds);"><span style="font-size:13px;color:var(--t2);">Signed by</span><span style="font-size:13px;font-weight:600;">2 of 2 parties</span></div>
+    <div style="display:flex;justify-content:space-between;padding:11px 16px;border-bottom:1px solid var(--bds);"><span style="font-size:13px;color:var(--t2);">Valid until</span><span style="font-size:13px;font-weight:600;">Dec 31, 2026</span></div>
+    <div style="display:flex;justify-content:space-between;padding:11px 16px;"><span style="font-size:13px;color:var(--t2);">Version</span><span style="font-size:13px;font-weight:600;">v3 · Final</span></div>
+  </div>
+
+  <!-- Activity -->
+  <div class="lbl">Activity</div>
+  <div class="card">
+    <div class="act-row">
+      <div class="act-dot" style="background:var(--green);"></div>
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:600;">Signed by client</div>
+        <div style="font-size:11px;color:var(--t3);margin-top:1px;">Jun 5, 14:32 · Electronic signature</div>
+      </div>
+    </div>
+    <div class="act-row">
+      <div class="act-dot" style="background:var(--green);"></div>
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:600;">Signed by PRV</div>
+        <div style="font-size:11px;color:var(--t3);margin-top:1px;">Jun 5, 11:10 · Andrei Popescu</div>
+      </div>
+    </div>
+    <div class="act-row">
+      <div class="act-dot" style="background:var(--blue);"></div>
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:600;">Sent for signature</div>
+        <div style="font-size:11px;color:var(--t3);margin-top:1px;">Jun 4, 09:15 · Via email</div>
+      </div>
+    </div>
+    <div class="act-row" style="border-bottom:none;">
+      <div class="act-dot" style="background:rgba(255,255,255,0.20);"></div>
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:600;">Document created</div>
+        <div style="font-size:11px;color:var(--t3);margin-top:1px;">Jun 3, 16:48 · v1 draft</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Tabbar — Command active (Documents is cross-cutting) -->
+<div class="tabbar">
+  <div class="tab on"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="6" height="6" rx="1"/><path d="M9 9V6a3 3 0 1 0-3 3h3"/><path d="M15 9h3a3 3 0 1 0-3-3v3"/><path d="M9 15H6a3 3 0 1 0 3 3v-3"/><path d="M15 15v3a3 3 0 1 0 3-3h-3"/></svg>Command</div>
+  <div class="tab"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Operations</div>
+  <div class="tab"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="3"/><path d="M3 20v-1a6 6 0 0 1 6-6"/><circle cx="17" cy="9" r="2.5"/><path d="M13 20v-1a4 4 0 0 1 4-4h0a4 4 0 0 1 4 4v1"/></svg>People</div>
+  <div class="tab"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18"/><path d="M5 20V10l4-4 4 4 4-6v16"/></svg>Finance</div>
+  <div class="tab"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a6 6 0 0 1 6 6c0 2.5-1.5 4.7-3.7 5.7L14 16H10l-.3-2.3A6.01 6.01 0 0 1 6 8a6 6 0 0 1 6-6z"/><path d="M10 19h4"/><path d="M11 22h2"/></svg>Intelligence</div>
+</div>
+
+</body>
+</html>
