@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PRV · Sprint 32 — Commerce</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --prv-bg:            #000;
+    --prv-g1:            rgba(255,255,255,0.06);
+    --prv-g2:            rgba(255,255,255,0.10);
+    --prv-g3:            rgba(255,255,255,0.15);
+    --prv-g4:            rgba(255,255,255,0.22);
+    --prv-text-1:        rgba(255,255,255,0.95);
+    --prv-text-2:        rgba(255,255,255,0.65);
+    --prv-text-3:        rgba(255,255,255,0.35);
+    --prv-text-4:        rgba(255,255,255,0.15);
+    --prv-border:        rgba(255,255,255,0.12);
+    --prv-border-subtle: rgba(255,255,255,0.07);
+    --prv-accent:        rgba(10,132,255,0.9);
+    --prv-green:         rgba(48,209,88,0.95);
+    --prv-red:           rgba(255,69,58,0.95);
+  }
+
+  html, body {
+    background: var(--prv-bg);
+    color: var(--prv-text-1);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page { max-width: 960px; margin: 0 auto; padding: 48px 24px 96px; }
+
+  .sprint-header { margin-bottom: 52px; }
+  .chips { display: flex; gap: 8px; margin-bottom: 10px; }
+  .chip { padding: 3px 10px; border-radius: 100px; background: var(--prv-g2); border: 1px solid var(--prv-border-subtle); font-size: 11px; font-weight: 600; color: var(--prv-text-3); letter-spacing: .06em; text-transform: uppercase; }
+  h1 { font-size: 28px; font-weight: 700; letter-spacing: -.02em; }
+  .sub { font-size: 14px; color: var(--prv-text-3); margin-top: 4px; }
+
+  .section { margin-bottom: 60px; }
+  .sl { font-size: 11px; font-weight: 600; color: var(--prv-text-3); letter-spacing: .07em; text-transform: uppercase; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+  .sl::after { content: ""; flex: 1; height: 1px; background: var(--prv-border-subtle); }
+
+  /* Delivery table */
+  .dt { width: 100%; border-collapse: collapse; }
+  .dt th, .dt td { text-align: left; padding: 10px 14px; font-size: 13px; border-bottom: 1px solid var(--prv-border-subtle); }
+  .dt th { font-size: 11px; font-weight: 600; color: var(--prv-text-3); letter-spacing: .06em; text-transform: uppercase; }
+  .dt td { color: var(--prv-text-1); }
+  .dt td:nth-child(2) { color: var(--prv-text-3); font-family: "SF Mono", monospace; font-size: 11px; }
+  .dt tr:last-child td { border-bottom: none; }
+  .tag { display: inline-flex; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 500; background: var(--prv-g2); color: var(--prv-text-3); border: 1px solid var(--prv-border-subtle); }
+  .tag.new { background: rgba(10,132,255,.12); color: rgba(10,132,255,.9); border-color: rgba(10,132,255,.2); }
+
+  .glass-surface { position: relative; overflow: hidden; background: var(--prv-g1); border: 1px solid var(--prv-border-subtle); border-radius: 20px; }
+  .glass-surface::before { content: ""; position: absolute; inset: 0 0 auto; height: 1px; background: linear-gradient(90deg,transparent,rgba(255,255,255,0.09),transparent); pointer-events: none; }
+
+  .demo-pad { padding: 24px; }
+
+  /* ════════════════════════════════════════════════
+     GLASS PRICE TAG
+  ════════════════════════════════════════════════ */
+  .pt { display: inline-flex; align-items: baseline; gap: 8px; }
+  .pt-cur { font-size: 14px; color: var(--prv-text-3); font-weight: 600; align-self: flex-start; margin-top: 3px; }
+  .pt-amt { font-size: 28px; font-weight: 700; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+  .pt-was { font-size: 14px; color: var(--prv-text-4); text-decoration: line-through; }
+  .pt-save { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 6px; background: rgba(48,209,88,0.14); color: var(--prv-green); }
+  .pt-row { display: flex; gap: 28px; flex-wrap: wrap; align-items: center; }
+
+  /* ════════════════════════════════════════════════
+     GLASS QUANTITY STEPPER
+  ════════════════════════════════════════════════ */
+  .qs { display: inline-flex; align-items: stretch; border-radius: 100px; overflow: hidden; background: var(--prv-g2); border: 1px solid var(--prv-border); }
+  .qs-btn { width: 38px; display: flex; align-items: center; justify-content: center; background: transparent; border: none; color: var(--prv-text-1); cursor: pointer; font-size: 18px; transition: background 130ms; }
+  .qs-btn:hover:not(:disabled) { background: var(--prv-g3); }
+  .qs-btn:disabled { color: var(--prv-text-4); cursor: not-allowed; }
+  .qs-val { min-width: 40px; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .qs-trash { color: var(--prv-red); }
+
+  /* ════════════════════════════════════════════════
+     GLASS PRODUCT CARD
+  ════════════════════════════════════════════════ */
+  .pc-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  @media (max-width: 700px){ .pc-grid { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 460px){ .pc-grid { grid-template-columns: 1fr; } }
+  .pc { border-radius: 16px; overflow: hidden; background: var(--prv-g1); border: 1px solid var(--prv-border-subtle); position: relative; transition: transform 200ms, box-shadow 200ms; }
+  .pc:hover { transform: translateY(-3px); box-shadow: 0 14px 36px rgba(0,0,0,0.45); }
+  .pc-media { position: relative; aspect-ratio: 1; }
+  .pc-badge { position: absolute; top: 10px; left: 10px; font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 6px; text-transform: uppercase; letter-spacing: .04em; }
+  .pc-badge.sale { background: var(--prv-red); color: #fff; }
+  .pc-badge.new  { background: var(--prv-accent); color: #fff; }
+  .pc-fav { position: absolute; top: 10px; right: 10px; width: 30px; height: 30px; border-radius: 50%; background: rgba(22,22,22,0.55); backdrop-filter: blur(16px); border: 1px solid var(--prv-border); display: flex; align-items: center; justify-content: center; color: #fff; cursor: pointer; }
+  .pc-fav.on { color: var(--prv-red); }
+  .pc-body { padding: 13px 14px 15px; }
+  .pc-cat { font-size: 11px; color: var(--prv-text-3); }
+  .pc-name { font-size: 14px; font-weight: 600; margin: 3px 0 4px; }
+  .pc-rate { font-size: 11px; color: var(--prv-text-3); display: flex; align-items: center; gap: 4px; margin-bottom: 10px; }
+  .star { color: rgba(255,204,0,0.95); }
+  .pc-foot { display: flex; align-items: center; justify-content: space-between; }
+  .pc-add { width: 36px; height: 36px; border-radius: 11px; background: var(--prv-text-1); border: none; color: #000; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 150ms; }
+  .pc-add:hover { transform: scale(1.08); }
+  .pc-oos { position: absolute; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #fff; backdrop-filter: blur(2px); }
+
+  /* ════════════════════════════════════════════════
+     GLASS CART LINE ITEM
+  ════════════════════════════════════════════════ */
+  .cart { display: flex; flex-direction: column; }
+  .cli { display: flex; align-items: center; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--prv-border-subtle); }
+  .cli:last-of-type { border-bottom: none; }
+  .cli-img { width: 60px; height: 60px; border-radius: 12px; flex-shrink: 0; border: 1px solid var(--prv-border-subtle); }
+  .cli-info { flex: 1; min-width: 0; }
+  .cli-name { font-size: 14px; font-weight: 600; }
+  .cli-variant { font-size: 12px; color: var(--prv-text-3); margin-top: 2px; }
+  .cli-right { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+  .cli-price { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .cart-total { display: flex; justify-content: space-between; padding-top: 16px; margin-top: 4px; border-top: 1px solid var(--prv-border); font-size: 16px; font-weight: 700; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="sprint-header">
+    <div class="chips"><span class="chip">Sprint 32</span><span class="chip">Preview</span><span class="chip">Phase 1 · M9</span></div>
+    <h1>Commerce</h1>
+    <div class="sub">GlassProductCard · GlassPriceTag · GlassCartLineItem · GlassQuantityStepper</div>
+  </div>
+
+  <!-- ── PRICE TAG ── -->
+  <div class="section">
+    <div class="sl">GlassPriceTag — Currency, amount, strikethrough was-price, save badge</div>
+    <div class="glass-surface">
+      <div class="demo-pad">
+        <div class="pt-row">
+          <div class="pt"><span class="pt-cur">€</span><span class="pt-amt">129.00</span></div>
+          <div class="pt"><span class="pt-cur">€</span><span class="pt-amt">89.00</span><span class="pt-was">€129.00</span><span class="pt-save">Save 31%</span></div>
+          <div class="pt"><span class="pt-cur">RON</span><span class="pt-amt">1,499</span></div>
+          <div class="pt"><span class="pt-amt" style="font-size:20px;color:var(--prv-green)">Free</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── QUANTITY STEPPER ── -->
+  <div class="section">
+    <div class="sl">GlassQuantityStepper — Pill stepper, min 1, trash at min, max clamp</div>
+    <div class="glass-surface">
+      <div class="demo-pad">
+        <div style="display:flex;gap:28px;align-items:center;flex-wrap:wrap">
+          <div class="qs" data-q="2">
+            <button class="qs-btn" onclick="q(this,-1)">−</button>
+            <span class="qs-val">2</span>
+            <button class="qs-btn" onclick="q(this,1)">+</button>
+          </div>
+          <div class="qs" data-q="1">
+            <button class="qs-btn qs-trash" onclick="q(this,-1)" title="Remove"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+            <span class="qs-val">1</span>
+            <button class="qs-btn" onclick="q(this,1)">+</button>
+          </div>
+          <div class="qs" data-q="10" data-max="10">
+            <button class="qs-btn" onclick="q(this,-1)">−</button>
+            <span class="qs-val">10</span>
+            <button class="qs-btn" onclick="q(this,1)" disabled>+</button>
+          </div>
+          <span style="font-size:12px;color:var(--prv-text-4)">min becomes 🗑 · max 10 disables +</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── PRODUCT CARD ── -->
+  <div class="section">
+    <div class="sl">GlassProductCard — Media, badges, favorite, rating, price, add-to-cart</div>
+    <div class="glass-surface">
+      <div class="demo-pad">
+        <div class="pc-grid">
+          <div class="pc">
+            <div class="pc-media" style="background:linear-gradient(135deg,#0A84FF,#5E5CE6)">
+              <span class="pc-badge new">New</span>
+              <button class="pc-fav" onclick="this.classList.toggle('on')"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
+            </div>
+            <div class="pc-body">
+              <div class="pc-cat">Power Tools</div>
+              <div class="pc-name">Cordless Drill 18V</div>
+              <div class="pc-rate"><span class="star">★</span> 4.7 · 212</div>
+              <div class="pc-foot"><div class="pt"><span class="pt-cur" style="font-size:12px">€</span><span class="pt-amt" style="font-size:18px">149</span></div><button class="pc-add"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button></div>
+            </div>
+          </div>
+
+          <div class="pc">
+            <div class="pc-media" style="background:linear-gradient(135deg,#FF9F0A,#FF375F)">
+              <span class="pc-badge sale">-31%</span>
+              <button class="pc-fav on" onclick="this.classList.toggle('on')"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
+            </div>
+            <div class="pc-body">
+              <div class="pc-cat">Flooring</div>
+              <div class="pc-name">Oak Laminate · m²</div>
+              <div class="pc-rate"><span class="star">★</span> 4.9 · 540</div>
+              <div class="pc-foot"><div class="pt"><span class="pt-cur" style="font-size:12px">€</span><span class="pt-amt" style="font-size:18px">22</span><span class="pt-was">€32</span></div><button class="pc-add"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button></div>
+            </div>
+          </div>
+
+          <div class="pc">
+            <div class="pc-media" style="background:linear-gradient(135deg,#30D158,#00C7BE)">
+              <div class="pc-oos">Out of stock</div>
+            </div>
+            <div class="pc-body">
+              <div class="pc-cat">Paint</div>
+              <div class="pc-name">Matte White 5L</div>
+              <div class="pc-rate"><span class="star">★</span> 4.5 · 98</div>
+              <div class="pc-foot"><div class="pt"><span class="pt-cur" style="font-size:12px">€</span><span class="pt-amt" style="font-size:18px">39</span></div><button class="pc-add" disabled style="opacity:.35;cursor:not-allowed"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── CART LINE ITEM ── -->
+  <div class="section">
+    <div class="sl">GlassCartLineItem — Thumbnail, name/variant, quantity stepper, line total</div>
+    <div class="glass-surface">
+      <div class="demo-pad">
+        <div class="cart">
+          <div class="cli">
+            <div class="cli-img" style="background:linear-gradient(135deg,#0A84FF,#5E5CE6)"></div>
+            <div class="cli-info"><div class="cli-name">Cordless Drill 18V</div><div class="cli-variant">Blue · 2 batteries</div></div>
+            <div class="cli-right">
+              <div class="cli-price">€298</div>
+              <div class="qs" data-q="2"><button class="qs-btn" onclick="q(this,-1)">−</button><span class="qs-val">2</span><button class="qs-btn" onclick="q(this,1)">+</button></div>
+            </div>
+          </div>
+          <div class="cli">
+            <div class="cli-img" style="background:linear-gradient(135deg,#FF9F0A,#FF375F)"></div>
+            <div class="cli-info"><div class="cli-name">Oak Laminate</div><div class="cli-variant">Natural · 12 m²</div></div>
+            <div class="cli-right">
+              <div class="cli-price">€264</div>
+              <div class="qs" data-q="12"><button class="qs-btn" onclick="q(this,-1)">−</button><span class="qs-val">12</span><button class="qs-btn" onclick="q(this,1)">+</button></div>
+            </div>
+          </div>
+          <div class="cart-total"><span>Total</span><span>€562</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Delivery ── -->
+  <div class="section">
+    <div class="sl">Sprint 32 Delivery</div>
+    <div class="glass-surface">
+      <table class="dt">
+        <thead><tr><th>Component</th><th>File</th><th>Key Props</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>GlassProductCard</td><td>glass-product-card.tsx</td><td>image, name, category, price, rating, badge, favorite, outOfStock, onAdd</td><td><span class="tag new">New</span></td></tr>
+          <tr><td>GlassPriceTag</td><td>glass-price-tag.tsx</td><td>amount, currency, wasPrice, size, free</td><td><span class="tag new">New</span></td></tr>
+          <tr><td>GlassCartLineItem</td><td>glass-cart-line-item.tsx</td><td>image, name, variant, price, quantity, onQuantityChange, onRemove</td><td><span class="tag new">New</span></td></tr>
+          <tr><td>GlassQuantityStepper</td><td>glass-quantity-stepper.tsx</td><td>value, onChange, min, max, removeAtMin, onRemove</td><td><span class="tag new">New</span></td></tr>
+          <tr><td>index.ts</td><td>components/index.ts</td><td>Export all 4 components + types</td><td><span class="tag">Update</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div><!-- /page -->
+
+<script>
+function q(btn, dir){
+  const qs=btn.closest('.qs'); const val=qs.querySelector('.qs-val')
+  const max=qs.dataset.max?+qs.dataset.max:99
+  let v=(+qs.dataset.q)+dir; v=Math.max(1,Math.min(max,v)); qs.dataset.q=v; val.textContent=v
+  const minus=qs.querySelectorAll('.qs-btn')[0], plus=qs.querySelectorAll('.qs-btn')[1]
+  plus.disabled = v>=max
+  // turn minus into trash at min
+  if(v===1){ minus.classList.add('qs-trash'); minus.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>' }
+  else { minus.classList.remove('qs-trash'); minus.textContent='−' }
+}
+</script>
+</body>
+</html>
