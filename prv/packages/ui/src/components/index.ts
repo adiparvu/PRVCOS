@@ -322,6 +322,9 @@ export type { GlassHeroProps, HeroAction } from "./glass-hero"
 export { GlassFeatureGrid } from "./glass-feature-grid"
 export type { GlassFeatureGridProps, FeatureItem } from "./glass-feature-grid"
 
+export { GlassPricingTable } from "./glass-pricing-table"
+export type { GlassPricingTableProps, PricingPlan, PricingFeature } from "./glass-pricing-table"
+
 export {
   ActionSheet,
   ConfirmationSheet,
