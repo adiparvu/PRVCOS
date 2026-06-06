@@ -244,18 +244,6 @@
 
   <div class="lbl" style="margin-top:0;">Channels</div>
   <div class="card">
-    {[
-      ["Push Notifications", true],
-      ["Email Digest", true],
-      ["SMS Alerts (Critical only)", false],
-    ].map(([l,v]) =>
-      `<div class="setting-row">
-        <div>
-          <div style="font-size:14px;font-weight:600;">${l}</div>
-        </div>
-        <div class="toggle ${v?'on':'off'}"><div class="toggle-knob"></div></div>
-      </div>`
-    ).join("")}
     <div class="setting-row"><div><div style="font-size:14px;font-weight:600;">Push Notifications</div></div><div class="toggle on"><div class="toggle-knob"></div></div></div>
     <div class="setting-row"><div><div style="font-size:14px;font-weight:600;">Email Digest</div><div style="font-size:12px;color:var(--t3);margin-top:2px;">Daily summary at 08:00</div></div><div class="toggle on"><div class="toggle-knob"></div></div></div>
     <div class="setting-row"><div><div style="font-size:14px;font-weight:600;">SMS Alerts</div><div style="font-size:12px;color:var(--t3);margin-top:2px;">Critical only</div></div><div class="toggle off"><div class="toggle-knob"></div></div></div>
