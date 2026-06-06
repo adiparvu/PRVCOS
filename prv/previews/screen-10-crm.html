@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PRV · Screen 10 — CRM</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #000; --g1: rgba(255,255,255,0.06); --g2: rgba(255,255,255,0.10); --g3: rgba(255,255,255,0.15);
+    --t1: rgba(255,255,255,0.95); --t2: rgba(255,255,255,0.65); --t3: rgba(255,255,255,0.35); --t4: rgba(255,255,255,0.12);
+    --bd: rgba(255,255,255,0.12); --bds: rgba(255,255,255,0.07);
+    --green: rgba(48,209,88,0.95); --red: rgba(255,69,58,0.95); --amber: rgba(255,159,10,0.95); --blue: rgba(10,132,255,0.9); --purple: rgba(191,90,242,0.9);
+  }
+  html,body { background: var(--bg); color: var(--t1); font-family: -apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif; -webkit-font-smoothing: antialiased; min-height:100vh; }
+  body { background: radial-gradient(ellipse 70% 25% at 30% -5%, rgba(48,209,88,0.04), transparent), #000; }
+
+  .tag { max-width:460px; margin:24px auto 0; padding:0 16px; display:flex; gap:8px; }
+  .chip { padding:3px 10px; border-radius:100px; background:var(--g2); border:1px solid var(--bds); font-size:11px; font-weight:600; color:var(--t3); letter-spacing:.06em; text-transform:uppercase; }
+  .frame { max-width:460px; margin:0 auto; padding:32px 16px 120px; }
+  .sep { height:1px; background:var(--bds); margin:28px 0; }
+  .view-label { font-size:10px; font-weight:700; color:var(--t3); text-transform:uppercase; letter-spacing:.1em; margin-bottom:12px; }
+  .lbl { font-size:11px; font-weight:600; color:var(--t3); text-transform:uppercase; letter-spacing:.07em; margin:18px 2px 10px; }
+
+  /* Header */
+  .hdr { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:20px; }
+  .hdr-k { font-size:13px; color:var(--t3); font-weight:500; margin-bottom:2px; }
+  .hdr-h1 { font-size:26px; font-weight:700; letter-spacing:-.02em; }
+  .icon-btn { width:34px; height:34px; border-radius:10px; background:var(--g1); border:1px solid var(--bds); display:flex; align-items:center; justify-content:center; }
+
+  /* KPI strip */
+  .kpis { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:14px; }
+  .kpi { padding:12px 8px; border-radius:14px; background:var(--g1); border:1px solid var(--bds); text-align:center; }
+  .kpi-v { font-size:18px; font-weight:700; }
+  .kpi-l { font-size:10px; font-weight:600; color:var(--t3); text-transform:uppercase; letter-spacing:.06em; margin-top:3px; }
+
+  /* Seg */
+  .seg { display:flex; gap:4px; padding:4px; background:var(--g1); border:1px solid var(--bds); border-radius:12px; margin-bottom:14px; }
+  .seg-btn { flex:1; padding:6px 0; border-radius:8px; font-size:12px; font-weight:600; color:var(--t3); text-align:center; }
+  .seg-btn.on { background:var(--g2); color:var(--t1); }
+
+  /* Card */
+  .card { background:var(--g1); border:1px solid var(--bds); border-radius:18px; position:relative; overflow:hidden; margin-bottom:12px; }
+  .card::before { content:""; position:absolute; inset:0 0 auto; height:1px; background:linear-gradient(90deg,transparent,rgba(255,255,255,0.09),transparent); }
+
+  /* Client row */
+  .client-row { display:flex; align-items:center; gap:12px; padding:13px 16px; border-bottom:1px solid var(--bds); }
+  .client-row:last-child { border-bottom:none; }
+  .c-av { width:38px; height:38px; border-radius:50%; background:var(--g2); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:var(--t2); flex-shrink:0; }
+  .c-name { font-size:14px; font-weight:700; }
+  .c-sub { font-size:12px; color:var(--t3); margin-top:1px; }
+  .c-right { text-align:right; flex-shrink:0; }
+  .c-val { font-size:14px; font-weight:700; }
+  .c-date { font-size:11px; color:var(--t3); margin-top:2px; }
+  .pill { font-size:10px; font-weight:600; padding:2px 8px; border-radius:6px; }
+  .p-vip   { background:rgba(255,159,10,0.15); color:rgba(255,159,10,0.95); }
+  .p-active{ background:rgba(48,209,88,0.14);  color:rgba(48,209,88,0.95);  }
+  .p-lead  { background:rgba(10,132,255,0.14); color:rgba(10,132,255,0.9);  }
+  .p-cold  { background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.35);}
+
+  /* Detail */
+  .detail-hero { padding:16px; border-radius:18px; background:var(--g1); border:1px solid var(--bds); margin-bottom:12px; }
+  .d-av-lg { width:56px; height:56px; border-radius:50%; background:var(--g2); display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:700; color:var(--t2); flex-shrink:0; }
+  .d-name { font-size:19px; font-weight:700; }
+  .d-chips { display:flex; gap:8px; flex-wrap:wrap; margin:8px 0 14px; }
+  .d-chip { padding:4px 10px; border-radius:8px; font-size:11px; font-weight:600; background:var(--g2); color:var(--t3); }
+  .stats-row { display:flex; gap:10px; }
+  .stat-sm { flex:1; text-align:center; padding:10px 6px; border-radius:12px; background:var(--g2); }
+  .stat-sm-v { font-size:16px; font-weight:700; }
+  .stat-sm-l { font-size:10px; font-weight:600; color:var(--t3); text-transform:uppercase; letter-spacing:.06em; margin-top:2px; }
+
+  /* Timeline */
+  .tl-row { display:flex; gap:12px; padding:12px 16px; border-bottom:1px solid var(--bds); }
+  .tl-row:last-child { border-bottom:none; }
+  .tl-icon { width:32px; height:32px; border-radius:9px; background:var(--g2); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .tl-body { flex:1; }
+  .tl-title { font-size:13px; font-weight:600; }
+  .tl-sub { font-size:12px; color:var(--t3); margin-top:2px; }
+  .tl-time { font-size:11px; color:var(--t3); text-align:right; flex-shrink:0; white-space:nowrap; }
+
+  /* Pipeline kanban */
+  .pipeline { display:flex; gap:10px; overflow-x:auto; padding-bottom:4px; }
+  .pcol { flex:0 0 160px; background:var(--g1); border:1px solid var(--bds); border-radius:16px; }
+  .pcol-h { padding:11px 12px 8px; display:flex; align-items:center; gap:7px; }
+  .pcol-dot { width:8px; height:8px; border-radius:50%; }
+  .pcol-title { font-size:12px; font-weight:700; flex:1; }
+  .pcol-cnt { font-size:11px; font-weight:600; color:var(--t3); background:var(--g2); padding:1px 7px; border-radius:100px; }
+  .pcard { margin:0 8px 8px; padding:10px; background:var(--g2); border:1px solid var(--bds); border-radius:10px; }
+  .pcard-name { font-size:12px; font-weight:700; margin-bottom:4px; }
+  .pcard-val { font-size:11px; color:var(--t3); }
+
+  /* Tabbar */
+  .tabbar { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); display:inline-flex; gap:2px; padding:7px; border-radius:22px; background:rgba(22,22,22,0.7); backdrop-filter:blur(48px); border:1px solid var(--bd); box-shadow:inset 0 1px 0 rgba(255,255,255,0.12),0 16px 40px rgba(0,0,0,0.55); }
+  .tab { display:flex; flex-direction:column; align-items:center; gap:3px; padding:8px 13px; border-radius:14px; font-size:10px; font-weight:600; color:var(--t3); }
+  .tab.on { background:var(--g2); color:var(--t1); }
+</style>
+</head>
+<body>
+
+<div class="tag">
+  <span class="chip">Screen 10</span>
+  <span class="chip">Preview</span>
+  <span class="chip">apps/web · /crm</span>
+</div>
+
+<div class="frame">
+
+  <!-- ══ VIEW A: Client List ══ -->
+  <div class="view-label">View A — Client List</div>
+
+  <div class="hdr">
+    <div><div class="hdr-k">PRV</div><h1 class="hdr-h1">CRM</h1></div>
+    <div style="display:flex;gap:8px;">
+      <div class="icon-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+      <div class="icon-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="1.8" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
+    </div>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi"><div class="kpi-v">284</div><div class="kpi-l">Clients</div></div>
+    <div class="kpi"><div class="kpi-v" style="color:var(--blue)">18</div><div class="kpi-l">Leads</div></div>
+    <div class="kpi"><div class="kpi-v" style="color:var(--amber)">7</div><div class="kpi-l">Proposals</div></div>
+    <div class="kpi"><div class="kpi-v" style="color:var(--green)">€1.8M</div><div class="kpi-l">LTV</div></div>
+  </div>
+
+  <div class="seg">
+    <div class="seg-btn on">All</div>
+    <div class="seg-btn">Active</div>
+    <div class="seg-btn">Leads</div>
+    <div class="seg-btn">VIP</div>
+  </div>
+
+  <div class="card">
+    <div class="client-row">
+      <div class="c-av">MP</div>
+      <div style="flex:1;min-width:0;">
+        <div class="c-name">Mihai Popescu</div>
+        <div class="c-sub">3 projects · Cluj</div>
+      </div>
+      <div class="c-right">
+        <div class="c-val">€42,800</div>
+        <div><span class="pill p-vip">VIP</span></div>
+      </div>
+    </div>
+    <div class="client-row">
+      <div class="c-av">AG</div>
+      <div style="flex:1;min-width:0;">
+        <div class="c-name">Andronic Group SRL</div>
+        <div class="c-sub">1 active project · București</div>
+      </div>
+      <div class="c-right">
+        <div class="c-val">€67,000</div>
+        <div><span class="pill p-active">Active</span></div>
+      </div>
+    </div>
+    <div class="client-row">
+      <div class="c-av">AI</div>
+      <div style="flex:1;min-width:0;">
+        <div class="c-name">Ana Ionescu</div>
+        <div class="c-sub">Quote sent · Timișoara</div>
+      </div>
+      <div class="c-right">
+        <div class="c-val">€24,200</div>
+        <div><span class="pill p-lead">Lead</span></div>
+      </div>
+    </div>
+    <div class="client-row">
+      <div class="c-av">BC</div>
+      <div style="flex:1;min-width:0;">
+        <div class="c-name">Biroul Construct SRL</div>
+        <div class="c-sub">2 projects · Brașov</div>
+      </div>
+      <div class="c-right">
+        <div class="c-val">€31,400</div>
+        <div><span class="pill p-active">Active</span></div>
+      </div>
+    </div>
+    <div class="client-row">
+      <div class="c-av">RN</div>
+      <div style="flex:1;min-width:0;">
+        <div class="c-name">Radu Niculescu</div>
+        <div class="c-sub">Last contact: 3 months ago</div>
+      </div>
+      <div class="c-right">
+        <div class="c-val">€8,600</div>
+        <div><span class="pill p-cold">Cold</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pipeline -->
+  <div class="lbl">Sales Pipeline</div>
+  <div class="pipeline">
+    <div class="pcol">
+      <div class="pcol-h"><div class="pcol-dot" style="background:rgba(255,255,255,0.4);"></div><span class="pcol-title">Lead</span><span class="pcol-cnt">6</span></div>
+      <div class="pcard"><div class="pcard-name">Familia Dinu</div><div class="pcard-val">€14,000 · Kitchen</div></div>
+      <div class="pcard"><div class="pcard-name">Cosmin Vlad</div><div class="pcard-val">€8,500 · Bathroom</div></div>
+    </div>
+    <div class="pcol">
+      <div class="pcol-h"><div class="pcol-dot" style="background:var(--blue);"></div><span class="pcol-title">Proposal</span><span class="pcol-cnt">4</span></div>
+      <div class="pcard"><div class="pcard-name">Ana Ionescu</div><div class="pcard-val">€24,200 · Full Reno</div></div>
+      <div class="pcard"><div class="pcard-name">SC Modern SRL</div><div class="pcard-val">€38,000 · Office</div></div>
+    </div>
+    <div class="pcol">
+      <div class="pcol-h"><div class="pcol-dot" style="background:var(--amber);"></div><span class="pcol-title">Negotiation</span><span class="pcol-cnt">3</span></div>
+      <div class="pcard"><div class="pcard-name">Horia Munteanu</div><div class="pcard-val">€19,500 · Apartment</div></div>
+    </div>
+    <div class="pcol">
+      <div class="pcol-h"><div class="pcol-dot" style="background:var(--green);"></div><span class="pcol-title">Won</span><span class="pcol-cnt">5</span></div>
+      <div class="pcard"><div class="pcard-name">Mihai Popescu</div><div class="pcard-val">€18,400 · Active</div></div>
+      <div class="pcard"><div class="pcard-name">Andronic Group</div><div class="pcard-val">€67,000 · Active</div></div>
+    </div>
+  </div>
+
+  <div class="sep"></div>
+
+  <!-- ══ VIEW B: Client Detail ══ -->
+  <div class="view-label">View B — Client Detail (Drill-down)</div>
+
+  <div class="detail-hero">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:8px;">
+      <div class="d-av-lg">MP</div>
+      <div>
+        <div class="d-name">Mihai Popescu</div>
+        <div style="font-size:12px;color:var(--t3);margin-top:3px;">mihai.popescu@gmail.com · 0740 123 456</div>
+      </div>
+    </div>
+    <div class="d-chips">
+      <span class="pill p-vip" style="font-size:11px;padding:4px 10px;">VIP</span>
+      <span class="d-chip">Cluj</span>
+      <span class="d-chip">Client since 2024</span>
+    </div>
+    <div class="stats-row">
+      <div class="stat-sm"><div class="stat-sm-v">3</div><div class="stat-sm-l">Projects</div></div>
+      <div class="stat-sm"><div class="stat-sm-v" style="color:var(--green);">€42,800</div><div class="stat-sm-l">Total LTV</div></div>
+      <div class="stat-sm"><div class="stat-sm-v" style="color:var(--blue);">8.9</div><div class="stat-sm-l">NPS Score</div></div>
+      <div class="stat-sm"><div class="stat-sm-v" style="color:var(--amber);">1</div><div class="stat-sm-l">Open Quote</div></div>
+    </div>
+  </div>
+
+  <!-- Activity timeline -->
+  <div class="lbl">Activity Timeline</div>
+  <div class="card">
+    <div class="tl-row">
+      <div class="tl-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(48,209,88,0.8)" stroke-width="1.8" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+      <div class="tl-body"><div class="tl-title">Invoice #1042 paid — €298</div><div class="tl-sub">Cluj · Main project</div></div>
+      <div class="tl-time">2 min ago</div>
+    </div>
+    <div class="tl-row">
+      <div class="tl-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(10,132,255,0.8)" stroke-width="1.8" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+      <div class="tl-body"><div class="tl-title">Message sent by Andrei P.</div><div class="tl-sub">"Tiles arrive Thursday, on track"</div></div>
+      <div class="tl-time">1 hr ago</div>
+    </div>
+    <div class="tl-row">
+      <div class="tl-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+      <div class="tl-body"><div class="tl-title">Site visit scheduled</div><div class="tl-sub">Jun 14 · 10:00 · Mănăștur</div></div>
+      <div class="tl-time">Yesterday</div>
+    </div>
+    <div class="tl-row">
+      <div class="tl-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="1.8" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg></div>
+      <div class="tl-body"><div class="tl-title">Contract signed · €18,400</div><div class="tl-sub">Renovare Apartament project</div></div>
+      <div class="tl-time">May 10</div>
+    </div>
+    <div class="tl-row">
+      <div class="tl-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(191,90,242,0.8)" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg></div>
+      <div class="tl-body"><div class="tl-title">New quote sent — €24,400</div><div class="tl-sub">Kitchen renovation · Pending</div></div>
+      <div class="tl-time">Jun 1</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Tabbar — no specific tab active (CRM is cross-module) -->
+<div class="tabbar">
+  <div class="tab">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="6" height="6" rx="1"/><path d="M9 9V6a3 3 0 1 0-3 3h3"/><path d="M15 9h3a3 3 0 1 0-3-3v3"/><path d="M9 15H6a3 3 0 1 0 3 3v-3"/><path d="M15 15v3a3 3 0 1 0 3-3h-3"/></svg>
+    Command
+  </div>
+  <div class="tab on">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+    Operations
+  </div>
+  <div class="tab">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="3"/><path d="M3 20v-1a6 6 0 0 1 6-6"/><circle cx="17" cy="9" r="2.5"/><path d="M13 20v-1a4 4 0 0 1 4-4h0a4 4 0 0 1 4 4v1"/></svg>
+    People
+  </div>
+  <div class="tab">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18"/><path d="M5 20V10l4-4 4 4 4-6v16"/></svg>
+    Finance
+  </div>
+  <div class="tab">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a6 6 0 0 1 6 6c0 2.5-1.5 4.7-3.7 5.7L14 16H10l-.3-2.3A6.01 6.01 0 0 1 6 8a6 6 0 0 1 6-6z"/><path d="M10 19h4"/><path d="M11 22h2"/></svg>
+    Intelligence
+  </div>
+</div>
+
+</body>
+</html>
