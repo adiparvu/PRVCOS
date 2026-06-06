@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Screen 22 — Client Portal</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #000;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", system-ui, sans-serif;
+    color: rgba(255,255,255,0.95);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding-bottom: 120px;
+  }
+  .phone { width: 393px; min-height: 852px; position: relative; padding: 56px 0 0; }
+  .specular { position: absolute; left: 0; right: 0; top: 0; height: 1px; background: linear-gradient(90deg,transparent,rgba(255,255,255,0.09),transparent); }
+  .label  { font-size: 11px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: rgba(255,255,255,0.35); }
+  .caption{ font-size: 12px; color: rgba(255,255,255,0.35); }
+  .section{ padding: 0 16px; margin-bottom: 20px; }
+
+  /* Search */
+  .search-bar { display:flex; align-items:center; gap:8px; padding:10px 14px; border-radius:14px; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.08); margin:12px 16px; }
+
+  /* Seg */
+  .seg-wrap { display:flex; gap:4px; padding:3px; background:rgba(255,255,255,0.06); border-radius:10px; margin:0 16px 20px; }
+  .seg-btn { flex:1; padding:6px 0; border-radius:8px; font-size:12px; font-weight:600; text-align:center; border:none; cursor:pointer; color:rgba(255,255,255,0.35); background:transparent; }
+  .seg-btn.active { background:rgba(255,255,255,0.10); color:rgba(255,255,255,0.95); }
+
+  /* Stats */
+  .stat-row { display:flex; gap:8px; padding:0 16px; margin-bottom:20px; }
+  .stat-card { flex:1; padding:14px 10px; border-radius:16px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.07); text-align:center; }
+  .stat-val { font-size:20px; font-weight:700; margin-bottom:2px; }
+  .stat-lbl { font-size:10px; color:rgba(255,255,255,0.35); }
+
+  /* Client row */
+  .client-row { display:flex; align-items:center; gap:12px; padding:13px 14px; border-radius:16px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.07); cursor:pointer; margin-bottom:8px; position:relative; }
+  .avatar { width:44px; height:44px; border-radius:13px; flex-shrink:0; background:rgba(255,255,255,0.09); display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; letter-spacing:0.02em; }
+
+  /* Pill */
+  .pill { font-size:10px; font-weight:700; padding:3px 8px; border-radius:20px; white-space:nowrap; flex-shrink:0; }
+  .pill-active    { background:rgba(48,209,88,0.12);  color:rgba(48,209,88,0.90); }
+  .pill-pending   { background:rgba(255,159,10,0.15); color:rgba(255,159,10,0.95); }
+  .pill-completed { background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.55); }
+  .pill-review    { background:rgba(10,132,255,0.12); color:rgba(10,132,255,0.90); }
+
+  /* Progress bar */
+  .pbar-wrap { height:4px; background:rgba(255,255,255,0.08); border-radius:2px; overflow:hidden; margin-top:6px; }
+  .pbar-fill { height:100%; border-radius:2px; background:rgba(255,255,255,0.55); }
+
+  /* Detail sheet */
+  .detail-sheet { position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:393px; background:rgba(255,255,255,0.10); border:1px solid rgba(255,255,255,0.12); border-radius:28px 28px 0 0; backdrop-filter:blur(48px); padding:0 20px 36px; z-index:50; }
+  .drag-nub { width:36px; height:4px; border-radius:2px; background:rgba(255,255,255,0.12); }
+  .info-row { display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.06); }
+  .info-row:last-child { border-bottom:none; }
+
+  /* Timeline dot */
+  .tl-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; margin-top:4px; }
+  .tl-line { width:1px; flex-shrink:0; background:rgba(255,255,255,0.08); margin:2px 0 2px 3.5px; height:20px; }
+
+  /* Tab bar */
+  .tab-bar { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); width:361px; display:flex; align-items:center; justify-content:space-around; padding:8px; border-radius:28px; background:rgba(255,255,255,0.09); border:1px solid rgba(255,255,255,0.13); backdrop-filter:blur(48px); box-shadow:inset 0 1px 0 rgba(255,255,255,0.20),0 24px 64px rgba(0,0,0,0.7); z-index:100; }
+  .tab-item { display:flex; flex-direction:column; align-items:center; gap:3px; width:64px; height:52px; border-radius:20px; justify-content:center; color:rgba(255,255,255,0.35); font-size:10px; font-weight:500; }
+  .tab-item.active { background:rgba(255,255,255,0.10); color:rgba(255,255,255,0.95); }
+  svg { display:block; }
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="specular"></div>
+
+  <!-- Header -->
+  <div class="section" style="padding-top:6px;margin-bottom:4px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+      <h1 style="font-size:26px;font-weight:700;letter-spacing:-0.02em;">Client Portal</h1>
+      <div style="display:flex;gap:8px;">
+        <div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="1.7" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </div>
+      </div>
+    </div>
+    <p style="font-size:14px;color:rgba(255,255,255,0.65);">24 clients · 8 active projects</p>
+  </div>
+
+  <!-- Stats -->
+  <div class="stat-row">
+    <div class="stat-card"><div class="stat-val">24</div><div class="stat-lbl">Clients</div></div>
+    <div class="stat-card"><div class="stat-val">8</div><div class="stat-lbl">Active</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:rgba(255,159,10,0.95);">3</div><div class="stat-lbl">Pending</div></div>
+    <div class="stat-card"><div class="stat-val">€1.2M</div><div class="stat-lbl">Total</div></div>
+  </div>
+
+  <!-- Search -->
+  <div class="search-bar">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <span style="font-size:14px;color:rgba(255,255,255,0.35);">Search clients, projects…</span>
+  </div>
+
+  <!-- Filter -->
+  <div class="seg-wrap">
+    <div class="seg-btn active">All</div>
+    <div class="seg-btn">Active</div>
+    <div class="seg-btn">Pending</div>
+    <div class="seg-btn">Completed</div>
+  </div>
+
+  <!-- Client list -->
+  <div class="section">
+    <div class="label" style="margin-bottom:12px;">Clients</div>
+
+    <!-- Client 1 — Active -->
+    <div class="client-row">
+      <div class="specular"></div>
+      <div class="avatar">MP</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:14px;font-weight:600;margin-bottom:1px;">Mihai & Elena Popescu</div>
+        <div class="caption">Kitchen + Bathroom renovation · Cluj</div>
+        <div class="pbar-wrap"><div class="pbar-fill" style="width:64%;"></div></div>
+        <div style="display:flex;justify-content:space-between;margin-top:3px;">
+          <div class="caption">64% complete</div>
+          <div class="caption">€38,400</div>
+        </div>
+      </div>
+      <div class="pill pill-active">Active</div>
+    </div>
+
+    <!-- Client 2 — Active -->
+    <div class="client-row">
+      <div class="specular"></div>
+      <div class="avatar">SI</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:14px;font-weight:600;margin-bottom:1px;">SC Invest-Imob SRL</div>
+        <div class="caption">Full apartment block renovation · Brașov</div>
+        <div class="pbar-wrap"><div class="pbar-fill" style="width:31%;"></div></div>
+        <div style="display:flex;justify-content:space-between;margin-top:3px;">
+          <div class="caption">31% complete</div>
+          <div class="caption">€210,000</div>
+        </div>
+      </div>
+      <div class="pill pill-active">Active</div>
+    </div>
+
+    <!-- Client 3 — Pending approval -->
+    <div class="client-row" style="border-color:rgba(10,132,255,0.22);">
+      <div class="specular"></div>
+      <div class="avatar" style="background:rgba(10,132,255,0.10);color:rgba(10,132,255,0.80);">DR</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:14px;font-weight:600;margin-bottom:1px;">Dan & Roxana Ionescu</div>
+        <div class="caption">Living room + Office · Cluj</div>
+        <div style="font-size:11px;color:rgba(10,132,255,0.80);margin-top:3px;">Quote sent · Awaiting approval</div>
+      </div>
+      <div class="pill pill-review">Review</div>
+    </div>
+
+    <!-- Client 4 — Active -->
+    <div class="client-row">
+      <div class="specular"></div>
+      <div class="avatar">HT</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:14px;font-weight:600;margin-bottom:1px;">Hotel Transilvania SA</div>
+        <div class="caption">Lobby & reception renovation · Brașov</div>
+        <div class="pbar-wrap"><div class="pbar-fill" style="width:88%;"></div></div>
+        <div style="display:flex;justify-content:space-between;margin-top:3px;">
+          <div class="caption">88% complete</div>
+          <div class="caption">€96,000</div>
+        </div>
+      </div>
+      <div class="pill pill-active">Active</div>
+    </div>
+
+    <!-- Client 5 — Pending -->
+    <div class="client-row">
+      <div class="specular"></div>
+      <div class="avatar" style="background:rgba(255,159,10,0.10);color:rgba(255,159,10,0.80);">AC</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:14px;font-weight:600;margin-bottom:1px;">Andrei Constantin</div>
+        <div class="caption">Bathroom renovation · Timișoara</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.35);margin-top:3px;">Site visit scheduled · Jun 10</div>
+      </div>
+      <div class="pill pill-pending">Pending</div>
+    </div>
+
+    <!-- Client 6 — Completed -->
+    <div class="client-row">
+      <div class="specular"></div>
+      <div class="avatar" style="color:rgba(255,255,255,0.45);">VD</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:14px;font-weight:600;color:rgba(255,255,255,0.65);margin-bottom:1px;">Vasile & Doina Marin</div>
+        <div class="caption">Kitchen renovation · May 2026</div>
+        <div class="caption" style="margin-top:1px;">€28,600 · Paid in full</div>
+      </div>
+      <div class="pill pill-completed">Done</div>
+    </div>
+  </div>
+
+  <!-- Recent activity -->
+  <div class="section">
+    <div class="label" style="margin-bottom:12px;">Recent Activity</div>
+    <div style="padding:14px 16px;border-radius:16px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.07);position:relative;">
+      <div class="specular"></div>
+      <div style="display:flex;flex-direction:column;gap:0;">
+
+        <div style="display:flex;gap:12px;padding-bottom:14px;">
+          <div style="display:flex;flex-direction:column;align-items:center;">
+            <div class="tl-dot" style="background:rgba(48,209,88,0.90);"></div>
+            <div class="tl-line"></div>
+          </div>
+          <div style="flex:1;">
+            <div style="font-size:13px;font-weight:600;margin-bottom:1px;">Invoice #2041 paid</div>
+            <div class="caption">Hotel Transilvania SA · €24,000 · Jun 5</div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:12px;padding-bottom:14px;">
+          <div style="display:flex;flex-direction:column;align-items:center;">
+            <div class="tl-dot" style="background:rgba(10,132,255,0.90);"></div>
+            <div class="tl-line"></div>
+          </div>
+          <div style="flex:1;">
+            <div style="font-size:13px;font-weight:600;margin-bottom:1px;">Quote approved</div>
+            <div class="caption">SC Invest-Imob SRL · €210,000 · Jun 4</div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:12px;padding-bottom:14px;">
+          <div style="display:flex;flex-direction:column;align-items:center;">
+            <div class="tl-dot" style="background:rgba(255,255,255,0.35);"></div>
+            <div class="tl-line"></div>
+          </div>
+          <div style="flex:1;">
+            <div style="font-size:13px;font-weight:600;margin-bottom:1px;">Progress photos uploaded</div>
+            <div class="caption">Mihai & Elena Popescu · 14 photos · Jun 3</div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:12px;">
+          <div style="display:flex;flex-direction:column;align-items:center;">
+            <div class="tl-dot" style="background:rgba(255,159,10,0.90);"></div>
+          </div>
+          <div style="flex:1;">
+            <div style="font-size:13px;font-weight:600;margin-bottom:1px;">Quote sent</div>
+            <div class="caption">Dan & Roxana Ionescu · €42,000 · Jun 2</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="height:30px;"></div>
+</div>
+
+<!-- Detail Sheet -->
+<div class="detail-sheet">
+  <div class="specular"></div>
+  <div style="display:flex;justify-content:center;padding:10px 0 6px;"><div class="drag-nub"></div></div>
+
+  <div style="display:flex;align-items:flex-start;gap:14px;margin-bottom:16px;">
+    <div class="avatar" style="width:52px;height:52px;border-radius:15px;font-size:16px;">MP</div>
+    <div style="flex:1;">
+      <div style="font-size:11px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:rgba(255,255,255,0.35);margin-bottom:3px;">Residential · Cluj-Napoca</div>
+      <div style="font-size:18px;font-weight:700;margin-bottom:4px;">Mihai & Elena Popescu</div>
+      <div class="pill pill-active">Active</div>
+    </div>
+    <div style="width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.07);display:flex;align-items:center;justify-content:center;cursor:pointer;">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="2.2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </div>
+  </div>
+
+  <!-- Project progress -->
+  <div style="padding:14px;border-radius:14px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.07);margin-bottom:14px;">
+    <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+      <span style="font-size:13px;font-weight:600;">Kitchen + Bathroom Renovation</span>
+      <span style="font-size:13px;font-weight:700;">64%</span>
+    </div>
+    <div class="pbar-wrap" style="margin-top:0;"><div class="pbar-fill" style="width:64%;"></div></div>
+    <div style="display:flex;gap:16px;margin-top:8px;">
+      <span style="font-size:11px;color:rgba(255,255,255,0.35);">Started: Apr 12</span>
+      <span style="font-size:11px;color:rgba(255,255,255,0.35);">Est. finish: Jul 20</span>
+    </div>
+  </div>
+
+  <!-- Metrics -->
+  <div style="display:flex;gap:8px;margin-bottom:14px;">
+    <div style="flex:1;padding:10px 8px;border-radius:12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.07);text-align:center;">
+      <div style="font-size:16px;font-weight:700;margin-bottom:2px;">€38.4k</div>
+      <div style="font-size:9px;color:rgba(255,255,255,0.35);">Contract</div>
+    </div>
+    <div style="flex:1;padding:10px 8px;border-radius:12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.07);text-align:center;">
+      <div style="font-size:16px;font-weight:700;margin-bottom:2px;">€22.1k</div>
+      <div style="font-size:9px;color:rgba(255,255,255,0.35);">Paid</div>
+    </div>
+    <div style="flex:1;padding:10px 8px;border-radius:12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.07);text-align:center;">
+      <div style="font-size:16px;font-weight:700;margin-bottom:2px;">€16.3k</div>
+      <div style="font-size:9px;color:rgba(255,255,255,0.35);">Remaining</div>
+    </div>
+  </div>
+
+  <!-- Info rows -->
+  <div style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.07);border-radius:16px;padding:0 14px;margin-bottom:14px;">
+    <div class="info-row"><span style="font-size:13px;color:rgba(255,255,255,0.35);">Contact</span><span style="font-size:13px;font-weight:600;">0721 100 200</span></div>
+    <div class="info-row"><span style="font-size:13px;color:rgba(255,255,255,0.35);">Site manager</span><span style="font-size:13px;font-weight:600;">Liviu Toma</span></div>
+    <div class="info-row"><span style="font-size:13px;color:rgba(255,255,255,0.35);">Documents</span><span style="font-size:13px;font-weight:600;">Contract · 3 invoices</span></div>
+    <div class="info-row"><span style="font-size:13px;color:rgba(255,255,255,0.35);">Last update</span><span style="font-size:13px;font-weight:600;">Jun 3, 2026</span></div>
+  </div>
+
+  <!-- CTA -->
+  <div style="display:flex;gap:8px;">
+    <button style="flex:1;padding:13px;border-radius:14px;background:rgba(255,255,255,0.10);border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.95);font-size:14px;font-weight:600;cursor:pointer;">View Project</button>
+    <button style="flex:1;padding:13px;border-radius:14px;background:rgba(255,255,255,0.95);border:none;color:#000;font-size:14px;font-weight:700;cursor:pointer;">Send Update</button>
+  </div>
+</div>
+
+<!-- Tab Bar -->
+<div class="tab-bar">
+  <div class="tab-item">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="9" y="9" width="6" height="6" rx="1"/><path d="M9 9V6a3 3 0 1 0-3 3h3"/><path d="M15 9h3a3 3 0 1 0-3-3v3"/><path d="M9 15H6a3 3 0 1 0 3 3v-3"/><path d="M15 15v3a3 3 0 1 0 3-3h-3"/></svg>
+    Command
+  </div>
+  <div class="tab-item active">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+    Operations
+  </div>
+  <div class="tab-item">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="9" cy="7" r="3"/><path d="M3 20v-1a6 6 0 0 1 6-6"/><circle cx="17" cy="9" r="2.5"/><path d="M13 20v-1a4 4 0 0 1 4-4h0a4 4 0 0 1 4 4v1"/></svg>
+    People
+  </div>
+  <div class="tab-item">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 20h18"/><path d="M5 20V10l4-4 4 4 4-6v16"/></svg>
+    Finance
+  </div>
+  <div class="tab-item">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M12 2a6 6 0 0 1 6 6c0 2.5-1.5 4.7-3.7 5.7L14 16H10l-.3-2.3A6.01 6.01 0 0 1 6 8a6 6 0 0 1 6-6z"/><path d="M10 19h4"/><path d="M11 22h2"/></svg>
+    Intelligence
+  </div>
+</div>
+
+</body>
+</html>
