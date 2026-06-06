@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PRV · Screen 08 — Intelligence</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #000;
+    --g1: rgba(255,255,255,0.06);
+    --g2: rgba(255,255,255,0.10);
+    --g3: rgba(255,255,255,0.15);
+    --t1: rgba(255,255,255,0.95);
+    --t2: rgba(255,255,255,0.65);
+    --t3: rgba(255,255,255,0.35);
+    --t4: rgba(255,255,255,0.12);
+    --bd: rgba(255,255,255,0.12);
+    --bds: rgba(255,255,255,0.07);
+    --green: rgba(48,209,88,0.95);
+    --red: rgba(255,69,58,0.95);
+    --amber: rgba(255,159,10,0.95);
+    --blue: rgba(10,132,255,0.9);
+    --purple: rgba(191,90,242,0.9);
+  }
+  html, body {
+    background: var(--bg);
+    color: var(--t1);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+  body {
+    background:
+      radial-gradient(ellipse 80% 30% at 70% -5%, rgba(191,90,242,0.06), transparent),
+      radial-gradient(ellipse 60% 25% at 20% 5%, rgba(10,132,255,0.05), transparent),
+      #000;
+  }
+
+  .tag { max-width: 460px; margin: 24px auto 0; padding: 0 16px; display: flex; gap: 8px; }
+  .chip { padding: 3px 10px; border-radius: 100px; background: var(--g2); border: 1px solid var(--bds); font-size: 11px; font-weight: 600; color: var(--t3); letter-spacing: .06em; text-transform: uppercase; }
+  .frame { max-width: 460px; margin: 0 auto; padding: 32px 16px 120px; }
+
+  /* Header */
+  .hdr { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 22px; }
+  .hdr-k { font-size: 13px; color: var(--t3); font-weight: 500; margin-bottom: 2px; }
+  .hdr-h1 { font-size: 26px; font-weight: 700; letter-spacing: -.02em; }
+  .hdr-badge { padding: 6px 12px; border-radius: 10px; background: var(--g1); border: 1px solid var(--bds); font-size: 12px; font-weight: 500; color: var(--t2); }
+
+  /* Glass card */
+  .card { background: var(--g1); border: 1px solid var(--bds); border-radius: 18px; position: relative; overflow: hidden; }
+  .card::before { content: ""; position: absolute; inset: 0 0 auto; height: 1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.09), transparent); }
+
+  /* Section label */
+  .lbl { font-size: 11px; font-weight: 600; color: var(--t3); text-transform: uppercase; letter-spacing: .07em; margin: 20px 2px 10px; }
+
+  /* KPI grid */
+  .kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+  .stat { padding: 15px 16px; border-radius: 18px; background: var(--g1); border: 1px solid var(--bds); position: relative; overflow: hidden; }
+  .stat::before { content: ""; position: absolute; inset: 0 0 auto; height: 1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.09), transparent); }
+  .stat-l { font-size: 11px; font-weight: 600; color: var(--t3); text-transform: uppercase; letter-spacing: .08em; }
+  .stat-v { font-size: 24px; font-weight: 700; letter-spacing: -.02em; margin: 5px 0 3px; }
+  .stat-t { font-size: 12px; font-weight: 600; }
+  .up { color: var(--green); } .down { color: var(--red); } .flat { color: var(--t3); }
+  .spark { margin-top: 8px; }
+
+  /* AI Briefing */
+  .ai-card {
+    padding: 16px;
+    border-radius: 18px;
+    margin-bottom: 14px;
+    position: relative;
+    overflow: hidden;
+    background: radial-gradient(circle at 0% 0%, rgba(191,90,242,0.12), transparent 55%),
+                radial-gradient(circle at 100% 100%, rgba(10,132,255,0.10), transparent 55%),
+                var(--g1);
+    border: 1px solid rgba(191,90,242,0.20);
+  }
+  .ai-card::before { content: ""; position: absolute; inset: 0 0 auto; height: 1px; background: linear-gradient(90deg, transparent, rgba(191,90,242,0.30), rgba(10,132,255,0.20), transparent); }
+  .ai-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .ai-icon { width: 36px; height: 36px; border-radius: 11px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: linear-gradient(135deg, rgba(191,90,242,0.8), rgba(10,132,255,0.8)); }
+  .ai-title { font-size: 11px; font-weight: 700; color: var(--t3); text-transform: uppercase; letter-spacing: .08em; }
+  .ai-body p { font-size: 13px; color: var(--t2); line-height: 1.55; margin-bottom: 8px; }
+  .ai-body p:last-child { margin-bottom: 0; }
+  .ai-body strong { color: var(--t1); font-weight: 600; }
+  .ai-chips { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 12px; }
+  .ai-chip { padding: 5px 11px; border-radius: 100px; background: var(--g2); border: 1px solid rgba(191,90,242,0.18); font-size: 12px; font-weight: 500; color: var(--t2); }
+
+  /* Segmented */
+  .seg { display: flex; gap: 4px; padding: 4px; background: var(--g1); border: 1px solid var(--bds); border-radius: 12px; margin-bottom: 14px; }
+  .seg-btn { flex: 1; padding: 6px 0; border-radius: 8px; font-size: 12px; font-weight: 600; color: var(--t3); text-align: center; }
+  .seg-btn.on { background: var(--g2); color: var(--t1); }
+
+  /* Line chart */
+  .chart-wrap { padding: 16px 14px 10px; }
+  .chart-lbl-row { display: flex; gap: 16px; margin-bottom: 4px; }
+  .cleg { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--t2); }
+  .cleg-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+  /* Donut placeholder */
+  .donut-wrap { display: flex; gap: 18px; align-items: center; padding: 16px; }
+  .donut-svg { flex-shrink: 0; }
+  .donut-legend { flex: 1; display: flex; flex-direction: column; gap: 9px; }
+  .dl-row { display: flex; align-items: center; gap: 8px; }
+  .dl-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+  .dl-label { font-size: 13px; font-weight: 500; color: var(--t1); flex: 1; }
+  .dl-pct { font-size: 13px; font-weight: 700; color: var(--t2); }
+
+  /* Forecast rows */
+  .fc-row { display: flex; align-items: center; gap: 12px; padding: 13px 16px; border-bottom: 1px solid var(--bds); }
+  .fc-row:last-child { border-bottom: none; }
+  .fc-label { font-size: 13px; font-weight: 600; flex: 1; }
+  .fc-bar-wrap { flex: 2; height: 6px; border-radius: 3px; background: var(--g2); overflow: hidden; }
+  .fc-bar { height: 100%; border-radius: 3px; }
+  .fc-val { font-size: 13px; font-weight: 700; min-width: 64px; text-align: right; }
+  .fc-trend { font-size: 11px; font-weight: 600; min-width: 44px; text-align: right; }
+
+  /* Reports list */
+  .rpt-row { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--bds); }
+  .rpt-row:last-child { border-bottom: none; }
+  .rpt-icon { width: 34px; height: 34px; border-radius: 9px; background: var(--g2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .rpt-name { font-size: 14px; font-weight: 600; }
+  .rpt-sub { font-size: 12px; color: var(--t3); margin-top: 1px; }
+  .rpt-meta { text-align: right; flex-shrink: 0; }
+  .rpt-date { font-size: 11px; color: var(--t3); }
+  .rpt-badge { font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 6px; margin-top: 3px; }
+  .b-ready { background: rgba(48,209,88,0.14); color: var(--green); }
+  .b-new   { background: rgba(10,132,255,0.14); color: var(--blue); }
+
+  /* Tabbar */
+  .tabbar { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: inline-flex; gap: 2px; padding: 7px; border-radius: 22px; background: rgba(22,22,22,0.7); backdrop-filter: blur(48px); border: 1px solid var(--bd); box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 16px 40px rgba(0,0,0,0.55); }
+  .tab { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 13px; border-radius: 14px; font-size: 10px; font-weight: 600; color: var(--t3); }
+  .tab.on { background: var(--g2); color: var(--t1); }
+</style>
+</head>
+<body>
+
+<div class="tag">
+  <span class="chip">Screen 08</span>
+  <span class="chip">Preview</span>
+  <span class="chip">apps/web · /intelligence</span>
+</div>
+
+<div class="frame">
+
+  <!-- Header -->
+  <div class="hdr">
+    <div>
+      <div class="hdr-k">PRV</div>
+      <h1 class="hdr-h1">Intelligence</h1>
+    </div>
+    <div class="hdr-badge">Live · Jun 2026</div>
+  </div>
+
+  <!-- KPI grid -->
+  <div class="kpis">
+    <div class="stat">
+      <div class="stat-l">Conversion</div>
+      <div class="stat-v">3.8%</div>
+      <div class="stat-t up">▲ 0.4pp</div>
+      <div class="spark">
+        <svg width="100%" height="26" viewBox="0 0 100 26" fill="none" preserveAspectRatio="none">
+          <polyline points="0,22 17,19 33,16 50,13 67,10 83,8 100,5" stroke="rgba(48,209,88,0.55)" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+    </div>
+    <div class="stat">
+      <div class="stat-l">Avg Order</div>
+      <div class="stat-v">€184</div>
+      <div class="stat-t up">▲ 6.2%</div>
+      <div class="spark">
+        <svg width="100%" height="26" viewBox="0 0 100 26" fill="none" preserveAspectRatio="none">
+          <polyline points="0,20 17,18 33,15 50,14 67,12 83,10 100,8" stroke="rgba(48,209,88,0.55)" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+    </div>
+    <div class="stat">
+      <div class="stat-l">Churn Risk</div>
+      <div class="stat-v">12</div>
+      <div class="stat-t down">▲ 3 accounts</div>
+      <div class="spark">
+        <svg width="100%" height="26" viewBox="0 0 100 26" fill="none" preserveAspectRatio="none">
+          <polyline points="0,14 17,14 33,15 50,14 67,16 83,17 100,18" stroke="rgba(255,69,58,0.5)" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+    </div>
+    <div class="stat">
+      <div class="stat-l">AI Actions</div>
+      <div class="stat-v">47</div>
+      <div class="stat-t flat">→ this week</div>
+      <div class="spark">
+        <svg width="100%" height="26" viewBox="0 0 100 26" fill="none" preserveAspectRatio="none">
+          <polyline points="0,18 17,16 33,14 50,12 67,11 83,10 100,9" stroke="rgba(191,90,242,0.55)" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI Briefing -->
+  <div class="ai-card">
+    <div class="ai-header">
+      <div class="ai-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round">
+          <path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8"/>
+          <circle cx="12" cy="12" r="3"/>
+        </svg>
+      </div>
+      <span class="ai-title">AI Analysis · Updated 4 min ago</span>
+    </div>
+    <div class="ai-body">
+      <p>Revenue is tracking <strong>+12% MoM</strong>. Cluj is your top-margin store at <strong>39%</strong> — replicating its replenishment cadence across Brașov could lift group margin by <strong>~1.8pp</strong>.</p>
+      <p>Iași · Palas shows a <strong>23% drop in foot traffic</strong> vs last month. Recommend a targeted promo push before June 15. AI confidence: <strong>87%</strong>.</p>
+      <p><strong>2 projects</strong> risk slipping this week due to understaffing on Thursday. Suggest reallocating 3 workers from Cluj to Timișoara.</p>
+    </div>
+    <div class="ai-chips">
+      <span class="ai-chip">▶ Apply reallocation</span>
+      <span class="ai-chip">▶ Schedule Iași promo</span>
+      <span class="ai-chip">▶ Full report</span>
+    </div>
+  </div>
+
+  <!-- Period selector -->
+  <div class="seg">
+    <div class="seg-btn">1W</div>
+    <div class="seg-btn on">1M</div>
+    <div class="seg-btn">3M</div>
+    <div class="seg-btn">6M</div>
+    <div class="seg-btn">1Y</div>
+  </div>
+
+  <!-- Revenue trend line chart -->
+  <div class="card" style="margin-bottom:14px;">
+    <div class="chart-wrap">
+      <p style="font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px;">Revenue Trend</p>
+      <div class="chart-lbl-row">
+        <div class="cleg"><div class="cleg-dot" style="background:rgba(255,255,255,0.75);"></div>Revenue</div>
+        <div class="cleg"><div class="cleg-dot" style="background:rgba(191,90,242,0.7);"></div>Forecast</div>
+      </div>
+      <svg width="100%" height="90" viewBox="0 0 400 90" preserveAspectRatio="none" style="display:block;margin-top:8px;">
+        <!-- Area fill -->
+        <defs>
+          <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="rgba(255,255,255,0.12)"/>
+            <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+          </linearGradient>
+          <linearGradient id="forecastGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="rgba(191,90,242,0.10)"/>
+            <stop offset="100%" stop-color="rgba(191,90,242,0)"/>
+          </linearGradient>
+        </defs>
+        <!-- Revenue area -->
+        <path d="M0,72 C28,68 57,62 86,54 C114,46 143,38 172,32 C200,26 228,22 257,18 C286,14 314,12 343,10 L343,88 L0,88 Z" fill="url(#areaGrad)"/>
+        <!-- Revenue line -->
+        <path d="M0,72 C28,68 57,62 86,54 C114,46 143,38 172,32 C200,26 228,22 257,18 C286,14 314,12 343,10" stroke="rgba(255,255,255,0.75)" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <!-- Forecast continuation (dashed) -->
+        <path d="M343,10 C357,8 371,6 400,4" stroke="rgba(191,90,242,0.7)" stroke-width="2" fill="none" stroke-linecap="round" stroke-dasharray="5,4"/>
+        <!-- Forecast area -->
+        <path d="M343,10 C357,8 371,6 400,4 L400,88 L343,88 Z" fill="url(#forecastGrad)"/>
+        <!-- X labels -->
+        <text x="0"   y="88" fill="rgba(255,255,255,0.30)" font-size="9" font-family="-apple-system,sans-serif">Jan</text>
+        <text x="57"  y="88" fill="rgba(255,255,255,0.30)" font-size="9" font-family="-apple-system,sans-serif">Feb</text>
+        <text x="114" y="88" fill="rgba(255,255,255,0.30)" font-size="9" font-family="-apple-system,sans-serif">Mar</text>
+        <text x="172" y="88" fill="rgba(255,255,255,0.30)" font-size="9" font-family="-apple-system,sans-serif">Apr</text>
+        <text x="228" y="88" fill="rgba(255,255,255,0.30)" font-size="9" font-family="-apple-system,sans-serif">May</text>
+        <text x="286" y="88" fill="rgba(255,255,255,0.30)" font-size="9" font-family="-apple-system,sans-serif">Jun</text>
+        <text x="360" y="88" fill="rgba(191,90,242,0.55)" font-size="9" font-family="-apple-system,sans-serif">Jul↗</text>
+      </svg>
+    </div>
+  </div>
+
+  <!-- Revenue breakdown donut -->
+  <div class="card" style="margin-bottom:14px;">
+    <div class="donut-wrap">
+      <svg class="donut-svg" width="90" height="90" viewBox="0 0 90 90">
+        <circle cx="45" cy="45" r="36" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="14"/>
+        <!-- Segments (circumference ≈ 226) -->
+        <circle cx="45" cy="45" r="36" fill="none" stroke="rgba(255,255,255,0.70)" stroke-width="14"
+          stroke-dasharray="90 136" stroke-dashoffset="56" stroke-linecap="butt"/>
+        <circle cx="45" cy="45" r="36" fill="none" stroke="rgba(10,132,255,0.75)" stroke-width="14"
+          stroke-dasharray="57 169" stroke-dashoffset="-34" stroke-linecap="butt"/>
+        <circle cx="45" cy="45" r="36" fill="none" stroke="rgba(191,90,242,0.75)" stroke-width="14"
+          stroke-dasharray="45 181" stroke-dashoffset="-91" stroke-linecap="butt"/>
+        <circle cx="45" cy="45" r="36" fill="none" stroke="rgba(255,159,10,0.75)" stroke-width="14"
+          stroke-dasharray="34 192" stroke-dashoffset="-136" stroke-linecap="butt"/>
+        <text x="45" y="49" text-anchor="middle" fill="rgba(255,255,255,0.90)" font-size="13" font-weight="700" font-family="-apple-system,sans-serif">€482K</text>
+      </svg>
+      <div class="donut-legend">
+        <div class="dl-row"><div class="dl-dot" style="background:rgba(255,255,255,0.70);"></div><span class="dl-label">Shop</span><span class="dl-pct">40%</span></div>
+        <div class="dl-row"><div class="dl-dot" style="background:rgba(10,132,255,0.75);"></div><span class="dl-label">Renovations</span><span class="dl-pct">25%</span></div>
+        <div class="dl-row"><div class="dl-dot" style="background:rgba(191,90,242,0.75);"></div><span class="dl-label">Projects</span><span class="dl-pct">20%</span></div>
+        <div class="dl-row"><div class="dl-dot" style="background:rgba(255,159,10,0.75);"></div><span class="dl-label">Other</span><span class="dl-pct">15%</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Forecast -->
+  <div class="lbl">AI Forecast · Next 30 Days</div>
+  <div class="card" style="margin-bottom:14px;">
+    <div class="fc-row">
+      <div class="fc-label">Revenue</div>
+      <div class="fc-bar-wrap"><div class="fc-bar" style="width:88%;background:linear-gradient(90deg,rgba(255,255,255,0.5),rgba(255,255,255,0.25));"></div></div>
+      <div class="fc-val">€534K</div>
+      <div class="fc-trend up">▲ 10.8%</div>
+    </div>
+    <div class="fc-row">
+      <div class="fc-label">Orders</div>
+      <div class="fc-bar-wrap"><div class="fc-bar" style="width:76%;background:linear-gradient(90deg,rgba(10,132,255,0.6),rgba(10,132,255,0.2));"></div></div>
+      <div class="fc-val">4,280</div>
+      <div class="fc-trend up">▲ 8.4%</div>
+    </div>
+    <div class="fc-row">
+      <div class="fc-label">New Clients</div>
+      <div class="fc-bar-wrap"><div class="fc-bar" style="width:62%;background:linear-gradient(90deg,rgba(191,90,242,0.6),rgba(191,90,242,0.2));"></div></div>
+      <div class="fc-val">148</div>
+      <div class="fc-trend up">▲ 5.1%</div>
+    </div>
+    <div class="fc-row">
+      <div class="fc-label">Churn Risk</div>
+      <div class="fc-bar-wrap"><div class="fc-bar" style="width:28%;background:linear-gradient(90deg,rgba(255,69,58,0.6),rgba(255,69,58,0.2));"></div></div>
+      <div class="fc-val">12</div>
+      <div class="fc-trend down">▲ 3</div>
+    </div>
+    <div class="fc-row">
+      <div class="fc-label">Expenses</div>
+      <div class="fc-bar-wrap"><div class="fc-bar" style="width:54%;background:linear-gradient(90deg,rgba(255,159,10,0.5),rgba(255,159,10,0.15));"></div></div>
+      <div class="fc-val">€360K</div>
+      <div class="fc-trend" style="color:var(--t3)">→ +4.7%</div>
+    </div>
+  </div>
+
+  <!-- Reports -->
+  <div class="lbl">Reports</div>
+  <div class="card">
+    <div class="rpt-row">
+      <div class="rpt-icon">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="1.8" stroke-linecap="round">
+          <path d="M3 3v18h18M18 9l-6 6-3-3-6 6"/>
+        </svg>
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div class="rpt-name">Monthly Financial Summary</div>
+        <div class="rpt-sub">Revenue · Profit · Expenses · Tax</div>
+      </div>
+      <div class="rpt-meta">
+        <div class="rpt-date">Jun 1</div>
+        <div class="rpt-badge b-ready">Ready</div>
+      </div>
+    </div>
+    <div class="rpt-row">
+      <div class="rpt-icon">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="1.8" stroke-linecap="round">
+          <circle cx="9" cy="7" r="3"/><path d="M3 20v-1a6 6 0 0 1 6-6"/><circle cx="17" cy="9" r="2.5"/><path d="M13 20v-1a4 4 0 0 1 4-4h0a4 4 0 0 1 4 4v1"/>
+        </svg>
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div class="rpt-name">Workforce Performance</div>
+        <div class="rpt-sub">Attendance · Productivity · Cost</div>
+      </div>
+      <div class="rpt-meta">
+        <div class="rpt-date">Jun 1</div>
+        <div class="rpt-badge b-ready">Ready</div>
+      </div>
+    </div>
+    <div class="rpt-row">
+      <div class="rpt-icon">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(10,132,255,0.7)" stroke-width="1.8" stroke-linecap="round">
+          <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+        </svg>
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div class="rpt-name">Store Performance Index</div>
+        <div class="rpt-sub">All 18 stores · Jun 2026</div>
+      </div>
+      <div class="rpt-meta">
+        <div class="rpt-date">Today</div>
+        <div class="rpt-badge b-new">New</div>
+      </div>
+    </div>
+    <div class="rpt-row">
+      <div class="rpt-icon">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(191,90,242,0.7)" stroke-width="1.8" stroke-linecap="round">
+          <path d="M12 2a6 6 0 0 1 6 6c0 2.5-1.5 4.7-3.7 5.7L14 16H10l-.3-2.3A6.01 6.01 0 0 1 6 8a6 6 0 0 1 6-6z"/>
+          <path d="M10 19h4"/><path d="M11 22h2"/>
+        </svg>
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div class="rpt-name">AI Insights Digest</div>
+        <div class="rpt-sub">Anomalies · Recommendations · Risks</div>
+      </div>
+      <div class="rpt-meta">
+        <div class="rpt-date">Today</div>
+        <div class="rpt-badge b-new">New</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Floating Tab Bar -->
+<div class="tabbar">
+  <div class="tab">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="9" y="9" width="6" height="6" rx="1"/>
+      <path d="M9 9V6a3 3 0 1 0-3 3h3"/><path d="M15 9h3a3 3 0 1 0-3-3v3"/>
+      <path d="M9 15H6a3 3 0 1 0 3 3v-3"/><path d="M15 15v3a3 3 0 1 0 3-3h-3"/>
+    </svg>
+    Command
+  </div>
+  <div class="tab">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+      <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+    </svg>
+    Operations
+  </div>
+  <div class="tab">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="9" cy="7" r="3"/><path d="M3 20v-1a6 6 0 0 1 6-6"/>
+      <circle cx="17" cy="9" r="2.5"/><path d="M13 20v-1a4 4 0 0 1 4-4h0a4 4 0 0 1 4 4v1"/>
+    </svg>
+    People
+  </div>
+  <div class="tab">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 20h18"/><path d="M5 20V10l4-4 4 4 4-6v16"/>
+    </svg>
+    Finance
+  </div>
+  <div class="tab on">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 2a6 6 0 0 1 6 6c0 2.5-1.5 4.7-3.7 5.7L14 16H10l-.3-2.3A6.01 6.01 0 0 1 6 8a6 6 0 0 1 6-6z"/>
+      <path d="M10 19h4"/><path d="M11 22h2"/>
+    </svg>
+    Intelligence
+  </div>
+</div>
+
+</body>
+</html>
