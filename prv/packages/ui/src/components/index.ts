@@ -196,6 +196,13 @@ export type { GlassColorPickerProps } from "./glass-color-picker"
 export { GlassRangeSlider } from "./glass-range-slider"
 export type { GlassRangeSliderProps, RangeValue } from "./glass-range-slider"
 
+export { GlassRichTextToolbar } from "./glass-rich-text-toolbar"
+export type {
+  GlassRichTextToolbarProps,
+  RichTextAction,
+  RichTextGroup,
+} from "./glass-rich-text-toolbar"
+
 export {
   ActionSheet,
   ConfirmationSheet,
