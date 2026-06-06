@@ -1,7 +1,7 @@
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import { getSession } from "@prv/auth"
-import { ContactsDirectory } from "./components/ContactsDirectory"
+import { PeopleViews } from "./components/PeopleViews"
 
 export const dynamic = "force-dynamic"
 export const metadata = { title: "People" }
@@ -32,7 +32,7 @@ export default async function PeoplePage({ searchParams }: Props) {
         <h1 className="text-white/90 text-[26px] font-semibold tracking-tight">People</h1>
       </div>
 
-      <ContactsDirectory companyId={session.companyId} initialStatusFilter={status ?? ""} />
+      <PeopleViews companyId={session.companyId} initialStatusFilter={status ?? ""} />
     </div>
   )
 }
