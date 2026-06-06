@@ -233,6 +233,9 @@ export type { GlassSpinnerProps, SpinnerSize, SpinnerVariant } from "./glass-spi
 export { GlassGauge } from "./glass-gauge"
 export type { GlassGaugeProps, GaugeThresholds } from "./glass-gauge"
 
+export { GlassShimmer } from "./glass-shimmer"
+export type { GlassShimmerProps, ShimmerVariant } from "./glass-shimmer"
+
 export {
   ActionSheet,
   ConfirmationSheet,
