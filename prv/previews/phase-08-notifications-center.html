@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Phase 08 — Notifications Center · PRV Preview</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #000;
+    color: #fff;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", system-ui, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── Ambient background ── */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(ellipse 80% 40% at 50% -10%, rgba(255,255,255,0.035) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── Layout ── */
+  .stage {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 20px 80px;
+    gap: 56px;
+  }
+
+  .title-block {
+    text-align: center;
+  }
+  .phase-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .14em;
+    color: rgba(255,255,255,0.30);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .phase-title {
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: -.02em;
+    color: rgba(255,255,255,0.92);
+    margin-bottom: 8px;
+  }
+  .phase-sub {
+    font-size: 14px;
+    color: rgba(255,255,255,0.38);
+    line-height: 1.5;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+
+  /* ── Phone frame ── */
+  .phone-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 32px;
+    justify-content: center;
+    align-items: flex-start;
+  }
+
+  .phone-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+  }
+  .phone-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.28);
+  }
+
+  .phone {
+    width: 320px;
+    height: 680px;
+    border-radius: 44px;
+    background: #0a0a0a;
+    border: 1.5px solid rgba(255,255,255,0.14);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.18),
+      0 32px 80px rgba(0,0,0,0.9),
+      0 8px 24px rgba(0,0,0,0.6);
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Dynamic Island */
+  .di {
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 50;
+    background: rgba(10,10,12,0.90);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 100px;
+    height: 32px;
+    padding: 0 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    backdrop-filter: blur(48px);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 4px 16px rgba(0,0,0,0.6);
+  }
+  .di-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.45); }
+  .di-dot.warn { background: #FF9F0A; box-shadow: 0 0 6px rgba(255,159,10,0.6); }
+  .di-text { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.85); }
+  .di-secondary { font-size: 10px; color: rgba(255,255,255,0.35); }
+
+  /* Tab bar */
+  .tab-bar {
+    position: absolute;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 50;
+    width: calc(100% - 28px);
+    background: rgba(20,20,20,0.82);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 32px;
+    backdrop-filter: blur(48px) saturate(200%);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.14), 0 16px 40px rgba(0,0,0,0.7);
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    padding: 6px;
+  }
+  .tab {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    min-width: 52px;
+    height: 52px;
+    justify-content: center;
+    border-radius: 24px;
+    color: rgba(255,255,255,0.38);
+    position: relative;
+  }
+  .tab.active {
+    background: rgba(255,255,255,0.10);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.18);
+    color: rgba(255,255,255,0.95);
+  }
+  .tab svg { width: 20px; height: 20px; }
+  .tab-lbl { font-size: 9px; font-weight: 500; letter-spacing: -.01em; opacity: .55; }
+  .tab.active .tab-lbl { opacity: .9; }
+  .tab-pip {
+    position: absolute;
+    bottom: -2px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 18px;
+    height: 3px;
+    border-radius: 3px;
+    background: rgba(255,255,255,0.65);
+    box-shadow: 0 0 6px rgba(255,255,255,0.5);
+  }
+
+  /* Scroll area */
+  .scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 56px 14px 100px;
+    scrollbar-width: none;
+  }
+  .scroll::-webkit-scrollbar { display: none; }
+
+  /* Glass card */
+  .glass {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 20px;
+    backdrop-filter: blur(32px);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.10);
+  }
+
+  /* ── Notification page header ── */
+  .page-header {
+    margin-bottom: 16px;
+    padding: 4px 2px;
+  }
+  .page-sup { font-size: 12px; font-weight: 500; color: rgba(255,255,255,0.32); margin-bottom: 3px; }
+  .page-h1 { font-size: 26px; font-weight: 700; letter-spacing: -.02em; color: rgba(255,255,255,0.94); line-height: 1.1; }
+
+  /* ── Filter pills ── */
+  .filter-row {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+    margin-bottom: 16px;
+  }
+  .filter-row::-webkit-scrollbar { display: none; }
+  .pill {
+    flex-shrink: 0;
+    padding: 5px 12px;
+    border-radius: 100px;
+    font-size: 11px;
+    font-weight: 600;
+    border: 1px solid rgba(255,255,255,0.10);
+    background: rgba(255,255,255,0.05);
+    color: rgba(255,255,255,0.40);
+    white-space: nowrap;
+  }
+  .pill.active {
+    background: rgba(255,255,255,0.12);
+    border-color: rgba(255,255,255,0.22);
+    color: rgba(255,255,255,0.90);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.18);
+  }
+  .pill .pill-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 16px;
+    height: 16px;
+    border-radius: 8px;
+    background: #FF453A;
+    color: #fff;
+    font-size: 8px;
+    font-weight: 700;
+    margin-left: 5px;
+    padding: 0 3px;
+  }
+  .pill.active .pill-count { background: rgba(255,255,255,0.25); color: rgba(255,255,255,0.90); }
+
+  /* ── Bulk actions bar ── */
+  .bulk-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    padding: 0 2px;
+  }
+  .bulk-count { font-size: 11px; color: rgba(255,255,255,0.32); font-weight: 500; }
+  .bulk-actions { display: flex; gap: 8px; }
+  .bulk-btn {
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.55);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 3px 6px;
+    border-radius: 6px;
+  }
+  .bulk-btn:hover { color: rgba(255,255,255,0.85); }
+
+  /* ── Notification cards ── */
+  .notif-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
+
+  .notif-card {
+    padding: 14px;
+    border-radius: 16px;
+    border: 1px solid rgba(255,255,255,0.09);
+    background: rgba(255,255,255,0.055);
+    backdrop-filter: blur(32px);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.09);
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    position: relative;
+    transition: background 200ms;
+  }
+  .notif-card.unread {
+    background: rgba(255,255,255,0.08);
+    border-color: rgba(255,255,255,0.13);
+  }
+  .notif-card.read { opacity: 0.62; }
+
+  .notif-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 12px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .notif-icon.error { background: rgba(255,59,48,0.18); }
+  .notif-icon.warning { background: rgba(255,159,10,0.16); }
+  .notif-icon.success { background: rgba(48,209,88,0.16); }
+  .notif-icon.info { background: rgba(255,255,255,0.10); }
+  .notif-icon.action { background: rgba(10,132,255,0.16); }
+
+  .notif-icon svg { width: 16px; height: 16px; }
+  .notif-icon.error svg { color: rgba(255,99,90,0.90); }
+  .notif-icon.warning svg { color: rgba(255,179,64,0.90); }
+  .notif-icon.success svg { color: rgba(48,209,88,0.90); }
+  .notif-icon.info svg { color: rgba(255,255,255,0.60); }
+  .notif-icon.action svg { color: rgba(10,132,255,0.90); }
+
+  .notif-body { flex: 1; min-width: 0; }
+  .notif-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.90);
+    line-height: 1.35;
+    margin-bottom: 3px;
+  }
+  .notif-card.read .notif-title { color: rgba(255,255,255,0.55); font-weight: 500; }
+  .notif-desc {
+    font-size: 12px;
+    color: rgba(255,255,255,0.40);
+    line-height: 1.4;
+    margin-bottom: 8px;
+  }
+  .notif-meta { display: flex; align-items: center; gap: 8px; }
+  .notif-time { font-size: 10px; color: rgba(255,255,255,0.26); }
+  .notif-source {
+    font-size: 10px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.26);
+    text-transform: uppercase;
+    letter-spacing: .06em;
+  }
+
+  .notif-actions { display: flex; gap: 6px; margin-top: 10px; }
+  .notif-action {
+    flex: 1;
+    text-align: center;
+    padding: 6px 8px;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.07);
+    color: rgba(255,255,255,0.75);
+  }
+  .notif-action.primary {
+    background: rgba(255,255,255,0.14);
+    border-color: rgba(255,255,255,0.20);
+    color: rgba(255,255,255,0.92);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.20);
+  }
+
+  /* Unread dot */
+  .unread-dot {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.65);
+  }
+
+  /* Section divider */
+  .section-div {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 14px 0 8px;
+  }
+  .section-div-label { font-size: 10px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: rgba(255,255,255,0.24); white-space: nowrap; }
+  .section-div-line { flex: 1; height: 1px; background: rgba(255,255,255,0.07); }
+
+  /* ── Empty state ── */
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 24px;
+    text-align: center;
+  }
+  .empty-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 20px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.10);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 16px;
+  }
+  .empty-title { font-size: 16px; font-weight: 600; color: rgba(255,255,255,0.55); margin-bottom: 6px; }
+  .empty-sub { font-size: 13px; color: rgba(255,255,255,0.25); line-height: 1.5; }
+
+  /* ── Swipe hint ── */
+  .swipe-hint {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.07);
+    margin-top: 6px;
+  }
+  .swipe-hint-text { font-size: 11px; color: rgba(255,255,255,0.26); }
+
+  /* ── Detail expanded card ── */
+  .notif-expanded {
+    padding: 16px;
+    border-radius: 20px;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.08);
+    backdrop-filter: blur(48px);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.14), 0 8px 32px rgba(0,0,0,0.5);
+    margin-bottom: 8px;
+  }
+  .notif-expanded .notif-title { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+  .notif-expanded .notif-desc { font-size: 13px; margin-bottom: 12px; color: rgba(255,255,255,0.55); }
+
+  /* ── Architecture section ── */
+  .arch-section {
+    width: 100%;
+    max-width: 860px;
+  }
+  .arch-title {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.28);
+    margin-bottom: 16px;
+    text-align: center;
+  }
+  .arch-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 12px;
+  }
+  .arch-card {
+    padding: 16px;
+    border-radius: 16px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.09);
+    backdrop-filter: blur(24px);
+  }
+  .arch-card-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.70);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .arch-card-title .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.45);
+  }
+  .arch-card ul {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .arch-card li {
+    font-size: 11px;
+    color: rgba(255,255,255,0.38);
+    line-height: 1.4;
+    padding-left: 10px;
+    position: relative;
+  }
+  .arch-card li::before {
+    content: "–";
+    position: absolute;
+    left: 0;
+    color: rgba(255,255,255,0.20);
+  }
+
+  /* ── Type legend ── */
+  .type-legend {
+    width: 100%;
+    max-width: 860px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+  }
+  .type-chip {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 14px;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.09);
+    font-size: 12px;
+  }
+  .type-chip .chip-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+  .chip-dot.error { background: rgba(255,99,90,0.90); box-shadow: 0 0 6px rgba(255,99,90,0.5); }
+  .chip-dot.warning { background: rgba(255,179,64,0.90); }
+  .chip-dot.success { background: rgba(48,209,88,0.90); }
+  .chip-dot.info { background: rgba(255,255,255,0.55); }
+  .chip-dot.action { background: rgba(10,132,255,0.90); box-shadow: 0 0 6px rgba(10,132,255,0.5); }
+  .type-chip .chip-label { color: rgba(255,255,255,0.60); font-weight: 600; }
+  .type-chip .chip-desc { color: rgba(255,255,255,0.28); }
+
+  /* ── Files plan ── */
+  .files-section {
+    width: 100%;
+    max-width: 860px;
+  }
+  .files-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .file-block {
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  .file-tag {
+    display: inline-block;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 5px;
+    margin-bottom: 6px;
+  }
+  .file-tag.new { background: rgba(48,209,88,0.18); color: rgba(48,209,88,0.90); }
+  .file-tag.update { background: rgba(10,132,255,0.18); color: rgba(10,132,255,0.90); }
+  .file-path { font-size: 11px; font-family: "SF Mono", ui-monospace, monospace; color: rgba(255,255,255,0.55); line-height: 1.5; word-break: break-all; }
+</style>
+</head>
+<body>
+<div class="stage">
+
+  <!-- Title -->
+  <div class="title-block">
+    <p class="phase-label">Phase 08</p>
+    <h1 class="phase-title">Notifications Center</h1>
+    <p class="phase-sub">Full inbox UI — categorized, realtime, actionable. Every alert, approval, and message in one glass surface. Wired to Phase 07's live badge from day one.</p>
+  </div>
+
+  <!-- Phone row -->
+  <div class="phone-row">
+
+    <!-- Phone 1: Main inbox — mixed notifications -->
+    <div class="phone-wrap">
+      <span class="phone-label">Inbox · All</span>
+      <div class="phone">
+        <div class="di">
+          <span class="di-dot warn"></span>
+          <span class="di-text">Command · €142K</span>
+          <span class="di-secondary">3 alerts</span>
+        </div>
+
+        <div class="scroll">
+          <!-- Page header -->
+          <div class="page-header">
+            <p class="page-sup">PRV</p>
+            <h2 class="page-h1">Inbox</h2>
+          </div>
+
+          <!-- Filter pills -->
+          <div class="filter-row">
+            <div class="pill active">All <span class="pill-count">7</span></div>
+            <div class="pill">Alerts <span class="pill-count" style="background:rgba(255,69,58,0.8)">3</span></div>
+            <div class="pill">Approvals <span class="pill-count" style="background:rgba(10,132,255,0.8)">2</span></div>
+            <div class="pill">Inbox</div>
+            <div class="pill">System</div>
+          </div>
+
+          <!-- Bulk actions -->
+          <div class="bulk-bar">
+            <span class="bulk-count">7 unread</span>
+            <div class="bulk-actions">
+              <button class="bulk-btn">Mark all read</button>
+              <button class="bulk-btn">Dismiss all</button>
+            </div>
+          </div>
+
+          <!-- Today section -->
+          <div class="section-div">
+            <span class="section-div-label">Today</span>
+            <div class="section-div-line"></div>
+          </div>
+
+          <div class="notif-list">
+
+            <!-- Error notification — expanded with actions -->
+            <div class="notif-expanded">
+              <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:10px;">
+                <div class="notif-icon error">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                  </svg>
+                </div>
+                <div style="flex:1">
+                  <p class="notif-title">Invoice #1038 payment failed</p>
+                  <p class="notif-desc">Stripe declined the charge for €1,240. Card expired — contact client.</p>
+                  <div class="notif-meta">
+                    <span class="notif-time">2 min ago</span>
+                    <span class="notif-source">Finance</span>
+                  </div>
+                </div>
+              </div>
+              <div class="notif-actions">
+                <div class="notif-action primary">View Invoice</div>
+                <div class="notif-action">Dismiss</div>
+              </div>
+            </div>
+
+            <!-- Warning notification — unread -->
+            <div class="notif-card unread">
+              <div class="unread-dot"></div>
+              <div class="notif-icon warning">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+              </div>
+              <div class="notif-body">
+                <p class="notif-title">Low stock — Paint (White, 5L)</p>
+                <p class="notif-desc">Cluj store · 2 units remaining. Auto-order threshold is 5.</p>
+                <div class="notif-meta">
+                  <span class="notif-time">18 min ago</span>
+                  <span class="notif-source">Inventory</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Action required — approval -->
+            <div class="notif-card unread">
+              <div class="unread-dot"></div>
+              <div class="notif-icon action">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                  <polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                </svg>
+              </div>
+              <div class="notif-body">
+                <p class="notif-title">Leave request — Maria Ionescu</p>
+                <p class="notif-desc">5 days · Aug 12–16. Awaiting your approval.</p>
+                <div class="notif-meta">
+                  <span class="notif-time">34 min ago</span>
+                  <span class="notif-source">HR</span>
+                </div>
+                <div class="notif-actions" style="margin-top:8px">
+                  <div class="notif-action primary">Approve</div>
+                  <div class="notif-action">Decline</div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Yesterday section -->
+          <div class="section-div">
+            <span class="section-div-label">Yesterday</span>
+            <div class="section-div-line"></div>
+          </div>
+
+          <div class="notif-list">
+
+            <!-- Success — read -->
+            <div class="notif-card read">
+              <div class="notif-icon success">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+              </div>
+              <div class="notif-body">
+                <p class="notif-title">Invoice #1037 paid · €298</p>
+                <p class="notif-desc">Payment confirmed via card. Receipt sent to client.</p>
+                <div class="notif-meta">
+                  <span class="notif-time">Yesterday · 14:32</span>
+                  <span class="notif-source">Finance</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Info — read -->
+            <div class="notif-card read">
+              <div class="notif-icon info">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                  <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+                </svg>
+              </div>
+              <div class="notif-body">
+                <p class="notif-title">New project assigned to you</p>
+                <p class="notif-desc">"Sibiu Kitchen Renovation" · Start date Aug 5.</p>
+                <div class="notif-meta">
+                  <span class="notif-time">Yesterday · 09:15</span>
+                  <span class="notif-source">Projects</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Swipe hint -->
+          <div class="swipe-hint">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.30)" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            <span class="swipe-hint-text">Swipe left to dismiss · right to mark read</span>
+          </div>
+        </div>
+
+        <div class="tab-bar">
+          <div class="tab active">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9Z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            <span class="tab-lbl">Command</span>
+            <span class="tab-pip"></span>
+          </div>
+          <div class="tab">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            <span class="tab-lbl">Operations</span>
+          </div>
+          <div class="tab">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            <span class="tab-lbl">People</span>
+          </div>
+          <div class="tab">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            <span class="tab-lbl">Finance</span>
+          </div>
+          <div class="tab">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            <span class="tab-lbl">Intelligence</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phone 2: Approvals filter -->
+    <div class="phone-wrap">
+      <span class="phone-label">Approvals filter</span>
+      <div class="phone">
+        <div class="di">
+          <span class="di-dot"></span>
+          <span class="di-text">Store · €28K</span>
+        </div>
+
+        <div class="scroll">
+          <div class="page-header">
+            <p class="page-sup">PRV</p>
+            <h2 class="page-h1">Inbox</h2>
+          </div>
+
+          <div class="filter-row">
+            <div class="pill">All <span class="pill-count">4</span></div>
+            <div class="pill">Alerts <span class="pill-count" style="background:rgba(255,69,58,0.8)">1</span></div>
+            <div class="pill active">Approvals <span class="pill-count">2</span></div>
+            <div class="pill">Inbox</div>
+            <div class="pill">System</div>
+          </div>
+
+          <div class="bulk-bar">
+            <span class="bulk-count">2 pending approvals</span>
+            <div class="bulk-actions">
+              <button class="bulk-btn">Approve all</button>
+            </div>
+          </div>
+
+          <div class="section-div">
+            <span class="section-div-label">Pending · 2</span>
+            <div class="section-div-line"></div>
+          </div>
+
+          <div class="notif-list">
+
+            <div class="notif-card unread">
+              <div class="unread-dot"></div>
+              <div class="notif-icon action">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                  <polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                </svg>
+              </div>
+              <div class="notif-body">
+                <p class="notif-title">Leave request — Ion Dima</p>
+                <p class="notif-desc">3 days · Aug 8–10. No other leave overlaps.</p>
+                <div class="notif-meta">
+                  <span class="notif-time">1 hour ago</span>
+                  <span class="notif-source">HR</span>
+                </div>
+                <div class="notif-actions" style="margin-top:8px">
+                  <div class="notif-action primary">Approve</div>
+                  <div class="notif-action">Decline</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="notif-card unread">
+              <div class="unread-dot"></div>
+              <div class="notif-icon action">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/>
+                </svg>
+              </div>
+              <div class="notif-body">
+                <p class="notif-title">Purchase order · €1,450</p>
+                <p class="notif-desc">Supplier: Dedeman. Tools & materials for Project #12.</p>
+                <div class="notif-meta">
+                  <span class="notif-time">3 hours ago</span>
+                  <span class="notif-source">Procurement</span>
+                </div>
+                <div class="notif-actions" style="margin-top:8px">
+                  <div class="notif-action primary">Approve</div>
+                  <div class="notif-action">Review</div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <div class="section-div">
+            <span class="section-div-label">Resolved</span>
+            <div class="section-div-line"></div>
+          </div>
+
+          <div class="notif-list">
+            <div class="notif-card read">
+              <div class="notif-icon success">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+              </div>
+              <div class="notif-body">
+                <p class="notif-title">Leave approved — Radu Nica</p>
+                <p class="notif-desc">Approved by you · July 29</p>
+                <div class="notif-meta">
+                  <span class="notif-time">Jul 29 · 11:04</span>
+                  <span class="notif-source">HR</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="tab-bar">
+          <div class="tab active">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9Z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            <span class="tab-lbl">Command</span>
+            <span class="tab-pip"></span>
+          </div>
+          <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg><span class="tab-lbl">Operations</span></div>
+          <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><span class="tab-lbl">People</span></div>
+          <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span class="tab-lbl">Finance</span></div>
+          <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span class="tab-lbl">Intelligence</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phone 3: Empty state (Alerts, all clear) -->
+    <div class="phone-wrap">
+      <span class="phone-label">Worker · All clear</span>
+      <div class="phone">
+        <div class="di">
+          <span class="di-dot"></span>
+          <span class="di-text">Your day · 5h 12m</span>
+        </div>
+
+        <div class="scroll">
+          <div class="page-header">
+            <p class="page-sup">PRV</p>
+            <h2 class="page-h1">Inbox</h2>
+          </div>
+
+          <div class="filter-row">
+            <div class="pill">All</div>
+            <div class="pill active">Alerts</div>
+            <div class="pill">Inbox</div>
+            <div class="pill">System</div>
+          </div>
+
+          <div class="empty-state">
+            <div class="empty-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="2" stroke-linecap="round">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+            </div>
+            <p class="empty-title">All clear</p>
+            <p class="empty-sub">No alerts right now. You'll be notified here when something needs your attention.</p>
+          </div>
+
+          <!-- Recent (read) inbox messages below -->
+          <div class="section-div">
+            <span class="section-div-label">Recent</span>
+            <div class="section-div-line"></div>
+          </div>
+
+          <div class="notif-list">
+            <div class="notif-card read">
+              <div class="notif-icon info">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
+              </div>
+              <div class="notif-body">
+                <p class="notif-title">Schedule updated for next week</p>
+                <p class="notif-desc">Your shift on Aug 7 moved to 10:00–18:00.</p>
+                <div class="notif-meta">
+                  <span class="notif-time">Yesterday</span>
+                  <span class="notif-source">Schedule</span>
+                </div>
+              </div>
+            </div>
+            <div class="notif-card read">
+              <div class="notif-icon success">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+              </div>
+              <div class="notif-body">
+                <p class="notif-title">Payslip for July available</p>
+                <p class="notif-desc">Net €2,200. Download in Documents.</p>
+                <div class="notif-meta">
+                  <span class="notif-time">Aug 1</span>
+                  <span class="notif-source">Payroll</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="tab-bar">
+          <div class="tab active">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9Z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            <span class="tab-lbl">Command</span>
+            <span class="tab-pip"></span>
+          </div>
+          <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/></svg><span class="tab-lbl">Operations</span></div>
+          <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><span class="tab-lbl">People</span></div>
+          <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span class="tab-lbl">Finance</span></div>
+          <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span class="tab-lbl">Intelligence</span></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end phone-row -->
+
+  <!-- Notification types -->
+  <div class="type-legend">
+    <div class="type-chip"><span class="chip-dot error"></span><span class="chip-label">error</span><span class="chip-desc">— Critical failures needing immediate action</span></div>
+    <div class="type-chip"><span class="chip-dot warning"></span><span class="chip-label">warning</span><span class="chip-desc">— Risks and threshold breaches</span></div>
+    <div class="type-chip"><span class="chip-dot action"></span><span class="chip-label">action_required</span><span class="chip-desc">— Approvals, decisions, reviews</span></div>
+    <div class="type-chip"><span class="chip-dot success"></span><span class="chip-label">success</span><span class="chip-desc">— Completed events, payments, milestones</span></div>
+    <div class="type-chip"><span class="chip-dot info"></span><span class="chip-label">info</span><span class="chip-desc">— Updates, assignments, schedule changes</span></div>
+  </div>
+
+  <!-- Architecture -->
+  <div class="arch-section">
+    <p class="arch-title">Architecture</p>
+    <div class="arch-grid">
+      <div class="arch-card">
+        <p class="arch-card-title"><span class="dot"></span>DB Queries</p>
+        <ul>
+          <li>queryNotifications(userId, companyId, filter, cursor)</li>
+          <li>queryNotificationCount(userId, companyId) — by type</li>
+          <li>markNotificationsRead(ids, userId)</li>
+          <li>dismissNotifications(ids, userId)</li>
+          <li>executeNotificationAction(id, action, userId)</li>
+        </ul>
+      </div>
+      <div class="arch-card">
+        <p class="arch-card-title"><span class="dot"></span>API Routes</p>
+        <ul>
+          <li>GET /api/notifications — paginated list, filter by type</li>
+          <li>PATCH /api/notifications/[id] — read, dismiss</li>
+          <li>POST /api/notifications/[id]/action — approve/decline</li>
+          <li>POST /api/notifications/bulk — mark-all-read, dismiss-all</li>
+          <li>GET /api/notifications/count — unread counts by category</li>
+        </ul>
+      </div>
+      <div class="arch-card">
+        <p class="arch-card-title"><span class="dot"></span>Pages &amp; Components</p>
+        <ul>
+          <li>/notifications page — server SSR initial batch</li>
+          <li>NotificationsClient — realtime hydration via Phase 07 hook</li>
+          <li>NotificationCard — type-aware, expandable, action buttons</li>
+          <li>NotificationFilters — pill tabs with live counts</li>
+          <li>BulkActionsBar — mark-all, dismiss-all</li>
+          <li>EmptyState — per-filter variant</li>
+        </ul>
+      </div>
+      <div class="arch-card">
+        <p class="arch-card-title"><span class="dot"></span>Interactions</p>
+        <ul>
+          <li>Swipe left → dismiss (spring physics)</li>
+          <li>Swipe right → mark read</li>
+          <li>Tap to expand → inline action buttons</li>
+          <li>Approve/Decline inline (no navigation)</li>
+          <li>Realtime prepend (Phase 07 useActivityFeed)</li>
+          <li>Optimistic updates — instant UI before server confirms</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Files plan -->
+  <div class="files-section">
+    <p class="arch-title">Files</p>
+    <div class="files-grid">
+      <div class="file-block">
+        <span class="file-tag new">NEW</span>
+        <p class="file-path">packages/db/src/queries/notifications.ts</p>
+      </div>
+      <div class="file-block">
+        <span class="file-tag new">NEW</span>
+        <p class="file-path">apps/web/src/app/api/notifications/route.ts</p>
+      </div>
+      <div class="file-block">
+        <span class="file-tag new">NEW</span>
+        <p class="file-path">apps/web/src/app/api/notifications/[id]/route.ts</p>
+      </div>
+      <div class="file-block">
+        <span class="file-tag new">NEW</span>
+        <p class="file-path">apps/web/src/app/api/notifications/bulk/route.ts</p>
+      </div>
+      <div class="file-block">
+        <span class="file-tag new">NEW</span>
+        <p class="file-path">apps/web/src/app/api/notifications/count/route.ts</p>
+      </div>
+      <div class="file-block">
+        <span class="file-tag new">NEW</span>
+        <p class="file-path">apps/web/src/app/(authenticated)/notifications/page.tsx</p>
+      </div>
+      <div class="file-block">
+        <span class="file-tag new">NEW</span>
+        <p class="file-path">apps/web/src/app/(authenticated)/notifications/NotificationsClient.tsx</p>
+      </div>
+      <div class="file-block">
+        <span class="file-tag new">NEW</span>
+        <p class="file-path">apps/web/src/app/(authenticated)/notifications/NotificationCard.tsx</p>
+      </div>
+      <div class="file-block">
+        <span class="file-tag new">NEW</span>
+        <p class="file-path">apps/web/src/app/(authenticated)/notifications/NotificationFilters.tsx</p>
+      </div>
+      <div class="file-block">
+        <span class="file-tag new">NEW</span>
+        <p class="file-path">apps/web/src/app/(authenticated)/notifications/BulkActionsBar.tsx</p>
+      </div>
+      <div class="file-block">
+        <span class="file-tag update">UPDATE</span>
+        <p class="file-path">packages/db/src/index.ts — add notification query exports</p>
+      </div>
+      <div class="file-block">
+        <span class="file-tag update">UPDATE</span>
+        <p class="file-path">apps/web/src/hooks/realtime/useLiveContext.ts — wire /api/notifications/count</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
