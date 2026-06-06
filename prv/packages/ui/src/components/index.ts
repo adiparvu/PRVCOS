@@ -158,6 +158,9 @@ export type { GlassPopoverProps, PopoverSide, PopoverAlign } from "./glass-popov
 export { GlassSteps } from "./glass-steps"
 export type { GlassStepsProps, StepItem, StepStatus, StepsVariant } from "./glass-steps"
 
+export { GlassTooltip } from "./glass-tooltip"
+export type { GlassTooltipProps, TooltipSide } from "./glass-tooltip"
+
 export {
   ActionSheet,
   ConfirmationSheet,
