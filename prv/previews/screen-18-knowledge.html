@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PRV · Screen 18 — Knowledge Base</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #000; --g1: rgba(255,255,255,0.06); --g2: rgba(255,255,255,0.10); --g3: rgba(255,255,255,0.15);
+    --t1: rgba(255,255,255,0.95); --t2: rgba(255,255,255,0.65); --t3: rgba(255,255,255,0.35);
+    --bd: rgba(255,255,255,0.12); --bds: rgba(255,255,255,0.07);
+    --green: rgba(48,209,88,0.95); --red: rgba(255,69,58,0.95); --amber: rgba(255,159,10,0.95); --blue: rgba(10,132,255,0.9);
+  }
+  html,body { background:var(--bg); color:var(--t1); font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif; -webkit-font-smoothing:antialiased; min-height:100vh; }
+  body { background: radial-gradient(ellipse 60% 20% at 50% -5%, rgba(191,90,242,0.03), transparent), #000; }
+
+  .tag { max-width:460px; margin:24px auto 0; padding:0 16px; display:flex; gap:8px; }
+  .chip { padding:3px 10px; border-radius:100px; background:var(--g2); border:1px solid var(--bds); font-size:11px; font-weight:600; color:var(--t3); letter-spacing:.06em; text-transform:uppercase; }
+  .frame { max-width:460px; margin:0 auto; padding:32px 16px 120px; }
+  .sep { height:1px; background:var(--bds); margin:28px 0; }
+  .view-label { font-size:10px; font-weight:700; color:var(--t3); text-transform:uppercase; letter-spacing:.1em; margin-bottom:12px; }
+  .lbl { font-size:11px; font-weight:600; color:var(--t3); text-transform:uppercase; letter-spacing:.07em; margin:18px 2px 10px; }
+
+  .hdr { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:20px; }
+  .hdr-k { font-size:13px; color:var(--t3); margin-bottom:2px; }
+  .hdr-h1 { font-size:26px; font-weight:700; letter-spacing:-.02em; }
+
+  .card { background:var(--g1); border:1px solid var(--bds); border-radius:18px; position:relative; overflow:hidden; margin-bottom:12px; }
+  .card::before { content:""; position:absolute; inset:0 0 auto; height:1px; background:linear-gradient(90deg,transparent,rgba(255,255,255,0.09),transparent); }
+
+  /* Search */
+  .search { display:flex; align-items:center; gap:10px; padding:11px 14px; background:var(--g1); border:1px solid var(--bds); border-radius:14px; margin-bottom:18px; }
+  .search-input { flex:1; background:none; border:none; outline:none; font-size:15px; color:var(--t1); font-family:inherit; }
+  .search-input::placeholder { color:var(--t3); }
+
+  /* Category cards */
+  .cat-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-bottom:18px; }
+  .cat-card { padding:16px; border-radius:16px; background:var(--g1); border:1px solid var(--bds); position:relative; overflow:hidden; cursor:pointer; }
+  .cat-card::before { content:""; position:absolute; inset:0 0 auto; height:1px; background:linear-gradient(90deg,transparent,rgba(255,255,255,0.09),transparent); }
+  .cat-icon { width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; margin-bottom:10px; }
+  .cat-name { font-size:14px; font-weight:700; margin-bottom:3px; }
+  .cat-meta { font-size:11px; color:var(--t3); }
+
+  /* Article row */
+  .art-row { display:flex; align-items:flex-start; gap:12px; padding:14px 16px; border-bottom:1px solid var(--bds); cursor:pointer; }
+  .art-row:last-child { border-bottom:none; }
+  .art-icon { width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .art-title { font-size:14px; font-weight:600; line-height:1.3; }
+  .art-meta { font-size:11px; color:var(--t3); margin-top:3px; }
+  .art-excerpt { font-size:12px; color:var(--t2); margin-top:4px; line-height:1.4; }
+
+  /* Pill */
+  .pill { font-size:10px; font-weight:600; padding:3px 8px; border-radius:6px; }
+  .p-sop  { background:rgba(10,132,255,0.12); color:var(--blue); }
+  .p-policy { background:rgba(191,90,242,0.12); color:rgba(191,90,242,0.95); }
+  .p-guide { background:rgba(48,209,88,0.12); color:var(--green); }
+  .p-faq  { background:rgba(255,159,10,0.12); color:var(--amber); }
+
+  /* Article body */
+  .art-body-lbl { font-size:11px; font-weight:700; color:var(--t3); text-transform:uppercase; letter-spacing:.07em; margin:14px 0 6px; }
+  .art-body-line { height:9px; border-radius:3px; background:rgba(255,255,255,0.08); margin-bottom:7px; }
+  .art-body-h2 { font-size:15px; font-weight:700; margin:14px 0 8px; }
+
+  /* TOC */
+  .toc-item { display:flex; align-items:center; gap:10px; padding:9px 16px; border-bottom:1px solid var(--bds); }
+  .toc-item:last-child { border-bottom:none; }
+  .toc-num { font-size:12px; font-weight:700; color:var(--t3); width:20px; }
+  .toc-label { font-size:13px; font-weight:600; }
+
+  /* Tabbar */
+  .tabbar { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); display:inline-flex; gap:2px; padding:7px; border-radius:22px; background:rgba(22,22,22,0.7); backdrop-filter:blur(48px); border:1px solid var(--bd); box-shadow:inset 0 1px 0 rgba(255,255,255,0.12),0 16px 40px rgba(0,0,0,0.55); }
+  .tab { display:flex; flex-direction:column; align-items:center; gap:3px; padding:8px 13px; border-radius:14px; font-size:10px; font-weight:600; color:var(--t3); }
+  .tab.on { background:var(--g2); color:var(--t1); }
+</style>
+</head>
+<body>
+
+<div class="tag">
+  <span class="chip">Screen 18</span>
+  <span class="chip">Preview</span>
+  <span class="chip">apps/web · /knowledge</span>
+</div>
+
+<div class="frame">
+
+  <!-- ══ VIEW A: Knowledge Home ══ -->
+  <div class="view-label">View A — Knowledge Home</div>
+
+  <div class="hdr">
+    <div><div class="hdr-k">PRV OS</div><h1 class="hdr-h1">Knowledge</h1></div>
+    <div style="padding:6px 12px;border-radius:10px;background:var(--g1);border:1px solid var(--bds);font-size:12px;font-weight:500;color:var(--t2);">248 articles</div>
+  </div>
+
+  <!-- Search -->
+  <div class="search">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input class="search-input" placeholder="Search procedures, guides, SOPs…" />
+  </div>
+
+  <!-- Category grid -->
+  <div class="cat-grid">
+    <div class="cat-card">
+      <div class="cat-icon" style="background:rgba(10,132,255,0.12);">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(10,132,255,0.9)" stroke-width="1.8" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg>
+      </div>
+      <div class="cat-name">SOPs</div>
+      <div class="cat-meta">74 procedures</div>
+    </div>
+    <div class="cat-card">
+      <div class="cat-icon" style="background:rgba(48,209,88,0.10);">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(48,209,88,0.85)" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+      </div>
+      <div class="cat-name">Onboarding</div>
+      <div class="cat-meta">32 guides</div>
+    </div>
+    <div class="cat-card">
+      <div class="cat-icon" style="background:rgba(191,90,242,0.10);">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(191,90,242,0.85)" stroke-width="1.8" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      </div>
+      <div class="cat-name">Policies</div>
+      <div class="cat-meta">48 documents</div>
+    </div>
+    <div class="cat-card">
+      <div class="cat-icon" style="background:rgba(255,159,10,0.10);">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,159,10,0.9)" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </div>
+      <div class="cat-name">FAQs</div>
+      <div class="cat-meta">94 answers</div>
+    </div>
+  </div>
+
+  <!-- Recently viewed -->
+  <div class="lbl">Recently Viewed</div>
+  <div class="card">
+    <div class="art-row">
+      <div class="art-icon" style="background:rgba(10,132,255,0.12);">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(10,132,255,0.9)" stroke-width="1.8" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      </div>
+      <div style="flex:1;">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <div class="art-title">SOP-14 · Site Safety Protocol</div>
+          <span class="pill p-sop">SOP</span>
+        </div>
+        <div class="art-meta">Operations · Updated Jun 1 · 8 min read</div>
+      </div>
+    </div>
+    <div class="art-row">
+      <div class="art-icon" style="background:rgba(191,90,242,0.10);">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(191,90,242,0.85)" stroke-width="1.8" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      </div>
+      <div style="flex:1;">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <div class="art-title">Leave & Absence Policy 2026</div>
+          <span class="pill p-policy">Policy</span>
+        </div>
+        <div class="art-meta">HR · Updated May 15 · 12 min read</div>
+      </div>
+    </div>
+    <div class="art-row">
+      <div class="art-icon" style="background:rgba(48,209,88,0.10);">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(48,209,88,0.85)" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+      </div>
+      <div style="flex:1;">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <div class="art-title">New Employee Onboarding — Week 1</div>
+          <span class="pill p-guide">Guide</span>
+        </div>
+        <div class="art-meta">HR · Updated Apr 20 · 15 min read</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Popular -->
+  <div class="lbl">Most Viewed This Month</div>
+  <div class="card">
+    <div class="art-row">
+      <div style="width:28px;text-align:center;font-size:16px;font-weight:800;color:var(--t3);flex-shrink:0;padding-top:2px;">1</div>
+      <div style="flex:1;">
+        <div class="art-title">How to submit an expense report</div>
+        <div class="art-meta">Finance · <span style="color:var(--green);">2,140 views</span></div>
+      </div>
+      <span class="pill p-guide">Guide</span>
+    </div>
+    <div class="art-row">
+      <div style="width:28px;text-align:center;font-size:16px;font-weight:800;color:var(--t3);flex-shrink:0;padding-top:2px;">2</div>
+      <div style="flex:1;">
+        <div class="art-title">Requesting time off — step by step</div>
+        <div class="art-meta">HR · <span style="color:var(--green);">1,874 views</span></div>
+      </div>
+      <span class="pill p-faq">FAQ</span>
+    </div>
+    <div class="art-row">
+      <div style="width:28px;text-align:center;font-size:16px;font-weight:800;color:var(--t3);flex-shrink:0;padding-top:2px;">3</div>
+      <div style="flex:1;">
+        <div class="art-title">SOP-03 · Material ordering process</div>
+        <div class="art-meta">Procurement · <span style="color:var(--green);">1,322 views</span></div>
+      </div>
+      <span class="pill p-sop">SOP</span>
+    </div>
+    <div class="art-row">
+      <div style="width:28px;text-align:center;font-size:16px;font-weight:800;color:var(--t3);flex-shrink:0;padding-top:2px;">4</div>
+      <div style="flex:1;">
+        <div class="art-title">Vehicle inspection checklist</div>
+        <div class="art-meta">Fleet · <span style="color:var(--green);">988 views</span></div>
+      </div>
+      <span class="pill p-sop">SOP</span>
+    </div>
+  </div>
+
+  <div class="sep"></div>
+
+  <!-- ══ VIEW B: Article Reader ══ -->
+  <div class="view-label">View B — Article Reader (Drill-down)</div>
+
+  <!-- Article header -->
+  <div style="margin-bottom:16px;">
+    <div style="display:flex;gap:8px;margin-bottom:10px;">
+      <span class="pill p-sop">SOP</span>
+      <span style="font-size:11px;color:var(--t3);padding:3px 0;">Operations · 8 min read</span>
+    </div>
+    <div style="font-size:22px;font-weight:800;line-height:1.2;letter-spacing:-.01em;margin-bottom:8px;">SOP-14 · Site Safety Protocol</div>
+    <div style="font-size:12px;color:var(--t3);">Last updated Jun 1, 2026 · by Maria Ionescu · v4.2</div>
+  </div>
+
+  <!-- Table of contents -->
+  <div class="lbl" style="margin-top:0;">Contents</div>
+  <div class="card">
+    <div class="toc-item"><div class="toc-num">1</div><div class="toc-label">Purpose & Scope</div></div>
+    <div class="toc-item"><div class="toc-num">2</div><div class="toc-label">Personal Protective Equipment</div></div>
+    <div class="toc-item"><div class="toc-num">3</div><div class="toc-label">Site Entry Procedures</div></div>
+    <div class="toc-item"><div class="toc-num">4</div><div class="toc-label">Emergency Response</div></div>
+    <div class="toc-item"><div class="toc-num">5</div><div class="toc-label">Incident Reporting</div></div>
+  </div>
+
+  <!-- Article body mockup -->
+  <div class="lbl">Article</div>
+  <div class="card" style="padding:16px;">
+    <div class="art-body-h2">1. Purpose & Scope</div>
+    <div class="art-body-line" style="width:100%"></div>
+    <div class="art-body-line" style="width:90%"></div>
+    <div class="art-body-line" style="width:95%"></div>
+    <div class="art-body-line" style="width:70%"></div>
+
+    <div class="art-body-h2">2. Personal Protective Equipment</div>
+    <div class="art-body-line" style="width:100%"></div>
+    <div class="art-body-line" style="width:85%"></div>
+    <div class="art-body-line" style="width:95%"></div>
+
+    <!-- Checklist mockup -->
+    <div style="margin:12px 0;display:flex;flex-direction:column;gap:7px;">
+      <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;background:rgba(48,209,88,0.07);border:1px solid rgba(48,209,88,0.12);">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(48,209,88,0.85)" stroke-width="2.2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+        <span style="font-size:13px;font-weight:600;">Safety helmet EN397</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;background:rgba(48,209,88,0.07);border:1px solid rgba(48,209,88,0.12);">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(48,209,88,0.85)" stroke-width="2.2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+        <span style="font-size:13px;font-weight:600;">Hi-visibility vest Class 2</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,0.04);border:1px solid var(--bds);">
+        <div style="width:14px;height:14px;border-radius:3px;border:1.5px solid var(--bds);"></div>
+        <span style="font-size:13px;font-weight:600;color:var(--t2);">Safety boots S3</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,0.04);border:1px solid var(--bds);">
+        <div style="width:14px;height:14px;border-radius:3px;border:1.5px solid var(--bds);"></div>
+        <span style="font-size:13px;font-weight:600;color:var(--t2);">Gloves EN388</span>
+      </div>
+    </div>
+
+    <div class="art-body-line" style="width:100%"></div>
+    <div class="art-body-line" style="width:60%"></div>
+  </div>
+
+  <!-- Feedback row -->
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-radius:16px;background:var(--g1);border:1px solid var(--bds);margin-top:4px;">
+    <span style="font-size:13px;color:var(--t2);">Was this helpful?</span>
+    <div style="display:flex;gap:8px;">
+      <button style="padding:6px 16px;border-radius:8px;background:rgba(48,209,88,0.14);border:none;color:var(--green);font-size:13px;font-weight:600;cursor:pointer;">Yes</button>
+      <button style="padding:6px 16px;border-radius:8px;background:var(--g2);border:none;color:var(--t2);font-size:13px;font-weight:600;cursor:pointer;">No</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- Tabbar — Command active -->
+<div class="tabbar">
+  <div class="tab on"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="6" height="6" rx="1"/><path d="M9 9V6a3 3 0 1 0-3 3h3"/><path d="M15 9h3a3 3 0 1 0-3-3v3"/><path d="M9 15H6a3 3 0 1 0 3 3v-3"/><path d="M15 15v3a3 3 0 1 0 3-3h-3"/></svg>Command</div>
+  <div class="tab"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Operations</div>
+  <div class="tab"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="3"/><path d="M3 20v-1a6 6 0 0 1 6-6"/><circle cx="17" cy="9" r="2.5"/><path d="M13 20v-1a4 4 0 0 1 4-4h0a4 4 0 0 1 4 4v1"/></svg>People</div>
+  <div class="tab"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18"/><path d="M5 20V10l4-4 4 4 4-6v16"/></svg>Finance</div>
+  <div class="tab"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a6 6 0 0 1 6 6c0 2.5-1.5 4.7-3.7 5.7L14 16H10l-.3-2.3A6.01 6.01 0 0 1 6 8a6 6 0 0 1 6-6z"/><path d="M10 19h4"/><path d="M11 22h2"/></svg>Intelligence</div>
+</div>
+
+</body>
+</html>
