@@ -247,6 +247,9 @@ export type {
 export { GlassDivider } from "./glass-divider"
 export type { GlassDividerProps, DividerOrientation, DividerVariant } from "./glass-divider"
 
+export { GlassScrollArea } from "./glass-scroll-area"
+export type { GlassScrollAreaProps, ScrollAxis } from "./glass-scroll-area"
+
 export {
   ActionSheet,
   ConfirmationSheet,
