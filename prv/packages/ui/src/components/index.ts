@@ -265,6 +265,9 @@ export type { GlassHeatmapProps, HeatmapValue } from "./glass-heatmap"
 export { GlassFunnel } from "./glass-funnel"
 export type { GlassFunnelProps, FunnelStage } from "./glass-funnel"
 
+export { GlassRadarChart } from "./glass-radar-chart"
+export type { GlassRadarChartProps, RadarSeries } from "./glass-radar-chart"
+
 export {
   ActionSheet,
   ConfirmationSheet,
