@@ -337,6 +337,9 @@ export type { GlassSwipeActionsProps, SwipeAction } from "./glass-swipe-actions"
 export { GlassActionBar } from "./glass-action-bar"
 export type { GlassActionBarProps, ActionBarAction } from "./glass-action-bar"
 
+export { GlassBottomToolbar } from "./glass-bottom-toolbar"
+export type { GlassBottomToolbarProps, BottomToolbarItem } from "./glass-bottom-toolbar"
+
 export {
   ActionSheet,
   ConfirmationSheet,
