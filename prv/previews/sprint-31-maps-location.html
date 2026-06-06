@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PRV · Sprint 31 — Maps & Location</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --prv-bg:            #000;
+    --prv-g1:            rgba(255,255,255,0.06);
+    --prv-g2:            rgba(255,255,255,0.10);
+    --prv-g3:            rgba(255,255,255,0.15);
+    --prv-g4:            rgba(255,255,255,0.22);
+    --prv-text-1:        rgba(255,255,255,0.95);
+    --prv-text-2:        rgba(255,255,255,0.65);
+    --prv-text-3:        rgba(255,255,255,0.35);
+    --prv-text-4:        rgba(255,255,255,0.15);
+    --prv-border:        rgba(255,255,255,0.12);
+    --prv-border-subtle: rgba(255,255,255,0.07);
+    --prv-accent:        rgba(10,132,255,0.9);
+    --prv-green:         rgba(48,209,88,0.95);
+    --prv-red:           rgba(255,69,58,0.95);
+  }
+
+  html, body {
+    background: var(--prv-bg);
+    color: var(--prv-text-1);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page { max-width: 960px; margin: 0 auto; padding: 48px 24px 96px; }
+
+  .sprint-header { margin-bottom: 52px; }
+  .chips { display: flex; gap: 8px; margin-bottom: 10px; }
+  .chip { padding: 3px 10px; border-radius: 100px; background: var(--prv-g2); border: 1px solid var(--prv-border-subtle); font-size: 11px; font-weight: 600; color: var(--prv-text-3); letter-spacing: .06em; text-transform: uppercase; }
+  h1 { font-size: 28px; font-weight: 700; letter-spacing: -.02em; }
+  .sub { font-size: 14px; color: var(--prv-text-3); margin-top: 4px; }
+
+  .section { margin-bottom: 60px; }
+  .sl { font-size: 11px; font-weight: 600; color: var(--prv-text-3); letter-spacing: .07em; text-transform: uppercase; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+  .sl::after { content: ""; flex: 1; height: 1px; background: var(--prv-border-subtle); }
+
+  /* Delivery table */
+  .dt { width: 100%; border-collapse: collapse; }
+  .dt th, .dt td { text-align: left; padding: 10px 14px; font-size: 13px; border-bottom: 1px solid var(--prv-border-subtle); }
+  .dt th { font-size: 11px; font-weight: 600; color: var(--prv-text-3); letter-spacing: .06em; text-transform: uppercase; }
+  .dt td { color: var(--prv-text-1); }
+  .dt td:nth-child(2) { color: var(--prv-text-3); font-family: "SF Mono", monospace; font-size: 11px; }
+  .dt tr:last-child td { border-bottom: none; }
+  .tag { display: inline-flex; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 500; background: var(--prv-g2); color: var(--prv-text-3); border: 1px solid var(--prv-border-subtle); }
+  .tag.new { background: rgba(10,132,255,.12); color: rgba(10,132,255,.9); border-color: rgba(10,132,255,.2); }
+
+  .glass-surface { position: relative; overflow: hidden; background: var(--prv-g1); border: 1px solid var(--prv-border-subtle); border-radius: 20px; }
+  .glass-surface::before { content: ""; position: absolute; inset: 0 0 auto; height: 1px; background: linear-gradient(90deg,transparent,rgba(255,255,255,0.09),transparent); pointer-events: none; }
+
+  .demo-pad { padding: 24px; }
+
+  /* Shared faux-map canvas */
+  .map { position: relative; width: 100%; height: 320px; border-radius: 16px; overflow: hidden; background:
+      radial-gradient(circle at 30% 20%, rgba(10,132,255,0.10), transparent 40%),
+      radial-gradient(circle at 75% 80%, rgba(94,92,230,0.12), transparent 45%),
+      #0c0c10; }
+  .map-grid { position: absolute; inset: 0; background-image:
+      linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
+      background-size: 38px 38px; }
+  .map-road { position: absolute; background: rgba(255,255,255,0.06); }
+
+  /* ════════════════════════════════════════════════
+     GLASS MAP VIEW — controls
+  ════════════════════════════════════════════════ */
+  .map-ctrls { position: absolute; top: 14px; right: 14px; display: flex; flex-direction: column; gap: 8px; }
+  .map-btn { width: 36px; height: 36px; border-radius: 11px; background: rgba(22,22,22,0.6); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid var(--prv-border); color: var(--prv-text-1); display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 18px; transition: background 150ms; }
+  .map-btn:hover { background: rgba(40,40,40,0.8); }
+  .map-attr { position: absolute; bottom: 8px; left: 12px; font-size: 10px; color: var(--prv-text-4); }
+  .map-pill { position: absolute; top: 14px; left: 14px; display: inline-flex; align-items: center; gap: 7px; padding: 7px 13px; border-radius: 100px; background: rgba(22,22,22,0.6); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid var(--prv-border); font-size: 12px; font-weight: 600; }
+
+  /* ════════════════════════════════════════════════
+     GLASS LOCATION PIN
+  ════════════════════════════════════════════════ */
+  .pin { position: absolute; transform: translate(-50%, -100%); cursor: pointer; }
+  .pin-head { width: 30px; height: 30px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); display: flex; align-items: center; justify-content: center; box-shadow: 0 6px 16px rgba(0,0,0,0.5); border: 2px solid rgba(255,255,255,0.85); }
+  .pin-head svg, .pin-head span { transform: rotate(45deg); color: #fff; font-size: 12px; font-weight: 700; }
+  .pin.accent .pin-head { background: var(--prv-accent); }
+  .pin.green .pin-head { background: var(--prv-green); }
+  .pin.red .pin-head { background: var(--prv-red); }
+  .pin-pulse { position: absolute; left: 50%; top: 0; width: 30px; height: 30px; border-radius: 50%; transform: translate(-50%,-50%); background: var(--prv-accent); opacity: .4; animation: pinpulse 2s ease-out infinite; }
+  @keyframes pinpulse { 0%{ transform: translate(-50%,-50%) scale(0.5); opacity:.5 } 100%{ transform: translate(-50%,-50%) scale(2.4); opacity:0 } }
+  .pin-label { position: absolute; left: 50%; top: 34px; transform: translateX(-50%); white-space: nowrap; padding: 4px 9px; border-radius: 8px; background: rgba(22,22,22,0.8); backdrop-filter: blur(16px); border: 1px solid var(--prv-border); font-size: 11px; font-weight: 600; }
+
+  /* ════════════════════════════════════════════════
+     GLASS ROUTE PREVIEW
+  ════════════════════════════════════════════════ */
+  .route-info { display: flex; gap: 16px; margin-top: 14px; }
+  .route-stat { flex: 1; padding: 12px 14px; border-radius: 12px; background: var(--prv-g1); border: 1px solid var(--prv-border-subtle); }
+  .route-stat .k { font-size: 11px; color: var(--prv-text-3); }
+  .route-stat .v { font-size: 18px; font-weight: 700; margin-top: 3px; }
+  .route-dot { width: 12px; height: 12px; border-radius: 50%; border: 3px solid; }
+
+  /* ════════════════════════════════════════════════
+     GLASS GEOFENCE CARD
+  ════════════════════════════════════════════════ */
+  .gf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 600px){ .gf-grid { grid-template-columns: 1fr; } }
+  .gf { padding: 16px; border-radius: 16px; background: var(--prv-g1); border: 1px solid var(--prv-border-subtle); position: relative; }
+  .gf::before { content:""; position:absolute; inset:0 0 auto; height:1px; background:linear-gradient(90deg,transparent,rgba(255,255,255,0.08),transparent); }
+  .gf-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .gf-ic { width: 38px; height: 38px; border-radius: 11px; background: var(--prv-g2); border: 1px solid var(--prv-border-subtle); display: flex; align-items: center; justify-content: center; color: var(--prv-accent); flex-shrink: 0; }
+  .gf-name { font-size: 14px; font-weight: 700; }
+  .gf-sub { font-size: 12px; color: var(--prv-text-3); }
+  .gf-status { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; padding: 4px 9px; border-radius: 100px; }
+  .gf-status.in { background: rgba(48,209,88,0.14); color: var(--prv-green); }
+  .gf-status.out { background: var(--prv-g2); color: var(--prv-text-3); }
+  .gf-row { display: flex; justify-content: space-between; font-size: 12px; padding: 6px 0; border-top: 1px solid var(--prv-border-subtle); }
+  .gf-row .lbl { color: var(--prv-text-3); }
+  .gf-mini { height: 70px; border-radius: 10px; margin-top: 10px; position: relative; overflow: hidden; background: radial-gradient(circle at 50% 50%, rgba(10,132,255,0.18), transparent 60%), #0c0c10; }
+  .gf-ring { position: absolute; left: 50%; top: 50%; width: 54px; height: 54px; border-radius: 50%; transform: translate(-50%,-50%); border: 2px dashed rgba(10,132,255,0.6); background: rgba(10,132,255,0.08); }
+  .gf-center { position: absolute; left: 50%; top: 50%; width: 8px; height: 8px; border-radius: 50%; transform: translate(-50%,-50%); background: var(--prv-accent); }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="sprint-header">
+    <div class="chips"><span class="chip">Sprint 31</span><span class="chip">Preview</span><span class="chip">Phase 1 · M9</span></div>
+    <h1>Maps &amp; Location</h1>
+    <div class="sub">GlassMapView · GlassLocationPin · GlassRoutePreview · GlassGeofenceCard</div>
+  </div>
+
+  <!-- ── MAP VIEW + PINS ── -->
+  <div class="section">
+    <div class="sl">GlassMapView — Glass map chrome, floating controls, attribution (wraps any tile/embed)</div>
+    <div class="glass-surface">
+      <div class="demo-pad">
+        <div class="map">
+          <div class="map-grid"></div>
+          <div class="map-road" style="left:0;right:0;top:46%;height:8px"></div>
+          <div class="map-road" style="top:0;bottom:0;left:38%;width:8px"></div>
+
+          <div class="map-pill"><span style="width:8px;height:8px;border-radius:50%;background:var(--prv-green);display:inline-block"></span>4 stores · live</div>
+          <div class="map-ctrls">
+            <button class="map-btn">+</button>
+            <button class="map-btn">−</button>
+            <button class="map-btn" style="font-size:14px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></button>
+          </div>
+
+          <!-- pins -->
+          <div class="pin accent" style="left:38%;top:46%"><div class="pin-pulse"></div><div class="pin-head"><span>3</span></div><div class="pin-label">Cluj · Main</div></div>
+          <div class="pin green" style="left:68%;top:30%"><div class="pin-head"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></div></div>
+          <div class="pin red" style="left:22%;top:72%"><div class="pin-head"><span>!</span></div></div>
+
+          <div class="map-attr">© PRV Maps · OpenStreetMap</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── LOCATION PIN (standalone) ── -->
+  <div class="section">
+    <div class="sl">GlassLocationPin — Teardrop marker, color states, pulse, count/icon/label</div>
+    <div class="glass-surface">
+      <div class="demo-pad">
+        <div style="position:relative;height:120px">
+          <div class="pin accent" style="left:14%;top:90px"><div class="pin-pulse"></div><div class="pin-head"><span>5</span></div></div>
+          <div class="pin green" style="left:34%;top:90px"><div class="pin-head"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg></div></div>
+          <div class="pin red" style="left:54%;top:90px"><div class="pin-head"><span>!</span></div></div>
+          <div class="pin accent" style="left:76%;top:90px"><div class="pin-head"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 0-8 8c0 5 8 12 8 12s8-7 8-12a8 8 0 0 0-8-8z"/></svg></div><div class="pin-label">HQ</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── ROUTE PREVIEW ── -->
+  <div class="section">
+    <div class="sl">GlassRoutePreview — Origin→destination path, distance &amp; ETA stats</div>
+    <div class="glass-surface">
+      <div class="demo-pad">
+        <div class="map" style="height:240px">
+          <div class="map-grid"></div>
+          <svg width="100%" height="100%" style="position:absolute;inset:0" viewBox="0 0 600 240" preserveAspectRatio="none">
+            <path d="M60 190 C 180 120, 260 200, 380 110 S 520 70, 540 60" fill="none" stroke="rgba(10,132,255,0.9)" stroke-width="4" stroke-linecap="round" stroke-dasharray="2 10" />
+          </svg>
+          <div class="pin green" style="left:10%;top:79%"><div class="pin-head"><span style="font-size:10px">A</span></div></div>
+          <div class="pin red" style="left:90%;top:25%"><div class="pin-head"><span style="font-size:10px">B</span></div></div>
+        </div>
+        <div class="route-info">
+          <div class="route-stat"><div class="k">Distance</div><div class="v">24.8 km</div></div>
+          <div class="route-stat"><div class="k">ETA</div><div class="v">32 min</div></div>
+          <div class="route-stat"><div class="k">Stops</div><div class="v">3</div></div>
+          <div class="route-stat"><div class="k">Mode</div><div class="v">🚐 Van</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── GEOFENCE CARD ── -->
+  <div class="section">
+    <div class="sl">GlassGeofenceCard — Zone summary, in/out status, radius mini-map (attendance/fleet)</div>
+    <div class="glass-surface">
+      <div class="demo-pad">
+        <div class="gf-grid">
+          <div class="gf">
+            <div class="gf-head">
+              <div class="gf-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></div>
+              <div><div class="gf-name">Cluj · Main Store</div><div class="gf-sub">Str. Horea 12</div></div>
+              <span class="gf-status in"><span style="width:6px;height:6px;border-radius:50%;background:var(--prv-green)"></span>12 inside</span>
+            </div>
+            <div class="gf-mini"><div class="gf-ring"></div><div class="gf-center"></div></div>
+            <div class="gf-row"><span class="lbl">Radius</span><span>150 m</span></div>
+            <div class="gf-row"><span class="lbl">Clock-ins today</span><span>34</span></div>
+          </div>
+
+          <div class="gf">
+            <div class="gf-head">
+              <div class="gf-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></div>
+              <div><div class="gf-name">West Region Depot</div><div class="gf-sub">Fleet zone · Timișoara</div></div>
+              <span class="gf-status out">Outside</span>
+            </div>
+            <div class="gf-mini"><div class="gf-ring" style="border-color:var(--prv-text-3);background:rgba(255,255,255,0.04)"></div><div class="gf-center" style="background:var(--prv-text-3);left:64%;top:38%"></div></div>
+            <div class="gf-row"><span class="lbl">Radius</span><span>500 m</span></div>
+            <div class="gf-row"><span class="lbl">Vehicles in zone</span><span>0 / 6</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Delivery ── -->
+  <div class="section">
+    <div class="sl">Sprint 31 Delivery</div>
+    <div class="glass-surface">
+      <table class="dt">
+        <thead><tr><th>Component</th><th>File</th><th>Key Props</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>GlassMapView</td><td>glass-map-view.tsx</td><td>children, controls, onZoomIn/Out, onRecenter, attribution, badge</td><td><span class="tag new">New</span></td></tr>
+          <tr><td>GlassLocationPin</td><td>glass-location-pin.tsx</td><td>color, pulse, label, count, icon, onClick</td><td><span class="tag new">New</span></td></tr>
+          <tr><td>GlassRoutePreview</td><td>glass-route-preview.tsx</td><td>path, distance, eta, stops, mode, stats[]</td><td><span class="tag new">New</span></td></tr>
+          <tr><td>GlassGeofenceCard</td><td>glass-geofence-card.tsx</td><td>name, address, status, radius, rows[], icon</td><td><span class="tag new">New</span></td></tr>
+          <tr><td>index.ts</td><td>components/index.ts</td><td>Export all 4 components + types</td><td><span class="tag">Update</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div><!-- /page -->
+</body>
+</html>
