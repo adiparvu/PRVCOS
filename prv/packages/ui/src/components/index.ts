@@ -224,6 +224,9 @@ export type { GlassVideoPlayerProps } from "./glass-video-player"
 export { GlassCodeBlock } from "./glass-code-block"
 export type { GlassCodeBlockProps } from "./glass-code-block"
 
+export { GlassMarkdownViewer } from "./glass-markdown-viewer"
+export type { GlassMarkdownViewerProps } from "./glass-markdown-viewer"
+
 export {
   ActionSheet,
   ConfirmationSheet,
