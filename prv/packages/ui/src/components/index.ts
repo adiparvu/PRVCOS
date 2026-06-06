@@ -203,6 +203,9 @@ export type {
   RichTextGroup,
 } from "./glass-rich-text-toolbar"
 
+export { GlassTreeView } from "./glass-tree-view"
+export type { GlassTreeViewProps, TreeNode } from "./glass-tree-view"
+
 export {
   ActionSheet,
   ConfirmationSheet,
