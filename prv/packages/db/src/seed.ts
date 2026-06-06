@@ -4,6 +4,9 @@
 
 import { db } from "./client"
 import { migrationHistory } from "./schema/migration-history"
+import { seedRoles } from "./seeds/roles"
+import { seedPermissions } from "./seeds/permissions"
+import { seedRolePermissions } from "./seeds/role-permissions"
 
 async function seed() {
   if (process.env["NODE_ENV"] === "production") {
@@ -16,8 +19,10 @@ async function seed() {
   const existing = await db.select().from(migrationHistory).limit(1)
   console.log(`  ✓ migration_history table accessible (${existing.length} records)`)
 
-  // Additional seed data added per sprint as schemas are defined
-  // Sprint 03+: users, companies, roles
+  // Phase 03: System roles, permissions, role-permission mappings
+  const roleIdMap = await seedRoles()
+  const permissionIdMap = await seedPermissions()
+  await seedRolePermissions(roleIdMap, permissionIdMap)
 
   console.log("✓ Seed complete")
   process.exit(0)

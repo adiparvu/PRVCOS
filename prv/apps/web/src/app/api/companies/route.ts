@@ -1,14 +1,51 @@
 import { withGates } from "@/lib/with-gates"
 import { NextRequest, NextResponse } from "next/server"
-import { eq } from "drizzle-orm"
+import { eq, and, isNull, or } from "drizzle-orm"
 import { db } from "@prv/db"
 import { companies, companyMemberships } from "@prv/db/schema"
-import { writeAuditLog, RoleSets } from "@prv/auth"
+import { writeAuditLog, RoleSets, hasScope } from "@prv/auth"
 import { z } from "zod"
 import type { GateContext } from "@prv/auth"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
+
+// GET /api/companies — list companies accessible to the authenticated user
+// group-level+ users see all active companies; company-level users see only their own
+export const GET = withGates(
+  {
+    action: "companies.list",
+    endpointClass: "api_read",
+    requiredRoles: RoleSets.management,
+    requiredScope: "SCOPE_COMPANY",
+  },
+  async (_req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
+    const canSeeAll = hasScope(ctx.session.scopeLevel, "SCOPE_GROUP")
+
+    const rows = await db
+      .select({
+        id: companies.id,
+        name: companies.name,
+        slug: companies.slug,
+        type: companies.type,
+        status: companies.status,
+        country: companies.country,
+        logoUrl: companies.logoUrl,
+        createdAt: companies.createdAt,
+      })
+      .from(companies)
+      .where(
+        and(
+          eq(companies.isActive, true),
+          isNull(companies.deletedAt),
+          canSeeAll ? undefined : eq(companies.id, ctx.session.companyId)
+        )
+      )
+      .orderBy(companies.name)
+
+    return NextResponse.json({ companies: rows })
+  }
+)
 
 const createCompanySchema = z.object({
   name: z.string().min(1).max(255),
