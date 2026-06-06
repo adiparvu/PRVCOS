@@ -244,6 +244,9 @@ export type {
   StatusDotVariant,
 } from "./glass-status-dot"
 
+export { GlassDivider } from "./glass-divider"
+export type { GlassDividerProps, DividerOrientation, DividerVariant } from "./glass-divider"
+
 export {
   ActionSheet,
   ConfirmationSheet,
