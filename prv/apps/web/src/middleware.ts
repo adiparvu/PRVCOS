@@ -37,7 +37,7 @@ const PROTECTED_PREFIXES = [
 ]
 
 // Routes that are only for unauthenticated users (redirect to dashboard if signed in)
-const AUTH_ONLY_ROUTES = ["/auth/login", "/auth/register"]
+const AUTH_ONLY_ROUTES = ["/auth/login", "/auth/register", "/auth/signup"]
 
 // Auth endpoints get the strictest rate limit class
 const AUTH_PREFIXES = ["/auth/", "/api/auth/"]
