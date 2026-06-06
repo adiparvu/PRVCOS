@@ -256,6 +256,9 @@ export type { GlassAspectRatioProps } from "./glass-aspect-ratio"
 export { GlassCopyButton, GlassKbd } from "./glass-copy-button"
 export type { GlassCopyButtonProps, GlassKbdProps } from "./glass-copy-button"
 
+export { GlassSparkline } from "./glass-sparkline"
+export type { GlassSparklineProps, SparklineTrend } from "./glass-sparkline"
+
 export {
   ActionSheet,
   ConfirmationSheet,
