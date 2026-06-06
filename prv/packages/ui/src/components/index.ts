@@ -218,6 +218,9 @@ export type { GlassCarouselProps } from "./glass-carousel"
 export { GlassImageGallery } from "./glass-image-gallery"
 export type { GlassImageGalleryProps, GalleryImage } from "./glass-image-gallery"
 
+export { GlassVideoPlayer } from "./glass-video-player"
+export type { GlassVideoPlayerProps } from "./glass-video-player"
+
 export {
   ActionSheet,
   ConfirmationSheet,
