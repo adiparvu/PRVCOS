@@ -274,6 +274,9 @@ export type { GlassChatBubbleProps, ChatRole, ChatStatus } from "./glass-chat-bu
 export { GlassChatComposer } from "./glass-chat-composer"
 export type { GlassChatComposerProps } from "./glass-chat-composer"
 
+export { GlassTypingIndicator } from "./glass-typing-indicator"
+export type { GlassTypingIndicatorProps, TypingSize } from "./glass-typing-indicator"
+
 export {
   ActionSheet,
   ConfirmationSheet,
