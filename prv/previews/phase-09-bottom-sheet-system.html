@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Phase 09 — Bottom Sheet System · PRV Preview</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #000;
+    color: #fff;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif;
+    min-height: 100vh;
+  }
+
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(ellipse 80% 40% at 50% -10%, rgba(255,255,255,0.035) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .stage {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 20px 80px;
+    gap: 52px;
+  }
+
+  .title-block { text-align: center; }
+  .phase-label { font-size: 11px; font-weight: 600; letter-spacing: .14em; color: rgba(255,255,255,0.28); text-transform: uppercase; margin-bottom: 8px; }
+  .phase-title { font-size: 32px; font-weight: 700; letter-spacing: -.02em; color: rgba(255,255,255,0.92); margin-bottom: 8px; }
+  .phase-sub { font-size: 14px; color: rgba(255,255,255,0.36); line-height: 1.55; max-width: 500px; margin: 0 auto; }
+
+  /* ── Phone ── */
+  .phone-row { display: flex; flex-wrap: wrap; gap: 32px; justify-content: center; align-items: flex-start; }
+  .phone-wrap { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+  .phone-label { font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: rgba(255,255,255,0.26); }
+
+  .phone {
+    width: 320px;
+    height: 680px;
+    border-radius: 44px;
+    background: #080808;
+    border: 1.5px solid rgba(255,255,255,0.14);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.16), 0 32px 80px rgba(0,0,0,0.9), 0 8px 24px rgba(0,0,0,0.6);
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Background screen content (behind sheet) */
+  .bg-content {
+    position: absolute;
+    inset: 0;
+    padding: 64px 16px 16px;
+    overflow: hidden;
+  }
+
+  .bg-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    margin-bottom: 8px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  .bg-avatar {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: rgba(255,255,255,0.10);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.50);
+    flex-shrink: 0;
+  }
+  .bg-text-1 { font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.50); }
+  .bg-text-2 { font-size: 11px; color: rgba(255,255,255,0.26); margin-top: 2px; }
+
+  /* Backdrop */
+  .sheet-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.55);
+    backdrop-filter: blur(20px) saturate(160%);
+    z-index: 10;
+  }
+
+  /* Dynamic Island */
+  .di {
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 60;
+    background: rgba(10,10,12,0.92);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 100px;
+    height: 32px;
+    padding: 0 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    backdrop-filter: blur(48px);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 4px 16px rgba(0,0,0,0.6);
+  }
+  .di-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.40); }
+  .di-text { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.80); }
+
+  /* ── Sheet variants ── */
+
+  /* Full / Mid height sheet */
+  .sheet {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    z-index: 20;
+    border-radius: 28px 28px 0 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .sheet-glass {
+    background: rgba(28,28,30,0.85);
+    border: 1px solid rgba(255,255,255,0.14);
+    border-bottom: none;
+    backdrop-filter: blur(64px) saturate(220%);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.22), 0 -24px 64px rgba(0,0,0,0.7), 0 -8px 24px rgba(0,0,0,0.4);
+  }
+
+  /* Grab handle */
+  .grab-handle {
+    width: 36px; height: 5px; border-radius: 3px;
+    background: rgba(255,255,255,0.25);
+    margin: 10px auto 0;
+    flex-shrink: 0;
+  }
+
+  /* Sheet header row */
+  .sheet-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px 0;
+  }
+  .sheet-title { font-size: 17px; font-weight: 700; color: rgba(255,255,255,0.92); letter-spacing: -.015em; }
+  .sheet-close {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.10);
+    display: flex; align-items: center; justify-content: center;
+    color: rgba(255,255,255,0.55);
+  }
+  .sheet-close svg { width: 14px; height: 14px; }
+
+  .sheet-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    scrollbar-width: none;
+  }
+  .sheet-body::-webkit-scrollbar { display: none; }
+
+  /* Snap indicator */
+  .snap-dots {
+    display: flex;
+    justify-content: center;
+    gap: 5px;
+    padding: 8px 0 4px;
+  }
+  .snap-dot {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: rgba(255,255,255,0.20);
+  }
+  .snap-dot.active {
+    background: rgba(255,255,255,0.65);
+    width: 16px;
+    border-radius: 3px;
+  }
+
+  /* ── Detail Sheet content ── */
+  .detail-avatar {
+    width: 64px; height: 64px; border-radius: 50%;
+    background: rgba(255,255,255,0.10);
+    border: 2px solid rgba(255,255,255,0.15);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; font-weight: 700; color: rgba(255,255,255,0.60);
+    margin: 0 auto 10px;
+  }
+  .detail-name { font-size: 19px; font-weight: 700; color: rgba(255,255,255,0.92); text-align: center; margin-bottom: 3px; }
+  .detail-role { font-size: 12px; color: rgba(255,255,255,0.40); text-align: center; margin-bottom: 16px; }
+
+  .detail-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 11px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+  }
+  .detail-row:last-child { border-bottom: none; }
+  .detail-label { font-size: 12px; color: rgba(255,255,255,0.35); font-weight: 500; }
+  .detail-value { font-size: 13px; color: rgba(255,255,255,0.75); font-weight: 600; }
+
+  .detail-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 14px;
+  }
+  .detail-action {
+    flex: 1;
+    padding: 11px 8px;
+    border-radius: 14px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 700;
+    border: none;
+  }
+  .detail-action.primary {
+    background: rgba(255,255,255,0.14);
+    border: 1px solid rgba(255,255,255,0.20);
+    color: rgba(255,255,255,0.92);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.20);
+  }
+  .detail-action.secondary {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.10);
+    color: rgba(255,255,255,0.50);
+  }
+  .detail-action.danger {
+    background: rgba(255,59,48,0.12);
+    border: 1px solid rgba(255,59,48,0.20);
+    color: rgba(255,99,90,0.90);
+  }
+
+  /* ── Action Sheet content ── */
+  .action-title-section {
+    padding: 12px 16px 4px;
+    text-align: center;
+  }
+  .action-context {
+    font-size: 11px;
+    color: rgba(255,255,255,0.30);
+    margin-bottom: 3px;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    font-weight: 600;
+  }
+  .action-subject {
+    font-size: 15px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.88);
+  }
+  .action-sub {
+    font-size: 12px;
+    color: rgba(255,255,255,0.35);
+    margin-top: 2px;
+  }
+
+  .action-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding: 8px 16px;
+  }
+  .action-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 13px 14px;
+    border-radius: 14px;
+    margin-bottom: 2px;
+    cursor: pointer;
+    transition: background 0.12s;
+  }
+  .action-item:hover { background: rgba(255,255,255,0.06); }
+  .action-item.destructive .action-item-label { color: rgba(255,99,90,0.90); }
+  .action-item.destructive .action-item-icon { color: rgba(255,99,90,0.80); background: rgba(255,59,48,0.14); }
+  .action-item-icon {
+    width: 34px; height: 34px; border-radius: 10px;
+    background: rgba(255,255,255,0.09);
+    display: flex; align-items: center; justify-content: center;
+    color: rgba(255,255,255,0.55);
+    flex-shrink: 0;
+  }
+  .action-item-icon svg { width: 16px; height: 16px; }
+  .action-item-label { font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.82); }
+  .action-item-sub { font-size: 11px; color: rgba(255,255,255,0.30); margin-top: 1px; }
+  .action-divider { height: 1px; background: rgba(255,255,255,0.07); margin: 4px 14px; }
+
+  /* Cancel button */
+  .sheet-cancel {
+    margin: 4px 16px 20px;
+    padding: 14px;
+    border-radius: 16px;
+    text-align: center;
+    font-size: 15px;
+    font-weight: 700;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.10);
+    color: rgba(255,255,255,0.60);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.10);
+  }
+
+  /* ── Confirm Sheet content ── */
+  .confirm-icon {
+    width: 56px; height: 56px; border-radius: 18px;
+    display: flex; align-items: center; justify-content: center;
+    margin: 12px auto 12px;
+    background: rgba(255,59,48,0.14);
+    border: 1px solid rgba(255,59,48,0.22);
+  }
+  .confirm-heading {
+    font-size: 18px; font-weight: 700; text-align: center;
+    color: rgba(255,255,255,0.92);
+    margin-bottom: 6px;
+    padding: 0 16px;
+    letter-spacing: -.015em;
+  }
+  .confirm-body {
+    font-size: 13px; line-height: 1.55; text-align: center;
+    color: rgba(255,255,255,0.45);
+    padding: 0 20px 16px;
+  }
+  .confirm-actions {
+    display: flex;
+    gap: 8px;
+    padding: 0 16px 24px;
+  }
+  .confirm-btn {
+    flex: 1;
+    padding: 14px 0;
+    border-radius: 14px;
+    text-align: center;
+    font-size: 15px;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+  }
+  .confirm-btn.cancel {
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.10);
+    color: rgba(255,255,255,0.55);
+  }
+  .confirm-btn.destructive {
+    background: rgba(255,59,48,0.18);
+    border: 1px solid rgba(255,59,48,0.25);
+    color: rgba(255,99,90,0.95);
+    box-shadow: inset 0 1px 0 rgba(255,99,90,0.25);
+  }
+
+  /* ── Filter sheet ── */
+  .filter-section-label {
+    font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+    color: rgba(255,255,255,0.24);
+    margin-bottom: 8px;
+    padding: 0 2px;
+  }
+  .filter-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    margin-bottom: 16px;
+  }
+  .filter-chip {
+    padding: 8px 6px;
+    border-radius: 12px;
+    text-align: center;
+    font-size: 11px;
+    font-weight: 600;
+    border: 1px solid rgba(255,255,255,0.09);
+    background: rgba(255,255,255,0.05);
+    color: rgba(255,255,255,0.38);
+  }
+  .filter-chip.active {
+    background: rgba(255,255,255,0.12);
+    border-color: rgba(255,255,255,0.22);
+    color: rgba(255,255,255,0.90);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.18);
+  }
+  .filter-row-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 11px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .filter-row-item:last-child { border-bottom: none; }
+  .filter-row-label { font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.70); }
+  .filter-check {
+    width: 20px; height: 20px; border-radius: 50%;
+    background: rgba(255,255,255,0.12);
+    border: 1.5px solid rgba(255,255,255,0.18);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .filter-check.on {
+    background: rgba(255,255,255,0.85);
+    border-color: rgba(255,255,255,0.85);
+  }
+  .filter-check.on svg { stroke: #000; }
+  .apply-btn {
+    width: 100%;
+    padding: 14px;
+    border-radius: 14px;
+    text-align: center;
+    font-size: 15px; font-weight: 700;
+    background: rgba(255,255,255,0.14);
+    border: 1px solid rgba(255,255,255,0.20);
+    color: rgba(255,255,255,0.92);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.20);
+    margin-top: 8px;
+  }
+
+  /* Stacked second sheet indicator */
+  .sheet-stack-peek {
+    position: absolute;
+    left: 8px; right: 8px; bottom: 0;
+    z-index: 19;
+    height: 36px;
+    border-radius: 20px 20px 0 0;
+    background: rgba(40,40,44,0.70);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-bottom: none;
+    backdrop-filter: blur(32px);
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 7px;
+  }
+  .stack-handle { width: 28px; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.18); }
+
+  /* Tab bar */
+  .tab-bar {
+    position: absolute;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 5;
+    width: calc(100% - 28px);
+    background: rgba(20,20,20,0.82);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 32px;
+    backdrop-filter: blur(48px) saturate(200%);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.14), 0 16px 40px rgba(0,0,0,0.7);
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    padding: 6px;
+  }
+  .tab {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 3px; min-width: 52px; height: 52px; justify-content: center;
+    border-radius: 24px;
+    color: rgba(255,255,255,0.38);
+    position: relative;
+  }
+  .tab.active { background: rgba(255,255,255,0.10); box-shadow: inset 0 1px 0 rgba(255,255,255,0.18); color: rgba(255,255,255,0.95); }
+  .tab svg { width: 20px; height: 20px; }
+  .tab-lbl { font-size: 9px; font-weight: 500; letter-spacing: -.01em; opacity: .55; }
+  .tab.active .tab-lbl { opacity: .9; }
+
+  /* ── Architecture ── */
+  .arch-section { width: 100%; max-width: 860px; }
+  .arch-title { font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: rgba(255,255,255,0.26); margin-bottom: 16px; text-align: center; }
+  .arch-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px; }
+  .arch-card { padding: 14px 16px; border-radius: 14px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); }
+  .arch-card-title { font-size: 12px; font-weight: 700; color: rgba(255,255,255,0.65); margin-bottom: 7px; display: flex; align-items: center; gap: 6px; }
+  .arch-card-title .dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.40); }
+  .arch-card ul { list-style: none; display: flex; flex-direction: column; gap: 3px; }
+  .arch-card li { font-size: 11px; color: rgba(255,255,255,0.36); line-height: 1.4; padding-left: 10px; position: relative; }
+  .arch-card li::before { content: "–"; position: absolute; left: 0; color: rgba(255,255,255,0.18); }
+
+  /* Sheet type chips */
+  .type-chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; width: 100%; max-width: 860px; }
+  .type-chip { padding: 7px 16px; border-radius: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.09); font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.55); }
+
+  /* Files section */
+  .files-section { width: 100%; max-width: 860px; }
+  .files-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .file-block { padding: 10px 13px; border-radius: 11px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); }
+  .file-tag { display: inline-block; font-size: 9px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; padding: 2px 7px; border-radius: 5px; margin-bottom: 5px; }
+  .file-tag.new { background: rgba(48,209,88,0.16); color: rgba(48,209,88,0.88); }
+  .file-tag.update { background: rgba(10,132,255,0.16); color: rgba(10,132,255,0.88); }
+  .file-path { font-size: 11px; font-family: "SF Mono", ui-monospace, monospace; color: rgba(255,255,255,0.50); line-height: 1.5; word-break: break-all; }
+</style>
+</head>
+<body>
+<div class="stage">
+
+  <!-- Title -->
+  <div class="title-block">
+    <p class="phase-label">Phase 09</p>
+    <h1 class="phase-title">Bottom Sheet System</h1>
+    <p class="phase-sub">The foundational interaction primitive. Every action, detail, filter, and confirmation in PRV flows through a glass bottom sheet — built once, used by every module that follows.</p>
+  </div>
+
+  <!-- Phone row -->
+  <div class="phone-row">
+
+    <!-- Phone 1: Detail sheet (mid snap) -->
+    <div class="phone-wrap">
+      <span class="phone-label">Detail sheet · mid snap</span>
+      <div class="phone">
+        <div class="di">
+          <span class="di-dot"></span>
+          <span class="di-text">People · 142 on shift</span>
+        </div>
+
+        <!-- BG content (visible through backdrop) -->
+        <div class="bg-content">
+          <div style="font-size:10px;color:rgba(255,255,255,0.18);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;margin-top:8px;">Team today</div>
+          <div class="bg-row"><div class="bg-avatar">MD</div><div><div class="bg-text-1">Maria Dima</div><div class="bg-text-2">Store Manager · Cluj</div></div></div>
+          <div class="bg-row" style="background:rgba(255,255,255,0.09);border-color:rgba(255,255,255,0.16)"><div class="bg-avatar" style="background:rgba(255,255,255,0.18)">IL</div><div><div class="bg-text-1" style="color:rgba(255,255,255,0.80)">Ion Lupu</div><div class="bg-text-2">Cashier · Cluj</div></div></div>
+          <div class="bg-row"><div class="bg-avatar">RP</div><div><div class="bg-text-1">Radu Pop</div><div class="bg-text-2">Painter · Site 3</div></div></div>
+        </div>
+
+        <!-- Backdrop -->
+        <div class="sheet-backdrop"></div>
+
+        <!-- Stacked peek (first sheet behind) -->
+        <div class="sheet-stack-peek"><div class="stack-handle"></div></div>
+
+        <!-- Main sheet -->
+        <div class="sheet sheet-glass" style="height: 68%;">
+          <div class="grab-handle"></div>
+          <div class="snap-dots">
+            <div class="snap-dot"></div>
+            <div class="snap-dot active"></div>
+            <div class="snap-dot"></div>
+          </div>
+
+          <div class="sheet-header">
+            <span class="sheet-title">Ion Lupu</span>
+            <span class="sheet-close">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </span>
+          </div>
+
+          <div class="sheet-body">
+            <!-- Avatar -->
+            <div class="detail-avatar">IL</div>
+            <div class="detail-name">Ion Lupu</div>
+            <div class="detail-role">Cashier · PRV Shop Cluj</div>
+
+            <!-- Details -->
+            <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:4px 12px;margin-bottom:12px;">
+              <div class="detail-row">
+                <span class="detail-label">Role</span>
+                <span class="detail-value">Cashier</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Store</span>
+                <span class="detail-value">Cluj · Main</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Status</span>
+                <span class="detail-value" style="display:flex;align-items:center;gap:5px;"><span style="width:7px;height:7px;border-radius:50%;background:rgba(48,209,88,0.90)"></span>On shift</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Since</span>
+                <span class="detail-value">Mar 2024</span>
+              </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="detail-actions">
+              <div class="detail-action primary">Message</div>
+              <div class="detail-action secondary">Schedule</div>
+              <div class="detail-action danger">Leave</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-bar" style="z-index:4">
+          <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9Z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span class="tab-lbl">Command</span></div>
+          <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/></svg><span class="tab-lbl">Operations</span></div>
+          <div class="tab active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span class="tab-lbl">People</span></div>
+          <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span class="tab-lbl">Finance</span></div>
+          <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span class="tab-lbl">Intel</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phone 2: Action sheet -->
+    <div class="phone-wrap">
+      <span class="phone-label">Action sheet</span>
+      <div class="phone">
+        <div class="di">
+          <span class="di-dot"></span>
+          <span class="di-text">Operations</span>
+        </div>
+
+        <div class="bg-content">
+          <div style="font-size:10px;color:rgba(255,255,255,0.18);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;margin-top:8px;">Active tasks</div>
+          <div class="bg-row"><div style="width:36px;height:36px;border-radius:10px;background:rgba(255,159,10,0.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,179,64,0.80)" stroke-width="2" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/></svg></div><div><div class="bg-text-1">Restock — Aisle 3</div><div class="bg-text-2">Due 10:00</div></div></div>
+          <div class="bg-row" style="background:rgba(255,255,255,0.09);border-color:rgba(255,255,255,0.16)"><div style="width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,0.10);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.50)" stroke-width="2" stroke-linecap="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div><div><div class="bg-text-1" style="color:rgba(255,255,255,0.80)">Inventory count</div><div class="bg-text-2">Section B · 14:00</div></div></div>
+        </div>
+
+        <div class="sheet-backdrop"></div>
+
+        <!-- Action sheet -->
+        <div class="sheet sheet-glass" style="height:auto;bottom:0;">
+          <div class="grab-handle"></div>
+
+          <div class="action-title-section">
+            <div class="action-context">Inventory count · Section B</div>
+            <div class="action-subject">Task actions</div>
+            <div class="action-sub">Assigned to you · Due 14:00</div>
+          </div>
+
+          <div class="action-list">
+            <div class="action-item">
+              <div class="action-item-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <div>
+                <div class="action-item-label">Mark Complete</div>
+                <div class="action-item-sub">Close this task</div>
+              </div>
+            </div>
+            <div class="action-item">
+              <div class="action-item-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              </div>
+              <div>
+                <div class="action-item-label">Reschedule</div>
+                <div class="action-item-sub">Change date or time</div>
+              </div>
+            </div>
+            <div class="action-item">
+              <div class="action-item-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+              </div>
+              <div>
+                <div class="action-item-label">Reassign</div>
+                <div class="action-item-sub">Delegate to another person</div>
+              </div>
+            </div>
+            <div class="action-divider"></div>
+            <div class="action-item destructive">
+              <div class="action-item-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+              </div>
+              <div>
+                <div class="action-item-label">Delete Task</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="sheet-cancel">Cancel</div>
+        </div>
+
+        <div class="tab-bar" style="z-index:4">
+          <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9Z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span class="tab-lbl">Command</span></div>
+          <div class="tab active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/></svg><span class="tab-lbl">Operations</span></div>
+          <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><span class="tab-lbl">People</span></div>
+          <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span class="tab-lbl">Finance</span></div>
+          <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span class="tab-lbl">Intel</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phone 3: Confirm + Filter sheet -->
+    <div class="phone-wrap">
+      <span class="phone-label">Confirm sheet</span>
+      <div class="phone">
+        <div class="di">
+          <span class="di-dot"></span>
+          <span class="di-text">Finance</span>
+        </div>
+
+        <div class="bg-content">
+          <div style="font-size:10px;color:rgba(255,255,255,0.18);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;margin-top:8px;">Recent invoices</div>
+          <div class="bg-row"><div style="width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,0.07);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:10px;font-weight:700;color:rgba(255,255,255,0.35);">#1041</div><div><div class="bg-text-1">€1,240 · Client A</div><div class="bg-text-2">Overdue · 14 days</div></div></div>
+          <div class="bg-row"><div style="width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,0.07);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:10px;font-weight:700;color:rgba(255,255,255,0.35);">#1042</div><div><div class="bg-text-1">€298 · Client B</div><div class="bg-text-2">Paid</div></div></div>
+        </div>
+
+        <div class="sheet-backdrop"></div>
+
+        <!-- Confirm sheet -->
+        <div class="sheet sheet-glass" style="height:auto;bottom:0;">
+          <div class="grab-handle"></div>
+
+          <div class="confirm-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(255,99,90,0.90)" stroke-width="2" stroke-linecap="round">
+              <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+              <path d="M10 11v6M14 11v6"/>
+            </svg>
+          </div>
+
+          <div class="confirm-heading">Delete Invoice #1041?</div>
+          <div class="confirm-body">This will permanently delete the invoice for €1,240. This action cannot be undone and will be recorded in the audit log.</div>
+
+          <div class="confirm-actions">
+            <button class="confirm-btn cancel">Cancel</button>
+            <button class="confirm-btn destructive">Delete</button>
+          </div>
+        </div>
+
+        <div class="tab-bar" style="z-index:4">
+          <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9Z"/></svg><span class="tab-lbl">Command</span></div>
+          <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/></svg><span class="tab-lbl">Operations</span></div>
+          <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><span class="tab-lbl">People</span></div>
+          <div class="tab active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span class="tab-lbl">Finance</span></div>
+          <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span class="tab-lbl">Intel</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phone 4: Filter sheet -->
+    <div class="phone-wrap">
+      <span class="phone-label">Filter sheet</span>
+      <div class="phone">
+        <div class="di">
+          <span class="di-dot"></span>
+          <span class="di-text">Intelligence</span>
+        </div>
+
+        <div class="bg-content" style="padding-top:56px;">
+          <div style="height:100%;background:rgba(255,255,255,0.03);border-radius:20px;"></div>
+        </div>
+
+        <div class="sheet-backdrop"></div>
+
+        <!-- Filter sheet -->
+        <div class="sheet sheet-glass" style="height:72%;">
+          <div class="grab-handle"></div>
+
+          <div class="sheet-header">
+            <span class="sheet-title">Filter & Sort</span>
+            <span class="sheet-close">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </span>
+          </div>
+
+          <div class="sheet-body">
+
+            <div class="filter-section-label">Period</div>
+            <div class="filter-grid">
+              <div class="filter-chip">Today</div>
+              <div class="filter-chip active">This week</div>
+              <div class="filter-chip">This month</div>
+              <div class="filter-chip">Last month</div>
+              <div class="filter-chip">Q2 2026</div>
+              <div class="filter-chip">Custom</div>
+            </div>
+
+            <div class="filter-section-label">Sort by</div>
+            <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:4px 12px;margin-bottom:16px;">
+              <div class="filter-row-item">
+                <span class="filter-row-label">Revenue (high → low)</span>
+                <div class="filter-check on"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+              </div>
+              <div class="filter-row-item">
+                <span class="filter-row-label">Date (newest first)</span>
+                <div class="filter-check"></div>
+              </div>
+              <div class="filter-row-item">
+                <span class="filter-row-label">Margin (high → low)</span>
+                <div class="filter-check"></div>
+              </div>
+            </div>
+
+            <div class="filter-section-label">Stores</div>
+            <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:4px 12px;margin-bottom:16px;">
+              <div class="filter-row-item">
+                <span class="filter-row-label">All stores</span>
+                <div class="filter-check on"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+              </div>
+              <div class="filter-row-item">
+                <span class="filter-row-label">Cluj</span>
+                <div class="filter-check on"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+              </div>
+              <div class="filter-row-item">
+                <span class="filter-row-label">Sibiu</span>
+                <div class="filter-check"></div>
+              </div>
+            </div>
+
+            <div class="apply-btn">Apply Filters</div>
+          </div>
+        </div>
+
+        <div class="tab-bar" style="z-index:4">
+          <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9Z"/></svg><span class="tab-lbl">Command</span></div>
+          <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/></svg><span class="tab-lbl">Operations</span></div>
+          <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><span class="tab-lbl">People</span></div>
+          <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span class="tab-lbl">Finance</span></div>
+          <div class="tab active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span class="tab-lbl">Intel</span></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end phone-row -->
+
+  <!-- Sheet types -->
+  <div class="type-chips">
+    <div class="type-chip">DetailSheet — scrollable content, snap points</div>
+    <div class="type-chip">ActionSheet — contextual action list + cancel</div>
+    <div class="type-chip">ConfirmSheet — destructive/critical confirmation</div>
+    <div class="type-chip">FilterSheet — filter + sort options + apply</div>
+    <div class="type-chip">FormSheet — inline form fields (Phase 10+)</div>
+    <div class="type-chip">SheetStack — up to 3 layers deep</div>
+  </div>
+
+  <!-- Architecture -->
+  <div class="arch-section">
+    <p class="arch-title">Architecture</p>
+    <div class="arch-grid">
+      <div class="arch-card">
+        <p class="arch-card-title"><span class="dot"></span>packages/ui — Base Primitives</p>
+        <ul>
+          <li>BottomSheet — glass surface, grab handle, snap points</li>
+          <li>useBottomSheet — open/close/snap state hook</li>
+          <li>SheetStack — manages up to 3 stacked sheets</li>
+          <li>SheetPortal — renders via React portal into body</li>
+          <li>useSheetGesture — touch drag + spring physics</li>
+          <li>SheetContext — global open/dismiss from anywhere</li>
+        </ul>
+      </div>
+      <div class="arch-card">
+        <p class="arch-card-title"><span class="dot"></span>Snap Point System</p>
+        <ul>
+          <li>peek — 120px (quick preview)</li>
+          <li>mid — 50% viewport (detail + actions)</li>
+          <li>full — 92% viewport (scrollable list/form)</li>
+          <li>auto — height-content (action/confirm sheets)</li>
+          <li>Custom heights supported (px or %)</li>
+          <li>Velocity-aware snap — fast swipe overrides nearest</li>
+        </ul>
+      </div>
+      <div class="arch-card">
+        <p class="arch-card-title"><span class="dot"></span>Gesture Physics</p>
+        <ul>
+          <li>Spring: cubic-bezier(0.34,1.56,0.64,1)</li>
+          <li>Dismiss threshold: 40% down OR velocity > 1000px/s</li>
+          <li>Overscroll: rubber-band up to +20px</li>
+          <li>Velocity tracking: last 4 frames averaged</li>
+          <li>Backdrop blur: interpolates 0→20px with sheet position</li>
+          <li>Haptic feedback: open, snap, dismiss</li>
+        </ul>
+      </div>
+      <div class="arch-card">
+        <p class="arch-card-title"><span class="dot"></span>App-level Sheet Variants</p>
+        <ul>
+          <li>ActionSheet(items[], context?) — contextual actions</li>
+          <li>ConfirmSheet(title, body, onConfirm, variant?) — confirm/destructive</li>
+          <li>FilterSheet(fields[], onApply) — filter/sort builder</li>
+          <li>DetailSheet(entityType, entityId) — dynamic entity detail</li>
+          <li>useSheet() hook — open any sheet from any component</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Files -->
+  <div class="files-section">
+    <p class="arch-title">Files</p>
+    <div class="files-grid">
+      <div class="file-block"><span class="file-tag new">NEW</span><p class="file-path">packages/ui/src/bottom-sheet/BottomSheet.tsx</p></div>
+      <div class="file-block"><span class="file-tag new">NEW</span><p class="file-path">packages/ui/src/bottom-sheet/SheetStack.tsx</p></div>
+      <div class="file-block"><span class="file-tag new">NEW</span><p class="file-path">packages/ui/src/bottom-sheet/SheetContext.tsx</p></div>
+      <div class="file-block"><span class="file-tag new">NEW</span><p class="file-path">packages/ui/src/bottom-sheet/useBottomSheet.ts</p></div>
+      <div class="file-block"><span class="file-tag new">NEW</span><p class="file-path">packages/ui/src/bottom-sheet/useSheetGesture.ts</p></div>
+      <div class="file-block"><span class="file-tag new">NEW</span><p class="file-path">packages/ui/src/bottom-sheet/index.ts</p></div>
+      <div class="file-block"><span class="file-tag new">NEW</span><p class="file-path">apps/web/src/components/sheets/ActionSheet.tsx</p></div>
+      <div class="file-block"><span class="file-tag new">NEW</span><p class="file-path">apps/web/src/components/sheets/ConfirmSheet.tsx</p></div>
+      <div class="file-block"><span class="file-tag new">NEW</span><p class="file-path">apps/web/src/components/sheets/FilterSheet.tsx</p></div>
+      <div class="file-block"><span class="file-tag new">NEW</span><p class="file-path">apps/web/src/components/sheets/DetailSheet.tsx</p></div>
+      <div class="file-block"><span class="file-tag new">NEW</span><p class="file-path">apps/web/src/components/sheets/useSheet.ts</p></div>
+      <div class="file-block"><span class="file-tag update">UPDATE</span><p class="file-path">packages/ui/src/index.ts — export sheet primitives</p></div>
+      <div class="file-block"><span class="file-tag update">UPDATE</span><p class="file-path">apps/web/src/app/(authenticated)/layout.tsx — SheetStack provider</p></div>
+      <div class="file-block"><span class="file-tag update">UPDATE</span><p class="file-path">apps/web/src/app/(authenticated)/dashboard/variants — wire QuickActions to ActionSheet</p></div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
