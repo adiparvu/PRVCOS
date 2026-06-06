@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PRV — Phase 11: AI Briefing Engine</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #060606;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 48px 24px 64px;
+    color: white;
+  }
+
+  /* ── Header ── */
+  .page-header {
+    text-align: center;
+    margin-bottom: 52px;
+  }
+  .phase-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 100px;
+    padding: 5px 14px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.5);
+    margin-bottom: 18px;
+  }
+  .phase-chip span { color: rgba(255,255,255,0.85); }
+  .page-title {
+    font-size: 34px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    color: rgba(255,255,255,0.95);
+    line-height: 1.1;
+    margin-bottom: 10px;
+  }
+  .page-sub {
+    font-size: 15px;
+    color: rgba(255,255,255,0.4);
+    font-weight: 400;
+    max-width: 480px;
+    line-height: 1.5;
+  }
+
+  /* ── Grid ── */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(4, 280px);
+    gap: 24px;
+    max-width: 1160px;
+  }
+
+  /* ── Phone frame ── */
+  .phone {
+    position: relative;
+    width: 280px;
+    border-radius: 44px;
+    background: #0a0a0a;
+    border: 1px solid rgba(255,255,255,0.13);
+    box-shadow:
+      0 32px 80px rgba(0,0,0,0.9),
+      0 8px 24px rgba(0,0,0,0.6),
+      inset 0 1px 0 rgba(255,255,255,0.18);
+    overflow: hidden;
+  }
+  .phone-screen {
+    min-height: 580px;
+    background: #000;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+  /* Dynamic Island */
+  .di {
+    width: 100px;
+    height: 30px;
+    background: #000;
+    border-radius: 20px;
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    border: 1px solid rgba(255,255,255,0.06);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+  }
+  .di-dot {
+    width: 6px; height: 6px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 50%;
+  }
+
+  /* Content scroll area */
+  .screen-content {
+    flex: 1;
+    padding: 52px 14px 28px;
+    overflow: hidden;
+  }
+
+  /* ── Glass ── */
+  .g1 {
+    background: rgba(255,255,255,0.055);
+    border: 1px solid rgba(255,255,255,0.08);
+    backdrop-filter: blur(32px);
+  }
+  .g2 {
+    background: rgba(255,255,255,0.10);
+    border: 1px solid rgba(255,255,255,0.12);
+    backdrop-filter: blur(48px);
+  }
+  .g3 {
+    background: rgba(255,255,255,0.16);
+    border: 1px solid rgba(255,255,255,0.18);
+    backdrop-filter: blur(64px);
+  }
+  .card {
+    border-radius: 18px;
+    padding: 14px;
+    position: relative;
+    overflow: hidden;
+  }
+  .card::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  }
+
+  /* ── Label ── */
+  .label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.3);
+    margin: 12px 2px 7px;
+  }
+
+  /* ── AI Chip ── */
+  .ai-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 100px;
+    padding: 4px 10px;
+    font-size: 10px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.6);
+    letter-spacing: .04em;
+  }
+  .ai-chip .dot {
+    width: 5px; height: 5px;
+    background: rgba(48,209,88,0.9);
+    border-radius: 50%;
+    animation: pulse 1.8s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.7); }
+  }
+
+  /* ── KPI row ── */
+  .kpi-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 7px;
+    margin-bottom: 8px;
+  }
+  .kpi {
+    border-radius: 14px;
+    padding: 10px 12px;
+    position: relative;
+    overflow: hidden;
+  }
+  .kpi::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
+  }
+  .kpi-label {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.3);
+    margin-bottom: 4px;
+  }
+  .kpi-val {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    color: rgba(255,255,255,0.92);
+    line-height: 1;
+  }
+  .kpi-trend {
+    font-size: 10px;
+    font-weight: 600;
+    margin-top: 3px;
+  }
+  .up { color: rgba(48,209,88,0.9); }
+  .down-good { color: rgba(48,209,88,0.9); }
+  .down-bad { color: rgba(255,69,58,0.9); }
+  .flat { color: rgba(255,255,255,0.35); }
+  .warn { color: rgba(255,159,10,0.9); }
+
+  /* ── Alert row ── */
+  .alert-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 9px 10px;
+    border-radius: 12px;
+    margin-bottom: 6px;
+  }
+  .alert-icon {
+    width: 20px; height: 20px;
+    border-radius: 7px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .alert-icon.red { background: rgba(255,69,58,0.18); }
+  .alert-icon.orange { background: rgba(255,159,10,0.18); }
+  .alert-icon.green { background: rgba(48,209,88,0.18); }
+  .alert-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.85);
+    line-height: 1.3;
+  }
+  .alert-sub {
+    font-size: 10px;
+    color: rgba(255,255,255,0.35);
+    margin-top: 1px;
+    line-height: 1.3;
+  }
+
+  /* ── Recommendation box ── */
+  .rec-box {
+    border-radius: 16px;
+    padding: 13px 14px;
+    position: relative;
+    overflow: hidden;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.13);
+  }
+  .rec-box::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.22), transparent);
+  }
+  .rec-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 7px;
+  }
+  .rec-badge {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.35);
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 5px;
+    padding: 2px 6px;
+  }
+  .rec-text {
+    font-size: 12px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.75);
+    line-height: 1.5;
+    margin-bottom: 10px;
+  }
+  .rec-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(255,255,255,0.9);
+    color: #000;
+    border-radius: 10px;
+    padding: 6px 12px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .02em;
+  }
+
+  /* ── Anomaly cards ── */
+  .anomaly-card {
+    border-radius: 16px;
+    padding: 12px;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 7px;
+  }
+  .anomaly-card::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+  }
+  .anomaly-type {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+  }
+  .anomaly-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.88);
+    margin-bottom: 3px;
+    line-height: 1.3;
+  }
+  .anomaly-desc {
+    font-size: 10px;
+    color: rgba(255,255,255,0.4);
+    line-height: 1.4;
+  }
+  .anomaly-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 8px;
+  }
+  .probability {
+    font-size: 10px;
+    font-weight: 700;
+    color: rgba(255,159,10,0.9);
+  }
+  .action-link {
+    font-size: 10px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.55);
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 6px;
+    padding: 3px 8px;
+  }
+
+  /* ── Forecast mini chart ── */
+  .forecast-area {
+    border-radius: 14px;
+    padding: 12px;
+    position: relative;
+    overflow: hidden;
+  }
+  .forecast-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.35);
+    margin-bottom: 8px;
+    letter-spacing: .04em;
+  }
+  .mini-chart {
+    width: 100%;
+    height: 60px;
+  }
+
+  /* ── Chat ── */
+  .chat-search {
+    border-radius: 14px;
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.12);
+  }
+  .chat-search svg { opacity: 0.35; }
+  .chat-placeholder {
+    font-size: 12px;
+    color: rgba(255,255,255,0.3);
+    flex: 1;
+  }
+  .chat-bubble {
+    max-width: 80%;
+    padding: 8px 11px;
+    border-radius: 14px;
+    font-size: 11px;
+    line-height: 1.45;
+    margin-bottom: 7px;
+    position: relative;
+  }
+  .bubble-user {
+    align-self: flex-end;
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.15);
+    color: rgba(255,255,255,0.9);
+    border-radius: 14px 14px 3px 14px;
+    margin-left: auto;
+  }
+  .bubble-ai {
+    align-self: flex-start;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: rgba(255,255,255,0.75);
+    border-radius: 3px 14px 14px 14px;
+  }
+  .bubble-ai-header {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-bottom: 5px;
+  }
+  .ai-label {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.3);
+  }
+  .chat-actions {
+    display: flex;
+    gap: 5px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+  }
+  .chat-action {
+    font-size: 10px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.6);
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    padding: 4px 9px;
+  }
+  .suggestions-label {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.25);
+    margin: 8px 0 5px;
+  }
+  .suggestion {
+    padding: 8px 10px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.07);
+    font-size: 11px;
+    color: rgba(255,255,255,0.5);
+    margin-bottom: 5px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .suggestion::before {
+    content: '→';
+    color: rgba(255,255,255,0.2);
+    font-size: 12px;
+  }
+
+  /* ── Predictive ── */
+  .risk-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 10px;
+    border-radius: 10px;
+    margin-bottom: 5px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.07);
+  }
+  .risk-name {
+    font-size: 11px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.6);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .risk-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+  }
+  .risk-badge {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 5px;
+  }
+  .risk-low { background: rgba(48,209,88,0.14); color: rgba(48,209,88,0.9); }
+  .risk-med { background: rgba(255,159,10,0.14); color: rgba(255,159,10,0.9); }
+  .risk-high { background: rgba(255,69,58,0.14); color: rgba(255,69,58,0.9); }
+
+  .opportunity-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 9px 10px;
+    border-radius: 11px;
+    background: rgba(48,209,88,0.06);
+    border: 1px solid rgba(48,209,88,0.12);
+    margin-bottom: 5px;
+  }
+  .opp-icon {
+    width: 18px; height: 18px;
+    border-radius: 6px;
+    background: rgba(48,209,88,0.14);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .opp-text {
+    font-size: 11px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.65);
+    line-height: 1.35;
+  }
+  .opp-value {
+    font-size: 10px;
+    font-weight: 700;
+    color: rgba(48,209,88,0.85);
+    margin-top: 2px;
+  }
+
+  /* ── Caption ── */
+  .caption {
+    text-align: center;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.25);
+    margin-top: 14px;
+  }
+
+  /* ── Bottom bar ── */
+  .tab-bar {
+    height: 60px;
+    background: rgba(255,255,255,0.06);
+    border-top: 1px solid rgba(255,255,255,0.08);
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    padding: 0 8px 4px;
+  }
+  .tab-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    opacity: 0.3;
+  }
+  .tab-item.active { opacity: 1; }
+  .tab-dot {
+    width: 4px; height: 4px;
+    background: white;
+    border-radius: 50%;
+    margin-top: -2px;
+  }
+  .tab-label {
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: .04em;
+  }
+
+  /* ── Section divider ── */
+  .divider {
+    height: 1px;
+    background: rgba(255,255,255,0.06);
+    margin: 9px 0;
+  }
+
+  /* ── Screen heading ── */
+  .screen-heading {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    color: rgba(255,255,255,0.92);
+    line-height: 1.1;
+    margin-bottom: 3px;
+  }
+  .screen-sub {
+    font-size: 11px;
+    color: rgba(255,255,255,0.3);
+    margin-bottom: 12px;
+    font-weight: 400;
+  }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <div class="phase-chip">Phase <span>11</span> · Preview</div>
+  <div class="page-title">AI Briefing &amp; Intelligence Engine</div>
+  <div class="page-sub">CEO 60-second rule — the missing piece. Natural language queries, anomaly detection, predictive forecasting, and a daily AI briefing.</div>
+</div>
+
+<div class="grid">
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- PHONE 1: Morning Briefing                               -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <div>
+    <div class="phone">
+      <div class="phone-screen">
+        <div class="di"><div class="di-dot"></div><div class="di-dot"></div></div>
+
+        <div class="screen-content">
+          <!-- Header -->
+          <div style="display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:10px;">
+            <div>
+              <p style="font-size:10px; color:rgba(255,255,255,0.3); font-weight:600; letter-spacing:.05em; text-transform:uppercase; margin-bottom:3px;">Intelligence</p>
+              <div class="screen-heading">Good morning,<br>Adrian.</div>
+              <p class="screen-sub">08:34 · Friday, 6 Jun 2026</p>
+            </div>
+            <div class="ai-chip"><div class="dot"></div>Live</div>
+          </div>
+
+          <!-- KPI row -->
+          <div class="kpi-row">
+            <div class="kpi g1">
+              <div class="kpi-label">Revenue</div>
+              <div class="kpi-val">€482K</div>
+              <div class="kpi-trend up">↑ 12.4% vs Jun</div>
+            </div>
+            <div class="kpi g1">
+              <div class="kpi-label">Profit</div>
+              <div class="kpi-val">€138K</div>
+              <div class="kpi-trend up">↑ 8.1%</div>
+            </div>
+          </div>
+          <div class="kpi-row" style="margin-bottom:10px;">
+            <div class="kpi g1">
+              <div class="kpi-label">Staff In</div>
+              <div class="kpi-val">142</div>
+              <div class="kpi-trend flat">→ 3 absent</div>
+            </div>
+            <div class="kpi g1">
+              <div class="kpi-label">Active Jobs</div>
+              <div class="kpi-val">38</div>
+              <div class="kpi-trend up">↑ 4 new</div>
+            </div>
+          </div>
+
+          <!-- Alerts -->
+          <div class="label">Critical Alerts</div>
+          <div class="card g1" style="padding:8px; border-radius:16px; margin-bottom:8px;">
+            <div class="alert-row" style="background:rgba(255,69,58,0.07); border:1px solid rgba(255,69,58,0.12); margin-bottom:0;">
+              <div class="alert-icon red">⚠</div>
+              <div>
+                <div class="alert-title">2 invoices overdue</div>
+                <div class="alert-sub">€3,240 outstanding · Andronic Group &amp; Biroul Construct</div>
+              </div>
+            </div>
+            <div class="divider"></div>
+            <div class="alert-row" style="background:rgba(255,159,10,0.07); border:1px solid rgba(255,159,10,0.12); margin-bottom:0;">
+              <div class="alert-icon orange">↓</div>
+              <div>
+                <div class="alert-title">Inventory low — Floreasca</div>
+                <div class="alert-sub">12 critical items below reorder point</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- AI Recommendation -->
+          <div class="label">AI Recommendation</div>
+          <div class="rec-box">
+            <div class="rec-header">
+              <div class="rec-badge">Action required</div>
+            </div>
+            <div class="rec-text">"Approve the €28,400 payroll run by 14:00 today to avoid salary delays for 142 employees."</div>
+            <div class="rec-cta">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              Approve Payroll
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab bar -->
+        <div class="tab-bar">
+          <div class="tab-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg><div class="tab-label">Command</div></div>
+          <div class="tab-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg><div class="tab-label">People</div></div>
+          <div class="tab-item active"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg><div class="tab-label">Intelligence</div><div class="tab-dot"></div></div>
+          <div class="tab-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4h22v16H1ZM1 10h22"/></svg><div class="tab-label">Finance</div></div>
+          <div class="tab-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg><div class="tab-label">More</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="caption">Morning Briefing</div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- PHONE 2: Anomaly Detection                              -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <div>
+    <div class="phone">
+      <div class="phone-screen">
+        <div class="di"><div class="di-dot"></div><div class="di-dot"></div></div>
+
+        <div class="screen-content">
+          <div style="margin-bottom:10px;">
+            <p style="font-size:10px; color:rgba(255,255,255,0.3); font-weight:600; letter-spacing:.05em; text-transform:uppercase; margin-bottom:3px;">Intelligence</p>
+            <div class="screen-heading">Anomalies<br>&amp; Insights</div>
+            <p class="screen-sub">3 signals detected in the last 24h</p>
+          </div>
+
+          <!-- Anomaly 1: Risk -->
+          <div class="anomaly-card" style="background:rgba(255,69,58,0.07); border:1px solid rgba(255,69,58,0.14);">
+            <div class="anomaly-type" style="color:rgba(255,69,58,0.8);">⚠ Risk · Revenue</div>
+            <div class="anomaly-title">Invoice overdue risk increasing</div>
+            <div class="anomaly-desc">Andronic Group SRL has not responded to 2 payment reminders. 62% probability of default if not contacted today.</div>
+            <div class="anomaly-footer">
+              <div class="probability">62% default risk</div>
+              <div class="action-link">Contact Client</div>
+            </div>
+          </div>
+
+          <!-- Anomaly 2: Expense Spike -->
+          <div class="anomaly-card" style="background:rgba(255,159,10,0.07); border:1px solid rgba(255,159,10,0.14);">
+            <div class="anomaly-type" style="color:rgba(255,159,10,0.8);">↑ Spike · Expenses</div>
+            <div class="anomaly-title">Procurement costs up 18%</div>
+            <div class="anomaly-desc">3 unapproved purchases detected this week. Romstal SRL, BricoStore, Leroy Merlin. Total: €4,620.</div>
+            <div class="anomaly-footer">
+              <div class="probability" style="color:rgba(255,159,10,0.9);">€4,620 unreviewed</div>
+              <div class="action-link">Review</div>
+            </div>
+          </div>
+
+          <!-- Anomaly 3: Positive -->
+          <div class="anomaly-card" style="background:rgba(48,209,88,0.07); border:1px solid rgba(48,209,88,0.14);">
+            <div class="anomaly-type" style="color:rgba(48,209,88,0.8);">✓ Opportunity · Ops</div>
+            <div class="anomaly-title">Floreasca — top performer</div>
+            <div class="anomaly-desc">Ops efficiency up 8% week-on-week. 0 open tasks overdue. Customer satisfaction: 4.9/5.</div>
+            <div class="anomaly-footer">
+              <div class="probability" style="color:rgba(48,209,88,0.9);">+8% efficiency</div>
+              <div class="action-link">View Store</div>
+            </div>
+          </div>
+
+          <!-- Forecast strip -->
+          <div class="label">Revenue Forecast</div>
+          <div class="forecast-area g1" style="border:1px solid rgba(255,255,255,0.08);">
+            <div class="forecast-label">Jun projected: €519K &nbsp;·&nbsp; AI confidence: 87%</div>
+            <svg class="mini-chart" viewBox="0 0 240 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <!-- Actual line -->
+              <polyline points="0,52 40,46 80,44 120,36 160,30 200,24" stroke="rgba(255,255,255,0.6)" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+              <!-- Projected line (dashed) -->
+              <polyline points="200,24 220,20 240,17" stroke="rgba(255,255,255,0.35)" stroke-width="1.5" fill="none" stroke-dasharray="3,3" stroke-linecap="round"/>
+              <!-- Confidence band -->
+              <polygon points="200,24 220,20 240,17 240,22 220,25 200,24" fill="rgba(255,255,255,0.06)"/>
+              <!-- Dot at current -->
+              <circle cx="200" cy="24" r="3" fill="rgba(255,255,255,0.9)"/>
+              <!-- Month labels -->
+              <text x="0" y="60" font-size="8" fill="rgba(255,255,255,0.25)" font-family="system-ui">Jan</text>
+              <text x="38" y="60" font-size="8" fill="rgba(255,255,255,0.25)" font-family="system-ui">Feb</text>
+              <text x="78" y="60" font-size="8" fill="rgba(255,255,255,0.25)" font-family="system-ui">Mar</text>
+              <text x="118" y="60" font-size="8" fill="rgba(255,255,255,0.25)" font-family="system-ui">Apr</text>
+              <text x="158" y="60" font-size="8" fill="rgba(255,255,255,0.25)" font-family="system-ui">May</text>
+              <text x="196" y="60" font-size="8" fill="rgba(255,255,255,0.4)" font-family="system-ui">Jun</text>
+            </svg>
+          </div>
+        </div>
+
+        <div class="tab-bar">
+          <div class="tab-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg><div class="tab-label">Command</div></div>
+          <div class="tab-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg><div class="tab-label">People</div></div>
+          <div class="tab-item active"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg><div class="tab-label">Intelligence</div><div class="tab-dot"></div></div>
+          <div class="tab-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4h22v16H1ZM1 10h22"/></svg><div class="tab-label">Finance</div></div>
+          <div class="tab-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg><div class="tab-label">More</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="caption">Anomaly Detection</div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- PHONE 3: AI Chat                                        -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <div>
+    <div class="phone">
+      <div class="phone-screen">
+        <div class="di"><div class="di-dot"></div><div class="di-dot"></div></div>
+
+        <div class="screen-content">
+          <div style="margin-bottom:8px;">
+            <p style="font-size:10px; color:rgba(255,255,255,0.3); font-weight:600; letter-spacing:.05em; text-transform:uppercase; margin-bottom:3px;">Intelligence</p>
+            <div class="screen-heading">Ask PRV AI</div>
+            <p class="screen-sub">Natural language · Scoped to your data</p>
+          </div>
+
+          <!-- Search bar -->
+          <div class="chat-search">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            <div class="chat-placeholder">Ask anything about your business…</div>
+          </div>
+
+          <!-- Chat thread -->
+          <div style="display:flex; flex-direction:column;">
+            <!-- User -->
+            <div class="chat-bubble bubble-user" style="font-weight:500;">Why is cash flow tight this week?</div>
+
+            <!-- AI response -->
+            <div class="chat-bubble bubble-ai" style="max-width:92%;">
+              <div class="bubble-ai-header">
+                <div class="ai-label">PRV AI</div>
+                <div class="ai-chip" style="font-size:8px; padding:2px 6px;"><div class="dot"></div>Analysed 3 sources</div>
+              </div>
+              Cash flow is down 8% vs last week due to:<br><br>
+              <span style="color:rgba(255,69,58,0.8);">1.</span> Payroll run €28,400 (Jun 2)<br>
+              <span style="color:rgba(255,159,10,0.8);">2.</span> 2 overdue receivables €3,240<br>
+              <span style="color:rgba(255,159,10,0.8);">3.</span> Romstal invoice €1,840 pending<br><br>
+              <span style="color:rgba(48,209,88,0.8);">Recovery:</span> Positive in ~4 days when Invoice #208 is collected.
+              <div class="chat-actions">
+                <div class="chat-action">View Cash Flow</div>
+                <div class="chat-action">Contact Client</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Suggestions -->
+          <div class="suggestions-label">Try asking</div>
+          <div class="suggestion">Which store is most profitable this month?</div>
+          <div class="suggestion">When is next payroll run?</div>
+          <div class="suggestion">Show expense trends by category</div>
+          <div class="suggestion">Who has pending time-off requests?</div>
+        </div>
+
+        <div class="tab-bar">
+          <div class="tab-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg><div class="tab-label">Command</div></div>
+          <div class="tab-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg><div class="tab-label">People</div></div>
+          <div class="tab-item active"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg><div class="tab-label">Intelligence</div><div class="tab-dot"></div></div>
+          <div class="tab-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4h22v16H1ZM1 10h22"/></svg><div class="tab-label">Finance</div></div>
+          <div class="tab-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg><div class="tab-label">More</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="caption">AI Chat Interface</div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- PHONE 4: Predictive Analytics                           -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <div>
+    <div class="phone">
+      <div class="phone-screen">
+        <div class="di"><div class="di-dot"></div><div class="di-dot"></div></div>
+
+        <div class="screen-content">
+          <div style="margin-bottom:10px;">
+            <p style="font-size:10px; color:rgba(255,255,255,0.3); font-weight:600; letter-spacing:.05em; text-transform:uppercase; margin-bottom:3px;">Intelligence</p>
+            <div class="screen-heading">Predictive<br>Analytics</div>
+            <p class="screen-sub">3-month forecast · AI confidence: 87%</p>
+          </div>
+
+          <!-- Revenue forecast chart -->
+          <div class="label">Revenue Forecast</div>
+          <div class="forecast-area g1" style="border:1px solid rgba(255,255,255,0.08); margin-bottom:8px;">
+            <svg width="100%" height="80" viewBox="0 0 240 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <!-- Confidence band future -->
+              <polygon points="160,32 200,26 240,19 240,30 200,36 160,38" fill="rgba(255,255,255,0.05)"/>
+              <!-- Actual -->
+              <polyline points="0,68 40,62 80,58 120,50 160,38" stroke="rgba(255,255,255,0.75)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+              <!-- Forecast -->
+              <polyline points="160,38 200,26 240,19" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" fill="none" stroke-dasharray="4,3" stroke-linecap="round"/>
+              <!-- dots -->
+              <circle cx="160" cy="38" r="3.5" fill="rgba(255,255,255,0.9)"/>
+              <circle cx="200" cy="26" r="3" fill="rgba(255,255,255,0.5)"/>
+              <circle cx="240" cy="19" r="3" fill="rgba(255,255,255,0.3)"/>
+              <!-- value labels -->
+              <text x="148" y="34" font-size="8" fill="rgba(255,255,255,0.6)" font-family="system-ui" text-anchor="middle">€482K</text>
+              <text x="200" y="22" font-size="8" fill="rgba(255,255,255,0.5)" font-family="system-ui" text-anchor="middle">€519K</text>
+              <text x="240" y="15" font-size="8" fill="rgba(255,255,255,0.35)" font-family="system-ui" text-anchor="middle">€557K</text>
+              <!-- x-axis labels -->
+              <text x="10" y="80" font-size="8" fill="rgba(255,255,255,0.25)" font-family="system-ui">Feb</text>
+              <text x="50" y="80" font-size="8" fill="rgba(255,255,255,0.25)" font-family="system-ui">Mar</text>
+              <text x="90" y="80" font-size="8" fill="rgba(255,255,255,0.25)" font-family="system-ui">Apr</text>
+              <text x="130" y="80" font-size="8" fill="rgba(255,255,255,0.25)" font-family="system-ui">May</text>
+              <text x="154" y="80" font-size="8" fill="rgba(255,255,255,0.5)" font-family="system-ui">Jun</text>
+              <text x="196" y="80" font-size="8" fill="rgba(255,255,255,0.3)" font-family="system-ui">Jul</text>
+              <text x="232" y="80" font-size="8" fill="rgba(255,255,255,0.2)" font-family="system-ui">Aug</text>
+            </svg>
+          </div>
+
+          <!-- Risk radar -->
+          <div class="label">Risk Radar</div>
+          <div class="card g1" style="border-radius:16px; padding:10px; margin-bottom:8px;">
+            <div class="risk-row">
+              <div class="risk-name"><div class="risk-dot" style="background:rgba(48,209,88,0.8);"></div>Cash Flow</div>
+              <div class="risk-badge risk-low">LOW</div>
+            </div>
+            <div class="risk-row">
+              <div class="risk-name"><div class="risk-dot" style="background:rgba(255,159,10,0.8);"></div>Procurement</div>
+              <div class="risk-badge risk-med">MEDIUM</div>
+            </div>
+            <div class="risk-row">
+              <div class="risk-name"><div class="risk-dot" style="background:rgba(255,69,58,0.8);"></div>Receivables</div>
+              <div class="risk-badge risk-high">HIGH</div>
+            </div>
+            <div class="risk-row" style="margin-bottom:0;">
+              <div class="risk-name"><div class="risk-dot" style="background:rgba(48,209,88,0.8);"></div>Workforce</div>
+              <div class="risk-badge risk-low">LOW</div>
+            </div>
+          </div>
+
+          <!-- Opportunities -->
+          <div class="label">Opportunities</div>
+          <div class="opportunity-row">
+            <div class="opp-icon">€</div>
+            <div>
+              <div class="opp-text">Unbilled materials across 4 active projects</div>
+              <div class="opp-value">+€12,400 billable now</div>
+            </div>
+          </div>
+          <div class="opportunity-row">
+            <div class="opp-icon">↑</div>
+            <div>
+              <div class="opp-text">2 project milestones ready to invoice</div>
+              <div class="opp-value">+€8,200 ready</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-bar">
+          <div class="tab-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg><div class="tab-label">Command</div></div>
+          <div class="tab-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg><div class="tab-label">People</div></div>
+          <div class="tab-item active"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg><div class="tab-label">Intelligence</div><div class="tab-dot"></div></div>
+          <div class="tab-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4h22v16H1ZM1 10h22"/></svg><div class="tab-label">Finance</div></div>
+          <div class="tab-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg><div class="tab-label">More</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="caption">Predictive Analytics</div>
+  </div>
+
+</div>
+</body>
+</html>
