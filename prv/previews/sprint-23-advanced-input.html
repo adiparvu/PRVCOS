@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PRV · Sprint 23 — Advanced Input & Selection</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --prv-bg:            #000;
+    --prv-g1:            rgba(255,255,255,0.06);
+    --prv-g2:            rgba(255,255,255,0.10);
+    --prv-g3:            rgba(255,255,255,0.15);
+    --prv-g4:            rgba(255,255,255,0.22);
+    --prv-text-1:        rgba(255,255,255,0.95);
+    --prv-text-2:        rgba(255,255,255,0.65);
+    --prv-text-3:        rgba(255,255,255,0.35);
+    --prv-text-4:        rgba(255,255,255,0.15);
+    --prv-border:        rgba(255,255,255,0.12);
+    --prv-border-subtle: rgba(255,255,255,0.07);
+    --prv-accent:        rgba(10,132,255,0.9);
+    --prv-star:          rgba(255,204,0,0.95);
+  }
+
+  html, body {
+    background: var(--prv-bg);
+    color: var(--prv-text-1);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page { max-width: 960px; margin: 0 auto; padding: 48px 24px 96px; }
+
+  .sprint-header { margin-bottom: 52px; }
+  .chips { display: flex; gap: 8px; margin-bottom: 10px; }
+  .chip { padding: 3px 10px; border-radius: 100px; background: var(--prv-g2); border: 1px solid var(--prv-border-subtle); font-size: 11px; font-weight: 600; color: var(--prv-text-3); letter-spacing: .06em; text-transform: uppercase; }
+  h1 { font-size: 28px; font-weight: 700; letter-spacing: -.02em; }
+  .sub { font-size: 14px; color: var(--prv-text-3); margin-top: 4px; }
+
+  .section { margin-bottom: 60px; }
+  .sl { font-size: 11px; font-weight: 600; color: var(--prv-text-3); letter-spacing: .07em; text-transform: uppercase; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+  .sl::after { content: ""; flex: 1; height: 1px; background: var(--prv-border-subtle); }
+
+  /* Delivery table */
+  .dt { width: 100%; border-collapse: collapse; }
+  .dt th, .dt td { text-align: left; padding: 10px 14px; font-size: 13px; border-bottom: 1px solid var(--prv-border-subtle); }
+  .dt th { font-size: 11px; font-weight: 600; color: var(--prv-text-3); letter-spacing: .06em; text-transform: uppercase; }
+  .dt td { color: var(--prv-text-1); }
+  .dt td:nth-child(2) { color: var(--prv-text-3); font-family: "SF Mono", monospace; font-size: 11px; }
+  .dt tr:last-child td { border-bottom: none; }
+  .tag { display: inline-flex; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 500; background: var(--prv-g2); color: var(--prv-text-3); border: 1px solid var(--prv-border-subtle); }
+  .tag.new { background: rgba(10,132,255,.12); color: rgba(10,132,255,.9); border-color: rgba(10,132,255,.2); }
+
+  .glass-surface { position: relative; overflow: hidden; background: var(--prv-g1); border: 1px solid var(--prv-border-subtle); border-radius: 20px; }
+  .glass-surface::before { content: ""; position: absolute; inset: 0 0 auto; height: 1px; background: linear-gradient(90deg,transparent,rgba(255,255,255,0.09),transparent); pointer-events: none; }
+
+  .demo-pad { padding: 40px 28px; }
+  .field-label { font-size: 12px; font-weight: 600; color: var(--prv-text-3); margin-bottom: 8px; }
+  .stack { display: flex; flex-direction: column; gap: 28px; max-width: 420px; }
+
+  /* ════════════════════════════════════════════════
+     GLASS COMBOBOX
+  ════════════════════════════════════════════════ */
+  .cb { position: relative; }
+  .cb-control {
+    display: flex; align-items: center; gap: 10px;
+    padding: 11px 14px; border-radius: 12px;
+    background: var(--prv-g2); border: 1px solid var(--prv-border);
+    transition: border-color 150ms, background 150ms;
+  }
+  .cb-control:focus-within { border-color: var(--prv-accent); background: var(--prv-g3); }
+  .cb-control .ic { color: var(--prv-text-3); display: flex; flex-shrink: 0; }
+  .cb-input { flex: 1; background: transparent; border: none; outline: none; color: var(--prv-text-1); font-size: 14px; font-family: inherit; }
+  .cb-input::placeholder { color: var(--prv-text-3); }
+  .cb-clear { width: 22px; height: 22px; border-radius: 6px; background: var(--prv-g2); border: none; display: none; align-items: center; justify-content: center; color: var(--prv-text-3); cursor: pointer; flex-shrink: 0; }
+  .cb-clear.show { display: flex; }
+  .cb-clear:hover { background: var(--prv-g3); color: var(--prv-text-1); }
+
+  .cb-pop {
+    position: absolute; z-index: 50; top: calc(100% + 6px); left: 0; right: 0;
+    background: rgba(22,22,22,0.94);
+    backdrop-filter: blur(48px) saturate(180%);
+    -webkit-backdrop-filter: blur(48px) saturate(180%);
+    border: 1px solid var(--prv-border); border-radius: 14px;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.7), 0 4px 12px rgba(0,0,0,0.4);
+    padding: 6px; max-height: 248px; overflow-y: auto;
+    opacity: 0; pointer-events: none; transform: scale(0.98) translateY(-6px);
+    transform-origin: top center;
+    transition: opacity 140ms, transform 200ms cubic-bezier(0.34,1.56,0.64,1);
+  }
+  .cb-pop.open { opacity: 1; pointer-events: all; transform: scale(1) translateY(0); }
+  .cb-opt {
+    display: flex; align-items: center; gap: 11px;
+    padding: 9px 10px; border-radius: 9px; cursor: pointer; font-size: 13px; color: var(--prv-text-1);
+  }
+  .cb-opt .av { width: 28px; height: 28px; border-radius: 8px; background: var(--prv-g2); border: 1px solid var(--prv-border-subtle); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: var(--prv-text-2); flex-shrink: 0; }
+  .cb-opt .tx { flex: 1; min-width: 0; }
+  .cb-opt .tx .s { font-size: 11px; color: var(--prv-text-3); margin-top: 1px; }
+  .cb-opt .ck { color: var(--prv-accent); opacity: 0; }
+  .cb-opt.active { background: var(--prv-g2); }
+  .cb-opt.selected .ck { opacity: 1; }
+  .cb-opt mark { background: transparent; color: var(--prv-accent); font-weight: 700; }
+  .cb-empty { padding: 18px; text-align: center; font-size: 13px; color: var(--prv-text-3); }
+
+  /* ════════════════════════════════════════════════
+     GLASS CHIP INPUT
+  ════════════════════════════════════════════════ */
+  .ci {
+    display: flex; flex-wrap: wrap; gap: 7px; align-items: center;
+    padding: 9px 11px; border-radius: 12px; min-height: 46px;
+    background: var(--prv-g2); border: 1px solid var(--prv-border);
+    transition: border-color 150ms, background 150ms; cursor: text;
+  }
+  .ci:focus-within { border-color: var(--prv-accent); background: var(--prv-g3); }
+  .ci-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 6px 4px 11px; border-radius: 100px;
+    background: var(--prv-g3); border: 1px solid var(--prv-border-subtle);
+    font-size: 12px; font-weight: 500; color: var(--prv-text-1);
+    animation: chipIn 240ms cubic-bezier(0.34,1.56,0.64,1);
+  }
+  @keyframes chipIn { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
+  .ci-chip .x { width: 16px; height: 16px; border-radius: 50%; background: var(--prv-g2); border: none; display: flex; align-items: center; justify-content: center; color: var(--prv-text-3); cursor: pointer; }
+  .ci-chip .x:hover { background: rgba(255,59,48,0.2); color: rgba(255,59,48,0.95); }
+  .ci-input { flex: 1; min-width: 90px; background: transparent; border: none; outline: none; color: var(--prv-text-1); font-size: 14px; font-family: inherit; padding: 4px 2px; }
+  .ci-input::placeholder { color: var(--prv-text-3); }
+  .ci-count { font-size: 11px; color: var(--prv-text-4); margin-top: 6px; }
+  .ci-sugg { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .ci-sugg-chip { padding: 4px 11px; border-radius: 100px; background: var(--prv-g1); border: 1px dashed var(--prv-border); font-size: 12px; color: var(--prv-text-2); cursor: pointer; transition: background 150ms; }
+  .ci-sugg-chip:hover { background: var(--prv-g2); }
+
+  /* ════════════════════════════════════════════════
+     GLASS RATING
+  ════════════════════════════════════════════════ */
+  .rt { display: inline-flex; align-items: center; gap: 10px; }
+  .rt-stars { display: inline-flex; gap: 4px; }
+  .rt-star { cursor: pointer; color: var(--prv-text-4); transition: transform 150ms cubic-bezier(0.34,1.56,0.64,1), color 150ms; }
+  .rt-star.on { color: var(--prv-star); }
+  .rt-star:hover { transform: scale(1.18); }
+  .rt-val { font-size: 13px; color: var(--prv-text-2); font-weight: 600; }
+  .rt-count { font-size: 12px; color: var(--prv-text-3); }
+  .rt.readonly .rt-star { cursor: default; }
+  .rt.readonly .rt-star:hover { transform: none; }
+  .rt-lg .rt-star svg { width: 30px; height: 30px; }
+  .rt-sm .rt-star svg { width: 16px; height: 16px; }
+
+  /* ════════════════════════════════════════════════
+     GLASS NUMBER STEPPER
+  ════════════════════════════════════════════════ */
+  .ns { display: inline-flex; align-items: stretch; border-radius: 12px; overflow: hidden; background: var(--prv-g2); border: 1px solid var(--prv-border); }
+  .ns:focus-within { border-color: var(--prv-accent); }
+  .ns-btn { width: 42px; display: flex; align-items: center; justify-content: center; background: transparent; border: none; color: var(--prv-text-1); cursor: pointer; font-size: 18px; transition: background 130ms; }
+  .ns-btn:hover:not(:disabled) { background: var(--prv-g3); }
+  .ns-btn:disabled { color: var(--prv-text-4); cursor: not-allowed; }
+  .ns-field { width: 76px; text-align: center; background: transparent; border: none; border-left: 1px solid var(--prv-border-subtle); border-right: 1px solid var(--prv-border-subtle); outline: none; color: var(--prv-text-1); font-size: 15px; font-weight: 600; font-family: inherit; }
+  .ns-unit { display: inline-flex; align-items: center; padding: 0 14px; color: var(--prv-text-3); font-size: 13px; border-left: 1px solid var(--prv-border-subtle); }
+  .ns-row { display: flex; align-items: center; gap: 14px; }
+  .ns-hint { font-size: 12px; color: var(--prv-text-4); }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="sprint-header">
+    <div class="chips"><span class="chip">Sprint 23</span><span class="chip">Preview</span><span class="chip">Phase 1 · M9</span></div>
+    <h1>Advanced Input &amp; Selection</h1>
+    <div class="sub">GlassComboBox · GlassChipInput · GlassRating · GlassNumberStepper</div>
+  </div>
+
+  <!-- ── COMBOBOX ── -->
+  <div class="section">
+    <div class="sl">GlassComboBox — Searchable autocomplete, match highlight, keyboard nav, clear</div>
+    <div class="glass-surface">
+      <div class="demo-pad">
+        <div class="stack">
+          <div>
+            <div class="field-label">Assign to employee</div>
+            <div class="cb" id="cb">
+              <div class="cb-control" onclick="document.getElementById('cb-input').focus()">
+                <span class="ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+                <input class="cb-input" id="cb-input" placeholder="Search people…" autocomplete="off"
+                  oninput="cbFilter(this.value)" onfocus="cbOpen()" />
+                <button class="cb-clear" id="cb-clear" onclick="cbClear()" aria-label="Clear">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+              </div>
+              <div class="cb-pop" id="cb-pop"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── CHIP INPUT ── -->
+  <div class="section">
+    <div class="sl">GlassChipInput — Tag entry (Enter / comma), removable chips, suggestions, max limit</div>
+    <div class="glass-surface">
+      <div class="demo-pad">
+        <div class="stack">
+          <div>
+            <div class="field-label">Skills &amp; tags</div>
+            <div class="ci" id="ci" onclick="document.getElementById('ci-input').focus()">
+              <span class="ci-chip">Plumbing<button class="x" onclick="chipRemove(event, this)" aria-label="Remove"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></span>
+              <span class="ci-chip">Electrical<button class="x" onclick="chipRemove(event, this)" aria-label="Remove"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></span>
+              <input class="ci-input" id="ci-input" placeholder="Add a tag…" onkeydown="chipKey(event)" />
+            </div>
+            <div class="ci-count" id="ci-count">2 / 8 tags</div>
+            <div class="ci-sugg">
+              <span class="ci-sugg-chip" onclick="chipAdd('Painting')">+ Painting</span>
+              <span class="ci-sugg-chip" onclick="chipAdd('Carpentry')">+ Carpentry</span>
+              <span class="ci-sugg-chip" onclick="chipAdd('Tiling')">+ Tiling</span>
+              <span class="ci-sugg-chip" onclick="chipAdd('HVAC')">+ HVAC</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── RATING ── -->
+  <div class="section">
+    <div class="sl">GlassRating — Interactive stars, hover preview, sizes, read-only with count</div>
+    <div class="glass-surface">
+      <div class="demo-pad">
+        <div style="display:flex;flex-direction:column;gap:26px">
+          <div>
+            <div class="field-label">Rate this contractor (interactive)</div>
+            <div class="rt rt-lg" id="rt-int" onmouseleave="rtHover(0)">
+              <div class="rt-stars" id="rt-int-stars"></div>
+              <span class="rt-val" id="rt-int-val">4.0</span>
+            </div>
+          </div>
+          <div>
+            <div class="field-label">Average rating (read-only)</div>
+            <div class="rt readonly" id="rt-ro">
+              <div class="rt-stars" id="rt-ro-stars"></div>
+              <span class="rt-val">4.6</span>
+              <span class="rt-count">· 318 reviews</span>
+            </div>
+          </div>
+          <div>
+            <div class="field-label">Compact (read-only, small)</div>
+            <div class="rt readonly rt-sm" id="rt-sm">
+              <div class="rt-stars" id="rt-sm-stars"></div>
+              <span class="rt-count">3.5</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── NUMBER STEPPER ── -->
+  <div class="section">
+    <div class="sl">GlassNumberStepper — Increment/decrement, min/max clamp, step, unit suffix, hold-to-repeat</div>
+    <div class="glass-surface">
+      <div class="demo-pad">
+        <div style="display:flex;flex-direction:column;gap:26px">
+          <div>
+            <div class="field-label">Quantity</div>
+            <div class="ns-row">
+              <div class="ns" data-min="0" data-max="99" data-step="1">
+                <button class="ns-btn" onclick="nsStep(this,-1)" aria-label="Decrease">−</button>
+                <input class="ns-field" value="3" onchange="nsClamp(this)" />
+                <button class="ns-btn" onclick="nsStep(this,1)" aria-label="Increase">+</button>
+              </div>
+              <span class="ns-hint">min 0 · max 99 · step 1</span>
+            </div>
+          </div>
+          <div>
+            <div class="field-label">Budget allocation</div>
+            <div class="ns-row">
+              <div class="ns" data-min="0" data-max="100" data-step="5">
+                <button class="ns-btn" onclick="nsStep(this,-1)" aria-label="Decrease">−</button>
+                <input class="ns-field" value="25" onchange="nsClamp(this)" />
+                <span class="ns-unit">%</span>
+                <button class="ns-btn" onclick="nsStep(this,1)" aria-label="Increase">+</button>
+              </div>
+              <span class="ns-hint">step 5 · unit suffix</span>
+            </div>
+          </div>
+          <div>
+            <div class="field-label">Team size (at max)</div>
+            <div class="ns-row">
+              <div class="ns" data-min="1" data-max="12" data-step="1">
+                <button class="ns-btn" onclick="nsStep(this,-1)" aria-label="Decrease">−</button>
+                <input class="ns-field" value="12" onchange="nsClamp(this)" />
+                <button class="ns-btn" onclick="nsStep(this,1)" aria-label="Increase" disabled>+</button>
+              </div>
+              <span class="ns-hint">+ disabled at max</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Delivery ── -->
+  <div class="section">
+    <div class="sl">Sprint 23 Delivery</div>
+    <div class="glass-surface">
+      <table class="dt">
+        <thead><tr><th>Component</th><th>File</th><th>Key Props</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>GlassComboBox</td><td>glass-combobox.tsx</td><td>options[], value, onChange, onSearch, placeholder, clearable, emptyText</td><td><span class="tag new">New</span></td></tr>
+          <tr><td>GlassChipInput</td><td>glass-chip-input.tsx</td><td>value[], onChange, suggestions[], max, delimiters, allowDuplicates</td><td><span class="tag new">New</span></td></tr>
+          <tr><td>GlassRating</td><td>glass-rating.tsx</td><td>value, onChange, max, size (sm|md|lg), readonly, count, allowHalf</td><td><span class="tag new">New</span></td></tr>
+          <tr><td>GlassNumberStepper</td><td>glass-number-stepper.tsx</td><td>value, onChange, min, max, step, unit, disabled</td><td><span class="tag new">New</span></td></tr>
+          <tr><td>index.ts</td><td>components/index.ts</td><td>Export all 4 components + types</td><td><span class="tag">Update</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div><!-- /page -->
+
+<script>
+// ── ComboBox ──────────────────────────────────────────────────────────────────
+const CB_DATA = [
+  { id: 'ap', name: 'Andrei Popescu', role: 'Store Manager · Cluj', av: 'AP' },
+  { id: 'mi', name: 'Maria Ionescu', role: 'Regional Manager · West', av: 'MI' },
+  { id: 'rd', name: 'Radu Dumitru', role: 'Cashier · Cluj', av: 'RD' },
+  { id: 'es', name: 'Elena Stan', role: 'HR Manager · HQ', av: 'ES' },
+  { id: 'vg', name: 'Victor Georgescu', role: 'Foreman · Renovations', av: 'VG' },
+  { id: 'cn', name: 'Cristina Neagu', role: 'Accountant · Finance', av: 'CN' },
+]
+let cbSel = null, cbActive = 0, cbQuery = ''
+function cbOpen() { document.getElementById('cb-pop').classList.add('open'); cbFilter(cbQuery) }
+function cbClose() { document.getElementById('cb-pop').classList.remove('open') }
+function cbFilter(q) {
+  cbQuery = q
+  document.getElementById('cb-clear').classList.toggle('show', q.length > 0)
+  const pop = document.getElementById('cb-pop')
+  const matches = CB_DATA.filter(p => p.name.toLowerCase().includes(q.toLowerCase()))
+  if (!matches.length) { pop.innerHTML = '<div class="cb-empty">No people found</div>'; return }
+  cbActive = 0
+  pop.innerHTML = matches.map((p, i) => {
+    const hl = p.name.replace(new RegExp('(' + q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + ')', 'ig'), '<mark>$1</mark>')
+    return `<div class="cb-opt ${i===0?'active':''} ${cbSel===p.id?'selected':''}" onclick="cbPick('${p.id}')" onmouseenter="cbSetActive(${i})">
+      <span class="av">${p.av}</span>
+      <span class="tx"><div>${q?hl:p.name}</div><div class="s">${p.role}</div></span>
+      <span class="ck"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg></span>
+    </div>`
+  }).join('')
+}
+function cbSetActive(i) { cbActive = i; [...document.querySelectorAll('#cb-pop .cb-opt')].forEach((el,j)=>el.classList.toggle('active', i===j)) }
+function cbPick(id) {
+  cbSel = id; const p = CB_DATA.find(x=>x.id===id)
+  document.getElementById('cb-input').value = p.name; cbQuery = p.name
+  document.getElementById('cb-clear').classList.add('show'); cbClose()
+}
+function cbClear() { cbSel=null; const i=document.getElementById('cb-input'); i.value=''; cbQuery=''; i.focus(); cbFilter('') }
+document.getElementById('cb-input').addEventListener('keydown', e => {
+  const opts = [...document.querySelectorAll('#cb-pop .cb-opt')]
+  if (e.key==='ArrowDown'){e.preventDefault(); cbSetActive(Math.min(cbActive+1,opts.length-1)); opts[cbActive]?.scrollIntoView({block:'nearest'})}
+  else if (e.key==='ArrowUp'){e.preventDefault(); cbSetActive(Math.max(cbActive-1,0)); opts[cbActive]?.scrollIntoView({block:'nearest'})}
+  else if (e.key==='Enter'){e.preventDefault(); opts[cbActive]?.click()}
+  else if (e.key==='Escape'){cbClose()}
+})
+document.addEventListener('click', e => { if (!e.target.closest('#cb')) cbClose() })
+
+// ── Chip Input ────────────────────────────────────────────────────────────────
+const CHIP_MAX = 8
+function chipCount() { return document.querySelectorAll('#ci .ci-chip').length }
+function updateCount() { document.getElementById('ci-count').textContent = chipCount() + ' / ' + CHIP_MAX + ' tags' }
+function chipAdd(label) {
+  label = label.trim(); if (!label) return
+  if (chipCount() >= CHIP_MAX) return
+  const exists = [...document.querySelectorAll('#ci .ci-chip')].some(c => c.textContent.trim().toLowerCase() === label.toLowerCase())
+  if (exists) return
+  const chip = document.createElement('span'); chip.className = 'ci-chip'
+  chip.innerHTML = label + '<button class="x" onclick="chipRemove(event, this)" aria-label="Remove"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>'
+  const input = document.getElementById('ci-input'); input.parentNode.insertBefore(chip, input); updateCount()
+}
+function chipRemove(e, btn) { e.stopPropagation(); btn.closest('.ci-chip').remove(); updateCount() }
+function chipKey(e) {
+  const input = e.target
+  if (e.key==='Enter' || e.key===',') { e.preventDefault(); chipAdd(input.value); input.value='' }
+  else if (e.key==='Backspace' && input.value==='') { const chips=document.querySelectorAll('#ci .ci-chip'); chips[chips.length-1]?.remove(); updateCount() }
+}
+
+// ── Rating ────────────────────────────────────────────────────────────────────
+const STAR = '<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>'
+let rtVal = 4
+function renderStars(id, value, max, interactive) {
+  const el = document.getElementById(id); el.innerHTML = ''
+  for (let i=1;i<=max;i++){
+    const s = document.createElement('span'); s.className = 'rt-star' + (i<=Math.round(value)?' on':''); s.innerHTML = STAR
+    if (interactive){ s.onclick=()=>{rtVal=i; renderStars('rt-int-stars',rtVal,5,true); document.getElementById('rt-int-val').textContent=rtVal.toFixed(1)}; s.onmouseenter=()=>rtHover(i) }
+    el.appendChild(s)
+  }
+}
+function rtHover(i){ const stars=[...document.querySelectorAll('#rt-int-stars .rt-star')]; stars.forEach((s,j)=>s.classList.toggle('on', j < (i||rtVal))) }
+renderStars('rt-int-stars', 4, 5, true)
+renderStars('rt-ro-stars', 4.6, 5, false)
+renderStars('rt-sm-stars', 3.5, 5, false)
+
+// ── Number Stepper ────────────────────────────────────────────────────────────
+function nsStep(btn, dir) {
+  const ns = btn.closest('.ns'); const field = ns.querySelector('.ns-field')
+  const min=+ns.dataset.min, max=+ns.dataset.max, step=+ns.dataset.step
+  let v = (parseFloat(field.value)||0) + dir*step
+  v = Math.max(min, Math.min(max, v)); field.value = v
+  ns.querySelectorAll('.ns-btn')[0].disabled = v<=min
+  ns.querySelectorAll('.ns-btn')[1].disabled = v>=max
+}
+function nsClamp(field) {
+  const ns = field.closest('.ns'); const min=+ns.dataset.min, max=+ns.dataset.max
+  let v = Math.max(min, Math.min(max, parseFloat(field.value)||min)); field.value = v
+  ns.querySelectorAll('.ns-btn')[0].disabled = v<=min
+  ns.querySelectorAll('.ns-btn')[1].disabled = v>=max
+}
+</script>
+</body>
+</html>
