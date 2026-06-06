@@ -316,6 +316,9 @@ export type { GlassShiftCardProps, ShiftStatus, ShiftAssignee, ShiftMeta } from 
 export { GlassAvailabilityGrid } from "./glass-availability-grid"
 export type { GlassAvailabilityGridProps, Availability } from "./glass-availability-grid"
 
+export { GlassHero } from "./glass-hero"
+export type { GlassHeroProps, HeroAction } from "./glass-hero"
+
 export {
   ActionSheet,
   ConfirmationSheet,
