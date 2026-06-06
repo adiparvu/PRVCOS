@@ -169,6 +169,9 @@ export type {
   DropdownAlign,
 } from "./glass-dropdown-menu"
 
+export { GlassCalendar } from "./glass-calendar"
+export type { GlassCalendarProps, CalendarMode, DateRange } from "./glass-calendar"
+
 export {
   ActionSheet,
   ConfirmationSheet,
