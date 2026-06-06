@@ -1,0 +1,1178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Phase 06 — Role-Aware Command Dashboard</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #000;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", sans-serif;
+    color: rgba(255,255,255,0.95);
+    min-height: 100vh;
+    padding: 40px 24px 80px;
+  }
+
+  /* ── Header ── */
+  .page-header {
+    text-align: center;
+    margin-bottom: 56px;
+  }
+  .phase-badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.45);
+    border: 1px solid rgba(255,255,255,0.15);
+    padding: 4px 14px;
+    border-radius: 100px;
+    margin-bottom: 16px;
+  }
+  .page-title {
+    font-size: 38px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    margin-bottom: 10px;
+  }
+  .page-sub {
+    font-size: 15px;
+    color: rgba(255,255,255,0.42);
+    max-width: 520px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+
+  /* ── Section labels ── */
+  .section-title {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    margin-bottom: 6px;
+  }
+  .section-sub {
+    font-size: 13px;
+    color: rgba(255,255,255,0.38);
+    margin-bottom: 28px;
+  }
+
+  /* ── Phone frames grid ── */
+  .phones-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 32px;
+    max-width: 1100px;
+    margin: 0 auto 72px;
+    justify-items: center;
+  }
+
+  .phone-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+  }
+  .phone-role-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.10em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.35);
+  }
+
+  .phone {
+    width: 220px;
+    height: 440px;
+    border-radius: 44px;
+    background: #0a0a0a;
+    border: 1.5px solid rgba(255,255,255,0.12);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.10),
+      0 40px 80px rgba(0,0,0,0.8);
+    overflow: hidden;
+    position: relative;
+    flex-shrink: 0;
+  }
+  .phone-notch {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80px;
+    height: 22px;
+    background: #000;
+    border-radius: 100px;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+  }
+  .notch-camera { width: 10px; height: 10px; border-radius: 50%; background: #1a1a1a; }
+  .notch-speaker { width: 28px; height: 5px; border-radius: 3px; background: #1a1a1a; }
+
+  .phone-screen {
+    width: 100%;
+    height: 100%;
+    padding: 48px 14px 84px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  /* ── Glass card ── */
+  .g-card {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 14px;
+    padding: 10px 12px;
+    position: relative;
+    overflow: hidden;
+  }
+  .g-card::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto;
+    height: 1px;
+    background: rgba(255,255,255,0.16);
+    border-radius: 14px 14px 0 0;
+  }
+
+  .card-label {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.10em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.32);
+    margin-bottom: 3px;
+  }
+  .card-value {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: rgba(255,255,255,0.92);
+    line-height: 1.1;
+  }
+  .card-trend {
+    font-size: 9px;
+    color: rgba(80,220,120,0.90);
+    margin-top: 2px;
+  }
+  .card-trend.down { color: rgba(255,99,90,0.90); }
+  .card-trend.neutral { color: rgba(255,255,255,0.35); }
+
+  .kpi-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+
+  /* ── Sparkline mini ── */
+  .sparkline {
+    height: 20px;
+    margin-top: 4px;
+    opacity: 0.5;
+  }
+
+  /* ── Section header ── */
+  .sec-hdr {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.10em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.28);
+    padding: 0 2px;
+  }
+
+  /* ── List rows ── */
+  .list-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .list-row:last-child { border-bottom: none; }
+  .dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .dot-green { background: rgba(80,220,120,0.90); }
+  .dot-yellow { background: rgba(255,179,64,0.90); }
+  .dot-red { background: rgba(255,99,90,0.90); }
+  .dot-blue { background: rgba(80,160,255,0.90); }
+  .row-text { font-size: 10px; color: rgba(255,255,255,0.75); flex: 1; line-height: 1.3; }
+  .row-value { font-size: 9px; color: rgba(255,255,255,0.35); }
+
+  /* ── Progress bar ── */
+  .progress-wrap {
+    margin-top: 4px;
+  }
+  .progress-bar-bg {
+    height: 4px;
+    border-radius: 2px;
+    background: rgba(255,255,255,0.08);
+    overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: rgba(255,255,255,0.55);
+  }
+
+  /* ── AI card ── */
+  .ai-card {
+    background: radial-gradient(circle at 0 0, rgba(10,132,255,0.18), transparent 60%), rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 14px;
+    padding: 8px 10px;
+    display: flex;
+    gap: 7px;
+    align-items: flex-start;
+  }
+  .ai-icon {
+    width: 20px; height: 20px;
+    border-radius: 7px;
+    background: linear-gradient(135deg,#0A84FF,#5E5CE6);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .ai-text { font-size: 9px; color: rgba(255,255,255,0.60); line-height: 1.5; }
+  .ai-highlight { color: rgba(255,255,255,0.88); font-weight: 600; }
+
+  /* ── Tab bar (mini) ── */
+  .tab-bar {
+    position: absolute;
+    bottom: 10px;
+    left: 12px;
+    right: 12px;
+    height: 52px;
+    background: rgba(20,20,20,0.88);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    padding: 0 4px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.12);
+    z-index: 5;
+  }
+  .tab-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 6px 8px;
+    border-radius: 18px;
+    min-width: 34px;
+  }
+  .tab-item.active {
+    background: rgba(255,255,255,0.10);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.16);
+  }
+  .tab-icon {
+    width: 14px; height: 14px;
+    opacity: 0.35;
+  }
+  .tab-icon.active { opacity: 0.90; }
+  .tab-label {
+    font-size: 7px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.32);
+    letter-spacing: 0.02em;
+  }
+  .tab-label.active { color: rgba(255,255,255,0.88); }
+
+  /* ── DI pill ── */
+  .di-pill {
+    position: absolute;
+    top: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(10,10,12,0.90);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 100px;
+    padding: 4px 12px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 9px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.80);
+    white-space: nowrap;
+    z-index: 8;
+  }
+  .di-dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: rgba(80,220,120,0.90);
+  }
+  .di-dot.warn { background: rgba(255,179,64,0.90); }
+
+  /* ── Greeting ── */
+  .greeting {
+    padding: 4px 2px 2px;
+  }
+  .greeting-sub { font-size: 9px; color: rgba(255,255,255,0.35); }
+  .greeting-name { font-size: 16px; font-weight: 700; letter-spacing: -0.02em; }
+
+  /* ── Shift card (worker) ── */
+  .shift-card {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 14px;
+    padding: 10px 12px;
+  }
+  .shift-time { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
+  .shift-meta { font-size: 9px; color: rgba(255,255,255,0.40); margin-top: 2px; }
+  .shift-badge {
+    display: inline-block;
+    font-size: 8px;
+    font-weight: 700;
+    background: rgba(80,220,120,0.16);
+    color: rgba(80,220,120,0.90);
+    border-radius: 6px;
+    padding: 2px 6px;
+    margin-top: 4px;
+  }
+
+  /* ── Task row ── */
+  .task-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 7px;
+    padding: 5px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .task-row:last-child { border-bottom: none; }
+  .task-check {
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(255,255,255,0.20);
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .task-check.done {
+    background: rgba(80,220,120,0.20);
+    border-color: rgba(80,220,120,0.60);
+  }
+  .task-text { font-size: 10px; color: rgba(255,255,255,0.72); line-height: 1.3; }
+  .task-time { font-size: 9px; color: rgba(255,255,255,0.30); white-space: nowrap; }
+
+  /* ── Alert mini ── */
+  .alert-mini {
+    display: flex;
+    gap: 6px;
+    align-items: flex-start;
+    padding: 7px 10px;
+    border-radius: 10px;
+    font-size: 9px;
+    line-height: 1.4;
+  }
+  .alert-mini.warn { background: rgba(255,159,10,0.12); border: 1px solid rgba(255,159,10,0.20); color: rgba(255,179,64,0.85); }
+  .alert-mini.error { background: rgba(255,59,48,0.12); border: 1px solid rgba(255,59,48,0.20); color: rgba(255,99,90,0.85); }
+  .alert-mini.info { background: rgba(10,132,255,0.12); border: 1px solid rgba(10,132,255,0.20); color: rgba(80,160,255,0.85); }
+
+  /* ── Avatar row ── */
+  .avatar-row {
+    display: flex;
+    gap: -4px;
+    padding: 2px 0;
+  }
+  .avatar {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.14);
+    border: 1.5px solid rgba(0,0,0,0.8);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 7px; font-weight: 700; color: rgba(255,255,255,0.70);
+    margin-right: -6px;
+    flex-shrink: 0;
+  }
+  .avatar-count {
+    font-size: 9px;
+    color: rgba(255,255,255,0.35);
+    margin-left: 16px;
+    display: flex;
+    align-items: center;
+  }
+
+  /* ── Separator ── */
+  .section-sep {
+    border: none;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    margin: 0;
+  }
+
+  /* ── Technical spec block ── */
+  .spec-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+    max-width: 1100px;
+    margin: 0 auto 72px;
+  }
+  .spec-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 20px;
+    padding: 20px 22px;
+  }
+  .spec-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.80);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .spec-icon {
+    width: 26px; height: 26px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.08);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px;
+  }
+  .spec-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .spec-list li {
+    font-size: 12px;
+    color: rgba(255,255,255,0.46);
+    display: flex;
+    gap: 7px;
+    line-height: 1.5;
+  }
+  .spec-list li::before {
+    content: '→';
+    color: rgba(255,255,255,0.20);
+    flex-shrink: 0;
+  }
+
+  /* ── Role mapping table ── */
+  .role-table {
+    max-width: 1100px;
+    margin: 0 auto 72px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 20px;
+    overflow: hidden;
+  }
+  .role-table table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  .role-table th {
+    text-align: left;
+    padding: 12px 18px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.28);
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+  }
+  .role-table td {
+    padding: 10px 18px;
+    color: rgba(255,255,255,0.60);
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    vertical-align: middle;
+  }
+  .role-table tr:last-child td { border-bottom: none; }
+  .role-chip {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 100px;
+    background: rgba(255,255,255,0.08);
+    color: rgba(255,255,255,0.55);
+  }
+  .dash-chip {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 100px;
+  }
+  .exec { background: rgba(10,132,255,0.14); color: rgba(80,160,255,0.90); }
+  .mgmt { background: rgba(48,209,88,0.14); color: rgba(80,220,120,0.90); }
+  .wrkr { background: rgba(255,159,10,0.14); color: rgba(255,179,64,0.90); }
+  .spec { background: rgba(94,92,230,0.20); color: rgba(140,138,255,0.90); }
+
+  /* ── File structure ── */
+  .code-block {
+    max-width: 1100px;
+    margin: 0 auto 72px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 20px;
+    padding: 24px 28px;
+    font-family: "SF Mono", "Fira Code", monospace;
+    font-size: 12px;
+    line-height: 1.8;
+    color: rgba(255,255,255,0.50);
+    overflow-x: auto;
+  }
+  .code-block .hi { color: rgba(255,255,255,0.85); }
+  .code-block .dim { color: rgba(255,255,255,0.25); }
+  .code-block .green { color: rgba(80,220,120,0.85); }
+  .code-block .blue { color: rgba(80,160,255,0.85); }
+  .code-block .purple { color: rgba(140,138,255,0.85); }
+  .code-block .orange { color: rgba(255,179,64,0.85); }
+
+  /* ── SVG icons (inline) ── */
+  svg.ico {
+    width: 14px; height: 14px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+</style>
+</head>
+<body>
+
+<!-- ══ Page Header ══════════════════════════════════════════════════════════ -->
+<div class="page-header">
+  <div class="phase-badge">Phase 06</div>
+  <h1 class="page-title">Role-Aware Command Dashboard</h1>
+  <p class="page-sub">
+    Every role sees a completely different Command screen.
+    4 dashboard variants covering all 21 SystemRole values —
+    executive briefing, manager overview, worker today-view, and specialist workspace.
+  </p>
+</div>
+
+<!-- ══ Phone Frames — 4 Dashboard Variants ══════════════════════════════════ -->
+<div style="max-width:1100px;margin:0 auto 16px;">
+  <p class="section-title">4 Dashboard Variants</p>
+  <p class="section-sub">CEO · Store Manager · Worker · Data Analyst — same screen, totally different experience</p>
+</div>
+
+<div class="phones-grid">
+
+  <!-- ── Executive (CEO / group_ceo / co_ceo) ── -->
+  <div class="phone-wrap">
+    <span class="phone-role-label">Executive</span>
+    <div class="phone">
+      <div class="phone-notch">
+        <div class="notch-camera"></div>
+        <div class="notch-speaker"></div>
+      </div>
+
+      <!-- DI pill -->
+      <div class="di-pill">
+        <div class="di-dot"></div>
+        Revenue · Live
+      </div>
+
+      <div class="phone-screen">
+        <!-- Greeting -->
+        <div class="greeting">
+          <div class="greeting-sub">Good morning</div>
+          <div class="greeting-name">Adrian</div>
+        </div>
+
+        <!-- AI Briefing -->
+        <div class="ai-card">
+          <div class="ai-icon">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4"/><circle cx="12" cy="12" r="3"/></svg>
+          </div>
+          <div class="ai-text">Revenue <span class="ai-highlight">+12% MoM</span>. Cluj best margin (39%). <span class="ai-highlight">2 projects</span> risk slipping — check staffing.</div>
+        </div>
+
+        <!-- KPI row 1 -->
+        <div class="kpi-row">
+          <div class="g-card">
+            <div class="card-label">Revenue</div>
+            <div class="card-value">€1.8M</div>
+            <div class="card-trend">↑ 12.4%</div>
+          </div>
+          <div class="g-card">
+            <div class="card-label">Profit</div>
+            <div class="card-value">€138K</div>
+            <div class="card-trend">↑ 8.1%</div>
+          </div>
+        </div>
+
+        <!-- KPI row 2 -->
+        <div class="kpi-row">
+          <div class="g-card">
+            <div class="card-label">Projects</div>
+            <div class="card-value">24</div>
+            <div class="card-trend">↑ 6 new</div>
+          </div>
+          <div class="g-card">
+            <div class="card-label">Workforce</div>
+            <div class="card-value">312</div>
+            <div class="card-trend neutral">— 2 absent</div>
+          </div>
+        </div>
+
+        <!-- Approvals queue -->
+        <div class="sec-hdr" style="margin-top:2px">Awaiting approval · 3</div>
+        <div class="g-card">
+          <div class="list-row">
+            <div class="dot dot-yellow"></div>
+            <div class="row-text">Purchase order · €24K</div>
+            <div class="row-value">Finance</div>
+          </div>
+          <div class="list-row">
+            <div class="dot dot-yellow"></div>
+            <div class="row-text">New hire — Senior Dev</div>
+            <div class="row-value">HR</div>
+          </div>
+          <div class="list-row">
+            <div class="dot dot-red"></div>
+            <div class="row-text">Contract extension · Iași</div>
+            <div class="row-value">Urgent</div>
+          </div>
+        </div>
+
+        <!-- Online now -->
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:0 2px;margin-top:2px">
+          <div class="sec-hdr">Online now</div>
+          <div class="row-value">312 / 340</div>
+        </div>
+        <div class="avatar-row">
+          <div class="avatar">AP</div>
+          <div class="avatar">MD</div>
+          <div class="avatar">IL</div>
+          <div class="avatar">RN</div>
+          <div class="avatar">EC</div>
+          <div class="avatar-count">+307</div>
+        </div>
+      </div>
+
+      <!-- Tab bar -->
+      <div class="tab-bar">
+        <div class="tab-item active">
+          <svg class="tab-icon active" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="9" y="9" width="6" height="6" rx="1"/><path d="M9 9V6a3 3 0 1 0-3 3h3"/><path d="M15 9h3a3 3 0 1 0-3-3v3"/><path d="M9 15H6a3 3 0 1 0 3 3v-3"/><path d="M15 15v3a3 3 0 1 0 3-3h-3"/></svg>
+          <span class="tab-label active">Command</span>
+        </div>
+        <div class="tab-item">
+          <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="3" y="7" width="7" height="13" rx="1"/><rect x="14" y="3" width="7" height="17" rx="1"/></svg>
+          <span class="tab-label">Companies</span>
+        </div>
+        <div class="tab-item">
+          <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M12 2a6 6 0 0 1 6 6c0 2.5-1.5 4.7-3.7 5.7L14 16H10l-.3-2.3A6 6 0 0 1 6 8a6 6 0 0 1 6-6z"/><path d="M10 19h4M11 22h2"/></svg>
+          <span class="tab-label">Intel</span>
+        </div>
+        <div class="tab-item">
+          <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 20h18M5 20V10l4-4 4 4 4-6v16"/></svg>
+          <span class="tab-label">Finance</span>
+        </div>
+        <div class="tab-item">
+          <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          <span class="tab-label">Ops</span>
+        </div>
+      </div>
+    </div>
+    <div style="font-size:11px;color:rgba(255,255,255,0.28);text-align:center">group_ceo · ceo · co_ceo</div>
+  </div>
+
+  <!-- ── Store Manager ── -->
+  <div class="phone-wrap">
+    <span class="phone-role-label">Store Manager</span>
+    <div class="phone">
+      <div class="phone-notch">
+        <div class="notch-camera"></div>
+        <div class="notch-speaker"></div>
+      </div>
+
+      <div class="di-pill">
+        <div class="di-dot"></div>
+        Store · Open
+      </div>
+
+      <div class="phone-screen">
+        <div class="greeting">
+          <div class="greeting-sub">Cluj · Main</div>
+          <div class="greeting-name">Store</div>
+        </div>
+
+        <!-- Store KPIs -->
+        <div class="kpi-row">
+          <div class="g-card">
+            <div class="card-label">Today</div>
+            <div class="card-value">€12.4K</div>
+            <div class="card-trend">↑ 7.2%</div>
+          </div>
+          <div class="g-card">
+            <div class="card-label">Margin</div>
+            <div class="card-value">39%</div>
+            <div class="card-trend">↑ vs 37%</div>
+          </div>
+        </div>
+        <div class="kpi-row">
+          <div class="g-card">
+            <div class="card-label">Transactions</div>
+            <div class="card-value">84</div>
+            <div class="card-trend">— avg €148</div>
+          </div>
+          <div class="g-card">
+            <div class="card-label">Staff online</div>
+            <div class="card-value">8 / 10</div>
+            <div class="card-trend neutral">2 on break</div>
+          </div>
+        </div>
+
+        <!-- Alert -->
+        <div class="alert-mini warn">
+          <span>⚠</span>
+          <span>SKU #2841 below reorder level — order now</span>
+        </div>
+
+        <!-- Staff list -->
+        <div class="sec-hdr" style="margin-top:2px">Staff on shift</div>
+        <div class="g-card">
+          <div class="list-row">
+            <div class="dot dot-green"></div>
+            <div class="row-text">Mihai Popescu · Cashier</div>
+            <div class="row-value">09:00–17:00</div>
+          </div>
+          <div class="list-row">
+            <div class="dot dot-green"></div>
+            <div class="row-text">Ana Radu · Stock</div>
+            <div class="row-value">08:00–16:00</div>
+          </div>
+          <div class="list-row">
+            <div class="dot dot-yellow"></div>
+            <div class="row-text">Ion Dima · Cashier</div>
+            <div class="row-value">On break</div>
+          </div>
+        </div>
+
+        <!-- Daily target -->
+        <div class="sec-hdr" style="margin-top:2px">Daily target · €18K</div>
+        <div class="g-card">
+          <div style="display:flex;justify-content:space-between;margin-bottom:5px">
+            <span style="font-size:9px;color:rgba(255,255,255,0.45)">Progress</span>
+            <span style="font-size:9px;color:rgba(255,255,255,0.70);font-weight:600">€12.4K / €18K · 69%</span>
+          </div>
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill" style="width:69%"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-bar">
+        <div class="tab-item active">
+          <svg class="tab-icon active" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="9" y="9" width="6" height="6" rx="1"/><path d="M9 9V6a3 3 0 1 0-3 3h3"/><path d="M15 9h3a3 3 0 1 0-3-3v3"/><path d="M9 15H6a3 3 0 1 0 3 3v-3"/><path d="M15 15v3a3 3 0 1 0 3-3h-3"/></svg>
+          <span class="tab-label active">Command</span>
+        </div>
+        <div class="tab-item">
+          <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M2 3h20l-2 8H4z"/><path d="M4 11v10h16V11"/><path d="M9 15h6v6H9z"/></svg>
+          <span class="tab-label">Store</span>
+        </div>
+        <div class="tab-item">
+          <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="9" cy="7" r="3"/><path d="M3 20v-1a6 6 0 0 1 6-6"/><circle cx="17" cy="9" r="2.5"/><path d="M13 20v-1a4 4 0 0 1 8 0v1"/></svg>
+          <span class="tab-label">Staff</span>
+        </div>
+        <div class="tab-item">
+          <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9M15 21V9"/></svg>
+          <span class="tab-label">Inventory</span>
+        </div>
+        <div class="tab-item">
+          <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 17V13M12 17v-5M16 17V9"/></svg>
+          <span class="tab-label">Reports</span>
+        </div>
+      </div>
+    </div>
+    <div style="font-size:11px;color:rgba(255,255,255,0.28);text-align:center">store_manager</div>
+  </div>
+
+  <!-- ── Worker ── -->
+  <div class="phone-wrap">
+    <span class="phone-role-label">Worker</span>
+    <div class="phone">
+      <div class="phone-notch">
+        <div class="notch-camera"></div>
+        <div class="notch-speaker"></div>
+      </div>
+
+      <div class="di-pill">
+        <div class="di-dot"></div>
+        Shift · 09:00–17:00
+      </div>
+
+      <div class="phone-screen">
+        <div class="greeting">
+          <div class="greeting-sub">Today, Friday 6 Jun</div>
+          <div class="greeting-name">Your day</div>
+        </div>
+
+        <!-- Shift card -->
+        <div class="shift-card">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start">
+            <div>
+              <div class="shift-time">09:00 – 17:00</div>
+              <div class="shift-meta">Cluj · Main · Floor 2</div>
+            </div>
+            <div class="shift-badge">Active</div>
+          </div>
+          <div style="margin-top:6px;display:flex;gap:8px">
+            <div style="font-size:9px;color:rgba(255,255,255,0.35)">6h 24m remaining</div>
+          </div>
+          <div class="progress-bar-bg" style="margin-top:6px">
+            <div class="progress-bar-fill" style="width:27%"></div>
+          </div>
+        </div>
+
+        <!-- Tasks -->
+        <div class="sec-hdr" style="margin-top:2px">Tasks today · 4</div>
+        <div class="g-card">
+          <div class="task-row">
+            <div class="task-check done"></div>
+            <div class="task-text">Morning briefing</div>
+            <div class="task-time">09:00</div>
+          </div>
+          <div class="task-row">
+            <div class="task-check done"></div>
+            <div class="task-text">Restock shelves — Aisle 3</div>
+            <div class="task-time">10:00</div>
+          </div>
+          <div class="task-row">
+            <div class="task-check"></div>
+            <div class="task-text">Inventory count — Section B</div>
+            <div class="task-time">14:00</div>
+          </div>
+          <div class="task-row">
+            <div class="task-check"></div>
+            <div class="task-text">End-of-day report</div>
+            <div class="task-time">16:30</div>
+          </div>
+        </div>
+
+        <!-- Team -->
+        <div class="sec-hdr" style="margin-top:2px">Your team · 8 on shift</div>
+        <div class="avatar-row">
+          <div class="avatar">MD</div>
+          <div class="avatar">IL</div>
+          <div class="avatar">RN</div>
+          <div class="avatar">AP</div>
+          <div class="avatar">EC</div>
+          <div class="avatar-count">+3</div>
+        </div>
+
+        <!-- Inbox -->
+        <div class="sec-hdr" style="margin-top:4px">Inbox · 2 unread</div>
+        <div class="g-card">
+          <div class="list-row">
+            <div class="dot dot-blue"></div>
+            <div class="row-text">Schedule change — Mon Jul 7</div>
+            <div class="row-value">HR</div>
+          </div>
+          <div class="list-row">
+            <div class="dot dot-blue"></div>
+            <div class="row-text">Team meeting — Fri 15:30</div>
+            <div class="row-value">Team</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-bar">
+        <div class="tab-item active">
+          <svg class="tab-icon active" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 9h18"/><path d="M8 2v4M16 2v4"/><circle cx="12" cy="14" r="1.5" fill="currentColor"/></svg>
+          <span class="tab-label active">Today</span>
+        </div>
+        <div class="tab-item">
+          <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M9 11l2 2 4-4"/><rect x="3" y="3" width="18" height="18" rx="3"/></svg>
+          <span class="tab-label">Tasks</span>
+        </div>
+        <div class="tab-item">
+          <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 9h18M8 2v4M16 2v4"/><path d="M8 13h2M8 17h4"/></svg>
+          <span class="tab-label">Schedule</span>
+        </div>
+        <div class="tab-item">
+          <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 14h3l2 3h8l2-3h3"/><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 9l9 5 9-5"/></svg>
+          <span class="tab-label">Inbox</span>
+        </div>
+        <div class="tab-item">
+          <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="7" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+          <span class="tab-label">Me</span>
+        </div>
+      </div>
+    </div>
+    <div style="font-size:11px;color:rgba(255,255,255,0.28);text-align:center">worker · team_leader · dept_head</div>
+  </div>
+
+  <!-- ── Data Analyst ── -->
+  <div class="phone-wrap">
+    <span class="phone-role-label">Data Analyst</span>
+    <div class="phone">
+      <div class="phone-notch">
+        <div class="notch-camera"></div>
+        <div class="notch-speaker"></div>
+      </div>
+
+      <div class="di-pill">
+        <div class="di-dot"></div>
+        Analytics · Live
+      </div>
+
+      <div class="phone-screen">
+        <div class="greeting">
+          <div class="greeting-sub">Analytics workspace</div>
+          <div class="greeting-name">Intelligence</div>
+        </div>
+
+        <!-- Pinned reports -->
+        <div class="sec-hdr">Pinned reports</div>
+        <div class="g-card">
+          <div class="list-row">
+            <div class="dot dot-blue"></div>
+            <div class="row-text">Revenue by store · Jun 2026</div>
+            <div class="row-value">Updated 2m</div>
+          </div>
+          <div class="list-row">
+            <div class="dot dot-green"></div>
+            <div class="row-text">Margin trend · Q2 2026</div>
+            <div class="row-value">Updated 1h</div>
+          </div>
+          <div class="list-row">
+            <div class="dot dot-yellow"></div>
+            <div class="row-text">Workforce forecast · Jul</div>
+            <div class="row-value">Draft</div>
+          </div>
+        </div>
+
+        <!-- Data health -->
+        <div class="sec-hdr" style="margin-top:2px">Data pipeline health</div>
+        <div class="kpi-row">
+          <div class="g-card">
+            <div class="card-label">Events/min</div>
+            <div class="card-value">4.2K</div>
+            <div class="card-trend">↑ normal</div>
+          </div>
+          <div class="g-card">
+            <div class="card-label">Freshness</div>
+            <div class="card-value">99.8%</div>
+            <div class="card-trend">↑ SLA met</div>
+          </div>
+        </div>
+
+        <!-- Recent exports -->
+        <div class="sec-hdr" style="margin-top:2px">Recent exports</div>
+        <div class="g-card">
+          <div class="list-row">
+            <div class="dot dot-green"></div>
+            <div class="row-text">monthly_revenue.csv</div>
+            <div class="row-value">1.2 MB</div>
+          </div>
+          <div class="list-row">
+            <div class="dot dot-green"></div>
+            <div class="row-text">workforce_q2.xlsx</div>
+            <div class="row-value">840 KB</div>
+          </div>
+        </div>
+
+        <!-- Saved queries -->
+        <div class="sec-hdr" style="margin-top:2px">Saved queries · 12</div>
+        <div class="g-card">
+          <div class="list-row">
+            <div class="dot dot-blue"></div>
+            <div class="row-text">Revenue breakdown by category</div>
+            <div class="row-value">SQL</div>
+          </div>
+          <div class="list-row">
+            <div class="dot dot-blue"></div>
+            <div class="row-text">Churn prediction model</div>
+            <div class="row-value">pgvector</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-bar">
+        <div class="tab-item active">
+          <svg class="tab-icon active" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 3v18h18"/><path d="M7 12l4-5 4 3 4-5"/></svg>
+          <span class="tab-label active">Analytics</span>
+        </div>
+        <div class="tab-item">
+          <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 17V13M12 17v-5M16 17V9"/></svg>
+          <span class="tab-label">Reports</span>
+        </div>
+        <div class="tab-item">
+          <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <span class="tab-label">Explore</span>
+        </div>
+        <div class="tab-item">
+          <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          <span class="tab-label">Exports</span>
+        </div>
+        <div class="tab-item">
+          <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 14h3l2 3h8l2-3h3"/><rect x="3" y="5" width="18" height="14" rx="2"/></svg>
+          <span class="tab-label">Inbox</span>
+        </div>
+      </div>
+    </div>
+    <div style="font-size:11px;color:rgba(255,255,255,0.28);text-align:center">data_analyst</div>
+  </div>
+
+</div>
+
+<!-- ══ Role → Dashboard mapping table ═══════════════════════════════════════ -->
+<div style="max-width:1100px;margin:0 auto 16px;">
+  <p class="section-title">Role → Dashboard mapping</p>
+  <p class="section-sub">All 21 SystemRole values mapped to 4 dashboard variants</p>
+</div>
+
+<div class="role-table">
+  <table>
+    <thead>
+      <tr>
+        <th>SystemRole</th>
+        <th>Dashboard</th>
+        <th>Primary KPIs</th>
+        <th>Unique widgets</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="role-chip">group_ceo · ceo · co_ceo</span></td>
+        <td><span class="dash-chip exec">ExecutiveDashboard</span></td>
+        <td>Revenue · Profit · Projects · Workforce</td>
+        <td>AI briefing · Approval queue · Company switcher · Online presence</td>
+      </tr>
+      <tr>
+        <td><span class="role-chip">operations_manager · project_director · shop_director</span></td>
+        <td><span class="dash-chip mgmt">ManagerDashboard</span></td>
+        <td>Scope revenue · Team size · Open tasks · SLA</td>
+        <td>Region/portfolio KPIs · Escalations · Team presence · AI summary</td>
+      </tr>
+      <tr>
+        <td><span class="role-chip">oms · project_oms · dept_head · hr_payroll</span></td>
+        <td><span class="dash-chip mgmt">ManagerDashboard</span></td>
+        <td>Area tasks · Staff on shift · Reports due</td>
+        <td>Area metrics · Attendance alerts · Document queue</td>
+      </tr>
+      <tr>
+        <td><span class="role-chip">store_manager · project_ops_manager</span></td>
+        <td><span class="dash-chip mgmt">ManagerDashboard</span></td>
+        <td>Store revenue · Daily target % · Transactions · Margin</td>
+        <td>Store staff list · Low-stock alerts · Target progress bar</td>
+      </tr>
+      <tr>
+        <td><span class="role-chip">worker · team_leader</span></td>
+        <td><span class="dash-chip wrkr">WorkerDashboard</span></td>
+        <td>Shift time · Tasks today · Team size</td>
+        <td>Shift progress · Task checklist · Team avatars · Inbox preview</td>
+      </tr>
+      <tr>
+        <td><span class="role-chip">project_worker · project_team_leader · seller</span></td>
+        <td><span class="dash-chip wrkr">WorkerDashboard</span></td>
+        <td>Active task · Project status · Shift/register</td>
+        <td>Task list · Project card · Chat preview</td>
+      </tr>
+      <tr>
+        <td><span class="role-chip">data_analyst</span></td>
+        <td><span class="dash-chip spec">SpecialistDashboard</span></td>
+        <td>Pipeline health · Events/min · Freshness</td>
+        <td>Pinned reports · Saved queries · Recent exports</td>
+      </tr>
+      <tr>
+        <td><span class="role-chip">qa_tester · app_support_specialist</span></td>
+        <td><span class="dash-chip spec">SpecialistDashboard</span></td>
+        <td>Open tickets · Bug count · Test coverage</td>
+        <td>Active issues · Recent reports · User lookup</td>
+      </tr>
+      <tr>
+        <td><span class="role-chip">system_administrator</span></td>
+        <td><span class="dash-chip spec">SpecialistDashboard</span></td>
+        <td>System health · Active sessions · Error rate</td>
+        <td>Security alerts · Audit stream · Integration status</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ══ Technical spec ════════════════════════════════════════════════════════ -->
+<div style="max-width:1100px;margin:0 auto 16px;">
+  <p class="section-title">Technical spec</p>
+  <p class="section-sub">Implementation architecture for the 4-variant dashboard system</p>
+</div>
+
+<div class="spec-grid">
+  <div class="spec-card">
+    <div class="spec-title"><div class="spec-icon">🏗</div> Architecture</div>
+    <ul class="spec-list">
+      <li><code>DashboardRouter</code> server component — reads <code>session.role</code>, renders correct variant</li>
+      <li>4 variant components: <code>ExecutiveDashboard</code>, <code>ManagerDashboard</code>, <code>WorkerDashboard</code>, <code>SpecialistDashboard</code></li>
+      <li>Each variant is a server component — fetches its own data via scoped DB queries</li>
+      <li>Role-specific quick actions via <code>resolveQuickActions(role)</code></li>
+      <li>All variants share glass card + section label primitives</li>
+    </ul>
+  </div>
+
+  <div class="spec-card">
+    <div class="spec-title"><div class="spec-icon">🗄</div> Data layer</div>
+    <ul class="spec-list">
+      <li><code>queryExecutiveKpis(companyId)</code> — revenue, profit, projects, workforce, approval queue</li>
+      <li><code>queryManagerKpis(companyId, userId, role)</code> — scoped to user's region/store/project</li>
+      <li><code>queryWorkerContext(userId)</code> — shift, tasks, inbox count, team</li>
+      <li><code>querySpecialistContext(userId, role)</code> — role-specific data sets</li>
+      <li>All queries behind <code>cacheMemo</code> — TTL 60s per company + role scope</li>
+    </ul>
+  </div>
+
+  <div class="spec-card">
+    <div class="spec-title"><div class="spec-icon">⚡</div> Live data (Phase 06)</div>
+    <ul class="spec-list">
+      <li>Dynamic Island receives live value from <code>useLiveContext(role)</code></li>
+      <li>Supabase Realtime channels per company + role scope</li>
+      <li>Executive: revenue ticks, approval arrivals</li>
+      <li>Manager: target progress, staff clock-in/out</li>
+      <li>Worker: shift updates, new task assignments</li>
+      <li>Specialist: pipeline events, new tickets</li>
+    </ul>
+  </div>
+
+  <div class="spec-card">
+    <div class="spec-title"><div class="spec-icon">🔐</div> Security</div>
+    <ul class="spec-list">
+      <li>Server component reads session before rendering — no client-side role check</li>
+      <li>Each DB query scoped to <code>companyId + userId + role</code></li>
+      <li>Scope validation in <code>@prv/db</code> query layer — not in component</li>
+      <li>Sensitive KPIs (revenue, payroll) only in executive + manager variants</li>
+      <li>All renders go through <code>withGates</code> in API routes</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ══ File structure ════════════════════════════════════════════════════════ -->
+<div style="max-width:1100px;margin:0 auto 16px;">
+  <p class="section-title">Files to create / modify</p>
+</div>
+
+<div class="code-block">
+<span class="dim">apps/web/src/app/(authenticated)/dashboard/</span>
+  <span class="green">page.tsx</span>                    <span class="dim">← refactor: delegate to DashboardRouter</span>
+  <span class="green">DashboardRouter.tsx</span>         <span class="dim">← NEW: server component, role → variant</span>
+  <span class="green">variants/</span>
+    <span class="blue">ExecutiveDashboard.tsx</span>    <span class="dim">← group_ceo / ceo / co_ceo</span>
+    <span class="blue">ManagerDashboard.tsx</span>      <span class="dim">← ops_manager / store_manager / project_director / shop_director / oms / dept_head / hr / project_oms / project_ops_manager</span>
+    <span class="orange">WorkerDashboard.tsx</span>       <span class="dim">← worker / team_leader / project_worker / project_team_leader / seller</span>
+    <span class="purple">SpecialistDashboard.tsx</span>   <span class="dim">← data_analyst / qa_tester / app_support / system_administrator</span>
+
+<span class="dim">packages/db/src/queries/</span>
+  <span class="green">dashboard.ts</span>               <span class="dim">← NEW: queryExecutiveKpis / queryManagerKpis / queryWorkerContext / querySpecialistContext</span>
+
+<span class="dim">apps/web/src/lib/</span>
+  <span class="green">quick-actions.ts</span>           <span class="dim">← NEW: resolveQuickActions(role) → QuickAction[]</span>
+</div>
+
+</body>
+</html>
