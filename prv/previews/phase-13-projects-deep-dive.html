@@ -1,0 +1,1602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phase 13 — Projects Deep Dive · PRV Preview</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #080808;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif;
+    color: #fff;
+    min-height: 100vh;
+    padding: 48px 32px 80px;
+    overflow-x: hidden;
+  }
+
+  /* ── Header ── */
+  .page-header {
+    text-align: center;
+    margin-bottom: 52px;
+  }
+  .phase-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 14px;
+    border-radius: 100px;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.12);
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.5);
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  .page-title {
+    font-size: 38px;
+    font-weight: 700;
+    letter-spacing: -1px;
+    color: rgba(255,255,255,0.95);
+    margin-bottom: 10px;
+  }
+  .page-sub {
+    font-size: 15px;
+    color: rgba(255,255,255,0.4);
+    max-width: 520px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+
+  /* ── Grid ── */
+  .phones-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 28px;
+    max-width: 1320px;
+    margin: 0 auto;
+    align-items: start;
+  }
+
+  /* ── Phone frame ── */
+  .phone {
+    width: 100%;
+    aspect-ratio: 9/19.5;
+    border-radius: 44px;
+    background: #0a0a0a;
+    border: 1px solid rgba(255,255,255,0.14);
+    box-shadow:
+      0 0 0 1px rgba(255,255,255,0.06) inset,
+      0 40px 80px rgba(0,0,0,0.8),
+      0 12px 32px rgba(0,0,0,0.5);
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Dynamic Island */
+  .dynamic-island {
+    width: 110px;
+    height: 30px;
+    background: #000;
+    border-radius: 20px;
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .di-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.25); }
+  .di-text { font-size: 9px; color: rgba(255,255,255,0.5); font-weight: 600; letter-spacing: 0.3px; }
+
+  .phone-content {
+    flex: 1;
+    overflow: hidden;
+    padding-top: 54px;
+    position: relative;
+  }
+
+  /* Caption */
+  .phone-label {
+    text-align: center;
+    margin-top: 16px;
+    font-size: 12px;
+    color: rgba(255,255,255,0.35);
+    font-weight: 500;
+    letter-spacing: 0.3px;
+  }
+  .phone-label strong {
+    display: block;
+    font-size: 14px;
+    color: rgba(255,255,255,0.7);
+    font-weight: 600;
+    margin-bottom: 2px;
+  }
+
+  /* ── Glass utils ── */
+  .g1 { background: rgba(255,255,255,0.06); }
+  .g2 { background: rgba(255,255,255,0.10); }
+  .g3 { background: rgba(255,255,255,0.16); }
+  .border { border: 1px solid rgba(255,255,255,0.10); }
+  .border-s { border: 1px solid rgba(255,255,255,0.07); }
+  .shine { box-shadow: inset 0 1px 0 rgba(255,255,255,0.12); }
+  .t1 { color: rgba(255,255,255,0.95); }
+  .t2 { color: rgba(255,255,255,0.65); }
+  .t3 { color: rgba(255,255,255,0.35); }
+  .t4 { color: rgba(255,255,255,0.18); }
+
+  /* ── Floating tab bar ── */
+  .tab-bar {
+    position: absolute;
+    bottom: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% - 28px);
+    height: 58px;
+    border-radius: 24px;
+    background: rgba(255,255,255,0.10);
+    backdrop-filter: blur(32px);
+    border: 1px solid rgba(255,255,255,0.14);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.18);
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    padding: 0 8px;
+    z-index: 10;
+  }
+  .tab-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 6px 10px;
+    border-radius: 14px;
+    flex: 1;
+  }
+  .tab-item.active { background: rgba(255,255,255,0.12); }
+  .tab-icon { font-size: 16px; line-height: 1; }
+  .tab-label { font-size: 8.5px; font-weight: 600; color: rgba(255,255,255,0.35); letter-spacing: 0.2px; }
+  .tab-item.active .tab-label { color: rgba(255,255,255,0.85); }
+
+  /* ── Scroll area ── */
+  .scroll { overflow-y: auto; height: 100%; padding-bottom: 80px; scrollbar-width: none; }
+  .scroll::-webkit-scrollbar { display: none; }
+
+  /* ── Status pill ── */
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 9px;
+    border-radius: 100px;
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+  }
+  .pill-active { background: rgba(255,255,255,0.14); color: rgba(255,255,255,0.9); border: 1px solid rgba(255,255,255,0.2); }
+  .pill-planning { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.5); border: 1px solid rgba(255,255,255,0.10); }
+  .pill-review { background: rgba(255,159,10,0.14); color: rgba(255,179,64,0.95); border: 1px solid rgba(255,159,10,0.2); }
+  .pill-done { background: rgba(48,209,88,0.12); color: rgba(80,220,120,0.9); border: 1px solid rgba(48,209,88,0.2); }
+  .pill-overbudget { background: rgba(255,59,48,0.12); color: rgba(255,99,90,0.9); border: 1px solid rgba(255,59,48,0.2); }
+
+  /* ── Screen 1: Projects List ── */
+
+  .projects-header {
+    padding: 12px 16px 10px;
+  }
+  .projects-title {
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.6px;
+    color: rgba(255,255,255,0.95);
+    margin-bottom: 2px;
+  }
+  .projects-subtitle {
+    font-size: 11px;
+    color: rgba(255,255,255,0.35);
+  }
+
+  /* Search bar */
+  .search-bar {
+    margin: 8px 16px;
+    height: 34px;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.09);
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 0 12px;
+  }
+  .search-icon { font-size: 11px; color: rgba(255,255,255,0.3); }
+  .search-placeholder { font-size: 11px; color: rgba(255,255,255,0.25); }
+
+  /* Filter chips */
+  .filter-chips {
+    display: flex;
+    gap: 6px;
+    padding: 8px 16px 4px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .filter-chips::-webkit-scrollbar { display: none; }
+  .chip {
+    padding: 4px 11px;
+    border-radius: 100px;
+    font-size: 10px;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+    letter-spacing: 0.2px;
+  }
+  .chip-active {
+    background: rgba(255,255,255,0.92);
+    color: #000;
+  }
+  .chip-inactive {
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.10);
+    color: rgba(255,255,255,0.5);
+  }
+
+  /* Project card */
+  .project-card {
+    margin: 0 12px 9px;
+    border-radius: 18px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.08);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.09);
+    overflow: hidden;
+  }
+  .project-card-inner {
+    padding: 13px 14px 11px;
+  }
+  .project-card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .project-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.92);
+    line-height: 1.3;
+    flex: 1;
+  }
+  .project-client {
+    font-size: 10px;
+    color: rgba(255,255,255,0.4);
+    margin-top: 2px;
+  }
+
+  /* Budget bar */
+  .budget-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 5px;
+  }
+  .budget-label { font-size: 9.5px; color: rgba(255,255,255,0.35); font-weight: 500; }
+  .budget-value { font-size: 9.5px; color: rgba(255,255,255,0.6); font-weight: 600; }
+  .progress-track {
+    height: 4px;
+    border-radius: 100px;
+    background: rgba(255,255,255,0.08);
+    overflow: hidden;
+    margin-bottom: 10px;
+  }
+  .progress-fill {
+    height: 100%;
+    border-radius: 100px;
+    background: rgba(255,255,255,0.6);
+    transition: width 0.4s;
+  }
+  .progress-fill-warn { background: rgba(255,159,10,0.7); }
+  .progress-fill-over { background: rgba(255,59,48,0.7); }
+
+  /* Team avatars */
+  .team-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .avatars {
+    display: flex;
+  }
+  .avatar {
+    width: 22px;
+    height: 22px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 8px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.8);
+    background: rgba(255,255,255,0.12);
+    border: 1.5px solid rgba(10,10,10,0.9);
+    margin-right: -5px;
+    flex-shrink: 0;
+  }
+  .avatar-more {
+    background: rgba(255,255,255,0.07);
+    color: rgba(255,255,255,0.4);
+    font-size: 7px;
+    letter-spacing: -0.3px;
+  }
+
+  /* Card footer */
+  .project-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 14px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    background: rgba(255,255,255,0.025);
+  }
+  .days-left {
+    font-size: 10px;
+    color: rgba(255,255,255,0.35);
+  }
+  .days-left strong {
+    color: rgba(255,255,255,0.65);
+    font-weight: 600;
+  }
+
+  /* ── Screen 2: Project Detail ── */
+
+  .detail-header {
+    padding: 10px 16px 8px;
+  }
+  .detail-back {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    color: rgba(255,255,255,0.4);
+    margin-bottom: 8px;
+  }
+  .detail-title {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.4px;
+    color: rgba(255,255,255,0.95);
+    line-height: 1.2;
+    margin-bottom: 3px;
+  }
+  .detail-client-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .client-avatar {
+    width: 18px;
+    height: 18px;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 7px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.7);
+    flex-shrink: 0;
+  }
+  .client-name { font-size: 11px; color: rgba(255,255,255,0.4); }
+
+  /* KPI strip */
+  .kpi-strip {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 7px;
+    padding: 8px 14px;
+  }
+  .kpi-tile {
+    border-radius: 14px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.08);
+    padding: 9px 10px;
+    text-align: center;
+  }
+  .kpi-value {
+    font-size: 17px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.95);
+    letter-spacing: -0.5px;
+    line-height: 1;
+    margin-bottom: 2px;
+  }
+  .kpi-label {
+    font-size: 8.5px;
+    color: rgba(255,255,255,0.3);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* Phase timeline */
+  .section-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.25);
+    text-transform: uppercase;
+    letter-spacing: 0.9px;
+    padding: 0 14px;
+    margin: 10px 0 7px;
+  }
+
+  .phase-timeline {
+    padding: 0 14px;
+    margin-bottom: 10px;
+  }
+  .phase-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    position: relative;
+    padding-bottom: 14px;
+  }
+  .phase-item:last-child { padding-bottom: 0; }
+  .phase-item::before {
+    content: '';
+    position: absolute;
+    left: 10px;
+    top: 20px;
+    bottom: 0;
+    width: 1px;
+    background: rgba(255,255,255,0.08);
+  }
+  .phase-item:last-child::before { display: none; }
+
+  .phase-dot {
+    width: 20px;
+    height: 20px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 0px;
+    position: relative;
+    z-index: 1;
+  }
+  .phase-dot-done {
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.25);
+  }
+  .phase-dot-active {
+    background: rgba(255,255,255,0.9);
+    border: 1px solid rgba(255,255,255,0.5);
+    box-shadow: 0 0 10px rgba(255,255,255,0.3);
+  }
+  .phase-dot-upcoming {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.10);
+  }
+  .phase-dot-icon { font-size: 8px; }
+  .phase-dot-active .phase-dot-icon { filter: invert(1); }
+
+  .phase-body { flex: 1; }
+  .phase-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.85);
+    margin-bottom: 1px;
+  }
+  .phase-name-upcoming { color: rgba(255,255,255,0.35); }
+  .phase-meta { font-size: 10px; color: rgba(255,255,255,0.3); }
+  .phase-active-meta { color: rgba(255,255,255,0.5); }
+
+  /* Budget ring */
+  .budget-section {
+    margin: 0 14px 10px;
+    border-radius: 16px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.08);
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .ring-wrap {
+    position: relative;
+    width: 58px;
+    height: 58px;
+    flex-shrink: 0;
+  }
+  .ring-label {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  .ring-pct { font-size: 14px; font-weight: 700; color: rgba(255,255,255,0.9); line-height: 1; }
+  .ring-sub { font-size: 7.5px; color: rgba(255,255,255,0.3); margin-top: 1px; }
+
+  .budget-details { flex: 1; }
+  .budget-line {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 5px;
+  }
+  .budget-line:last-child { margin-bottom: 0; }
+  .bl-label { font-size: 10px; color: rgba(255,255,255,0.4); }
+  .bl-value { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.85); }
+  .bl-value-warn { color: rgba(255,179,64,0.9); }
+
+  /* Milestone list */
+  .milestone-list {
+    margin: 0 14px 10px;
+    border-radius: 16px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.08);
+    overflow: hidden;
+  }
+  .milestone-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .milestone-item:last-child { border-bottom: none; }
+  .ms-check {
+    width: 16px;
+    height: 16px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 8px;
+  }
+  .ms-check-done { background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.7); }
+  .ms-check-open { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.12); }
+  .ms-text { font-size: 11px; flex: 1; }
+  .ms-text-done { color: rgba(255,255,255,0.35); text-decoration: line-through; }
+  .ms-text-open { color: rgba(255,255,255,0.75); }
+  .ms-date { font-size: 9px; color: rgba(255,255,255,0.25); }
+
+  /* Team section */
+  .team-section {
+    margin: 0 14px 10px;
+    border-radius: 16px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.08);
+    overflow: hidden;
+  }
+  .team-member {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 8px 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .team-member:last-child { border-bottom: none; }
+  .tm-avatar {
+    width: 26px;
+    height: 26px;
+    border-radius: 9px;
+    background: rgba(255,255,255,0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.8);
+    flex-shrink: 0;
+  }
+  .tm-name { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.8); flex: 1; }
+  .tm-role { font-size: 9.5px; color: rgba(255,255,255,0.3); }
+
+  /* FAB */
+  .fab {
+    position: absolute;
+    bottom: 80px;
+    right: 16px;
+    width: 44px;
+    height: 44px;
+    border-radius: 100px;
+    background: rgba(255,255,255,0.92);
+    color: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    font-weight: 300;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    z-index: 10;
+    border: none;
+    cursor: pointer;
+  }
+
+  /* ── Screen 3: Project SnapSheet ── */
+
+  .sheet-bg {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(4px);
+  }
+  .snap-sheet {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    border-radius: 28px 28px 0 0;
+    background: rgba(22,22,24,0.96);
+    backdrop-filter: blur(48px);
+    border-top: 1px solid rgba(255,255,255,0.14);
+    box-shadow: 0 -24px 64px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.18);
+    padding-bottom: 28px;
+  }
+  .sheet-handle-row {
+    display: flex;
+    justify-content: center;
+    padding: 10px 0 6px;
+  }
+  .sheet-handle {
+    width: 36px;
+    height: 4px;
+    border-radius: 2px;
+    background: rgba(255,255,255,0.18);
+  }
+  .sheet-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.95);
+    text-align: center;
+    padding: 0 20px 12px;
+    letter-spacing: -0.3px;
+    line-height: 1.3;
+  }
+
+  .sheet-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 7px;
+    padding: 0 14px 12px;
+  }
+  .sheet-stat {
+    border-radius: 14px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.08);
+    padding: 10px 12px;
+  }
+  .ss-value { font-size: 19px; font-weight: 700; color: rgba(255,255,255,0.95); letter-spacing: -0.5px; line-height: 1; margin-bottom: 2px; }
+  .ss-label { font-size: 9.5px; color: rgba(255,255,255,0.3); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  /* Client contact card */
+  .client-card {
+    margin: 0 14px 12px;
+    border-radius: 14px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.08);
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .cc-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 11px;
+    background: rgba(255,255,255,0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.8);
+    flex-shrink: 0;
+  }
+  .cc-name { font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.85); }
+  .cc-sub { font-size: 10px; color: rgba(255,255,255,0.35); margin-top: 1px; }
+  .cc-actions {
+    display: flex;
+    gap: 6px;
+    margin-left: auto;
+  }
+  .cc-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 9px;
+    background: rgba(255,255,255,0.09);
+    border: 1px solid rgba(255,255,255,0.10);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+  }
+
+  /* Action rows */
+  .action-list {
+    margin: 0 14px;
+    border-radius: 14px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    overflow: hidden;
+  }
+  .action-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    cursor: pointer;
+  }
+  .action-row:last-child { border-bottom: none; }
+  .action-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    flex-shrink: 0;
+  }
+  .action-icon-white { background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.12); }
+  .action-icon-warn { background: rgba(255,159,10,0.12); border: 1px solid rgba(255,159,10,0.18); }
+  .action-icon-danger { background: rgba(255,59,48,0.10); border: 1px solid rgba(255,59,48,0.15); }
+  .action-label { font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.85); flex: 1; }
+  .action-label-warn { color: rgba(255,179,64,0.9); }
+  .action-label-danger { color: rgba(255,99,90,0.9); }
+  .action-chevron { font-size: 11px; color: rgba(255,255,255,0.2); }
+
+  /* ── Screen 4: Phase Detail / Execution ── */
+
+  .phase-header {
+    padding: 10px 14px 6px;
+  }
+  .phase-header-back {
+    font-size: 10px;
+    color: rgba(255,255,255,0.3);
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+  }
+  .phase-header-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.95);
+    letter-spacing: -0.5px;
+  }
+  .phase-header-sub {
+    font-size: 11px;
+    color: rgba(255,255,255,0.35);
+    margin-top: 2px;
+  }
+
+  /* Progress circle large */
+  .progress-circle-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px 0 8px;
+  }
+  .progress-ring-label {
+    margin-top: 8px;
+    text-align: center;
+  }
+  .prl-pct {
+    font-size: 36px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.95);
+    letter-spacing: -1px;
+    line-height: 1;
+  }
+  .prl-sub {
+    font-size: 11px;
+    color: rgba(255,255,255,0.3);
+    margin-top: 2px;
+  }
+
+  /* Task list for phase */
+  .task-group {
+    margin: 0 14px 8px;
+  }
+  .task-group-label {
+    font-size: 9.5px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.25);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 6px;
+    padding-left: 2px;
+  }
+  .task-item {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 9px 12px;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.07);
+    margin-bottom: 5px;
+  }
+  .task-check {
+    width: 18px;
+    height: 18px;
+    border-radius: 7px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 8.5px;
+  }
+  .task-check-done { background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.7); }
+  .task-check-wip { background: rgba(255,159,10,0.14); border: 1px solid rgba(255,159,10,0.2); }
+  .task-check-open { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.12); }
+  .task-text { font-size: 11.5px; flex: 1; color: rgba(255,255,255,0.8); }
+  .task-text-done { color: rgba(255,255,255,0.3); text-decoration: line-through; }
+  .task-assignee {
+    width: 22px;
+    height: 22px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.10);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 7.5px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.6);
+    flex-shrink: 0;
+  }
+
+  /* Update feed */
+  .update-feed {
+    margin: 0 14px;
+    border-radius: 14px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.07);
+    overflow: hidden;
+  }
+  .update-item {
+    display: flex;
+    gap: 9px;
+    padding: 9px 11px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .update-item:last-child { border-bottom: none; }
+  .update-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    margin-top: 4px;
+    flex-shrink: 0;
+  }
+  .update-body { flex: 1; }
+  .update-text { font-size: 10.5px; color: rgba(255,255,255,0.65); line-height: 1.4; }
+  .update-time { font-size: 9px; color: rgba(255,255,255,0.2); margin-top: 2px; }
+
+  /* ── Section divider ── */
+  .section-divider {
+    text-align: center;
+    margin: 44px 0 36px;
+    position: relative;
+  }
+  .section-divider::before {
+    content: '';
+    position: absolute;
+    left: 0; right: 0; top: 50%;
+    height: 1px;
+    background: rgba(255,255,255,0.06);
+  }
+  .section-divider span {
+    position: relative;
+    background: #080808;
+    padding: 0 16px;
+    font-size: 11px;
+    color: rgba(255,255,255,0.2);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  /* ── API callouts ── */
+  .api-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    max-width: 860px;
+    margin: 0 auto;
+  }
+  .api-card {
+    border-radius: 16px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    padding: 16px 18px;
+  }
+  .api-method {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.35);
+    margin-bottom: 4px;
+  }
+  .api-route {
+    font-size: 13px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.8);
+    font-family: "SF Mono", "Fira Code", monospace;
+    margin-bottom: 8px;
+  }
+  .api-desc { font-size: 11px; color: rgba(255,255,255,0.35); line-height: 1.5; }
+
+  @media (max-width: 900px) {
+    .phones-grid { grid-template-columns: 1fr 1fr; }
+    .api-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 540px) {
+    .phones-grid { grid-template-columns: 1fr; }
+    body { padding: 32px 16px 60px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── Page Header ── -->
+<div class="page-header">
+  <div class="phase-badge">Phase 13 · Preview</div>
+  <h1 class="page-title">Projects Deep Dive</h1>
+  <p class="page-sub">
+    End-to-end project visibility — from the list to execution-phase task tracking.
+    Budget rings, phase timelines, SnapSheet quick actions, and full audit on every status change.
+  </p>
+</div>
+
+<!-- ── 4 Phone Screens ── -->
+<div class="phones-grid">
+
+  <!-- ═══════════════════════════════════
+       SCREEN 1 · Projects List
+       ═══════════════════════════════════ -->
+  <div>
+    <div class="phone">
+      <div class="dynamic-island">
+        <div class="di-dot"></div>
+        <div class="di-text">PRV · 4 active</div>
+        <div class="di-dot"></div>
+      </div>
+      <div class="phone-content">
+        <div class="scroll">
+
+          <!-- Header -->
+          <div class="projects-header">
+            <div class="projects-title">Projects</div>
+            <div class="projects-subtitle">PRV Renovations · Jun 2026</div>
+          </div>
+
+          <!-- Search -->
+          <div class="search-bar">
+            <span class="search-icon">⌕</span>
+            <span class="search-placeholder">Search projects…</span>
+          </div>
+
+          <!-- Filters -->
+          <div class="filter-chips">
+            <div class="chip chip-active">All · 7</div>
+            <div class="chip chip-inactive">Active · 4</div>
+            <div class="chip chip-inactive">Review · 1</div>
+            <div class="chip chip-inactive">Planning · 2</div>
+            <div class="chip chip-inactive">Done</div>
+          </div>
+
+          <!-- Project 1 -->
+          <div class="project-card" style="margin-top:10px;">
+            <div class="project-card-inner">
+              <div class="project-card-header">
+                <div>
+                  <div class="project-name">Renovare Apartament Floreasca</div>
+                  <div class="project-client">Andronic Group SRL</div>
+                </div>
+                <div class="pill pill-active">Active</div>
+              </div>
+              <div class="budget-row">
+                <span class="budget-label">Budget used</span>
+                <span class="budget-value">€22,400 / €38,000</span>
+              </div>
+              <div class="progress-track">
+                <div class="progress-fill" style="width:59%;"></div>
+              </div>
+              <div class="team-row">
+                <div class="avatars">
+                  <div class="avatar">MP</div>
+                  <div class="avatar">GS</div>
+                  <div class="avatar">RC</div>
+                  <div class="avatar avatar-more">+2</div>
+                </div>
+                <div class="pill pill-active" style="font-size:8.5px;padding:2px 7px;">Execution</div>
+              </div>
+            </div>
+            <div class="project-card-footer">
+              <span class="days-left"><strong>23 days</strong> remaining</span>
+              <span style="font-size:9.5px;color:rgba(255,255,255,0.3);">59% complete</span>
+            </div>
+          </div>
+
+          <!-- Project 2 -->
+          <div class="project-card">
+            <div class="project-card-inner">
+              <div class="project-card-header">
+                <div>
+                  <div class="project-name">Baie Modernă Cluj</div>
+                  <div class="project-client">Biroul Construct SRL</div>
+                </div>
+                <div class="pill pill-review">Review</div>
+              </div>
+              <div class="budget-row">
+                <span class="budget-label">Budget used</span>
+                <span class="budget-value">€11,800 / €14,000</span>
+              </div>
+              <div class="progress-track">
+                <div class="progress-fill progress-fill-warn" style="width:84%;"></div>
+              </div>
+              <div class="team-row">
+                <div class="avatars">
+                  <div class="avatar">EP</div>
+                  <div class="avatar">DM</div>
+                </div>
+                <div class="pill pill-review" style="font-size:8.5px;padding:2px 7px;">Review</div>
+              </div>
+            </div>
+            <div class="project-card-footer">
+              <span class="days-left"><strong>5 days</strong> remaining</span>
+              <span style="font-size:9.5px;color:rgba(255,179,64,0.7);">84% · watch budget</span>
+            </div>
+          </div>
+
+          <!-- Project 3 -->
+          <div class="project-card">
+            <div class="project-card-inner">
+              <div class="project-card-header">
+                <div>
+                  <div class="project-name">Bucătărie Integrată Timișoara</div>
+                  <div class="project-client">Radu Construct SRL</div>
+                </div>
+                <div class="pill pill-active">Active</div>
+              </div>
+              <div class="budget-row">
+                <span class="budget-label">Budget used</span>
+                <span class="budget-value">€8,100 / €24,500</span>
+              </div>
+              <div class="progress-track">
+                <div class="progress-fill" style="width:33%;"></div>
+              </div>
+              <div class="team-row">
+                <div class="avatars">
+                  <div class="avatar">AR</div>
+                  <div class="avatar">LG</div>
+                </div>
+                <div class="pill pill-planning" style="font-size:8.5px;padding:2px 7px;">Planning</div>
+              </div>
+            </div>
+            <div class="project-card-footer">
+              <span class="days-left"><strong>41 days</strong> remaining</span>
+              <span style="font-size:9.5px;color:rgba(255,255,255,0.3);">33% complete</span>
+            </div>
+          </div>
+
+          <!-- Project 4 -->
+          <div class="project-card">
+            <div class="project-card-inner">
+              <div class="project-card-header">
+                <div>
+                  <div class="project-name">Pardoseli Comerciale Brașov</div>
+                  <div class="project-client">Andronic Group SRL</div>
+                </div>
+                <div class="pill pill-overbudget">Over budget</div>
+              </div>
+              <div class="budget-row">
+                <span class="budget-label">Budget used</span>
+                <span class="budget-value">€19,200 / €17,000</span>
+              </div>
+              <div class="progress-track">
+                <div class="progress-fill progress-fill-over" style="width:100%;"></div>
+              </div>
+              <div class="team-row">
+                <div class="avatars">
+                  <div class="avatar">TN</div>
+                  <div class="avatar">IA</div>
+                  <div class="avatar">MP</div>
+                </div>
+                <div class="pill pill-active" style="font-size:8.5px;padding:2px 7px;">Execution</div>
+              </div>
+            </div>
+            <div class="project-card-footer">
+              <span class="days-left"><strong>8 days</strong> remaining</span>
+              <span style="font-size:9.5px;color:rgba(255,99,90,0.8);">113% · over budget</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Tab bar -->
+      <div class="tab-bar">
+        <div class="tab-item"><div class="tab-icon">⌂</div><div class="tab-label">Command</div></div>
+        <div class="tab-item active"><div class="tab-icon">⊞</div><div class="tab-label">Operations</div></div>
+        <div class="tab-item"><div class="tab-icon">◎</div><div class="tab-label">People</div></div>
+        <div class="tab-item"><div class="tab-icon">⟁</div><div class="tab-label">Finance</div></div>
+        <div class="tab-item"><div class="tab-icon">✦</div><div class="tab-label">Intelligence</div></div>
+      </div>
+    </div>
+    <div class="phone-label"><strong>Projects List</strong>Filter · budget progress · team avatars</div>
+  </div>
+
+  <!-- ═══════════════════════════════════
+       SCREEN 2 · Project Detail
+       ═══════════════════════════════════ -->
+  <div>
+    <div class="phone">
+      <div class="dynamic-island">
+        <div class="di-dot"></div>
+        <div class="di-text">Execution · 59%</div>
+        <div class="di-dot"></div>
+      </div>
+      <div class="phone-content">
+        <div class="scroll">
+
+          <!-- Back + title -->
+          <div class="detail-header">
+            <div class="detail-back">
+              <span>‹</span> Projects
+            </div>
+            <div class="detail-title">Renovare Apartament Floreasca</div>
+            <div class="detail-client-row">
+              <div class="client-avatar">AG</div>
+              <span class="client-name">Andronic Group SRL · p1</span>
+              <span class="pill pill-active" style="font-size:8px;padding:2px 7px;margin-left:auto;">Active</span>
+            </div>
+          </div>
+
+          <!-- KPI strip -->
+          <div class="kpi-strip">
+            <div class="kpi-tile">
+              <div class="kpi-value">59%</div>
+              <div class="kpi-label">Complete</div>
+            </div>
+            <div class="kpi-tile">
+              <div class="kpi-value">23d</div>
+              <div class="kpi-label">Remaining</div>
+            </div>
+            <div class="kpi-tile">
+              <div class="kpi-value" style="color:rgba(255,255,255,0.6);font-size:14px;">€38k</div>
+              <div class="kpi-label">Budget</div>
+            </div>
+          </div>
+
+          <!-- Budget ring -->
+          <div class="section-label" style="margin-top:6px;">Budget</div>
+          <div class="budget-section">
+            <div class="ring-wrap">
+              <svg width="58" height="58" viewBox="0 0 58 58" style="transform:rotate(-90deg)">
+                <circle cx="29" cy="29" r="22" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="5"/>
+                <circle cx="29" cy="29" r="22" fill="none" stroke="rgba(255,255,255,0.65)" stroke-width="5"
+                  stroke-dasharray="138.2" stroke-dashoffset="56.7" stroke-linecap="round"/>
+              </svg>
+              <div class="ring-label">
+                <div class="ring-pct">59%</div>
+                <div class="ring-sub">used</div>
+              </div>
+            </div>
+            <div class="budget-details">
+              <div class="budget-line">
+                <span class="bl-label">Total Budget</span>
+                <span class="bl-value">€38,000</span>
+              </div>
+              <div class="budget-line">
+                <span class="bl-label">Spent</span>
+                <span class="bl-value">€22,400</span>
+              </div>
+              <div class="budget-line">
+                <span class="bl-label">Remaining</span>
+                <span class="bl-value">€15,600</span>
+              </div>
+              <div class="budget-line">
+                <span class="bl-label">Projected</span>
+                <span class="bl-value">€37,200</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Phase timeline -->
+          <div class="section-label">Phase Timeline</div>
+          <div class="phase-timeline">
+            <div class="phase-item">
+              <div class="phase-dot phase-dot-done">
+                <span class="phase-dot-icon">✓</span>
+              </div>
+              <div class="phase-body">
+                <div class="phase-name">Planning</div>
+                <div class="phase-meta">Completed · May 2</div>
+              </div>
+            </div>
+            <div class="phase-item">
+              <div class="phase-dot phase-dot-done">
+                <span class="phase-dot-icon">✓</span>
+              </div>
+              <div class="phase-body">
+                <div class="phase-name">Demolition & Prep</div>
+                <div class="phase-meta">Completed · May 18</div>
+              </div>
+            </div>
+            <div class="phase-item">
+              <div class="phase-dot phase-dot-active">
+                <span class="phase-dot-icon" style="color:#000;">▶</span>
+              </div>
+              <div class="phase-body">
+                <div class="phase-name">Execution</div>
+                <div class="phase-meta phase-active-meta">In progress · 59% done</div>
+              </div>
+            </div>
+            <div class="phase-item">
+              <div class="phase-dot phase-dot-upcoming"></div>
+              <div class="phase-body">
+                <div class="phase-name phase-name-upcoming">Review & Snagging</div>
+                <div class="phase-meta">Jun 20 – Jun 25</div>
+              </div>
+            </div>
+            <div class="phase-item">
+              <div class="phase-dot phase-dot-upcoming"></div>
+              <div class="phase-body">
+                <div class="phase-name phase-name-upcoming">Handover</div>
+                <div class="phase-meta">Jun 27</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Milestones -->
+          <div class="section-label">Milestones</div>
+          <div class="milestone-list">
+            <div class="milestone-item">
+              <div class="ms-check ms-check-done">✓</div>
+              <span class="ms-text ms-text-done">Site survey approved</span>
+              <span class="ms-date">May 3</span>
+            </div>
+            <div class="milestone-item">
+              <div class="ms-check ms-check-done">✓</div>
+              <span class="ms-text ms-text-done">Materials ordered</span>
+              <span class="ms-date">May 10</span>
+            </div>
+            <div class="milestone-item">
+              <div class="ms-check ms-check-open"></div>
+              <span class="ms-text ms-text-open">Electrical rough-in</span>
+              <span class="ms-date">Jun 12</span>
+            </div>
+            <div class="milestone-item">
+              <div class="ms-check ms-check-open"></div>
+              <span class="ms-text ms-text-open">Tiling complete</span>
+              <span class="ms-date">Jun 18</span>
+            </div>
+            <div class="milestone-item">
+              <div class="ms-check ms-check-open"></div>
+              <span class="ms-text ms-text-open">Final inspection</span>
+              <span class="ms-date">Jun 26</span>
+            </div>
+          </div>
+
+          <!-- Team -->
+          <div class="section-label" style="margin-top:10px;">Team</div>
+          <div class="team-section">
+            <div class="team-member">
+              <div class="tm-avatar">MP</div>
+              <span class="tm-name">Mihai Popescu</span>
+              <span class="tm-role">Lead Tech</span>
+            </div>
+            <div class="team-member">
+              <div class="tm-avatar">GS</div>
+              <span class="tm-name">George Stoica</span>
+              <span class="tm-role">Electrician</span>
+            </div>
+            <div class="team-member">
+              <div class="tm-avatar">RC</div>
+              <span class="tm-name">Radu Ciobanu</span>
+              <span class="tm-role">Tiler</span>
+            </div>
+          </div>
+
+          <div style="height:10px;"></div>
+        </div>
+
+        <!-- FAB -->
+        <div class="fab">⋮</div>
+      </div>
+
+      <!-- Tab bar -->
+      <div class="tab-bar">
+        <div class="tab-item"><div class="tab-icon">⌂</div><div class="tab-label">Command</div></div>
+        <div class="tab-item active"><div class="tab-icon">⊞</div><div class="tab-label">Operations</div></div>
+        <div class="tab-item"><div class="tab-icon">◎</div><div class="tab-label">People</div></div>
+        <div class="tab-item"><div class="tab-icon">⟁</div><div class="tab-label">Finance</div></div>
+        <div class="tab-item"><div class="tab-icon">✦</div><div class="tab-label">Intelligence</div></div>
+      </div>
+    </div>
+    <div class="phone-label"><strong>Project Detail</strong>Phase timeline · budget ring · milestones</div>
+  </div>
+
+  <!-- ═══════════════════════════════════
+       SCREEN 3 · Project SnapSheet
+       ═══════════════════════════════════ -->
+  <div>
+    <div class="phone">
+      <div class="dynamic-island">
+        <div class="di-dot"></div>
+        <div class="di-text">Quick Actions</div>
+        <div class="di-dot"></div>
+      </div>
+      <div class="phone-content" style="background:rgba(0,0,0,0.3);">
+
+        <!-- Dimmed background (blurred list) -->
+        <div class="sheet-bg"></div>
+
+        <!-- Blurred content peek behind -->
+        <div style="padding:10px 14px;opacity:0.3;filter:blur(1px);pointer-events:none;">
+          <div style="font-size:11px;color:rgba(255,255,255,0.5);margin-bottom:8px;">‹ Projects</div>
+          <div style="font-size:18px;font-weight:700;color:rgba(255,255,255,0.8);letter-spacing:-0.4px;line-height:1.2;">Renovare Apartament Floreasca</div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:4px;">Andronic Group SRL</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:12px;">
+            <div style="height:52px;border-radius:12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.07);"></div>
+            <div style="height:52px;border-radius:12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.07);"></div>
+            <div style="height:52px;border-radius:12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.07);"></div>
+          </div>
+        </div>
+
+        <!-- SnapSheet -->
+        <div class="snap-sheet">
+          <div class="sheet-handle-row">
+            <div class="sheet-handle"></div>
+          </div>
+          <div class="sheet-title">Renovare Floreasca</div>
+
+          <!-- 4-stat grid -->
+          <div class="sheet-stats">
+            <div class="sheet-stat">
+              <div class="ss-value">59%</div>
+              <div class="ss-label">Complete</div>
+            </div>
+            <div class="sheet-stat">
+              <div class="ss-value">23d</div>
+              <div class="ss-label">Remaining</div>
+            </div>
+            <div class="sheet-stat">
+              <div class="ss-value">€22.4k</div>
+              <div class="ss-label">Spent</div>
+            </div>
+            <div class="sheet-stat">
+              <div class="ss-value" style="color:rgba(48,220,100,0.85);">+14%</div>
+              <div class="ss-label">Margin</div>
+            </div>
+          </div>
+
+          <!-- Client contact -->
+          <div class="client-card">
+            <div class="cc-avatar">AG</div>
+            <div>
+              <div class="cc-name">Andronic Group SRL</div>
+              <div class="cc-sub">Ion Andronic · +40 744 123 456</div>
+            </div>
+            <div class="cc-actions">
+              <div class="cc-btn">📞</div>
+              <div class="cc-btn">✉</div>
+            </div>
+          </div>
+
+          <!-- Action list -->
+          <div class="action-list">
+            <div class="action-row">
+              <div class="action-icon action-icon-white">▶</div>
+              <span class="action-label">Advance to Review Phase</span>
+              <span class="action-chevron">›</span>
+            </div>
+            <div class="action-row">
+              <div class="action-icon action-icon-white">✎</div>
+              <span class="action-label">Add Site Note</span>
+              <span class="action-chevron">›</span>
+            </div>
+            <div class="action-row">
+              <div class="action-icon action-icon-warn">⚑</div>
+              <span class="action-label action-label-warn">Flag Budget Risk</span>
+              <span class="action-chevron" style="color:rgba(255,159,10,0.3);">›</span>
+            </div>
+            <div class="action-row">
+              <div class="action-icon action-icon-white">📄</div>
+              <span class="action-label">View Documents</span>
+              <span class="action-chevron">›</span>
+            </div>
+            <div class="action-row">
+              <div class="action-icon action-icon-danger">⏸</div>
+              <span class="action-label action-label-danger">Pause Project</span>
+              <span class="action-chevron" style="color:rgba(255,59,48,0.2);">›</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <!-- No tab bar — sheet takes priority -->
+    </div>
+    <div class="phone-label"><strong>Project SnapSheet</strong>Quick actions · client call · phase advance</div>
+  </div>
+
+  <!-- ═══════════════════════════════════
+       SCREEN 4 · Execution Phase Detail
+       ═══════════════════════════════════ -->
+  <div>
+    <div class="phone">
+      <div class="dynamic-island">
+        <div class="di-dot"></div>
+        <div class="di-text">Execution · live</div>
+        <div class="di-dot"></div>
+      </div>
+      <div class="phone-content">
+        <div class="scroll">
+
+          <!-- Header -->
+          <div class="phase-header">
+            <div class="phase-header-back">‹ Floreasca</div>
+            <div class="phase-header-title">Execution Phase</div>
+            <div class="phase-header-sub">In progress · started May 18</div>
+          </div>
+
+          <!-- Progress ring + label -->
+          <div class="progress-circle-wrap">
+            <svg width="90" height="90" viewBox="0 0 90 90">
+              <circle cx="45" cy="45" r="36" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="7"/>
+              <circle cx="45" cy="45" r="36" fill="none" stroke="rgba(255,255,255,0.75)" stroke-width="7"
+                stroke-dasharray="226.2" stroke-dashoffset="92.7" stroke-linecap="round"
+                transform="rotate(-90 45 45)"/>
+            </svg>
+            <div class="progress-ring-label">
+              <div class="prl-pct">59%</div>
+              <div class="prl-sub">8 of 14 tasks done</div>
+            </div>
+          </div>
+
+          <!-- In Progress tasks -->
+          <div class="task-group">
+            <div class="task-group-label">In Progress</div>
+            <div class="task-item">
+              <div class="task-check task-check-wip">
+                <div style="width:7px;height:7px;border-radius:50%;background:rgba(255,159,10,0.8);"></div>
+              </div>
+              <span class="task-text">Electrical rough-in — living room</span>
+              <div class="task-assignee">GS</div>
+            </div>
+            <div class="task-item">
+              <div class="task-check task-check-wip">
+                <div style="width:7px;height:7px;border-radius:50%;background:rgba(255,159,10,0.8);"></div>
+              </div>
+              <span class="task-text">Tile adhesive — bathroom walls</span>
+              <div class="task-assignee">RC</div>
+            </div>
+          </div>
+
+          <!-- Open tasks -->
+          <div class="task-group">
+            <div class="task-group-label">Open</div>
+            <div class="task-item">
+              <div class="task-check task-check-open"></div>
+              <span class="task-text">Paint prep — all rooms</span>
+              <div class="task-assignee">MP</div>
+            </div>
+            <div class="task-item">
+              <div class="task-check task-check-open"></div>
+              <span class="task-text">Install kitchen cabinets</span>
+              <div class="task-assignee">AR</div>
+            </div>
+            <div class="task-item">
+              <div class="task-check task-check-open"></div>
+              <span class="task-text">Plumbing fixtures — bathroom</span>
+              <div class="task-assignee">LG</div>
+            </div>
+            <div class="task-item">
+              <div class="task-check task-check-open"></div>
+              <span class="task-text">Final flooring — bedroom</span>
+              <div class="task-assignee">RC</div>
+            </div>
+          </div>
+
+          <!-- Completed tasks -->
+          <div class="task-group">
+            <div class="task-group-label">Completed · 8</div>
+            <div class="task-item" style="opacity:0.55;">
+              <div class="task-check task-check-done">✓</div>
+              <span class="task-text task-text-done">Demolition complete</span>
+              <div class="task-assignee" style="opacity:0.5;">MP</div>
+            </div>
+            <div class="task-item" style="opacity:0.55;">
+              <div class="task-check task-check-done">✓</div>
+              <span class="task-text task-text-done">Waterproofing — bathroom</span>
+              <div class="task-assignee" style="opacity:0.5;">GS</div>
+            </div>
+          </div>
+
+          <!-- Activity feed -->
+          <div class="section-label" style="margin-top:4px;">Activity</div>
+          <div class="update-feed" style="margin:0 14px 12px;">
+            <div class="update-item">
+              <div class="update-dot" style="background:rgba(48,209,88,0.7);"></div>
+              <div class="update-body">
+                <div class="update-text">Waterproofing marked complete by George Stoica</div>
+                <div class="update-time">Today · 11:32</div>
+              </div>
+            </div>
+            <div class="update-item">
+              <div class="update-dot" style="background:rgba(255,159,10,0.7);"></div>
+              <div class="update-body">
+                <div class="update-text">Material delivery delayed — tiles arrive Jun 10</div>
+                <div class="update-time">Yesterday · 15:04</div>
+              </div>
+            </div>
+            <div class="update-item">
+              <div class="update-dot" style="background:rgba(255,255,255,0.3);"></div>
+              <div class="update-body">
+                <div class="update-text">Site note added by Mihai Popescu</div>
+                <div class="update-time">Jun 4 · 09:17</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Tab bar -->
+      <div class="tab-bar">
+        <div class="tab-item"><div class="tab-icon">⌂</div><div class="tab-label">Command</div></div>
+        <div class="tab-item active"><div class="tab-icon">⊞</div><div class="tab-label">Operations</div></div>
+        <div class="tab-item"><div class="tab-icon">◎</div><div class="tab-label">People</div></div>
+        <div class="tab-item"><div class="tab-icon">⟁</div><div class="tab-label">Finance</div></div>
+        <div class="tab-item"><div class="tab-icon">✦</div><div class="tab-label">Intelligence</div></div>
+      </div>
+    </div>
+    <div class="phone-label"><strong>Execution Phase</strong>Task checklist · progress ring · activity feed</div>
+  </div>
+
+</div><!-- /phones-grid -->
+
+<!-- ── Divider ── -->
+<div class="section-divider" style="margin:56px 0 40px;"><span>API Surface</span></div>
+
+<!-- ── API Cards ── -->
+<div class="api-grid">
+  <div class="api-card">
+    <div class="api-method">GET</div>
+    <div class="api-route">/api/projects</div>
+    <div class="api-desc">List all projects filtered by status (active | planning | review | done). Returns id, name, client, phase, budget, spent, workingDays, completionPct, teamIds, startDate, endDate.</div>
+  </div>
+  <div class="api-card">
+    <div class="api-method">GET</div>
+    <div class="api-route">/api/projects/[id]</div>
+    <div class="api-desc">Full project detail: phases array, milestones checklist, team roster, budget breakdown, activity feed entries, linked documents, and client contact.</div>
+  </div>
+  <div class="api-card">
+    <div class="api-method">POST</div>
+    <div class="api-route">/api/projects/[id]/phase</div>
+    <div class="api-desc">Advance or revert a project phase. Body: <code>{ action: "advance"|"revert", note? }</code>. Writes audit log with actorId, companyId, resourceType: "project".</div>
+  </div>
+  <div class="api-card">
+    <div class="api-method">POST</div>
+    <div class="api-route">/api/projects/[id]/flag</div>
+    <div class="api-desc">Flag a budget risk or issue. Body: <code>{ type: "budget_risk"|"delay"|"quality", severity, note }</code>. Writes audit log. Triggers notification to company owner and manager.</div>
+  </div>
+</div>
+
+</body>
+</html>
