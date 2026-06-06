@@ -146,6 +146,9 @@ export type { GlassBarChartProps } from "./glass-bar-chart"
 export { GlassDonutChart } from "./glass-donut-chart"
 export type { GlassDonutChartProps, DonutSegment } from "./glass-donut-chart"
 
+export { GlassAccordion } from "./glass-accordion"
+export type { GlassAccordionProps, AccordionItem } from "./glass-accordion"
+
 export {
   ActionSheet,
   ConfirmationSheet,
