@@ -283,6 +283,9 @@ export type { GlassAIPromptCardProps, PromptVariant } from "./glass-ai-prompt-ca
 export { GlassMapView } from "./glass-map-view"
 export type { GlassMapViewProps } from "./glass-map-view"
 
+export { GlassLocationPin } from "./glass-location-pin"
+export type { GlassLocationPinProps, PinColor } from "./glass-location-pin"
+
 export {
   ActionSheet,
   ConfirmationSheet,
