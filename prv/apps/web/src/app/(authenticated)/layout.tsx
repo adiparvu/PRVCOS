@@ -2,6 +2,7 @@ import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import { getSession } from "@prv/auth"
 import { FloatingTabBar } from "./floating-tab-bar"
+import { AppearanceButton } from "./appearance-button"
 
 export const dynamic = "force-dynamic"
 
@@ -34,6 +35,9 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
 
       {/* Main content — padded bottom for floating tab bar */}
       <main className="relative z-10 min-h-screen pb-32">{children}</main>
+
+      {/* Appearance settings toggle — fixed top-right */}
+      <AppearanceButton />
 
       {/* Floating Tab Bar — fixed at bottom, above content */}
       <FloatingTabBar role={session.role} />
