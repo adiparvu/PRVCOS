@@ -36,7 +36,7 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
       />
 
       {/* Dynamic Island — fixed top, role-aware live context */}
-      <DynamicIslandBar role={session.role} />
+      <DynamicIslandBar role={session.role} userId={session.userId} companyId={session.companyId} />
 
       {/* Floating Search Bar — fixed below DI, pill-shaped glass */}
       <FloatingSearchBar role={session.role} />
@@ -48,7 +48,7 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
       <AppearanceButton />
 
       {/* Floating Tab Bar — fixed at bottom */}
-      <FloatingTabBar role={session.role} />
+      <FloatingTabBar role={session.role} userId={session.userId} companyId={session.companyId} />
     </div>
   )
 }

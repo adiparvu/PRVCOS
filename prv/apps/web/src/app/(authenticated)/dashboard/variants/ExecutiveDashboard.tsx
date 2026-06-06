@@ -1,30 +1,24 @@
 import { cacheMemo } from "@prv/cache"
 import { queryCompanyKpis } from "@prv/db"
-import {
-  GlassStatCard,
-  GlassLineChart,
-  GlassAlertBanner,
-  GlassTimeline,
-  type TimelineEntry,
-} from "@prv/ui"
+import { GlassAlertBanner } from "@prv/ui"
 import type { PRVSession } from "@prv/auth"
+import type { ActivityEventPayload } from "@prv/cache"
 import { OnlineNowPanel } from "@/components/presence/OnlineNowPanel"
 import { PinnedContactsRow } from "@/components/dashboard/PinnedContactsRow"
 import { DashboardGreeting } from "@/components/dashboard/DashboardGreeting"
 import { resolveQuickActions } from "@/lib/quick-actions"
-import { GlassCard, SectionLabel, formatCurrency, QuickActionsGrid } from "../_shared"
+import { GlassCard, SectionLabel, QuickActionsGrid } from "../_shared"
+import { LiveKpiGrid } from "../islands/LiveKpiGrid"
+import { LiveActivityFeed } from "../islands/LiveActivityFeed"
 
 const REVENUE_SERIES = [320, 348, 360, 402, 438, 482]
 const REVENUE_LABELS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"]
 
 const SPARK = {
-  revenue: [30, 34, 32, 40, 38, 44, 48],
-  profit: [26, 24, 28, 26, 30, 32, 34],
-  projects: [24, 22, 24, 20, 21, 26, 28],
-  workforce: [20, 20, 18, 19, 17, 18, 16],
+  revenue: [30, 34, 32, 40, 44, 48],
 }
 
-const ACTIVITY: TimelineEntry[] = [
+const INITIAL_ACTIVITY: ActivityEventPayload[] = [
   {
     id: "1",
     type: "success",
@@ -69,6 +63,13 @@ export async function ExecutiveDashboard({ session }: Props) {
 
   const alertCount = kpis?.alerts ?? 0
   const quickActions = resolveQuickActions(session.role)
+
+  const initialKpis = {
+    revenue: kpis?.revenue ?? "0",
+    workforce: kpis?.workforce ?? 0,
+    activeProjects: kpis?.activeProjects ?? 0,
+    alerts: alertCount,
+  }
 
   return (
     <div className="px-4 pt-14 pb-28 max-w-2xl mx-auto">
@@ -153,42 +154,31 @@ export async function ExecutiveDashboard({ session }: Props) {
         </div>
       )}
 
-      {/* KPI grid */}
-      <div className="grid grid-cols-2 gap-3 mb-3.5">
-        <GlassStatCard
-          label="Revenue"
-          value={kpis ? formatCurrency(kpis.revenue) : "—"}
-          trend={{ direction: "up", value: "12.4%" }}
-          sparkline={SPARK.revenue}
-        />
-        <GlassStatCard
-          label="Profit"
-          value="€138K"
-          trend={{ direction: "up", value: "8.1%" }}
-          sparkline={SPARK.profit}
-        />
-        <GlassStatCard
-          label="Active Projects"
-          value={kpis ? String(kpis.activeProjects) : "—"}
-          trend={{ direction: "up", value: "6 new" }}
-          sparkline={SPARK.projects}
-        />
-        <GlassStatCard
-          label="Workforce"
-          value={kpis ? String(kpis.workforce) : "—"}
-          trend={{ direction: "flat", value: "online" }}
-          sparkline={SPARK.workforce}
-        />
-      </div>
+      {/* KPI grid — live client island */}
+      <LiveKpiGrid initial={initialKpis} companyId={session.companyId} variant="executive" />
 
       {/* Revenue chart */}
       <GlassCard className="mb-3.5">
         <SectionLabel>Revenue · last 6 months</SectionLabel>
-        <GlassLineChart
-          series={[{ label: "Revenue", data: REVENUE_SERIES }]}
-          labels={REVENUE_LABELS}
-          height={140}
-        />
+        <div className="flex items-end gap-1 h-[88px]" aria-label="Revenue sparkline">
+          {REVENUE_SERIES.map((v, i) => (
+            <div key={i} className="flex-1 flex flex-col items-center gap-1">
+              <div
+                className="w-full rounded-[3px]"
+                style={{
+                  height: `${Math.round((v / Math.max(...REVENUE_SERIES)) * 72)}px`,
+                  background:
+                    i === REVENUE_SERIES.length - 1
+                      ? "rgba(255,255,255,0.55)"
+                      : "rgba(255,255,255,0.14)",
+                }}
+              />
+              <span className="text-[9px]" style={{ color: "rgba(255,255,255,0.25)" }}>
+                {REVENUE_LABELS[i]}
+              </span>
+            </div>
+          ))}
+        </div>
       </GlassCard>
 
       {/* Online Now */}
@@ -202,11 +192,8 @@ export async function ExecutiveDashboard({ session }: Props) {
       {/* Quick Actions */}
       <QuickActionsGrid actions={quickActions} />
 
-      {/* Recent Activity */}
-      <GlassCard>
-        <SectionLabel>Recent Activity</SectionLabel>
-        <GlassTimeline entries={ACTIVITY} compact />
-      </GlassCard>
+      {/* Recent Activity — live client island */}
+      <LiveActivityFeed initialEntries={INITIAL_ACTIVITY} companyId={session.companyId} />
     </div>
   )
 }

@@ -4,10 +4,24 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import type { SystemRole } from "@prv/auth"
 import { resolveShell } from "@/lib/shell-config"
+import { useNotificationCount } from "@/hooks/realtime"
 
-export function FloatingTabBar({ role }: { role: SystemRole }) {
+interface FloatingTabBarProps {
+  role: SystemRole
+  userId: string
+  companyId: string
+  initialNotifCount?: number
+}
+
+export function FloatingTabBar({
+  role,
+  userId,
+  companyId,
+  initialNotifCount = 0,
+}: FloatingTabBarProps) {
   const pathname = usePathname()
   const { tabs } = resolveShell(role)
+  const notifCount = useNotificationCount(initialNotifCount, userId, companyId)
 
   return (
     <div
@@ -26,8 +40,11 @@ export function FloatingTabBar({ role }: { role: SystemRole }) {
         }}
         aria-label="Main navigation"
       >
-        {tabs.map((tab) => {
+        {tabs.map((tab, idx) => {
           const isActive = pathname === tab.href || pathname.startsWith(tab.href + "/")
+          // Notification badge on the Command tab (first tab, dashboard)
+          const showBadge = idx === 0 && notifCount > 0
+
           return (
             <Link
               key={tab.id}
@@ -43,7 +60,22 @@ export function FloatingTabBar({ role }: { role: SystemRole }) {
                   "color 300ms cubic-bezier(0.34,1.56,0.64,1), background 300ms cubic-bezier(0.34,1.56,0.64,1), box-shadow 300ms cubic-bezier(0.34,1.56,0.64,1)",
               }}
             >
-              {tab.icon}
+              <span className="relative">
+                {tab.icon}
+                {showBadge && (
+                  <span
+                    aria-label={`${notifCount} unread`}
+                    className="absolute -top-[3px] -right-[3px] min-w-[14px] h-[14px] rounded-full flex items-center justify-center text-[8px] font-bold px-[3px]"
+                    style={{
+                      background: "#FF453A",
+                      color: "#fff",
+                      boxShadow: "0 0 6px rgba(255,69,58,0.6)",
+                    }}
+                  >
+                    {notifCount > 99 ? "99+" : notifCount}
+                  </span>
+                )}
+              </span>
               <span
                 className="text-[9px] font-medium tracking-tight leading-none whitespace-nowrap"
                 style={{ opacity: isActive ? 0.9 : 0.5 }}

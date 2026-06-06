@@ -1,19 +1,15 @@
 import { cacheMemo } from "@prv/cache"
 import { queryManagerKpis } from "@prv/db"
-import { GlassStatCard, GlassAlertBanner, GlassTimeline, type TimelineEntry } from "@prv/ui"
+import { GlassAlertBanner } from "@prv/ui"
 import type { PRVSession } from "@prv/auth"
+import type { ActivityEventPayload } from "@prv/cache"
 import { DashboardGreeting } from "@/components/dashboard/DashboardGreeting"
 import { resolveQuickActions } from "@/lib/quick-actions"
-import { GlassCard, SectionLabel, formatCurrency, QuickActionsGrid, InlineAlert } from "../_shared"
+import { GlassCard, SectionLabel, QuickActionsGrid, InlineAlert } from "../_shared"
+import { LiveKpiGrid } from "../islands/LiveKpiGrid"
+import { LiveActivityFeed } from "../islands/LiveActivityFeed"
 
-const SPARK = {
-  revenue: [28, 32, 30, 36, 34, 40, 44],
-  workforce: [18, 18, 17, 18, 16, 17, 17],
-  projects: [8, 9, 10, 10, 11, 12, 12],
-  tasks: [22, 20, 18, 16, 15, 14, 13],
-}
-
-const ACTIVITY: TimelineEntry[] = [
+const INITIAL_ACTIVITY: ActivityEventPayload[] = [
   {
     id: "1",
     type: "info",
@@ -71,6 +67,14 @@ export async function ManagerDashboard({ session }: Props) {
 
   const quickActions = resolveQuickActions(session.role)
 
+  const initialKpis = {
+    revenue: kpis?.revenue ?? "0",
+    workforce: kpis?.workforce ?? 0,
+    activeProjects: kpis?.activeProjects ?? 0,
+    alerts: kpis?.alerts ?? 0,
+    pendingApprovals: kpis?.pendingApprovals ?? 0,
+  }
+
   return (
     <div className="px-4 pt-14 pb-28 max-w-2xl mx-auto">
       {/* Header */}
@@ -118,42 +122,14 @@ export async function ManagerDashboard({ session }: Props) {
         />
       )}
 
-      {/* KPI grid */}
-      <div className="grid grid-cols-2 gap-3 mb-3.5">
-        <GlassStatCard
-          label="Revenue MTD"
-          value={kpis ? formatCurrency(kpis.revenue) : "—"}
-          trend={{ direction: "up", value: "vs last month" }}
-          sparkline={SPARK.revenue}
-        />
-        <GlassStatCard
-          label="Workforce"
-          value={kpis ? String(kpis.workforce) : "—"}
-          trend={{ direction: "flat", value: "active" }}
-          sparkline={SPARK.workforce}
-        />
-        <GlassStatCard
-          label="Active Projects"
-          value={kpis ? String(kpis.activeProjects) : "—"}
-          trend={{ direction: "up", value: "on track" }}
-          sparkline={SPARK.projects}
-        />
-        <GlassStatCard
-          label="Open Tasks"
-          value="13"
-          trend={{ direction: "down", value: "9 done today" }}
-          sparkline={SPARK.tasks}
-        />
-      </div>
+      {/* KPI grid — live client island */}
+      <LiveKpiGrid initial={initialKpis} companyId={session.companyId} variant="manager" />
 
       {/* Quick Actions */}
       <QuickActionsGrid actions={quickActions} />
 
-      {/* Recent Activity */}
-      <GlassCard>
-        <SectionLabel>Recent Activity</SectionLabel>
-        <GlassTimeline entries={ACTIVITY} compact />
-      </GlassCard>
+      {/* Recent Activity — live client island */}
+      <LiveActivityFeed initialEntries={INITIAL_ACTIVITY} companyId={session.companyId} />
     </div>
   )
 }

@@ -3,22 +3,9 @@
 import { useState, useEffect } from "react"
 import type { SystemRole } from "@prv/auth"
 import { resolveShell } from "@/lib/shell-config"
+import { useLiveContext } from "@/hooks/realtime"
 
-// Live context data shape — populated by role-specific Supabase Realtime subscriptions in Phase 06
-interface LiveContext {
-  primary: string
-  secondary?: string
-  indicator?: "normal" | "warning" | "critical"
-}
-
-function useLiveContext(role: SystemRole, diLabel: string): LiveContext {
-  const [ctx] = useState<LiveContext>({ primary: diLabel, secondary: "Live" })
-  // Phase 06: subscribe to Supabase Realtime channels scoped to role + company
-  // useEffect(() => { ... }, [role])
-  return ctx
-}
-
-const PulseIcon = ({ indicator }: { indicator?: LiveContext["indicator"] }) => {
+const PulseIcon = ({ indicator }: { indicator?: "normal" | "warning" | "critical" }) => {
   const color =
     indicator === "critical"
       ? "#FF453A"
@@ -39,18 +26,20 @@ const PulseIcon = ({ indicator }: { indicator?: LiveContext["indicator"] }) => {
 
 interface DynamicIslandBarProps {
   role: SystemRole
+  userId: string
+  companyId: string
 }
 
-export function DynamicIslandBar({ role }: DynamicIslandBarProps) {
+export function DynamicIslandBar({ role, userId, companyId }: DynamicIslandBarProps) {
   const { diLabel } = resolveShell(role)
-  const ctx = useLiveContext(role, diLabel)
+  const ctx = useLiveContext({ role, diLabel, companyId, userId })
   const [expanded, setExpanded] = useState(false)
 
-  // Auto-collapse after 4 s when a critical indicator fires
+  // Auto-expand 4 s when a critical indicator fires
   useEffect(() => {
     if (ctx.indicator === "critical") {
       setExpanded(true)
-      const t = setTimeout(() => setExpanded(false), 4000)
+      const t = setTimeout(() => setExpanded(false), 4_000)
       return () => clearTimeout(t)
     }
   }, [ctx.indicator])
@@ -95,7 +84,6 @@ export function DynamicIslandBar({ role }: DynamicIslandBarProps) {
         )}
       </button>
 
-      {/* Expanded tray — Phase 06 will inject role-specific live widgets here */}
       {expanded && (
         <div
           className="mt-[2px] w-full rounded-[20px] overflow-hidden"
@@ -107,11 +95,24 @@ export function DynamicIslandBar({ role }: DynamicIslandBarProps) {
             boxShadow: "inset 0 1px 0 rgba(255,255,255,0.14), 0 24px 64px rgba(0,0,0,0.75)",
           }}
         >
-          <div
-            className="px-4 py-6 text-center text-xs"
-            style={{ color: "rgba(255,255,255,0.28)" }}
-          >
-            {diLabel} · Live data in Phase 06
+          <div className="px-4 py-4">
+            <p
+              className="text-[11px] font-semibold uppercase tracking-widest mb-1"
+              style={{ color: "rgba(255,255,255,0.30)" }}
+            >
+              {diLabel}
+            </p>
+            <p
+              className="text-[22px] font-bold tracking-tight"
+              style={{ color: "rgba(255,255,255,0.90)" }}
+            >
+              {ctx.primary.includes("·") ? ctx.primary.split("·")[1]?.trim() : ctx.primary}
+            </p>
+            {ctx.secondary && (
+              <p className="text-[12px] mt-0.5" style={{ color: "rgba(255,255,255,0.45)" }}>
+                {ctx.secondary}
+              </p>
+            )}
           </div>
         </div>
       )}

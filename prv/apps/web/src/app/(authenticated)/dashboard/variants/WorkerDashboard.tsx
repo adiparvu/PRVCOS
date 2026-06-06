@@ -4,17 +4,8 @@ import type { PRVSession } from "@prv/auth"
 import { DashboardGreeting } from "@/components/dashboard/DashboardGreeting"
 import { resolveQuickActions } from "@/lib/quick-actions"
 import { GlassCard, SectionLabel, QuickActionsGrid } from "../_shared"
+import { LiveShiftCard } from "../islands/LiveShiftCard"
 import Link from "next/link"
-
-// ── Placeholder shift data — live data arrives with the Attendance module ─────
-const SHIFT = {
-  start: "09:00",
-  end: "17:00",
-  location: "Main Floor",
-  progressPct: 27,
-  remainingH: 6,
-  remainingM: 24,
-}
 
 const TASKS = [
   { id: "1", label: "Morning briefing", time: "09:00", done: true },
@@ -87,42 +78,8 @@ export async function WorkerDashboard({ session }: Props) {
       {/* Greeting */}
       <DashboardGreeting name={firstName} tasksToday={TASKS.length} />
 
-      {/* Shift card */}
-      <GlassCard className="mb-3.5">
-        <div className="flex items-start justify-between mb-2">
-          <div>
-            <p
-              className="text-[26px] font-bold tracking-tight leading-tight"
-              style={{ color: "var(--prv-text-1)" }}
-            >
-              {SHIFT.start} – {SHIFT.end}
-            </p>
-            <p className="text-[12px] mt-0.5" style={{ color: "var(--prv-text-3)" }}>
-              {SHIFT.location} · {SHIFT.remainingH}h {SHIFT.remainingM}m remaining
-            </p>
-          </div>
-          <span
-            className="text-[10px] font-bold px-2 py-1 rounded-[8px]"
-            style={{ background: "rgba(80,220,120,0.16)", color: "rgba(80,220,120,0.90)" }}
-          >
-            Active
-          </span>
-        </div>
-        <div
-          className="h-1 rounded-full overflow-hidden"
-          style={{ background: "rgba(255,255,255,0.08)" }}
-          role="progressbar"
-          aria-valuenow={SHIFT.progressPct}
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-label="Shift progress"
-        >
-          <div
-            className="h-full rounded-full"
-            style={{ width: `${SHIFT.progressPct}%`, background: "rgba(255,255,255,0.55)" }}
-          />
-        </div>
-      </GlassCard>
+      {/* Shift card — live client island with real-time countdown */}
+      <LiveShiftCard userId={session.userId} />
 
       {/* Tasks */}
       <GlassCard className="mb-3.5">
