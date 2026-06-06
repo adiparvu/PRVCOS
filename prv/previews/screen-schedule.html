@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PRV — Schedule</title>
+<style>
+  :root, [data-theme="dark"] {
+    --prv-bg: #000000;
+    --prv-g1: rgba(255,255,255,0.06);
+    --prv-g2: rgba(255,255,255,0.10);
+    --prv-g3: rgba(255,255,255,0.16);
+    --prv-text-1: rgba(255,255,255,0.95);
+    --prv-text-2: rgba(255,255,255,0.65);
+    --prv-text-3: rgba(255,255,255,0.35);
+    --prv-border: rgba(255,255,255,0.12);
+    --prv-border-subtle: rgba(255,255,255,0.06);
+    --prv-border-strong: rgba(255,255,255,0.28);
+    --prv-g2-spec: rgba(255,255,255,0.18);
+    --prv-shadow-e2: 0 4px 16px rgba(0,0,0,0.5);
+    --prv-shadow-e4: 0 24px 64px rgba(0,0,0,0.70), 0 8px 24px rgba(0,0,0,0.40);
+  }
+  [data-theme="light"] {
+    --prv-bg: #f2f2f7;
+    --prv-g1: rgba(255,255,255,0.72);
+    --prv-g2: rgba(255,255,255,0.80);
+    --prv-g3: rgba(255,255,255,0.92);
+    --prv-text-1: rgba(0,0,0,0.90);
+    --prv-text-2: rgba(0,0,0,0.60);
+    --prv-text-3: rgba(0,0,0,0.35);
+    --prv-border: rgba(0,0,0,0.08);
+    --prv-border-subtle: rgba(0,0,0,0.04);
+    --prv-border-strong: rgba(0,0,0,0.22);
+    --prv-g2-spec: rgba(255,255,255,0.90);
+    --prv-shadow-e2: 0 4px 16px rgba(0,0,0,0.12);
+    --prv-shadow-e4: 0 24px 64px rgba(0,0,0,0.18), 0 8px 24px rgba(0,0,0,0.10);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--prv-bg);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", sans-serif;
+    min-height: 100vh;
+    transition: background .3s;
+  }
+  .page-glow {
+    position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background: radial-gradient(ellipse 100% 40% at 50% -10%, var(--prv-border-subtle) 0%, transparent 100%);
+    transition: background .3s;
+  }
+  .screen {
+    position: relative; z-index: 1;
+    max-width: 390px; margin: 0 auto;
+    padding: 56px 16px 140px;
+  }
+
+  /* ── Shared ───────────────────────────────────────────────── */
+  .card {
+    background: var(--prv-g1); border: 1px solid var(--prv-border-subtle);
+    border-radius: 18px; padding: 16px; margin-bottom: 12px;
+    transition: background .3s, border-color .3s;
+  }
+  .section-label {
+    font-size: 11px; font-weight: 600; letter-spacing: .10em; text-transform: uppercase;
+    color: var(--prv-text-3); margin: 20px 4px 10px; transition: color .3s;
+  }
+
+  /* ── Header ──────────────────────────────────────────────── */
+  .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  .header-sub { font-size: 13px; font-weight: 500; color: var(--prv-text-3); margin-bottom: 2px; transition: color .3s; }
+  .header-title { font-size: 26px; font-weight: 600; letter-spacing: -.5px; color: var(--prv-text-1); transition: color .3s; }
+  .week-nav { display: flex; align-items: center; gap: 8px; }
+  .nav-btn {
+    width: 32px; height: 32px; border-radius: 9px;
+    background: var(--prv-g2); border: 1px solid var(--prv-border-subtle);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--prv-text-2); transition: all .3s; cursor: default;
+  }
+  .week-label { font-size: 13px; font-weight: 600; color: var(--prv-text-2); transition: color .3s; }
+
+  /* ── Stats row ────────────────────────────────────────────── */
+  .stats-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-bottom: 12px; }
+  .stat {
+    background: var(--prv-g1); border: 1px solid var(--prv-border-subtle);
+    border-radius: 16px; padding: 12px 8px; text-align: center;
+    transition: background .3s, border-color .3s;
+  }
+  .stat-val { font-size: 18px; font-weight: 700; color: var(--prv-text-1); transition: color .3s; }
+  .stat-lbl { font-size: 9px; font-weight: 600; letter-spacing:.05em; text-transform: uppercase; color: var(--prv-text-3); margin-top: 2px; transition: color .3s; }
+
+  /* ── Alert banner ─────────────────────────────────────────── */
+  .alert-banner {
+    display: flex; align-items: flex-start; gap: 10px;
+    background: rgba(255,159,10,0.10); border: 1px solid rgba(255,159,10,0.28);
+    border-radius: 14px; padding: 12px 14px; margin-bottom: 12px;
+  }
+  .alert-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,159,10,0.9); flex-shrink: 0; margin-top: 4px; }
+  .alert-title { font-size: 13px; font-weight: 600; color: rgba(255,159,10,0.95); }
+  .alert-sub { font-size: 11px; color: var(--prv-text-2); margin-top: 1px; transition: color .3s; }
+
+  /* ── Week strip ───────────────────────────────────────────── */
+  .week-strip {
+    display: flex; gap: 4px;
+    background: var(--prv-g1); border: 1px solid var(--prv-border-subtle);
+    border-radius: 18px; padding: 10px 8px; margin-bottom: 12px;
+    overflow-x: auto;
+    transition: background .3s, border-color .3s;
+  }
+  .day-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 40px; }
+  .day-lbl { font-size: 10px; font-weight: 600; letter-spacing:.04em; color: var(--prv-text-3); transition: color .3s; }
+  .day-num {
+    width: 28px; height: 28px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 600; color: var(--prv-text-2); transition: all .3s;
+  }
+  .day-num.today { background: var(--prv-text-1); color: var(--prv-bg); }
+  .day-shifts { display: flex; flex-direction: column; gap: 2px; width: 100%; }
+  .day-pip { height: 4px; border-radius: 2px; width: 100%; }
+
+  /* ── Shift cards ──────────────────────────────────────────── */
+  .shift-card {
+    background: var(--prv-g1); border: 1px solid var(--prv-border-subtle);
+    border-radius: 16px; padding: 14px; margin-bottom: 10px;
+    display: flex; align-items: center; gap: 12px;
+    cursor: pointer; transition: background .3s, border-color .3s;
+    position: relative; overflow: hidden;
+  }
+  .shift-accent { width: 4px; align-self: stretch; border-radius: 2px; flex-shrink: 0; }
+  .shift-body { flex: 1; }
+  .shift-role { font-size: 14px; font-weight: 600; color: var(--prv-text-1); transition: color .3s; }
+  .shift-time { font-size: 12px; color: var(--prv-text-2); margin-top: 2px; transition: color .3s; }
+  .shift-meta { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+  .shift-meta-item { font-size: 11px; color: var(--prv-text-3); transition: color .3s; }
+  .shift-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex-shrink: 0; }
+  .shift-duration { font-size: 13px; font-weight: 700; color: var(--prv-text-1); transition: color .3s; }
+  .shift-status {
+    font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 100px;
+  }
+  .shift-status.confirmed { background: rgba(48,209,88,0.15); color: rgba(48,209,88,0.9); }
+  .shift-status.open { background: rgba(255,159,10,0.15); color: rgba(255,159,10,0.9); }
+  .shift-status.pending { background: rgba(10,132,255,0.15); color: rgba(10,132,255,0.9); }
+  .shift-avatars { display: flex; }
+  .shift-avatar {
+    width: 20px; height: 20px; border-radius: 6px;
+    background: var(--prv-g2); border: 1px solid var(--prv-border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 8px; font-weight: 700; color: var(--prv-text-2);
+    margin-left: -4px; transition: all .3s;
+  }
+  .shift-avatar:first-child { margin-left: 0; }
+
+  /* ── Time slot picker ─────────────────────────────────────── */
+  .slot-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 6px; }
+  .slot {
+    padding: 10px 4px; border-radius: 10px; text-align: center;
+    font-size: 12px; font-weight: 600; cursor: pointer;
+    border: 1px solid var(--prv-border-subtle); background: var(--prv-g1);
+    color: var(--prv-text-2); transition: all .2s;
+  }
+  .slot.selected { background: var(--prv-text-1); color: var(--prv-bg); border-color: transparent; }
+  .slot.taken { background: var(--prv-border-subtle); color: var(--prv-text-3); border-color: transparent; text-decoration: line-through; cursor: default; }
+
+  /* ── Availability grid ────────────────────────────────────── */
+  .avail-header { display: flex; align-items: center; margin-bottom: 8px; }
+  .avail-name-col { width: 60px; flex-shrink: 0; }
+  .avail-day-cols { flex: 1; display: grid; grid-template-columns: repeat(7,1fr); gap: 4px; }
+  .avail-day-lbl { font-size: 10px; font-weight: 600; text-align: center; color: var(--prv-text-3); transition: color .3s; }
+  .avail-row { display: flex; align-items: center; margin-bottom: 6px; }
+  .avail-name { width: 60px; font-size: 12px; font-weight: 500; color: var(--prv-text-2); flex-shrink: 0; transition: color .3s; }
+  .avail-cells { flex: 1; display: grid; grid-template-columns: repeat(7,1fr); gap: 4px; }
+  .avail-cell {
+    height: 26px; border-radius: 6px; cursor: pointer; transition: all .2s;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 700;
+  }
+  .avail-cell.yes { background: rgba(48,209,88,0.18); color: rgba(48,209,88,0.9); }
+  .avail-cell.maybe { background: rgba(255,159,10,0.15); color: rgba(255,159,10,0.9); }
+  .avail-cell.no { background: rgba(255,69,58,0.12); color: rgba(255,69,58,0.7); }
+
+  /* ── Leave requests ───────────────────────────────────────── */
+  .leave-item {
+    display: flex; align-items: center; gap: 10px; padding: 10px 0;
+    border-bottom: 1px solid var(--prv-border-subtle); transition: border-color .3s;
+  }
+  .leave-item:last-child { border-bottom: none; padding-bottom: 0; }
+  .leave-avatar {
+    width: 36px; height: 36px; border-radius: 11px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 600; color: var(--prv-text-2);
+    background: var(--prv-g2); border: 1px solid var(--prv-border);
+    transition: all .3s;
+  }
+  .leave-name { font-size: 13px; font-weight: 600; color: var(--prv-text-1); transition: color .3s; }
+  .leave-meta { font-size: 11px; color: var(--prv-text-3); margin-top: 1px; transition: color .3s; }
+  .leave-actions { margin-left: auto; display: flex; gap: 6px; }
+  .leave-btn {
+    font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 8px; border: none; cursor: pointer;
+    transition: opacity .15s;
+  }
+  .leave-btn.approve { background: rgba(48,209,88,0.18); color: rgba(48,209,88,0.9); }
+  .leave-btn.deny { background: rgba(255,69,58,0.12); color: rgba(255,69,58,0.8); }
+
+  /* ── Detail sheet ─────────────────────────────────────────── */
+  #sheet-overlay {
+    position: fixed; inset: 0; z-index: 55;
+    background: rgba(0,0,0,.45); backdrop-filter: blur(6px);
+    display: flex; align-items: flex-end; justify-content: center;
+    padding: 0 16px 28px;
+    opacity: 0; pointer-events: none; transition: opacity .2s;
+  }
+  #sheet-overlay.open { opacity: 1; pointer-events: all; }
+  #sheet {
+    width: 100%; max-width: 480px;
+    transform: translateY(40px); opacity: 0;
+    transition: transform .32s cubic-bezier(.34,1.56,.64,1), opacity .22s;
+  }
+  #sheet-overlay.open #sheet { transform: translateY(0); opacity: 1; }
+  .sheet-inner {
+    position: relative; border-radius: 24px; overflow: hidden;
+    background: var(--prv-g2); border: 1px solid var(--prv-border);
+    box-shadow: var(--prv-shadow-e4); backdrop-filter: blur(48px);
+    transition: background .3s, border-color .3s;
+  }
+  .sheet-spec { position: absolute; inset-x: 0; top: 0; height: 1px; background: var(--prv-g2-spec); transition: background .3s; }
+  .sheet-drag { width: 36px; height: 4px; border-radius: 2px; background: var(--prv-border); margin: 12px auto 0; transition: background .3s; }
+  .sheet-body { padding: 16px 20px 24px; }
+  .sheet-shift-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+  .sheet-shift-color { width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .sheet-shift-title { font-size: 18px; font-weight: 700; color: var(--prv-text-1); transition: color .3s; }
+  .sheet-shift-time { font-size: 13px; color: var(--prv-text-2); margin-top: 2px; transition: color .3s; }
+  .info-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--prv-border-subtle); transition: border-color .3s; }
+  .info-row:last-child { border-bottom: none; }
+  .info-key { font-size: 13px; color: var(--prv-text-3); transition: color .3s; }
+  .info-val { font-size: 13px; font-weight: 600; color: var(--prv-text-1); transition: color .3s; }
+  .sheet-cta {
+    width: 100%; border-radius: 14px; padding: 14px;
+    font-size: 15px; font-weight: 600; border: none; cursor: pointer;
+    background: var(--prv-text-1); color: var(--prv-bg); margin-top: 16px;
+    transition: background .3s, color .3s, opacity .15s;
+  }
+  .sheet-cta:hover { opacity: .9; }
+  .assignee-row { display: flex; gap: 8px; margin-bottom: 14px; }
+  .big-avatar {
+    width: 40px; height: 40px; border-radius: 12px;
+    background: var(--prv-g2); border: 1px solid var(--prv-border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 600; color: var(--prv-text-2);
+    transition: all .3s;
+  }
+
+  /* ── Tab bar ──────────────────────────────────────────────── */
+  .tab-bar {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    width: calc(100% - 32px); max-width: 358px;
+    display: flex; justify-content: space-around; align-items: center;
+    background: var(--prv-border); border: 1px solid var(--prv-border);
+    border-radius: 28px; padding: 8px 6px;
+    backdrop-filter: blur(48px);
+    box-shadow: inset 0 1px 0 var(--prv-g3), 0 24px 64px rgba(0,0,0,.7), 0 8px 24px rgba(0,0,0,.4);
+    z-index: 50; transition: background .3s, border-color .3s;
+  }
+  .tab { display: flex; flex-direction: column; align-items: center; gap: 3px;
+    padding: 6px 10px; border-radius: 20px; font-size: 10px; font-weight: 500;
+    color: var(--prv-text-3); transition: all .3s; }
+  .tab.active { background: var(--prv-g2); color: var(--prv-text-1); }
+
+  /* ── Demo bar ─────────────────────────────────────────────── */
+  .demo-bar {
+    position: fixed; bottom: 88px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 4px; z-index: 100;
+    background: rgba(20,20,20,.8); border: 1px solid rgba(255,255,255,.1);
+    border-radius: 100px; padding: 4px 6px; backdrop-filter: blur(24px);
+    transition: background .3s, border-color .3s;
+  }
+  [data-theme="light"] .demo-bar { background: rgba(240,240,245,.9); border-color: rgba(0,0,0,.1); }
+  .demo-btn { font-size: 10px; font-weight: 600; padding: 4px 12px; border-radius: 100px; border: none; cursor: pointer; background: transparent; color: rgba(255,255,255,.4); transition: all .2s; }
+  [data-theme="light"] .demo-btn { color: rgba(0,0,0,.3); }
+  .demo-btn.on { background: rgba(255,255,255,.14); color: rgba(255,255,255,.95); }
+  [data-theme="light"] .demo-btn.on { background: rgba(0,0,0,.08); color: rgba(0,0,0,.85); }
+
+  /* ── App button ──────────────────────────────────────────── */
+  .app-btn {
+    position: fixed; top: 14px; right: 16px; z-index: 60;
+    width: 36px; height: 36px; border-radius: 50%;
+    background: var(--prv-g2); border: 1px solid var(--prv-border);
+    backdrop-filter: blur(32px);
+    box-shadow: inset 0 1px 0 var(--prv-g2-spec), var(--prv-shadow-e2);
+    display: flex; align-items: center; justify-content: center;
+    transition: background .3s, border-color .3s;
+  }
+</style>
+</head>
+<body data-theme="dark">
+<div class="page-glow"></div>
+
+<div class="screen">
+
+  <!-- Header -->
+  <div class="header">
+    <div>
+      <div class="header-sub">PRV · Cluj Main</div>
+      <div class="header-title">Schedule</div>
+    </div>
+    <div class="week-nav">
+      <div class="nav-btn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </div>
+      <span class="week-label">Jun 9–15</span>
+      <div class="nav-btn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-row">
+    <div class="stat"><div class="stat-val">18</div><div class="stat-lbl">Shifts</div></div>
+    <div class="stat"><div class="stat-val" style="color:rgba(255,159,10,0.9)">3</div><div class="stat-lbl">Open</div></div>
+    <div class="stat"><div class="stat-val">94%</div><div class="stat-lbl">Coverage</div></div>
+    <div class="stat"><div class="stat-val">142h</div><div class="stat-lbl">This week</div></div>
+  </div>
+
+  <!-- Alert -->
+  <div class="alert-banner">
+    <div class="alert-dot"></div>
+    <div>
+      <div class="alert-title">3 open shifts this week</div>
+      <div class="alert-sub">Sat Evening · Sun Morning · Mon Warehouse — need assignment</div>
+    </div>
+  </div>
+
+  <!-- Week strip -->
+  <div class="week-strip">
+    <div class="day-col">
+      <div class="day-lbl">MON</div>
+      <div class="day-num">9</div>
+      <div class="day-shifts">
+        <div class="day-pip" style="background:rgba(10,132,255,0.7)"></div>
+      </div>
+    </div>
+    <div class="day-col">
+      <div class="day-lbl">TUE</div>
+      <div class="day-num">10</div>
+      <div class="day-shifts">
+        <div class="day-pip" style="background:rgba(48,209,88,0.7)"></div>
+        <div class="day-pip" style="background:rgba(191,90,242,0.7)"></div>
+      </div>
+    </div>
+    <div class="day-col">
+      <div class="day-lbl">WED</div>
+      <div class="day-num today">11</div>
+      <div class="day-shifts">
+        <div class="day-pip" style="background:rgba(48,209,88,0.7)"></div>
+      </div>
+    </div>
+    <div class="day-col">
+      <div class="day-lbl">THU</div>
+      <div class="day-num">12</div>
+      <div class="day-shifts">
+        <div class="day-pip" style="background:rgba(191,90,242,0.7)"></div>
+      </div>
+    </div>
+    <div class="day-col">
+      <div class="day-lbl">FRI</div>
+      <div class="day-num">13</div>
+      <div class="day-shifts">
+        <div class="day-pip" style="background:rgba(10,132,255,0.7)"></div>
+        <div class="day-pip" style="background:rgba(48,209,88,0.7)"></div>
+      </div>
+    </div>
+    <div class="day-col">
+      <div class="day-lbl">SAT</div>
+      <div class="day-num">14</div>
+      <div class="day-shifts">
+        <div class="day-pip" style="background:rgba(255,159,10,0.5);border:1px dashed rgba(255,159,10,0.7)"></div>
+      </div>
+    </div>
+    <div class="day-col">
+      <div class="day-lbl">SUN</div>
+      <div class="day-num">15</div>
+      <div class="day-shifts"></div>
+    </div>
+  </div>
+
+  <!-- Shift cards -->
+  <div class="section-label">This week's shifts</div>
+
+  <div class="shift-card" onclick="openSheet('morning')">
+    <div class="shift-accent" style="background:rgba(10,132,255,0.9)"></div>
+    <div class="shift-body">
+      <div class="shift-role">Morning · Sales Floor</div>
+      <div class="shift-time">Wed 11 · 08:00–16:00</div>
+      <div class="shift-meta">
+        <span class="shift-meta-item">📍 Cluj · Main</span>
+        <span class="shift-meta-item">☕ 1h break</span>
+      </div>
+    </div>
+    <div class="shift-right">
+      <div class="shift-duration">8h</div>
+      <div class="shift-status confirmed">Confirmed</div>
+      <div class="shift-avatars">
+        <div class="shift-avatar">AP</div>
+        <div class="shift-avatar">MI</div>
+        <div class="shift-avatar">RD</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="shift-card" onclick="openSheet('evening')">
+    <div class="shift-accent" style="background:rgba(48,209,88,0.9)"></div>
+    <div class="shift-body">
+      <div class="shift-role">Afternoon · Warehouse</div>
+      <div class="shift-time">Thu 12 · 12:00–20:00</div>
+      <div class="shift-meta">
+        <span class="shift-meta-item">📍 Bucharest</span>
+        <span class="shift-meta-item">🌙 Night rate</span>
+      </div>
+    </div>
+    <div class="shift-right">
+      <div class="shift-duration">8h</div>
+      <div class="shift-status confirmed">Confirmed</div>
+      <div class="shift-avatars">
+        <div class="shift-avatar">VG</div>
+        <div class="shift-avatar">CL</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="shift-card" onclick="openSheet('open')">
+    <div class="shift-accent" style="background:rgba(255,159,10,0.9)"></div>
+    <div class="shift-body">
+      <div class="shift-role">Evening · Stock</div>
+      <div class="shift-time">Sat 14 · 16:00–00:00</div>
+      <div class="shift-meta">
+        <span class="shift-meta-item">📍 Cluj · Main</span>
+        <span class="shift-meta-item">2 slots open</span>
+      </div>
+    </div>
+    <div class="shift-right">
+      <div class="shift-duration">8h</div>
+      <div class="shift-status open">2 Open</div>
+      <div class="shift-avatars">
+        <div class="shift-avatar">SI</div>
+        <div class="shift-avatar" style="background:var(--prv-border-subtle);color:var(--prv-text-3)">?</div>
+        <div class="shift-avatar" style="background:var(--prv-border-subtle);color:var(--prv-text-3)">?</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Time slot picker -->
+  <div class="section-label">Assign a slot · Thu Jun 12</div>
+  <div class="card">
+    <div class="slot-grid">
+      <div class="slot selected" onclick="selectSlot(this)">08:00</div>
+      <div class="slot taken">08:30</div>
+      <div class="slot" onclick="selectSlot(this)">09:00</div>
+      <div class="slot" onclick="selectSlot(this)">09:30</div>
+      <div class="slot" onclick="selectSlot(this)">10:00</div>
+      <div class="slot taken">10:30</div>
+      <div class="slot" onclick="selectSlot(this)">11:00</div>
+      <div class="slot" onclick="selectSlot(this)">11:30</div>
+    </div>
+  </div>
+
+  <!-- Availability grid -->
+  <div class="section-label">Team availability</div>
+  <div class="card">
+    <div class="avail-header">
+      <div class="avail-name-col"></div>
+      <div class="avail-day-cols">
+        <div class="avail-day-lbl">M</div>
+        <div class="avail-day-lbl">T</div>
+        <div class="avail-day-lbl">W</div>
+        <div class="avail-day-lbl">T</div>
+        <div class="avail-day-lbl">F</div>
+        <div class="avail-day-lbl">S</div>
+        <div class="avail-day-lbl">S</div>
+      </div>
+    </div>
+    <div class="avail-row">
+      <div class="avail-name">Andrei</div>
+      <div class="avail-cells">
+        <div class="avail-cell yes">✓</div><div class="avail-cell yes">✓</div><div class="avail-cell yes">✓</div>
+        <div class="avail-cell maybe">~</div><div class="avail-cell yes">✓</div><div class="avail-cell no">✗</div><div class="avail-cell no">✗</div>
+      </div>
+    </div>
+    <div class="avail-row">
+      <div class="avail-name">Maria</div>
+      <div class="avail-cells">
+        <div class="avail-cell yes">✓</div><div class="avail-cell maybe">~</div><div class="avail-cell yes">✓</div>
+        <div class="avail-cell yes">✓</div><div class="avail-cell yes">✓</div><div class="avail-cell yes">✓</div><div class="avail-cell no">✗</div>
+      </div>
+    </div>
+    <div class="avail-row">
+      <div class="avail-name">Radu</div>
+      <div class="avail-cells">
+        <div class="avail-cell maybe">~</div><div class="avail-cell yes">✓</div><div class="avail-cell yes">✓</div>
+        <div class="avail-cell no">✗</div><div class="avail-cell yes">✓</div><div class="avail-cell maybe">~</div><div class="avail-cell no">✗</div>
+      </div>
+    </div>
+    <div class="avail-row">
+      <div class="avail-name">Elena</div>
+      <div class="avail-cells">
+        <div class="avail-cell yes">✓</div><div class="avail-cell yes">✓</div><div class="avail-cell no">✗</div>
+        <div class="avail-cell yes">✓</div><div class="avail-cell maybe">~</div><div class="avail-cell no">✗</div><div class="avail-cell no">✗</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pending leave requests -->
+  <div class="section-label">Pending leave requests</div>
+  <div class="card">
+    <div class="leave-item">
+      <div class="leave-avatar">MI</div>
+      <div>
+        <div class="leave-name">Maria Ionescu</div>
+        <div class="leave-meta">Annual leave · Jun 18–22 · 5 days</div>
+      </div>
+      <div class="leave-actions">
+        <button class="leave-btn approve">Approve</button>
+        <button class="leave-btn deny">Deny</button>
+      </div>
+    </div>
+    <div class="leave-item">
+      <div class="leave-avatar">RP</div>
+      <div>
+        <div class="leave-name">Radu Pop</div>
+        <div class="leave-meta">Medical · Jun 15 · 1 day</div>
+      </div>
+      <div class="leave-actions">
+        <button class="leave-btn approve">Approve</button>
+        <button class="leave-btn deny">Deny</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Appearance button -->
+<div class="app-btn">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--prv-text-2)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M18.37 2.63 14 7l-1.59-1.59a2 2 0 0 0-2.82 0L8 7l9 9 1.59-1.59a2 2 0 0 0 0-2.82L17 10l4.37-4.37a2.12 2.12 0 1 0-3-3Z"/>
+    <path d="M9 8c-2 3-4 3.5-7 4l8 10c2-1 6-5 6-7"/>
+    <path d="M14.5 17.5 4.5 15"/>
+  </svg>
+</div>
+
+<!-- Tab bar -->
+<nav class="tab-bar">
+  <div class="tab">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="6" height="6" rx="1"/><path d="M9 9V6a3 3 0 1 0-3 3h3"/><path d="M15 9h3a3 3 0 1 0-3-3v3"/><path d="M9 15H6a3 3 0 1 0 3 3v-3"/><path d="M15 15v3a3 3 0 1 0 3-3h-3"/></svg>
+    Command
+  </div>
+  <div class="tab active">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+    Operations
+  </div>
+  <div class="tab">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="3"/><path d="M3 20v-1a6 6 0 0 1 6-6"/><circle cx="17" cy="9" r="2.5"/><path d="M13 20v-1a4 4 0 0 1 4-4h0a4 4 0 0 1 4 4v1"/></svg>
+    People
+  </div>
+  <div class="tab">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18"/><path d="M5 20V10l4-4 4 4 4-6v16"/></svg>
+    Finance
+  </div>
+  <div class="tab">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a6 6 0 0 1 6 6c0 2.5-1.5 4.7-3.7 5.7L14 16H10l-.3-2.3A6.01 6.01 0 0 1 6 8a6 6 0 0 1 6-6z"/><path d="M10 19h4"/><path d="M11 22h2"/></svg>
+    Intel
+  </div>
+</nav>
+
+<!-- Demo bar -->
+<div class="demo-bar">
+  <button class="demo-btn on" id="btn-dark" onclick="setTheme('dark')">Dark</button>
+  <button class="demo-btn" id="btn-light" onclick="setTheme('light')">Light</button>
+  <button class="demo-btn" id="btn-system" onclick="setTheme('system')">System</button>
+</div>
+
+<!-- Shift detail sheet -->
+<div id="sheet-overlay" onclick="handleOverlay(event)">
+  <div id="sheet">
+    <div class="sheet-inner">
+      <div class="sheet-spec"></div>
+      <div class="sheet-drag"></div>
+      <div class="sheet-body" id="sheet-body"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+function setTheme(t) {
+  if (t === 'system') {
+    const pref = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
+    document.body.setAttribute('data-theme', pref)
+  } else {
+    document.body.setAttribute('data-theme', t)
+  }
+  document.querySelectorAll('.demo-btn').forEach(b => b.classList.remove('on'))
+  document.getElementById('btn-' + t).classList.add('on')
+}
+
+function selectSlot(el) {
+  if (el.classList.contains('taken')) return
+  document.querySelectorAll('.slot').forEach(s => s.classList.remove('selected'))
+  el.classList.add('selected')
+}
+
+const SHEETS = {
+  morning: `
+    <div class="sheet-shift-header">
+      <div class="sheet-shift-color" style="background:rgba(10,132,255,0.15);border:1px solid rgba(10,132,255,0.3)">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(10,132,255,0.9)" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+      </div>
+      <div>
+        <div class="sheet-shift-title">Morning · Sales Floor</div>
+        <div class="sheet-shift-time">Wednesday Jun 11 · 08:00–16:00</div>
+      </div>
+    </div>
+    <div class="assignee-row">
+      <div class="big-avatar">AP</div>
+      <div class="big-avatar">MI</div>
+      <div class="big-avatar">RD</div>
+    </div>
+    <div class="info-row"><span class="info-key">Location</span><span class="info-val">Cluj · Main Store</span></div>
+    <div class="info-row"><span class="info-key">Duration</span><span class="info-val">8h · 1h break included</span></div>
+    <div class="info-row"><span class="info-key">Role</span><span class="info-val">Sales Associate</span></div>
+    <div class="info-row"><span class="info-key">Status</span><span class="info-val" style="color:rgba(48,209,88,.9)">Confirmed</span></div>
+    <div class="info-row"><span class="info-key">Rate</span><span class="info-val">Standard</span></div>
+    <button class="sheet-cta">Edit Shift</button>`,
+  evening: `
+    <div class="sheet-shift-header">
+      <div class="sheet-shift-color" style="background:rgba(48,209,88,0.15);border:1px solid rgba(48,209,88,0.3)">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(48,209,88,0.9)" stroke-width="1.8" stroke-linecap="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+      </div>
+      <div>
+        <div class="sheet-shift-title">Afternoon · Warehouse</div>
+        <div class="sheet-shift-time">Thursday Jun 12 · 12:00–20:00</div>
+      </div>
+    </div>
+    <div class="assignee-row">
+      <div class="big-avatar">VG</div>
+      <div class="big-avatar">CL</div>
+    </div>
+    <div class="info-row"><span class="info-key">Location</span><span class="info-val">Bucharest · Warehouse</span></div>
+    <div class="info-row"><span class="info-key">Duration</span><span class="info-val">8h · Night rate applies</span></div>
+    <div class="info-row"><span class="info-key">Role</span><span class="info-val">Warehouse Staff</span></div>
+    <div class="info-row"><span class="info-key">Status</span><span class="info-val" style="color:rgba(48,209,88,.9)">Confirmed</span></div>
+    <button class="sheet-cta">Edit Shift</button>`,
+  open: `
+    <div class="sheet-shift-header">
+      <div class="sheet-shift-color" style="background:rgba(255,159,10,0.15);border:1px solid rgba(255,159,10,0.3)">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,159,10,0.9)" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+      </div>
+      <div>
+        <div class="sheet-shift-title">Evening · Stock</div>
+        <div class="sheet-shift-time">Saturday Jun 14 · 16:00–00:00</div>
+      </div>
+    </div>
+    <div style="background:rgba(255,159,10,0.10);border:1px solid rgba(255,159,10,0.25);border-radius:12px;padding:10px 12px;margin-bottom:14px;font-size:13px;color:rgba(255,159,10,0.9);font-weight:600">
+      ⚠️ 2 slots still unassigned
+    </div>
+    <div class="assignee-row">
+      <div class="big-avatar">SI</div>
+      <div class="big-avatar" style="border:1px dashed var(--prv-border);background:transparent;color:var(--prv-text-3)">+</div>
+      <div class="big-avatar" style="border:1px dashed var(--prv-border);background:transparent;color:var(--prv-text-3)">+</div>
+    </div>
+    <div class="info-row"><span class="info-key">Location</span><span class="info-val">Cluj · Main Store</span></div>
+    <div class="info-row"><span class="info-key">Duration</span><span class="info-val">8h · Weekend rate</span></div>
+    <div class="info-row"><span class="info-key">Suitable for</span><span class="info-val">Stock · Warehouse roles</span></div>
+    <div class="info-row"><span class="info-key">Available staff</span><span class="info-val">Andrei, Elena, Radu</span></div>
+    <button class="sheet-cta">Assign Staff</button>`
+}
+
+function openSheet(type) {
+  document.getElementById('sheet-body').innerHTML = SHEETS[type]
+  document.getElementById('sheet-overlay').classList.add('open')
+}
+
+function handleOverlay(e) {
+  if (e.target === document.getElementById('sheet-overlay')) {
+    document.getElementById('sheet-overlay').classList.remove('open')
+  }
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') document.getElementById('sheet-overlay').classList.remove('open')
+})
+</script>
+</body>
+</html>
