@@ -124,7 +124,7 @@ function GlassCard({
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="text-[11px] font-semibold text-white/35 uppercase tracking-widest mb-3">
+    <p className="text-[11px] font-semibold uppercase tracking-widest mb-3" style={{ color: "var(--prv-text-3)" }}>
       {children}
     </p>
   )
@@ -173,16 +173,17 @@ export default async function DashboardPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <p className="text-white/35 text-[13px] font-medium mb-0.5">PRV</p>
-          <h1 className="text-white/90 text-[26px] font-semibold tracking-tight leading-tight">
+          <p className="text-[13px] font-medium mb-0.5" style={{ color: "var(--prv-text-3)" }}>PRV</p>
+          <h1 className="text-[26px] font-semibold tracking-tight leading-tight" style={{ color: "var(--prv-text-1)" }}>
             Command
           </h1>
         </div>
         <div
-          className="px-3 py-1.5 rounded-[10px] text-[12px] font-medium text-white/60"
+          className="px-3 py-1.5 rounded-[10px] text-[12px] font-medium"
           style={{
             background: "var(--prv-g1)",
             border: "1px solid var(--prv-border-subtle)",
+            color: "var(--prv-text-2)",
           }}
         >
           {roleLabel}
@@ -219,9 +220,9 @@ export default async function DashboardPage() {
           </svg>
         </div>
         <div>
-          <p className="text-[12px] font-bold text-white/90 mb-0.5">AI BRIEFING</p>
-          <p className="text-[13px] text-white/65 leading-relaxed">
-            Revenue is tracking <span className="text-white/90 font-semibold">+12% MoM</span>. Cluj
+          <p className="text-[12px] font-bold mb-0.5" style={{ color: "var(--prv-text-1)" }}>AI BRIEFING</p>
+          <p className="text-[13px] leading-relaxed" style={{ color: "var(--prv-text-2)" }}>
+            Revenue is tracking <span className="font-semibold" style={{ color: "var(--prv-text-1)" }}>+12% MoM</span>. Cluj
             is your best-margin store (39%). 2 projects risk slipping this week — review staffing.
           </p>
         </div>
@@ -302,15 +303,14 @@ export default async function DashboardPage() {
                 height="18"
                 viewBox="0 0 24 24"
                 fill="none"
-                stroke="currentColor"
+                stroke="var(--prv-text-3)"
                 strokeWidth="1.6"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                className="text-white/45"
               >
                 <path d={icon} />
               </svg>
-              <span className="text-[11px] font-medium text-white/45 text-center leading-tight px-1">
+              <span className="text-[11px] font-medium text-center leading-tight px-1" style={{ color: "var(--prv-text-3)" }}>
                 {label}
               </span>
             </div>
@@ -321,8 +321,8 @@ export default async function DashboardPage() {
       {/* Quote of the Day */}
       <GlassCard className="mb-3.5">
         <SectionLabel>Quote of the day</SectionLabel>
-        <p className="text-[15px] leading-relaxed text-white/90">“{QUOTE.text}”</p>
-        <p className="text-[12px] text-white/35 mt-2">— {QUOTE.author}</p>
+        <p className=”text-[15px] leading-relaxed” style={{ color: “var(--prv-text-1)” }}>”{QUOTE.text}”</p>
+        <p className=”text-[12px] mt-2” style={{ color: “var(--prv-text-3)” }}>— {QUOTE.author}</p>
       </GlassCard>
 
       {/* Recent Activity */}

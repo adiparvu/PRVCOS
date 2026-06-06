@@ -59,12 +59,12 @@ export function PinnedContactsRow() {
     <div
       className="rounded-[20px] p-4 mb-5"
       style={{
-        background: "rgba(255,255,255,0.06)",
-        border: "1px solid rgba(255,255,255,0.10)",
-        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.12)",
+        background: "var(--prv-g1)",
+        border: "1px solid var(--prv-border)",
+        boxShadow: "inset 0 1px 0 var(--prv-g2-spec)",
       }}
     >
-      <p className="text-[11px] font-medium text-white/35 uppercase tracking-widest mb-3">
+      <p className="text-[11px] font-medium uppercase tracking-widest mb-3" style={{ color: "var(--prv-text-3)" }}>
         Quick Access
       </p>
       <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
@@ -87,14 +87,14 @@ export function PinnedContactsRow() {
                 <div
                   className="w-12 h-12 rounded-[14px] overflow-hidden"
                   style={{
-                    background: "rgba(255,255,255,0.10)",
-                    border: "1px solid rgba(255,255,255,0.12)",
+                    background: "var(--prv-g2)",
+                    border: "1px solid var(--prv-border)",
                   }}
                 >
                   {contact.avatarUrl ? (
                     <img src={contact.avatarUrl} alt="" className="w-full h-full object-cover" />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-white/45 text-[18px] font-medium">
+                    <div className="w-full h-full flex items-center justify-center text-[18px] font-medium" style={{ color: "var(--prv-text-3)" }}>
                       {contact.firstName.charAt(0).toUpperCase()}
                     </div>
                   )}
@@ -103,14 +103,14 @@ export function PinnedContactsRow() {
                   <PresenceDot status={status as never} size={10} />
                 </div>
               </div>
-              <p className="text-white/55 text-[11px] font-medium leading-tight max-w-[52px] text-center truncate">
+              <p className="text-[11px] font-medium leading-tight max-w-[52px] text-center truncate" style={{ color: "var(--prv-text-2)" }}>
                 {contact.firstName}
               </p>
             </button>
           )
         })}
       </div>
-      <p className="text-white/20 text-[11px] mt-2">Long-press contact to unpin</p>
+      <p className="text-[11px] mt-2" style={{ color: "var(--prv-text-3)" }}>Long-press contact to unpin</p>
     </div>
   )
 }
