@@ -209,6 +209,9 @@ export type { GlassTreeViewProps, TreeNode } from "./glass-tree-view"
 export { GlassKanban } from "./glass-kanban"
 export type { GlassKanbanProps, KanbanColumn, KanbanCard } from "./glass-kanban"
 
+export { GlassSplitView } from "./glass-split-view"
+export type { GlassSplitViewProps, SplitOrientation } from "./glass-split-view"
+
 export {
   ActionSheet,
   ConfirmationSheet,
