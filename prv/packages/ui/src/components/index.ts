@@ -369,3 +369,6 @@ export type { SnapSheetProps, SnapPoint } from "./glass-snap-sheet"
 
 export { SheetStackProvider, useSheetStack } from "./glass-sheet-context"
 export type { SheetConfig } from "./glass-sheet-context"
+
+export { CommandPaletteProvider, useCommandPalette } from "./glass-command-palette-context"
+export type { CommandPaletteContextValue } from "./glass-command-palette-context"
