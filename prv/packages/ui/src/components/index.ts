@@ -161,6 +161,14 @@ export type { GlassStepsProps, StepItem, StepStatus, StepsVariant } from "./glas
 export { GlassTooltip } from "./glass-tooltip"
 export type { GlassTooltipProps, TooltipSide } from "./glass-tooltip"
 
+export { GlassDropdownMenu } from "./glass-dropdown-menu"
+export type {
+  GlassDropdownMenuProps,
+  DropdownMenuItem,
+  DropdownMenuSection,
+  DropdownAlign,
+} from "./glass-dropdown-menu"
+
 export {
   ActionSheet,
   ConfirmationSheet,
