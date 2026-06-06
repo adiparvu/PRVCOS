@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PRV · Screen 03 — Scheduling Workspace</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --prv-bg:#000; --prv-g1:rgba(255,255,255,0.06); --prv-g2:rgba(255,255,255,0.10);
+    --prv-g3:rgba(255,255,255,0.15); --prv-text-1:rgba(255,255,255,0.95);
+    --prv-text-2:rgba(255,255,255,0.65); --prv-text-3:rgba(255,255,255,0.35);
+    --prv-text-4:rgba(255,255,255,0.15); --prv-border:rgba(255,255,255,0.12);
+    --prv-border-subtle:rgba(255,255,255,0.07); --prv-accent:rgba(10,132,255,0.9);
+    --prv-green:rgba(48,209,88,0.95); --prv-amber:rgba(255,159,10,0.95); --prv-purple:rgba(191,90,242,0.95);
+  }
+  html,body { background:var(--prv-bg); color:var(--prv-text-1); font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif; -webkit-font-smoothing:antialiased; }
+  body { background: radial-gradient(ellipse 100% 40% at 50% -10%, rgba(255,255,255,0.03), transparent); min-height:100vh; }
+  .frame { max-width: 460px; margin: 0 auto; padding: 40px 16px 120px; }
+  .pv-tag { max-width:460px; margin:24px auto 0; padding:0 16px; }
+  .chips { display:flex; gap:8px; }
+  .chip { padding:3px 10px; border-radius:100px; background:var(--prv-g2); border:1px solid var(--prv-border-subtle); font-size:11px; font-weight:600; color:var(--prv-text-3); letter-spacing:.06em; text-transform:uppercase; }
+
+  .hdr { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+  .hdr .k { font-size:13px; color:var(--prv-text-3); font-weight:500; }
+  .hdr h1 { font-size:26px; font-weight:700; letter-spacing:-.02em; }
+  .wknav { display:flex; align-items:center; gap:8px; }
+  .wbtn { width:32px; height:32px; border-radius:9px; background:var(--prv-g2); border:1px solid var(--prv-border-subtle); display:flex; align-items:center; justify-content:center; color:var(--prv-text-2); cursor:pointer; }
+  .wlabel { font-size:13px; font-weight:600; color:var(--prv-text-2); }
+
+  .lbl { font-size:11px; font-weight:600; color:var(--prv-text-3); letter-spacing:.07em; text-transform:uppercase; margin:22px 4px 10px; }
+
+  /* scheduler */
+  .sch { background:var(--prv-g1); border:1px solid var(--prv-border-subtle); border-radius:20px; overflow:hidden; position:relative; }
+  .sch::before { content:""; position:absolute; inset:0 0 auto; height:1px; background:linear-gradient(90deg,transparent,rgba(255,255,255,0.09),transparent); z-index:1; }
+  .sch-scroll { overflow-x:auto; }
+  .grid { display:grid; grid-template-columns:48px repeat(7,minmax(80px,1fr)); min-width:600px; }
+  .h { font-size:11px; font-weight:600; color:var(--prv-text-3); text-align:center; padding:10px 0 8px; text-transform:uppercase; }
+  .h .n { display:block; font-size:14px; font-weight:700; color:var(--prv-text-1); margin-top:2px; }
+  .h.today .n { color:var(--prv-accent); }
+  .t { font-size:10px; color:var(--prv-text-4); text-align:right; padding:0 6px; height:48px; }
+  .cell { height:48px; border-top:1px solid var(--prv-border-subtle); border-left:1px solid var(--prv-border-subtle); position:relative; }
+  .shift { position:absolute; left:2px; right:2px; top:2px; border-radius:7px; padding:4px 6px; font-size:10px; font-weight:600; color:#fff; overflow:hidden; }
+  .shift .tt { font-size:9px; opacity:.85; font-weight:500; }
+
+  /* shift cards */
+  .scard { display:flex; gap:12px; padding:14px; border-radius:16px; background:var(--prv-g1); border:1px solid var(--prv-border-subtle); margin-bottom:10px; position:relative; }
+  .scard::before { content:""; position:absolute; inset:0 0 auto; height:1px; background:linear-gradient(90deg,transparent,rgba(255,255,255,0.08),transparent); }
+  .stripe { width:4px; border-radius:100px; flex-shrink:0; }
+  .srole { font-size:14px; font-weight:700; } .stime { font-size:13px; color:var(--prv-text-2); margin-top:2px; }
+  .smeta { display:flex; gap:14px; margin-top:10px; font-size:12px; color:var(--prv-text-3); }
+  .sstatus { position:absolute; top:14px; right:14px; font-size:10px; font-weight:700; padding:3px 8px; border-radius:6px; text-transform:uppercase; }
+  .st-conf { background:rgba(48,209,88,0.14); color:var(--prv-green); }
+  .st-open { background:rgba(255,159,10,0.14); color:var(--prv-amber); }
+  .people { display:flex; margin-top:10px; }
+  .pa { width:24px; height:24px; border-radius:50%; border:2px solid var(--prv-bg); margin-left:-7px; display:flex; align-items:center; justify-content:center; font-size:9px; font-weight:700; color:#fff; }
+  .pa:first-child { margin-left:0; }
+
+  /* time slot picker */
+  .ts-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(80px,1fr)); gap:8px; }
+  .ts { padding:10px 0; text-align:center; border-radius:11px; background:var(--prv-g2); border:1px solid var(--prv-border-subtle); font-size:13px; font-weight:600; cursor:pointer; }
+  .ts.sel { background:var(--prv-accent); border-color:var(--prv-accent); color:#fff; }
+  .ts.taken { opacity:.35; text-decoration:line-through; }
+  .card { background:var(--prv-g1); border:1px solid var(--prv-border-subtle); border-radius:18px; padding:16px; position:relative; }
+  .card::before { content:""; position:absolute; inset:0 0 auto; height:1px; background:linear-gradient(90deg,transparent,rgba(255,255,255,0.09),transparent); }
+
+  /* availability grid */
+  .av { display:grid; grid-template-columns:78px repeat(7,1fr); gap:5px; }
+  .avh { font-size:11px; font-weight:600; color:var(--prv-text-3); text-align:center; padding-bottom:4px; }
+  .avn { font-size:12px; color:var(--prv-text-2); display:flex; align-items:center; }
+  .avc { height:28px; border-radius:7px; }
+  .yes { background:rgba(48,209,88,0.7); } .maybe { background:rgba(255,159,10,0.6); } .no { background:var(--prv-g2); }
+  .avleg { display:flex; gap:16px; margin-top:14px; font-size:12px; color:var(--prv-text-3); }
+  .avleg span { display:flex; align-items:center; gap:7px; } .sw { width:13px; height:13px; border-radius:4px; }
+
+  .tabbar { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); display:inline-flex; gap:2px; padding:7px; border-radius:22px; background:rgba(22,22,22,0.7); backdrop-filter:blur(48px); border:1px solid var(--prv-border); box-shadow:0 16px 40px rgba(0,0,0,0.5); }
+  .tab { display:flex; flex-direction:column; align-items:center; gap:3px; padding:8px 13px; border-radius:14px; font-size:10px; font-weight:600; color:var(--prv-text-3); }
+  .tab.on { background:var(--prv-g2); color:var(--prv-text-1); }
+</style>
+</head>
+<body>
+<div class="pv-tag"><div class="chips"><span class="chip">Screen 03</span><span class="chip">Preview</span><span class="chip">apps/web · /schedule</span></div></div>
+
+<div class="frame">
+  <div class="hdr">
+    <div><div class="k">PRV · Cluj · Main</div><h1>Schedule</h1></div>
+    <div class="wknav"><div class="wbtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg></div><span class="wlabel">Jun 9–15</span><div class="wbtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg></div></div>
+  </div>
+
+  <!-- Scheduler -->
+  <div class="sch">
+    <div class="sch-scroll">
+      <div class="grid">
+        <div class="h"></div>
+        <div class="h">Mon<span class="n">9</span></div><div class="h">Tue<span class="n">10</span></div><div class="h today">Wed<span class="n">11</span></div><div class="h">Thu<span class="n">12</span></div><div class="h">Fri<span class="n">13</span></div><div class="h">Sat<span class="n">14</span></div><div class="h">Sun<span class="n">15</span></div>
+        <div class="t">8:00</div>
+          <div class="cell"><div class="shift" style="height:88px;background:linear-gradient(180deg,var(--prv-accent),rgba(10,132,255,0.75))">Sales<div class="tt">8–12</div></div></div>
+          <div class="cell"></div><div class="cell"><div class="shift" style="height:184px;background:linear-gradient(180deg,var(--prv-green),rgba(48,209,88,0.75))">Manager<div class="tt">8–16</div></div></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+        <div class="t">10:00</div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"><div class="shift" style="height:88px;background:linear-gradient(180deg,var(--prv-purple),rgba(191,90,242,0.75))">Cashier<div class="tt">10–14</div></div></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+        <div class="t">12:00</div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+        <div class="t">14:00</div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"><div class="shift" style="height:40px;background:linear-gradient(180deg,var(--prv-amber),rgba(255,159,10,0.75))">Stock<div class="tt">16–18</div></div></div><div class="cell"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Open / today's shifts -->
+  <div class="lbl">This week's shifts</div>
+  <div class="scard">
+    <div class="stripe" style="background:var(--prv-accent)"></div>
+    <div style="flex:1">
+      <span class="sstatus st-conf">Confirmed</span>
+      <div class="srole">Morning · Sales Floor</div>
+      <div class="stime">Wed · 08:00–16:00 · 8h</div>
+      <div class="smeta"><span>📍 Cluj · Main</span><span>☕ 1h break</span></div>
+      <div class="people"><div class="pa" style="background:linear-gradient(135deg,#0A84FF,#5E5CE6)">AP</div><div class="pa" style="background:linear-gradient(135deg,#FF9F0A,#FF375F)">MI</div><div class="pa" style="background:linear-gradient(135deg,#30D158,#00C7BE)">RD</div><div class="pa" style="background:var(--prv-g3);color:var(--prv-text-2)">+2</div></div>
+    </div>
+  </div>
+  <div class="scard">
+    <div class="stripe" style="background:var(--prv-amber)"></div>
+    <div style="flex:1">
+      <span class="sstatus st-open">2 open</span>
+      <div class="srole">Evening · Warehouse</div>
+      <div class="stime">Sat · 16:00–00:00 · 8h</div>
+      <div class="smeta"><span>📍 Bucharest</span><span>🌙 Night rate</span></div>
+      <div class="people"><div class="pa" style="background:linear-gradient(135deg,#64D2FF,#0A84FF)">VG</div><div class="pa" style="background:var(--prv-g1);border-style:dashed;color:var(--prv-text-3)">?</div><div class="pa" style="background:var(--prv-g1);border-style:dashed;color:var(--prv-text-3)">?</div></div>
+    </div>
+  </div>
+
+  <!-- Quick assign — time slot picker -->
+  <div class="lbl">Assign a slot · Thu Jun 12</div>
+  <div class="card">
+    <div class="ts-grid">
+      <div class="ts">08:00</div><div class="ts taken">08:30</div><div class="ts sel">09:00</div><div class="ts">09:30</div><div class="ts">10:00</div><div class="ts taken">10:30</div><div class="ts">11:00</div><div class="ts">11:30</div>
+    </div>
+  </div>
+
+  <!-- Team availability -->
+  <div class="lbl">Team availability</div>
+  <div class="card">
+    <div class="av">
+      <div class="avh"></div><div class="avh">M</div><div class="avh">T</div><div class="avh">W</div><div class="avh">T</div><div class="avh">F</div><div class="avh">S</div><div class="avh">S</div>
+      <div class="avn">Andrei</div><div class="avc yes"></div><div class="avc yes"></div><div class="avc yes"></div><div class="avc maybe"></div><div class="avc yes"></div><div class="avc no"></div><div class="avc no"></div>
+      <div class="avn">Maria</div><div class="avc yes"></div><div class="avc maybe"></div><div class="avc yes"></div><div class="avc yes"></div><div class="avc yes"></div><div class="avc yes"></div><div class="avc no"></div>
+      <div class="avn">Radu</div><div class="avc maybe"></div><div class="avc yes"></div><div class="avc yes"></div><div class="avc no"></div><div class="avc yes"></div><div class="avc maybe"></div><div class="avc no"></div>
+      <div class="avn">Elena</div><div class="avc yes"></div><div class="avc yes"></div><div class="avc no"></div><div class="avc yes"></div><div class="avc maybe"></div><div class="avc no"></div><div class="avc no"></div>
+    </div>
+    <div class="avleg"><span><span class="sw yes"></span>Available</span><span><span class="sw maybe"></span>Maybe</span><span><span class="sw no"></span>Unavailable</span></div>
+  </div>
+</div>
+
+<div class="tabbar">
+  <div class="tab"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Command</div>
+  <div class="tab"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Operations</div>
+  <div class="tab on"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>People</div>
+  <div class="tab"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Finance</div>
+  <div class="tab"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4"/><circle cx="12" cy="12" r="3"/></svg>Intelligence</div>
+</div>
+</body>
+</html>
