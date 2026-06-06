@@ -304,6 +304,9 @@ export type { GlassProductCardProps, ProductBadge } from "./glass-product-card"
 export { GlassCartLineItem } from "./glass-cart-line-item"
 export type { GlassCartLineItemProps } from "./glass-cart-line-item"
 
+export { GlassScheduler } from "./glass-scheduler"
+export type { GlassSchedulerProps, SchedulerDay, SchedulerShift } from "./glass-scheduler"
+
 export {
   ActionSheet,
   ConfirmationSheet,
