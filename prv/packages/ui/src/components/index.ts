@@ -187,6 +187,9 @@ export type { GlassRatingProps, RatingSize } from "./glass-rating"
 export { GlassNumberStepper } from "./glass-number-stepper"
 export type { GlassNumberStepperProps } from "./glass-number-stepper"
 
+export { GlassOTPInput } from "./glass-otp-input"
+export type { GlassOTPInputProps } from "./glass-otp-input"
+
 export {
   ActionSheet,
   ConfirmationSheet,
