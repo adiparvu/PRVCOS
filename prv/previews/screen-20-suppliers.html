@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Screen 20 — Supplier Management</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #000;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", system-ui, sans-serif;
+    color: rgba(255,255,255,0.95);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding-bottom: 120px;
+  }
+  .phone { width: 393px; min-height: 852px; position: relative; padding: 56px 0 0; }
+  .specular { position: absolute; left: 0; right: 0; top: 0; height: 1px; background: linear-gradient(90deg,transparent,rgba(255,255,255,0.09),transparent); }
+
+  .title-lg  { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; }
+  .label     { font-size: 11px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: rgba(255,255,255,0.35); }
+  .body      { font-size: 14px; color: rgba(255,255,255,0.65); }
+  .caption   { font-size: 12px; color: rgba(255,255,255,0.35); }
+
+  .section   { padding: 0 16px; margin-bottom: 20px; }
+
+  /* Search */
+  .search-bar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 14px; border-radius: 14px;
+    background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.08);
+    margin: 12px 16px 12px;
+  }
+
+  /* Segmented */
+  .seg-wrap { display: flex; gap: 4px; padding: 3px; background: rgba(255,255,255,0.06); border-radius: 10px; margin: 0 16px 20px; }
+  .seg-btn { flex: 1; padding: 6px 0; border-radius: 8px; font-size: 12px; font-weight: 600; text-align: center; border: none; cursor: pointer; color: rgba(255,255,255,0.35); background: transparent; }
+  .seg-btn.active { background: rgba(255,255,255,0.10); color: rgba(255,255,255,0.95); }
+
+  /* Stats */
+  .stat-row { display: flex; gap: 8px; padding: 0 16px; margin-bottom: 20px; }
+  .stat-card { flex: 1; padding: 14px 10px; border-radius: 16px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.07); text-align: center; }
+  .stat-val { font-size: 20px; font-weight: 700; margin-bottom: 2px; }
+  .stat-lbl { font-size: 10px; color: rgba(255,255,255,0.35); }
+
+  /* Supplier row */
+  .supplier-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 13px 14px; border-radius: 16px;
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.07);
+    cursor: pointer; margin-bottom: 8px; position: relative;
+  }
+  .supplier-avatar {
+    width: 44px; height: 44px; border-radius: 13px; flex-shrink: 0;
+    background: rgba(255,255,255,0.09);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 700; color: rgba(255,255,255,0.80);
+    letter-spacing: 0.02em;
+  }
+  .supplier-text { flex: 1; min-width: 0; }
+  .rating-stars { display: flex; gap: 2px; margin-top: 2px; }
+  .star { width: 10px; height: 10px; }
+
+  /* Status pills */
+  .pill { font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 20px; white-space: nowrap; flex-shrink: 0; }
+  .pill-active   { background: rgba(48,209,88,0.12); color: rgba(48,209,88,0.90); }
+  .pill-pending  { background: rgba(255,159,10,0.15); color: rgba(255,159,10,0.95); }
+  .pill-inactive { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.45); }
+  .pill-risk     { background: rgba(255,69,58,0.14); color: rgba(255,69,58,0.90); }
+
+  /* Detail sheet */
+  .detail-sheet {
+    position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 393px;
+    background: rgba(255,255,255,0.10);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 28px 28px 0 0;
+    backdrop-filter: blur(48px);
+    padding: 0 20px 36px;
+    z-index: 50;
+  }
+  .drag-handle { display: flex; justify-content: center; padding: 10px 0 6px; }
+  .drag-nub { width: 36px; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.12); }
+
+  .info-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+  .info-row:last-child { border-bottom: none; }
+
+  /* Score ring placeholder */
+  .score-ring {
+    width: 64px; height: 64px; border-radius: 50%;
+    background: conic-gradient(rgba(255,255,255,0.65) 0% 88%, rgba(255,255,255,0.08) 88% 100%);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .score-ring-inner {
+    width: 50px; height: 50px; border-radius: 50%;
+    background: #000; display: flex; align-items: center; justify-content: center;
+    flex-direction: column;
+  }
+
+  /* Category chip */
+  .cat-chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 4px 10px; border-radius: 20px;
+    background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.08);
+    font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.65);
+    margin-right: 6px; margin-bottom: 6px;
+  }
+
+  /* Tab bar */
+  .tab-bar {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    width: 361px; display: flex; align-items: center; justify-content: space-around;
+    padding: 8px; border-radius: 28px;
+    background: rgba(255,255,255,0.09); border: 1px solid rgba(255,255,255,0.13);
+    backdrop-filter: blur(48px);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.20), 0 24px 64px rgba(0,0,0,0.7);
+    z-index: 100;
+  }
+  .tab-item { display: flex; flex-direction: column; align-items: center; gap: 3px; width: 64px; height: 52px; border-radius: 20px; justify-content: center; color: rgba(255,255,255,0.35); font-size: 10px; font-weight: 500; }
+  .tab-item.active { background: rgba(255,255,255,0.10); color: rgba(255,255,255,0.95); }
+  svg { display: block; }
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="specular"></div>
+
+  <!-- Header -->
+  <div class="section" style="padding-top:6px; margin-bottom:4px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+      <h1 class="title-lg">Suppliers</h1>
+      <div style="display:flex;gap:8px;">
+        <div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="1.7" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </div>
+        <div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="1.7" stroke-linecap="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+        </div>
+      </div>
+    </div>
+    <p class="body">34 suppliers · 4 under review</p>
+  </div>
+
+  <!-- Stats -->
+  <div class="stat-row">
+    <div class="stat-card">
+      <div class="stat-val">34</div>
+      <div class="stat-lbl">Total</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val">28</div>
+      <div class="stat-lbl">Active</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val">4</div>
+      <div class="stat-lbl">Review</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val" style="color:rgba(255,69,58,0.90);">2</div>
+      <div class="stat-lbl">At Risk</div>
+    </div>
+  </div>
+
+  <!-- Search -->
+  <div class="search-bar">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <span style="font-size:14px;color:rgba(255,255,255,0.35);">Search suppliers, categories…</span>
+  </div>
+
+  <!-- Filter -->
+  <div class="seg-wrap">
+    <div class="seg-btn active">All</div>
+    <div class="seg-btn">Active</div>
+    <div class="seg-btn">Review</div>
+    <div class="seg-btn">At Risk</div>
+  </div>
+
+  <!-- ── At Risk Alert ── -->
+  <div class="section">
+    <div style="padding:12px 14px;border-radius:14px;background:rgba(255,69,58,0.07);border:1px solid rgba(255,69,58,0.18);display:flex;align-items:center;gap:10px;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,69,58,0.90)" stroke-width="1.8" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:600;color:rgba(255,69,58,0.95);">2 suppliers require attention</div>
+        <div style="font-size:12px;color:rgba(255,255,255,0.35);margin-top:1px;">Contract expiry · Late deliveries</div>
+      </div>
+      <div style="font-size:12px;color:rgba(255,255,255,0.35);">Review →</div>
+    </div>
+  </div>
+
+  <!-- ── Supplier List ── -->
+  <div class="section">
+    <div class="label" style="margin-bottom:12px;">All Suppliers</div>
+
+    <!-- Row 1 -->
+    <div class="supplier-row">
+      <div class="specular"></div>
+      <div class="supplier-avatar">MG</div>
+      <div class="supplier-text">
+        <div style="font-size:14px;font-weight:600;margin-bottom:1px;">Materiale Grigore SRL</div>
+        <div class="caption">Building materials · 38 orders</div>
+        <div class="rating-stars">
+          <svg class="star" viewBox="0 0 12 12" fill="rgba(255,159,10,0.90)"><polygon points="6 1 7.5 4.5 11 5 8.5 7.5 9 11 6 9 3 11 3.5 7.5 1 5 4.5 4.5"/></svg>
+          <svg class="star" viewBox="0 0 12 12" fill="rgba(255,159,10,0.90)"><polygon points="6 1 7.5 4.5 11 5 8.5 7.5 9 11 6 9 3 11 3.5 7.5 1 5 4.5 4.5"/></svg>
+          <svg class="star" viewBox="0 0 12 12" fill="rgba(255,159,10,0.90)"><polygon points="6 1 7.5 4.5 11 5 8.5 7.5 9 11 6 9 3 11 3.5 7.5 1 5 4.5 4.5"/></svg>
+          <svg class="star" viewBox="0 0 12 12" fill="rgba(255,159,10,0.90)"><polygon points="6 1 7.5 4.5 11 5 8.5 7.5 9 11 6 9 3 11 3.5 7.5 1 5 4.5 4.5"/></svg>
+          <svg class="star" viewBox="0 0 12 12" fill="rgba(255,255,255,0.12)"><polygon points="6 1 7.5 4.5 11 5 8.5 7.5 9 11 6 9 3 11 3.5 7.5 1 5 4.5 4.5"/></svg>
+          <span style="font-size:10px;color:rgba(255,255,255,0.35);margin-left:4px;">4.2</span>
+        </div>
+      </div>
+      <div style="text-align:right;flex-shrink:0;">
+        <div class="pill pill-active" style="margin-bottom:4px;display:block;">Active</div>
+        <div style="font-size:12px;color:rgba(255,255,255,0.35);">€84k / yr</div>
+      </div>
+    </div>
+
+    <!-- Row 2 -->
+    <div class="supplier-row">
+      <div class="specular"></div>
+      <div class="supplier-avatar">RC</div>
+      <div class="supplier-text">
+        <div style="font-size:14px;font-weight:600;margin-bottom:1px;">Radu Construct SRL</div>
+        <div class="caption">Steel & concrete · 24 orders</div>
+        <div class="rating-stars">
+          <svg class="star" viewBox="0 0 12 12" fill="rgba(255,159,10,0.90)"><polygon points="6 1 7.5 4.5 11 5 8.5 7.5 9 11 6 9 3 11 3.5 7.5 1 5 4.5 4.5"/></svg>
+          <svg class="star" viewBox="0 0 12 12" fill="rgba(255,159,10,0.90)"><polygon points="6 1 7.5 4.5 11 5 8.5 7.5 9 11 6 9 3 11 3.5 7.5 1 5 4.5 4.5"/></svg>
+          <svg class="star" viewBox="0 0 12 12" fill="rgba(255,159,10,0.90)"><polygon points="6 1 7.5 4.5 11 5 8.5 7.5 9 11 6 9 3 11 3.5 7.5 1 5 4.5 4.5"/></svg>
+          <svg class="star" viewBox="0 0 12 12" fill="rgba(255,159,10,0.90)"><polygon points="6 1 7.5 4.5 11 5 8.5 7.5 9 11 6 9 3 11 3.5 7.5 1 5 4.5 4.5"/></svg>
+          <svg class="star" viewBox="0 0 12 12" fill="rgba(255,159,10,0.90)"><polygon points="6 1 7.5 4.5 11 5 8.5 7.5 9 11 6 9 3 11 3.5 7.5 1 5 4.5 4.5"/></svg>
+          <span style="font-size:10px;color:rgba(255,255,255,0.35);margin-left:4px;">4.8</span>
+        </div>
+      </div>
+      <div style="text-align:right;flex-shrink:0;">
+        <div class="pill pill-active" style="margin-bottom:4px;display:block;">Active</div>
+        <div style="font-size:12px;color:rgba(255,255,255,0.35);">€62k / yr</div>
+      </div>
+    </div>
+
+    <!-- Row 3 — At Risk -->
+    <div class="supplier-row">
+      <div class="specular"></div>
+      <div class="supplier-avatar" style="background:rgba(255,69,58,0.10);color:rgba(255,69,58,0.80);">TC</div>
+      <div class="supplier-text">
+        <div style="font-size:14px;font-weight:600;margin-bottom:1px;">Tehno Construct SA</div>
+        <div class="caption">Tools & equipment · 12 orders</div>
+        <div class="rating-stars">
+          <svg class="star" viewBox="0 0 12 12" fill="rgba(255,159,10,0.90)"><polygon points="6 1 7.5 4.5 11 5 8.5 7.5 9 11 6 9 3 11 3.5 7.5 1 5 4.5 4.5"/></svg>
+          <svg class="star" viewBox="0 0 12 12" fill="rgba(255,159,10,0.90)"><polygon points="6 1 7.5 4.5 11 5 8.5 7.5 9 11 6 9 3 11 3.5 7.5 1 5 4.5 4.5"/></svg>
+          <svg class="star" viewBox="0 0 12 12" fill="rgba(255,255,255,0.12)"><polygon points="6 1 7.5 4.5 11 5 8.5 7.5 9 11 6 9 3 11 3.5 7.5 1 5 4.5 4.5"/></svg>
+          <svg class="star" viewBox="0 0 12 12" fill="rgba(255,255,255,0.12)"><polygon points="6 1 7.5 4.5 11 5 8.5 7.5 9 11 6 9 3 11 3.5 7.5 1 5 4.5 4.5"/></svg>
+          <svg class="star" viewBox="0 0 12 12" fill="rgba(255,255,255,0.12)"><polygon points="6 1 7.5 4.5 11 5 8.5 7.5 9 11 6 9 3 11 3.5 7.5 1 5 4.5 4.5"/></svg>
+          <span style="font-size:10px;color:rgba(255,255,255,0.35);margin-left:4px;">2.3</span>
+        </div>
+      </div>
+      <div style="text-align:right;flex-shrink:0;">
+        <div class="pill pill-risk" style="margin-bottom:4px;display:block;">At Risk</div>
+        <div style="font-size:12px;color:rgba(255,255,255,0.35);">€28k / yr</div>
+      </div>
+    </div>
+
+    <!-- Row 4 — Pending -->
+    <div class="supplier-row">
+      <div class="specular"></div>
+      <div class="supplier-avatar" style="background:rgba(255,159,10,0.10);color:rgba(255,159,10,0.80);">EL</div>
+      <div class="supplier-text">
+        <div style="font-size:14px;font-weight:600;margin-bottom:1px;">ElectroLux Instalații SRL</div>
+        <div class="caption">Electrical · New supplier</div>
+        <div style="margin-top:3px;font-size:11px;color:rgba(255,255,255,0.35);">Pending onboarding</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0;">
+        <div class="pill pill-pending" style="margin-bottom:4px;display:block;">Pending</div>
+        <div style="font-size:12px;color:rgba(255,255,255,0.35);">—</div>
+      </div>
+    </div>
+
+    <!-- Row 5 -->
+    <div class="supplier-row">
+      <div class="specular"></div>
+      <div class="supplier-avatar">FP</div>
+      <div class="supplier-text">
+        <div style="font-size:14px;font-weight:600;margin-bottom:1px;">Faianță & Pardoseli SRL</div>
+        <div class="caption">Tiles & flooring · 19 orders</div>
+        <div class="rating-stars">
+          <svg class="star" viewBox="0 0 12 12" fill="rgba(255,159,10,0.90)"><polygon points="6 1 7.5 4.5 11 5 8.5 7.5 9 11 6 9 3 11 3.5 7.5 1 5 4.5 4.5"/></svg>
+          <svg class="star" viewBox="0 0 12 12" fill="rgba(255,159,10,0.90)"><polygon points="6 1 7.5 4.5 11 5 8.5 7.5 9 11 6 9 3 11 3.5 7.5 1 5 4.5 4.5"/></svg>
+          <svg class="star" viewBox="0 0 12 12" fill="rgba(255,159,10,0.90)"><polygon points="6 1 7.5 4.5 11 5 8.5 7.5 9 11 6 9 3 11 3.5 7.5 1 5 4.5 4.5"/></svg>
+          <svg class="star" viewBox="0 0 12 12" fill="rgba(255,159,10,0.90)"><polygon points="6 1 7.5 4.5 11 5 8.5 7.5 9 11 6 9 3 11 3.5 7.5 1 5 4.5 4.5"/></svg>
+          <svg class="star" viewBox="0 0 12 12" fill="rgba(255,255,255,0.12)"><polygon points="6 1 7.5 4.5 11 5 8.5 7.5 9 11 6 9 3 11 3.5 7.5 1 5 4.5 4.5"/></svg>
+          <span style="font-size:10px;color:rgba(255,255,255,0.35);margin-left:4px;">4.0</span>
+        </div>
+      </div>
+      <div style="text-align:right;flex-shrink:0;">
+        <div class="pill pill-active" style="margin-bottom:4px;display:block;">Active</div>
+        <div style="font-size:12px;color:rgba(255,255,255,0.35);">���41k / yr</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Spend by Category ── -->
+  <div class="section">
+    <div class="label" style="margin-bottom:12px;">Spend by Category</div>
+    <div style="padding:16px;border-radius:18px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.07);position:relative;">
+      <div class="specular"></div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;"><span style="color:rgba(255,255,255,0.65);">Building Materials</span><span style="font-weight:600;">€84k</span></div>
+          <div style="height:5px;background:rgba(255,255,255,0.08);border-radius:3px;overflow:hidden;"><div style="height:100%;width:72%;background:rgba(255,255,255,0.50);border-radius:3px;"></div></div>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;"><span style="color:rgba(255,255,255,0.65);">Steel & Concrete</span><span style="font-weight:600;">€62k</span></div>
+          <div style="height:5px;background:rgba(255,255,255,0.08);border-radius:3px;overflow:hidden;"><div style="height:100%;width:53%;background:rgba(255,255,255,0.40);border-radius:3px;"></div></div>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;"><span style="color:rgba(255,255,255,0.65);">Tiles & Flooring</span><span style="font-weight:600;">€41k</span></div>
+          <div style="height:5px;background:rgba(255,255,255,0.08);border-radius:3px;overflow:hidden;"><div style="height:100%;width:35%;background:rgba(255,255,255,0.30);border-radius:3px;"></div></div>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;"><span style="color:rgba(255,255,255,0.65);">Tools & Equipment</span><span style="font-weight:600;">€28k</span></div>
+          <div style="height:5px;background:rgba(255,255,255,0.08);border-radius:3px;overflow:hidden;"><div style="height:100%;width:24%;background:rgba(255,255,255,0.20);border-radius:3px;"></div></div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06);">
+        <span style="font-size:13px;color:rgba(255,255,255,0.35);">Total Annual Spend</span>
+        <span style="font-size:14px;font-weight:700;">€215k</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="height:30px;"></div>
+</div>
+
+<!-- ── Supplier Detail Sheet ── -->
+<div class="detail-sheet">
+  <div class="specular"></div>
+  <div class="drag-handle"><div class="drag-nub"></div></div>
+
+  <!-- Header -->
+  <div style="display:flex;align-items:flex-start;gap:14px;margin-bottom:16px;">
+    <div class="supplier-avatar" style="width:52px;height:52px;border-radius:15px;font-size:16px;">MG</div>
+    <div style="flex:1;">
+      <div style="font-size:18px;font-weight:700;margin-bottom:4px;">Materiale Grigore SRL</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        <div class="cat-chip"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="2" stroke-linecap="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg> Building Materials</div>
+        <div class="cat-chip">Paints</div>
+      </div>
+    </div>
+    <div class="pill pill-active">Active</div>
+  </div>
+
+  <!-- Score + spend -->
+  <div style="display:flex;gap:10px;margin-bottom:16px;">
+    <div style="flex:1;padding:12px;border-radius:14px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.07);text-align:center;">
+      <div style="font-size:22px;font-weight:700;margin-bottom:2px;">88</div>
+      <div style="font-size:10px;color:rgba(255,255,255,0.35);">Trust Score</div>
+    </div>
+    <div style="flex:1;padding:12px;border-radius:14px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.07);text-align:center;">
+      <div style="font-size:22px;font-weight:700;margin-bottom:2px;">4.2</div>
+      <div style="font-size:10px;color:rgba(255,255,255,0.35);">Rating</div>
+    </div>
+    <div style="flex:1;padding:12px;border-radius:14px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.07);text-align:center;">
+      <div style="font-size:22px;font-weight:700;margin-bottom:2px;">38</div>
+      <div style="font-size:10px;color:rgba(255,255,255,0.35);">Orders</div>
+    </div>
+    <div style="flex:1;padding:12px;border-radius:14px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.07);text-align:center;">
+      <div style="font-size:14px;font-weight:700;margin-bottom:2px;">€84k</div>
+      <div style="font-size:10px;color:rgba(255,255,255,0.35);">Annual</div>
+    </div>
+  </div>
+
+  <!-- Details -->
+  <div style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.07);border-radius:16px;padding:0 14px;">
+    <div class="info-row"><span style="font-size:13px;color:rgba(255,255,255,0.35);">Contact</span><span style="font-size:13px;font-weight:600;">Grigore Matei · 0721 000 111</span></div>
+    <div class="info-row"><span style="font-size:13px;color:rgba(255,255,255,0.35);">On-time delivery</span><span style="font-size:13px;font-weight:600;">94%</span></div>
+    <div class="info-row"><span style="font-size:13px;color:rgba(255,255,255,0.35);">Contract expires</span><span style="font-size:13px;font-weight:600;">Dec 31, 2026</span></div>
+    <div class="info-row"><span style="font-size:13px;color:rgba(255,255,255,0.35);">Payment terms</span><span style="font-size:13px;font-weight:600;">Net 30</span></div>
+    <div class="info-row"><span style="font-size:13px;color:rgba(255,255,255,0.35);">Last order</span><span style="font-size:13px;font-weight:600;">Jun 4, 2026 · €4,200</span></div>
+  </div>
+
+  <!-- CTA -->
+  <div style="display:flex;gap:8px;margin-top:14px;">
+    <button style="flex:1;padding:13px;border-radius:14px;background:rgba(255,255,255,0.10);border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.95);font-size:14px;font-weight:600;cursor:pointer;">New Order</button>
+    <button style="flex:1;padding:13px;border-radius:14px;background:rgba(255,255,255,0.95);border:none;color:#000;font-size:14px;font-weight:700;cursor:pointer;">Contact</button>
+  </div>
+</div>
+
+<!-- Tab Bar -->
+<div class="tab-bar">
+  <div class="tab-item">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="9" y="9" width="6" height="6" rx="1"/><path d="M9 9V6a3 3 0 1 0-3 3h3"/><path d="M15 9h3a3 3 0 1 0-3-3v3"/><path d="M9 15H6a3 3 0 1 0 3 3v-3"/><path d="M15 15v3a3 3 0 1 0 3-3h-3"/></svg>
+    Command
+  </div>
+  <div class="tab-item active">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+    Operations
+  </div>
+  <div class="tab-item">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="9" cy="7" r="3"/><path d="M3 20v-1a6 6 0 0 1 6-6"/><circle cx="17" cy="9" r="2.5"/><path d="M13 20v-1a4 4 0 0 1 4-4h0a4 4 0 0 1 4 4v1"/></svg>
+    People
+  </div>
+  <div class="tab-item">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 20h18"/><path d="M5 20V10l4-4 4 4 4-6v16"/></svg>
+    Finance
+  </div>
+  <div class="tab-item">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M12 2a6 6 0 0 1 6 6c0 2.5-1.5 4.7-3.7 5.7L14 16H10l-.3-2.3A6.01 6.01 0 0 1 6 8a6 6 0 0 1 6-6z"/><path d="M10 19h4"/><path d="M11 22h2"/></svg>
+    Intelligence
+  </div>
+</div>
+
+</body>
+</html>
