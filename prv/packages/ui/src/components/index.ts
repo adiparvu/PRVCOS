@@ -334,6 +334,9 @@ export type { GlassPullToRefreshProps } from "./glass-pull-to-refresh"
 export { GlassSwipeActions } from "./glass-swipe-actions"
 export type { GlassSwipeActionsProps, SwipeAction } from "./glass-swipe-actions"
 
+export { GlassActionBar } from "./glass-action-bar"
+export type { GlassActionBarProps, ActionBarAction } from "./glass-action-bar"
+
 export {
   ActionSheet,
   ConfirmationSheet,
