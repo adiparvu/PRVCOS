@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PRV · Screen 04 — Public Landing</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --prv-bg:#000; --prv-g1:rgba(255,255,255,0.06); --prv-g2:rgba(255,255,255,0.10);
+    --prv-g3:rgba(255,255,255,0.15); --prv-text-1:rgba(255,255,255,0.95);
+    --prv-text-2:rgba(255,255,255,0.65); --prv-text-3:rgba(255,255,255,0.35);
+    --prv-text-4:rgba(255,255,255,0.15); --prv-border:rgba(255,255,255,0.12);
+    --prv-border-subtle:rgba(255,255,255,0.07); --prv-accent:rgba(10,132,255,0.9);
+    --prv-green:rgba(48,209,88,0.95); --prv-star:rgba(255,204,0,0.95);
+  }
+  html,body { background:var(--prv-bg); color:var(--prv-text-1); font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif; -webkit-font-smoothing:antialiased; }
+  .pv-tag { max-width:1000px; margin:24px auto 0; padding:0 24px; }
+  .chips { display:flex; gap:8px; }
+  .chip { padding:3px 10px; border-radius:100px; background:var(--prv-g2); border:1px solid var(--prv-border-subtle); font-size:11px; font-weight:600; color:var(--prv-text-3); letter-spacing:.06em; text-transform:uppercase; }
+  .wrap { max-width:1000px; margin:0 auto; padding:24px; }
+
+  /* nav */
+  .nav { display:flex; align-items:center; justify-content:space-between; padding:16px 0; }
+  .brand { display:flex; align-items:center; gap:9px; font-size:17px; font-weight:800; letter-spacing:-.02em; }
+  .brand-mark { width:28px; height:28px; border-radius:8px; background:linear-gradient(135deg,#0A84FF,#BF5AF2); display:flex; align-items:center; justify-content:center; font-size:13px; }
+  .nav-links { display:flex; gap:24px; font-size:14px; color:var(--prv-text-2); }
+  .nav-cta { display:flex; gap:10px; }
+  .btn { padding:9px 18px; border-radius:12px; font-size:13px; font-weight:600; cursor:pointer; border:1px solid transparent; }
+  .btn-primary { background:var(--prv-text-1); color:#000; } .btn-ghost { background:var(--prv-g2); border-color:var(--prv-border); color:var(--prv-text-1); }
+  @media (max-width:640px){ .nav-links { display:none; } }
+
+  /* hero */
+  .hero { position:relative; overflow:hidden; border-radius:24px; padding:72px 32px; text-align:center; margin:18px 0 40px;
+    background:radial-gradient(circle at 30% 0%, rgba(10,132,255,0.22), transparent 50%), radial-gradient(circle at 80% 100%, rgba(191,90,242,0.20), transparent 50%), var(--prv-g1); border:1px solid var(--prv-border-subtle); }
+  .eyebrow { display:inline-flex; align-items:center; gap:7px; padding:5px 13px; border-radius:100px; background:var(--prv-g2); border:1px solid var(--prv-border-subtle); font-size:12px; font-weight:600; color:var(--prv-text-2); margin-bottom:22px; }
+  .hero h1 { font-size:48px; font-weight:800; letter-spacing:-.03em; line-height:1.04; max-width:680px; margin:0 auto; }
+  .grad { background:linear-gradient(120deg,#0A84FF,#BF5AF2); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .hero p { font-size:17px; color:var(--prv-text-2); max-width:540px; margin:20px auto 0; line-height:1.6; }
+  .hero-cta { display:flex; gap:12px; justify-content:center; margin-top:32px; flex-wrap:wrap; }
+  .btn-lg { padding:13px 26px; border-radius:14px; font-size:14px; }
+  .trust { display:flex; gap:26px; justify-content:center; margin-top:36px; font-size:13px; color:var(--prv-text-3); flex-wrap:wrap; }
+  @media (max-width:640px){ .hero h1 { font-size:34px; } }
+
+  .sec-h { text-align:center; margin-bottom:28px; }
+  .sec-h h2 { font-size:28px; font-weight:700; letter-spacing:-.02em; }
+  .sec-h p { font-size:15px; color:var(--prv-text-3); margin-top:8px; }
+  .section { margin-bottom:56px; }
+
+  /* features */
+  .fg { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+  @media (max-width:720px){ .fg { grid-template-columns:1fr 1fr; } } @media (max-width:460px){ .fg { grid-template-columns:1fr; } }
+  .fi { padding:22px; border-radius:16px; background:var(--prv-g1); border:1px solid var(--prv-border-subtle); }
+  .fic { width:44px; height:44px; border-radius:13px; background:var(--prv-g2); border:1px solid var(--prv-border-subtle); display:flex; align-items:center; justify-content:center; color:var(--prv-accent); margin-bottom:14px; }
+  .ft { font-size:15px; font-weight:700; margin-bottom:6px; } .fd { font-size:13px; color:var(--prv-text-3); line-height:1.55; }
+
+  /* pricing */
+  .pr { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; } @media (max-width:720px){ .pr { grid-template-columns:1fr; } }
+  .plan { padding:24px; border-radius:18px; background:var(--prv-g1); border:1px solid var(--prv-border-subtle); position:relative; display:flex; flex-direction:column; }
+  .plan.feat { border-color:var(--prv-accent); background:linear-gradient(180deg,rgba(10,132,255,0.08),var(--prv-g1)); }
+  .pbadge { position:absolute; top:-11px; left:50%; transform:translateX(-50%); font-size:10px; font-weight:700; padding:4px 12px; border-radius:100px; background:var(--prv-accent); color:#fff; text-transform:uppercase; }
+  .pn { font-size:14px; font-weight:700; color:var(--prv-text-2); } .pp { font-size:36px; font-weight:800; letter-spacing:-.02em; margin:10px 0 2px; } .pp span { font-size:14px; font-weight:500; color:var(--prv-text-3); }
+  .pd { font-size:12px; color:var(--prv-text-3); margin-bottom:18px; } .pf { list-style:none; display:flex; flex-direction:column; gap:10px; margin-bottom:22px; flex:1; }
+  .pf li { font-size:13px; color:var(--prv-text-2); display:flex; gap:9px; } .pf svg { color:var(--prv-green); flex-shrink:0; } .pf li.off { color:var(--prv-text-4); } .pf li.off svg { color:var(--prv-text-4); }
+
+  /* testimonials */
+  .tm-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; } @media (max-width:600px){ .tm-grid { grid-template-columns:1fr; } }
+  .tm { padding:22px; border-radius:18px; background:var(--prv-g1); border:1px solid var(--prv-border-subtle); }
+  .tm-st { color:var(--prv-star); font-size:14px; letter-spacing:2px; margin-bottom:12px; } .tm-q { font-size:15px; line-height:1.6; margin-bottom:18px; }
+  .tm-a { display:flex; align-items:center; gap:11px; } .tm-av { width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; color:#fff; }
+  .tm-n { font-size:13px; font-weight:700; } .tm-r { font-size:12px; color:var(--prv-text-3); }
+
+  .footer { border-top:1px solid var(--prv-border-subtle); padding:28px 0; display:flex; align-items:center; justify-content:space-between; font-size:13px; color:var(--prv-text-3); flex-wrap:wrap; gap:12px; }
+</style>
+</head>
+<body>
+<div class="pv-tag"><div class="chips"><span class="chip">Screen 04</span><span class="chip">Preview</span><span class="chip">apps/marketing · /</span></div></div>
+
+<div class="wrap">
+  <!-- Nav -->
+  <div class="nav">
+    <div class="brand"><span class="brand-mark">✦</span>PRV</div>
+    <div class="nav-links"><span>Product</span><span>Platforms</span><span>Pricing</span><span>Customers</span></div>
+    <div class="nav-cta"><button class="btn btn-ghost">Sign in</button><button class="btn btn-primary">Start free</button></div>
+  </div>
+
+  <!-- Hero (GlassHero) -->
+  <div class="hero">
+    <div class="eyebrow">✦ The Company Operating System</div>
+    <h1>Run your whole company from <span class="grad">one glass surface</span></h1>
+    <p>PRV unifies 18 platforms — projects, workforce, finance, AI — into a single Apple-grade experience.</p>
+    <div class="hero-cta"><button class="btn btn-primary btn-lg">Start free trial</button><button class="btn btn-ghost btn-lg">Book a demo</button></div>
+    <div class="trust"><span>★ 4.9 / 5 rating</span><span>100+ companies</span><span>10,000+ employees</span><span>SOC 2 compliant</span></div>
+  </div>
+
+  <!-- Features (GlassFeatureGrid) -->
+  <div class="section">
+    <div class="sec-h"><h2>One platform. Every workflow.</h2><p>Replace a dozen disconnected tools.</p></div>
+    <div class="fg">
+      <div class="fi"><div class="fic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></div><div class="ft">18 Platforms</div><div class="fd">Projects, CRM, shop, finance, HR & more in one ecosystem.</div></div>
+      <div class="fi"><div class="fic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><div class="ft">Zero Trust</div><div class="fd">10-gate security chain with immutable SHA-256 audit logs.</div></div>
+      <div class="fi"><div class="fic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2a10 10 0 1 0 10 10"/><path d="M12 6v6l4 2"/></svg></div><div class="ft">Real-time</div><div class="fd">Live presence, notifications & dashboards on every device.</div></div>
+      <div class="fi"><div class="fic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4"/><circle cx="12" cy="12" r="3"/></svg></div><div class="ft">AI Native</div><div class="fd">An assistant that forecasts, summarizes & drafts for every role.</div></div>
+      <div class="fi"><div class="fic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></div><div class="ft">Multi-tenant</div><div class="fd">Scales to 100+ companies & 1,000+ stores with strict isolation.</div></div>
+      <div class="fi"><div class="fic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div><div class="ft">Every Platform</div><div class="fd">iPhone, iPad, Android, web & macOS — one design language.</div></div>
+    </div>
+  </div>
+
+  <!-- Pricing (GlassPricingTable) -->
+  <div class="section">
+    <div class="sec-h"><h2>Simple, scalable pricing</h2><p>Start free. Upgrade as you grow.</p></div>
+    <div class="pr">
+      <div class="plan"><div class="pn">Starter</div><div class="pp">€0<span>/mo</span></div><div class="pd">For small teams getting started.</div>
+        <ul class="pf"><li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>Up to 5 users</li><li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>3 platforms</li><li class="off"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>AI assistant</li></ul>
+        <button class="btn btn-ghost" style="width:100%">Get started</button></div>
+      <div class="plan feat"><div class="pbadge">Most popular</div><div class="pn">Business</div><div class="pp">€49<span>/user/mo</span></div><div class="pd">For growing companies.</div>
+        <ul class="pf"><li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>Unlimited users</li><li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>All 18 platforms</li><li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>AI assistant</li></ul>
+        <button class="btn btn-primary" style="width:100%">Start trial</button></div>
+      <div class="plan"><div class="pn">Enterprise</div><div class="pp">Custom</div><div class="pd">For 100+ companies & groups.</div>
+        <ul class="pf"><li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>Everything in Business</li><li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>SSO & SCIM</li><li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>Dedicated support</li></ul>
+        <button class="btn btn-ghost" style="width:100%">Contact sales</button></div>
+    </div>
+  </div>
+
+  <!-- Testimonials (GlassTestimonial) -->
+  <div class="section">
+    <div class="sec-h"><h2>Loved by operators</h2></div>
+    <div class="tm-grid">
+      <div class="tm"><div class="tm-st">★★★★★</div><div class="tm-q">"PRV replaced six separate tools. Our CEO sees revenue, projects and workforce in one glance."</div><div class="tm-a"><div class="tm-av" style="background:linear-gradient(135deg,#0A84FF,#5E5CE6)">AP</div><div><div class="tm-n">Andrei Popescu</div><div class="tm-r">COO · Renovații SRL</div></div></div></div>
+      <div class="tm"><div class="tm-st">★★★★★</div><div class="tm-q">"The Liquid Glass design genuinely feels like a first-party Apple app."</div><div class="tm-a"><div class="tm-av" style="background:linear-gradient(135deg,#FF9F0A,#FF375F)">MI</div><div><div class="tm-n">Maria Ionescu</div><div class="tm-r">HR Director · West Group</div></div></div></div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer"><div class="brand"><span class="brand-mark">✦</span>PRV</div><div>© 2026 PRV · Privacy · Terms · Status</div></div>
+</div>
+</body>
+</html>
