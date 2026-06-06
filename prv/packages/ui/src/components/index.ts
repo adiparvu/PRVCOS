@@ -280,6 +280,9 @@ export type { GlassTypingIndicatorProps, TypingSize } from "./glass-typing-indic
 export { GlassAIPromptCard } from "./glass-ai-prompt-card"
 export type { GlassAIPromptCardProps, PromptVariant } from "./glass-ai-prompt-card"
 
+export { GlassMapView } from "./glass-map-view"
+export type { GlassMapViewProps } from "./glass-map-view"
+
 export {
   ActionSheet,
   ConfirmationSheet,
