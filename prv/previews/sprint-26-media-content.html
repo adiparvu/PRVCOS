@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PRV · Sprint 26 — Media & Content</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --prv-bg:            #000;
+    --prv-g1:            rgba(255,255,255,0.06);
+    --prv-g2:            rgba(255,255,255,0.10);
+    --prv-g3:            rgba(255,255,255,0.15);
+    --prv-g4:            rgba(255,255,255,0.22);
+    --prv-text-1:        rgba(255,255,255,0.95);
+    --prv-text-2:        rgba(255,255,255,0.65);
+    --prv-text-3:        rgba(255,255,255,0.35);
+    --prv-text-4:        rgba(255,255,255,0.15);
+    --prv-border:        rgba(255,255,255,0.12);
+    --prv-border-subtle: rgba(255,255,255,0.07);
+    --prv-accent:        rgba(10,132,255,0.9);
+  }
+
+  html, body {
+    background: var(--prv-bg);
+    color: var(--prv-text-1);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page { max-width: 960px; margin: 0 auto; padding: 48px 24px 96px; }
+
+  .sprint-header { margin-bottom: 52px; }
+  .chips { display: flex; gap: 8px; margin-bottom: 10px; }
+  .chip { padding: 3px 10px; border-radius: 100px; background: var(--prv-g2); border: 1px solid var(--prv-border-subtle); font-size: 11px; font-weight: 600; color: var(--prv-text-3); letter-spacing: .06em; text-transform: uppercase; }
+  h1 { font-size: 28px; font-weight: 700; letter-spacing: -.02em; }
+  .sub { font-size: 14px; color: var(--prv-text-3); margin-top: 4px; }
+
+  .section { margin-bottom: 60px; }
+  .sl { font-size: 11px; font-weight: 600; color: var(--prv-text-3); letter-spacing: .07em; text-transform: uppercase; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+  .sl::after { content: ""; flex: 1; height: 1px; background: var(--prv-border-subtle); }
+
+  /* Delivery table */
+  .dt { width: 100%; border-collapse: collapse; }
+  .dt th, .dt td { text-align: left; padding: 10px 14px; font-size: 13px; border-bottom: 1px solid var(--prv-border-subtle); }
+  .dt th { font-size: 11px; font-weight: 600; color: var(--prv-text-3); letter-spacing: .06em; text-transform: uppercase; }
+  .dt td { color: var(--prv-text-1); }
+  .dt td:nth-child(2) { color: var(--prv-text-3); font-family: "SF Mono", monospace; font-size: 11px; }
+  .dt tr:last-child td { border-bottom: none; }
+  .tag { display: inline-flex; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 500; background: var(--prv-g2); color: var(--prv-text-3); border: 1px solid var(--prv-border-subtle); }
+  .tag.new { background: rgba(10,132,255,.12); color: rgba(10,132,255,.9); border-color: rgba(10,132,255,.2); }
+
+  .glass-surface { position: relative; overflow: hidden; background: var(--prv-g1); border: 1px solid var(--prv-border-subtle); border-radius: 20px; }
+  .glass-surface::before { content: ""; position: absolute; inset: 0 0 auto; height: 1px; background: linear-gradient(90deg,transparent,rgba(255,255,255,0.09),transparent); pointer-events: none; }
+
+  .demo-pad { padding: 24px; }
+
+  /* ════════════════════════════════════════════════
+     GLASS IMAGE GALLERY + LIGHTBOX
+  ════════════════════════════════════════════════ */
+  .gal { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  @media (max-width: 640px) { .gal { grid-template-columns: repeat(2, 1fr); } }
+  .gal-item { position: relative; aspect-ratio: 1; border-radius: 12px; overflow: hidden; cursor: pointer; border: 1px solid var(--prv-border-subtle); }
+  .gal-item .ph { position: absolute; inset: 0; transition: transform 300ms cubic-bezier(0.4,0,0.2,1); }
+  .gal-item:hover .ph { transform: scale(1.08); }
+  .gal-item .cap { position: absolute; left: 0; right: 0; bottom: 0; padding: 18px 10px 8px; font-size: 11px; color: #fff; background: linear-gradient(transparent, rgba(0,0,0,0.7)); opacity: 0; transition: opacity 200ms; }
+  .gal-item:hover .cap { opacity: 1; }
+  .gal-more { position: absolute; inset: 0; background: rgba(0,0,0,0.55); display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700; color: #fff; }
+
+  .lb { position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); display: none; align-items: center; justify-content: center; opacity: 0; transition: opacity 280ms; }
+  .lb.open { display: flex; opacity: 1; }
+  .lb-stage { position: relative; width: min(80vw, 760px); }
+  .lb-img { width: 100%; aspect-ratio: 16/10; border-radius: 16px; box-shadow: 0 24px 64px rgba(0,0,0,0.7); }
+  .lb-cap { text-align: center; margin-top: 14px; font-size: 13px; color: var(--prv-text-2); }
+  .lb-count { text-align: center; margin-top: 4px; font-size: 12px; color: var(--prv-text-4); }
+  .lb-btn { position: absolute; top: 50%; transform: translateY(-50%); width: 44px; height: 44px; border-radius: 50%; background: rgba(22,22,22,0.6); backdrop-filter: blur(24px); border: 1px solid var(--prv-border); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+  .lb-btn.prev { left: -60px; } .lb-btn.next { right: -60px; }
+  @media (max-width: 820px){ .lb-btn.prev{left:8px} .lb-btn.next{right:8px} }
+  .lb-close { position: absolute; top: 20px; right: 20px; width: 40px; height: 40px; border-radius: 50%; background: rgba(22,22,22,0.6); backdrop-filter: blur(24px); border: 1px solid var(--prv-border); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+
+  /* ════════════════════════════════════════════════
+     GLASS VIDEO PLAYER
+  ════════════════════════════════════════════════ */
+  .vp { position: relative; border-radius: 16px; overflow: hidden; aspect-ratio: 16/9; background: linear-gradient(135deg,#1a1a2e,#16213e); }
+  .vp-poster { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+  .vp-bigplay { width: 72px; height: 72px; border-radius: 50%; background: rgba(255,255,255,0.15); backdrop-filter: blur(24px); border: 1px solid rgba(255,255,255,0.3); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 200ms cubic-bezier(0.34,1.56,0.64,1); }
+  .vp-bigplay:hover { transform: scale(1.1); }
+  .vp-bigplay.hidden { display: none; }
+  .vp-controls { position: absolute; left: 0; right: 0; bottom: 0; padding: 14px 16px; background: linear-gradient(transparent, rgba(0,0,0,0.75)); display: flex; flex-direction: column; gap: 8px; }
+  .vp-bar { height: 5px; border-radius: 100px; background: rgba(255,255,255,0.2); cursor: pointer; position: relative; }
+  .vp-bar-fill { height: 100%; border-radius: 100px; background: var(--prv-accent); width: 32%; position: relative; }
+  .vp-bar-fill::after { content: ""; position: absolute; right: -6px; top: 50%; transform: translateY(-50%); width: 12px; height: 12px; border-radius: 50%; background: #fff; }
+  .vp-row { display: flex; align-items: center; gap: 14px; }
+  .vp-ic { background: none; border: none; color: #fff; cursor: pointer; display: flex; align-items: center; }
+  .vp-time { font-size: 12px; color: rgba(255,255,255,0.8); font-variant-numeric: tabular-nums; }
+  .vp-spacer { flex: 1; }
+
+  /* ════════════════════════════════════════════════
+     GLASS CODE BLOCK
+  ════════════════════════════════════════════════ */
+  .cb { border-radius: 14px; overflow: hidden; border: 1px solid var(--prv-border-subtle); background: rgba(16,16,18,0.6); }
+  .cb-head { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--prv-border-subtle); background: var(--prv-g1); }
+  .cb-dots { display: flex; gap: 6px; }
+  .cb-dot { width: 11px; height: 11px; border-radius: 50%; }
+  .cb-lang { font-size: 11px; font-weight: 600; color: var(--prv-text-3); letter-spacing: .04em; text-transform: uppercase; flex: 1; }
+  .cb-copy { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 8px; background: var(--prv-g2); border: 1px solid var(--prv-border-subtle); color: var(--prv-text-2); font-size: 12px; cursor: pointer; font-family: inherit; transition: background 150ms; }
+  .cb-copy:hover { background: var(--prv-g3); color: var(--prv-text-1); }
+  .cb-copy.done { color: rgba(48,209,88,0.9); }
+  .cb-body { display: flex; font-family: "SF Mono", ui-monospace, monospace; font-size: 13px; line-height: 1.7; overflow-x: auto; }
+  .cb-nums { padding: 14px 0 14px 14px; text-align: right; color: var(--prv-text-4); user-select: none; }
+  .cb-code { padding: 14px 16px; white-space: pre; color: var(--prv-text-1); }
+  .tk-key { color: #FF7AB2; } .tk-str { color: #9EE493; } .tk-fn { color: #82AAFF; } .tk-com { color: var(--prv-text-3); } .tk-num { color: #F78C6C; }
+
+  /* ════════════════════════════════════════════════
+     GLASS MARKDOWN VIEWER
+  ════════════════════════════════════════════════ */
+  .md { padding: 24px 26px; font-size: 14px; line-height: 1.7; color: var(--prv-text-2); }
+  .md h1 { font-size: 22px; font-weight: 700; color: var(--prv-text-1); margin: 0 0 12px; letter-spacing: -.01em; }
+  .md h2 { font-size: 17px; font-weight: 700; color: var(--prv-text-1); margin: 24px 0 10px; }
+  .md p { margin: 0 0 12px; }
+  .md a { color: var(--prv-accent); text-decoration: none; }
+  .md a:hover { text-decoration: underline; }
+  .md ul { margin: 0 0 12px; padding-left: 20px; }
+  .md li { margin: 4px 0; }
+  .md code { font-family: "SF Mono", monospace; font-size: 12.5px; background: var(--prv-g2); border: 1px solid var(--prv-border-subtle); border-radius: 5px; padding: 1px 6px; color: #9EE493; }
+  .md blockquote { margin: 0 0 12px; padding: 8px 16px; border-left: 3px solid var(--prv-accent); background: var(--prv-g1); border-radius: 0 10px 10px 0; color: var(--prv-text-3); }
+  .md strong { color: var(--prv-text-1); font-weight: 600; }
+  .md hr { border: none; border-top: 1px solid var(--prv-border-subtle); margin: 20px 0; }
+  .md table { width: 100%; border-collapse: collapse; margin: 0 0 12px; font-size: 13px; }
+  .md th, .md td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--prv-border-subtle); }
+  .md th { color: var(--prv-text-3); font-weight: 600; font-size: 11px; text-transform: uppercase; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="sprint-header">
+    <div class="chips"><span class="chip">Sprint 26</span><span class="chip">Preview</span><span class="chip">Phase 1 · M9</span></div>
+    <h1>Media &amp; Content</h1>
+    <div class="sub">GlassImageGallery · GlassVideoPlayer · GlassCodeBlock · GlassMarkdownViewer</div>
+  </div>
+
+  <!-- ── IMAGE GALLERY + LIGHTBOX ── -->
+  <div class="section">
+    <div class="sl">GlassImageGallery — Thumbnail grid, hover zoom, lightbox with prev/next &amp; captions</div>
+    <div class="glass-surface">
+      <div class="demo-pad">
+        <div class="gal" id="gal"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── VIDEO PLAYER ── -->
+  <div class="section">
+    <div class="sl">GlassVideoPlayer — Glass controls, scrubber, time, volume, fullscreen</div>
+    <div class="glass-surface">
+      <div class="demo-pad">
+        <div class="vp">
+          <div class="vp-poster">
+            <div class="vp-bigplay" id="vp-big" onclick="vpToggle()">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="#fff"><polygon points="6 4 20 12 6 20 6 4"/></svg>
+            </div>
+          </div>
+          <div class="vp-controls">
+            <div class="vp-bar" id="vp-bar" onclick="vpSeek(event)"><div class="vp-bar-fill" id="vp-fill"></div></div>
+            <div class="vp-row">
+              <button class="vp-ic" id="vp-pp" onclick="vpToggle()"><svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><polygon points="6 4 20 12 6 20 6 4"/></svg></button>
+              <span class="vp-time" id="vp-time">0:48 / 2:30</span>
+              <div class="vp-spacer"></div>
+              <button class="vp-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a9 9 0 0 1 0 14"/></svg></button>
+              <button class="vp-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></svg></button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── CODE BLOCK ── -->
+  <div class="section">
+    <div class="sl">GlassCodeBlock — Window chrome, language label, line numbers, copy button</div>
+    <div class="glass-surface">
+      <div class="demo-pad">
+        <div class="cb">
+          <div class="cb-head">
+            <div class="cb-dots"><span class="cb-dot" style="background:#FF5F57"></span><span class="cb-dot" style="background:#FEBC2E"></span><span class="cb-dot" style="background:#28C840"></span></div>
+            <span class="cb-lang">TypeScript</span>
+            <button class="cb-copy" id="cb-copy" onclick="cbCopy()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><span id="cb-copy-label">Copy</span></button>
+          </div>
+          <div class="cb-body">
+            <div class="cb-nums">1<br>2<br>3<br>4<br>5<br>6</div>
+            <pre class="cb-code"><span class="tk-com">// 10-gate Zero Trust chain</span>
+<span class="tk-key">export async function</span> <span class="tk-fn">authorize</span>(req: Request) {
+  <span class="tk-key">const</span> user = <span class="tk-key">await</span> <span class="tk-fn">verifySession</span>(req)
+  <span class="tk-key">if</span> (!user) <span class="tk-key">throw new</span> <span class="tk-fn">AuthError</span>(<span class="tk-num">401</span>)
+  <span class="tk-key">return</span> <span class="tk-fn">runGates</span>(user, <span class="tk-str">"strict"</span>)
+}</pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── MARKDOWN VIEWER ── -->
+  <div class="section">
+    <div class="sl">GlassMarkdownViewer — Styled headings, lists, code, quotes, tables, links</div>
+    <div class="glass-surface">
+      <div class="md">
+        <h1>Renovation Workflow</h1>
+        <p>This guide covers the <strong>standard renovation pipeline</strong> from quote to handover. For API details see <a href="#">the developer docs</a>.</p>
+        <h2>Phases</h2>
+        <ul>
+          <li>Site survey &amp; measurements</li>
+          <li>Quote generation (<code>POST /api/quotes</code>)</li>
+          <li>Client approval via signed contract</li>
+          <li>Execution &amp; daily progress logs</li>
+        </ul>
+        <blockquote>Every phase transition is recorded in the immutable audit log with a SHA-256 chain hash.</blockquote>
+        <h2>SLA Targets</h2>
+        <table>
+          <thead><tr><th>Phase</th><th>Target</th><th>Owner</th></tr></thead>
+          <tbody>
+            <tr><td>Quote</td><td>48h</td><td>Sales</td></tr>
+            <tr><td>Approval</td><td>5 days</td><td>Client</td></tr>
+            <tr><td>Handover</td><td>On schedule</td><td>Foreman</td></tr>
+          </tbody>
+        </table>
+        <hr>
+        <p>Need help? Contact the <a href="#">platform team</a>.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Delivery ── -->
+  <div class="section">
+    <div class="sl">Sprint 26 Delivery</div>
+    <div class="glass-surface">
+      <table class="dt">
+        <thead><tr><th>Component</th><th>File</th><th>Key Props</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>GlassImageGallery</td><td>glass-image-gallery.tsx</td><td>images[], columns, onOpen, lightbox, captions</td><td><span class="tag new">New</span></td></tr>
+          <tr><td>GlassVideoPlayer</td><td>glass-video-player.tsx</td><td>src, poster, autoPlay, muted, onTimeUpdate</td><td><span class="tag new">New</span></td></tr>
+          <tr><td>GlassCodeBlock</td><td>glass-code-block.tsx</td><td>code, language, showLineNumbers, copyable, chrome</td><td><span class="tag new">New</span></td></tr>
+          <tr><td>GlassMarkdownViewer</td><td>glass-markdown-viewer.tsx</td><td>content, components, className</td><td><span class="tag new">New</span></td></tr>
+          <tr><td>index.ts</td><td>components/index.ts</td><td>Export all 4 components + types</td><td><span class="tag">Update</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div><!-- /page -->
+
+<!-- Lightbox -->
+<div class="lb" id="lb" onclick="if(event.target.id==='lb')lbClose()">
+  <button class="lb-close" onclick="lbClose()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+  <button class="lb-btn prev" onclick="lbMove(-1)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+  <div class="lb-stage">
+    <div class="lb-img" id="lb-img"></div>
+    <div class="lb-cap" id="lb-cap"></div>
+    <div class="lb-count" id="lb-count"></div>
+  </div>
+  <button class="lb-btn next" onclick="lbMove(1)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+</div>
+
+<script>
+// ── Gallery + Lightbox ────────────────────────────────────────────────────────
+const IMAGES = [
+  { grad:'linear-gradient(135deg,#0A84FF,#5E5CE6)', cap:'Kitchen — before' },
+  { grad:'linear-gradient(135deg,#30D158,#00C7BE)', cap:'Kitchen — after' },
+  { grad:'linear-gradient(135deg,#FF9F0A,#FF375F)', cap:'Bathroom remodel' },
+  { grad:'linear-gradient(135deg,#BF5AF2,#FF6482)', cap:'Living room' },
+  { grad:'linear-gradient(135deg,#64D2FF,#0A84FF)', cap:'Flooring detail' },
+  { grad:'linear-gradient(135deg,#FFD60A,#FF9F0A)', cap:'Lighting install' },
+  { grad:'linear-gradient(135deg,#5E5CE6,#BF5AF2)', cap:'Facade' },
+  { grad:'linear-gradient(135deg,#FF453A,#FF9F0A)', cap:'Commercial fit-out' },
+]
+const VISIBLE = 4
+function renderGal(){
+  document.getElementById('gal').innerHTML = IMAGES.slice(0,VISIBLE).map((im,i)=>{
+    const more = (i===VISIBLE-1 && IMAGES.length>VISIBLE)
+    return `<div class="gal-item" onclick="lbOpen(${i})">
+      <div class="ph" style="background:${im.grad}"></div>
+      <div class="cap">${im.cap}</div>
+      ${more?`<div class="gal-more">+${IMAGES.length-VISIBLE}</div>`:''}
+    </div>`
+  }).join('')
+}
+let lbIdx = 0
+function lbOpen(i){ lbIdx=i; lbRender(); document.getElementById('lb').classList.add('open') }
+function lbClose(){ document.getElementById('lb').classList.remove('open') }
+function lbMove(d){ lbIdx=(lbIdx+d+IMAGES.length)%IMAGES.length; lbRender() }
+function lbRender(){
+  document.getElementById('lb-img').style.background = IMAGES[lbIdx].grad
+  document.getElementById('lb-cap').textContent = IMAGES[lbIdx].cap
+  document.getElementById('lb-count').textContent = (lbIdx+1)+' / '+IMAGES.length
+}
+document.addEventListener('keydown', e=>{
+  if(!document.getElementById('lb').classList.contains('open')) return
+  if(e.key==='Escape') lbClose(); if(e.key==='ArrowLeft') lbMove(-1); if(e.key==='ArrowRight') lbMove(1)
+})
+renderGal()
+
+// ── Video Player (simulated) ──────────────────────────────────────────────────
+let vpPlaying=false, vpT=48, vpDur=150, vpTimer=null
+function fmt(s){ return Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0') }
+function vpRender(){
+  document.getElementById('vp-fill').style.width=(vpT/vpDur*100)+'%'
+  document.getElementById('vp-time').textContent=fmt(vpT)+' / '+fmt(vpDur)
+  const playIcon='<svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><polygon points="6 4 20 12 6 20 6 4"/></svg>'
+  const pauseIcon='<svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>'
+  document.getElementById('vp-pp').innerHTML = vpPlaying?pauseIcon:playIcon
+  document.getElementById('vp-big').classList.toggle('hidden', vpPlaying)
+}
+function vpToggle(){
+  vpPlaying=!vpPlaying
+  if(vpPlaying){ vpTimer=setInterval(()=>{ vpT++; if(vpT>=vpDur){vpT=vpDur;vpToggle()} vpRender() },1000) }
+  else clearInterval(vpTimer)
+  vpRender()
+}
+function vpSeek(e){ const r=e.currentTarget.getBoundingClientRect(); vpT=Math.round((e.clientX-r.left)/r.width*vpDur); vpRender() }
+vpRender()
+
+// ── Code Block copy ───────────────────────────────────────────────────────────
+function cbCopy(){
+  const code=document.querySelector('.cb-code').innerText
+  navigator.clipboard?.writeText(code)
+  const btn=document.getElementById('cb-copy'), label=document.getElementById('cb-copy-label')
+  btn.classList.add('done'); label.textContent='Copied'
+  setTimeout(()=>{ btn.classList.remove('done'); label.textContent='Copy' },1600)
+}
+</script>
+</body>
+</html>
