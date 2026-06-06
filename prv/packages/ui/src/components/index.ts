@@ -155,6 +155,9 @@ export type { GlassDrawerProps, DrawerSide, DrawerSize } from "./glass-drawer"
 export { GlassPopover } from "./glass-popover"
 export type { GlassPopoverProps, PopoverSide, PopoverAlign } from "./glass-popover"
 
+export { GlassSteps } from "./glass-steps"
+export type { GlassStepsProps, StepItem, StepStatus, StepsVariant } from "./glass-steps"
+
 export {
   ActionSheet,
   ConfirmationSheet,
