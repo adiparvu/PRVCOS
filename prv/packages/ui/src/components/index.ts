@@ -313,6 +313,9 @@ export type { GlassTimeSlotPickerProps } from "./glass-time-slot-picker"
 export { GlassShiftCard } from "./glass-shift-card"
 export type { GlassShiftCardProps, ShiftStatus, ShiftAssignee, ShiftMeta } from "./glass-shift-card"
 
+export { GlassAvailabilityGrid } from "./glass-availability-grid"
+export type { GlassAvailabilityGridProps, Availability } from "./glass-availability-grid"
+
 export {
   ActionSheet,
   ConfirmationSheet,
