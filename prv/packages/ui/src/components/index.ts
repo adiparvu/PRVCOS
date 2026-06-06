@@ -298,6 +298,9 @@ export type { GlassPriceTagProps, PriceTagSize } from "./glass-price-tag"
 export { GlassQuantityStepper } from "./glass-quantity-stepper"
 export type { GlassQuantityStepperProps } from "./glass-quantity-stepper"
 
+export { GlassProductCard } from "./glass-product-card"
+export type { GlassProductCardProps, ProductBadge } from "./glass-product-card"
+
 export {
   ActionSheet,
   ConfirmationSheet,
