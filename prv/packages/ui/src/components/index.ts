@@ -193,6 +193,9 @@ export type { GlassOTPInputProps } from "./glass-otp-input"
 export { GlassColorPicker } from "./glass-color-picker"
 export type { GlassColorPickerProps } from "./glass-color-picker"
 
+export { GlassRangeSlider } from "./glass-range-slider"
+export type { GlassRangeSliderProps, RangeValue } from "./glass-range-slider"
+
 export {
   ActionSheet,
   ConfirmationSheet,
