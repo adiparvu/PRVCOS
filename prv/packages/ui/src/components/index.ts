@@ -230,6 +230,9 @@ export type { GlassMarkdownViewerProps } from "./glass-markdown-viewer"
 export { GlassSpinner } from "./glass-spinner"
 export type { GlassSpinnerProps, SpinnerSize, SpinnerVariant } from "./glass-spinner"
 
+export { GlassGauge } from "./glass-gauge"
+export type { GlassGaugeProps, GaugeThresholds } from "./glass-gauge"
+
 export {
   ActionSheet,
   ConfirmationSheet,
