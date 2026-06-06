@@ -17,10 +17,12 @@ export async function withRLS<T>(
   ctx: RLSContext,
   callback: (tx: postgres.TransactionSql) => Promise<T>
 ): Promise<T> {
+  // postgres.js sql.begin() returns UnwrapPromiseArray<T> which conflicts with
+  // our Promise<T> when T is itself a resolved value — cast required.
   return sql.begin(async (tx) => {
     await tx.unsafe(
       `SET LOCAL app.company_id = '${ctx.companyId}'; SET LOCAL app.user_id = '${ctx.userId}';`
     )
     return callback(tx)
-  })
+  }) as Promise<T>
 }

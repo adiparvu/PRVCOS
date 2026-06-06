@@ -124,7 +124,10 @@ function GlassCard({
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="text-[11px] font-semibold uppercase tracking-widest mb-3" style={{ color: "var(--prv-text-3)" }}>
+    <p
+      className="text-[11px] font-semibold uppercase tracking-widest mb-3"
+      style={{ color: "var(--prv-text-3)" }}
+    >
       {children}
     </p>
   )
@@ -173,8 +176,13 @@ export default async function DashboardPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <p className="text-[13px] font-medium mb-0.5" style={{ color: "var(--prv-text-3)" }}>PRV</p>
-          <h1 className="text-[26px] font-semibold tracking-tight leading-tight" style={{ color: "var(--prv-text-1)" }}>
+          <p className="text-[13px] font-medium mb-0.5" style={{ color: "var(--prv-text-3)" }}>
+            PRV
+          </p>
+          <h1
+            className="text-[26px] font-semibold tracking-tight leading-tight"
+            style={{ color: "var(--prv-text-1)" }}
+          >
             Command
           </h1>
         </div>
@@ -220,10 +228,16 @@ export default async function DashboardPage() {
           </svg>
         </div>
         <div>
-          <p className="text-[12px] font-bold mb-0.5" style={{ color: "var(--prv-text-1)" }}>AI BRIEFING</p>
+          <p className="text-[12px] font-bold mb-0.5" style={{ color: "var(--prv-text-1)" }}>
+            AI BRIEFING
+          </p>
           <p className="text-[13px] leading-relaxed" style={{ color: "var(--prv-text-2)" }}>
-            Revenue is tracking <span className="font-semibold" style={{ color: "var(--prv-text-1)" }}>+12% MoM</span>. Cluj
-            is your best-margin store (39%). 2 projects risk slipping this week — review staffing.
+            Revenue is tracking{" "}
+            <span className="font-semibold" style={{ color: "var(--prv-text-1)" }}>
+              +12% MoM
+            </span>
+            . Cluj is your best-margin store (39%). 2 projects risk slipping this week — review
+            staffing.
           </p>
         </div>
       </div>
@@ -310,7 +324,10 @@ export default async function DashboardPage() {
               >
                 <path d={icon} />
               </svg>
-              <span className="text-[11px] font-medium text-center leading-tight px-1" style={{ color: "var(--prv-text-3)" }}>
+              <span
+                className="text-[11px] font-medium text-center leading-tight px-1"
+                style={{ color: "var(--prv-text-3)" }}
+              >
                 {label}
               </span>
             </div>
@@ -321,8 +338,12 @@ export default async function DashboardPage() {
       {/* Quote of the Day */}
       <GlassCard className="mb-3.5">
         <SectionLabel>Quote of the day</SectionLabel>
-        <p className=”text-[15px] leading-relaxed” style={{ color: “var(--prv-text-1)” }}>”{QUOTE.text}”</p>
-        <p className=”text-[12px] mt-2” style={{ color: “var(--prv-text-3)” }}>— {QUOTE.author}</p>
+        <p className="text-[15px] leading-relaxed" style={{ color: "var(--prv-text-1)" }}>
+          "{QUOTE.text}"
+        </p>
+        <p className="text-[12px] mt-2" style={{ color: "var(--prv-text-3)" }}>
+          — {QUOTE.author}
+        </p>
       </GlassCard>
 
       {/* Recent Activity */}

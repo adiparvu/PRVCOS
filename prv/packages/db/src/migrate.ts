@@ -1,7 +1,11 @@
 import { createHash } from "crypto"
 import { readdir, readFile } from "fs/promises"
-import { join } from "path"
+import { join, dirname } from "path"
+import { fileURLToPath } from "url"
 import postgres from "postgres"
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
 
 // Migration runner — tracks applied migrations in migration_history table
 // Uses direct connection (not PgBouncer) for DDL statements
@@ -110,4 +114,17 @@ export async function runMigrations(migrationsDir: string): Promise<void> {
   } finally {
     await sql.end()
   }
+}
+
+// CLI entry point — invoked via `pnpm db:migrate:run` (tsx src/migrate.ts)
+const isMain = process.argv[1]?.endsWith("migrate.ts") || process.argv[1]?.endsWith("migrate.js")
+
+if (isMain) {
+  const migrationsDir = join(__dirname, "..", "migrations", "sql")
+  runMigrations(migrationsDir)
+    .then(() => process.exit(0))
+    .catch((err) => {
+      console.error("Migration failed:", err instanceof Error ? err.message : err)
+      process.exit(1)
+    })
 }

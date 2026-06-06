@@ -6,7 +6,9 @@
     ".": "./src/index.ts",
     "./session": "./src/session.ts",
     "./types": "./src/types.ts",
-    "./errors": "./src/errors.ts"
+    "./errors": "./src/errors.ts",
+    "./permission-engine": "./src/permission-engine.ts",
+    "./scope-resolver": "./src/scope-resolver.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

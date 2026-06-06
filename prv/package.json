@@ -21,6 +21,7 @@
     "prepare": "cd .. && husky prv/.husky"
   },
   "devDependencies": {
+    "@types/node": "^22",
     "@vitest/coverage-v8": "^4.1.8",
     "husky": "^9.1.7",
     "lint-staged": "^15.3.0",
