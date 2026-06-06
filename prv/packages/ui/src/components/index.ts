@@ -271,6 +271,9 @@ export type { GlassRadarChartProps, RadarSeries } from "./glass-radar-chart"
 export { GlassChatBubble } from "./glass-chat-bubble"
 export type { GlassChatBubbleProps, ChatRole, ChatStatus } from "./glass-chat-bubble"
 
+export { GlassChatComposer } from "./glass-chat-composer"
+export type { GlassChatComposerProps } from "./glass-chat-composer"
+
 export {
   ActionSheet,
   ConfirmationSheet,
