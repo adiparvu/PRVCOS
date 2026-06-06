@@ -1,0 +1,15 @@
+@import "tailwindcss";
+
+/* PRV design tokens (--prv-* custom properties, dark theme on :root by default) */
+@import "@prv/ui/styles/tokens";
+
+body {
+  background: var(--prv-bg);
+  color: var(--prv-text-1);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+html {
+  scroll-behavior: smooth;
+}
