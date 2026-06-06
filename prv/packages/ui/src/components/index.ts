@@ -152,6 +152,9 @@ export type { GlassAccordionProps, AccordionItem } from "./glass-accordion"
 export { GlassDrawer } from "./glass-drawer"
 export type { GlassDrawerProps, DrawerSide, DrawerSize } from "./glass-drawer"
 
+export { GlassPopover } from "./glass-popover"
+export type { GlassPopoverProps, PopoverSide, PopoverAlign } from "./glass-popover"
+
 export {
   ActionSheet,
   ConfirmationSheet,
