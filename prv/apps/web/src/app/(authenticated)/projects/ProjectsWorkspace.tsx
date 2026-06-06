@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Link from "next/link"
 import {
   GlassSegmentedControl,
   GlassProgressBar,
@@ -348,13 +349,20 @@ function Label({ children }: { children: React.ReactNode }) {
   )
 }
 
-function ProjectCard({ project, onSelect }: { project: Project; onSelect: (p: Project) => void }) {
+function budgetBarColor(pct: number): string {
+  if (pct > 100) return "rgba(255,59,48,0.7)"
+  if (pct > 80) return "rgba(255,159,10,0.7)"
+  return "rgba(255,255,255,0.6)"
+}
+
+function ProjectCard({ project }: { project: Project }) {
   const s = STATUS_STYLE[project.status]
+  const budgetPct = Math.round((project.financials.spent / project.financials.estimated) * 100)
   return (
-    <button
-      onClick={() => onSelect(project)}
-      className="w-full text-left px-4 py-3.5"
-      style={{ borderBottom: "1px solid var(--prv-border-subtle)" }}
+    <Link
+      href={`/projects/${project.id}`}
+      className="block w-full text-left px-4 py-3.5"
+      style={{ borderBottom: "1px solid var(--prv-border-subtle)", textDecoration: "none" }}
     >
       <div className="flex items-start gap-2.5 mb-2.5">
         <div className="w-2.5 h-2.5 rounded-full mt-1 shrink-0" style={{ background: s.color }} />
@@ -372,23 +380,42 @@ function ProjectCard({ project, onSelect }: { project: Project; onSelect: (p: Pr
           PM: <span className="text-white/65 font-semibold">{project.pm}</span>
         </span>
         <span className="text-[12px] text-white/35">
-          Value: <span className="text-white/65 font-semibold">{project.value}</span>
-        </span>
-        <span className="text-[12px] text-white/35">
           Due: <span className="text-white/65 font-semibold">{project.due}</span>
         </span>
+        <span className="text-[12px] text-white/35">{project.value}</span>
       </div>
 
-      <div className="ml-5 mb-2">
-        <GlassProgressBar
-          value={project.pct}
-          size="sm"
-          color={PROGRESS_COLOR[project.status]}
-          animated
-        />
+      {/* Budget bar */}
+      <div className="ml-5 mb-1.5">
+        <div className="flex items-center justify-between mb-1">
+          <span className="text-[10px] text-white/30">Budget used</span>
+          <span
+            className="text-[10px] font-semibold"
+            style={{
+              color:
+                budgetPct > 100
+                  ? "rgba(255,99,90,0.85)"
+                  : budgetPct > 80
+                    ? "rgba(255,179,64,0.85)"
+                    : "rgba(255,255,255,0.4)",
+            }}
+          >
+            €{project.financials.spent.toLocaleString()} / €
+            {project.financials.estimated.toLocaleString()}
+          </span>
+        </div>
+        <div
+          className="h-[3px] rounded-full overflow-hidden"
+          style={{ background: "rgba(255,255,255,0.07)" }}
+        >
+          <div
+            className="h-full rounded-full"
+            style={{ width: `${Math.min(budgetPct, 100)}%`, background: budgetBarColor(budgetPct) }}
+          />
+        </div>
       </div>
 
-      <div className="flex items-center justify-between ml-5">
+      <div className="flex items-center justify-between ml-5 mt-2">
         <div className="flex">
           {project.team.slice(0, 4).map((m, i) => (
             <div
@@ -427,7 +454,7 @@ function ProjectCard({ project, onSelect }: { project: Project; onSelect: (p: Pr
           )}
         </span>
       </div>
-    </button>
+    </Link>
   )
 }
 
@@ -678,7 +705,6 @@ function ProjectDetail({ project, onBack }: { project: Project; onBack: () => vo
 
 export function ProjectsWorkspace() {
   const [filter, setFilter] = useState("all")
-  const [selectedProject, setSelectedProject] = useState<Project | null>(null)
 
   const activeCount = PROJECTS.filter((p) => p.status === "active").length
   const reviewCount = PROJECTS.filter((p) => p.status === "review").length
@@ -691,14 +717,6 @@ export function ProjectsWorkspace() {
     if (filter === "done") return p.status === "done"
     return true
   })
-
-  if (selectedProject) {
-    return (
-      <div className="px-4 pt-14 pb-28 max-w-2xl mx-auto">
-        <ProjectDetail project={selectedProject} onBack={() => setSelectedProject(null)} />
-      </div>
-    )
-  }
 
   return (
     <div className="px-4 pt-14 pb-28 max-w-2xl mx-auto">
@@ -789,7 +807,7 @@ export function ProjectsWorkspace() {
         {filtered.length === 0 ? (
           <div className="py-12 text-center text-white/35 text-[14px]">No projects found.</div>
         ) : (
-          filtered.map((p) => <ProjectCard key={p.id} project={p} onSelect={setSelectedProject} />)
+          filtered.map((p) => <ProjectCard key={p.id} project={p} />)
         )}
       </div>
     </div>
