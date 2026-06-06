@@ -227,6 +227,9 @@ export type { GlassCodeBlockProps } from "./glass-code-block"
 export { GlassMarkdownViewer } from "./glass-markdown-viewer"
 export type { GlassMarkdownViewerProps } from "./glass-markdown-viewer"
 
+export { GlassSpinner } from "./glass-spinner"
+export type { GlassSpinnerProps, SpinnerSize, SpinnerVariant } from "./glass-spinner"
+
 export {
   ActionSheet,
   ConfirmationSheet,
