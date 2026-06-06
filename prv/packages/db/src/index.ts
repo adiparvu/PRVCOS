@@ -9,3 +9,18 @@ export { queryGroupKpis } from "./queries/group-kpis"
 export type { GroupKpis } from "./queries/group-kpis"
 export { queryManagerKpis, queryWorkerContext, querySpecialistContext } from "./queries/dashboard"
 export type { ManagerKpis, WorkerContext, SpecialistContext } from "./queries/dashboard"
+export {
+  queryNotifications,
+  queryNotificationCounts,
+  markNotificationsRead,
+  markAllNotificationsRead,
+  dismissNotification,
+  dismissAllNotifications,
+  executeNotificationAction,
+} from "./queries/notifications"
+export type {
+  NotificationFilter,
+  NotificationActionKind,
+  NotificationRow,
+  NotificationCounts,
+} from "./queries/notifications"

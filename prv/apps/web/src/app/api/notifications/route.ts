@@ -1,11 +1,12 @@
 import { withGates } from "@/lib/with-gates"
 import { NextRequest, NextResponse } from "next/server"
-import { eq, and, desc, isNull, lt } from "drizzle-orm"
-import { db } from "@prv/db"
+import { eq, and, desc, isNull, lt, or } from "drizzle-orm"
+import { db, queryNotificationCounts } from "@prv/db"
 import { notifications } from "@prv/db/schema"
 import { writeAuditLog } from "@prv/auth"
 import { z } from "zod"
 import type { GateContext } from "@prv/auth"
+import type { NotificationFilter } from "@prv/db"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -13,13 +14,44 @@ export const runtime = "nodejs"
 const PAGE_SIZE = 25
 
 const listSchema = z.object({
+  // Legacy single-type filter — kept for backward compat
   type: z.enum(["info", "warning", "error", "success", "action_required"]).optional(),
+  // Category-based filter used by the Notifications Center UI
+  filter: z.enum(["all", "alerts", "approvals", "inbox", "system"]).optional(),
   unreadOnly: z
     .string()
     .transform((v) => v === "true")
     .optional(),
   cursor: z.string().optional(),
+  includeCounts: z
+    .string()
+    .transform((v) => v === "true")
+    .optional(),
 })
+
+function applyFilterClause(
+  filter: NotificationFilter,
+  baseFilters: ReturnType<typeof eq>[]
+): ReturnType<typeof eq>[] {
+  switch (filter) {
+    case "alerts":
+      return [
+        ...baseFilters,
+        or(eq(notifications.type, "error"), eq(notifications.type, "warning"))!,
+      ]
+    case "approvals":
+      return [...baseFilters, eq(notifications.type, "action_required")]
+    case "inbox":
+      return [
+        ...baseFilters,
+        or(eq(notifications.type, "info"), eq(notifications.type, "success"))!,
+      ]
+    case "system":
+      return [...baseFilters, eq(notifications.entityType, "system")]
+    default:
+      return baseFilters
+  }
+}
 
 // GET /api/notifications — paginated list of the authenticated user's notifications
 export const GET = withGates(
@@ -31,45 +63,55 @@ export const GET = withGates(
       return NextResponse.json({ error: "Invalid query params" }, { status: 400 })
     }
 
-    const { type, unreadOnly, cursor } = parsed.data
+    const { type, filter, unreadOnly, cursor, includeCounts } = parsed.data
     const { userId, companyId } = ctx.session
 
-    const filters = [
+    let baseFilters: ReturnType<typeof eq>[] = [
       eq(notifications.userId, userId),
       eq(notifications.companyId, companyId),
       eq(notifications.isDismissed, false),
       isNull(notifications.expiresAt),
     ]
-    if (type) filters.push(eq(notifications.type, type))
-    if (unreadOnly) filters.push(eq(notifications.isRead, false))
-    // Cursor: createdAt of the last item seen (ISO string)
-    if (cursor) filters.push(lt(notifications.createdAt, new Date(cursor)))
 
-    const rows = await db
-      .select({
-        id: notifications.id,
-        type: notifications.type,
-        channel: notifications.channel,
-        title: notifications.title,
-        body: notifications.body,
-        actionUrl: notifications.actionUrl,
-        entityType: notifications.entityType,
-        entityId: notifications.entityId,
-        isRead: notifications.isRead,
-        readAt: notifications.readAt,
-        createdAt: notifications.createdAt,
-      })
-      .from(notifications)
-      .where(and(...filters))
-      .orderBy(desc(notifications.createdAt))
-      .limit(PAGE_SIZE + 1)
+    // Category filter takes priority over legacy type param
+    if (filter && filter !== "all") {
+      baseFilters = applyFilterClause(filter, baseFilters)
+    } else if (type) {
+      baseFilters.push(eq(notifications.type, type))
+    }
+
+    if (unreadOnly) baseFilters.push(eq(notifications.isRead, false))
+    if (cursor) baseFilters.push(lt(notifications.createdAt, new Date(cursor)))
+
+    const [rows, counts] = await Promise.all([
+      db
+        .select({
+          id: notifications.id,
+          type: notifications.type,
+          channel: notifications.channel,
+          title: notifications.title,
+          body: notifications.body,
+          actionUrl: notifications.actionUrl,
+          entityType: notifications.entityType,
+          entityId: notifications.entityId,
+          isRead: notifications.isRead,
+          readAt: notifications.readAt,
+          metadata: notifications.metadata,
+          createdAt: notifications.createdAt,
+        })
+        .from(notifications)
+        .where(and(...baseFilters))
+        .orderBy(desc(notifications.createdAt))
+        .limit(PAGE_SIZE + 1),
+      includeCounts ? queryNotificationCounts(userId, companyId) : Promise.resolve(null),
+    ])
 
     const hasMore = rows.length > PAGE_SIZE
     const items = hasMore ? rows.slice(0, PAGE_SIZE) : rows
     const nextCursor =
       hasMore && items.length > 0 ? items[items.length - 1]!.createdAt.toISOString() : null
 
-    return NextResponse.json({ items, nextCursor, hasMore })
+    return NextResponse.json({ items, nextCursor, hasMore, counts })
   }
 )
 

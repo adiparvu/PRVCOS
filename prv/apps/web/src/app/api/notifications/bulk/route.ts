@@ -1,14 +1,13 @@
 import { withGates } from "@/lib/with-gates"
 import { NextRequest, NextResponse } from "next/server"
-import { eq, and } from "drizzle-orm"
-import { db } from "@prv/db"
-import { notifications } from "@prv/db/schema"
+import { markAllNotificationsRead, dismissAllNotifications } from "@prv/db"
 import type { GateContext } from "@prv/auth"
+import type { NotificationFilter } from "@prv/db"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
 
-// POST /api/notifications/bulk — mark all as read or dismiss all
+// POST /api/notifications/bulk — { operation: "mark_all_read" | "dismiss_all", filter?: NotificationFilter }
 export const POST = withGates(
   { action: "notifications.update", endpointClass: "api_write" },
   async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
@@ -19,7 +18,11 @@ export const POST = withGates(
       return NextResponse.json({ error: "Invalid JSON" }, { status: 400 })
     }
 
-    const { operation } = body as { operation?: string }
+    const { operation, filter = "all" } = body as {
+      operation?: string
+      filter?: NotificationFilter
+    }
+
     if (operation !== "mark_all_read" && operation !== "dismiss_all") {
       return NextResponse.json(
         { error: "operation must be 'mark_all_read' or 'dismiss_all'" },
@@ -27,24 +30,14 @@ export const POST = withGates(
       )
     }
 
-    const now = new Date()
-    const set =
-      operation === "mark_all_read"
-        ? { isRead: true, readAt: now }
-        : { isDismissed: true, dismissedAt: now }
+    const { userId, companyId } = ctx.session
 
-    const rows = await db
-      .update(notifications)
-      .set(set)
-      .where(
-        and(
-          eq(notifications.userId, ctx.session.userId),
-          eq(notifications.companyId, ctx.session.companyId),
-          eq(notifications.isDismissed, false)
-        )
-      )
-      .returning({ id: notifications.id })
+    if (operation === "mark_all_read") {
+      await markAllNotificationsRead(userId, companyId, filter)
+    } else {
+      await dismissAllNotifications(userId, companyId, filter)
+    }
 
-    return NextResponse.json({ updated: rows.length })
+    return NextResponse.json({ ok: true })
   }
 )
