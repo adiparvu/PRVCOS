@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PRV · Sprint 27 — Status & Loading</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --prv-bg:            #000;
+    --prv-g1:            rgba(255,255,255,0.06);
+    --prv-g2:            rgba(255,255,255,0.10);
+    --prv-g3:            rgba(255,255,255,0.15);
+    --prv-g4:            rgba(255,255,255,0.22);
+    --prv-text-1:        rgba(255,255,255,0.95);
+    --prv-text-2:        rgba(255,255,255,0.65);
+    --prv-text-3:        rgba(255,255,255,0.35);
+    --prv-text-4:        rgba(255,255,255,0.15);
+    --prv-border:        rgba(255,255,255,0.12);
+    --prv-border-subtle: rgba(255,255,255,0.07);
+    --prv-accent:        rgba(10,132,255,0.9);
+    --prv-green:         rgba(48,209,88,0.95);
+    --prv-amber:         rgba(255,159,10,0.95);
+    --prv-red:           rgba(255,69,58,0.95);
+  }
+
+  html, body {
+    background: var(--prv-bg);
+    color: var(--prv-text-1);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page { max-width: 960px; margin: 0 auto; padding: 48px 24px 96px; }
+
+  .sprint-header { margin-bottom: 52px; }
+  .chips { display: flex; gap: 8px; margin-bottom: 10px; }
+  .chip { padding: 3px 10px; border-radius: 100px; background: var(--prv-g2); border: 1px solid var(--prv-border-subtle); font-size: 11px; font-weight: 600; color: var(--prv-text-3); letter-spacing: .06em; text-transform: uppercase; }
+  h1 { font-size: 28px; font-weight: 700; letter-spacing: -.02em; }
+  .sub { font-size: 14px; color: var(--prv-text-3); margin-top: 4px; }
+
+  .section { margin-bottom: 60px; }
+  .sl { font-size: 11px; font-weight: 600; color: var(--prv-text-3); letter-spacing: .07em; text-transform: uppercase; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+  .sl::after { content: ""; flex: 1; height: 1px; background: var(--prv-border-subtle); }
+
+  /* Delivery table */
+  .dt { width: 100%; border-collapse: collapse; }
+  .dt th, .dt td { text-align: left; padding: 10px 14px; font-size: 13px; border-bottom: 1px solid var(--prv-border-subtle); }
+  .dt th { font-size: 11px; font-weight: 600; color: var(--prv-text-3); letter-spacing: .06em; text-transform: uppercase; }
+  .dt td { color: var(--prv-text-1); }
+  .dt td:nth-child(2) { color: var(--prv-text-3); font-family: "SF Mono", monospace; font-size: 11px; }
+  .dt tr:last-child td { border-bottom: none; }
+  .tag { display: inline-flex; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 500; background: var(--prv-g2); color: var(--prv-text-3); border: 1px solid var(--prv-border-subtle); }
+  .tag.new { background: rgba(10,132,255,.12); color: rgba(10,132,255,.9); border-color: rgba(10,132,255,.2); }
+
+  .glass-surface { position: relative; overflow: hidden; background: var(--prv-g1); border: 1px solid var(--prv-border-subtle); border-radius: 20px; }
+  .glass-surface::before { content: ""; position: absolute; inset: 0 0 auto; height: 1px; background: linear-gradient(90deg,transparent,rgba(255,255,255,0.09),transparent); pointer-events: none; }
+
+  .demo-pad { padding: 36px 28px; }
+  .row { display: flex; align-items: center; gap: 40px; flex-wrap: wrap; }
+  .cell { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .cell-label { font-size: 11px; color: var(--prv-text-3); }
+
+  /* ════════════════════════════════════════════════
+     GLASS SPINNER
+  ════════════════════════════════════════════════ */
+  .sp-ring { border-radius: 50%; border: 3px solid var(--prv-g3); border-top-color: var(--prv-text-1); animation: spin 0.8s linear infinite; }
+  .sp-ring.accent { border-top-color: var(--prv-accent); }
+  .sp-sm { width: 18px; height: 18px; border-width: 2px; }
+  .sp-md { width: 28px; height: 28px; }
+  .sp-lg { width: 44px; height: 44px; border-width: 4px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .sp-dots { display: inline-flex; gap: 6px; }
+  .sp-dots span { width: 9px; height: 9px; border-radius: 50%; background: var(--prv-text-1); animation: bounce 1.2s ease-in-out infinite; }
+  .sp-dots span:nth-child(2){ animation-delay: .15s } .sp-dots span:nth-child(3){ animation-delay: .3s }
+  @keyframes bounce { 0%,80%,100%{ transform: scale(0.5); opacity: .4 } 40%{ transform: scale(1); opacity: 1 } }
+
+  .sp-inline { display: inline-flex; align-items: center; gap: 10px; padding: 10px 18px; border-radius: 12px; background: var(--prv-g2); border: 1px solid var(--prv-border-subtle); font-size: 13px; color: var(--prv-text-2); }
+
+  /* ════════════════════════════════════════════════
+     GLASS GAUGE
+  ════════════════════════════════════════════════ */
+  .gauge { position: relative; }
+  .gauge-label { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .gauge-val { font-size: 26px; font-weight: 700; color: var(--prv-text-1); font-variant-numeric: tabular-nums; }
+  .gauge-cap { font-size: 11px; color: var(--prv-text-3); margin-top: 2px; }
+
+  /* ════════════════════════════════════════════════
+     GLASS SHIMMER
+  ════════════════════════════════════════════════ */
+  .shimmer { position: relative; overflow: hidden; background: var(--prv-g2); border-radius: 8px; }
+  .shimmer::after { content: ""; position: absolute; inset: 0; transform: translateX(-100%); background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent); animation: sh 1.4s infinite; }
+  @keyframes sh { 100% { transform: translateX(100%); } }
+  .sk-card { width: 280px; padding: 16px; border-radius: 16px; background: var(--prv-g1); border: 1px solid var(--prv-border-subtle); }
+  .sk-row { display: flex; gap: 12px; align-items: center; margin-bottom: 14px; }
+  .sk-line { height: 11px; }
+
+  /* ════════════════════════════════════════════════
+     GLASS STATUS DOT
+  ════════════════════════════════════════════════ */
+  .sd { display: inline-flex; align-items: center; gap: 9px; font-size: 13px; color: var(--prv-text-2); }
+  .sd-dot { width: 10px; height: 10px; border-radius: 50%; position: relative; flex-shrink: 0; }
+  .sd-dot.pulse::after { content: ""; position: absolute; inset: 0; border-radius: 50%; background: inherit; animation: pulse 1.8s ease-out infinite; }
+  @keyframes pulse { 0%{ transform: scale(1); opacity: .6 } 100%{ transform: scale(2.6); opacity: 0 } }
+  .sd-online  { background: var(--prv-green); } .sd-online.pulse::after { background: var(--prv-green); }
+  .sd-away    { background: var(--prv-amber); }
+  .sd-busy    { background: var(--prv-red); }
+  .sd-offline { background: var(--prv-text-3); }
+  .sd-pill { display: inline-flex; align-items: center; gap: 7px; padding: 5px 12px 5px 10px; border-radius: 100px; background: var(--prv-g2); border: 1px solid var(--prv-border-subtle); font-size: 12px; font-weight: 600; color: var(--prv-text-1); }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="sprint-header">
+    <div class="chips"><span class="chip">Sprint 27</span><span class="chip">Preview</span><span class="chip">Phase 1 · M9</span></div>
+    <h1>Status &amp; Loading</h1>
+    <div class="sub">GlassSpinner · GlassGauge · GlassShimmer · GlassStatusDot</div>
+  </div>
+
+  <!-- ── SPINNER ── -->
+  <div class="section">
+    <div class="sl">GlassSpinner — Ring &amp; dot variants, sizes, accent, inline loading state</div>
+    <div class="glass-surface">
+      <div class="demo-pad">
+        <div class="row">
+          <div class="cell"><div class="sp-ring sp-sm"></div><span class="cell-label">sm</span></div>
+          <div class="cell"><div class="sp-ring sp-md"></div><span class="cell-label">md</span></div>
+          <div class="cell"><div class="sp-ring sp-lg"></div><span class="cell-label">lg</span></div>
+          <div class="cell"><div class="sp-ring sp-md accent"></div><span class="cell-label">accent</span></div>
+          <div class="cell"><div class="sp-dots"><span></span><span></span><span></span></div><span class="cell-label">dots</span></div>
+          <div class="cell"><div class="sp-inline"><div class="sp-ring sp-sm accent"></div>Loading projects…</div><span class="cell-label">inline</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── GAUGE ── -->
+  <div class="section">
+    <div class="sl">GlassGauge — Radial meter, threshold colors, center value, animated arc</div>
+    <div class="glass-surface">
+      <div class="demo-pad">
+        <div class="row" style="justify-content:space-around">
+          <div class="cell"><div class="gauge" id="g1"></div><span class="cell-label">Healthy</span></div>
+          <div class="cell"><div class="gauge" id="g2"></div><span class="cell-label">Warning</span></div>
+          <div class="cell"><div class="gauge" id="g3"></div><span class="cell-label">Critical</span></div>
+          <div class="cell"><div class="gauge" id="g4"></div><span class="cell-label">Accent</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SHIMMER ── -->
+  <div class="section">
+    <div class="sl">GlassShimmer — Content skeleton presets, sweep animation</div>
+    <div class="glass-surface">
+      <div class="demo-pad">
+        <div class="row" style="align-items:flex-start;gap:24px">
+          <!-- card preset -->
+          <div class="sk-card">
+            <div class="sk-row">
+              <div class="shimmer" style="width:44px;height:44px;border-radius:50%"></div>
+              <div style="flex:1">
+                <div class="shimmer sk-line" style="width:60%;margin-bottom:7px"></div>
+                <div class="shimmer sk-line" style="width:40%"></div>
+              </div>
+            </div>
+            <div class="shimmer" style="width:100%;height:120px;border-radius:12px;margin-bottom:14px"></div>
+            <div class="shimmer sk-line" style="width:100%;margin-bottom:7px"></div>
+            <div class="shimmer sk-line" style="width:90%;margin-bottom:7px"></div>
+            <div class="shimmer sk-line" style="width:70%"></div>
+          </div>
+          <!-- list preset -->
+          <div class="sk-card" style="width:300px">
+            <div class="sk-row" style="margin-bottom:18px"><div class="shimmer" style="width:36px;height:36px;border-radius:10px"></div><div style="flex:1"><div class="shimmer sk-line" style="width:70%;margin-bottom:6px"></div><div class="shimmer sk-line" style="width:45%"></div></div></div>
+            <div class="sk-row" style="margin-bottom:18px"><div class="shimmer" style="width:36px;height:36px;border-radius:10px"></div><div style="flex:1"><div class="shimmer sk-line" style="width:60%;margin-bottom:6px"></div><div class="shimmer sk-line" style="width:50%"></div></div></div>
+            <div class="sk-row" style="margin-bottom:0"><div class="shimmer" style="width:36px;height:36px;border-radius:10px"></div><div style="flex:1"><div class="shimmer sk-line" style="width:80%;margin-bottom:6px"></div><div class="shimmer sk-line" style="width:35%"></div></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── STATUS DOT ── -->
+  <div class="section">
+    <div class="sl">GlassStatusDot — Presence/health states, optional pulse, label &amp; pill variants</div>
+    <div class="glass-surface">
+      <div class="demo-pad">
+        <div class="row" style="gap:28px">
+          <span class="sd"><span class="sd-dot sd-online pulse"></span>Online</span>
+          <span class="sd"><span class="sd-dot sd-away"></span>Away</span>
+          <span class="sd"><span class="sd-dot sd-busy pulse"></span>Busy</span>
+          <span class="sd"><span class="sd-dot sd-offline"></span>Offline</span>
+        </div>
+        <div class="row" style="gap:14px;margin-top:26px">
+          <span class="sd-pill"><span class="sd-dot sd-online pulse"></span>12 staff online</span>
+          <span class="sd-pill"><span class="sd-dot sd-amber sd-away"></span>3 idle</span>
+          <span class="sd-pill"><span class="sd-dot sd-busy"></span>System degraded</span>
+          <span class="sd-pill"><span class="sd-dot sd-online"></span>API operational</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Delivery ── -->
+  <div class="section">
+    <div class="sl">Sprint 27 Delivery</div>
+    <div class="glass-surface">
+      <table class="dt">
+        <thead><tr><th>Component</th><th>File</th><th>Key Props</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>GlassSpinner</td><td>glass-spinner.tsx</td><td>size, variant (ring|dots), accent, label, inline</td><td><span class="tag new">New</span></td></tr>
+          <tr><td>GlassGauge</td><td>glass-gauge.tsx</td><td>value, max, size, thresholds, label, unit, animated</td><td><span class="tag new">New</span></td></tr>
+          <tr><td>GlassShimmer</td><td>glass-shimmer.tsx</td><td>variant (text|circle|rect|card|list), width, height, lines</td><td><span class="tag new">New</span></td></tr>
+          <tr><td>GlassStatusDot</td><td>glass-status-dot.tsx</td><td>status, pulse, label, size, variant (dot|pill)</td><td><span class="tag new">New</span></td></tr>
+          <tr><td>index.ts</td><td>components/index.ts</td><td>Export all 4 components + types</td><td><span class="tag">Update</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div><!-- /page -->
+
+<script>
+// ── Gauge rendering (SVG arc) ─────────────────────────────────────────────────
+function gauge(id, value, color, size){
+  size = size || 120
+  const stroke = 10, r = (size-stroke)/2, c = 2*Math.PI*r
+  const sweep = 0.75 // 270° arc
+  const arcLen = c*sweep
+  const off = arcLen*(1-value/100)
+  const el = document.getElementById(id)
+  el.style.width = size+'px'; el.style.height = size+'px'
+  el.innerHTML = `
+    <svg width="${size}" height="${size}" style="transform:rotate(135deg)">
+      <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="var(--prv-g2)" stroke-width="${stroke}" stroke-linecap="round" stroke-dasharray="${arcLen} ${c}"/>
+      <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${color}" stroke-width="${stroke}" stroke-linecap="round" stroke-dasharray="${arcLen} ${c}" stroke-dashoffset="${off}" style="transition:stroke-dashoffset 900ms cubic-bezier(0.34,1.56,0.64,1)"/>
+    </svg>
+    <div class="gauge-label"><div class="gauge-val">${value}<span style="font-size:14px">%</span></div><div class="gauge-cap">uptime</div></div>`
+}
+gauge('g1', 98, 'var(--prv-green)')
+gauge('g2', 64, 'var(--prv-amber)')
+gauge('g3', 22, 'var(--prv-red)')
+gauge('g4', 78, 'var(--prv-accent)')
+</script>
+</body>
+</html>
