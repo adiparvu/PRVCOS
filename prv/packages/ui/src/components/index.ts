@@ -310,6 +310,9 @@ export type { GlassSchedulerProps, SchedulerDay, SchedulerShift } from "./glass-
 export { GlassTimeSlotPicker } from "./glass-time-slot-picker"
 export type { GlassTimeSlotPickerProps } from "./glass-time-slot-picker"
 
+export { GlassShiftCard } from "./glass-shift-card"
+export type { GlassShiftCardProps, ShiftStatus, ShiftAssignee, ShiftMeta } from "./glass-shift-card"
+
 export {
   ActionSheet,
   ConfirmationSheet,
