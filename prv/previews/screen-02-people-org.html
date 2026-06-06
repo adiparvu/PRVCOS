@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PRV · Screen 02 — People / Org</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --prv-bg:#000; --prv-g1:rgba(255,255,255,0.06); --prv-g2:rgba(255,255,255,0.10);
+    --prv-g3:rgba(255,255,255,0.15); --prv-text-1:rgba(255,255,255,0.95);
+    --prv-text-2:rgba(255,255,255,0.65); --prv-text-3:rgba(255,255,255,0.35);
+    --prv-text-4:rgba(255,255,255,0.15); --prv-border:rgba(255,255,255,0.12);
+    --prv-border-subtle:rgba(255,255,255,0.07); --prv-accent:rgba(10,132,255,0.9);
+    --prv-green:rgba(48,209,88,0.95); --prv-amber:rgba(255,159,10,0.95); --prv-red:rgba(255,69,58,0.95);
+  }
+  html,body { background:var(--prv-bg); color:var(--prv-text-1); font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif; -webkit-font-smoothing:antialiased; }
+  body { background: radial-gradient(ellipse 100% 40% at 50% -10%, rgba(255,255,255,0.03), transparent); min-height:100vh; }
+  .frame { max-width: 460px; margin: 0 auto; padding: 40px 16px 120px; }
+  .pv-tag { max-width:460px; margin:24px auto 0; padding:0 16px; }
+  .chips { display:flex; gap:8px; }
+  .chip { padding:3px 10px; border-radius:100px; background:var(--prv-g2); border:1px solid var(--prv-border-subtle); font-size:11px; font-weight:600; color:var(--prv-text-3); letter-spacing:.06em; text-transform:uppercase; }
+
+  .hdr .k { font-size:13px; color:var(--prv-text-3); font-weight:500; }
+  .hdr h1 { font-size:26px; font-weight:700; letter-spacing:-.02em; margin-bottom:14px; }
+
+  /* segmented control */
+  .seg { display:flex; padding:4px; border-radius:14px; background:var(--prv-g2); border:1px solid var(--prv-border-subtle); margin-bottom:16px; }
+  .seg b { flex:1; text-align:center; font-size:13px; font-weight:600; padding:8px 0; border-radius:10px; color:var(--prv-text-3); cursor:pointer; display:flex; align-items:center; justify-content:center; gap:7px; }
+  .seg b.on { background:var(--prv-g3); color:var(--prv-text-1); border:1px solid var(--prv-border); }
+
+  /* search (combobox-ish) */
+  .search { display:flex; align-items:center; gap:10px; padding:11px 14px; border-radius:12px; background:var(--prv-g2); border:1px solid var(--prv-border); margin-bottom:14px; }
+  .search input { flex:1; background:none; border:none; outline:none; color:var(--prv-text-1); font-size:14px; font-family:inherit; }
+  .search input::placeholder { color:var(--prv-text-3); }
+
+  /* tree */
+  .tree { background:var(--prv-g1); border:1px solid var(--prv-border-subtle); border-radius:20px; padding:14px; position:relative; overflow:hidden; }
+  .tree::before { content:""; position:absolute; inset:0 0 auto; height:1px; background:linear-gradient(90deg,transparent,rgba(255,255,255,0.09),transparent); }
+  .tnode { user-select:none; }
+  .trow { display:flex; align-items:center; gap:9px; padding:8px 10px; border-radius:10px; cursor:pointer; font-size:13px; }
+  .trow:hover { background:var(--prv-g2); }
+  .trow.sel { background:rgba(10,132,255,0.14); }
+  .chev { width:14px; color:var(--prv-text-3); transition:transform .2s; flex-shrink:0; display:flex; }
+  .tnode.open > .trow .chev { transform:rotate(90deg); }
+  .chev.leaf { visibility:hidden; }
+  .ava { width:26px; height:26px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; color:#fff; position:relative; }
+  .dot { position:absolute; right:-1px; bottom:-1px; width:9px; height:9px; border-radius:50%; border:2px solid #0b0b0b; }
+  .d-online { background:var(--prv-green); } .d-away { background:var(--prv-amber); } .d-busy { background:var(--prv-red); } .d-offline { background:var(--prv-text-3); }
+  .tlabel { flex:1; }
+  .tname { font-weight:600; color:var(--prv-text-1); }
+  .trole { font-size:11px; color:var(--prv-text-3); margin-top:1px; }
+  .tcount { font-size:11px; color:var(--prv-text-4); background:var(--prv-g2); border-radius:100px; padding:1px 8px; }
+  .tchildren { overflow:hidden; max-height:0; transition:max-height .28s; padding-left:18px; }
+  .tnode.open > .tchildren { max-height:1000px; }
+
+  /* directory row (continuity) */
+  .drow { display:flex; align-items:center; gap:12px; padding:11px 4px; }
+  .dname { font-size:14px; font-weight:600; } .dsub { font-size:12px; color:var(--prv-text-3); }
+  .sectlabel { font-size:13px; font-weight:600; color:var(--prv-text-3); padding:8px 4px 4px; }
+
+  .tabbar { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); display:inline-flex; gap:2px; padding:7px; border-radius:22px; background:rgba(22,22,22,0.7); backdrop-filter:blur(48px); border:1px solid var(--prv-border); box-shadow:0 16px 40px rgba(0,0,0,0.5); }
+  .tab { display:flex; flex-direction:column; align-items:center; gap:3px; padding:8px 13px; border-radius:14px; font-size:10px; font-weight:600; color:var(--prv-text-3); }
+  .tab.on { background:var(--prv-g2); color:var(--prv-text-1); }
+</style>
+</head>
+<body>
+<div class="pv-tag"><div class="chips"><span class="chip">Screen 02</span><span class="chip">Preview</span><span class="chip">apps/web · /people</span></div></div>
+
+<div class="frame">
+  <div class="hdr"><div class="k">PRV</div><h1>People</h1></div>
+
+  <!-- View toggle (GlassSegmentedControl) -->
+  <div class="seg">
+    <b><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg>Directory</b>
+    <b class="on"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="2" width="6" height="6" rx="1"/><rect x="3" y="16" width="6" height="6" rx="1"/><rect x="15" y="16" width="6" height="6" rx="1"/><path d="M12 8v4M6 16v-2h12v2"/></svg>Org Chart</b>
+  </div>
+
+  <!-- Search (GlassComboBox-style) -->
+  <div class="search">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--prv-text-3)" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <input placeholder="Search people…" />
+  </div>
+
+  <!-- ORG CHART (GlassTreeView + status dots) -->
+  <div class="tree">
+    <div class="tnode open">
+      <div class="trow sel">
+        <span class="chev"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg></span>
+        <span class="ava" style="background:linear-gradient(135deg,#0A84FF,#5E5CE6)">AP<span class="dot d-online"></span></span>
+        <span class="tlabel"><span class="tname">Andrei Popescu</span><div class="trole">Group CEO</div></span>
+        <span class="tcount">1,204</span>
+      </div>
+      <div class="tchildren">
+
+        <div class="tnode open">
+          <div class="trow">
+            <span class="chev"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg></span>
+            <span class="ava" style="background:linear-gradient(135deg,#FF9F0A,#FF375F)">MI<span class="dot d-busy"></span></span>
+            <span class="tlabel"><span class="tname">Maria Ionescu</span><div class="trole">Regional Manager · West</div></span>
+            <span class="tcount">214</span>
+          </div>
+          <div class="tchildren">
+            <div class="tnode"><div class="trow"><span class="chev leaf"></span><span class="ava" style="background:linear-gradient(135deg,#30D158,#00C7BE)">RD<span class="dot d-online"></span></span><span class="tlabel"><span class="tname">Radu Dumitru</span><div class="trole">Store Manager · Cluj</div></span><span class="tcount">12</span></div></div>
+            <div class="tnode"><div class="trow"><span class="chev leaf"></span><span class="ava" style="background:linear-gradient(135deg,#BF5AF2,#FF6482)">ES<span class="dot d-away"></span></span><span class="tlabel"><span class="tname">Elena Stan</span><div class="trole">Store Manager · Iași</div></span><span class="tcount">8</span></div></div>
+          </div>
+        </div>
+
+        <div class="tnode">
+          <div class="trow">
+            <span class="chev"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg></span>
+            <span class="ava" style="background:linear-gradient(135deg,#64D2FF,#0A84FF)">VG<span class="dot d-offline"></span></span>
+            <span class="tlabel"><span class="tname">Victor Georgescu</span><div class="trole">Project Director</div></span>
+            <span class="tcount">96</span>
+          </div>
+        </div>
+
+        <div class="tnode">
+          <div class="trow">
+            <span class="chev"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg></span>
+            <span class="ava" style="background:linear-gradient(135deg,#5E5CE6,#BF5AF2)">CN<span class="dot d-online"></span></span>
+            <span class="tlabel"><span class="tname">Cristina Neagu</span><div class="trole">HR &amp; Payroll Director</div></span>
+            <span class="tcount">42</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <p style="font-size:12px;color:var(--prv-text-4);margin-top:14px;text-align:center">Tap a person to expand reports · tap a leaf to peek their profile</p>
+
+  <!-- Directory (continuity reference, shown when toggle = Directory) -->
+  <div style="margin-top:28px;opacity:.5">
+    <div class="sectlabel">Directory view (existing) — D</div>
+    <div class="drow"><span class="ava" style="background:linear-gradient(135deg,#30D158,#00C7BE)">RD<span class="dot d-online"></span></span><div><div class="dname">Radu Dumitru</div><div class="dsub">Store Manager · Cluj</div></div></div>
+    <div class="drow"><span class="ava" style="background:linear-gradient(135deg,#0A84FF,#5E5CE6)">AD<span class="dot d-away"></span></span><div><div class="dname">Ana Dragomir</div><div class="dsub">Cashier · Cluj</div></div></div>
+  </div>
+</div>
+
+<div class="tabbar">
+  <div class="tab"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Command</div>
+  <div class="tab"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Operations</div>
+  <div class="tab on"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>People</div>
+  <div class="tab"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Finance</div>
+  <div class="tab"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4"/><circle cx="12" cy="12" r="3"/></svg>Intelligence</div>
+</div>
+</body>
+</html>
