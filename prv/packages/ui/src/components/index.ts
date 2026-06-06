@@ -178,6 +178,9 @@ export type { GlassFileUploadProps, UploadFile, UploadStatus } from "./glass-fil
 export { GlassComboBox } from "./glass-combobox"
 export type { GlassComboBoxProps, ComboBoxOption } from "./glass-combobox"
 
+export { GlassChipInput } from "./glass-chip-input"
+export type { GlassChipInputProps } from "./glass-chip-input"
+
 export {
   ActionSheet,
   ConfirmationSheet,
