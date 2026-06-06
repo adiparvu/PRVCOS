@@ -253,6 +253,9 @@ export type { GlassScrollAreaProps, ScrollAxis } from "./glass-scroll-area"
 export { GlassAspectRatio } from "./glass-aspect-ratio"
 export type { GlassAspectRatioProps } from "./glass-aspect-ratio"
 
+export { GlassCopyButton, GlassKbd } from "./glass-copy-button"
+export type { GlassCopyButtonProps, GlassKbdProps } from "./glass-copy-button"
+
 export {
   ActionSheet,
   ConfirmationSheet,
