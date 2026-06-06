@@ -181,6 +181,9 @@ export type { GlassComboBoxProps, ComboBoxOption } from "./glass-combobox"
 export { GlassChipInput } from "./glass-chip-input"
 export type { GlassChipInputProps } from "./glass-chip-input"
 
+export { GlassRating } from "./glass-rating"
+export type { GlassRatingProps, RatingSize } from "./glass-rating"
+
 export {
   ActionSheet,
   ConfirmationSheet,
