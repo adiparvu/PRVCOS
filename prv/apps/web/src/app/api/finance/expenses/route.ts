@@ -1,4 +1,5 @@
 import { withGates } from "@/lib/with-gates"
+import { writeAuditLog } from "@prv/auth"
 import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
 
@@ -191,5 +192,63 @@ export const GET = withGates(
     if (category) expenses = expenses.filter((e) => e.category === category)
 
     return NextResponse.json({ expenses, plData: MOCK_PL, meta: MOCK_META })
+  }
+)
+
+export const POST = withGates(
+  { action: "finance.expenses.create", endpointClass: "api_write" },
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
+    const body = await req.json()
+    const { title, period, projectRef, notes, lines, status } = body
+
+    const expenseId = `exp-${Date.now()}`
+    const today = new Date().toISOString().slice(0, 10)
+
+    const totalNet = (lines ?? []).reduce(
+      (s: number, l: { amount: number }) => s + (l.amount ?? 0),
+      0
+    )
+    const totalVat = (lines ?? []).reduce(
+      (s: number, l: { amount: number; vatRate: number }) =>
+        s + (l.amount ?? 0) * ((l.vatRate ?? 0) / 100),
+      0
+    )
+    const totalGross = totalNet + totalVat
+
+    const newExpense: Expense = {
+      id: expenseId,
+      category: lines?.[0]?.category ?? "altele",
+      status: (status as ExpenseStatus) ?? "draft",
+      title: title ?? "Cheltuială nouă",
+      amount: Math.round(totalNet),
+      amountLabel: `€${Math.round(totalNet).toLocaleString("ro-RO")}`,
+      vatAmount: Math.round(totalVat),
+      vatLabel: totalVat > 0 ? `€${Math.round(totalVat).toLocaleString("ro-RO")}` : "—",
+      vendorName: lines?.[0]?.vendorName ?? "",
+      date: today,
+      dueDate: today,
+      approvalStage: 0,
+    }
+
+    await writeAuditLog({
+      companyId: ctx.session.companyId,
+      actorId: ctx.session.userId,
+      sessionId: ctx.session.sessionId,
+      action: "finance.expenses.create",
+      entityType: "expense",
+      entityId: expenseId,
+      payload: {
+        title,
+        period,
+        projectRef,
+        lineCount: (lines ?? []).length,
+        totalNet: newExpense.amount,
+        totalVat: newExpense.vatAmount,
+        totalGross: Math.round(totalGross),
+        status: newExpense.status,
+      },
+    })
+
+    return NextResponse.json({ expense: newExpense }, { status: 201 })
   }
 )
