@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Task 14 — Admin Panel · PRV</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #000; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif; display: flex; gap: 32px; padding: 40px; min-height: 100vh; align-items: flex-start; justify-content: center; }
+  .phone { width: 390px; min-height: 844px; background: #000; border-radius: 44px; border: 1px solid rgba(255,255,255,0.12); overflow: hidden; position: relative; flex-shrink: 0; }
+  .notch { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 126px; height: 34px; background: #000; border-radius: 0 0 20px 20px; z-index: 20; }
+  .screen { padding: 50px 0 100px; height: 100%; overflow-y: auto; }
+  .screen::-webkit-scrollbar { display: none; }
+
+  .section-label { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: rgba(255,255,255,0.30); margin: 20px 16px 8px; }
+  h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; color: rgba(255,255,255,0.95); }
+
+  .group {
+    margin: 0 16px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 16px;
+    overflow: hidden;
+    position: relative;
+  }
+  .group::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg,transparent,rgba(255,255,255,0.18),transparent); }
+  .row {
+    display: flex;
+    align-items: center;
+    padding: 12px 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+    gap: 12px;
+    cursor: pointer;
+  }
+  .row:last-child { border-bottom: none; }
+  .row-icon { width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .row-label { flex: 1; font-size: 14px; font-weight: 500; color: rgba(255,255,255,0.85); }
+  .row-value { font-size: 13px; color: rgba(255,255,255,0.35); margin-right: 6px; }
+  .row-chevron { color: rgba(255,255,255,0.20); }
+
+  /* Tab bar */
+  .tab-bar { position: absolute; bottom: 12px; left: 16px; right: 16px; background: rgba(255,255,255,0.08); backdrop-filter: blur(32px); border: 1px solid rgba(255,255,255,0.12); border-radius: 100px; padding: 10px 20px; display: flex; justify-content: space-around; align-items: center; }
+  .tab { display: flex; flex-direction: column; align-items: center; gap: 3px; opacity: 0.35; }
+  .tab.active { opacity: 1; }
+  .tab span { font-size: 9px; font-weight: 500; color: rgba(255,255,255,0.85); }
+
+  /* Role badge */
+  .role-pill { font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 100px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14); color: rgba(255,255,255,0.55); }
+
+  /* Member row */
+  .member-avatar { width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.10); border: 1px solid rgba(255,255,255,0.14); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.65); flex-shrink: 0; }
+</style>
+</head>
+<body>
+
+<!-- Screen 1: Admin Hub -->
+<div class="phone">
+  <div class="notch"></div>
+  <div class="screen">
+    <div style="padding:0 16px; margin-bottom:16px;">
+      <p style="font-size:11px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:rgba(255,255,255,0.30);margin-bottom:4px;">PRV Group</p>
+      <h1>Admin</h1>
+    </div>
+
+    <!-- Company card -->
+    <div style="margin:0 16px 12px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); border-radius:20px; padding:16px; position:relative; overflow:hidden;">
+      <div style="position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.22),transparent);"></div>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+        <div style="width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.65)" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="8" width="18" height="13" rx="2"/><path d="M3 8l9-5 9 5"/><path d="M9 21V12h6v9"/></svg>
+        </div>
+        <div>
+          <div style="font-size:17px;font-weight:700;color:rgba(255,255,255,0.95);">PRV Group</div>
+          <div style="font-size:12px;color:rgba(255,255,255,0.40);">prv.ro · ID: prv-001</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;">
+        <div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:8px;">
+          <div style="font-size:15px;font-weight:700;color:rgba(255,255,255,0.90);">4</div>
+          <div style="font-size:9px;color:rgba(255,255,255,0.30);text-transform:uppercase;letter-spacing:.05em;">Companii</div>
+        </div>
+        <div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:8px;">
+          <div style="font-size:15px;font-weight:700;color:rgba(255,255,255,0.90);">12</div>
+          <div style="font-size:9px;color:rgba(255,255,255,0.30);text-transform:uppercase;letter-spacing:.05em;">Membri</div>
+        </div>
+        <div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:8px;">
+          <div style="font-size:15px;font-weight:700;color:rgba(255,255,255,0.90);">6</div>
+          <div style="font-size:9px;color:rgba(255,255,255,0.30);text-transform:uppercase;letter-spacing:.05em;">Roluri</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Gestionare -->
+    <div class="section-label">Gestionare</div>
+    <div class="group">
+      <div class="row">
+        <div class="row-icon" style="background:rgba(255,255,255,0.08);">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.65)" stroke-width="1.8" stroke-linecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+        </div>
+        <span class="row-label">Membri echipă</span>
+        <span class="row-value">12 activi</span>
+        <svg class="row-chevron" width="7" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+      </div>
+      <div class="row">
+        <div class="row-icon" style="background:rgba(255,255,255,0.08);">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.65)" stroke-width="1.8" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        </div>
+        <span class="row-label">Roluri &amp; Permisiuni</span>
+        <span class="row-value">6 roluri</span>
+        <svg class="row-chevron" width="7" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+      </div>
+      <div class="row">
+        <div class="row-icon" style="background:rgba(255,255,255,0.08);">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.65)" stroke-width="1.8" stroke-linecap="round"><path d="M21 2H3v7h18V2zM21 15H3v7h18v-7z"/><path d="M21 8.5H3v7h18v-7z"/></svg>
+        </div>
+        <span class="row-label">Setări companie</span>
+        <svg class="row-chevron" width="7" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+      </div>
+    </div>
+
+    <!-- Securitate & Audit -->
+    <div class="section-label">Securitate &amp; Audit</div>
+    <div class="group">
+      <div class="row">
+        <div class="row-icon" style="background:rgba(255,255,255,0.08);">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.65)" stroke-width="1.8" stroke-linecap="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
+        </div>
+        <span class="row-label">Jurnal de audit</span>
+        <svg class="row-chevron" width="7" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+      </div>
+      <div class="row">
+        <div class="row-icon" style="background:rgba(255,255,255,0.08);">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.65)" stroke-width="1.8" stroke-linecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        </div>
+        <span class="row-label">Acces JIT</span>
+        <span style="font-size:10px;padding:2px 7px;border-radius:100px;background:rgba(255,200,50,0.12);color:rgba(255,200,50,0.90);border:1px solid rgba(255,200,50,0.22);font-weight:600;margin-right:6px;">2 active</span>
+        <svg class="row-chevron" width="7" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+      </div>
+      <div class="row">
+        <div class="row-icon" style="background:rgba(255,255,255,0.08);">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.65)" stroke-width="1.8" stroke-linecap="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.778 7.778 5.5 5.5 0 017.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+        </div>
+        <span class="row-label">Chei API</span>
+        <span class="row-value">3 active</span>
+        <svg class="row-chevron" width="7" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+      </div>
+    </div>
+
+    <!-- Integrări -->
+    <div class="section-label">Integrări</div>
+    <div class="group">
+      <div class="row">
+        <div class="row-icon" style="background:rgba(255,255,255,0.08);">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.65)" stroke-width="1.8" stroke-linecap="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+        </div>
+        <span class="row-label">Webhook-uri</span>
+        <span class="row-value">2 active</span>
+        <svg class="row-chevron" width="7" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+      </div>
+      <div class="row">
+        <div class="row-icon" style="background:rgba(255,255,255,0.08);">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.65)" stroke-width="1.8" stroke-linecap="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><path d="M22 6l-10 7L2 6"/></svg>
+        </div>
+        <span class="row-label">Email (Resend)</span>
+        <span style="font-size:10px;padding:2px 7px;border-radius:100px;background:rgba(80,255,140,0.10);color:rgba(80,255,140,0.80);border:1px solid rgba(80,255,140,0.20);font-weight:600;margin-right:6px;">Conectat</span>
+        <svg class="row-chevron" width="7" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+      </div>
+    </div>
+    <div style="height:20px;"></div>
+  </div>
+
+  <div class="tab-bar">
+    <div class="tab"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>Command</span></div>
+    <div class="tab"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M3 12h3M18 12h3M12 3v3M12 18v3"/></svg><span>Operations</span></div>
+    <div class="tab active"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.95)" stroke-width="2" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><span style="color:rgba(255,255,255,0.95);">Admin</span></div>
+    <div class="tab"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg><span>Finance</span></div>
+    <div class="tab"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg><span>Profil</span></div>
+  </div>
+</div>
+
+<!-- Screen 2: Roles & Permissions -->
+<div class="phone">
+  <div class="notch"></div>
+  <div class="screen">
+    <div style="padding:0 16px; margin-bottom:16px; display:flex; align-items:center; gap:10px;">
+      <svg width="9" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.40)" stroke-width="2.2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
+      <h1>Roluri &amp; Permisiuni</h1>
+    </div>
+
+    <!-- Role cards -->
+    <div style="padding:0 16px; display:flex; flex-direction:column; gap:8px;">
+      <!-- Superadmin -->
+      <div style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:16px;padding:14px;position:relative;overflow:hidden;">
+        <div style="position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.22),transparent);"></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,200,50,0.90)" stroke-width="1.8" stroke-linecap="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            <span style="font-size:14px;font-weight:600;color:rgba(255,255,255,0.92);">Superadmin</span>
+          </div>
+          <span style="font-size:10px;padding:2px 8px;border-radius:100px;background:rgba(255,200,50,0.12);color:rgba(255,200,50,0.90);border:1px solid rgba(255,200,50,0.22);font-weight:600;">1 utilizator</span>
+        </div>
+        <p style="font-size:12px;color:rgba(255,255,255,0.35);">Acces complet · Toate companiile · Toate modulele</p>
+      </div>
+
+      <!-- CEO -->
+      <div style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:16px;padding:14px;position:relative;overflow:hidden;">
+        <div style="position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.18),transparent);"></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.65)" stroke-width="1.8" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            <span style="font-size:14px;font-weight:600;color:rgba(255,255,255,0.92);">Company Owner</span>
+          </div>
+          <span style="font-size:10px;padding:2px 8px;border-radius:100px;background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.55);border:1px solid rgba(255,255,255,0.14);font-weight:600;">2 utilizatori</span>
+        </div>
+        <p style="font-size:12px;color:rgba(255,255,255,0.35);">Acces complet · Companie proprie · Toate modulele</p>
+        <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:8px;">
+          <span style="font-size:10px;padding:2px 7px;border-radius:100px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.10);color:rgba(255,255,255,0.45);">Finance</span>
+          <span style="font-size:10px;padding:2px 7px;border-radius:100px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.10);color:rgba(255,255,255,0.45);">People</span>
+          <span style="font-size:10px;padding:2px 7px;border-radius:100px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.10);color:rgba(255,255,255,0.45);">CRM</span>
+          <span style="font-size:10px;padding:2px 7px;border-radius:100px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.10);color:rgba(255,255,255,0.45);">+12</span>
+        </div>
+      </div>
+
+      <!-- Manager Regional -->
+      <div style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:16px;padding:14px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+          <span style="font-size:14px;font-weight:600;color:rgba(255,255,255,0.92);">Manager Regional</span>
+          <span style="font-size:10px;padding:2px 8px;border-radius:100px;background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.55);border:1px solid rgba(255,255,255,0.14);font-weight:600;">3 utilizatori</span>
+        </div>
+        <p style="font-size:12px;color:rgba(255,255,255,0.35);">Acces regional · N magazine alocate</p>
+      </div>
+
+      <!-- Store Manager -->
+      <div style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:16px;padding:14px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+          <span style="font-size:14px;font-weight:600;color:rgba(255,255,255,0.92);">Store Manager</span>
+          <span style="font-size:10px;padding:2px 8px;border-radius:100px;background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.55);border:1px solid rgba(255,255,255,0.14);font-weight:600;">4 utilizatori</span>
+        </div>
+        <p style="font-size:12px;color:rgba(255,255,255,0.35);">1 magazin · Operations, People, Inventory</p>
+      </div>
+
+      <!-- Cashier -->
+      <div style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:16px;padding:14px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+          <span style="font-size:14px;font-weight:600;color:rgba(255,255,255,0.92);">Casier</span>
+          <span style="font-size:10px;padding:2px 8px;border-radius:100px;background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.55);border:1px solid rgba(255,255,255,0.14);font-weight:600;">2 utilizatori</span>
+        </div>
+        <p style="font-size:12px;color:rgba(255,255,255,0.35);">Shop · registrul propriu · read-only restul</p>
+      </div>
+
+      <!-- Add role -->
+      <button style="width:100%;padding:13px;background:rgba(255,255,255,0.05);border:1px dashed rgba(255,255,255,0.16);border-radius:16px;color:rgba(255,255,255,0.45);font-size:14px;font-weight:500;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Rol nou personalizat
+      </button>
+    </div>
+    <div style="height:20px;"></div>
+  </div>
+
+  <div class="tab-bar">
+    <div class="tab"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>Command</span></div>
+    <div class="tab"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M3 12h3M18 12h3M12 3v3M12 18v3"/></svg><span>Operations</span></div>
+    <div class="tab active"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.95)" stroke-width="2" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><span style="color:rgba(255,255,255,0.95);">Admin</span></div>
+    <div class="tab"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg><span>Finance</span></div>
+    <div class="tab"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg><span>Profil</span></div>
+  </div>
+</div>
+
+<div style="position:fixed;top:20px;left:50%;transform:translateX(-50%);background:rgba(255,255,255,0.08);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.14);border-radius:100px;padding:8px 20px;color:rgba(255,255,255,0.80);font-size:13px;font-weight:500;white-space:nowrap;">
+  Task 14 — Admin Panel · /admin · /admin/roles
+</div>
+
+</body>
+</html>
