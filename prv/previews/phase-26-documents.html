@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Phase 26 — Documents Deep Dive · PRV Preview</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #000;
+    color: rgba(255,255,255,.95);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+    min-height: 100vh;
+    display: flex;
+    gap: 32px;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 40px 24px;
+  }
+  .phone {
+    width: 375px; min-height: 720px;
+    background: #0a0a0a;
+    border-radius: 44px;
+    border: 1px solid rgba(255,255,255,.12);
+    box-shadow: 0 32px 80px rgba(0,0,0,.9), inset 0 1px 0 rgba(255,255,255,.18);
+    overflow: hidden; position: relative; flex-shrink: 0;
+  }
+  .phone-label { text-align: center; font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: rgba(255,255,255,.3); margin-bottom: 10px; }
+  .screen { padding: 0 0 100px; overflow-y: auto; max-height: 780px; }
+  .nav { position: sticky; top: 0; z-index: 10; padding: 12px 16px 10px; background: rgba(0,0,0,.55); backdrop-filter: blur(32px); border-bottom: 1px solid rgba(255,255,255,.07); display: flex; align-items: center; justify-content: space-between; }
+  .nav-title { font-size: 17px; font-weight: 700; }
+  .nav-back { display: flex; align-items: center; gap: 4px; color: rgba(10,132,255,.9); font-size: 15px; font-weight: 500; }
+
+  /* KPI strip */
+  .kpi-strip { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; padding: 14px 16px 10px; }
+  .kpi { background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.08); border-radius: 12px; padding: 10px 10px 9px; }
+  .kpi-val { font-size: 17px; font-weight: 700; }
+  .kpi-lbl { font-size: 10px; color: rgba(255,255,255,.4); font-weight: 500; margin-top: 3px; }
+
+  /* chips */
+  .chips { display: flex; gap: 8px; padding: 0 16px 12px; overflow-x: auto; scrollbar-width: none; }
+  .chips::-webkit-scrollbar { display: none; }
+  .chip { padding: 6px 14px; border-radius: 100px; font-size: 13px; font-weight: 600; white-space: nowrap; flex: 0 0 auto; cursor: pointer; border: 1px solid rgba(255,255,255,.09); background: rgba(255,255,255,.05); color: rgba(255,255,255,.55); }
+  .chip.active { background: rgba(255,255,255,.12); border-color: rgba(255,255,255,.22); color: rgba(255,255,255,.95); }
+
+  /* section label */
+  .section-lbl { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: rgba(255,255,255,.35); padding: 0 18px 8px; margin-top: 6px; }
+
+  /* alert */
+  .alert { margin: 0 16px 12px; background: rgba(255,159,10,.08); border: 1px solid rgba(255,159,10,.22); border-radius: 12px; padding: 10px 14px; display: flex; align-items: center; gap: 10px; font-size: 13px; color: rgba(255,159,10,.95); font-weight: 500; }
+
+  /* doc row */
+  .doc-row { margin: 0 16px 8px; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.08); border-radius: 14px; padding: 13px 14px; display: flex; gap: 12px; align-items: flex-start; cursor: pointer; }
+  .doc-row.pending { border-left: 3px solid transparent; border-image: linear-gradient(180deg,rgba(255,159,10,.7),rgba(255,159,10,.3)) 1; padding-left: 13px; }
+  .doc-row.expired { border-left: 3px solid transparent; border-image: linear-gradient(180deg,rgba(255,69,58,.7),rgba(255,69,58,.3)) 1; padding-left: 13px; }
+
+  /* ext badge */
+  .ext-badge { width: 38px; height: 44px; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; flex-shrink: 0; gap: 2px; }
+  .ext-lbl { font-size: 9px; font-weight: 800; letter-spacing: .04em; }
+  .ext-icon-line { width: 18px; height: 1.5px; border-radius: 1px; opacity: .4; }
+
+  /* pills */
+  .pill { padding: 3px 9px; border-radius: 100px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+  .pill-green { background: rgba(48,209,88,.13); color: rgba(48,209,88,.95); }
+  .pill-blue  { background: rgba(10,132,255,.13); color: rgba(10,132,255,.9); }
+  .pill-amber { background: rgba(255,159,10,.13); color: rgba(255,159,10,.95); }
+  .pill-red   { background: rgba(255,69,58,.13); color: rgba(255,69,58,.9); }
+  .pill-dim   { background: rgba(255,255,255,.07); color: rgba(255,255,255,.45); }
+  .pill-purple{ background: rgba(191,90,242,.13); color: rgba(191,90,242,.9); }
+
+  /* FAB */
+  .fab { position: absolute; bottom: 88px; right: 20px; width: 52px; height: 52px; border-radius: 50%; background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.22); box-shadow: 0 8px 24px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.25); backdrop-filter: blur(20px); display: flex; align-items: center; justify-content: center; cursor: pointer; }
+
+  /* tab bar */
+  .tab-bar { position: absolute; bottom: 16px; left: 16px; right: 16px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.12); border-radius: 24px; padding: 10px 8px; display: flex; justify-content: space-around; backdrop-filter: blur(32px); box-shadow: 0 8px 32px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.15); }
+  .tab { display: flex; flex-direction: column; align-items: center; gap: 3px; opacity: .35; padding: 0 10px; }
+  .tab.active { opacity: .95; }
+  .tab-lbl { font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+
+  /* detail */
+  .hero { padding: 20px 16px 16px; border-bottom: 1px solid rgba(255,255,255,.07); }
+  .hero-file { width: 64px; height: 76px; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; flex-shrink: 0; position: relative; border: 1px solid rgba(255,255,255,.1); }
+  .hero-corner { position: absolute; top: 0; right: 0; width: 16px; height: 16px; }
+  .stat-tiles { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-top: 14px; }
+  .stat-tile { background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.08); border-radius: 12px; padding: 10px 12px; }
+  .stat-val { font-size: 17px; font-weight: 700; }
+  .stat-lbl { font-size: 11px; color: rgba(255,255,255,.4); margin-top: 2px; }
+  .card { margin: 12px 16px 0; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.08); border-radius: 16px; overflow: hidden; }
+  .card-hdr { padding: 12px 16px 10px; font-size: 13px; font-weight: 700; color: rgba(255,255,255,.75); border-bottom: 1px solid rgba(255,255,255,.06); display: flex; align-items: center; justify-content: space-between; }
+  .info-row { display: flex; justify-content: space-between; align-items: center; padding: 11px 16px; border-bottom: 1px solid rgba(255,255,255,.05); }
+  .info-row:last-child { border-bottom: none; }
+  .info-key { font-size: 13px; color: rgba(255,255,255,.45); }
+  .info-val { font-size: 13px; font-weight: 600; color: rgba(255,255,255,.9); }
+
+  /* timeline */
+  .timeline-row { display: flex; gap: 12px; padding: 10px 16px; position: relative; }
+  .tl-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 4px; flex-shrink: 0; }
+  .tl-line { position: absolute; left: 19px; top: 22px; bottom: -10px; width: 1px; background: rgba(255,255,255,.08); }
+
+  /* CTAs */
+  .cta-row { display: flex; gap: 10px; margin: 14px 16px 0; }
+  .cta { flex: 1; padding: 14px 0; border-radius: 14px; font-size: 15px; font-weight: 700; text-align: center; cursor: pointer; }
+
+  /* sheet */
+  .sheet-preview { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(22,22,26,.92); backdrop-filter: blur(48px); border: 1px solid rgba(255,255,255,.12); border-bottom: none; border-radius: 28px 28px 0 0; padding: 10px 16px 32px; box-shadow: 0 -16px 48px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,255,255,.15); }
+  .sheet-handle { width: 36px; height: 4px; border-radius: 2px; background: rgba(255,255,255,.2); margin: 0 auto 14px; }
+  .sheet-title { font-size: 15px; font-weight: 700; text-align: center; margin-bottom: 16px; color: rgba(255,255,255,.85); }
+  .sheet-btn { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 14px; margin-bottom: 8px; cursor: pointer; }
+  .sb-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .sb-label { font-size: 15px; font-weight: 600; }
+  .sb-sub { font-size: 12px; color: rgba(255,255,255,.4); margin-top: 2px; }
+</style>
+</head>
+<body>
+
+<!-- ══ SCREEN 1 — LIST ══ -->
+<div>
+  <p class="phone-label">LIST — Documente</p>
+  <div class="phone">
+    <div class="screen">
+      <div class="nav">
+        <span class="nav-title">Documente</span>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(10,132,255,.9)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </div>
+
+      <!-- KPI strip -->
+      <div class="kpi-strip">
+        <div class="kpi"><span class="kpi-val">47</span><span class="kpi-lbl">Total</span></div>
+        <div class="kpi"><span class="kpi-val" style="color:rgba(255,159,10,.9)">4</span><span class="kpi-lbl">Nesemnate</span></div>
+        <div class="kpi"><span class="kpi-val" style="color:rgba(255,69,58,.9)">2</span><span class="kpi-lbl">Expirate</span></div>
+        <div class="kpi"><span class="kpi-val" style="color:rgba(48,209,88,.9)">8</span><span class="kpi-lbl">Recente</span></div>
+      </div>
+
+      <!-- Alert -->
+      <div class="alert">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,159,10,.9)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        Contract A4 Brașov expiră în 3 zile
+      </div>
+
+      <!-- Filter chips -->
+      <div class="chips">
+        <button class="chip active">Recente</button>
+        <button class="chip">Contracte</button>
+        <button class="chip">Facturi</button>
+        <button class="chip">Proiecte</button>
+        <button class="chip">HR</button>
+        <button class="chip">Flotă</button>
+      </div>
+
+      <!-- Section: needs signature -->
+      <div class="section-lbl">Necesită Semnătură · 4</div>
+
+      <!-- pending doc row -->
+      <div class="doc-row pending">
+        <div class="ext-badge" style="background:rgba(255,159,10,.10);border:1px solid rgba(255,159,10,.18)">
+          <div class="ext-lbl" style="color:rgba(255,159,10,.9)">PDF</div>
+          <div class="ext-icon-line" style="background:rgba(255,159,10,.6)"></div>
+          <div class="ext-icon-line" style="background:rgba(255,159,10,.6)"></div>
+          <div class="ext-icon-line" style="background:rgba(255,159,10,.6)"></div>
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+            <div>
+              <p style="font-size:14px;font-weight:600;color:rgba(255,255,255,.95);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:190px">Contract_Renovare_A4Brasov.pdf</p>
+              <p style="font-size:12px;color:rgba(255,255,255,.4);margin-top:2px">Contracte · Andrei Popescu</p>
+            </div>
+            <span class="pill pill-amber">Nesemnat</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+            <span style="font-size:11px;color:rgba(255,255,255,.35)">3 Iun 2026 · 2.4 MB</span>
+            <span style="font-size:10px;color:rgba(255,159,10,.75);font-weight:600">Expiră 12 Iun</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="doc-row pending">
+        <div class="ext-badge" style="background:rgba(255,159,10,.10);border:1px solid rgba(255,159,10,.18)">
+          <div class="ext-lbl" style="color:rgba(255,159,10,.9)">PDF</div>
+          <div class="ext-icon-line" style="background:rgba(255,159,10,.6)"></div>
+          <div class="ext-icon-line" style="background:rgba(255,159,10,.6)"></div>
+          <div class="ext-icon-line" style="background:rgba(255,159,10,.6)"></div>
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+            <div>
+              <p style="font-size:14px;font-weight:600;color:rgba(255,255,255,.95);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:190px">Subcontract_Manopera_Electrici.pdf</p>
+              <p style="font-size:12px;color:rgba(255,255,255,.4);margin-top:2px">Contracte · Elena Marin</p>
+            </div>
+            <span class="pill pill-amber">Nesemnat</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+            <span style="font-size:11px;color:rgba(255,255,255,.35)">5 Iun 2026 · 1.1 MB</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section: recent -->
+      <div class="section-lbl" style="margin-top:4px">Recente</div>
+
+      <div class="doc-row">
+        <div class="ext-badge" style="background:rgba(48,209,88,.08);border:1px solid rgba(48,209,88,.16)">
+          <div class="ext-lbl" style="color:rgba(48,209,88,.8)">PDF</div>
+          <div class="ext-icon-line" style="background:rgba(48,209,88,.5)"></div>
+          <div class="ext-icon-line" style="background:rgba(48,209,88,.5)"></div>
+          <div class="ext-icon-line" style="background:rgba(48,209,88,.5)"></div>
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+            <div>
+              <p style="font-size:14px;font-weight:600;color:rgba(255,255,255,.95);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:190px">Factura_Materiale_Mai2026.pdf</p>
+              <p style="font-size:12px;color:rgba(255,255,255,.4);margin-top:2px">Facturi · Maria Ionescu</p>
+            </div>
+            <span class="pill pill-green">Semnat</span>
+          </div>
+          <div style="margin-top:6px;font-size:11px;color:rgba(255,255,255,.35)">7 Iun 2026 · 0.8 MB</div>
+        </div>
+      </div>
+
+      <div class="doc-row">
+        <div class="ext-badge" style="background:rgba(10,132,255,.08);border:1px solid rgba(10,132,255,.16)">
+          <div class="ext-lbl" style="color:rgba(10,132,255,.8)">DOC</div>
+          <div class="ext-icon-line" style="background:rgba(10,132,255,.5)"></div>
+          <div class="ext-icon-line" style="background:rgba(10,132,255,.5)"></div>
+          <div class="ext-icon-line" style="background:rgba(10,132,255,.5)"></div>
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+            <div>
+              <p style="font-size:14px;font-weight:600;color:rgba(255,255,255,.95);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:190px">Raport_Proiect_Cluj14_Iun.docx</p>
+              <p style="font-size:12px;color:rgba(255,255,255,.4);margin-top:2px">Proiecte · Andrei Popescu</p>
+            </div>
+            <span class="pill pill-dim">Ciornă</span>
+          </div>
+          <div style="margin-top:6px;font-size:11px;color:rgba(255,255,255,.35)">6 Iun 2026 · 0.4 MB</div>
+        </div>
+      </div>
+
+      <!-- Section: expired -->
+      <div class="section-lbl" style="margin-top:4px">Expirate · 2</div>
+
+      <div class="doc-row expired">
+        <div class="ext-badge" style="background:rgba(255,69,58,.08);border:1px solid rgba(255,69,58,.16)">
+          <div class="ext-lbl" style="color:rgba(255,69,58,.8)">PDF</div>
+          <div class="ext-icon-line" style="background:rgba(255,69,58,.5)"></div>
+          <div class="ext-icon-line" style="background:rgba(255,69,58,.5)"></div>
+          <div class="ext-icon-line" style="background:rgba(255,69,58,.5)"></div>
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+            <div>
+              <p style="font-size:14px;font-weight:600;color:rgba(255,255,255,.95);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:190px">Autorizatie_Constructie_Cluj.pdf</p>
+              <p style="font-size:12px;color:rgba(255,255,255,.4);margin-top:2px">Proiecte · Sorin Florea</p>
+            </div>
+            <span class="pill pill-red">Expirat</span>
+          </div>
+          <div style="margin-top:6px;font-size:11px;color:rgba(255,69,58,.7);font-weight:600">Expirat 1 Iun 2026</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- FAB -->
+    <div class="fab">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.9)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </div>
+
+    <!-- Tab bar -->
+    <div class="tab-bar">
+      <div class="tab"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg><span class="tab-lbl">Ops</span></div>
+      <div class="tab active"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span class="tab-lbl">Documente</span></div>
+      <div class="tab"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span class="tab-lbl">Oameni</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SCREEN 2 — DETAIL ══ -->
+<div>
+  <p class="phone-label">DETAIL — Contract A4 Brașov</p>
+  <div class="phone">
+    <div class="screen">
+      <div class="nav">
+        <span class="nav-back"><svg width="9" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(10,132,255,.9)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Documente</span>
+        <span class="nav-title">Document</span>
+        <span style="width:60px"></span>
+      </div>
+
+      <!-- Hero -->
+      <div class="hero">
+        <div style="display:flex;gap:16px;align-items:flex-start;margin-bottom:14px">
+          <!-- File icon -->
+          <div class="hero-file" style="background:rgba(255,159,10,.08)">
+            <svg class="hero-corner" viewBox="0 0 16 16" fill="none"><path d="M10 0H0v16h16V6L10 0z" fill="none"/><path d="M10 0v6h6" fill="rgba(255,159,10,.25)" stroke="rgba(255,159,10,.3)" stroke-width="1"/></svg>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,159,10,.85)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="margin-top:4px">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+            </svg>
+            <span style="font-size:9px;font-weight:800;color:rgba(255,159,10,.8);letter-spacing:.04em">PDF</span>
+          </div>
+          <div style="flex:1">
+            <p style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:rgba(255,255,255,.35);margin:0 0 4px">Contracte</p>
+            <p style="font-size:19px;font-weight:700;line-height:1.2;margin:0;color:rgba(255,255,255,.95)">Contract_Renovare_A4Brasov.pdf</p>
+            <p style="font-size:13px;color:rgba(255,255,255,.5);margin:4px 0 0">Andrei Popescu · 3 Iun 2026</p>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">
+              <span class="pill pill-amber">Nesemnat</span>
+              <span class="pill" style="background:rgba(255,159,10,.1);color:rgba(255,159,10,.85)">v2.1</span>
+              <span class="pill pill-dim">A4 Brașov</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stat tiles -->
+        <div class="stat-tiles">
+          <div class="stat-tile"><p class="stat-val">2.4 MB</p><p class="stat-lbl">Mărime</p></div>
+          <div class="stat-tile"><p class="stat-val">18</p><p class="stat-lbl">Pagini</p></div>
+          <div class="stat-tile"><p class="stat-val" style="color:rgba(255,159,10,.9)">v2.1</p><p class="stat-lbl">Versiune</p></div>
+        </div>
+      </div>
+
+      <!-- CTAs -->
+      <div class="cta-row">
+        <button class="cta" style="background:rgba(255,255,255,.06);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.09)">Descarcă</button>
+        <button class="cta" style="background:rgba(48,209,88,.15);color:rgba(48,209,88,.95);border:1px solid rgba(48,209,88,.25);flex:2">Semnează</button>
+      </div>
+
+      <!-- Expiry alert -->
+      <div style="margin:14px 16px 0;background:rgba(255,69,58,.08);border:1px solid rgba(255,69,58,.2);border-radius:12px;padding:10px 14px;display:flex;align-items:center;gap:10px">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(255,69,58,.9)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span style="font-size:13px;color:rgba(255,69,58,.9);font-weight:500">Document expiră pe 12 Iun 2026 · 3 zile rămase</span>
+      </div>
+
+      <!-- Metadata card -->
+      <div class="card">
+        <div class="card-hdr">Detalii Document</div>
+        <div class="info-row"><span class="info-key">Proiect</span><span class="info-val">A4 Brașov</span></div>
+        <div class="info-row"><span class="info-key">Creat de</span><span class="info-val">Andrei Popescu</span></div>
+        <div class="info-row"><span class="info-key">Dată creare</span><span class="info-val">3 Iun 2026</span></div>
+        <div class="info-row"><span class="info-key">Valabil până</span><span class="info-val" style="color:rgba(255,69,58,.9)">12 Iun 2026</span></div>
+        <div class="info-row"><span class="info-key">Semnat de</span><span class="info-val" style="color:rgba(255,255,255,.35)">—</span></div>
+      </div>
+
+      <!-- Activity timeline -->
+      <div class="card" style="margin-bottom:0">
+        <div class="card-hdr">Activitate</div>
+
+        <div class="timeline-row" style="position:relative">
+          <div class="tl-line"></div>
+          <div class="tl-dot" style="background:rgba(255,159,10,.9);margin-top:5px"></div>
+          <div>
+            <p style="font-size:13px;font-weight:600;color:rgba(255,255,255,.9)">Trimis spre semnare</p>
+            <p style="font-size:12px;color:rgba(255,255,255,.4);margin-top:1px">Andrei Popescu · Ieri, 14:32</p>
+          </div>
+        </div>
+
+        <div class="timeline-row" style="position:relative">
+          <div class="tl-line"></div>
+          <div class="tl-dot" style="background:rgba(10,132,255,.9);margin-top:5px"></div>
+          <div>
+            <p style="font-size:13px;font-weight:600;color:rgba(255,255,255,.9)">Versiune v2.1 încărcată</p>
+            <p style="font-size:12px;color:rgba(255,255,255,.4);margin-top:1px">Andrei Popescu · 3 Iun, 09:15</p>
+          </div>
+        </div>
+
+        <div class="timeline-row">
+          <div class="tl-dot" style="background:rgba(255,255,255,.25);margin-top:5px"></div>
+          <div>
+            <p style="font-size:13px;font-weight:600;color:rgba(255,255,255,.55)">Document creat v1.0</p>
+            <p style="font-size:12px;color:rgba(255,255,255,.3);margin-top:1px">Andrei Popescu · 28 Mai, 11:00</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- FAB (3-dot) -->
+    <div class="fab">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.9)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+    </div>
+
+    <!-- Tab bar -->
+    <div class="tab-bar">
+      <div class="tab"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg><span class="tab-lbl">Ops</span></div>
+      <div class="tab active"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span class="tab-lbl">Documente</span></div>
+      <div class="tab"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span class="tab-lbl">Oameni</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SCREEN 3 — FAB SHEET ══ -->
+<div>
+  <p class="phone-label">FAB SHEET — Acțiuni Document</p>
+  <div class="phone" style="min-height:500px">
+    <div class="screen" style="padding-bottom:0">
+      <div class="nav">
+        <span class="nav-back"><svg width="9" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(10,132,255,.9)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Documente</span>
+        <span class="nav-title">Document</span>
+        <span style="width:60px"></span>
+      </div>
+      <div style="height:200px;background:linear-gradient(rgba(0,0,0,.2),rgba(0,0,0,.6));display:flex;align-items:center;justify-content:center">
+        <p style="color:rgba(255,255,255,.15);font-size:13px">Conținut ecran</p>
+      </div>
+    </div>
+    <div class="sheet-preview">
+      <div class="sheet-handle"></div>
+      <p class="sheet-title">Acțiuni Document</p>
+
+      <!-- Semnează -->
+      <div class="sheet-btn" style="background:rgba(48,209,88,.10);border:1px solid rgba(48,209,88,.2)">
+        <div class="sb-icon" style="background:rgba(48,209,88,.18)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(48,209,88,.9)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <div><p class="sb-label" style="color:rgba(48,209,88,.95)">Semnează Document</p><p class="sb-sub">Semnătură electronică cu Face ID</p></div>
+      </div>
+
+      <!-- Partajează -->
+      <div class="sheet-btn" style="background:rgba(10,132,255,.10);border:1px solid rgba(10,132,255,.2)">
+        <div class="sb-icon" style="background:rgba(10,132,255,.18)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(10,132,255,.9)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+        </div>
+        <div><p class="sb-label" style="color:rgba(10,132,255,.9)">Partajează</p><p class="sb-sub">Trimite unui coleg sau client</p></div>
+      </div>
+
+      <!-- Descarcă -->
+      <div class="sheet-btn" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09)">
+        <div class="sb-icon" style="background:rgba(255,255,255,.10)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        </div>
+        <div><p class="sb-label" style="color:rgba(255,255,255,.75)">Descarcă</p><p class="sb-sub">Salvează local ca PDF</p></div>
+      </div>
+
+      <!-- Arhivează -->
+      <div class="sheet-btn" style="background:rgba(255,159,10,.08);border:1px solid rgba(255,159,10,.18)">
+        <div class="sb-icon" style="background:rgba(255,159,10,.15)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,159,10,.85)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+        </div>
+        <div><p class="sb-label" style="color:rgba(255,159,10,.9)">Arhivează</p><p class="sb-sub">Mută în arhivă, fără ștergere</p></div>
+      </div>
+
+      <!-- Șterge -->
+      <div class="sheet-btn" style="background:rgba(255,69,58,.07);border:1px solid rgba(255,69,58,.15)">
+        <div class="sb-icon" style="background:rgba(255,69,58,.13)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,69,58,.85)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+        </div>
+        <div><p class="sb-label" style="color:rgba(255,69,58,.9)">Șterge</p><p class="sb-sub">Elimină definitiv documentul</p></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
