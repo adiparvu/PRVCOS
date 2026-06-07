@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Phase 23 — Schedule Deep Dive · PRV Preview</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #000;
+    color: rgba(255,255,255,.95);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+    min-height: 100vh;
+    display: flex;
+    gap: 32px;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 40px 24px;
+  }
+
+  /* ── phone frame ──────────────────────────────────── */
+  .phone {
+    width: 375px;
+    min-height: 720px;
+    background: #0a0a0a;
+    border-radius: 44px;
+    border: 1px solid rgba(255,255,255,.12);
+    box-shadow: 0 32px 80px rgba(0,0,0,.9), inset 0 1px 0 rgba(255,255,255,.18);
+    overflow: hidden;
+    position: relative;
+    flex-shrink: 0;
+  }
+  .phone-label {
+    text-align: center;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,.3);
+    margin-bottom: 10px;
+  }
+  .screen {
+    padding: 0 0 100px;
+    overflow-y: auto;
+    max-height: 780px;
+  }
+
+  /* ── floating navbar ──────────────────────────────── */
+  .nav {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    padding: 12px 16px 10px;
+    background: rgba(0,0,0,.55);
+    backdrop-filter: blur(32px);
+    -webkit-backdrop-filter: blur(32px);
+    border-bottom: 1px solid rgba(255,255,255,.07);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .nav-back {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: rgba(10,132,255,.9);
+    font-size: 15px;
+    font-weight: 500;
+  }
+  .nav-title { font-size: 17px; font-weight: 700; }
+  .nav-badge {
+    background: rgba(255,69,58,.9);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 100px;
+    min-width: 20px;
+    text-align: center;
+    line-height: 1.5;
+  }
+
+  /* ── week strip ───────────────────────────────────── */
+  .week-strip {
+    display: flex;
+    gap: 6px;
+    padding: 14px 16px 10px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .week-strip::-webkit-scrollbar { display: none; }
+  .day-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 9px 7px;
+    border-radius: 12px;
+    min-width: 42px;
+    flex-shrink: 0;
+    background: rgba(255,255,255,.04);
+    border: 1px solid rgba(255,255,255,.07);
+    cursor: pointer;
+  }
+  .day-cell.today {
+    background: rgba(255,255,255,.10);
+    border-color: rgba(255,255,255,.18);
+  }
+  .day-cell.open { border-color: rgba(255,159,10,.3); background: rgba(255,159,10,.06); }
+  .day-label { font-size: 10px; font-weight: 600; color: rgba(255,255,255,.45); text-transform: uppercase; letter-spacing: .04em; }
+  .day-date { font-size: 16px; font-weight: 700; color: rgba(255,255,255,.95); }
+  .day-cell.today .day-date { color: rgba(255,255,255,1); }
+  .day-pips { display: flex; gap: 3px; min-height: 5px; }
+  .pip { width: 5px; height: 5px; border-radius: 50%; }
+
+  /* ── kpi strip ────────────────────────────────────── */
+  .kpi-strip {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    padding: 0 16px 14px;
+  }
+  .kpi {
+    background: rgba(255,255,255,.05);
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 12px;
+    padding: 10px 10px 9px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .kpi-val { font-size: 18px; font-weight: 700; }
+  .kpi-lbl { font-size: 10px; color: rgba(255,255,255,.4); font-weight: 500; }
+
+  /* ── alert banner ─────────────────────────────────── */
+  .alert {
+    margin: 0 16px 12px;
+    background: rgba(255,159,10,.08);
+    border: 1px solid rgba(255,159,10,.22);
+    border-radius: 12px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    color: rgba(255,159,10,.95);
+    font-weight: 500;
+  }
+
+  /* ── filter chips ─────────────────────────────────── */
+  .chips {
+    display: flex;
+    gap: 8px;
+    padding: 0 16px 14px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .chips::-webkit-scrollbar { display: none; }
+  .chip {
+    padding: 6px 14px;
+    border-radius: 100px;
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+    flex: 0 0 auto;
+    cursor: pointer;
+    border: 1px solid rgba(255,255,255,.09);
+    background: rgba(255,255,255,.05);
+    color: rgba(255,255,255,.55);
+  }
+  .chip.active {
+    background: rgba(255,255,255,.12);
+    border-color: rgba(255,255,255,.22);
+    color: rgba(255,255,255,.95);
+  }
+
+  /* ── section label ────────────────────────────────── */
+  .section-lbl {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    color: rgba(255,255,255,.35);
+    padding: 0 18px 8px;
+  }
+
+  /* ── shift row ────────────────────────────────────── */
+  .shift-row {
+    margin: 0 16px 8px;
+    background: rgba(255,255,255,.05);
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 14px;
+    padding: 13px 14px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    cursor: pointer;
+  }
+  .shift-row.open {
+    border-left: 3px solid transparent;
+    border-image: linear-gradient(180deg, rgba(255,159,10,.7), rgba(255,159,10,.3)) 1;
+    padding-left: 13px;
+  }
+  .shift-row.urgent {
+    border-left: 3px solid transparent;
+    border-image: linear-gradient(180deg, rgba(255,69,58,.8), rgba(255,69,58,.3)) 1;
+    padding-left: 13px;
+  }
+  .shift-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .shift-body { flex: 1; min-width: 0; }
+  .shift-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+  .shift-title { font-size: 14px; font-weight: 600; color: rgba(255,255,255,.95); }
+  .shift-meta { font-size: 12px; color: rgba(255,255,255,.45); margin-top: 3px; }
+  .shift-bottom { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; }
+  .shift-time { font-size: 12px; color: rgba(255,255,255,.55); display: flex; align-items: center; gap: 5px; }
+  .shift-assignees { display: flex; }
+  .avatar-sm {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: rgba(255,255,255,.12);
+    border: 1px solid rgba(255,255,255,.2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px; font-weight: 700;
+    color: rgba(255,255,255,.75);
+    margin-left: -6px;
+  }
+  .avatar-sm:first-child { margin-left: 0; }
+
+  /* ── pill ─────────────────────────────────────────── */
+  .pill {
+    padding: 3px 9px;
+    border-radius: 100px;
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .pill-green { background: rgba(48,209,88,.13); color: rgba(48,209,88,.95); }
+  .pill-amber { background: rgba(255,159,10,.13); color: rgba(255,159,10,.95); }
+  .pill-blue  { background: rgba(10,132,255,.13); color: rgba(10,132,255,.9); }
+  .pill-red   { background: rgba(255,69,58,.12); color: rgba(255,69,58,.95); }
+  .pill-dim   { background: rgba(255,255,255,.07); color: rgba(255,255,255,.45); }
+  .pill-purple{ background: rgba(191,90,242,.12); color: rgba(191,90,242,.9); }
+
+  /* ── open-slot row ────────────────────────────────── */
+  .open-slot {
+    margin: 0 16px 8px;
+    background: rgba(255,159,10,.05);
+    border: 1px dashed rgba(255,159,10,.3);
+    border-radius: 14px;
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+  }
+  .open-slot-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: rgba(255,159,10,.1);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .open-slot-text { font-size: 13px; font-weight: 600; color: rgba(255,159,10,.9); }
+  .open-slot-meta { font-size: 11px; color: rgba(255,255,255,.35); margin-top: 2px; }
+
+  /* ── FAB ──────────────────────────────────────────── */
+  .fab {
+    position: absolute;
+    bottom: 88px;
+    right: 20px;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: rgba(255,255,255,.14);
+    border: 1px solid rgba(255,255,255,.22);
+    box-shadow: 0 8px 24px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.25);
+    backdrop-filter: blur(20px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+
+  /* ── tab bar ──────────────────────────────────────── */
+  .tab-bar {
+    position: absolute;
+    bottom: 16px;
+    left: 16px;
+    right: 16px;
+    background: rgba(255,255,255,.08);
+    border: 1px solid rgba(255,255,255,.12);
+    border-radius: 24px;
+    padding: 10px 8px;
+    display: flex;
+    justify-content: space-around;
+    backdrop-filter: blur(32px);
+    box-shadow: 0 8px 32px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.15);
+  }
+  .tab { display: flex; flex-direction: column; align-items: center; gap: 3px; opacity: .35; cursor: pointer; padding: 0 10px; }
+  .tab.active { opacity: .95; }
+  .tab-lbl { font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+
+  /* ── DETAIL SCREEN ────────────────────────────────── */
+  .hero {
+    padding: 20px 16px 16px;
+    border-bottom: 1px solid rgba(255,255,255,.07);
+  }
+  .hero-top { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 14px; }
+  .hero-icon {
+    width: 52px; height: 52px; border-radius: 14px;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .hero-meta p { margin: 0; }
+  .hero-type { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: rgba(255,255,255,.35); margin-bottom: 4px; }
+  .hero-name { font-size: 22px; font-weight: 700; line-height: 1.15; }
+  .hero-sub { font-size: 14px; color: rgba(255,255,255,.55); margin-top: 4px; }
+  .hero-pills { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+  .stat-tiles { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; }
+  .stat-tile {
+    background: rgba(255,255,255,.05);
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 12px;
+    padding: 10px 12px;
+  }
+  .stat-tile-val { font-size: 17px; font-weight: 700; }
+  .stat-tile-lbl { font-size: 11px; color: rgba(255,255,255,.4); margin-top: 2px; }
+
+  .card {
+    margin: 12px 16px 0;
+    background: rgba(255,255,255,.05);
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+  .card-hdr {
+    padding: 12px 16px 10px;
+    font-size: 13px;
+    font-weight: 700;
+    color: rgba(255,255,255,.75);
+    border-bottom: 1px solid rgba(255,255,255,.06);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 11px 16px;
+    border-bottom: 1px solid rgba(255,255,255,.05);
+  }
+  .info-row:last-child { border-bottom: none; }
+  .info-key { font-size: 13px; color: rgba(255,255,255,.45); }
+  .info-val { font-size: 13px; font-weight: 600; color: rgba(255,255,255,.9); text-align: right; max-width: 55%; }
+
+  .person-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(255,255,255,.05);
+  }
+  .person-row:last-child { border-bottom: none; }
+  .avatar {
+    width: 36px; height: 36px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700;
+    flex-shrink: 0;
+  }
+  .person-name { font-size: 14px; font-weight: 600; }
+  .person-role { font-size: 12px; color: rgba(255,255,255,.4); margin-top: 1px; }
+
+  .timeline-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 16px;
+    border-bottom: 1px solid rgba(255,255,255,.05);
+  }
+  .timeline-row:last-child { border-bottom: none; }
+  .tl-dot-col { display: flex; flex-direction: column; align-items: center; padding-top: 4px; }
+  .tl-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .tl-line { width: 1px; flex: 1; background: rgba(255,255,255,.1); margin-top: 3px; min-height: 18px; }
+  .tl-time { font-size: 12px; color: rgba(255,255,255,.4); width: 42px; flex-shrink: 0; margin-top: 1px; }
+  .tl-text { font-size: 13px; color: rgba(255,255,255,.85); font-weight: 500; padding-top: 1px; }
+  .tl-sub { font-size: 11px; color: rgba(255,255,255,.35); margin-top: 2px; }
+
+  .cta-row {
+    display: flex;
+    gap: 10px;
+    margin: 14px 16px 0;
+  }
+  .cta {
+    flex: 1;
+    padding: 14px 0;
+    border-radius: 14px;
+    font-size: 15px;
+    font-weight: 700;
+    text-align: center;
+    cursor: pointer;
+    border: none;
+  }
+  .cta-approve { background: rgba(48,209,88,.15); color: rgba(48,209,88,.95); border: 1px solid rgba(48,209,88,.25); flex: 2; }
+  .cta-cancel  { background: rgba(255,69,58,.10); color: rgba(255,69,58,.95); border: 1px solid rgba(255,69,58,.2); flex: 1; }
+
+  /* ── sheet ────────────────────────────────────────── */
+  .sheet-preview {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    background: rgba(22,22,26,.92);
+    backdrop-filter: blur(48px);
+    -webkit-backdrop-filter: blur(48px);
+    border: 1px solid rgba(255,255,255,.12);
+    border-bottom: none;
+    border-radius: 28px 28px 0 0;
+    padding: 10px 16px 32px;
+    box-shadow: 0 -16px 48px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,255,255,.15);
+  }
+  .sheet-handle {
+    width: 36px; height: 4px; border-radius: 2px;
+    background: rgba(255,255,255,.2);
+    margin: 0 auto 14px;
+  }
+  .sheet-title {
+    font-size: 15px; font-weight: 700;
+    text-align: center;
+    margin-bottom: 16px;
+    color: rgba(255,255,255,.85);
+  }
+  .sheet-btn {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    border-radius: 14px;
+    margin-bottom: 8px;
+    cursor: pointer;
+  }
+  .sb-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .sb-label { font-size: 15px; font-weight: 600; }
+  .sb-sub { font-size: 12px; color: rgba(255,255,255,.4); margin-top: 2px; }
+
+  /* ── skeleton ─────────────────────────────────────── */
+  .skel { background: rgba(255,255,255,.07); border-radius: 6px; }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════ SCREEN 1 — LIST ══════════════════════ -->
+<div>
+  <p class="phone-label">LIST — Program Săptămânal</p>
+  <div class="phone">
+    <div class="screen">
+
+      <!-- navbar -->
+      <div class="nav">
+        <span class="nav-title">Program</span>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:13px;color:rgba(255,255,255,.45);">7–13 Iun</span>
+          <span class="nav-badge">3</span>
+        </div>
+      </div>
+
+      <!-- week strip -->
+      <div class="week-strip">
+        <div class="day-cell">
+          <span class="day-label">LUN</span>
+          <span class="day-date">7</span>
+          <div class="day-pips"><div class="pip" style="background:rgba(10,132,255,.8)"></div></div>
+        </div>
+        <div class="day-cell">
+          <span class="day-label">MAR</span>
+          <span class="day-date">8</span>
+          <div class="day-pips">
+            <div class="pip" style="background:rgba(48,209,88,.8)"></div>
+            <div class="pip" style="background:rgba(191,90,242,.8)"></div>
+          </div>
+        </div>
+        <div class="day-cell today">
+          <span class="day-label">MIE</span>
+          <span class="day-date">9</span>
+          <div class="day-pips">
+            <div class="pip" style="background:rgba(48,209,88,.8)"></div>
+          </div>
+        </div>
+        <div class="day-cell">
+          <span class="day-label">JOI</span>
+          <span class="day-date">10</span>
+          <div class="day-pips">
+            <div class="pip" style="background:rgba(191,90,242,.8)"></div>
+          </div>
+        </div>
+        <div class="day-cell">
+          <span class="day-label">VIN</span>
+          <span class="day-date">11</span>
+          <div class="day-pips">
+            <div class="pip" style="background:rgba(10,132,255,.8)"></div>
+            <div class="pip" style="background:rgba(48,209,88,.8)"></div>
+          </div>
+        </div>
+        <div class="day-cell open">
+          <span class="day-label">SÂM</span>
+          <span class="day-date">12</span>
+          <div class="day-pips"><div class="pip" style="background:rgba(255,159,10,.8)"></div></div>
+        </div>
+        <div class="day-cell">
+          <span class="day-label">DUM</span>
+          <span class="day-date">13</span>
+          <div class="day-pips"></div>
+        </div>
+      </div>
+
+      <!-- kpi -->
+      <div class="kpi-strip">
+        <div class="kpi">
+          <span class="kpi-val">18</span>
+          <span class="kpi-lbl">Ture</span>
+        </div>
+        <div class="kpi">
+          <span class="kpi-val" style="color:rgba(255,159,10,.9)">3</span>
+          <span class="kpi-lbl">Neacoperit</span>
+        </div>
+        <div class="kpi">
+          <span class="kpi-val" style="color:rgba(48,209,88,.9)">94%</span>
+          <span class="kpi-lbl">Acoperire</span>
+        </div>
+        <div class="kpi">
+          <span class="kpi-val">142h</span>
+          <span class="kpi-lbl">Ore</span>
+        </div>
+      </div>
+
+      <!-- alert -->
+      <div class="alert">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,159,10,.9)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        3 ture neacoperite săptămâna aceasta
+      </div>
+
+      <!-- filters -->
+      <div class="chips">
+        <button class="chip active">Toate</button>
+        <button class="chip">Astăzi</button>
+        <button class="chip">Confirmat</button>
+        <button class="chip">Neacoperit</button>
+        <button class="chip">Ciornă</button>
+      </div>
+
+      <!-- section: open slots -->
+      <div class="section-lbl">Ture Neacoperite · 3</div>
+
+      <div class="open-slot">
+        <div class="open-slot-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,159,10,.85)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+        </div>
+        <div>
+          <p class="open-slot-text">Zidar — Sâmbătă 12 Iun</p>
+          <p class="open-slot-meta">08:00 – 17:00 · Șantier A4 Brașov · 9h</p>
+        </div>
+        <span class="pill pill-amber" style="margin-left:auto">+Asignează</span>
+      </div>
+
+      <div class="open-slot">
+        <div class="open-slot-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,159,10,.85)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+        </div>
+        <div>
+          <p class="open-slot-text">Electrician — Luni 7 Iun</p>
+          <p class="open-slot-meta">07:00 – 15:00 · Cluj Mănăștur · 8h</p>
+        </div>
+        <span class="pill pill-amber" style="margin-left:auto">+Asignează</span>
+      </div>
+
+      <!-- section: confirmed -->
+      <div class="section-lbl" style="margin-top:8px">Confirmate · Azi 9 Iun</div>
+
+      <!-- shift row: blue -->
+      <div class="shift-row">
+        <div class="shift-icon" style="background:rgba(10,132,255,.1)">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(10,132,255,.85)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
+        <div class="shift-body">
+          <div class="shift-top">
+            <div>
+              <p class="shift-title">Maistru Construcții</p>
+              <p class="shift-meta">Șantier A4 Brașov</p>
+            </div>
+            <span class="pill pill-green">Confirmat</span>
+          </div>
+          <div class="shift-bottom">
+            <div class="shift-time">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              07:00 – 16:00 · 9h
+            </div>
+            <div class="shift-assignees">
+              <div class="avatar-sm">IC</div>
+              <div class="avatar-sm">RD</div>
+              <div class="avatar-sm">SF</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- shift row: green / confirmed -->
+      <div class="shift-row">
+        <div class="shift-icon" style="background:rgba(48,209,88,.08)">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(48,209,88,.8)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 10c-.83 0-1.5-.67-1.5-1.5v-5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5v5c0 .83-.67 1.5-1.5 1.5z"/><path d="M20.5 10H19V8.5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/><path d="M9.5 14c.83 0 1.5.67 1.5 1.5v5c0 .83-.67 1.5-1.5 1.5S8 21.33 8 20.5v-5c0-.83.67-1.5 1.5-1.5z"/><path d="M3.5 14H5v1.5c0 .83-.67 1.5-1.5 1.5S2 16.33 2 15.5 2.67 14 3.5 14z"/><path d="M14 14.5c0-.83.67-1.5 1.5-1.5h5c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5h-5c-.83 0-1.5-.67-1.5-1.5z"/><path d="M15.5 19H14v1.5c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5-.67-1.5-1.5-1.5z"/><path d="M10 9.5C10 8.67 9.33 8 8.5 8h-5C2.67 8 2 8.67 2 9.5S2.67 11 3.5 11h5c.83 0 1.5-.67 1.5-1.5z"/><path d="M8.5 5H10V3.5C10 2.67 9.33 2 8.5 2S7 2.67 7 3.5 7.67 5 8.5 5z"/></svg>
+        </div>
+        <div class="shift-body">
+          <div class="shift-top">
+            <div>
+              <p class="shift-title">Electrician</p>
+              <p class="shift-meta">Cluj Mănăștur</p>
+            </div>
+            <span class="pill pill-green">Confirmat</span>
+          </div>
+          <div class="shift-bottom">
+            <div class="shift-time">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              08:00 – 17:00 · 9h
+            </div>
+            <div class="shift-assignees">
+              <div class="avatar-sm">LT</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- shift row: purple/draft -->
+      <div class="shift-row" style="opacity:.75">
+        <div class="shift-icon" style="background:rgba(191,90,242,.08)">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(191,90,242,.8)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
+        <div class="shift-body">
+          <div class="shift-top">
+            <div>
+              <p class="shift-title">Echipă Finisaj</p>
+              <p class="shift-meta">Cluj Mănăștur · 4 persoane</p>
+            </div>
+            <span class="pill pill-dim">Ciornă</span>
+          </div>
+          <div class="shift-bottom">
+            <div class="shift-time">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              09:00 – 18:00 · 9h
+            </div>
+            <div class="shift-assignees">
+              <div class="avatar-sm">EM</div>
+              <div class="avatar-sm">AS</div>
+              <div class="avatar-sm" style="background:rgba(255,255,255,.08);font-size:8px">+2</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-lbl" style="margin-top:8px">Mâine 10 Iun · Joi</div>
+
+      <div class="shift-row">
+        <div class="shift-icon" style="background:rgba(191,90,242,.08)">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(191,90,242,.8)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+        </div>
+        <div class="shift-body">
+          <div class="shift-top">
+            <div>
+              <p class="shift-title">Sudor · Structuri Metal</p>
+              <p class="shift-meta">Șantier A4 Brașov</p>
+            </div>
+            <span class="pill pill-blue">Programat</span>
+          </div>
+          <div class="shift-bottom">
+            <div class="shift-time">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              06:30 – 15:00 · 8.5h
+            </div>
+            <div class="shift-assignees">
+              <div class="avatar-sm">RD</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- FAB -->
+    <div class="fab">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.9)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </div>
+
+    <!-- tab bar -->
+    <div class="tab-bar">
+      <div class="tab"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg><span class="tab-lbl">Ops</span></div>
+      <div class="tab active"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span class="tab-lbl">Program</span></div>
+      <div class="tab"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span class="tab-lbl">Oameni</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ SCREEN 2 — DETAIL ══════════════════════ -->
+<div>
+  <p class="phone-label">DETAIL — Tură Maistru Construcții</p>
+  <div class="phone">
+    <div class="screen">
+
+      <!-- nav -->
+      <div class="nav">
+        <span class="nav-back">
+          <svg width="9" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(10,132,255,.9)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+          Program
+        </span>
+        <span class="nav-title">Tură</span>
+        <span style="width:60px"></span>
+      </div>
+
+      <!-- hero -->
+      <div class="hero">
+        <div class="hero-top">
+          <div class="hero-icon" style="background:rgba(10,132,255,.1);border:1px solid rgba(255,255,255,.08)">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(10,132,255,.85)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+          <div class="hero-meta">
+            <p class="hero-type">Tură · Miercuri 9 Iun 2026</p>
+            <p class="hero-name">Maistru Construcții</p>
+            <p class="hero-sub">Șantier A4 Brașov · 07:00 – 16:00</p>
+            <div class="hero-pills">
+              <span class="pill pill-green">Confirmat</span>
+              <span class="pill" style="background:rgba(10,132,255,.1);color:rgba(10,132,255,.9)">SH-0041</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="stat-tiles">
+          <div class="stat-tile">
+            <p class="stat-tile-val">9h</p>
+            <p class="stat-tile-lbl">Durată</p>
+          </div>
+          <div class="stat-tile">
+            <p class="stat-tile-val">3</p>
+            <p class="stat-tile-lbl">Asignați</p>
+          </div>
+          <div class="stat-tile">
+            <p class="stat-tile-val" style="color:rgba(48,209,88,.9)">100%</p>
+            <p class="stat-tile-lbl">Acoperire</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- inline CTAs (open slots scenario) -->
+      <div class="cta-row">
+        <button class="cta cta-cancel">Anulează</button>
+        <button class="cta cta-approve">Modifică Tura</button>
+      </div>
+
+      <!-- Details card -->
+      <div class="card">
+        <div class="card-hdr">Detalii Tură</div>
+        <div class="info-row">
+          <span class="info-key">Locație</span>
+          <span class="info-val">Șantier A4 Brașov</span>
+        </div>
+        <div class="info-row">
+          <span class="info-key">Interval</span>
+          <span class="info-val">07:00 – 16:00 · 9h</span>
+        </div>
+        <div class="info-row">
+          <span class="info-key">Pauză</span>
+          <span class="info-val">30 min (12:00)</span>
+        </div>
+        <div class="info-row">
+          <span class="info-key">Tarif orar</span>
+          <span class="info-val" style="color:rgba(48,209,88,.9)">€22/h</span>
+        </div>
+        <div class="info-row">
+          <span class="info-key">Cost total estimat</span>
+          <span class="info-val">€594</span>
+        </div>
+        <div class="info-row">
+          <span class="info-key">Proiect</span>
+          <span class="info-val">A4 Brașov</span>
+        </div>
+      </div>
+
+      <!-- Assignees card -->
+      <div class="card">
+        <div class="card-hdr">
+          Angajați Asignați
+          <span class="pill pill-green">3 / 3</span>
+        </div>
+        <div class="person-row">
+          <div class="avatar" style="background:rgba(10,132,255,.15);color:rgba(10,132,255,.9)">IC</div>
+          <div>
+            <p class="person-name">Ion Crișan</p>
+            <p class="person-role">Maistru Construcții · Confirmat</p>
+          </div>
+          <span class="pill pill-green" style="margin-left:auto">✓</span>
+        </div>
+        <div class="person-row">
+          <div class="avatar" style="background:rgba(48,209,88,.1);color:rgba(48,209,88,.9)">RD</div>
+          <div>
+            <p class="person-name">Radu Dima</p>
+            <p class="person-role">Zidar Calificat · Confirmat</p>
+          </div>
+          <span class="pill pill-green" style="margin-left:auto">✓</span>
+        </div>
+        <div class="person-row">
+          <div class="avatar" style="background:rgba(191,90,242,.1);color:rgba(191,90,242,.9)">SF</div>
+          <div>
+            <p class="person-name">Sorin Florea</p>
+            <p class="person-role">Muncitor Necalificat · Confirmat</p>
+          </div>
+          <span class="pill pill-green" style="margin-left:auto">✓</span>
+        </div>
+      </div>
+
+      <!-- Timeline card -->
+      <div class="card">
+        <div class="card-hdr">Cronologie Tură</div>
+        <div class="timeline-row">
+          <div class="tl-dot-col">
+            <div class="tl-dot" style="background:rgba(48,209,88,.8)"></div>
+            <div class="tl-line"></div>
+          </div>
+          <span class="tl-time">07:00</span>
+          <div>
+            <p class="tl-text">Început Tură</p>
+            <p class="tl-sub">Prezență confirmată · Toți angajații</p>
+          </div>
+        </div>
+        <div class="timeline-row">
+          <div class="tl-dot-col">
+            <div class="tl-dot" style="background:rgba(255,255,255,.3)"></div>
+            <div class="tl-line"></div>
+          </div>
+          <span class="tl-time">12:00</span>
+          <div>
+            <p class="tl-text">Pauză de masă</p>
+            <p class="tl-sub">30 minute · Obligatoriu</p>
+          </div>
+        </div>
+        <div class="timeline-row">
+          <div class="tl-dot-col">
+            <div class="tl-dot" style="background:rgba(255,159,10,.7)"></div>
+            <div class="tl-line"></div>
+          </div>
+          <span class="tl-time">16:00</span>
+          <div>
+            <p class="tl-text">Sfârșit Tură</p>
+            <p class="tl-sub">Semnare pontaj necesară</p>
+          </div>
+        </div>
+        <div class="timeline-row">
+          <div class="tl-dot-col">
+            <div class="tl-dot" style="background:rgba(255,255,255,.12)"></div>
+          </div>
+          <span class="tl-time" style="color:rgba(255,255,255,.2)">—</span>
+          <div>
+            <p class="tl-text" style="color:rgba(255,255,255,.3)">Raport Sfârșit Tură</p>
+            <p class="tl-sub">Nepublicat</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notes -->
+      <div class="card" style="margin-bottom:0">
+        <div class="card-hdr">Note</div>
+        <div style="padding:12px 16px">
+          <p style="font-size:13px;color:rgba(255,255,255,.65);line-height:1.5">Turnare fundație sector B. Echipamentul de protecție obligatoriu. Contactați maistrul înainte de 06:30.</p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- FAB -->
+    <div class="fab">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.9)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+    </div>
+
+    <!-- tab bar -->
+    <div class="tab-bar">
+      <div class="tab"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg><span class="tab-lbl">Ops</span></div>
+      <div class="tab active"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span class="tab-lbl">Program</span></div>
+      <div class="tab"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span class="tab-lbl">Oameni</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ SCREEN 3 — FAB SHEET ══════════════════════ -->
+<div>
+  <p class="phone-label">FAB SHEET — Acțiuni Tură</p>
+  <div class="phone" style="min-height:520px">
+    <div class="screen" style="padding-bottom:0">
+
+      <div class="nav">
+        <span class="nav-back">
+          <svg width="9" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(10,132,255,.9)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+          Program
+        </span>
+        <span class="nav-title">Tură</span>
+        <span style="width:60px"></span>
+      </div>
+
+      <!-- dimmed bg -->
+      <div style="height:260px;background:linear-gradient(rgba(0,0,0,.2),rgba(0,0,0,.6));display:flex;align-items:center;justify-content:center;">
+        <p style="color:rgba(255,255,255,.15);font-size:13px">Conținut ecran</p>
+      </div>
+
+    </div>
+
+    <!-- sheet -->
+    <div class="sheet-preview">
+      <div class="sheet-handle"></div>
+      <p class="sheet-title">Acțiuni Tură</p>
+
+      <div class="sheet-btn" style="background:rgba(48,209,88,.10);border:1px solid rgba(48,209,88,.2)">
+        <div class="sb-icon" style="background:rgba(48,209,88,.18)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(48,209,88,.9)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <div>
+          <p class="sb-label" style="color:rgba(48,209,88,.95)">Marchează Prezent</p>
+          <p class="sb-sub">Confirmă prezența echipei</p>
+        </div>
+      </div>
+
+      <div class="sheet-btn" style="background:rgba(10,132,255,.15);border:1px solid rgba(10,132,255,.25)">
+        <div class="sb-icon" style="background:rgba(10,132,255,.2)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(10,132,255,.9)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+        </div>
+        <div>
+          <p class="sb-label" style="color:rgba(10,132,255,.9)">Asignează Angajat</p>
+          <p class="sb-sub">Adaugă o persoană la tură</p>
+        </div>
+      </div>
+
+      <div class="sheet-btn" style="background:rgba(255,159,10,.10);border:1px solid rgba(255,159,10,.2)">
+        <div class="sb-icon" style="background:rgba(255,159,10,.18)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,159,10,.9)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </div>
+        <div>
+          <p class="sb-label" style="color:rgba(255,159,10,.95)">Modifică Tura</p>
+          <p class="sb-sub">Editează interval, locație, echipă</p>
+        </div>
+      </div>
+
+      <div class="sheet-btn" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.09)">
+        <div class="sb-icon" style="background:rgba(255,255,255,.08)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.6)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        </div>
+        <div>
+          <p class="sb-label">Export Raport Tură</p>
+          <p class="sb-sub">PDF cu detalii și pontaj</p>
+        </div>
+      </div>
+
+      <div class="sheet-btn" style="background:rgba(255,69,58,.10);border:1px solid rgba(255,69,58,.2)">
+        <div class="sb-icon" style="background:rgba(255,69,58,.15)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,69,58,.9)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+        </div>
+        <div>
+          <p class="sb-label" style="color:rgba(255,69,58,.95)">Anulează Tura</p>
+          <p class="sb-sub">Notifică angajații automat</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
