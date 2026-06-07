@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Phase 19 — Procurement Deep Dive · PRV Preview</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#000;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',sans-serif;-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:40px 20px 80px;gap:48px}
+  h2{font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:12px;text-align:center}
+  .row{display:flex;gap:24px;align-items:flex-start;justify-content:center;flex-wrap:wrap}
+  .phone{width:390px;background:#000;border-radius:44px;border:1px solid rgba(255,255,255,.12);overflow:hidden;position:relative;box-shadow:0 32px 80px rgba(0,0,0,.8),0 8px 24px rgba(0,0,0,.5)}
+  .screen{padding:52px 0 120px;overflow:hidden;max-height:820px}
+  .label{font-size:12px;font-weight:600;color:rgba(255,255,255,.4);margin-top:10px;text-align:center}
+
+  /* design tokens */
+  --g1:rgba(255,255,255,.06);
+  --g2:rgba(255,255,255,.10);
+  --g3:rgba(255,255,255,.16);
+  --border:rgba(255,255,255,.12);
+  --border-subtle:rgba(255,255,255,.07);
+  --t1:rgba(255,255,255,.95);
+  --t2:rgba(255,255,255,.65);
+  --t3:rgba(255,255,255,.35);
+  --green:rgba(48,209,88,.95);
+  --red:rgba(255,69,58,.95);
+  --amber:rgba(255,159,10,.95);
+  --blue:rgba(10,132,255,.9);
+
+  /* base content styles */
+  .content{padding:0 16px}
+  .page-label{font-size:13px;color:rgba(255,255,255,.35);margin-bottom:2px}
+  .page-title{font-size:26px;font-weight:700;letter-spacing:-.02em;color:rgba(255,255,255,.95)}
+  .section-label{font-size:11px;font-weight:600;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.07em;margin:18px 0 10px}
+
+  .card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.07);border-radius:18px;position:relative;overflow:hidden;margin-bottom:12px}
+  .top-edge{position:absolute;inset:0 0 auto;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.12),transparent)}
+
+  /* kpi strip */
+  .kpi-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+  .kpi{padding:12px 8px;border-radius:14px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.07);text-align:center}
+  .kpi-val{font-size:17px;font-weight:700;color:rgba(255,255,255,.95)}
+  .kpi-lbl{font-size:10px;font-weight:600;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.06em;margin-top:3px}
+
+  /* pills */
+  .pill{display:inline-block;font-size:10px;font-weight:600;padding:3px 8px;border-radius:6px}
+  .pill-pending{background:rgba(255,159,10,.13);color:rgba(255,159,10,.95)}
+  .pill-approved{background:rgba(48,209,88,.13);color:rgba(48,209,88,.95)}
+  .pill-transit{background:rgba(10,132,255,.12);color:rgba(10,132,255,.9)}
+  .pill-draft{background:rgba(255,255,255,.08);color:rgba(255,255,255,.55)}
+  .pill-rejected{background:rgba(255,69,58,.12);color:rgba(255,69,58,.95)}
+
+  /* filter bar */
+  .filter-bar{display:flex;gap:4px;padding:4px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.07);border-radius:12px;margin-bottom:14px}
+  .filter-btn{flex:1;padding:6px 0;border-radius:8px;font-size:12px;font-weight:600;border:none;cursor:pointer;transition:all .15s;background:transparent;color:rgba(255,255,255,.35)}
+  .filter-btn.active{background:rgba(255,255,255,.10);color:rgba(255,255,255,.95)}
+
+  /* PO row */
+  .po-row{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.07);position:relative}
+  .po-row:last-child{border-bottom:none}
+  .po-row.pending{border-left:3px solid transparent;border-image:linear-gradient(180deg,rgba(255,159,10,.7),rgba(255,159,10,.4)) 1;padding-left:13px}
+  .po-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .po-icon.pending-ic{background:rgba(255,159,10,.10)}
+  .po-icon.approved-ic{background:rgba(48,209,88,.10)}
+  .po-icon.transit-ic{background:rgba(10,132,255,.10)}
+  .po-icon.draft-ic{background:rgba(255,255,255,.06)}
+  .po-ref{font-size:14px;font-weight:700;color:rgba(255,255,255,.95)}
+  .po-meta{font-size:12px;color:rgba(255,255,255,.35);margin-top:2px}
+  .po-amount{font-size:15px;font-weight:700;color:rgba(255,255,255,.95);margin-bottom:4px}
+  .po-right{text-align:right;flex-shrink:0}
+
+  /* budget bar */
+  .budget-bar{height:8px;background:rgba(255,255,255,.07);border-radius:4px;overflow:hidden;margin-bottom:6px}
+  .budget-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,rgba(48,209,88,.6),rgba(255,159,10,.7))}
+  .budget-sub{display:flex;justify-content:space-between;font-size:11px;color:rgba(255,255,255,.35)}
+
+  /* alert banner */
+  .alert-banner{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:14px;margin-bottom:14px}
+  .alert-amber{background:rgba(255,159,10,.07);border:1px solid rgba(255,159,10,.18)}
+
+  /* detail hero */
+  .detail-hero{padding:16px}
+  .hero-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px}
+  .po-detail-ref{font-size:22px;font-weight:700;color:rgba(255,255,255,.95);line-height:1.1}
+  .po-detail-desc{font-size:14px;color:rgba(255,255,255,.55);margin-top:3px}
+
+  /* detail rows */
+  .detail-row{display:flex;justify-content:space-between;align-items:center;padding:11px 16px;border-bottom:1px solid rgba(255,255,255,.07)}
+  .detail-row:last-child{border-bottom:none}
+  .detail-row-label{font-size:13px;color:rgba(255,255,255,.65)}
+  .detail-row-val{font-size:13px;font-weight:600;color:rgba(255,255,255,.95)}
+
+  /* line items */
+  .line-item{display:flex;align-items:center;gap:10px;padding:11px 16px;border-bottom:1px solid rgba(255,255,255,.07)}
+  .li-name{font-size:13px;font-weight:600;color:rgba(255,255,255,.95)}
+  .li-ref{font-size:11px;color:rgba(255,255,255,.35);margin-top:2px}
+  .li-qty{font-size:12px;color:rgba(255,255,255,.35);width:52px;text-align:center;flex-shrink:0}
+  .li-price{font-size:13px;font-weight:700;color:rgba(255,255,255,.95);width:60px;text-align:right;flex-shrink:0}
+  .li-total-row{display:flex;justify-content:space-between;padding:12px 16px;background:rgba(255,255,255,.04)}
+  .li-total-lbl{font-size:14px;font-weight:700;color:rgba(255,255,255,.95)}
+  .li-total-val{font-size:16px;font-weight:700;color:rgba(255,255,255,.95)}
+
+  /* approval CTAs */
+  .cta-row{display:flex;gap:10px;padding:0 16px;margin-top:8px}
+  .btn-reject{flex:1;padding:14px;border-radius:14px;background:rgba(255,69,58,.15);border:1px solid rgba(255,69,58,.25);color:rgba(255,69,58,.95);font-size:14px;font-weight:700;cursor:pointer}
+  .btn-approve{flex:2;padding:14px;border-radius:14px;background:rgba(48,209,88,.85);border:none;color:#000;font-size:14px;font-weight:700;cursor:pointer}
+
+  /* supplier card */
+  .supplier-card{display:flex;align-items:center;gap:12px;padding:14px 16px}
+  .supplier-avatar{width:40px;height:40px;border-radius:10px;background:rgba(255,255,255,.10);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:rgba(255,255,255,.65);flex-shrink:0}
+  .supplier-name{font-size:15px;font-weight:700;color:rgba(255,255,255,.95)}
+  .supplier-meta{font-size:12px;color:rgba(255,255,255,.35);margin-top:2px}
+  .supplier-link{font-size:13px;font-weight:600;color:#7eb8ff;text-decoration:none;margin-top:6px;display:block}
+
+  /* back button */
+  .back-btn{display:flex;align-items:center;gap:6px;background:none;border:none;color:rgba(255,255,255,.65);font-size:14px;font-weight:500;cursor:pointer;padding:0 16px;margin-bottom:20px}
+
+  /* action sheet */
+  .sheet-overlay{position:absolute;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);display:flex;flex-direction:column;justify-content:flex-end}
+  .sheet{background:rgba(20,20,22,.92);backdrop-filter:blur(48px);border:1px solid rgba(255,255,255,.12);border-radius:32px 32px 0 0;padding:20px 16px 40px;box-shadow:0 -24px 64px rgba(0,0,0,.7)}
+  .sheet-pill{width:36px;height:4px;background:rgba(255,255,255,.15);border-radius:2px;margin:0 auto 20px}
+  .sheet-title{font-size:13px;font-weight:600;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.06em;margin-bottom:14px;padding:0 4px}
+  .sheet-btn{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:14px;margin-bottom:8px;border:none;cursor:pointer;width:100%;text-align:left}
+  .sheet-btn-blue{background:rgba(10,132,255,.15);border:1px solid rgba(10,132,255,.25)}
+  .sheet-btn-green{background:rgba(48,209,88,.12);border:1px solid rgba(48,209,88,.2)}
+  .sheet-btn-white{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.09)}
+  .sheet-btn-red{background:rgba(255,69,58,.10);border:1px solid rgba(255,69,58,.2)}
+  .sheet-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .sheet-icon-blue{background:rgba(10,132,255,.2)}
+  .sheet-icon-green{background:rgba(48,209,88,.15)}
+  .sheet-icon-white{background:rgba(255,255,255,.08)}
+  .sheet-icon-red{background:rgba(255,69,58,.15)}
+  .sheet-btn-lbl{font-size:15px;font-weight:600;color:rgba(255,255,255,.95)}
+  .sheet-btn-sub{font-size:12px;color:rgba(255,255,255,.35);margin-top:2px}
+
+  /* fab */
+  .fab{position:absolute;bottom:130px;right:16px;width:52px;height:52px;border-radius:26px;background:rgba(255,255,255,.12);backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+
+  /* activity */
+  .activity-row{display:flex;align-items:flex-start;gap:12px;padding:11px 16px;border-bottom:1px solid rgba(255,255,255,.07)}
+  .activity-row:last-child{border-bottom:none}
+  .act-dot{width:8px;height:8px;border-radius:50%;margin-top:4px;flex-shrink:0}
+
+  /* date badge */
+  .date-badge{padding:6px 12px;border-radius:10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.07);font-size:12px;font-weight:500;color:rgba(255,255,255,.65)}
+
+  /* tab bar */
+  .tab-bar{position:absolute;bottom:0;left:0;right:0;height:88px;display:flex;align-items:flex-start;justify-content:space-around;padding:12px 8px 0;background:rgba(255,255,255,.06);backdrop-filter:blur(32px);border-top:1px solid rgba(255,255,255,.07)}
+  .tab{display:flex;flex-direction:column;align-items:center;gap:4px;opacity:.45;padding:0 12px}
+  .tab.active{opacity:1}
+  .tab-lbl{font-size:10px;font-weight:600}
+</style>
+</head>
+<body>
+
+<h2>Phase 19 — Procurement Deep Dive</h2>
+
+<div class="row">
+
+  <!-- SCREEN 1: PO List -->
+  <div>
+    <div class="phone">
+      <div class="screen">
+        <div style="padding:0 16px 0">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px">
+            <div>
+              <div class="page-label">Operations</div>
+              <div class="page-title">Procurement</div>
+            </div>
+            <div class="date-badge">Iun 2026</div>
+          </div>
+
+          <!-- KPI -->
+          <div class="kpi-strip">
+            <div class="kpi"><div class="kpi-val">€84K</div><div class="kpi-lbl">MTD Spend</div></div>
+            <div class="kpi"><div class="kpi-val" style="color:rgba(255,159,10,.95)">3</div><div class="kpi-lbl">Pending</div></div>
+            <div class="kpi"><div class="kpi-val" style="color:rgba(10,132,255,.9)">2</div><div class="kpi-lbl">În Transit</div></div>
+            <div class="kpi"><div class="kpi-val" style="color:rgba(48,209,88,.95)">94%</div><div class="kpi-lbl">On Budget</div></div>
+          </div>
+
+          <!-- Budget bar -->
+          <div class="card">
+            <div class="top-edge"></div>
+            <div style="padding:14px 16px">
+              <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;color:rgba(255,255,255,.65);margin-bottom:8px">
+                <span>Buget Lunar</span>
+                <span style="color:rgba(255,255,255,.95);font-weight:700">€84,200 / €90,000</span>
+              </div>
+              <div class="budget-bar"><div class="budget-fill" style="width:93.5%"></div></div>
+              <div class="budget-sub">
+                <span>€0</span>
+                <span style="color:rgba(255,159,10,.95)">€5,800 rămas</span>
+                <span>€90K</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Alert -->
+          <div class="alert-banner alert-amber">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,159,10,.9)" stroke-width="1.8" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <div>
+              <div style="font-size:13px;font-weight:700;color:rgba(255,159,10,.95)">Alertă Buget</div>
+              <div style="font-size:12px;color:rgba(255,159,10,.65);margin-top:1px">93% din buget utilizat · 3 PO-uri în așteptare</div>
+            </div>
+          </div>
+
+          <!-- Filter -->
+          <div class="filter-bar">
+            <button class="filter-btn active">Toți</button>
+            <button class="filter-btn">Pending</button>
+            <button class="filter-btn">Aprobat</button>
+            <button class="filter-btn">Transit</button>
+            <button class="filter-btn">Draft</button>
+          </div>
+        </div>
+
+        <!-- PO list -->
+        <div class="card" style="margin:0 16px 12px">
+          <div class="top-edge"></div>
+
+          <!-- Pending row (amber left border) -->
+          <div class="po-row pending">
+            <div class="po-icon pending-ic">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,159,10,.9)" stroke-width="1.8" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            </div>
+            <div style="flex:1">
+              <div class="po-ref">PO-2026-0194</div>
+              <div class="po-meta">Ceramic Tiles · Suppliers SRL · 8 Iun</div>
+            </div>
+            <div class="po-right">
+              <div class="po-amount">€12,400</div>
+              <span class="pill pill-pending">Pending</span>
+            </div>
+          </div>
+
+          <!-- Approved row -->
+          <div class="po-row">
+            <div class="po-icon approved-ic">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(48,209,88,.85)" stroke-width="1.8" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <div style="flex:1">
+              <div class="po-ref">PO-2026-0193</div>
+              <div class="po-meta">Electrical Components · ElectroMax · 6 Iun</div>
+            </div>
+            <div class="po-right">
+              <div class="po-amount">€8,750</div>
+              <span class="pill pill-approved">Aprobat</span>
+            </div>
+          </div>
+
+          <!-- In Transit row -->
+          <div class="po-row">
+            <div class="po-icon transit-ic">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(10,132,255,.85)" stroke-width="1.8" stroke-linecap="round"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+            </div>
+            <div style="flex:1">
+              <div class="po-ref">PO-2026-0192</div>
+              <div class="po-meta">Paint &amp; Primers · ColorPro · 5 Iun</div>
+            </div>
+            <div class="po-right">
+              <div class="po-amount">€4,200</div>
+              <span class="pill pill-transit">În Transit</span>
+            </div>
+          </div>
+
+          <!-- Pending row 2 -->
+          <div class="po-row pending">
+            <div class="po-icon pending-ic">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,159,10,.9)" stroke-width="1.8" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            </div>
+            <div style="flex:1">
+              <div class="po-ref">PO-2026-0191</div>
+              <div class="po-meta">Plumbing Fixtures · AquaFit · 5 Iun</div>
+            </div>
+            <div class="po-right">
+              <div class="po-amount">€6,100</div>
+              <span class="pill pill-draft">Draft</span>
+            </div>
+          </div>
+
+          <!-- Approved row 2 -->
+          <div class="po-row" style="border-bottom:none">
+            <div class="po-icon approved-ic">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(48,209,88,.85)" stroke-width="1.8" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <div style="flex:1">
+              <div class="po-ref">PO-2026-0190</div>
+              <div class="po-meta">Safety Equipment · SafeWork · 4 Iun</div>
+            </div>
+            <div class="po-right">
+              <div class="po-amount">€2,980</div>
+              <span class="pill pill-approved">Aprobat</span>
+            </div>
+          </div>
+
+          <div style="padding:12px 16px;text-align:center;border-top:1px solid rgba(255,255,255,.07)">
+            <span style="font-size:12px;color:rgba(255,255,255,.35)">184 mai multe comenzi ›</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- FAB -->
+      <div class="fab">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.9)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </div>
+
+      <!-- Tab bar -->
+      <div class="tab-bar">
+        <div class="tab"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span class="tab-lbl">Command</span></div>
+        <div class="tab active"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg><span class="tab-lbl">Operations</span></div>
+        <div class="tab"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span class="tab-lbl">People</span></div>
+        <div class="tab"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span class="tab-lbl">Finance</span></div>
+        <div class="tab"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span class="tab-lbl">Intelligence</span></div>
+      </div>
+    </div>
+    <div class="label">Lista comenzi · /procurement</div>
+  </div>
+
+  <!-- SCREEN 2: PO Detail (Pending - approval workflow) -->
+  <div>
+    <div class="phone">
+      <div class="screen">
+
+        <!-- Back -->
+        <button class="back-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+          Procurement
+        </button>
+
+        <div class="content">
+          <!-- Hero -->
+          <div class="card" style="margin-bottom:14px">
+            <div class="top-edge"></div>
+            <div class="detail-hero">
+              <div class="hero-top">
+                <div>
+                  <div class="po-detail-ref">PO-2026-0194</div>
+                  <div class="po-detail-desc">Ceramic Tiles</div>
+                </div>
+                <span class="pill pill-pending">Pending</span>
+              </div>
+              <!-- meta pills -->
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <div style="display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.07);font-size:12px;font-weight:500;color:rgba(255,255,255,.65)">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                  Scadent 13 Iun
+                </div>
+                <div style="display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.07);font-size:12px;font-weight:500;color:rgba(255,255,255,.65)">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                  Depozit Cluj
+                </div>
+                <div style="display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.07);font-size:12px;font-weight:500;color:rgba(255,255,255,.65)">
+                  Net 30
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Supplier -->
+          <div class="section-label">Furnizor</div>
+          <div class="card">
+            <div class="top-edge"></div>
+            <div class="supplier-card">
+              <div class="supplier-avatar">SU</div>
+              <div style="flex:1">
+                <div class="supplier-name">Suppliers SRL</div>
+                <div class="supplier-meta">4.8 ★ · 24 comenzi · 3-5 zile livrare</div>
+                <a class="supplier-link">→ Profil furnizor</a>
+              </div>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </div>
+          </div>
+
+          <!-- Details -->
+          <div class="section-label">Detalii</div>
+          <div class="card">
+            <div class="top-edge"></div>
+            <div class="detail-row"><span class="detail-row-label">Solicitat de</span><span class="detail-row-val">Andrei Popescu</span></div>
+            <div class="detail-row"><span class="detail-row-label">Proiect</span><span class="detail-row-val">Renovare Cluj #14</span></div>
+            <div class="detail-row"><span class="detail-row-label">Livrare la</span><span class="detail-row-val">Depozit Cluj</span></div>
+            <div class="detail-row"><span class="detail-row-label">Necesar până</span><span class="detail-row-val" style="color:rgba(255,159,10,.9)">13 Iun 2026</span></div>
+            <div class="detail-row"><span class="detail-row-label">Termeni plată</span><span class="detail-row-val">Net 30</span></div>
+          </div>
+
+          <!-- Line items -->
+          <div class="section-label">Articole (4)</div>
+          <div class="card">
+            <div class="top-edge"></div>
+            <div class="line-item">
+              <div style="flex:1">
+                <div class="li-name">Porcelain Tile 60×60cm</div>
+                <div class="li-ref">White Gloss · REF-4412</div>
+              </div>
+              <div class="li-qty">120 m²</div>
+              <div class="li-price">€7,200</div>
+            </div>
+            <div class="line-item">
+              <div style="flex:1">
+                <div class="li-name">Tile Adhesive Pro</div>
+                <div class="li-ref">25kg bags · REF-0821</div>
+              </div>
+              <div class="li-qty">40 saci</div>
+              <div class="li-price">€1,960</div>
+            </div>
+            <div class="line-item">
+              <div style="flex:1">
+                <div class="li-name">Grout White Fine</div>
+                <div class="li-ref">5kg bags · REF-3307</div>
+              </div>
+              <div class="li-qty">24 saci</div>
+              <div class="li-price">€840</div>
+            </div>
+            <div class="line-item" style="border-bottom:1px solid rgba(255,255,255,.07)">
+              <div style="flex:1">
+                <div class="li-name">Tile Spacers 3mm</div>
+                <div class="li-ref">500pcs pack · REF-1102</div>
+              </div>
+              <div class="li-qty">10 packs</div>
+              <div class="li-price">€2,400</div>
+            </div>
+            <div class="li-total-row">
+              <span class="li-total-lbl">Total</span>
+              <span class="li-total-val">€12,400</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Approve / Reject -->
+        <div class="cta-row">
+          <button class="btn-reject">Respinge</button>
+          <button class="btn-approve">Aprobă Comanda</button>
+        </div>
+
+      </div>
+
+      <!-- FAB -->
+      <div class="fab">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.9)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+      </div>
+
+      <!-- Tab bar -->
+      <div class="tab-bar">
+        <div class="tab"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span class="tab-lbl">Command</span></div>
+        <div class="tab active"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg><span class="tab-lbl">Operations</span></div>
+        <div class="tab"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><span class="tab-lbl">People</span></div>
+        <div class="tab"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span class="tab-lbl">Finance</span></div>
+        <div class="tab"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span class="tab-lbl">Intelligence</span></div>
+      </div>
+    </div>
+    <div class="label">Detalii PO (Pending) · /procurement/po-0194</div>
+  </div>
+
+  <!-- SCREEN 3: Action Sheet (FAB on detail) -->
+  <div>
+    <div class="phone">
+      <div class="screen" style="position:relative">
+
+        <!-- Blurred background (detail preview) -->
+        <button class="back-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+          Procurement
+        </button>
+        <div class="content" style="opacity:.3">
+          <div class="card" style="margin-bottom:14px">
+            <div class="top-edge"></div>
+            <div class="detail-hero">
+              <div class="hero-top">
+                <div><div class="po-detail-ref">PO-2026-0194</div><div class="po-detail-desc">Ceramic Tiles</div></div>
+                <span class="pill pill-pending">Pending</span>
+              </div>
+            </div>
+          </div>
+          <div class="section-label">Furnizor</div>
+          <div class="card" style="height:60px"></div>
+          <div class="section-label">Articole (4)</div>
+          <div class="card" style="height:100px"></div>
+        </div>
+
+        <!-- Sheet overlay -->
+        <div class="sheet-overlay">
+          <div class="sheet">
+            <div class="sheet-pill"></div>
+            <div class="sheet-title">Acțiuni Comandă</div>
+
+            <button class="sheet-btn sheet-btn-green">
+              <div class="sheet-icon sheet-icon-green">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(48,209,88,.9)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <div>
+                <div class="sheet-btn-lbl" style="color:rgba(48,209,88,.95)">Aprobă Comanda</div>
+                <div class="sheet-btn-sub">Trimite spre procesare</div>
+              </div>
+            </button>
+
+            <button class="sheet-btn sheet-btn-red">
+              <div class="sheet-icon sheet-icon-red">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,69,58,.9)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </div>
+              <div>
+                <div class="sheet-btn-lbl" style="color:rgba(255,69,58,.95)">Respinge</div>
+                <div class="sheet-btn-sub">Solicită modificări sau anulează</div>
+              </div>
+            </button>
+
+            <button class="sheet-btn sheet-btn-blue">
+              <div class="sheet-icon sheet-icon-blue">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(10,132,255,.9)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+              </div>
+              <div>
+                <div class="sheet-btn-lbl" style="color:rgba(10,132,255,.9)">Comandă Nouă</div>
+                <div class="sheet-btn-sub">Creează un nou PO</div>
+              </div>
+            </button>
+
+            <button class="sheet-btn sheet-btn-white">
+              <div class="sheet-icon sheet-icon-white">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              </div>
+              <div>
+                <div class="sheet-btn-lbl">Duplică PO</div>
+                <div class="sheet-btn-sub">Refolosește articolele și furnizorul</div>
+              </div>
+            </button>
+
+            <button class="sheet-btn sheet-btn-white">
+              <div class="sheet-icon sheet-icon-white">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              </div>
+              <div>
+                <div class="sheet-btn-lbl">Editează</div>
+                <div class="sheet-btn-sub">Modifică articole sau detalii</div>
+              </div>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab bar -->
+      <div class="tab-bar">
+        <div class="tab"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span class="tab-lbl">Command</span></div>
+        <div class="tab active"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg><span class="tab-lbl">Operations</span></div>
+        <div class="tab"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><span class="tab-lbl">People</span></div>
+        <div class="tab"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span class="tab-lbl">Finance</span></div>
+        <div class="tab"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span class="tab-lbl">Intelligence</span></div>
+      </div>
+    </div>
+    <div class="label">Sheet acțiuni · FAB → Aprobare / Respingere</div>
+  </div>
+
+</div>
+
+</body>
+</html>
