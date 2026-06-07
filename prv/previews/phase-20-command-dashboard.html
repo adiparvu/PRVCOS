@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Phase 20 · Command Dashboard · PRV</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: #080808;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 24px 80px;
+  gap: 36px;
+  color: rgba(255,255,255,0.92);
+}
+
+/* ── Header ── */
+.header { text-align: center; }
+.header-eyebrow { font-size: 11px; font-weight: 600; letter-spacing: 0.12em; color: rgba(255,255,255,0.35); text-transform: uppercase; margin-bottom: 8px; }
+.header-title { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; color: rgba(255,255,255,0.92); margin-bottom: 6px; }
+.header-sub { font-size: 14px; color: rgba(255,255,255,0.4); }
+
+/* ── Role switcher ── */
+.role-bar { display: flex; gap: 6px; justify-content: center; }
+.role-btn {
+  padding: 7px 16px; border-radius: 100px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.05);
+  color: rgba(255,255,255,0.5); font-size: 12px; font-weight: 500;
+  cursor: pointer; transition: all 0.18s; font-family: inherit;
+}
+.role-btn:hover { background: rgba(255,255,255,0.09); color: rgba(255,255,255,0.75); }
+.role-btn.active { background: rgba(255,255,255,0.14); border-color: rgba(255,255,255,0.3); color: rgba(255,255,255,0.92); }
+
+/* ── Scene ── */
+.scene { display: flex; gap: 48px; align-items: flex-start; justify-content: center; flex-wrap: wrap; }
+
+/* ── Phone ── */
+.phone {
+  width: 320px; height: 692px; background: #0d0d0d;
+  border-radius: 50px; border: 1.5px solid rgba(255,255,255,0.18);
+  overflow: hidden; position: relative;
+  box-shadow: 0 0 0 8px #111, 0 0 0 9px rgba(255,255,255,0.06), 0 40px 120px rgba(0,0,0,0.9), 0 12px 40px rgba(0,0,0,0.6);
+}
+.island {
+  position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+  width: 108px; height: 32px; background: #000; border-radius: 100px; z-index: 20;
+}
+.status-bar {
+  position: absolute; top: 0; left: 0; right: 0; height: 54px;
+  display: flex; align-items: flex-start; justify-content: space-between;
+  padding: 16px 24px 0; z-index: 15; pointer-events: none;
+}
+.status-time { font-size: 15px; font-weight: 600; color: rgba(255,255,255,0.92); }
+.status-icons { display: flex; gap: 5px; align-items: center; font-size: 11px; color: rgba(255,255,255,0.75); }
+
+/* Screen */
+.screen { position: absolute; inset: 0; background: #000; display: none; flex-direction: column; overflow: hidden; }
+.screen.active { display: flex; }
+.scroll { flex: 1; overflow-y: auto; padding: 60px 14px 96px; scrollbar-width: none; display: flex; flex-direction: column; gap: 0; }
+.scroll::-webkit-scrollbar { display: none; }
+
+/* ── Tab bar ── */
+.tab-bar {
+  position: absolute; bottom: 20px; left: 12px; right: 12px; height: 68px;
+  background: rgba(20,20,20,0.94); border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 28px; display: flex; align-items: center; justify-content: space-around;
+  padding: 0 8px; z-index: 10; overflow: hidden;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.8);
+}
+.tab-bar::before { content:''; position:absolute; top:0;left:0;right:0;height:1px; background:rgba(255,255,255,0.32); }
+.tab { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; padding:6px 0; position:relative; }
+.tab-icon { font-size:20px; color:rgba(255,255,255,0.35); line-height:24px; }
+.tab-label { font-size:9px; font-weight:600; letter-spacing:0.3px; text-transform:uppercase; color:rgba(255,255,255,0.35); }
+.tab.active .tab-icon { color:rgba(255,255,255,0.92); }
+.tab.active .tab-label { color:rgba(255,255,255,0.65); }
+.tab-dot { width:4px; height:4px; border-radius:2px; background:rgba(255,255,255,0.92); position:absolute; bottom:4px; }
+
+/* ── Design primitives ── */
+.glass {
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 20px; position: relative; overflow: hidden;
+}
+.glass::before { content:''; position:absolute; top:0;left:0;right:0;height:1px; background:rgba(255,255,255,0.32); }
+
+/* ── Command screen elements ── */
+
+/* Header */
+.cmd-header { padding: 4px 2px 16px; }
+.cmd-greeting { font-size: 12px; font-weight: 500; color: rgba(255,255,255,0.35); letter-spacing: 0.02em; margin-bottom: 2px; }
+.cmd-name { font-size: 28px; font-weight: 700; letter-spacing: -0.4px; line-height: 1.1; }
+.cmd-role-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  margin-top: 7px; padding: 4px 10px; border-radius: 100px;
+  background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1);
+  font-size: 11px; font-weight: 500; color: rgba(255,255,255,0.55);
+}
+.cmd-role-dot { width: 5px; height: 5px; border-radius: 50%; background: rgba(48,209,88,0.9); }
+
+/* KPI row */
+.kpi-row { display: flex; gap: 8px; margin-bottom: 8px; }
+.kpi-card {
+  flex: 1; padding: 12px 12px 10px;
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 18px; position: relative; overflow: hidden;
+}
+.kpi-card::before { content:''; position:absolute; top:0;left:0;right:0;height:1px; background:rgba(255,255,255,0.28); }
+.kpi-val { font-size: 22px; font-weight: 700; letter-spacing: -0.3px; line-height: 1; margin-bottom: 4px; }
+.kpi-val.green { color: #30d158; }
+.kpi-val.amber { color: #ff9f0a; }
+.kpi-lbl { font-size: 11px; color: rgba(255,255,255,0.45); font-weight: 500; }
+.kpi-delta { font-size: 10px; margin-top: 4px; }
+.kpi-delta.up { color: rgba(48,209,88,0.8); }
+.kpi-delta.dn { color: rgba(255,69,58,0.8); }
+.kpi-delta.neu { color: rgba(255,255,255,0.3); }
+
+/* Wide KPI — spans 2 cols */
+.kpi-wide { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+.kpi-wide .kpi-card { flex: unset; }
+
+/* Secondary strip */
+.metric-strip { display: flex; gap: 8px; margin-bottom: 14px; }
+.metric-pill {
+  flex: 1; padding: 9px 10px; border-radius: 14px;
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.09);
+  text-align: center;
+}
+.metric-pill-val { font-size: 16px; font-weight: 700; letter-spacing: -0.2px; }
+.metric-pill-lbl { font-size: 9px; font-weight: 500; color: rgba(255,255,255,0.35); text-transform: uppercase; letter-spacing: 0.04em; margin-top: 2px; }
+
+/* Section header */
+.sec-hd { font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.45); letter-spacing: -0.08px; margin-bottom: 8px; margin-top: 14px; text-transform: uppercase; font-size:10px; letter-spacing: 0.08em; }
+
+/* AI briefing */
+.ai-card { padding: 13px 14px; margin-bottom: 8px; }
+.ai-top { display: flex; align-items: center; gap: 7px; margin-bottom: 7px; }
+.ai-glyph { font-size: 15px; }
+.ai-badge {
+  font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.55);
+  background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1);
+  padding: 2px 7px; border-radius: 100px; letter-spacing: 0.04em;
+}
+.ai-ts { font-size: 10px; color: rgba(255,255,255,0.25); margin-left: auto; }
+.ai-body { font-size: 13px; color: rgba(255,255,255,0.6); line-height: 18px; }
+.ai-insight { display: flex; align-items: flex-start; gap: 6px; margin-top: 7px; padding-top: 7px; border-top: 1px solid rgba(255,255,255,0.07); }
+.ai-bullet { font-size: 10px; color: rgba(255,255,255,0.3); margin-top: 3px; flex-shrink: 0; }
+.ai-insight-text { font-size: 12px; color: rgba(255,255,255,0.45); line-height: 17px; }
+.ai-insight-text strong { color: rgba(255,255,255,0.7); font-weight: 600; }
+
+/* Alert card */
+.alert-card { padding: 11px 13px; display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.alert-icon { font-size: 14px; flex-shrink: 0; }
+.alert-body { flex: 1; }
+.alert-title { font-size: 13px; font-weight: 600; }
+.alert-sub { font-size: 11px; color: rgba(255,255,255,0.4); margin-top: 1px; }
+.alert-time { font-size: 10px; color: rgba(255,255,255,0.3); flex-shrink: 0; }
+.alert-amber { border-color: rgba(255,159,10,0.3); background: rgba(255,159,10,0.06); }
+.alert-amber::before { background: rgba(255,159,10,0.5); }
+.alert-red { border-color: rgba(255,69,58,0.3); background: rgba(255,69,58,0.06); }
+.alert-red::before { background: rgba(255,69,58,0.5); }
+
+/* Inbox row */
+.inbox-row { display: flex; align-items: center; gap: 10px; padding: 11px 13px; }
+.inbox-row + .inbox-row { border-top: 1px solid rgba(255,255,255,0.06); }
+.inbox-avatar { width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; flex-shrink: 0; color: rgba(255,255,255,0.75); }
+.inbox-text { flex: 1; min-width: 0; }
+.inbox-sender { font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.88); }
+.inbox-preview { font-size: 11px; color: rgba(255,255,255,0.35); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+.inbox-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
+.inbox-time { font-size: 10px; color: rgba(255,255,255,0.3); }
+.inbox-unread { width: 7px; height: 7px; border-radius: 50%; background: #0a84ff; }
+
+/* Quick actions */
+.actions-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 4px; }
+.action-btn {
+  padding: 12px 12px; border-radius: 16px;
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.09);
+  display: flex; align-items: center; gap: 8px; cursor: pointer;
+  position: relative; overflow: hidden;
+}
+.action-btn::before { content:''; position:absolute; top:0;left:0;right:0;height:1px; background:rgba(255,255,255,0.14); }
+.action-icon { font-size: 16px; flex-shrink: 0; }
+.action-label { font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.7); }
+
+/* ── Spec panel ── */
+.spec-panel { width: 280px; display: flex; flex-direction: column; gap: 16px; }
+.spec-block {
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px; padding: 18px; position: relative; overflow: hidden;
+}
+.spec-block::before { content:''; position:absolute; top:0;left:0;right:0;height:1px; background:rgba(255,255,255,0.14); }
+.spec-label { font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.35); margin-bottom: 12px; }
+.spec-row { display: flex; justify-content: space-between; align-items: baseline; padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.spec-row:last-child { border-bottom: none; }
+.spec-key { font-size: 12px; color: rgba(255,255,255,0.45); }
+.spec-val { font-size: 12px; color: rgba(255,255,255,0.75); font-weight: 500; text-align: right; max-width: 170px; }
+.spec-val.mono { font-family: "SF Mono","Fira Code",monospace; font-size: 11px; }
+.spec-divider { height: 1px; background: rgba(255,255,255,0.07); margin: 10px 0 12px; }
+.spec-sub { font-size: 11px; color: rgba(255,255,255,0.35); line-height: 17px; margin-top: 8px; }
+
+.stack-item { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.stack-item:last-child { border-bottom: none; }
+.stack-icon { font-size: 14px; width: 20px; text-align: center; flex-shrink: 0; }
+.stack-text { flex: 1; }
+.stack-name { font-size: 12px; color: rgba(255,255,255,0.75); font-weight: 500; }
+.stack-desc { font-size: 10px; color: rgba(255,255,255,0.35); margin-top: 1px; }
+
+.section-item { padding: 7px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.section-item:last-child { border-bottom: none; }
+.section-name { font-size: 12px; color: rgba(255,255,255,0.75); font-weight: 600; }
+.section-desc { font-size: 11px; color: rgba(255,255,255,0.35); margin-top: 2px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-eyebrow">Phase 20 · Preview</div>
+  <div class="header-title">Command Dashboard</div>
+  <div class="header-sub">KPIs · AI Briefing · Alerts · Inbox · Quick Actions</div>
+</div>
+
+<!-- Role switcher -->
+<div class="role-bar">
+  <button class="role-btn active" onclick="switchRole('ceo', this)">CEO</button>
+  <button class="role-btn" onclick="switchRole('regional', this)">Regional Manager</button>
+  <button class="role-btn" onclick="switchRole('store', this)">Store Manager</button>
+</div>
+
+<div class="scene">
+
+  <!-- Phone -->
+  <div class="phone">
+    <div class="island"></div>
+    <div class="status-bar">
+      <span class="status-time">9:41</span>
+      <div class="status-icons"><span>●●●●</span><span> WiFi </span><span>▮</span></div>
+    </div>
+
+    <!-- CEO Screen -->
+    <div class="screen active" id="screen-ceo">
+      <div class="scroll">
+
+        <!-- Header -->
+        <div class="cmd-header">
+          <div class="cmd-greeting">Saturday, 7 June</div>
+          <div class="cmd-name">Good morning,<br/>Alexandru</div>
+          <div class="cmd-role-chip"><div class="cmd-role-dot"></div>CEO · PRV Group</div>
+        </div>
+
+        <!-- Primary KPIs -->
+        <div class="kpi-row">
+          <div class="kpi-card">
+            <div class="kpi-val">€124k</div>
+            <div class="kpi-lbl">Revenue</div>
+            <div class="kpi-delta up">↑ 12% vs last week</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-val green">€31k</div>
+            <div class="kpi-lbl">Profit</div>
+            <div class="kpi-delta up">↑ 8% vs last week</div>
+          </div>
+        </div>
+        <div class="kpi-row">
+          <div class="kpi-card">
+            <div class="kpi-val">8</div>
+            <div class="kpi-lbl">Active Projects</div>
+            <div class="kpi-delta neu">2 on hold</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-val">47</div>
+            <div class="kpi-lbl">Team Online</div>
+            <div class="kpi-delta up">↑ 3 since yesterday</div>
+          </div>
+        </div>
+
+        <!-- Secondary strip -->
+        <div class="metric-strip">
+          <div class="metric-pill">
+            <div class="metric-pill-val" style="color:rgba(255,159,10,0.9);">23</div>
+            <div class="metric-pill-lbl">Open Tasks</div>
+          </div>
+          <div class="metric-pill">
+            <div class="metric-pill-val" style="color:rgba(255,69,58,0.9);">2</div>
+            <div class="metric-pill-lbl">Alerts</div>
+          </div>
+          <div class="metric-pill">
+            <div class="metric-pill-val">€8.4k</div>
+            <div class="metric-pill-lbl">Inv. Due</div>
+          </div>
+        </div>
+
+        <!-- AI Briefing -->
+        <div class="sec-hd">AI Briefing</div>
+        <div class="glass ai-card">
+          <div class="ai-top">
+            <span class="ai-glyph">✦</span>
+            <span class="ai-badge">PRV AI</span>
+            <span class="ai-ts">Just now</span>
+          </div>
+          <div class="ai-body">3 things need your attention today.</div>
+          <div class="ai-insight">
+            <div class="ai-bullet">●</div>
+            <div class="ai-insight-text"><strong>Store Brăila</strong> revenue down 18% — staffing gap on Fridays detected.</div>
+          </div>
+          <div class="ai-insight">
+            <div class="ai-bullet">●</div>
+            <div class="ai-insight-text"><strong>Project #P-041</strong> is 6 days behind schedule. 2 blockers unresolved.</div>
+          </div>
+          <div class="ai-insight">
+            <div class="ai-bullet">●</div>
+            <div class="ai-insight-text"><strong>Inventory forecast</strong> predicts stock-out for SKU-2291 in 4 days.</div>
+          </div>
+        </div>
+
+        <!-- Alerts -->
+        <div class="sec-hd">Critical Alerts</div>
+        <div class="glass alert-card alert-amber">
+          <div class="alert-icon">⚠</div>
+          <div class="alert-body">
+            <div class="alert-title">Low stock — SKU-2291</div>
+            <div class="alert-sub">Depozit Centrale · 4 days to stockout</div>
+          </div>
+          <div class="alert-time">2h ago</div>
+        </div>
+        <div class="glass alert-card alert-red" style="margin-bottom:0;">
+          <div class="alert-icon">●</div>
+          <div class="alert-body">
+            <div class="alert-title">Invoice overdue — Client Ionescu SRL</div>
+            <div class="alert-sub">€4,200 · 12 days past due</div>
+          </div>
+          <div class="alert-time">1d ago</div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="sec-hd">Quick Actions</div>
+        <div class="actions-grid">
+          <div class="action-btn"><div class="action-icon">＋</div><div class="action-label">New Task</div></div>
+          <div class="action-btn"><div class="action-icon">◎</div><div class="action-label">Add Employee</div></div>
+          <div class="action-btn"><div class="action-icon">⟁</div><div class="action-label">New Invoice</div></div>
+          <div class="action-btn"><div class="action-icon">⊞</div><div class="action-label">View Reports</div></div>
+        </div>
+
+        <!-- Inbox -->
+        <div class="sec-hd">Inbox</div>
+        <div class="glass" style="margin-bottom:0;border-radius:18px;overflow:hidden;">
+          <div class="inbox-row">
+            <div class="inbox-avatar">MV</div>
+            <div class="inbox-text">
+              <div class="inbox-sender">Mihai Vlad</div>
+              <div class="inbox-preview">Proiectul P-041 are o problema cu furnizorul...</div>
+            </div>
+            <div class="inbox-meta"><div class="inbox-time">10m</div><div class="inbox-unread"></div></div>
+          </div>
+          <div class="inbox-row">
+            <div class="inbox-avatar">AP</div>
+            <div class="inbox-text">
+              <div class="inbox-sender">Ana Pop</div>
+              <div class="inbox-preview">Raportul de luna trecuta este gata de semnat</div>
+            </div>
+            <div class="inbox-meta"><div class="inbox-time">1h</div><div class="inbox-unread"></div></div>
+          </div>
+          <div class="inbox-row">
+            <div class="inbox-avatar">RD</div>
+            <div class="inbox-text">
+              <div class="inbox-sender">Radu Dima</div>
+              <div class="inbox-preview">Confirmat — echipa e disponibila sambata</div>
+            </div>
+            <div class="inbox-meta"><div class="inbox-time">3h</div></div>
+          </div>
+        </div>
+
+      </div>
+      <div class="tab-bar">
+        <div class="tab active"><div class="tab-icon">⌂</div><div class="tab-label">Command</div><div class="tab-dot"></div></div>
+        <div class="tab"><div class="tab-icon">⊞</div><div class="tab-label">Ops</div></div>
+        <div class="tab"><div class="tab-icon">◎</div><div class="tab-label">People</div></div>
+        <div class="tab"><div class="tab-icon">⟁</div><div class="tab-label">Finance</div></div>
+        <div class="tab"><div class="tab-icon">✦</div><div class="tab-label">Intel</div></div>
+      </div>
+    </div>
+
+    <!-- Regional Manager Screen -->
+    <div class="screen" id="screen-regional">
+      <div class="scroll">
+        <div class="cmd-header">
+          <div class="cmd-greeting">Saturday, 7 June</div>
+          <div class="cmd-name">Good morning,<br/>Cristian</div>
+          <div class="cmd-role-chip"><div class="cmd-role-dot"></div>Regional Manager · Sud-Est</div>
+        </div>
+        <div class="kpi-row">
+          <div class="kpi-card">
+            <div class="kpi-val">€38k</div>
+            <div class="kpi-lbl">Region Revenue</div>
+            <div class="kpi-delta up">↑ 6% vs last week</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-val">4</div>
+            <div class="kpi-lbl">Stores</div>
+            <div class="kpi-delta" style="color:rgba(255,69,58,0.8);">1 underperforming</div>
+          </div>
+        </div>
+        <div class="kpi-row">
+          <div class="kpi-card">
+            <div class="kpi-val">19</div>
+            <div class="kpi-lbl">Staff Online</div>
+            <div class="kpi-delta neu">3 absent</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-val amber">11</div>
+            <div class="kpi-lbl">Open Tasks</div>
+            <div class="kpi-delta" style="color:rgba(255,159,10,0.8);">4 overdue</div>
+          </div>
+        </div>
+        <div class="sec-hd">AI Briefing</div>
+        <div class="glass ai-card">
+          <div class="ai-top"><span class="ai-glyph">✦</span><span class="ai-badge">PRV AI</span><span class="ai-ts">Just now</span></div>
+          <div class="ai-body">2 stores need attention this week.</div>
+          <div class="ai-insight"><div class="ai-bullet">●</div><div class="ai-insight-text"><strong>Store Brăila</strong> is 18% below regional average — Friday coverage gap.</div></div>
+          <div class="ai-insight"><div class="ai-bullet">●</div><div class="ai-insight-text"><strong>Store Galați</strong> has 4 overdue tasks assigned to same employee.</div></div>
+        </div>
+        <div class="sec-hd">Stores Overview</div>
+        <div class="glass" style="overflow:hidden;border-radius:18px;">
+          <div class="inbox-row"><div class="inbox-avatar" style="border-radius:8px;font-size:10px;font-weight:700;">BRL</div><div class="inbox-text"><div class="inbox-sender">Brăila</div><div class="inbox-preview">€7.2k today · ↓ 18%</div></div><div class="inbox-meta"><div class="inbox-time" style="color:rgba(255,69,58,0.8);font-weight:600;">Low</div></div></div>
+          <div class="inbox-row"><div class="inbox-avatar" style="border-radius:8px;font-size:10px;font-weight:700;">GLT</div><div class="inbox-text"><div class="inbox-sender">Galați</div><div class="inbox-preview">€9.1k today · ↑ 4%</div></div><div class="inbox-meta"><div class="inbox-time" style="color:rgba(48,209,88,0.8);font-weight:600;">OK</div></div></div>
+          <div class="inbox-row"><div class="inbox-avatar" style="border-radius:8px;font-size:10px;font-weight:700;">TLS</div><div class="inbox-text"><div class="inbox-sender">Tulcea</div><div class="inbox-preview">€11.4k today · ↑ 9%</div></div><div class="inbox-meta"><div class="inbox-time" style="color:rgba(48,209,88,0.8);font-weight:600;">OK</div></div></div>
+          <div class="inbox-row"><div class="inbox-avatar" style="border-radius:8px;font-size:10px;font-weight:700;">FCS</div><div class="inbox-text"><div class="inbox-sender">Focșani</div><div class="inbox-preview">€10.3k today · ↑ 2%</div></div><div class="inbox-meta"><div class="inbox-time" style="color:rgba(48,209,88,0.8);font-weight:600;">OK</div></div></div>
+        </div>
+      </div>
+      <div class="tab-bar">
+        <div class="tab active"><div class="tab-icon">⌂</div><div class="tab-label">Command</div><div class="tab-dot"></div></div>
+        <div class="tab"><div class="tab-icon">⊞</div><div class="tab-label">Ops</div></div>
+        <div class="tab"><div class="tab-icon">◎</div><div class="tab-label">People</div></div>
+        <div class="tab"><div class="tab-icon">⟁</div><div class="tab-label">Finance</div></div>
+        <div class="tab"><div class="tab-icon">✦</div><div class="tab-label">Intel</div></div>
+      </div>
+    </div>
+
+    <!-- Store Manager Screen -->
+    <div class="screen" id="screen-store">
+      <div class="scroll">
+        <div class="cmd-header">
+          <div class="cmd-greeting">Saturday, 7 June</div>
+          <div class="cmd-name">Good morning,<br/>Ioana</div>
+          <div class="cmd-role-chip"><div class="cmd-role-dot"></div>Store Manager · Brăila</div>
+        </div>
+        <div class="kpi-row">
+          <div class="kpi-card">
+            <div class="kpi-val">€7.2k</div>
+            <div class="kpi-lbl">Today's Revenue</div>
+            <div class="kpi-delta" style="color:rgba(255,69,58,0.8);">↓ 18% vs target</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-val">12</div>
+            <div class="kpi-lbl">Staff Today</div>
+            <div class="kpi-delta" style="color:rgba(255,159,10,0.8);">2 absent</div>
+          </div>
+        </div>
+        <div class="kpi-row">
+          <div class="kpi-card">
+            <div class="kpi-val">6</div>
+            <div class="kpi-lbl">Open Tasks</div>
+            <div class="kpi-delta" style="color:rgba(255,159,10,0.8);">2 overdue</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-val green">94%</div>
+            <div class="kpi-lbl">Attendance</div>
+            <div class="kpi-delta up">↑ this week</div>
+          </div>
+        </div>
+        <div class="sec-hd">AI Briefing</div>
+        <div class="glass ai-card">
+          <div class="ai-top"><span class="ai-glyph">✦</span><span class="ai-badge">PRV AI</span><span class="ai-ts">Just now</span></div>
+          <div class="ai-body">Today looks manageable. One urgent item.</div>
+          <div class="ai-insight"><div class="ai-bullet">●</div><div class="ai-insight-text"><strong>SKU-2291</strong> will stock out by Tuesday. Reorder now to avoid disruption.</div></div>
+        </div>
+        <div class="sec-hd">My Tasks</div>
+        <div class="glass" style="overflow:hidden;border-radius:18px;">
+          <div class="inbox-row"><div class="inbox-avatar" style="background:rgba(255,159,10,0.12);border-color:rgba(255,159,10,0.2);font-size:12px;">!</div><div class="inbox-text"><div class="inbox-sender" style="font-size:12px;">Reorder SKU-2291</div><div class="inbox-preview">Due today</div></div><div class="inbox-meta"><div class="inbox-time" style="color:rgba(255,159,10,0.8);">Urgent</div></div></div>
+          <div class="inbox-row"><div class="inbox-avatar" style="font-size:12px;">✓</div><div class="inbox-text"><div class="inbox-sender" style="font-size:12px;">Staff schedule — next week</div><div class="inbox-preview">Due Monday</div></div><div class="inbox-meta"><div class="inbox-time">2d</div></div></div>
+          <div class="inbox-row"><div class="inbox-avatar" style="font-size:12px;">◎</div><div class="inbox-text"><div class="inbox-sender" style="font-size:12px;">Review Andrei's evaluation</div><div class="inbox-preview">Due Wednesday</div></div><div class="inbox-meta"><div class="inbox-time">4d</div></div></div>
+        </div>
+        <div class="sec-hd">Quick Actions</div>
+        <div class="actions-grid">
+          <div class="action-btn"><div class="action-icon">＋</div><div class="action-label">New Task</div></div>
+          <div class="action-btn"><div class="action-icon">⋯</div><div class="action-label">Schedule</div></div>
+          <div class="action-btn"><div class="action-icon">⬡</div><div class="action-label">Inventory</div></div>
+          <div class="action-btn"><div class="action-icon">◎</div><div class="action-label">My Team</div></div>
+        </div>
+      </div>
+      <div class="tab-bar">
+        <div class="tab active"><div class="tab-icon">⌂</div><div class="tab-label">Command</div><div class="tab-dot"></div></div>
+        <div class="tab"><div class="tab-icon">⊞</div><div class="tab-label">Ops</div></div>
+        <div class="tab"><div class="tab-icon">◎</div><div class="tab-label">People</div></div>
+        <div class="tab"><div class="tab-icon">⟁</div><div class="tab-label">Finance</div></div>
+        <div class="tab"><div class="tab-icon">✦</div><div class="tab-label">Intel</div></div>
+      </div>
+    </div>
+
+  </div><!-- /phone -->
+
+  <!-- Spec panel -->
+  <div class="spec-panel">
+
+    <div class="spec-block">
+      <div class="spec-label">Screen Sections</div>
+      <div class="section-item"><div class="section-name">Greeting Header</div><div class="section-desc">Name, date, role chip with live indicator</div></div>
+      <div class="section-item"><div class="section-name">Primary KPIs (2×2)</div><div class="section-desc">Revenue, Profit, Projects, Team — with delta</div></div>
+      <div class="section-item"><div class="section-name">Secondary Strip</div><div class="section-desc">Tasks, Alerts, Invoices Due — compact pills</div></div>
+      <div class="section-item"><div class="section-name">AI Briefing</div><div class="section-desc">✦ PRV AI — bullet insights, refreshed daily</div></div>
+      <div class="section-item"><div class="section-name">Critical Alerts</div><div class="section-desc">Amber/red cards, only when active</div></div>
+      <div class="section-item"><div class="section-name">Quick Actions</div><div class="section-desc">4 role-specific shortcuts, 2×2 grid</div></div>
+      <div class="section-item"><div class="section-name">Inbox</div><div class="section-desc">Latest 3 messages, unread dot, tap to open</div></div>
+    </div>
+
+    <div class="spec-block">
+      <div class="spec-label">Role-Aware Content</div>
+      <div class="spec-row"><div class="spec-key">CEO</div><div class="spec-val">All companies · full KPIs</div></div>
+      <div class="spec-row"><div class="spec-key">Regional Mgr</div><div class="spec-val">Region + store list</div></div>
+      <div class="spec-row"><div class="spec-key">Store Manager</div><div class="spec-val">Own store + my tasks</div></div>
+      <div class="spec-row"><div class="spec-key">Cashier</div><div class="spec-val">Today's shift + register</div></div>
+    </div>
+
+    <div class="spec-block">
+      <div class="spec-label">Data Layer</div>
+      <div class="stack-item"><div class="stack-icon">⟳</div><div class="stack-text"><div class="stack-name">TanStack Query v5</div><div class="stack-desc">QueryClientProvider in root layout</div></div></div>
+      <div class="stack-item"><div class="stack-icon">◈</div><div class="stack-text"><div class="stack-name">API client</div><div class="stack-desc">src/lib/api.ts — fetch + auth header</div></div></div>
+      <div class="stack-item"><div class="stack-icon">◎</div><div class="stack-text"><div class="stack-name">useCommand hook</div><div class="stack-desc">src/hooks/useCommand.ts</div></div></div>
+      <div class="stack-item"><div class="stack-icon">⬡</div><div class="stack-text"><div class="stack-name">Skeleton loading</div><div class="stack-desc">Animated glass placeholder cards</div></div></div>
+      <div class="stack-item"><div class="stack-icon">⟁</div><div class="stack-text"><div class="stack-name">Pull-to-refresh</div><div class="stack-desc">RefreshControl on ScrollView</div></div></div>
+    </div>
+
+    <div class="spec-block">
+      <div class="spec-label">New Files</div>
+      <div class="spec-row"><div class="spec-key mono">src/lib/api.ts</div><div class="spec-val">API client</div></div>
+      <div class="spec-row"><div class="spec-key mono">src/hooks/useCommand.ts</div><div class="spec-val">Query hooks</div></div>
+      <div class="spec-row"><div class="spec-key mono">src/components/Skeleton.tsx</div><div class="spec-val">Loading states</div></div>
+      <div class="spec-row"><div class="spec-key mono">src/components/KPICard.tsx</div><div class="spec-val">Reusable KPI card</div></div>
+      <div class="spec-row"><div class="spec-key mono">app/(tabs)/command.tsx</div><div class="spec-val">Full rewrite</div></div>
+      <div class="spec-row"><div class="spec-key mono">app/_layout.tsx</div><div class="spec-val">+ QueryClientProvider</div></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+function switchRole(role, btn) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'))
+  document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'))
+  document.getElementById('screen-' + role).classList.add('active')
+  if (btn) btn.classList.add('active')
+}
+</script>
+</body>
+</html>
