@@ -20,6 +20,9 @@ export const metadata: Metadata = {
   },
   description: "The complete operating system for modern companies.",
   robots: { index: false, follow: false },
+  icons: {
+    icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
+  },
 }
 
 export const viewport: Viewport = {

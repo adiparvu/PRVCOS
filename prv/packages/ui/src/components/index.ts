@@ -22,6 +22,9 @@ export type { GlassBadgeProps } from "./glass-badge"
 export { PRVText } from "./prv-text"
 export type { PRVTextProps, TextVariant, TextColor } from "./prv-text"
 
+export { PRVMark, PRVLogo, PRVAppIcon, PRVAvatar } from "./prv-logo"
+export type { PRVMarkProps, PRVLogoProps, PRVAppIconProps, PRVAvatarProps } from "./prv-logo"
+
 export { AppearanceSettings } from "./appearance-settings"
 export type { AppearanceSettingsProps } from "./appearance-settings"
 

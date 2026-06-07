@@ -8,6 +8,9 @@ export const metadata: Metadata = {
   },
   description:
     "PRV unifies 18 platforms — projects, workforce, finance, AI — into a single Apple-grade experience.",
+  icons: {
+    icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
+  },
 }
 
 export const viewport: Viewport = {

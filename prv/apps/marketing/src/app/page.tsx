@@ -5,6 +5,7 @@ import {
   GlassFeatureGrid,
   GlassPricingTable,
   GlassTestimonial,
+  PRVLogo,
   type FeatureItem,
   type PricingPlan,
 } from "@prv/ui"
@@ -147,15 +148,7 @@ export default function LandingPage() {
     <main className="max-w-[1000px] mx-auto px-6">
       {/* Nav */}
       <nav className="flex items-center justify-between py-4">
-        <div className="flex items-center gap-2.5 text-[17px] font-extrabold tracking-tight">
-          <span
-            className="w-7 h-7 rounded-[8px] flex items-center justify-center text-[13px]"
-            style={{ background: "linear-gradient(135deg,#0A84FF,#BF5AF2)" }}
-          >
-            ✦
-          </span>
-          PRV
-        </div>
+        <PRVLogo height={24} color="var(--prv-text-1)" />
         <div className="hidden sm:flex gap-6 text-[14px] text-white/65">
           <a href="#features">Product</a>
           <a href="#features">Platforms</a>
@@ -255,15 +248,7 @@ export default function LandingPage() {
         className="flex items-center justify-between flex-wrap gap-3 py-7 text-[13px] text-white/35"
         style={{ borderTop: "1px solid var(--prv-border-subtle)" }}
       >
-        <div className="flex items-center gap-2.5 font-extrabold text-white/90">
-          <span
-            className="w-7 h-7 rounded-[8px] flex items-center justify-center text-[13px]"
-            style={{ background: "linear-gradient(135deg,#0A84FF,#BF5AF2)" }}
-          >
-            ✦
-          </span>
-          PRV
-        </div>
+        <PRVLogo height={20} color="var(--prv-text-1)" />
         <div>© 2026 PRV · Privacy · Terms · Status</div>
       </footer>
     </main>
