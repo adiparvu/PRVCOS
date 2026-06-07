@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Task 8 — Expense Report Builder</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #000; font-family: -apple-system, 'SF Pro Text', BlinkMacSystemFont, sans-serif;
+         color: rgba(255,255,255,0.9); -webkit-font-smoothing: antialiased;
+         padding: 56px 16px 100px; max-width: 480px; margin: 0 auto; }
+
+  .back { display: flex; align-items: center; gap: 5px; font-size: 13px;
+          color: rgba(255,255,255,0.35); margin-bottom: 4px; cursor: pointer; }
+  h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; }
+
+  .slabel { font-size: 10px; font-weight: 700; letter-spacing: 0.07em;
+            text-transform: uppercase; color: rgba(255,255,255,0.35); margin: 0 2px 8px; }
+
+  .card { border-radius: 18px; padding: 14px; margin-bottom: 14px;
+          background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); position: relative; overflow: hidden; }
+  .card::before { content:''; position:absolute; top:0; left:0; right:0; height:1px;
+                  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent); }
+
+  .field-label { font-size: 10px; font-weight: 700; text-transform: uppercase;
+                 letter-spacing: .06em; color: rgba(255,255,255,0.35); margin-bottom: 6px; }
+  .input-stub { height: 38px; border-radius: 10px;
+                background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.10);
+                display: flex; align-items: center; padding: 0 11px;
+                font-size: 13px; color: rgba(255,255,255,0.30); }
+  .input-filled { color: rgba(255,255,255,0.85); }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+
+  /* category strip */
+  .cats { display: flex; gap: 6px; margin-bottom: 14px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+  .cat { padding: 6px 13px; border-radius: 100px; font-size: 12px; font-weight: 600;
+         white-space: nowrap; cursor: pointer; }
+  .cat-on  { background: rgba(255,255,255,0.92); color: #000; }
+  .cat-off { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.11);
+             color: rgba(255,255,255,0.50); }
+
+  /* line items list */
+  .lines-card { border-radius: 18px; overflow: hidden; margin-bottom: 14px;
+                background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); }
+  .line-row { display: flex; align-items: center; gap: 10px; padding: 11px 14px;
+              border-bottom: 1px solid rgba(255,255,255,0.07); }
+  .cat-icon { width: 34px; height: 34px; border-radius: 9px; display: flex;
+              align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+  .icon-transport  { background: rgba(10,132,255,0.15); }
+  .icon-materiale  { background: rgba(255,159,10,0.15); }
+  .icon-subcontr   { background: rgba(130,100,255,0.15); }
+  .icon-utilitati  { background: rgba(48,209,88,0.12); }
+  .icon-diverse    { background: rgba(255,255,255,0.08); }
+
+  /* add-row (expanded) */
+  .add-row { padding: 12px 14px; background: rgba(255,255,255,0.03); }
+  .add-top { display: flex; gap: 8px; margin-bottom: 8px; }
+  .add-desc { flex: 1; height: 38px; border-radius: 10px; background: rgba(255,255,255,0.07);
+              border: 1px solid rgba(255,255,255,0.10); display: flex; align-items: center;
+              padding: 0 11px; font-size: 13px; color: rgba(255,255,255,0.28); }
+  .btn-remove { width: 38px; height: 38px; border-radius: 9px; flex-shrink: 0;
+                background: rgba(255,69,58,0.12); color: rgba(255,69,58,0.8);
+                display: flex; align-items: center; justify-content: center; font-size: 13px; cursor: pointer; }
+
+  /* totals */
+  .totals-card { border-radius: 18px; overflow: hidden; margin-bottom: 14px;
+                 background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); }
+  .total-row { display: flex; justify-content: space-between; align-items: center;
+               padding: 10px 14px; border-bottom: 1px solid rgba(255,255,255,0.07); }
+  .total-row:last-child { border-bottom: none; padding: 13px 14px; }
+
+  /* approval badge */
+  .badge-approval { display: inline-flex; align-items: center; gap: 5px; padding: 4px 11px;
+                    border-radius: 8px; font-size: 11px; font-weight: 600; }
+
+  /* actions */
+  .actions { display: flex; gap: 10px; }
+  .btn-draft  { flex: 1; padding: 14px; border-radius: 14px; font-size: 14px; font-weight: 600;
+                background: rgba(255,255,255,0.09); border: 1px solid rgba(255,255,255,0.12);
+                color: rgba(255,255,255,0.60); text-align: center; cursor: pointer; }
+  .btn-submit { flex: 1; padding: 14px; border-radius: 14px; font-size: 14px; font-weight: 700;
+                background: rgba(255,255,255,0.92); color: #000; text-align: center; cursor: pointer; }
+
+  .section-row { display: flex; justify-content: space-between; align-items: center; margin: 18px 2px 8px; }
+  .add-link { font-size: 12px; font-weight: 600; color: rgba(10,132,255,0.9); cursor: pointer; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="back">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+  Cheltuieli
+</div>
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:22px">
+  <h1>Raport Cheltuieli</h1>
+  <span class="badge-approval" style="background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.45);">
+    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+    Ciornă
+  </span>
+</div>
+
+<!-- General info -->
+<p class="slabel">Informații generale</p>
+<div class="card">
+  <p class="field-label">Titlu raport</p>
+  <div class="input-stub" style="margin-bottom:10px">Deplasare Cluj – București 07.06.2026</div>
+  <div class="grid2">
+    <div>
+      <p class="field-label">Data</p>
+      <div class="input-stub input-filled">2026-06-07</div>
+    </div>
+    <div>
+      <p class="field-label">Proiect asociat</p>
+      <div class="input-stub">Selectează...</div>
+    </div>
+  </div>
+</div>
+
+<!-- Category filter -->
+<p class="slabel">Categorie</p>
+<div class="cats">
+  <div class="cat cat-on">Transport</div>
+  <div class="cat cat-off">Materiale</div>
+  <div class="cat cat-off">Subcontr.</div>
+  <div class="cat cat-off">Utilități</div>
+  <div class="cat cat-off">Diverse</div>
+</div>
+
+<!-- Line items -->
+<div class="section-row">
+  <p class="slabel" style="margin:0">Linii cheltuieli (3)</p>
+  <span class="add-link">+ Adaugă</span>
+</div>
+
+<div class="lines-card">
+  <!-- row 1 -->
+  <div class="line-row">
+    <div class="cat-icon icon-transport">✈️</div>
+    <div style="flex:1">
+      <p style="font-size:13px;font-weight:600;color:rgba(255,255,255,0.88)">Bilet avion Cluj – București</p>
+      <p style="font-size:11px;color:rgba(255,255,255,0.32);margin-top:2px">Transport · Bon #AF2204</p>
+    </div>
+    <div style="text-align:right;flex-shrink:0">
+      <p style="font-size:14px;font-weight:700;color:rgba(255,255,255,0.92)">€148</p>
+      <p style="font-size:10px;color:rgba(255,255,255,0.28);margin-top:1px">TVA 0%</p>
+    </div>
+  </div>
+  <!-- row 2 -->
+  <div class="line-row">
+    <div class="cat-icon icon-transport">🚕</div>
+    <div style="flex:1">
+      <p style="font-size:13px;font-weight:600;color:rgba(255,255,255,0.88)">Taxi aeroport Otopeni</p>
+      <p style="font-size:11px;color:rgba(255,255,255,0.32);margin-top:2px">Transport · Bon #TX0482</p>
+    </div>
+    <div style="text-align:right;flex-shrink:0">
+      <p style="font-size:14px;font-weight:700;color:rgba(255,255,255,0.92)">€32</p>
+      <p style="font-size:10px;color:rgba(255,255,255,0.28);margin-top:1px">TVA 0%</p>
+    </div>
+  </div>
+  <!-- row 3 — new line being entered -->
+  <div class="add-row">
+    <div class="add-top">
+      <div class="add-desc">Descriere cheltuială nouă...</div>
+      <div class="btn-remove">✕</div>
+    </div>
+    <div class="grid3">
+      <div>
+        <p class="field-label">Sumă (€)</p>
+        <div class="input-stub">0,00</div>
+      </div>
+      <div>
+        <p class="field-label">TVA</p>
+        <div class="input-stub" style="color:rgba(255,255,255,0.45)">19% TVA</div>
+      </div>
+      <div>
+        <p class="field-label">Bon fiscal</p>
+        <div class="input-stub">Ref...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Totals -->
+<div class="totals-card">
+  <div class="total-row">
+    <span style="font-size:13px;color:rgba(255,255,255,0.45)">Subtotal fără TVA</span>
+    <span style="font-size:13px;color:rgba(255,255,255,0.65)">€180,00</span>
+  </div>
+  <div class="total-row">
+    <span style="font-size:13px;color:rgba(255,255,255,0.45)">TVA total</span>
+    <span style="font-size:13px;color:rgba(255,255,255,0.65)">€0,00</span>
+  </div>
+  <div class="total-row">
+    <span style="font-size:15px;font-weight:700;color:rgba(255,255,255,0.92)">Total raport</span>
+    <span style="font-size:18px;font-weight:700;color:rgba(48,209,88,0.95)">€180,00</span>
+  </div>
+</div>
+
+<!-- Note -->
+<p class="slabel">Notă / justificare</p>
+<div class="input-stub" style="height:44px;margin-bottom:18px">Motivul cheltuielilor (opțional)...</div>
+
+<!-- Actions -->
+<div class="actions">
+  <div class="btn-draft">Salvează ciornă</div>
+  <div class="btn-submit">Trimite spre aprobare</div>
+</div>
+
+</body>
+</html>
