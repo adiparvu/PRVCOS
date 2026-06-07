@@ -1,7 +1,17 @@
 import { useEffect } from "react"
 import { Stack, useRouter, useSegments } from "expo-router"
 import { StatusBar } from "expo-status-bar"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { useAuthStore } from "@/store/auth"
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 30_000,
+      retry: 2,
+    },
+  },
+})
 
 export default function RootLayout() {
   const { session, isHydrated, hydrate } = useAuthStore()
@@ -25,9 +35,9 @@ export default function RootLayout() {
   }, [session, isHydrated, segments])
 
   return (
-    <>
+    <QueryClientProvider client={queryClient}>
       <StatusBar style="light" />
       <Stack screenOptions={{ headerShown: false, animation: "fade" }} />
-    </>
+    </QueryClientProvider>
   )
 }
