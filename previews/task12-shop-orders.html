@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Task 12 — Shop Orders</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #000; font-family: -apple-system, 'SF Pro Text', BlinkMacSystemFont, sans-serif;
+         color: rgba(255,255,255,0.9); -webkit-font-smoothing: antialiased;
+         padding: 52px 0 100px; max-width: 480px; margin: 0 auto; }
+
+  .card { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.11);
+          border-radius: 20px; position: relative; overflow: hidden; }
+  .card::before { content:''; position:absolute; top:0; left:0; right:0; height:1px;
+                  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent); }
+
+  .section-label { font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.35);
+                   text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px; }
+
+  .order-card { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.11);
+                border-radius: 16px; padding: 12px 14px; margin-bottom: 8px; position: relative;
+                overflow: hidden; display: block; text-decoration: none; }
+  .order-card::before { content:''; position:absolute; top:0; left:0; right:0; height:1px;
+                        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent); }
+
+  /* tabs */
+  .tabs { display: flex; gap: 6px; padding: 0 16px 14px; overflow-x: auto; scrollbar-width: none; }
+  .tab { padding: 5px 14px; border-radius: 100px; font-size: 11px; font-weight: 500;
+         white-space: nowrap; cursor: pointer; }
+  .tab-on { background: rgba(255,255,255,0.14); border: 1px solid rgba(255,255,255,0.28);
+             color: rgba(255,255,255,0.95); }
+  .tab-off { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.10);
+              color: rgba(255,255,255,0.55); }
+</style>
+</head>
+<body>
+
+<!-- ── SCREEN 1: Order Confirmation ── -->
+<div style="margin:0 16px 32px">
+  <p style="font-size:11px;color:rgba(255,255,255,0.30);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Ecran 1 din 2 · Confirmare comandă</p>
+</div>
+
+<!-- Header -->
+<div style="display:flex;align-items:center;gap:10px;padding:0 16px;margin-bottom:22px">
+  <div style="display:flex;align-items:center;color:rgba(255,255,255,0.40)">
+    <svg width="9" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+  </div>
+  <h1 style="font-size:24px;font-weight:700;letter-spacing:-0.5px;color:rgba(255,255,255,0.95)">Finalizează comanda</h1>
+</div>
+
+<!-- Order summary card -->
+<div class="card" style="margin:0 16px 14px;padding:16px">
+  <p class="section-label">Sumar comandă</p>
+
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.07)">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="width:32px;height:32px;border-radius:8px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.10);display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.45)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+      </div>
+      <div>
+        <p style="font-size:13px;font-weight:600;color:rgba(255,255,255,0.88)">Bosch GSB 18V Li-Ion</p>
+        <p style="font-size:11px;color:rgba(255,255,255,0.35);margin-top:1px">Scule · 1 buc</p>
+      </div>
+    </div>
+    <p style="font-size:14px;font-weight:700;color:rgba(255,255,255,0.90)">€210</p>
+  </div>
+
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.07)">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="width:32px;height:32px;border-radius:8px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.10);display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.45)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.69l5.66 5.66a8 8 0 11-11.31 0z"/></svg>
+      </div>
+      <div>
+        <p style="font-size:13px;font-weight:600;color:rgba(255,255,255,0.88)">Cabină duș 90×90 Cersanit</p>
+        <p style="font-size:11px;color:rgba(255,255,255,0.35);margin-top:1px">Sanitare · 1 buc · <span style="color:rgba(255,69,58,0.8)">−20%</span></p>
+      </div>
+    </div>
+    <p style="font-size:14px;font-weight:700;color:rgba(255,255,255,0.90)">€416</p>
+  </div>
+
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.07)">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="width:32px;height:32px;border-radius:8px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.10);display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.45)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+      </div>
+      <div>
+        <p style="font-size:13px;font-weight:600;color:rgba(255,255,255,0.88)">Parchet stejar 10mm</p>
+        <p style="font-size:11px;color:rgba(255,255,255,0.35);margin-top:1px">Pardoseli · 20 m²</p>
+      </div>
+    </div>
+    <p style="font-size:14px;font-weight:700;color:rgba(255,255,255,0.90)">€560</p>
+  </div>
+
+  <!-- Totals -->
+  <div style="padding-top:12px">
+    <div style="display:flex;justify-content:space-between;padding:3px 0">
+      <span style="font-size:12px;color:rgba(255,255,255,0.40)">Subtotal (3 produse)</span>
+      <span style="font-size:12px;color:rgba(255,255,255,0.65)">€1,186</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;padding:3px 0">
+      <span style="font-size:12px;color:rgba(255,255,255,0.40)">TVA 19%</span>
+      <span style="font-size:12px;color:rgba(255,255,255,0.65)">€225</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;padding:3px 0">
+      <span style="font-size:12px;color:rgba(255,255,255,0.40)">Transport</span>
+      <span style="font-size:12px;color:rgba(48,209,88,0.90)">Gratuit</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;padding-top:10px;border-top:1px solid rgba(255,255,255,0.09);margin-top:6px">
+      <span style="font-size:16px;font-weight:700;color:rgba(255,255,255,0.95)">Total</span>
+      <span style="font-size:18px;font-weight:700;color:rgba(255,255,255,0.95);letter-spacing:-0.4px">€1,411</span>
+    </div>
+  </div>
+</div>
+
+<!-- Delivery details -->
+<div class="card" style="margin:0 16px 14px;padding:16px">
+  <p class="section-label">Livrare</p>
+  <div style="display:flex;align-items:flex-start;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.07)">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.40)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="margin-top:1px;flex-shrink:0"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+    <div>
+      <p style="font-size:13px;font-weight:600;color:rgba(255,255,255,0.85)">Sediu PRV Cluj-Napoca</p>
+      <p style="font-size:11px;color:rgba(255,255,255,0.35);margin-top:1px">Str. Fabricii 12, Cluj-Napoca</p>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px;padding:8px 0">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.40)" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+    <div>
+      <p style="font-size:13px;font-weight:600;color:rgba(255,255,255,0.85)">Estimat: 11–13 Iun 2026</p>
+      <p style="font-size:11px;color:rgba(255,255,255,0.35);margin-top:1px">3–5 zile lucrătoare</p>
+    </div>
+  </div>
+</div>
+
+<!-- Notes -->
+<div style="margin:0 16px 20px">
+  <p style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.40);margin-bottom:5px">Notă comandă (opțional)</p>
+  <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.10);border-radius:12px;padding:10px 12px">
+    <p style="font-size:13px;color:rgba(255,255,255,0.30)">Ex. Livrați la recepție, contactați site managerul...</p>
+  </div>
+</div>
+
+<!-- CTA -->
+<div style="padding:0 16px;margin-bottom:48px">
+  <button style="width:100%;padding:14px;border-radius:14px;background:rgba(255,255,255,0.92);color:#000;font-size:16px;font-weight:700;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+    Plasează comanda · €1,411
+  </button>
+</div>
+
+<!-- ── SCREEN 2: Orders List ── -->
+<div style="margin:0 16px 16px">
+  <div style="height:1px;background:rgba(255,255,255,0.08);margin-bottom:28px"></div>
+  <p style="font-size:11px;color:rgba(255,255,255,0.30);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Ecran 2 din 2 · Lista comenzilor</p>
+</div>
+
+<!-- Orders header -->
+<div style="display:flex;align-items:center;justify-content:space-between;padding:0 16px;margin-bottom:20px">
+  <div style="display:flex;align-items:center;gap:10px">
+    <div style="display:flex;align-items:center;color:rgba(255,255,255,0.40)">
+      <svg width="9" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+    </div>
+    <h2 style="font-size:24px;font-weight:700;letter-spacing:-0.5px;color:rgba(255,255,255,0.95)">Comenzi</h2>
+  </div>
+</div>
+
+<!-- Filter tabs -->
+<div class="tabs" style="margin-bottom:4px">
+  <div class="tab tab-on">Toate</div>
+  <div class="tab tab-off">În procesare <span style="font-size:10px;font-weight:700;color:rgba(255,159,10,0.90);margin-left:3px">2</span></div>
+  <div class="tab tab-off">Livrate</div>
+  <div class="tab tab-off">Anulate</div>
+</div>
+
+<!-- KPI strip -->
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:0 16px;margin-bottom:14px">
+  <div style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.11);border-radius:16px;padding:10px 10px 8px;position:relative;overflow:hidden">
+    <div style="position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.15),transparent)"></div>
+    <p style="font-size:15px;font-weight:700;color:rgba(255,255,255,0.95);letter-spacing:-0.3px">12</p>
+    <p style="font-size:9px;font-weight:500;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:.05em;margin-top:2px">Total</p>
+  </div>
+  <div style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.11);border-radius:16px;padding:10px 10px 8px;position:relative;overflow:hidden">
+    <div style="position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.15),transparent)"></div>
+    <p style="font-size:15px;font-weight:700;color:rgba(255,159,10,0.95);letter-spacing:-0.3px">2</p>
+    <p style="font-size:9px;font-weight:500;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:.05em;margin-top:2px">În curs</p>
+  </div>
+  <div style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.11);border-radius:16px;padding:10px 10px 8px;position:relative;overflow:hidden">
+    <div style="position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.15),transparent)"></div>
+    <p style="font-size:15px;font-weight:700;color:rgba(48,209,88,0.90);letter-spacing:-0.3px">€4.2k</p>
+    <p style="font-size:9px;font-weight:500;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:.05em;margin-top:2px">Total val.</p>
+  </div>
+</div>
+
+<!-- Order cards -->
+<div style="padding:0 16px">
+
+  <!-- Order 1: In processing -->
+  <div class="order-card">
+    <div style="position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(180deg,#ffaa00,#ffcc44);border-radius:16px 0 0 16px"></div>
+    <div style="padding-left:4px;display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px">
+      <div>
+        <p style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.35);letter-spacing:.03em;margin-bottom:2px">CMD-0031 · 3 produse</p>
+        <p style="font-size:14px;font-weight:600;color:rgba(255,255,255,0.92)">Bosch + Cersanit + Parchet</p>
+        <p style="font-size:11px;color:rgba(255,255,255,0.35);margin-top:1px">Plasată: Iun 7, 2026</p>
+      </div>
+      <div style="text-align:right">
+        <p style="font-size:17px;font-weight:700;letter-spacing:-0.3px;color:rgba(255,255,255,0.92)">€1,411</p>
+        <span style="font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:3px 8px;border-radius:100px;background:rgba(255,200,50,0.12);border:1px solid rgba(255,200,50,0.24);color:#ffcc44">În procesare</span>
+      </div>
+    </div>
+    <div style="padding-left:4px;display:flex;align-items:center;justify-content:space-between">
+      <div style="display:flex;align-items:center;gap:4px">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#ffcc44" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        <span style="font-size:10px;font-weight:600;color:#ffcc44">Livrare est. 11–13 Iun</span>
+      </div>
+      <svg width="7" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.20)" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+    </div>
+  </div>
+
+  <!-- Order 2: Delivered -->
+  <div class="order-card">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px">
+      <div>
+        <p style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.35);letter-spacing:.03em;margin-bottom:2px">CMD-0028 · 1 produs</p>
+        <p style="font-size:14px;font-weight:600;color:rgba(255,255,255,0.92)">Tablou electric Hager 24 module</p>
+        <p style="font-size:11px;color:rgba(255,255,255,0.35);margin-top:1px">Plasată: Mai 30, 2026</p>
+      </div>
+      <div style="text-align:right">
+        <p style="font-size:17px;font-weight:700;letter-spacing:-0.3px;color:rgba(48,209,88,0.90)">€94</p>
+        <span style="font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:3px 8px;border-radius:100px;background:rgba(48,209,88,0.10);border:1px solid rgba(48,209,88,0.20);color:rgba(48,209,88,0.90)">Livrat</span>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <span style="font-size:10px;color:rgba(255,255,255,0.30)">Livrat: Iun 3, 2026</span>
+      <svg width="7" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.20)" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+    </div>
+  </div>
+
+  <!-- Order 3: Delivered -->
+  <div class="order-card">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px">
+      <div>
+        <p style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.35);letter-spacing:.03em;margin-bottom:2px">CMD-0025 · 4 produse</p>
+        <p style="font-size:14px;font-weight:600;color:rgba(255,255,255,0.92)">Vopsele + Materiale lot 3</p>
+        <p style="font-size:11px;color:rgba(255,255,255,0.35);margin-top:1px">Plasată: Mai 18, 2026</p>
+      </div>
+      <div style="text-align:right">
+        <p style="font-size:17px;font-weight:700;letter-spacing:-0.3px;color:rgba(48,209,88,0.90)">€312</p>
+        <span style="font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:3px 8px;border-radius:100px;background:rgba(48,209,88,0.10);border:1px solid rgba(48,209,88,0.20);color:rgba(48,209,88,0.90)">Livrat</span>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <span style="font-size:10px;color:rgba(255,255,255,0.30)">Livrat: Mai 23, 2026</span>
+      <svg width="7" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.20)" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

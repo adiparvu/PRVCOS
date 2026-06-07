@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Task 10 — Client Detail</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #000;
+    font-family: -apple-system, 'SF Pro Text', BlinkMacSystemFont, sans-serif;
+    color: rgba(255,255,255,0.95);
+    -webkit-font-smoothing: antialiased;
+    padding: 52px 0 100px;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+
+  /* Status bar */
+  .status-bar {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0 20px 10px; font-size: 12px; font-weight: 600;
+    color: rgba(255,255,255,0.7);
+  }
+  .status-time { font-size: 15px; font-weight: 700; color: rgba(255,255,255,0.92); }
+  .status-icons { display: flex; align-items: center; gap: 5px; }
+
+  /* Header nav */
+  .nav-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 4px 16px 2px;
+  }
+  .back-btn {
+    width: 32px; height: 32px; border-radius: 100px;
+    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.11);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    cursor: pointer;
+  }
+  .nav-breadcrumb {
+    font-size: 14px; color: rgba(255,255,255,0.40); font-weight: 500;
+  }
+
+  /* Hero card */
+  .hero {
+    margin: 12px 16px 0;
+    border-radius: 20px;
+    padding: 18px 18px 16px;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.12);
+    position: relative; overflow: hidden;
+  }
+  .hero::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.22), transparent);
+  }
+  .hero-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 7px; }
+  .hero-name {
+    font-size: 20px; font-weight: 700; letter-spacing: -0.4px;
+    color: rgba(255,255,255,0.95); line-height: 1.2; flex: 1; margin-right: 10px;
+  }
+  .badge-active {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 4px 10px; border-radius: 100px;
+    background: rgba(48,209,88,0.14); border: 1px solid rgba(48,209,88,0.28);
+    font-size: 11px; font-weight: 600; color: rgba(48,209,88,0.95);
+    flex-shrink: 0;
+  }
+  .badge-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(48,209,88,0.9); }
+  .hero-sub {
+    font-size: 12px; color: rgba(255,255,255,0.40);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .hero-sub-sep { color: rgba(255,255,255,0.18); }
+
+  /* Section label */
+  .slabel {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase; color: rgba(255,255,255,0.28);
+    padding: 0 18px; margin: 20px 0 8px;
+  }
+
+  /* Generic card */
+  .card {
+    margin: 0 16px 12px;
+    border-radius: 18px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.11);
+    position: relative; overflow: hidden;
+  }
+  .card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
+  }
+  .card-body { padding: 16px 16px 14px; }
+
+  /* Progress */
+  .proj-name {
+    font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.92); margin-bottom: 12px;
+  }
+  .progress-track {
+    height: 6px; border-radius: 100px;
+    background: rgba(255,255,255,0.08); overflow: hidden; margin-bottom: 6px;
+  }
+  .progress-fill { height: 100%; border-radius: 100px; background: rgba(48,209,88,0.82); }
+  .progress-row {
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;
+  }
+  .progress-pct { font-size: 13px; font-weight: 700; color: rgba(48,209,88,0.92); }
+  .progress-label { font-size: 11px; color: rgba(255,255,255,0.35); }
+  .dates-row { display: flex; justify-content: space-between; align-items: center; }
+  .date-item { display: flex; flex-direction: column; gap: 2px; }
+  .date-lbl {
+    font-size: 9px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.07em; color: rgba(255,255,255,0.30);
+  }
+  .date-val { font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.75); }
+  .dates-divider { width: 1px; height: 28px; background: rgba(255,255,255,0.10); }
+
+  /* Financial 3-col */
+  .fin-grid {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0;
+    margin: 0 16px 12px;
+    border-radius: 18px; overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.11);
+    position: relative;
+  }
+  .fin-grid::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
+    z-index: 1;
+  }
+  .fin-cell {
+    padding: 14px 12px;
+    background: rgba(255,255,255,0.06);
+    border-right: 1px solid rgba(255,255,255,0.09);
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .fin-cell:last-child { border-right: none; }
+  .fin-lbl {
+    font-size: 9px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.07em; color: rgba(255,255,255,0.28);
+  }
+  .fin-val { font-size: 15px; font-weight: 700; letter-spacing: -0.3px; color: rgba(255,255,255,0.92); }
+  .fin-val.green { color: rgba(48,209,88,0.92); }
+  .fin-val.amber { color: rgba(255,159,10,0.92); }
+  .fin-sub { font-size: 10px; color: rgba(255,255,255,0.28); }
+
+  /* Detail rows */
+  .detail-list {
+    margin: 0 16px 12px;
+    border-radius: 18px; overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.11);
+    position: relative;
+  }
+  .detail-list::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
+    z-index: 1;
+  }
+  .detail-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 14px;
+    background: rgba(255,255,255,0.06);
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  .detail-row:last-child { border-bottom: none; }
+  .detail-icon {
+    width: 32px; height: 32px; border-radius: 9px;
+    background: rgba(255,255,255,0.09); border: 1px solid rgba(255,255,255,0.12);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .detail-key {
+    font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.06em; color: rgba(255,255,255,0.30); margin-bottom: 2px;
+  }
+  .detail-val { font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.82); }
+
+  /* Documents */
+  .doc-list {
+    margin: 0 16px 12px;
+    border-radius: 18px; overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.11);
+    position: relative;
+  }
+  .doc-list::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
+    z-index: 1;
+  }
+  .doc-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 11px 14px;
+    background: rgba(255,255,255,0.06);
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    cursor: pointer;
+  }
+  .doc-row:last-child { border-bottom: none; }
+  .doc-icon {
+    width: 30px; height: 30px; border-radius: 8px;
+    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.11);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .doc-name { font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.80); flex: 1; }
+  .doc-chevron { color: rgba(255,255,255,0.22); }
+
+  /* Activity timeline */
+  .timeline {
+    margin: 0 16px 12px;
+    border-radius: 18px; overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.11);
+    position: relative;
+  }
+  .timeline::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
+    z-index: 1;
+  }
+  .tl-row {
+    display: flex; gap: 12px; padding: 12px 14px;
+    background: rgba(255,255,255,0.06);
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    align-items: flex-start;
+  }
+  .tl-row:last-child { border-bottom: none; }
+  .tl-icon {
+    width: 28px; height: 28px; border-radius: 8px;
+    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.10);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .tl-text { font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.75); line-height: 1.4; margin-bottom: 3px; }
+  .tl-meta { display: flex; align-items: center; gap: 6px; font-size: 10px; color: rgba(255,255,255,0.28); }
+  .tl-dot-green { width: 5px; height: 5px; border-radius: 50%; background: rgba(48,209,88,0.7); }
+  .tl-dot-amber { width: 5px; height: 5px; border-radius: 50%; background: rgba(255,159,10,0.7); }
+  .tl-dot-white { width: 5px; height: 5px; border-radius: 50%; background: rgba(255,255,255,0.35); }
+
+  /* Action buttons */
+  .actions-row { display: flex; gap: 10px; padding: 0 16px; margin-top: 4px; }
+  .action-btn {
+    flex: 1; display: flex; flex-direction: column; align-items: center; gap: 7px;
+    padding: 14px 10px; border-radius: 18px;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.11);
+    position: relative; overflow: hidden; cursor: pointer;
+  }
+  .action-btn::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.16), transparent);
+  }
+  .action-btn-lbl { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.65); letter-spacing: 0.01em; }
+</style>
+</head>
+<body>
+
+<!-- Status bar -->
+<div class="status-bar">
+  <span class="status-time">9:41</span>
+  <div class="status-icons">
+    <svg width="16" height="11" viewBox="0 0 16 11" fill="rgba(255,255,255,0.7)">
+      <rect x="0" y="4" width="3" height="7" rx="1"/>
+      <rect x="4.5" y="2.5" width="3" height="8.5" rx="1"/>
+      <rect x="9" y="1" width="3" height="10" rx="1"/>
+      <rect x="13.5" y="0" width="2.5" height="11" rx="1"/>
+    </svg>
+    <svg width="16" height="12" viewBox="0 0 16 12" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="1.2">
+      <path d="M1 4C3.5 1.5 12.5 1.5 15 4" stroke-linecap="round"/>
+      <path d="M3 6.5C5 4.5 11 4.5 13 6.5" stroke-linecap="round"/>
+      <path d="M5.5 9C6.8 7.7 9.2 7.7 10.5 9" stroke-linecap="round"/>
+      <circle cx="8" cy="11" r="1" fill="rgba(255,255,255,0.7)" stroke="none"/>
+    </svg>
+    <svg width="25" height="11" viewBox="0 0 25 11" fill="rgba(255,255,255,0.7)">
+      <rect x="0" y="1" width="21" height="9" rx="2" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="1"/>
+      <rect x="22" y="4" width="2" height="3" rx="1"/>
+      <rect x="1.5" y="2.5" width="16" height="6" rx="1"/>
+    </svg>
+  </div>
+</div>
+
+<!-- 1. Header -->
+<div class="nav-row">
+  <div class="back-btn">
+    <svg width="9" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.65)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M15 18l-6-6 6-6"/>
+    </svg>
+  </div>
+  <span class="nav-breadcrumb">Clienti</span>
+</div>
+
+<div class="hero">
+  <div class="hero-top">
+    <div class="hero-name">Hotel Transilvania SA</div>
+    <div class="badge-active">
+      <div class="badge-dot"></div>
+      Activ
+    </div>
+  </div>
+  <div class="hero-sub">
+    <span>Comercial</span>
+    <span class="hero-sub-sep">&#183;</span>
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/>
+      <circle cx="12" cy="10" r="3"/>
+    </svg>
+    <span>Brasov</span>
+  </div>
+</div>
+
+<!-- 2. Progress card -->
+<div class="slabel">Proiect activ</div>
+<div class="card">
+  <div class="card-body">
+    <div class="proj-name">Lobby &amp; Reception Renovation</div>
+    <div class="progress-track">
+      <div class="progress-fill" style="width:88%"></div>
+    </div>
+    <div class="progress-row">
+      <span class="progress-pct">88% finalizat</span>
+      <span class="progress-label">aproape gata</span>
+    </div>
+    <div class="dates-row">
+      <div class="date-item">
+        <span class="date-lbl">Start</span>
+        <span class="date-val">15 Feb 2026</span>
+      </div>
+      <div class="dates-divider"></div>
+      <div class="date-item" style="align-items:center">
+        <span class="date-lbl" style="text-align:center">Durata</span>
+        <span class="date-val" style="color:rgba(255,255,255,0.50)">4 luni</span>
+      </div>
+      <div class="dates-divider"></div>
+      <div class="date-item" style="align-items:flex-end">
+        <span class="date-lbl">Finalizare</span>
+        <span class="date-val">20 Iun 2026</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 3. Financial summary -->
+<div class="slabel">Situatie financiara</div>
+<div class="fin-grid">
+  <div class="fin-cell">
+    <span class="fin-lbl">Contract</span>
+    <span class="fin-val">&#8364;96k</span>
+    <span class="fin-sub">total</span>
+  </div>
+  <div class="fin-cell">
+    <span class="fin-lbl">Achitat</span>
+    <span class="fin-val green">&#8364;80k</span>
+    <span class="fin-sub">83%</span>
+  </div>
+  <div class="fin-cell">
+    <span class="fin-lbl">Restant</span>
+    <span class="fin-val amber">&#8364;16k</span>
+    <span class="fin-sub">17%</span>
+  </div>
+</div>
+
+<!-- 4. Details card -->
+<div class="slabel">Detalii</div>
+<div class="detail-list">
+
+  <div class="detail-row">
+    <div class="detail-icon">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.65)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+        <circle cx="12" cy="7" r="4"/>
+      </svg>
+    </div>
+    <div>
+      <div class="detail-key">Responsabil santier</div>
+      <div class="detail-val">Radu Dima</div>
+    </div>
+  </div>
+
+  <div class="detail-row">
+    <div class="detail-icon">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.65)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 10.8 19.79 19.79 0 01.07 2.18 2 2 0 012 0h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 14.92z"/>
+      </svg>
+    </div>
+    <div>
+      <div class="detail-key">Telefon</div>
+      <div class="detail-val">0724 400 500</div>
+    </div>
+  </div>
+
+  <div class="detail-row">
+    <div class="detail-icon">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.65)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <polyline points="12 6 12 12 16 14"/>
+      </svg>
+    </div>
+    <div>
+      <div class="detail-key">Ultima actualizare</div>
+      <div class="detail-val">5 Iun 2026</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- 5. Documents -->
+<div class="slabel">Documente</div>
+<div class="doc-list">
+
+  <div class="doc-row">
+    <div class="doc-icon">
+      <svg width="14" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.60)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+        <line x1="8" y1="13" x2="16" y2="13"/>
+        <line x1="8" y1="17" x2="14" y2="17"/>
+      </svg>
+    </div>
+    <span class="doc-name">Contract &#8212; Hotel Transilvania SA</span>
+    <div class="doc-chevron">
+      <svg width="7" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 18l6-6-6-6"/>
+      </svg>
+    </div>
+  </div>
+
+  <div class="doc-row">
+    <div class="doc-icon">
+      <svg width="14" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.60)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+        <line x1="8" y1="13" x2="16" y2="13"/>
+        <line x1="8" y1="17" x2="14" y2="17"/>
+      </svg>
+    </div>
+    <span class="doc-name">Factura #001 &#8212; Mar 2026</span>
+    <div class="doc-chevron">
+      <svg width="7" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 18l6-6-6-6"/>
+      </svg>
+    </div>
+  </div>
+
+  <div class="doc-row">
+    <div class="doc-icon">
+      <svg width="14" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.60)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+        <line x1="8" y1="13" x2="16" y2="13"/>
+        <line x1="8" y1="17" x2="14" y2="17"/>
+      </svg>
+    </div>
+    <span class="doc-name">Factura #002 &#8212; Apr 2026</span>
+    <div class="doc-chevron">
+      <svg width="7" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 18l6-6-6-6"/>
+      </svg>
+    </div>
+  </div>
+
+  <div class="doc-row">
+    <div class="doc-icon">
+      <svg width="14" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.60)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+        <line x1="8" y1="13" x2="16" y2="13"/>
+        <line x1="8" y1="17" x2="14" y2="17"/>
+      </svg>
+    </div>
+    <span class="doc-name">Factura #003 &#8212; Mai 2026</span>
+    <div class="doc-chevron">
+      <svg width="7" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 18l6-6-6-6"/>
+      </svg>
+    </div>
+  </div>
+
+  <div class="doc-row">
+    <div class="doc-icon">
+      <svg width="14" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.60)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+        <line x1="8" y1="13" x2="16" y2="13"/>
+        <line x1="8" y1="17" x2="14" y2="17"/>
+      </svg>
+    </div>
+    <span class="doc-name">Factura #004 &#8212; Iun 2026</span>
+    <div class="doc-chevron">
+      <svg width="7" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 18l6-6-6-6"/>
+      </svg>
+    </div>
+  </div>
+
+  <div class="doc-row">
+    <div class="doc-icon">
+      <svg width="14" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.60)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="18" height="18" rx="2"/>
+        <path d="M3 9h18M9 21V9"/>
+      </svg>
+    </div>
+    <span class="doc-name">Planuri arhitecturale &#8212; Lobby</span>
+    <div class="doc-chevron">
+      <svg width="7" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 18l6-6-6-6"/>
+      </svg>
+    </div>
+  </div>
+
+</div>
+
+<!-- 6. Activity timeline -->
+<div class="slabel">Activitate recenta</div>
+<div class="timeline">
+
+  <div class="tl-row">
+    <div class="tl-icon">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(48,209,88,0.85)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="20 6 9 17 4 12"/>
+      </svg>
+    </div>
+    <div>
+      <div class="tl-text">Factura #004 achitata &#8212; &#8364;20,000</div>
+      <div class="tl-meta">
+        <div class="tl-dot-green"></div>
+        <span>5 Iun 2026 &#183; Radu Dima</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="tl-row">
+    <div class="tl-icon">
+      <svg width="14" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
+        <circle cx="12" cy="13" r="4"/>
+      </svg>
+    </div>
+    <div>
+      <div class="tl-text">Fotografii de progres adaugate &#8212; 12 poze</div>
+      <div class="tl-meta">
+        <div class="tl-dot-white"></div>
+        <span>3 Iun 2026 &#183; Radu Dima</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="tl-row">
+    <div class="tl-icon">
+      <svg width="15" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,159,10,0.80)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="1" y="3" width="15" height="13" rx="1"/>
+        <path d="M16 8h4l3 3v5h-7V8z"/>
+        <circle cx="5.5" cy="18.5" r="2.5"/>
+        <circle cx="18.5" cy="18.5" r="2.5"/>
+      </svg>
+    </div>
+    <div>
+      <div class="tl-text">Livrare materiale receptionata &#8212; Lot C</div>
+      <div class="tl-meta">
+        <div class="tl-dot-amber"></div>
+        <span>1 Iun 2026 &#183; Depozit central</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- 7. Action buttons -->
+<div class="slabel">Actiuni</div>
+<div class="actions-row">
+
+  <div class="action-btn">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.75)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 10.8 19.79 19.79 0 01.07 2.18 2 2 0 012 0h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 14.92z"/>
+    </svg>
+    <span class="action-btn-lbl">Suna</span>
+  </div>
+
+  <div class="action-btn">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.75)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+    </svg>
+    <span class="action-btn-lbl">Mesaj</span>
+  </div>
+
+  <div class="action-btn">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.75)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>
+    </svg>
+    <span class="action-btn-lbl">Proiect</span>
+  </div>
+
+</div>
+
+</body>
+</html>
