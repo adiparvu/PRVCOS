@@ -382,7 +382,8 @@ export function InvoiceListClient() {
             Facturi
           </h1>
         </div>
-        <button
+        <Link
+          href="/finance/invoices/new"
           style={{
             width: 32,
             height: 32,
@@ -391,13 +392,12 @@ export function InvoiceListClient() {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            border: "none",
-            cursor: "pointer",
             color: "#000",
+            textDecoration: "none",
           }}
         >
           <IconPlus />
-        </button>
+        </Link>
       </div>
 
       {/* KPI strip */}
