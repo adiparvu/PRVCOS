@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phase 30 — Intelligence Deep Dive</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #111;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", system-ui, sans-serif;
+    color: rgba(255,255,255,0.92);
+    display: flex;
+    gap: 24px;
+    padding: 32px 24px;
+    min-height: 100vh;
+    overflow-x: auto;
+  }
+
+  .phone {
+    width: 390px;
+    min-width: 390px;
+    background: #000;
+    border-radius: 52px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.12);
+    box-shadow: 0 40px 80px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.06) inset;
+    position: relative;
+    height: fit-content;
+    min-height: 780px;
+  }
+
+  .phone-inner {
+    padding: 52px 0 120px;
+    overflow: hidden;
+  }
+
+  .screen-label {
+    color: rgba(255,255,255,0.35);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    text-align: center;
+  }
+
+  /* Glass utilities */
+  .glass-card {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .glass-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
+  }
+
+  .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.35);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    padding: 18px 16px 10px;
+  }
+
+  /* Row divider */
+  .row-divider {
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+
+  /* Status colors */
+  .green { color: rgba(48,209,88,0.95); }
+  .amber { color: rgba(255,159,10,0.95); }
+  .blue  { color: rgba(10,132,255,0.9); }
+  .red   { color: rgba(255,69,58,0.95); }
+  .purple{ color: rgba(191,90,242,0.9); }
+  .dim   { color: rgba(255,255,255,0.45); }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 9px;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .pill-green  { color: rgba(48,209,88,0.9);  background: rgba(48,209,88,0.12);  border: 1px solid rgba(48,209,88,0.28); }
+  .pill-amber  { color: rgba(255,159,10,0.9); background: rgba(255,159,10,0.12); border: 1px solid rgba(255,159,10,0.28); }
+  .pill-blue   { color: rgba(10,132,255,0.9); background: rgba(10,132,255,0.12); border: 1px solid rgba(10,132,255,0.28); }
+  .pill-red    { color: rgba(255,69,58,0.9);  background: rgba(255,69,58,0.12);  border: 1px solid rgba(255,69,58,0.28); }
+  .pill-purple { color: rgba(191,90,242,0.9); background: rgba(191,90,242,0.12); border: 1px solid rgba(191,90,242,0.28); }
+  .pill-dim    { color: rgba(255,255,255,0.5); background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14); }
+
+  /* Chips */
+  .chip-row {
+    display: flex;
+    gap: 8px;
+    padding: 0 16px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .chip {
+    padding: 7px 16px;
+    border-radius: 100px;
+    font-size: 13px;
+    white-space: nowrap;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .chip-active {
+    background: rgba(255,255,255,0.14);
+    border: 1px solid rgba(255,255,255,0.40);
+    color: rgba(255,255,255,0.95);
+    font-weight: 600;
+  }
+  .chip-inactive {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    color: rgba(255,255,255,0.45);
+    font-weight: 400;
+  }
+
+  /* KPI tile */
+  .kpi-strip {
+    display: flex;
+    gap: 8px;
+    padding: 0 16px;
+  }
+  .kpi-tile {
+    flex: 1;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 16px;
+    padding: 14px 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 3;
+    position: relative;
+    overflow: hidden;
+  }
+  .kpi-tile::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
+  }
+  .kpi-val { font-size: 19px; font-weight: 700; letter-spacing: -0.5px; }
+  .kpi-label { font-size: 10px; color: rgba(255,255,255,0.40); font-weight: 500; margin-top: 1px; }
+  .kpi-trend { font-size: 10px; font-weight: 600; margin-top: 2px; }
+
+  /* FAB */
+  .fab {
+    position: absolute;
+    bottom: 88px; right: 20px;
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.14);
+    border: 1px solid rgba(255,255,255,0.28);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.25);
+    display: flex; align-items: center; justify-content: center;
+    backdrop-filter: blur(32px);
+  }
+
+  /* Tab bar */
+  .tab-bar {
+    position: absolute;
+    bottom: 16px;
+    left: 16px; right: 16px;
+    height: 64px;
+    background: rgba(28,28,30,0.88);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 24px;
+    backdrop-filter: blur(32px);
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    padding: 0 8px;
+  }
+  .tab-item {
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    flex: 1; cursor: pointer;
+  }
+  .tab-icon { width: 24px; height: 24px; opacity: 0.4; }
+  .tab-icon.active { opacity: 1; }
+  .tab-label { font-size: 10px; color: rgba(255,255,255,0.35); }
+  .tab-label.active { color: rgba(255,255,255,0.85); }
+
+  /* Metric row */
+  .metric-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 13px 16px;
+  }
+
+  /* Sparkline placeholder */
+  .sparkline {
+    width: 64px; height: 28px;
+    flex-shrink: 0;
+  }
+
+  /* Bar chart row */
+  .bar-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 16px;
+  }
+  .bar-label { font-size: 12px; color: rgba(255,255,255,0.55); width: 80px; flex-shrink: 0; }
+  .bar-track { flex: 1; height: 8px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 4px; }
+  .bar-val { font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.75); width: 42px; text-align: right; flex-shrink: 0; }
+
+  /* Insight card */
+  .insight-card {
+    margin: 0 16px;
+    background: rgba(191,90,242,0.08);
+    border: 1px solid rgba(191,90,242,0.22);
+    border-radius: 18px;
+    padding: 14px;
+    position: relative;
+    overflow: hidden;
+  }
+  .insight-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(191,90,242,0.30), transparent);
+  }
+
+  /* Report row */
+  .report-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 13px 16px;
+  }
+  .report-icon {
+    width: 40px; height: 40px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+
+  /* Stat tile 2x2 */
+  .stat-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    padding: 0 16px;
+  }
+  .stat-tile {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 16px;
+    padding: 14px 13px 12px;
+    position: relative; overflow: hidden;
+  }
+  .stat-tile::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
+  }
+
+  /* Section card wrapper */
+  .section-card {
+    margin: 0 16px;
+  }
+
+  /* AI score ring */
+  .score-ring {
+    width: 76px; height: 76px;
+    border-radius: 50%;
+    background: conic-gradient(rgba(191,90,242,0.85) 0% 73%, rgba(255,255,255,0.08) 73% 100%);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    position: relative;
+  }
+  .score-ring-inner {
+    width: 60px; height: 60px;
+    border-radius: 50%;
+    background: #000;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 0;
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══ SCREEN 1: Intelligence List ═══ -->
+<div>
+  <div class="screen-label">Screen 1 · Intelligence — Toate</div>
+  <div class="phone">
+    <div class="phone-inner">
+
+      <!-- Header -->
+      <div style="padding: 0 16px 0;">
+        <div style="font-size: 28px; font-weight: 700; letter-spacing: -0.6px; color: rgba(255,255,255,0.95);">Inteligență</div>
+        <div style="font-size: 14px; color: rgba(255,255,255,0.35); margin-top: 4px;">Analiză · AI · Rapoarte</div>
+      </div>
+
+      <!-- KPI Strip -->
+      <div style="margin-top: 16px;">
+        <div class="kpi-strip">
+          <div class="kpi-tile">
+            <div class="kpi-val green">€118k</div>
+            <div class="kpi-label">Venit Azi</div>
+            <div class="kpi-trend green">+8%</div>
+          </div>
+          <div class="kpi-tile">
+            <div class="kpi-val amber">34%</div>
+            <div class="kpi-label">Marjă Medie</div>
+            <div class="kpi-trend amber">−1pp</div>
+          </div>
+          <div class="kpi-tile">
+            <div class="kpi-val blue">93</div>
+            <div class="kpi-label">Comenzi Azi</div>
+            <div class="kpi-trend blue">+5%</div>
+          </div>
+          <div class="kpi-tile">
+            <div class="kpi-val" style="color:rgba(255,69,58,0.95);">2</div>
+            <div class="kpi-label">Alerte</div>
+            <div class="kpi-trend" style="color:rgba(255,69,58,0.6);">activ</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filter Chips -->
+      <div class="chip-row" style="margin-top: 14px;">
+        <div class="chip chip-active">Toate</div>
+        <div class="chip chip-inactive">Analytics</div>
+        <div class="chip chip-inactive">AI Insights</div>
+        <div class="chip chip-inactive">Rapoarte</div>
+      </div>
+
+      <!-- Featured AI Insight -->
+      <div class="section-label">AI Insights</div>
+      <div class="insight-card">
+        <div style="display: flex; align-items: flex-start; gap: 12px;">
+          <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(191,90,242,0.16); border: 1px solid rgba(191,90,242,0.30); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(191,90,242,0.9)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+            </svg>
+          </div>
+          <div style="flex: 1;">
+            <div style="font-size: 13px; font-weight: 700; color: rgba(191,90,242,0.9); margin-bottom: 4px;">Recomandare AI · Urgentă</div>
+            <div style="font-size: 14px; font-weight: 500; color: rgba(255,255,255,0.88); line-height: 1.45;">3 magazine sub pragul de performanță — risc de pierderi în Q3</div>
+            <div style="margin-top: 8px; display: flex; gap: 8px; align-items: center;">
+              <span class="pill pill-purple">Impact ridicat</span>
+              <span style="font-size: 12px; color: rgba(255,255,255,0.35);">acum 2h</span>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(191,90,242,0.14); display: flex; justify-content: flex-end;">
+          <div style="display: flex; align-items: center; gap: 4px; color: rgba(191,90,242,0.85); font-size: 13px; font-weight: 600;">
+            Analizează detalii
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Revenue per Store (bar chart) -->
+      <div class="section-label">Venit per Magazin — Azi</div>
+      <div class="section-card glass-card">
+        <div class="bar-row row-divider">
+          <div class="bar-label" style="font-size: 11px;">Cluj · Main</div>
+          <div class="bar-track"><div class="bar-fill" style="width: 88%; background: rgba(48,209,88,0.5);"></div></div>
+          <div class="bar-val" style="color: rgba(48,209,88,0.9);">€34.2k</div>
+        </div>
+        <div class="bar-row row-divider">
+          <div class="bar-label" style="font-size: 11px;">București</div>
+          <div class="bar-track"><div class="bar-fill" style="width: 75%; background: rgba(10,132,255,0.5);"></div></div>
+          <div class="bar-val" style="color: rgba(10,132,255,0.8);">€28.9k</div>
+        </div>
+        <div class="bar-row row-divider">
+          <div class="bar-label" style="font-size: 11px;">Timișoara</div>
+          <div class="bar-track"><div class="bar-fill" style="width: 55%; background: rgba(10,132,255,0.4);"></div></div>
+          <div class="bar-val">€21.4k</div>
+        </div>
+        <div class="bar-row row-divider">
+          <div class="bar-label" style="font-size: 11px;">Brașov</div>
+          <div class="bar-track"><div class="bar-fill" style="width: 48%; background: rgba(255,159,10,0.45);"></div></div>
+          <div class="bar-val" style="color: rgba(255,159,10,0.8);">€18.6k</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label" style="font-size: 11px;">Iași</div>
+          <div class="bar-track"><div class="bar-fill" style="width: 39%; background: rgba(255,69,58,0.45);"></div></div>
+          <div class="bar-val" style="color: rgba(255,69,58,0.8);">€15.2k</div>
+        </div>
+      </div>
+
+      <!-- Reports -->
+      <div class="section-label">Rapoarte Recente</div>
+      <div class="section-card glass-card">
+
+        <div class="report-row row-divider">
+          <div class="report-icon" style="background: rgba(10,132,255,0.12); border: 1px solid rgba(10,132,255,0.22);">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(10,132,255,0.9)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+            </svg>
+          </div>
+          <div style="flex: 1; min-width: 0;">
+            <div style="font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.90); margin-bottom: 3px;">Raport Lunar · Mai 2026</div>
+            <div style="font-size: 12px; color: rgba(255,255,255,0.40);">Generat 1 Iun · 14 pagini</div>
+          </div>
+          <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
+            <span class="pill pill-green">Finalizat</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+        </div>
+
+        <div class="report-row row-divider">
+          <div class="report-icon" style="background: rgba(255,159,10,0.12); border: 1px solid rgba(255,159,10,0.22);">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,159,10,0.9)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+            </svg>
+          </div>
+          <div style="flex: 1; min-width: 0;">
+            <div style="font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.90); margin-bottom: 3px;">Raport Stocuri Critice</div>
+            <div style="font-size: 12px; color: rgba(255,255,255,0.40);">Actualizat azi · 3 SKU-uri alertate</div>
+          </div>
+          <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
+            <span class="pill pill-amber">Revizuiește</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+        </div>
+
+        <div class="report-row">
+          <div class="report-icon" style="background: rgba(191,90,242,0.12); border: 1px solid rgba(191,90,242,0.22);">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(191,90,242,0.85)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>
+            </svg>
+          </div>
+          <div style="flex: 1; min-width: 0;">
+            <div style="font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.90); margin-bottom: 3px;">Prognoză Q3 2026</div>
+            <div style="font-size: 12px; color: rgba(255,255,255,0.40);">Model AI · Conf. 87%</div>
+          </div>
+          <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
+            <span class="pill pill-purple">AI</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Tab Bar -->
+    <div class="tab-bar">
+      <div class="tab-item">
+        <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        <span class="tab-label">Command</span>
+      </div>
+      <div class="tab-item">
+        <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span class="tab-label">Operațiuni</span>
+      </div>
+      <div class="tab-item">
+        <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        <span class="tab-label">People</span>
+      </div>
+      <div class="tab-item">
+        <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+        <span class="tab-label">Finanțe</span>
+      </div>
+      <div class="tab-item">
+        <svg class="tab-icon active" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+        <span class="tab-label active">Intelligence</span>
+      </div>
+    </div>
+
+    <!-- FAB -->
+    <div class="fab">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.92)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══ SCREEN 2: AI Insight Detail ═══ -->
+<div>
+  <div class="screen-label">Screen 2 · AI Insight Detail</div>
+  <div class="phone">
+    <div class="phone-inner">
+
+      <!-- Back + Header -->
+      <div style="padding: 0 16px 0;">
+        <div style="display: flex; align-items: center; gap: 4px; color: rgba(191,90,242,0.85); font-size: 15px; margin-bottom: 16px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          Inteligență
+        </div>
+
+        <div style="display: flex; align-items: flex-start; gap: 14px;">
+          <div style="width: 48px; height: 48px; border-radius: 14px; background: rgba(191,90,242,0.14); border: 1px solid rgba(191,90,242,0.30); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(191,90,242,0.9)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+            </svg>
+          </div>
+          <div>
+            <div style="font-size: 11px; font-weight: 700; color: rgba(191,90,242,0.75); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 5px;">AI Insight · Urgentă</div>
+            <div style="font-size: 20px; font-weight: 700; color: rgba(255,255,255,0.95); line-height: 1.3; letter-spacing: -0.4px;">3 Magazine sub Pragul de Performanță</div>
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px; margin-top: 12px;">
+          <span class="pill pill-purple">Impact ridicat</span>
+          <span class="pill pill-red">3 magazine afectate</span>
+          <span style="font-size: 12px; color: rgba(255,255,255,0.30);">acum 2h</span>
+        </div>
+      </div>
+
+      <!-- Score ring + summary -->
+      <div style="margin: 20px 16px 0; display: flex; align-items: center; gap: 16px; background: rgba(191,90,242,0.06); border: 1px solid rgba(191,90,242,0.16); border-radius: 18px; padding: 16px; position: relative; overflow: hidden;">
+        <div style="position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg,transparent,rgba(191,90,242,0.25),transparent);"></div>
+        <div class="score-ring">
+          <div class="score-ring-inner">
+            <div style="font-size: 20px; font-weight: 700; color: rgba(191,90,242,0.9);">73</div>
+            <div style="font-size: 9px; color: rgba(255,255,255,0.35); font-weight: 600; letter-spacing: 0.3px;">SCOR</div>
+          </div>
+        </div>
+        <div>
+          <div style="font-size: 13px; color: rgba(255,255,255,0.85); line-height: 1.5; font-weight: 400;">Risc moderat de scădere a veniturilor în Q3 dacă nu se iau măsuri corective în următoarele <span style="color: rgba(255,159,10,0.9); font-weight: 600;">14 zile</span>.</div>
+          <div style="font-size: 11px; color: rgba(191,90,242,0.6); margin-top: 6px; font-weight: 500;">Bazat pe date istorice · 18 luni</div>
+        </div>
+      </div>
+
+      <!-- Affected Stores -->
+      <div class="section-label">Magazine Afectate</div>
+      <div class="section-card glass-card">
+
+        <div class="metric-row row-divider">
+          <div style="width: 8px; height: 8px; border-radius: 50%; background: rgba(255,159,10,0.95); box-shadow: 0 0 6px rgba(255,159,10,0.7); flex-shrink: 0;"></div>
+          <div style="flex: 1; min-width: 0;">
+            <div style="font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.90);">Brașov · Coresi</div>
+            <div style="font-size: 12px; color: rgba(255,255,255,0.40); margin-top: 2px;">Marjă −4pp · Comenzi −12%</div>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-size: 14px; font-weight: 700; color: rgba(255,159,10,0.9);">29%</div>
+            <div style="font-size: 10px; color: rgba(255,255,255,0.35);">marjă</div>
+          </div>
+        </div>
+
+        <div class="metric-row row-divider">
+          <div style="width: 8px; height: 8px; border-radius: 50%; background: rgba(255,69,58,0.95); box-shadow: 0 0 6px rgba(255,69,58,0.7); flex-shrink: 0;"></div>
+          <div style="flex: 1; min-width: 0;">
+            <div style="font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.90);">Iași · Palas</div>
+            <div style="font-size: 12px; color: rgba(255,255,255,0.40); margin-top: 2px;">Stoc redus · 3 SKU · Alerte active</div>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-size: 14px; font-weight: 700; color: rgba(255,69,58,0.9);">27%</div>
+            <div style="font-size: 10px; color: rgba(255,255,255,0.35);">marjă</div>
+          </div>
+        </div>
+
+        <div class="metric-row">
+          <div style="width: 8px; height: 8px; border-radius: 50%; background: rgba(255,159,10,0.95); box-shadow: 0 0 6px rgba(255,159,10,0.7); flex-shrink: 0;"></div>
+          <div style="flex: 1; min-width: 0;">
+            <div style="font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.90);">Timișoara · Iulius</div>
+            <div style="font-size: 12px; color: rgba(255,255,255,0.40); margin-top: 2px;">Creștere 0% · Marjă stagnantă</div>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-size: 14px; font-weight: 700; color: rgba(255,159,10,0.9);">31%</div>
+            <div style="font-size: 10px; color: rgba(255,255,255,0.35);">marjă</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Recommendations -->
+      <div class="section-label">Recomandări AI</div>
+      <div class="section-card glass-card">
+
+        <div style="padding: 13px 16px;" class="row-divider">
+          <div style="display: flex; align-items: flex-start; gap: 10px;">
+            <div style="width: 22px; height: 22px; border-radius: 50%; background: rgba(48,209,88,0.12); border: 1.5px solid rgba(48,209,88,0.35); display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px;">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="rgba(48,209,88,0.9)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <div>
+              <div style="font-size: 14px; font-weight: 500; color: rgba(255,255,255,0.88); line-height: 1.4;">Audit inventar pentru magazinele Brașov și Iași</div>
+              <div style="font-size: 11px; color: rgba(48,209,88,0.7); font-weight: 600; margin-top: 4px;">Prioritate Urgentă · Această săptămână</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="padding: 13px 16px;" class="row-divider">
+          <div style="display: flex; align-items: flex-start; gap: 10px;">
+            <div style="width: 22px; height: 22px; border-radius: 50%; background: rgba(10,132,255,0.12); border: 1.5px solid rgba(10,132,255,0.35); display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px;">
+              <svg width="8" height="8" viewBox="0 0 24 24" fill="rgba(10,132,255,0.9)" stroke="none"><polygon points="5,3 19,12 5,21"/></svg>
+            </div>
+            <div>
+              <div style="font-size: 14px; font-weight: 500; color: rgba(255,255,255,0.88); line-height: 1.4;">Training suplimentar echipă vânzări Timișoara</div>
+              <div style="font-size: 11px; color: rgba(10,132,255,0.7); font-weight: 600; margin-top: 4px;">Prioritate Medie · Luna aceasta</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="padding: 13px 16px;">
+          <div style="display: flex; align-items: flex-start; gap: 10px;">
+            <div style="width: 22px; height: 22px; border-radius: 50%; background: rgba(255,159,10,0.12); border: 1.5px solid rgba(255,159,10,0.35); display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px;">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="rgba(255,159,10,0.9)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </div>
+            <div>
+              <div style="font-size: 14px; font-weight: 500; color: rgba(255,255,255,0.88); line-height: 1.4;">Revizuire strategie prețuri în Q3</div>
+              <div style="font-size: 11px; color: rgba(255,159,10,0.7); font-weight: 600; margin-top: 4px;">Prioritate Medie · Q3 2026</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Tab Bar -->
+    <div class="tab-bar">
+      <div class="tab-item"><svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg><span class="tab-label">Command</span></div>
+      <div class="tab-item"><svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span class="tab-label">Operațiuni</span></div>
+      <div class="tab-item"><svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg><span class="tab-label">People</span></div>
+      <div class="tab-item"><svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg><span class="tab-label">Finanțe</span></div>
+      <div class="tab-item"><svg class="tab-icon active" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg><span class="tab-label active">Intelligence</span></div>
+    </div>
+
+    <!-- FAB 3-dot -->
+    <div class="fab">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.92)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="5" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="12" cy="19" r="1" fill="currentColor"/>
+      </svg>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══ SCREEN 3: FAB Sheets ═══ -->
+<div>
+  <div class="screen-label">Screen 3 · FAB Action Sheets</div>
+  <div class="phone">
+    <div class="phone-inner" style="position: relative; min-height: 780px;">
+
+      <!-- Dimmed background -->
+      <div style="position: absolute; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); z-index: 1;"></div>
+
+      <!-- Dummy content behind -->
+      <div style="padding: 0 16px; opacity: 0.3;">
+        <div style="font-size: 28px; font-weight: 700; letter-spacing: -0.6px; color: rgba(255,255,255,0.95); margin-bottom: 12px;">Inteligență</div>
+        <div class="kpi-strip">
+          <div class="kpi-tile"><div class="kpi-val green">€118k</div><div class="kpi-label">Venit</div></div>
+          <div class="kpi-tile"><div class="kpi-val amber">34%</div><div class="kpi-label">Marjă</div></div>
+          <div class="kpi-tile"><div class="kpi-val blue">93</div><div class="kpi-label">Comenzi</div></div>
+          <div class="kpi-tile"><div class="kpi-val" style="color:rgba(255,69,58,0.95);">2</div><div class="kpi-label">Alerte</div></div>
+        </div>
+      </div>
+
+      <!-- LIST FAB Sheet (left half) -->
+      <div style="position: absolute; bottom: 72px; left: 0; right: 0; z-index: 10;">
+        <div style="margin: 0 8px; background: rgba(28,28,30,0.96); border: 1px solid rgba(255,255,255,0.14); border-radius: 28px; padding: 12px 14px 10px;">
+          <div style="width: 36px; height: 4px; background: rgba(255,255,255,0.20); border-radius: 2px; margin: 0 auto 14px;"></div>
+          <div style="font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.25); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 10px;">Acțiuni · Inteligență</div>
+
+          <!-- Acțiune 1: Generează Raport -->
+          <div style="display: flex; align-items: center; gap: 14px; padding: 12px 4px; border-bottom: 1px solid rgba(255,255,255,0.08);">
+            <div style="width: 40px; height: 40px; border-radius: 12px; background: rgba(10,132,255,0.14); border: 1px solid rgba(10,132,255,0.28); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(10,132,255,0.9)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            </div>
+            <span style="font-size: 16px; font-weight: 500; color: rgba(10,132,255,0.9);">Generează Raport Nou</span>
+          </div>
+
+          <!-- Acțiune 2: Export Date -->
+          <div style="display: flex; align-items: center; gap: 14px; padding: 12px 4px; border-bottom: 1px solid rgba(255,255,255,0.08);">
+            <div style="width: 40px; height: 40px; border-radius: 12px; background: rgba(48,209,88,0.12); border: 1px solid rgba(48,209,88,0.25); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(48,209,88,0.9)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            </div>
+            <span style="font-size: 16px; font-weight: 500; color: rgba(48,209,88,0.9);">Exportă Date CSV</span>
+          </div>
+
+          <!-- Acțiune 3: Programează Raport -->
+          <div style="display: flex; align-items: center; gap: 14px; padding: 12px 4px;">
+            <div style="width: 40px; height: 40px; border-radius: 12px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            </div>
+            <span style="font-size: 16px; font-weight: 500; color: rgba(255,255,255,0.75);">Programează Raport</span>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Tab Bar -->
+    <div class="tab-bar" style="z-index: 20;">
+      <div class="tab-item"><svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg><span class="tab-label">Command</span></div>
+      <div class="tab-item"><svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span class="tab-label">Operațiuni</span></div>
+      <div class="tab-item"><svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><span class="tab-label">People</span></div>
+      <div class="tab-item"><svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg><span class="tab-label">Finanțe</span></div>
+      <div class="tab-item"><svg class="tab-icon active" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg><span class="tab-label active">Intelligence</span></div>
+    </div>
+
+    <!-- FAB -->
+    <div class="fab" style="z-index: 20;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.92)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
