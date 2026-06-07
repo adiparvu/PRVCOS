@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Phase 29 — Operations Deep Dive</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #111; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif; display: flex; gap: 20px; padding: 32px 24px; justify-content: center; flex-wrap: wrap; }
+
+  .phone { width: 390px; background: #000; border-radius: 52px; border: 1px solid rgba(255,255,255,0.12); overflow: hidden; position: relative; box-shadow: 0 40px 80px rgba(0,0,0,0.9); flex-shrink: 0; }
+  .phone-inner { height: 844px; overflow-y: auto; overflow-x: hidden; scrollbar-width: none; position: relative; }
+  .phone-inner::-webkit-scrollbar { display: none; }
+  .label { color: rgba(255,255,255,0.4); font-size: 11px; text-align: center; padding: 10px 0 6px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
+
+  :root {
+    --g1: rgba(255,255,255,0.06);
+    --g2: rgba(255,255,255,0.10);
+    --g3: rgba(255,255,255,0.16);
+    --bd: rgba(255,255,255,0.12);
+    --bds: rgba(255,255,255,0.07);
+    --t1: rgba(255,255,255,0.95);
+    --t2: rgba(255,255,255,0.65);
+    --t3: rgba(255,255,255,0.35);
+    --t4: rgba(255,255,255,0.15);
+  }
+
+  .specular { position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.22), transparent); pointer-events: none; }
+  .section-label { font-size: 11px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: var(--t3); margin-bottom: 10px; }
+
+  .tab-bar { position: sticky; bottom: 0; z-index: 20; padding: 8px 16px 20px; background: linear-gradient(to top, rgba(0,0,0,0.95) 60%, transparent); }
+  .tab-bar-inner { background: var(--g2); border: 1px solid var(--bd); border-radius: 24px; padding: 8px 12px; display: flex; justify-content: space-around; backdrop-filter: blur(32px); position: relative; }
+
+  .status-bar { display: flex; justify-content: space-between; align-items: center; padding: 14px 28px 0; }
+  .status-time { color: var(--t1); font-size: 15px; font-weight: 700; }
+  .status-icons { display: flex; gap: 6px; align-items: center; }
+
+  .pill { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 20px; font-size: 10px; font-weight: 700; white-space: nowrap; }
+
+  .kpi-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 14px 16px 0; }
+  .kpi-cell { padding: 10px 8px; border-radius: 14px; background: var(--g1); border: 1px solid var(--bds); text-align: center; }
+  .kpi-val { font-size: 18px; font-weight: 700; color: var(--t1); margin-bottom: 2px; line-height: 1; }
+  .kpi-lbl { font-size: 10px; color: var(--t3); }
+
+  .chips { display: flex; gap: 6px; padding: 14px 16px 0; overflow-x: auto; scrollbar-width: none; }
+  .chips::-webkit-scrollbar { display: none; }
+  .chip { padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; white-space: nowrap; cursor: pointer; border: none; }
+  .chip-active { background: var(--t1); color: #000; }
+  .chip-idle { background: var(--g1); color: var(--t2); border: 1px solid var(--bds); }
+
+  /* alert */
+  .alert-banner { margin: 14px 16px 0; padding: 12px 14px; border-radius: 14px; background: rgba(255,159,10,0.08); border: 1px solid rgba(255,159,10,0.2); display: flex; align-items: flex-start; gap: 10px; }
+  .alert-icon { width: 32px; height: 32px; border-radius: 8px; background: rgba(255,159,10,0.12); border: 1px solid rgba(255,159,10,0.2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .alert-title { font-size: 13px; font-weight: 700; color: rgba(255,159,10,0.95); margin-bottom: 2px; }
+  .alert-sub { font-size: 12px; color: rgba(255,159,10,0.7); }
+
+  /* store row */
+  .store-row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 16px; background: var(--g1); border: 1px solid var(--bds); cursor: pointer; position: relative; }
+  .store-icon { width: 44px; height: 44px; border-radius: 12px; background: var(--g2); border: 1px solid var(--bd); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .store-title { font-size: 14px; font-weight: 600; color: var(--t1); margin-bottom: 1px; }
+  .store-sub { font-size: 12px; color: var(--t3); }
+
+  /* task row */
+  .task-row { display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-radius: 14px; background: var(--g1); border: 1px solid var(--bds); cursor: pointer; position: relative; }
+
+  /* order row */
+  .order-row { display: flex; align-items: center; gap: 10px; padding: 11px 14px; border-radius: 14px; background: var(--g1); border: 1px solid var(--bds); cursor: pointer; position: relative; }
+
+  /* status dot */
+  .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .dot-green { background: rgba(48,209,88,0.9); box-shadow: 0 0 6px rgba(48,209,88,0.5); }
+  .dot-amber { background: rgba(255,159,10,0.9); box-shadow: 0 0 6px rgba(255,159,10,0.4); }
+  .dot-red { background: rgba(255,69,58,0.9); box-shadow: 0 0 6px rgba(255,69,58,0.4); }
+
+  /* left-border treatment */
+  .lb-green { border-left: 3px solid transparent; border-image: linear-gradient(180deg,rgba(48,209,88,0.9),rgba(48,209,88,0.3)) 1; padding-left: 13px; }
+  .lb-amber { border-left: 3px solid transparent; border-image: linear-gradient(180deg,rgba(255,159,10,0.9),rgba(255,159,10,0.3)) 1; padding-left: 13px; }
+  .lb-red { border-left: 3px solid transparent; border-image: linear-gradient(180deg,rgba(255,69,58,0.9),rgba(255,69,58,0.3)) 1; padding-left: 13px; }
+  .lb-blue { border-left: 3px solid transparent; border-image: linear-gradient(180deg,rgba(10,132,255,0.9),rgba(10,132,255,0.3)) 1; padding-left: 13px; }
+
+  /* section card */
+  .section-card { margin: 14px 16px 0; border-radius: 18px; background: var(--g1); border: 1px solid var(--bds); overflow: hidden; position: relative; }
+  .section-card-header { padding: 14px 16px 10px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--bds); }
+  .section-card-title { font-size: 13px; font-weight: 700; color: var(--t1); }
+  .section-card-badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px; background: var(--g2); color: var(--t2); }
+
+  /* stat tiles */
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 14px 16px 0; }
+  .stat-tile { padding: 12px 14px; border-radius: 16px; background: var(--g1); border: 1px solid var(--bds); position: relative; }
+  .stat-tile-val { font-size: 20px; font-weight: 700; color: var(--t1); margin-bottom: 2px; }
+  .stat-tile-lbl { font-size: 11px; color: var(--t3); }
+
+  /* sheet */
+  .sheet-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.55); backdrop-filter: blur(6px); z-index: 40; display: flex; align-items: flex-end; }
+  .sheet { width: 100%; background: rgba(28,28,30,0.92); border: 1px solid var(--bd); border-radius: 28px 28px 0 0; overflow: hidden; position: relative; padding-bottom: 32px; backdrop-filter: blur(48px); }
+  .sheet-handle { display: flex; justify-content: center; padding: 10px 0 6px; }
+  .sheet-drag { width: 36px; height: 4px; border-radius: 2px; background: var(--bd); }
+  .sheet-title { font-size: 15px; font-weight: 700; color: var(--t1); text-align: center; padding: 4px 0 16px; }
+  .sheet-action { display: flex; align-items: center; gap: 14px; padding: 14px 20px; border-bottom: 1px solid var(--bds); cursor: pointer; }
+  .sheet-action:last-child { border-bottom: none; }
+  .sheet-action-icon { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .sheet-action-label { font-size: 15px; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<!-- ─────────────── SCREEN 1: LIST ─────────────── -->
+<div>
+  <div class="label">Screen 1 · Lista Operațiuni</div>
+  <div class="phone">
+    <div class="phone-inner" style="background:#000;">
+      <div class="status-bar">
+        <span class="status-time">9:41</span>
+        <div style="width:126px;height:34px;background:#000;border-radius:20px;display:flex;align-items:center;justify-content:center;"><div style="width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,0.15);margin-right:8px;"></div><div style="width:60px;height:6px;background:rgba(255,255,255,0.12);border-radius:4px;"></div></div>
+        <div class="status-icons">
+          <svg width="16" height="12" viewBox="0 0 16 12" fill="rgba(255,255,255,0.85)"><rect x="0" y="4" width="3" height="8" rx="1"/><rect x="4.5" y="2.5" width="3" height="9.5" rx="1"/><rect x="9" y="0.5" width="3" height="11.5" rx="1"/><rect x="13.5" y="0" width="2" height="12" rx="1" opacity="0.3"/></svg>
+          <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3.5" stroke="rgba(255,255,255,0.35)"/><rect x="2" y="2" width="16" height="8" rx="2" fill="rgba(255,255,255,0.85)"/><path d="M23 4v4a2 2 0 0 0 0-4z" fill="rgba(255,255,255,0.4)"/></svg>
+        </div>
+      </div>
+
+      <!-- header -->
+      <div style="padding:10px 16px 4px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;">
+          <h1 style="font-size:26px;font-weight:700;letter-spacing:-0.02em;color:var(--t1);">Operațiuni</h1>
+          <div style="display:flex;align-items:center;gap:6px;padding:5px 10px;border-radius:10px;background:var(--g1);border:1px solid var(--bds);">
+            <div class="dot dot-green"></div>
+            <span style="font-size:12px;font-weight:600;color:var(--t2);">18 Magazine</span>
+          </div>
+        </div>
+        <p style="font-size:13px;color:var(--t2);">5 sarcini active · 142 comenzi azi</p>
+      </div>
+
+      <!-- KPI strip -->
+      <div class="kpi-strip">
+        <div class="kpi-cell">
+          <div class="kpi-val" style="color:rgba(48,209,88,0.95);">18</div>
+          <div class="kpi-lbl">Magazine</div>
+        </div>
+        <div class="kpi-cell">
+          <div class="kpi-val" style="color:rgba(255,159,10,0.95);">5</div>
+          <div class="kpi-lbl">Sarcini</div>
+        </div>
+        <div class="kpi-cell">
+          <div class="kpi-val" style="color:rgba(10,132,255,0.9);">142</div>
+          <div class="kpi-lbl">Comenzi</div>
+        </div>
+        <div class="kpi-cell">
+          <div class="kpi-val" style="color:rgba(255,69,58,0.9);">3</div>
+          <div class="kpi-lbl">Alerte</div>
+        </div>
+      </div>
+
+      <!-- filter chips -->
+      <div class="chips">
+        <button class="chip chip-active">Toate</button>
+        <button class="chip chip-idle">Magazine</button>
+        <button class="chip chip-idle">Sarcini</button>
+        <button class="chip chip-idle">Comenzi</button>
+      </div>
+
+      <!-- alert banner -->
+      <div class="alert-banner">
+        <div class="alert-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,159,10,0.9)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        </div>
+        <div>
+          <div class="alert-title">Stoc redus detectat</div>
+          <div class="alert-sub">Iași · Palas — 3 SKU-uri sub pragul de reaprovizionare</div>
+        </div>
+      </div>
+
+      <!-- Magazine section -->
+      <div style="padding:18px 16px 0;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <div class="section-label" style="margin-bottom:0;">Magazine</div>
+          <span style="font-size:12px;color:var(--t3);">Vezi toate 18</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+
+          <div class="store-row lb-green">
+            <div class="specular"></div>
+            <div class="store-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.65)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            </div>
+            <div style="flex:1;min-width:0;">
+              <div class="store-title">Cluj · Main</div>
+              <div class="store-sub">€34,200 venit azi</div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+              <span class="pill" style="background:rgba(48,209,88,0.12);color:rgba(48,209,88,0.9);">39% marjă</span>
+              <div class="dot dot-green"></div>
+            </div>
+          </div>
+
+          <div class="store-row lb-green">
+            <div class="specular"></div>
+            <div class="store-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.65)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            </div>
+            <div style="flex:1;min-width:0;">
+              <div class="store-title">București · Floreasca</div>
+              <div class="store-sub">€28,900 venit azi</div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+              <span class="pill" style="background:rgba(48,209,88,0.12);color:rgba(48,209,88,0.9);">34% marjă</span>
+              <div class="dot dot-green"></div>
+            </div>
+          </div>
+
+          <div class="store-row lb-amber">
+            <div class="specular"></div>
+            <div class="store-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.65)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            </div>
+            <div style="flex:1;min-width:0;">
+              <div class="store-title">Brașov · Coresi</div>
+              <div class="store-sub">€18,600 venit azi</div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+              <span class="pill" style="background:rgba(255,159,10,0.12);color:rgba(255,159,10,0.9);">29% marjă</span>
+              <div class="dot dot-amber"></div>
+            </div>
+          </div>
+
+          <div class="store-row lb-red">
+            <div class="specular"></div>
+            <div class="store-icon" style="background:rgba(255,69,58,0.08);border-color:rgba(255,69,58,0.18);">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,69,58,0.8)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            </div>
+            <div style="flex:1;min-width:0;">
+              <div class="store-title">Iași · Palas</div>
+              <div class="store-sub" style="color:rgba(255,159,10,0.7);">Stoc redus · 3 SKU-uri</div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+              <span class="pill" style="background:rgba(255,69,58,0.10);color:rgba(255,69,58,0.9);">Alertă</span>
+              <div class="dot dot-red"></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Sarcini active -->
+      <div style="padding:18px 16px 0;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <div class="section-label" style="margin-bottom:0;">Sarcini Active</div>
+          <span style="font-size:12px;color:var(--t3);">5 deschise</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+
+          <div class="task-row lb-red">
+            <div class="specular"></div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:13px;font-weight:600;color:var(--t1);margin-bottom:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Reaprovizionare rafturi</div>
+              <div style="font-size:11px;color:var(--t3);">Brașov · Coresi</div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+              <span class="pill" style="background:rgba(255,69,58,0.10);color:rgba(255,69,58,0.9);">Urgent</span>
+              <div style="width:22px;height:22px;border-radius:50%;background:var(--g3);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:var(--t2);">AR</div>
+            </div>
+          </div>
+
+          <div class="task-row lb-blue">
+            <div class="specular"></div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:13px;font-weight:600;color:var(--t1);margin-bottom:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Audit inventar — în curs</div>
+              <div style="font-size:11px;color:var(--t3);">Cluj · Main</div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+              <span class="pill" style="background:rgba(10,132,255,0.12);color:rgba(10,132,255,0.9);">În Curs</span>
+              <div style="width:22px;height:22px;border-radius:50%;background:var(--g3);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:var(--t2);">EP</div>
+            </div>
+          </div>
+
+          <div class="task-row lb-amber">
+            <div class="specular"></div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:13px;font-weight:600;color:var(--t1);margin-bottom:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Mentenanță HVAC</div>
+              <div style="font-size:11px;color:var(--t3);">Iași · Palas</div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+              <span class="pill" style="background:rgba(255,159,10,0.12);color:rgba(255,159,10,0.9);">Mediu</span>
+              <div style="width:22px;height:22px;border-radius:50%;background:var(--g3);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:var(--t2);">MP</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Comenzi recente -->
+      <div style="padding:18px 16px 0;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <div class="section-label" style="margin-bottom:0;">Comenzi Recente</div>
+          <span style="font-size:12px;color:var(--t3);">Vezi toate 142</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+
+          <div class="order-row">
+            <div class="specular"></div>
+            <div style="width:38px;height:38px;border-radius:10px;background:var(--g2);border:1px solid var(--bds);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.65)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 16H2v-3a2 2 0 0 1 2-2h12"/><path d="M22 8H8a2 2 0 0 0-2 2v6h16V8z"/><circle cx="6" cy="20" r="2"/><circle cx="18" cy="20" r="2"/></svg>
+            </div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:13px;font-weight:600;color:var(--t1);margin-bottom:1px;">#ORD-4821 · Mihai Popescu</div>
+              <div style="font-size:11px;color:var(--t3);">Cluj · acum 12 min</div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+              <span style="font-size:13px;font-weight:700;color:var(--t1);">€298</span>
+              <span class="pill" style="background:rgba(48,209,88,0.12);color:rgba(48,209,88,0.9);">Plătit</span>
+            </div>
+          </div>
+
+          <div class="order-row">
+            <div class="specular"></div>
+            <div style="width:38px;height:38px;border-radius:10px;background:var(--g2);border:1px solid var(--bds);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.65)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 16H2v-3a2 2 0 0 1 2-2h12"/><path d="M22 8H8a2 2 0 0 0-2 2v6h16V8z"/><circle cx="6" cy="20" r="2"/><circle cx="18" cy="20" r="2"/></svg>
+            </div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:13px;font-weight:600;color:var(--t1);margin-bottom:1px;">#ORD-4820 · Ana Ionescu</div>
+              <div style="font-size:11px;color:var(--t3);">București · acum 28 min</div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+              <span style="font-size:13px;font-weight:700;color:var(--t1);">€540</span>
+              <span class="pill" style="background:rgba(10,132,255,0.12);color:rgba(10,132,255,0.9);">Livrat</span>
+            </div>
+          </div>
+
+          <div class="order-row">
+            <div class="specular"></div>
+            <div style="width:38px;height:38px;border-radius:10px;background:var(--g2);border:1px solid var(--bds);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.65)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 16H2v-3a2 2 0 0 1 2-2h12"/><path d="M22 8H8a2 2 0 0 0-2 2v6h16V8z"/><circle cx="6" cy="20" r="2"/><circle cx="18" cy="20" r="2"/></svg>
+            </div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:13px;font-weight:600;color:var(--t1);margin-bottom:1px;">#ORD-4819 · Radu Dima</div>
+              <div style="font-size:11px;color:var(--t3);">Timișoara · acum 44 min</div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+              <span style="font-size:13px;font-weight:700;color:var(--t1);">€120</span>
+              <span class="pill" style="background:rgba(255,159,10,0.12);color:rgba(255,159,10,0.9);">Așteptare</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div style="height:40px;"></div>
+
+      <div class="tab-bar">
+        <div class="tab-bar-inner">
+          <div class="specular"></div>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.7" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+          <div style="position:relative;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.95)" stroke-width="1.8" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            <div style="position:absolute;bottom:-4px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,0.9);"></div>
+          </div>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.7" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.7" stroke-linecap="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.7" stroke-linecap="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- FAB -->
+    <div style="position:absolute;bottom:104px;right:20px;width:52px;height:52px;border-radius:50%;background:var(--g3);border:1px solid var(--bd);display:flex;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(0,0,0,0.5);backdrop-filter:blur(32px);">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────────── SCREEN 2: STORE DETAIL ─────────────── -->
+<div>
+  <div class="label">Screen 2 · Detaliu Magazin</div>
+  <div class="phone">
+    <div class="phone-inner" style="background:#000;">
+      <div class="status-bar">
+        <span class="status-time">9:41</span>
+        <div style="width:126px;height:34px;background:#000;border-radius:20px;display:flex;align-items:center;justify-content:center;"><div style="width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,0.15);margin-right:8px;"></div><div style="width:60px;height:6px;background:rgba(255,255,255,0.12);border-radius:4px;"></div></div>
+        <div class="status-icons">
+          <svg width="16" height="12" viewBox="0 0 16 12" fill="rgba(255,255,255,0.85)"><rect x="0" y="4" width="3" height="8" rx="1"/><rect x="4.5" y="2.5" width="3" height="9.5" rx="1"/><rect x="9" y="0.5" width="3" height="11.5" rx="1"/><rect x="13.5" y="0" width="2" height="12" rx="1" opacity="0.3"/></svg>
+          <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3.5" stroke="rgba(255,255,255,0.35)"/><rect x="2" y="2" width="16" height="8" rx="2" fill="rgba(255,255,255,0.85)"/><path d="M23 4v4a2 2 0 0 0 0-4z" fill="rgba(255,255,255,0.4)"/></svg>
+        </div>
+      </div>
+
+      <!-- back nav -->
+      <div style="display:flex;align-items:center;gap:8px;padding:8px 16px 0;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.65)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        <span style="font-size:14px;color:rgba(255,255,255,0.65);">Operațiuni</span>
+      </div>
+
+      <!-- hero -->
+      <div style="padding:14px 16px 0;">
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
+          <span class="pill" style="background:rgba(48,209,88,0.12);color:rgba(48,209,88,0.9);">
+            <span style="width:5px;height:5px;border-radius:50%;background:rgba(48,209,88,0.9);display:inline-block;"></span>
+            Online
+          </span>
+          <span class="pill" style="background:var(--g2);color:var(--t2);">Cluj</span>
+          <span class="pill" style="background:var(--g2);color:var(--t3);">Actualizat acum 5 min</span>
+        </div>
+        <div style="font-size:24px;font-weight:700;color:var(--t1);letter-spacing:-0.02em;margin-bottom:4px;line-height:1.2;">Cluj · Main</div>
+        <div style="font-size:13px;color:var(--t2);">Strada Memorandumului 28 · Deschis 09:00–21:00</div>
+      </div>
+
+      <!-- stat tiles -->
+      <div class="stat-grid">
+        <div class="stat-tile">
+          <div class="specular"></div>
+          <div class="stat-tile-val" style="color:rgba(48,209,88,0.95);">€34,200</div>
+          <div class="stat-tile-lbl">Venit Azi</div>
+          <div style="font-size:10px;color:rgba(48,209,88,0.6);margin-top:3px;">+12% vs ieri</div>
+        </div>
+        <div class="stat-tile">
+          <div class="specular"></div>
+          <div class="stat-tile-val">39%</div>
+          <div class="stat-tile-lbl">Marjă</div>
+          <div style="font-size:10px;color:rgba(48,209,88,0.6);margin-top:3px;">+2pp vs luna tr.</div>
+        </div>
+        <div class="stat-tile">
+          <div class="specular"></div>
+          <div class="stat-tile-val" style="color:rgba(10,132,255,0.9);">28</div>
+          <div class="stat-tile-lbl">Comenzi Azi</div>
+          <div style="font-size:10px;color:var(--t3);margin-top:3px;">3 în așteptare</div>
+        </div>
+        <div class="stat-tile">
+          <div class="specular"></div>
+          <div class="stat-tile-val">12</div>
+          <div class="stat-tile-lbl">Personal Activ</div>
+          <div style="font-size:10px;color:var(--t3);margin-top:3px;">Tură: 09:00–17:00</div>
+        </div>
+      </div>
+
+      <!-- tasks for this store -->
+      <div class="section-card">
+        <div class="specular"></div>
+        <div class="section-card-header">
+          <span class="section-card-title">Sarcini Active</span>
+          <span class="section-card-badge">1 deschisă</span>
+        </div>
+
+        <div style="padding:10px 14px;border-bottom:1px solid var(--bds);display:flex;align-items:center;gap:12px;cursor:pointer;">
+          <div style="width:28px;height:28px;border-radius:50%;background:rgba(10,132,255,0.12);border:1px solid rgba(10,132,255,0.3);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="rgba(10,132,255,0.9)" stroke="none"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          </div>
+          <div style="flex:1;">
+            <div style="font-size:13px;font-weight:600;color:var(--t1);margin-bottom:2px;">Audit inventar</div>
+            <div style="font-size:11px;color:rgba(10,132,255,0.7);">În curs · EP</div>
+          </div>
+          <span class="pill" style="background:rgba(255,69,58,0.10);color:rgba(255,69,58,0.9);">Urgent</span>
+        </div>
+
+        <div style="padding:10px 14px;display:flex;align-items:center;gap:12px;cursor:pointer;">
+          <div style="width:28px;height:28px;border-radius:50%;background:var(--g2);border:1px solid var(--bds);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <div style="width:8px;height:8px;border-radius:50%;background:var(--t3);"></div>
+          </div>
+          <div style="flex:1;">
+            <div style="font-size:13px;font-weight:600;color:var(--t1);margin-bottom:2px;">Curățenie generală post-tură</div>
+            <div style="font-size:11px;color:var(--t3);">De făcut · RC</div>
+          </div>
+          <span class="pill" style="background:var(--g2);color:var(--t3);">Scăzut</span>
+        </div>
+      </div>
+
+      <!-- recent orders for this store -->
+      <div class="section-card" style="margin-bottom:16px;">
+        <div class="specular"></div>
+        <div class="section-card-header">
+          <span class="section-card-title">Comenzi Recente</span>
+          <span class="section-card-badge">28 azi</span>
+        </div>
+
+        <div style="padding:10px 14px;border-bottom:1px solid var(--bds);display:flex;align-items:center;gap:10px;cursor:pointer;">
+          <div style="flex:1;">
+            <div style="font-size:13px;font-weight:600;color:var(--t1);margin-bottom:1px;">#ORD-4821 · Mihai Popescu</div>
+            <div style="font-size:11px;color:var(--t3);">acum 12 min</div>
+          </div>
+          <span style="font-size:13px;font-weight:700;color:var(--t1);margin-right:8px;">€298</span>
+          <span class="pill" style="background:rgba(48,209,88,0.12);color:rgba(48,209,88,0.9);">Plătit</span>
+        </div>
+
+        <div style="padding:10px 14px;border-bottom:1px solid var(--bds);display:flex;align-items:center;gap:10px;cursor:pointer;">
+          <div style="flex:1;">
+            <div style="font-size:13px;font-weight:600;color:var(--t1);margin-bottom:1px;">#ORD-4817 · Vlad Nicu</div>
+            <div style="font-size:11px;color:var(--t3);">acum 1h 20min</div>
+          </div>
+          <span style="font-size:13px;font-weight:700;color:var(--t1);margin-right:8px;">€1,200</span>
+          <span class="pill" style="background:rgba(10,132,255,0.12);color:rgba(10,132,255,0.9);">Livrat</span>
+        </div>
+
+        <div style="padding:10px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;">
+          <div style="flex:1;">
+            <div style="font-size:13px;font-weight:600;color:var(--t1);margin-bottom:1px;">#ORD-4812 · Alina Stan</div>
+            <div style="font-size:11px;color:var(--t3);">acum 2h 10min</div>
+          </div>
+          <span style="font-size:13px;font-weight:700;color:var(--t1);margin-right:8px;">€87</span>
+          <span class="pill" style="background:rgba(255,159,10,0.12);color:rgba(255,159,10,0.9);">Așteptare</span>
+        </div>
+      </div>
+
+      <div class="tab-bar">
+        <div class="tab-bar-inner">
+          <div class="specular"></div>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.7" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+          <div style="position:relative;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.95)" stroke-width="1.8" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            <div style="position:absolute;bottom:-4px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,0.9);"></div>
+          </div>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.7" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.7" stroke-linecap="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.7" stroke-linecap="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- FAB 3-dot -->
+    <div style="position:absolute;bottom:104px;right:20px;width:52px;height:52px;border-radius:50%;background:var(--g3);border:1px solid var(--bd);display:flex;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(0,0,0,0.5);backdrop-filter:blur(32px);">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="rgba(255,255,255,0.9)" stroke="none"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────────── SCREEN 3: FAB SHEETS ─────────────── -->
+<div>
+  <div class="label">Screen 3 · FAB Sheet (List + Detail)</div>
+  <div class="phone">
+    <div class="phone-inner" style="background:#000;">
+
+      <!-- TOP HALF: List FAB Sheet -->
+      <div style="padding:20px 16px 14px;">
+        <div style="font-size:13px;font-weight:600;color:var(--t3);margin-bottom:12px;text-transform:uppercase;letter-spacing:0.05em;font-size:10px;">Sheet 1 — Lista (FAB +)</div>
+        <div style="background:rgba(28,28,30,0.92);border:1px solid var(--bd);border-radius:22px;overflow:hidden;position:relative;backdrop-filter:blur(48px);">
+          <div class="specular"></div>
+          <div style="display:flex;justify-content:center;padding:10px 0 6px;"><div style="width:36px;height:4px;border-radius:2px;background:var(--bd);"></div></div>
+          <div style="font-size:15px;font-weight:700;color:var(--t1);text-align:center;padding:4px 0 14px;">Acțiuni Operațiuni</div>
+
+          <div class="sheet-action">
+            <div class="sheet-action-icon" style="background:rgba(48,209,88,0.10);border:1px solid rgba(48,209,88,0.20);">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(48,209,88,0.9)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/><line x1="12" y1="3" x2="12" y2="9"/></svg>
+            </div>
+            <span class="sheet-action-label" style="color:rgba(48,209,88,0.9);">Magazin Nou</span>
+          </div>
+          <div class="sheet-action">
+            <div class="sheet-action-icon" style="background:rgba(10,132,255,0.12);border:1px solid rgba(10,132,255,0.20);">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(10,132,255,0.9)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+            </div>
+            <span class="sheet-action-label" style="color:rgba(10,132,255,0.9);">Sarcină Nouă</span>
+          </div>
+          <div class="sheet-action" style="border-bottom:none;">
+            <div class="sheet-action-icon" style="background:var(--g2);border:1px solid var(--bd);">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--t2)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            </div>
+            <span class="sheet-action-label" style="color:var(--t1);">Export Raport</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- BOTTOM HALF: Detail FAB Sheet -->
+      <div style="padding:0 16px 20px;">
+        <div style="font-size:10px;font-weight:600;color:var(--t3);margin-bottom:12px;text-transform:uppercase;letter-spacing:0.05em;">Sheet 2 — Magazin (FAB 3-dot)</div>
+        <div style="background:rgba(28,28,30,0.92);border:1px solid var(--bd);border-radius:22px;overflow:hidden;position:relative;backdrop-filter:blur(48px);">
+          <div class="specular"></div>
+          <div style="display:flex;justify-content:center;padding:10px 0 6px;"><div style="width:36px;height:4px;border-radius:2px;background:var(--bd);"></div></div>
+          <div style="font-size:15px;font-weight:700;color:var(--t1);text-align:center;padding:4px 0 14px;">Acțiuni Magazin</div>
+
+          <div class="sheet-action">
+            <div class="sheet-action-icon" style="background:var(--g2);border:1px solid var(--bd);">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--t1)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+            </div>
+            <span class="sheet-action-label" style="color:var(--t1);">Generează Raport</span>
+          </div>
+          <div class="sheet-action">
+            <div class="sheet-action-icon" style="background:rgba(10,132,255,0.12);border:1px solid rgba(10,132,255,0.20);">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(10,132,255,0.9)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            </div>
+            <span class="sheet-action-label" style="color:rgba(10,132,255,0.9);">Contactează Manager</span>
+          </div>
+          <div class="sheet-action">
+            <div class="sheet-action-icon" style="background:rgba(255,159,10,0.12);border:1px solid rgba(255,159,10,0.20);">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,159,10,0.9)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            </div>
+            <span class="sheet-action-label" style="color:rgba(255,159,10,0.9);">Setează Alertă</span>
+          </div>
+          <div class="sheet-action" style="border-bottom:none;">
+            <div class="sheet-action-icon" style="background:rgba(255,69,58,0.10);border:1px solid rgba(255,69,58,0.18);">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,69,58,0.9)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+            </div>
+            <span class="sheet-action-label" style="color:rgba(255,69,58,0.9);">Dezactivează Magazin</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-bar">
+        <div class="tab-bar-inner">
+          <div class="specular"></div>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.7" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+          <div style="position:relative;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.95)" stroke-width="1.8" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            <div style="position:absolute;bottom:-4px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,0.9);"></div>
+          </div>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.7" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.7" stroke-linecap="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.7" stroke-linecap="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
