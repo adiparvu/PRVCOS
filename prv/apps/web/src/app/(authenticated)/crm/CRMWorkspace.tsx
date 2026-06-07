@@ -444,6 +444,16 @@ function ClientDetail({ client, onBack }: { client: Client; onBack: () => void }
               </>
             )}
           </p>
+          <div className="mt-3 pt-3" style={{ borderTop: "1px solid var(--prv-border-subtle)" }}>
+            <Link
+              href={`/crm/clients/${client.id}`}
+              className="text-[13px] font-semibold"
+              style={{ color: "#7eb8ff", textDecoration: "none" }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              Profil complet →
+            </Link>
+          </div>
         </GlassCard>
       )}
 
@@ -561,7 +571,7 @@ export function CRMWorkspace() {
       {/* KPI strip */}
       <div className="grid grid-cols-4 gap-2.5 mb-4">
         {[
-          { v: String(CLIENTS.length), l: "Clients", c: "var(--prv-text-1)", href: undefined },
+          { v: String(CLIENTS.length), l: "Clients", c: "var(--prv-text-1)", href: "/crm/clients" },
           {
             v: String(CLIENTS.filter((c) => c.status === "lead").length),
             l: "Leads",
