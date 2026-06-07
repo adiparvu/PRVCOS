@@ -1,10 +1,10 @@
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import { getSession } from "@prv/auth"
-import { IntelligenceWorkspace } from "./IntelligenceWorkspace"
+import IntelligenceListClient from "./IntelligenceListClient"
 
 export const dynamic = "force-dynamic"
-export const metadata = { title: "Intelligence" }
+export const metadata = { title: "Inteligență · PRV" }
 
 export default async function IntelligencePage() {
   const cookieStore = await cookies()
@@ -17,9 +17,5 @@ export default async function IntelligencePage() {
     redirect("/auth/login")
   }
 
-  return (
-    <div className="pt-14 max-w-2xl mx-auto">
-      <IntelligenceWorkspace />
-    </div>
-  )
+  return <IntelligenceListClient />
 }
