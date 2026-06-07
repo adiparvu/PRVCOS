@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Phase 28 — Learning Deep Dive</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #111; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif; display: flex; gap: 20px; padding: 32px 24px; justify-content: center; flex-wrap: wrap; }
+
+  .phone { width: 390px; background: #000; border-radius: 52px; border: 1px solid rgba(255,255,255,0.12); overflow: hidden; position: relative; box-shadow: 0 40px 80px rgba(0,0,0,0.9); flex-shrink: 0; }
+  .phone-inner { height: 844px; overflow-y: auto; overflow-x: hidden; scrollbar-width: none; position: relative; }
+  .phone-inner::-webkit-scrollbar { display: none; }
+
+  .label { color: rgba(255,255,255,0.4); font-size: 11px; text-align: center; padding: 10px 0 6px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
+
+  :root {
+    --g1: rgba(255,255,255,0.06);
+    --g2: rgba(255,255,255,0.10);
+    --g3: rgba(255,255,255,0.16);
+    --bd: rgba(255,255,255,0.12);
+    --bds: rgba(255,255,255,0.07);
+    --t1: rgba(255,255,255,0.95);
+    --t2: rgba(255,255,255,0.65);
+    --t3: rgba(255,255,255,0.35);
+    --t4: rgba(255,255,255,0.15);
+  }
+
+  /* ── Reusable ── */
+  .specular { position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.22), transparent); }
+  .section-label { font-size: 11px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: var(--t3); margin-bottom: 10px; }
+
+  /* ── TAB BAR ── */
+  .tab-bar { position: sticky; bottom: 0; z-index: 20; padding: 8px 16px 20px; background: linear-gradient(to top, rgba(0,0,0,0.95) 60%, transparent); }
+  .tab-bar-inner { background: var(--g2); border: 1px solid var(--bd); border-radius: 24px; padding: 8px 12px; display: flex; justify-content: space-around; backdrop-filter: blur(32px); position: relative; }
+
+  /* ── STATUS BAR ── */
+  .status-bar { display: flex; justify-content: space-between; align-items: center; padding: 14px 28px 0; }
+  .status-time { color: var(--t1); font-size: 15px; font-weight: 700; }
+  .status-icons { display: flex; gap: 6px; align-items: center; }
+
+  /* ── FAB ── */
+  .fab { position: fixed; bottom: 100px; right: 24px; width: 52px; height: 52px; border-radius: 50%; background: var(--g3); border: 1px solid var(--bd); display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 24px rgba(0,0,0,0.5); backdrop-filter: blur(32px); z-index: 10; cursor: pointer; }
+
+  /* ── PILL ── */
+  .pill { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 20px; font-size: 10px; font-weight: 700; white-space: nowrap; }
+
+  /* ── PROGRESS BAR ── */
+  .prog-track { height: 4px; background: var(--bd); border-radius: 2px; overflow: hidden; }
+  .prog-fill { height: 100%; border-radius: 2px; }
+
+  /* ── KPI strip ── */
+  .kpi-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 14px 16px 0; }
+  .kpi-cell { padding: 10px 8px; border-radius: 14px; background: var(--g1); border: 1px solid var(--bds); text-align: center; }
+  .kpi-val { font-size: 18px; font-weight: 700; color: var(--t1); margin-bottom: 2px; line-height: 1; }
+  .kpi-lbl { font-size: 10px; color: var(--t3); }
+
+  /* ── CHIP FILTERS ── */
+  .chips { display: flex; gap: 6px; padding: 14px 16px 0; overflow-x: auto; scrollbar-width: none; }
+  .chips::-webkit-scrollbar { display: none; }
+  .chip { padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; white-space: nowrap; cursor: pointer; border: none; }
+  .chip-active { background: var(--t1); color: #000; }
+  .chip-idle { background: var(--g1); color: var(--t2); border: 1px solid var(--bds); }
+
+  /* ── FEATURED CARD ── */
+  .featured-card { margin: 16px 16px 0; border-radius: 20px; background: var(--g1); border: 1px solid var(--bd); overflow: hidden; position: relative; cursor: pointer; }
+  .featured-thumb { height: 110px; background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.10) 100%); position: relative; display: flex; align-items: center; justify-content: center; }
+  .featured-thumb-grid { display: grid; grid-template-columns: repeat(5,1fr); gap: 4px; padding: 14px; width: 100%; }
+  .thumb-bar { height: 18px; border-radius: 4px; }
+  .featured-play { position: absolute; width: 44px; height: 44px; border-radius: 50%; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.18); display: flex; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
+  .featured-body { padding: 14px 16px 16px; }
+  .featured-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 3px 8px; border-radius: 6px; background: rgba(10,132,255,0.15); color: rgba(10,132,255,0.9); margin-bottom: 8px; }
+  .featured-title { font-size: 16px; font-weight: 700; color: var(--t1); margin-bottom: 4px; line-height: 1.3; }
+  .featured-sub { font-size: 12px; color: var(--t2); margin-bottom: 10px; }
+  .featured-footer { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+
+  /* ── COURSE ROW ── */
+  .course-row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 16px; background: var(--g1); border: 1px solid var(--bds); cursor: pointer; position: relative; }
+  .course-icon { width: 44px; height: 44px; border-radius: 12px; background: var(--g2); border: 1px solid var(--bd); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .course-title { font-size: 14px; font-weight: 600; color: var(--t1); margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .course-sub { font-size: 12px; color: var(--t3); }
+
+  /* ── ACHIEVEMENT ROW ── */
+  .achievement-row { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 14px; background: var(--g1); border: 1px solid var(--bds); }
+  .ach-icon { width: 38px; height: 38px; border-radius: 10px; background: var(--g2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+
+  /* ── SECTION CARD ── */
+  .section-card { margin: 14px 16px 0; border-radius: 18px; background: var(--g1); border: 1px solid var(--bds); overflow: hidden; position: relative; }
+  .section-card-header { padding: 14px 16px 10px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--bds); }
+  .section-card-title { font-size: 13px; font-weight: 700; color: var(--t1); }
+  .section-card-badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px; background: var(--g2); color: var(--t2); }
+
+  /* ── MODULE ROW ── */
+  .module-row { display: flex; align-items: center; gap: 12px; padding: 11px 16px; border-bottom: 1px solid var(--bds); cursor: pointer; }
+  .module-row:last-child { border-bottom: none; }
+  .module-circle { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 11px; font-weight: 700; }
+  .module-done { background: rgba(48,209,88,0.12); border: 1px solid rgba(48,209,88,0.25); }
+  .module-active { background: rgba(10,132,255,0.12); border: 1px solid rgba(10,132,255,0.3); }
+  .module-locked { background: var(--g2); border: 1px solid var(--bds); }
+  .module-title { font-size: 13px; font-weight: 600; flex: 1; }
+  .module-dur { font-size: 11px; color: var(--t3); margin-right: 4px; }
+
+  /* ── SHEET ── */
+  .sheet-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.55); backdrop-filter: blur(6px); z-index: 40; display: flex; align-items: flex-end; }
+  .sheet { width: 100%; background: rgba(28,28,30,0.92); border: 1px solid var(--bd); border-radius: 28px 28px 0 0; overflow: hidden; position: relative; padding-bottom: 32px; backdrop-filter: blur(48px); }
+  .sheet-handle { display: flex; justify-content: center; padding: 10px 0 6px; }
+  .sheet-drag { width: 36px; height: 4px; border-radius: 2px; background: var(--bd); }
+  .sheet-title { font-size: 15px; font-weight: 700; color: var(--t1); text-align: center; padding: 4px 0 16px; }
+  .sheet-search { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 14px; background: var(--g2); border: 1px solid var(--bd); margin: 0 16px 16px; }
+  .sheet-search input { flex: 1; background: none; border: none; outline: none; font-size: 14px; color: var(--t1); font-family: inherit; }
+  .sheet-search input::placeholder { color: var(--t3); }
+  .sheet-action { display: flex; align-items: center; gap: 14px; padding: 14px 20px; border-bottom: 1px solid var(--bds); cursor: pointer; }
+  .sheet-action:last-child { border-bottom: none; }
+  .sheet-action-icon { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .sheet-action-label { font-size: 15px; font-weight: 600; }
+
+  /* ── DETAIL HERO ── */
+  .detail-hero { padding: 16px 16px 14px; }
+  .detail-pills { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+  .detail-title { font-size: 22px; font-weight: 700; color: var(--t1); line-height: 1.25; margin-bottom: 6px; }
+  .detail-meta { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+  .detail-meta-chip { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--t2); }
+
+  /* ── CTA ── */
+  .cta-row { display: flex; gap: 10px; padding: 14px 16px 0; }
+  .cta-btn { flex: 1; padding: 14px; border-radius: 16px; font-size: 15px; font-weight: 700; border: none; cursor: pointer; text-align: center; }
+  .cta-primary { background: rgba(255,255,255,0.95); color: #000; }
+  .cta-secondary { background: var(--g2); border: 1px solid var(--bd); color: var(--t1); }
+
+  /* ── CERT CARD ── */
+  .cert-card { margin: 14px 16px 0; padding: 14px 16px; border-radius: 16px; background: rgba(48,209,88,0.06); border: 1px solid rgba(48,209,88,0.18); display: flex; align-items: center; gap: 12px; }
+
+  /* ── LEFT BORDER TREATMENT ── */
+  .left-border-blue { border-left: 3px solid transparent; border-image: linear-gradient(180deg, rgba(10,132,255,0.9), rgba(10,132,255,0.4)) 1; padding-left: 13px; }
+  .left-border-amber { border-left: 3px solid transparent; border-image: linear-gradient(180deg, rgba(255,159,10,0.9), rgba(255,159,10,0.4)) 1; padding-left: 13px; }
+</style>
+</head>
+<body>
+
+<!-- ─────────────────────── SCREEN 1: LIST ─────────────────────── -->
+<div>
+  <div class="label">Screen 1 · Lista Cursuri</div>
+  <div class="phone">
+    <div class="phone-inner" style="background: #000;">
+      <!-- status bar -->
+      <div class="status-bar">
+        <span class="status-time">9:41</span>
+        <div style="width:126px;height:34px;background:#000;border-radius:20px;display:flex;align-items:center;justify-content:center;">
+          <div style="width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,0.15);margin-right:8px;"></div>
+          <div style="width:60px;height:6px;background:rgba(255,255,255,0.12);border-radius:4px;"></div>
+        </div>
+        <div class="status-icons">
+          <svg width="16" height="12" viewBox="0 0 16 12" fill="rgba(255,255,255,0.85)"><rect x="0" y="4" width="3" height="8" rx="1"/><rect x="4.5" y="2.5" width="3" height="9.5" rx="1"/><rect x="9" y="0.5" width="3" height="11.5" rx="1"/><rect x="13.5" y="0" width="2" height="12" rx="1" opacity="0.3"/></svg>
+          <svg width="16" height="12" viewBox="0 0 24 16" fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="1.8" stroke-linecap="round"><path d="M1.5 6A13.5 13.5 0 0 1 12 2c4.1 0 7.8 1.8 10.3 4.7"/><path d="M5 9.5A9 9 0 0 1 12 7a9 9 0 0 1 6.9 3.2"/><circle cx="12" cy="13" r="1.5" fill="rgba(255,255,255,0.85)" stroke="none"/></svg>
+          <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3.5" stroke="rgba(255,255,255,0.35)"/><rect x="2" y="2" width="16" height="8" rx="2" fill="rgba(255,255,255,0.85)"/><path d="M23 4v4a2 2 0 0 0 0-4z" fill="rgba(255,255,255,0.4)"/></svg>
+        </div>
+      </div>
+
+      <!-- header -->
+      <div style="padding: 10px 16px 4px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;">
+          <h1 style="font-size:26px;font-weight:700;letter-spacing:-0.02em;color:var(--t1);">Centrul de Învățare</h1>
+          <div style="width:36px;height:36px;border-radius:50%;background:var(--g1);border:1px solid var(--bds);display:flex;align-items:center;justify-content:center;">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.65)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/>
+            </svg>
+          </div>
+        </div>
+        <p style="font-size:13px;color:var(--t2);">3 cursuri active · 12 finalizate</p>
+      </div>
+
+      <!-- KPI strip -->
+      <div class="kpi-strip">
+        <div class="kpi-cell">
+          <div class="kpi-val" style="color:rgba(48,209,88,0.95);">12</div>
+          <div class="kpi-lbl">Finalizate</div>
+        </div>
+        <div class="kpi-cell">
+          <div class="kpi-val" style="color:rgba(255,159,10,0.95);">3</div>
+          <div class="kpi-lbl">În Curs</div>
+        </div>
+        <div class="kpi-cell">
+          <div class="kpi-val">14h</div>
+          <div class="kpi-lbl">Luna Asta</div>
+        </div>
+        <div class="kpi-cell">
+          <div class="kpi-val" style="color:rgba(10,132,255,0.9);">86%</div>
+          <div class="kpi-lbl">Scor Mediu</div>
+        </div>
+      </div>
+
+      <!-- Filter chips -->
+      <div class="chips">
+        <button class="chip chip-active">Toate</button>
+        <button class="chip chip-idle">În Curs</button>
+        <button class="chip chip-idle">Recomandate</button>
+        <button class="chip chip-idle">Completate</button>
+        <button class="chip chip-idle">Salvate</button>
+      </div>
+
+      <!-- Featured in-progress course -->
+      <div class="featured-card">
+        <div class="specular"></div>
+        <div class="featured-thumb">
+          <div class="featured-thumb-grid">
+            <div class="thumb-bar" style="background:rgba(255,255,255,0.12);"></div>
+            <div class="thumb-bar" style="background:rgba(255,255,255,0.06);"></div>
+            <div class="thumb-bar" style="background:rgba(255,255,255,0.15);"></div>
+            <div class="thumb-bar" style="background:rgba(255,255,255,0.08);"></div>
+            <div class="thumb-bar" style="background:rgba(255,255,255,0.06);"></div>
+            <div class="thumb-bar" style="background:rgba(255,255,255,0.06);"></div>
+            <div class="thumb-bar" style="background:rgba(255,255,255,0.12);"></div>
+            <div class="thumb-bar" style="background:rgba(255,255,255,0.06);"></div>
+            <div class="thumb-bar" style="background:rgba(255,255,255,0.10);"></div>
+            <div class="thumb-bar" style="background:rgba(255,255,255,0.14);"></div>
+          </div>
+          <div class="featured-play">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="rgba(255,255,255,0.9)" stroke="none"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          </div>
+        </div>
+        <div class="featured-body">
+          <div class="featured-badge">
+            <span style="width:5px;height:5px;border-radius:50%;background:rgba(10,132,255,0.9);display:inline-block;"></span>
+            Continuă Parcursul
+          </div>
+          <div class="featured-title">Sănătate & Siguranță pe Șantier</div>
+          <div class="featured-sub">Modulul 3 din 6 · Certificare Siguranță</div>
+          <div class="featured-footer">
+            <div style="display:flex;gap:12px;">
+              <span style="font-size:11px;color:var(--t3);">45 min rămase</span>
+              <span style="font-size:11px;color:var(--t3);">3/6 module</span>
+            </div>
+            <span class="pill" style="background:rgba(255,159,10,0.15);color:rgba(255,159,10,0.95);">48%</span>
+          </div>
+          <div class="prog-track"><div class="prog-fill" style="width:48%;background:rgba(255,159,10,0.8);"></div></div>
+        </div>
+      </div>
+
+      <!-- Continuă -->
+      <div style="padding: 20px 16px 0;">
+        <div class="section-label">Continuă Parcursul</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+
+          <div class="course-row left-border-amber">
+            <div class="specular"></div>
+            <div class="course-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.65)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </div>
+            <div style="flex:1;min-width:0;">
+              <div class="course-title">Siguranță Incendiu & Urgențe</div>
+              <div class="course-sub">Modulul 2 din 4 · 20 min rămase</div>
+              <div class="prog-track" style="margin-top:6px;"><div class="prog-fill" style="width:40%;background:rgba(255,159,10,0.8);"></div></div>
+            </div>
+            <span class="pill" style="background:rgba(255,159,10,0.15);color:rgba(255,159,10,0.95);">40%</span>
+          </div>
+
+          <div class="course-row left-border-blue">
+            <div class="specular"></div>
+            <div class="course-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.65)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+            </div>
+            <div style="flex:1;min-width:0;">
+              <div class="course-title">GDPR & Protecția Datelor</div>
+              <div class="course-sub">Modulul 4 din 5 · 12 min rămase</div>
+              <div class="prog-track" style="margin-top:6px;"><div class="prog-fill" style="width:72%;background:rgba(10,132,255,0.7);"></div></div>
+            </div>
+            <span class="pill" style="background:rgba(10,132,255,0.12);color:rgba(10,132,255,0.9);">72%</span>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Realizări recente -->
+      <div style="padding: 18px 16px 0;">
+        <div class="section-label">Realizări Recente</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+
+          <div class="achievement-row">
+            <div class="ach-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,159,10,0.9)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/>
+              </svg>
+            </div>
+            <div style="flex:1;">
+              <div style="font-size:13px;font-weight:600;color:var(--t1);margin-bottom:2px;">Safety Champion</div>
+              <div style="font-size:11px;color:var(--t3);">Ai finalizat toate cursurile de siguranță</div>
+            </div>
+            <div style="font-size:11px;color:var(--t3);">4 Iun</div>
+          </div>
+
+          <div class="achievement-row">
+            <div class="ach-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(48,209,88,0.9)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+              </svg>
+            </div>
+            <div style="flex:1;">
+              <div style="font-size:13px;font-weight:600;color:var(--t1);margin-bottom:2px;">10 Cursuri Finalizate</div>
+              <div style="font-size:11px;color:var(--t3);">Jaloanele trimestrului curent</div>
+            </div>
+            <div style="font-size:11px;color:var(--t3);">28 Mai</div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Recomandate -->
+      <div style="padding: 18px 16px 0;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <div class="section-label" style="margin-bottom:0;">Recomandate</div>
+          <span style="font-size:12px;color:var(--t3);">Vezi toate</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+
+          <div class="course-row">
+            <div class="specular"></div>
+            <div class="course-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.65)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </div>
+            <div style="flex:1;min-width:0;">
+              <div class="course-title">Management de Proiect — Fundamente</div>
+              <div class="course-sub">6 module · 2h 30min</div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+              <span class="pill" style="background:var(--g2);color:var(--t2);">Nou</span>
+              <span style="font-size:9px;color:rgba(191,90,242,0.8);">🎓 Cert</span>
+            </div>
+          </div>
+
+          <div class="course-row">
+            <div class="specular"></div>
+            <div class="course-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.65)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            </div>
+            <div style="flex:1;min-width:0;">
+              <div class="course-title">Excel Avansat pentru Operațiuni</div>
+              <div class="course-sub">8 module · 3h 10min</div>
+            </div>
+            <span class="pill" style="background:var(--g2);color:var(--t2);">Nou</span>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Completate -->
+      <div style="padding: 18px 16px 0;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <div class="section-label" style="margin-bottom:0;">Completate</div>
+          <span style="font-size:12px;color:var(--t3);">Vezi toate 12</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+
+          <div class="course-row">
+            <div class="specular"></div>
+            <div class="course-icon" style="background:rgba(48,209,88,0.08);border-color:rgba(48,209,88,0.18);">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(48,209,88,0.8)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            </div>
+            <div style="flex:1;min-width:0;">
+              <div class="course-title">Standarde Siguranță Renovare 2026</div>
+              <div class="course-sub" style="color:rgba(48,209,88,0.7);">Finalizat · 4 Iun · Certificat obținut</div>
+            </div>
+            <span class="pill" style="background:rgba(48,209,88,0.12);color:rgba(48,209,88,0.9);">✓</span>
+          </div>
+
+          <div class="course-row">
+            <div class="specular"></div>
+            <div class="course-icon" style="background:rgba(48,209,88,0.08);border-color:rgba(48,209,88,0.18);">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(48,209,88,0.8)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </div>
+            <div style="flex:1;min-width:0;">
+              <div class="course-title">Ergonomie la Locul de Muncă</div>
+              <div class="course-sub" style="color:rgba(48,209,88,0.7);">Finalizat · 28 Mai</div>
+            </div>
+            <span class="pill" style="background:rgba(48,209,88,0.12);color:rgba(48,209,88,0.9);">✓</span>
+          </div>
+
+        </div>
+      </div>
+
+      <div style="height: 40px;"></div>
+
+      <!-- tab bar -->
+      <div class="tab-bar">
+        <div class="tab-bar-inner">
+          <div class="specular"></div>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.7" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.7" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.7" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.7" stroke-linecap="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          <div style="position:relative;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.95)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+            <div style="position:absolute;bottom:-4px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,0.9);"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FAB -->
+    <div style="position:absolute;bottom:104px;right:20px;width:52px;height:52px;border-radius:50%;background:var(--g3);border:1px solid var(--bd);display:flex;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(0,0,0,0.5);backdrop-filter:blur(32px);">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────────────────── SCREEN 2: DETAIL ─────────────────────── -->
+<div>
+  <div class="label">Screen 2 · Detaliu Curs</div>
+  <div class="phone">
+    <div class="phone-inner" style="background: #000;">
+      <!-- status bar -->
+      <div class="status-bar">
+        <span class="status-time">9:41</span>
+        <div style="width:126px;height:34px;background:#000;border-radius:20px;display:flex;align-items:center;justify-content:center;">
+          <div style="width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,0.15);margin-right:8px;"></div>
+          <div style="width:60px;height:6px;background:rgba(255,255,255,0.12);border-radius:4px;"></div>
+        </div>
+        <div class="status-icons">
+          <svg width="16" height="12" viewBox="0 0 16 12" fill="rgba(255,255,255,0.85)"><rect x="0" y="4" width="3" height="8" rx="1"/><rect x="4.5" y="2.5" width="3" height="9.5" rx="1"/><rect x="9" y="0.5" width="3" height="11.5" rx="1"/><rect x="13.5" y="0" width="2" height="12" rx="1" opacity="0.3"/></svg>
+          <svg width="16" height="12" viewBox="0 0 24 16" fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="1.8" stroke-linecap="round"><path d="M1.5 6A13.5 13.5 0 0 1 12 2c4.1 0 7.8 1.8 10.3 4.7"/><path d="M5 9.5A9 9 0 0 1 12 7a9 9 0 0 1 6.9 3.2"/><circle cx="12" cy="13" r="1.5" fill="rgba(255,255,255,0.85)" stroke="none"/></svg>
+          <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3.5" stroke="rgba(255,255,255,0.35)"/><rect x="2" y="2" width="16" height="8" rx="2" fill="rgba(255,255,255,0.85)"/><path d="M23 4v4a2 2 0 0 0 0-4z" fill="rgba(255,255,255,0.4)"/></svg>
+        </div>
+      </div>
+
+      <!-- back nav -->
+      <div style="display:flex;align-items:center;gap:8px;padding:8px 16px 0;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.65)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        <span style="font-size:14px;color:rgba(255,255,255,0.65);">Centrul de Învățare</span>
+      </div>
+
+      <!-- hero: pills + title + meta + progress -->
+      <div class="detail-hero">
+        <div class="detail-pills">
+          <span class="pill" style="background:rgba(255,159,10,0.15);color:rgba(255,159,10,0.95);">
+            <span style="width:5px;height:5px;border-radius:50%;background:rgba(255,159,10,0.95);"></span>
+            În Curs
+          </span>
+          <span class="pill" style="background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.55);">Siguranță</span>
+          <span class="pill" style="background:rgba(191,90,242,0.12);color:rgba(191,90,242,0.85);">
+            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="22 4 12 14.01 9 11.01"/><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/></svg>
+            Certificat
+          </span>
+        </div>
+        <div class="detail-title">Sănătate & Siguranță pe Șantier</div>
+        <div class="detail-meta">
+          <div class="detail-meta-chip">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            45 min rămase
+          </div>
+          <div class="detail-meta-chip">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+            6 module
+          </div>
+          <div class="detail-meta-chip">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            4.8 · 234 recenzii
+          </div>
+        </div>
+
+        <!-- progress -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+          <span style="font-size:11px;color:var(--t3);">Progres</span>
+          <span style="font-size:11px;font-weight:700;color:rgba(255,159,10,0.95);">48% completat</span>
+        </div>
+        <div class="prog-track" style="height:6px;border-radius:3px;">
+          <div class="prog-fill" style="width:48%;background:rgba(255,159,10,0.8);border-radius:3px;"></div>
+        </div>
+      </div>
+
+      <!-- CTA row -->
+      <div class="cta-row" style="padding-top:0;padding-bottom:4px;">
+        <button class="cta-btn cta-secondary" style="flex:1;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:middle;margin-right:5px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Offline
+        </button>
+        <button class="cta-btn cta-primary" style="flex:2;">Continuă Modulul 3</button>
+      </div>
+
+      <!-- Modules card -->
+      <div class="section-card">
+        <div class="specular"></div>
+        <div class="section-card-header">
+          <span class="section-card-title">Module</span>
+          <span class="section-card-badge">3/6 completate</span>
+        </div>
+
+        <!-- done -->
+        <div class="module-row">
+          <div class="module-circle module-done">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="rgba(48,209,88,0.9)" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div style="flex:1;min-width:0;">
+            <div class="module-title" style="color:var(--t2);">Modul 1 — Introducere în Siguranță</div>
+          </div>
+          <span class="module-dur">18 min</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--t4)" stroke-width="1.8" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
+        <div class="module-row">
+          <div class="module-circle module-done">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="rgba(48,209,88,0.9)" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div style="flex:1;min-width:0;">
+            <div class="module-title" style="color:var(--t2);">Modul 2 — Echipamente de Protecție</div>
+          </div>
+          <span class="module-dur">22 min</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--t4)" stroke-width="1.8" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
+
+        <!-- active -->
+        <div class="module-row" style="background:rgba(10,132,255,0.05);">
+          <div class="module-circle module-active">
+            <svg width="9" height="9" viewBox="0 0 24 24" fill="rgba(10,132,255,0.9)" stroke="none"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          </div>
+          <div style="flex:1;min-width:0;">
+            <div class="module-title" style="color:var(--t1);">Modul 3 — Lucrul la Înălțime</div>
+            <div style="font-size:10px;color:rgba(10,132,255,0.8);margin-top:1px;">În curs · 45 min rămase</div>
+          </div>
+          <span class="module-dur">48 min</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(10,132,255,0.7)" stroke-width="1.8" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
+
+        <!-- locked -->
+        <div class="module-row" style="opacity:0.5;">
+          <div class="module-circle module-locked">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </div>
+          <div style="flex:1;min-width:0;">
+            <div class="module-title" style="color:var(--t3);">Modul 4 — Situații de Urgență</div>
+          </div>
+          <span class="module-dur">35 min</span>
+        </div>
+        <div class="module-row" style="opacity:0.5;">
+          <div class="module-circle module-locked">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </div>
+          <div style="flex:1;min-width:0;">
+            <div class="module-title" style="color:var(--t3);">Modul 5 — Raportare Incidente</div>
+          </div>
+          <span class="module-dur">28 min</span>
+        </div>
+        <div class="module-row" style="opacity:0.5;">
+          <div class="module-circle module-locked">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </div>
+          <div style="flex:1;min-width:0;">
+            <div class="module-title" style="color:var(--t3);">Modul 6 — Evaluare Finală</div>
+          </div>
+          <span class="module-dur">20 min</span>
+        </div>
+      </div>
+
+      <!-- Certificate card -->
+      <div class="cert-card">
+        <div style="width:40px;height:40px;border-radius:10px;background:rgba(48,209,88,0.1);border:1px solid rgba(48,209,88,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(48,209,88,0.8)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/>
+          </svg>
+        </div>
+        <div style="flex:1;">
+          <div style="font-size:13px;font-weight:600;color:var(--t1);margin-bottom:2px;">Certificat de Finalizare</div>
+          <div style="font-size:11px;color:rgba(48,209,88,0.7);">Disponibil după completarea tuturor modulelor</div>
+        </div>
+      </div>
+
+      <!-- About card -->
+      <div class="section-card" style="margin-bottom:16px;">
+        <div class="specular"></div>
+        <div class="section-card-header">
+          <span class="section-card-title">Despre Curs</span>
+        </div>
+        <div style="padding:12px 16px;">
+          <p style="font-size:13px;color:var(--t2);line-height:1.55;margin-bottom:12px;">
+            Acest curs acoperă toate aspectele esențiale ale siguranței pe șantierele de construcție, de la echipamentele de protecție individuală până la procedurile de urgență.
+          </p>
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:var(--g2);border:1px solid var(--bds);">
+            <div style="width:32px;height:32px;border-radius:50%;background:rgba(10,132,255,0.15);border:1px solid rgba(10,132,255,0.25);display:flex;align-items:center;justify-content:center;">
+              <span style="font-size:12px;font-weight:700;color:rgba(10,132,255,0.9);">MI</span>
+            </div>
+            <div>
+              <div style="font-size:12px;font-weight:600;color:var(--t1);">Maria Ionescu</div>
+              <div style="font-size:11px;color:var(--t3);">Instructor Certificat · Siguranță Industrială</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- tab bar -->
+      <div class="tab-bar">
+        <div class="tab-bar-inner">
+          <div class="specular"></div>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.7" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.7" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.7" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.7" stroke-linecap="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          <div style="position:relative;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.95)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+            <div style="position:absolute;bottom:-4px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,0.9);"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FAB 3-dot -->
+    <div style="position:absolute;bottom:104px;right:20px;width:52px;height:52px;border-radius:50%;background:var(--g3);border:1px solid var(--bd);display:flex;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(0,0,0,0.5);backdrop-filter:blur(32px);">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="rgba(255,255,255,0.9)" stroke="none"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────────────────── SCREEN 3: FAB SHEET ─────────────────────── -->
+<div>
+  <div class="label">Screen 3 · FAB Sheet</div>
+  <div class="phone">
+    <div class="phone-inner" style="background: #000;">
+      <!-- dimmed list behind sheet -->
+      <div style="filter:blur(2px);opacity:0.4;padding:20px 16px;pointer-events:none;">
+        <div style="font-size:22px;font-weight:700;color:var(--t1);margin-bottom:16px;">Sănătate & Siguranță pe Șantier</div>
+        <div style="height:6px;background:rgba(255,159,10,0.5);border-radius:3px;margin-bottom:20px;width:48%;"></div>
+        <div style="height:80px;background:var(--g1);border-radius:16px;margin-bottom:8px;"></div>
+        <div style="height:60px;background:var(--g1);border-radius:16px;margin-bottom:8px;"></div>
+        <div style="height:60px;background:var(--g1);border-radius:16px;margin-bottom:8px;"></div>
+      </div>
+
+      <!-- sheet overlay -->
+      <div class="sheet-overlay">
+        <div class="sheet">
+          <div class="specular"></div>
+          <div class="sheet-handle"><div class="sheet-drag"></div></div>
+          <div class="sheet-title">Acțiuni Curs</div>
+
+          <!-- search -->
+          <div class="sheet-search">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            <input placeholder="Caută în Centrul de Învățare…" readonly />
+          </div>
+
+          <!-- actions -->
+          <div class="sheet-action">
+            <div class="sheet-action-icon" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
+            </div>
+            <span class="sheet-action-label" style="color:var(--t1);">Salvează la Favorite</span>
+          </div>
+
+          <div class="sheet-action">
+            <div class="sheet-action-icon" style="background:rgba(10,132,255,0.12);border:1px solid rgba(10,132,255,0.2);">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(10,132,255,0.9)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+            </div>
+            <span class="sheet-action-label" style="color:rgba(10,132,255,0.9);">Partajează Curs</span>
+          </div>
+
+          <div class="sheet-action">
+            <div class="sheet-action-icon" style="background:rgba(255,159,10,0.12);border:1px solid rgba(255,159,10,0.2);">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,159,10,0.9)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            </div>
+            <span class="sheet-action-label" style="color:rgba(255,159,10,0.9);">Descarcă pentru Offline</span>
+          </div>
+
+          <div class="sheet-action">
+            <div class="sheet-action-icon" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.65)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg>
+            </div>
+            <span class="sheet-action-label" style="color:var(--t2);">Vizualizează Certificat</span>
+            <span style="margin-left:auto;font-size:10px;color:var(--t4);padding:2px 7px;border-radius:8px;background:var(--g1);">după finalizare</span>
+          </div>
+
+          <div class="sheet-action">
+            <div class="sheet-action-icon" style="background:rgba(255,69,58,0.10);border:1px solid rgba(255,69,58,0.18);">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,69,58,0.9)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+            </div>
+            <span class="sheet-action-label" style="color:rgba(255,69,58,0.9);">Arhivează</span>
+          </div>
+
+          <div style="height:8px;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
