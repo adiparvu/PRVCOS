@@ -721,12 +721,12 @@
 <div style="display:flex;flex-direction:column;align-items:center;gap:10px;">
   <div class="scene-label">TAP TO SWITCH SCREENS</div>
   <div class="tabs-switcher" id="switcher">
-    <button class="switcher-btn active" onclick="switchScreen('auth')">Login</button>
-    <button class="switcher-btn" onclick="switchScreen('command')">⌂ Command</button>
-    <button class="switcher-btn" onclick="switchScreen('operations')">⊞ Operations</button>
-    <button class="switcher-btn" onclick="switchScreen('people')">◎ People</button>
-    <button class="switcher-btn" onclick="switchScreen('finance')">⟁ Finance</button>
-    <button class="switcher-btn" onclick="switchScreen('intelligence')">✦ Intelligence</button>
+    <button class="switcher-btn active" onclick="switchScreen('auth', this)">Login</button>
+    <button class="switcher-btn" onclick="switchScreen('command', this)">⌂ Command</button>
+    <button class="switcher-btn" onclick="switchScreen('operations', this)">⊞ Operations</button>
+    <button class="switcher-btn" onclick="switchScreen('people', this)">◎ People</button>
+    <button class="switcher-btn" onclick="switchScreen('finance', this)">⟁ Finance</button>
+    <button class="switcher-btn" onclick="switchScreen('intelligence', this)">✦ Intelligence</button>
   </div>
 </div>
 
@@ -1304,12 +1304,10 @@
 <script>
 let currentScreen = 'auth';
 
-function switchScreen(name) {
+function switchScreen(name, btn) {
   // Update switcher buttons
-  document.querySelectorAll('.switcher-btn').forEach((btn, i) => {
-    btn.classList.remove('active');
-  });
-  event.target.classList.add('active');
+  document.querySelectorAll('.switcher-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
 
   // Hide all screens
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
