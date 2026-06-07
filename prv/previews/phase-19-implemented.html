@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Phase 19 · PRV Mobile · Implemented</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: #080808;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 24px 80px;
+  gap: 40px;
+  color: rgba(255,255,255,0.92);
+}
+
+/* ── Header ── */
+.header { text-align: center; }
+.header-eyebrow {
+  font-size: 11px; font-weight: 600; letter-spacing: 0.12em;
+  color: rgba(255,255,255,0.35); text-transform: uppercase; margin-bottom: 8px;
+}
+.header-title {
+  font-size: 26px; font-weight: 700; letter-spacing: -0.02em;
+  color: rgba(255,255,255,0.92); margin-bottom: 6px;
+}
+.header-sub { font-size: 14px; color: rgba(255,255,255,0.4); }
+
+/* ── Screen switcher ── */
+.switcher {
+  display: flex; gap: 6px; flex-wrap: wrap; justify-content: center;
+}
+.sw-btn {
+  padding: 7px 14px; border-radius: 100px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.05);
+  color: rgba(255,255,255,0.5); font-size: 12px; font-weight: 500;
+  cursor: pointer; transition: all 0.18s ease; letter-spacing: -0.01em;
+  -webkit-tap-highlight-color: transparent;
+}
+.sw-btn:hover { background: rgba(255,255,255,0.09); color: rgba(255,255,255,0.75); }
+.sw-btn.active {
+  background: rgba(255,255,255,0.14); border-color: rgba(255,255,255,0.3);
+  color: rgba(255,255,255,0.92);
+}
+
+/* ── Scene ── */
+.scene {
+  display: flex; gap: 48px; align-items: flex-start; justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* ── Phone frame ── */
+.phone-wrap { position: relative; }
+.phone {
+  width: 320px; height: 692px;
+  background: #0d0d0d;
+  border-radius: 50px;
+  border: 1.5px solid rgba(255,255,255,0.18);
+  overflow: hidden;
+  position: relative;
+  box-shadow:
+    0 0 0 8px #111,
+    0 0 0 9px rgba(255,255,255,0.06),
+    0 40px 120px rgba(0,0,0,0.9),
+    0 12px 40px rgba(0,0,0,0.6);
+}
+
+/* Dynamic Island */
+.island {
+  position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+  width: 108px; height: 32px;
+  background: #000; border-radius: 100px;
+  z-index: 20;
+}
+
+/* Status bar */
+.status-bar {
+  position: absolute; top: 0; left: 0; right: 0; height: 54px;
+  display: flex; align-items: flex-start; justify-content: space-between;
+  padding: 16px 24px 0;
+  z-index: 15;
+}
+.status-time { font-size: 15px; font-weight: 600; color: rgba(255,255,255,0.92); }
+.status-icons { display: flex; gap: 5px; align-items: center; font-size: 12px; color: rgba(255,255,255,0.92); }
+
+/* Screen container */
+.screen {
+  position: absolute; inset: 0;
+  background: #000;
+  overflow: hidden;
+  display: none;
+}
+.screen.active { display: flex; flex-direction: column; }
+
+/* ── Shared screen styles ── */
+.screen-scroll {
+  flex: 1; overflow-y: auto; padding: 54px 16px 100px;
+  scrollbar-width: none;
+}
+.screen-scroll::-webkit-scrollbar { display: none; }
+
+/* ── Login screen ── */
+.login-scroll {
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+  padding: 54px 24px 40px; overflow-y: auto; scrollbar-width: none;
+}
+.login-scroll::-webkit-scrollbar { display: none; }
+
+.mark-wrap {
+  width: 72px; height: 72px; border-radius: 18px;
+  background: #0d0d0d; display: flex; align-items: center; justify-content: center;
+  margin-bottom: 20px; margin-top: 12px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.8);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+.login-title { font-size: 28px; font-weight: 700; letter-spacing: -0.3px; margin-bottom: 6px; text-align: center; }
+.login-sub { font-size: 15px; color: rgba(255,255,255,0.35); text-align: center; line-height: 22px; margin-bottom: 32px; }
+
+.form { width: 100%; display: flex; flex-direction: column; gap: 10px; }
+.input-field {
+  width: 100%; height: 50px; background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12); border-radius: 12px;
+  padding: 0 14px; font-size: 17px; color: rgba(255,255,255,0.92);
+  font-family: inherit;
+}
+.input-field::placeholder { color: rgba(255,255,255,0.35); }
+.input-field:focus { outline: none; border-color: rgba(255,255,255,0.28); background: rgba(255,255,255,0.09); }
+
+.btn-primary {
+  width: 100%; height: 50px; background: #fff; border-radius: 12px;
+  border: none; font-size: 17px; font-weight: 600; color: #000;
+  cursor: pointer; margin-top: 4px; font-family: inherit;
+  transition: opacity 0.15s;
+}
+.btn-primary:hover { opacity: 0.9; }
+
+.divider { display: flex; align-items: center; gap: 12px; width: 100%; margin: 16px 0; }
+.divider-line { flex: 1; height: 1px; background: rgba(255,255,255,0.07); }
+.divider-text { font-size: 12px; color: rgba(255,255,255,0.35); }
+
+.btn-biometric {
+  width: 100%; height: 50px;
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 12px; color: rgba(255,255,255,0.65);
+  font-size: 17px; font-family: inherit; cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-biometric:hover { background: rgba(255,255,255,0.09); }
+
+.forgot { font-size: 13px; color: rgba(255,255,255,0.35); margin-top: 20px; cursor: pointer; }
+
+/* ── MFA screen ── */
+.mfa-inner {
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+  padding: 54px 24px 40px;
+}
+.mfa-title { font-size: 22px; font-weight: 700; letter-spacing: -0.26px; margin-bottom: 6px; }
+.mfa-sub { font-size: 15px; color: rgba(255,255,255,0.35); text-align: center; line-height: 22px; margin-bottom: 36px; }
+.code-row { display: flex; gap: 10px; margin-bottom: 16px; }
+.code-cell {
+  width: 42px; height: 52px; background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12); border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; font-weight: 700; color: rgba(255,255,255,0.92);
+}
+.code-cell.filled {
+  border-color: rgba(255,255,255,0.32); background: rgba(255,255,255,0.09);
+}
+.code-cursor {
+  width: 1.5px; height: 24px; background: rgba(255,255,255,0.8);
+  animation: blink 1s step-end infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+.back-link { font-size: 13px; color: rgba(255,255,255,0.35); margin-top: 24px; cursor: pointer; }
+
+/* ── Tab screens ── */
+.screen-eyebrow {
+  font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+  color: rgba(255,255,255,0.35); margin-bottom: 4px;
+}
+.screen-title { font-size: 34px; font-weight: 700; letter-spacing: -0.4px; margin-bottom: 20px; }
+
+/* KPI grid */
+.kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+.kpi-card {
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 20px; padding: 14px; position: relative; overflow: hidden;
+}
+.kpi-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: rgba(255,255,255,0.32);
+}
+.kpi-value { font-size: 28px; font-weight: 700; letter-spacing: -0.3px; margin-bottom: 2px; }
+.kpi-label { font-size: 15px; color: rgba(255,255,255,0.65); }
+.kpi-sub { font-size: 12px; color: rgba(255,255,255,0.35); margin-top: 2px; }
+
+/* Glass card */
+.glass-card {
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 20px; position: relative; overflow: hidden;
+}
+.glass-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: rgba(255,255,255,0.32);
+}
+
+/* Section title */
+.section-title { font-size: 17px; font-weight: 600; letter-spacing: -0.2px; color: rgba(255,255,255,0.65); margin-bottom: 10px; margin-top: 4px; }
+
+/* AI briefing */
+.briefing-card { padding: 14px; display: flex; gap: 10px; align-items: flex-start; margin-bottom: 20px; }
+.briefing-icon { font-size: 18px; flex-shrink: 0; margin-top: 2px; }
+.briefing-body { font-size: 15px; color: rgba(255,255,255,0.35); line-height: 20px; }
+
+/* Empty card */
+.empty-card { padding: 16px; text-align: center; }
+.empty-text { font-size: 15px; color: rgba(255,255,255,0.35); }
+
+/* List rows */
+.list-rows { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+.list-row { display: flex; align-items: center; gap: 12px; padding: 14px; }
+.row-icon { font-size: 20px; color: rgba(255,255,255,0.65); width: 26px; text-align: center; flex-shrink: 0; }
+.row-text { flex: 1; }
+.row-label { font-size: 17px; color: rgba(255,255,255,0.92); }
+.row-desc { font-size: 12px; color: rgba(255,255,255,0.35); margin-top: 2px; }
+.row-chevron { font-size: 20px; color: rgba(255,255,255,0.35); }
+
+/* AI card */
+.ai-card { padding: 16px; margin-bottom: 20px; }
+.ai-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.ai-header-icon { font-size: 18px; }
+.ai-header-title { font-size: 17px; font-weight: 600; }
+.ai-body-text { font-size: 15px; color: rgba(255,255,255,0.35); line-height: 20px; }
+
+/* ── Floating Tab Bar ── */
+.tab-bar {
+  position: absolute; bottom: 20px; left: 12px; right: 12px; height: 68px;
+  background: rgba(20,20,20,0.94);
+  border: 1px solid rgba(255,255,255,0.12); border-radius: 28px;
+  display: flex; align-items: center; justify-content: space-around;
+  padding: 0 8px; z-index: 10;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.8);
+  backdrop-filter: blur(48px);
+  overflow: hidden;
+}
+.tab-bar::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: rgba(255,255,255,0.32); border-radius: 28px 28px 0 0;
+}
+.tab-item {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 2px;
+  padding: 6px 0; cursor: pointer; position: relative;
+}
+.tab-icon { font-size: 20px; color: rgba(255,255,255,0.35); line-height: 24px; }
+.tab-label { font-size: 9px; font-weight: 600; letter-spacing: 0.3px; text-transform: uppercase; color: rgba(255,255,255,0.35); }
+.tab-item.active .tab-icon { color: rgba(255,255,255,0.92); }
+.tab-item.active .tab-label { color: rgba(255,255,255,0.65); }
+.tab-dot {
+  width: 4px; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.92);
+  position: absolute; bottom: 4px;
+}
+
+/* ── Spec panel ── */
+.spec-panel {
+  width: 280px; display: flex; flex-direction: column; gap: 20px;
+}
+.spec-block {
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px; padding: 18px; position: relative; overflow: hidden;
+}
+.spec-block::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: rgba(255,255,255,0.14);
+}
+.spec-label { font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.35); margin-bottom: 12px; }
+.spec-row { display: flex; justify-content: space-between; align-items: baseline; padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.spec-row:last-child { border-bottom: none; }
+.spec-key { font-size: 12px; color: rgba(255,255,255,0.45); }
+.spec-val { font-size: 12px; color: rgba(255,255,255,0.75); font-weight: 500; text-align: right; max-width: 160px; }
+.spec-val.mono { font-family: "SF Mono", "Fira Code", monospace; font-size: 11px; }
+
+/* ── PRV SVG mark ── */
+.prv-mark-svg { display: block; }
+
+/* ── File tree ── */
+.file-tree {
+  font-family: "SF Mono", "Fira Code", monospace; font-size: 11px;
+  color: rgba(255,255,255,0.55); line-height: 20px;
+}
+.file-tree .dir { color: rgba(255,255,255,0.35); }
+.file-tree .new { color: rgba(255,255,255,0.75); }
+.file-tree .done::after { content: ' ✓'; color: rgba(48,209,88,0.8); }
+
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-eyebrow">Phase 19 · Implemented</div>
+  <div class="header-title">PRV Mobile Foundation</div>
+  <div class="header-sub">Expo Router 4 · React Native · Liquid Glass</div>
+</div>
+
+<!-- Screen switcher -->
+<div class="switcher">
+  <button class="sw-btn active" onclick="switchScreen('login', this)">Login</button>
+  <button class="sw-btn" onclick="switchScreen('mfa', this)">MFA</button>
+  <button class="sw-btn" onclick="switchScreen('command', this)">⌂ Command</button>
+  <button class="sw-btn" onclick="switchScreen('operations', this)">⊞ Ops</button>
+  <button class="sw-btn" onclick="switchScreen('people', this)">◎ People</button>
+  <button class="sw-btn" onclick="switchScreen('finance', this)">⟁ Finance</button>
+  <button class="sw-btn" onclick="switchScreen('intel', this)">✦ Intel</button>
+</div>
+
+<!-- Scene -->
+<div class="scene">
+
+  <!-- Phone -->
+  <div class="phone-wrap">
+    <div class="phone">
+
+      <!-- Dynamic Island -->
+      <div class="island"></div>
+
+      <!-- Status bar -->
+      <div class="status-bar">
+        <span class="status-time">9:41</span>
+        <div class="status-icons">
+          <span>●●●●</span>
+          <span>WiFi</span>
+          <span>▮</span>
+        </div>
+      </div>
+
+      <!-- ── LOGIN ── -->
+      <div class="screen active" id="screen-login">
+        <div class="login-scroll">
+          <div class="mark-wrap">
+            <svg class="prv-mark-svg" width="27" height="40" viewBox="0 0 52 80" fill="none">
+              <path fill-rule="evenodd" clip-rule="evenodd"
+                d="M0 0H36Q52 0 52 23Q52 46 36 46H18V80H0Z M18 12H32Q42 12 42 23Q42 34 32 34H18Z M18 12H30V24H18Z"
+                fill="rgba(255,255,255,0.92)"/>
+            </svg>
+          </div>
+          <div class="login-title">PRV</div>
+          <div class="login-sub">Sign in to your company<br/>operating system</div>
+          <div class="form">
+            <input class="input-field" type="text" placeholder="work@company.ro" readonly/>
+            <input class="input-field" type="password" placeholder="Password" value="••••••••" readonly/>
+            <button class="btn-primary">Continue</button>
+          </div>
+          <div class="divider">
+            <div class="divider-line"></div>
+            <div class="divider-text">or</div>
+            <div class="divider-line"></div>
+          </div>
+          <button class="btn-biometric">Sign in with Face ID</button>
+          <div class="forgot">Forgot password?</div>
+        </div>
+      </div>
+
+      <!-- ── MFA ── -->
+      <div class="screen" id="screen-mfa">
+        <div class="mfa-inner">
+          <div class="mark-wrap">
+            <svg class="prv-mark-svg" width="26" height="40" viewBox="0 0 52 80" fill="none">
+              <path fill-rule="evenodd" clip-rule="evenodd"
+                d="M0 0H36Q52 0 52 23Q52 46 36 46H18V80H0Z M18 12H32Q42 12 42 23Q42 34 32 34H18Z M18 12H30V24H18Z"
+                fill="rgba(255,255,255,0.92)"/>
+            </svg>
+          </div>
+          <div class="mfa-title">Two-Factor Auth</div>
+          <div class="mfa-sub">Enter the 6-digit code from<br/>your authenticator app</div>
+          <div class="code-row">
+            <div class="code-cell filled">3</div>
+            <div class="code-cell filled">7</div>
+            <div class="code-cell filled">1</div>
+            <div class="code-cell" style="justify-content: center;"><div class="code-cursor"></div></div>
+            <div class="code-cell"></div>
+            <div class="code-cell"></div>
+          </div>
+          <button class="btn-primary" style="width:100%;height:50px;margin-top:8px;">Verify</button>
+          <div class="back-link">← Back to login</div>
+        </div>
+      </div>
+
+      <!-- ── COMMAND ── -->
+      <div class="screen" id="screen-command">
+        <div class="screen-scroll">
+          <div class="screen-eyebrow">Good morning</div>
+          <div class="screen-title">Command</div>
+          <div class="kpi-grid">
+            <div class="kpi-card"><div class="kpi-value">—</div><div class="kpi-label">Revenue</div><div class="kpi-sub">Today</div></div>
+            <div class="kpi-card"><div class="kpi-value">—</div><div class="kpi-label">Active Projects</div><div class="kpi-sub">In Progress</div></div>
+            <div class="kpi-card"><div class="kpi-value">—</div><div class="kpi-label">Team Online</div><div class="kpi-sub">Right Now</div></div>
+            <div class="kpi-card"><div class="kpi-value">—</div><div class="kpi-label">Open Tasks</div><div class="kpi-sub">Assigned</div></div>
+          </div>
+          <div class="section-title">AI Briefing</div>
+          <div class="glass-card briefing-card" style="margin-bottom:20px;">
+            <div class="briefing-icon">✦</div>
+            <div class="briefing-body">Your daily intelligence briefing will appear here. PRV AI is analyzing your company data.</div>
+          </div>
+          <div class="section-title">Inbox</div>
+          <div class="glass-card empty-card"><div class="empty-text">No new notifications</div></div>
+        </div>
+        <div class="tab-bar" id="tabbar-command">
+          <div class="tab-item active"><div class="tab-icon">⌂</div><div class="tab-label">Command</div><div class="tab-dot"></div></div>
+          <div class="tab-item"><div class="tab-icon">⊞</div><div class="tab-label">Ops</div></div>
+          <div class="tab-item"><div class="tab-icon">◎</div><div class="tab-label">People</div></div>
+          <div class="tab-item"><div class="tab-icon">⟁</div><div class="tab-label">Finance</div></div>
+          <div class="tab-item"><div class="tab-icon">✦</div><div class="tab-label">Intel</div></div>
+        </div>
+      </div>
+
+      <!-- ── OPERATIONS ── -->
+      <div class="screen" id="screen-operations">
+        <div class="screen-scroll">
+          <div class="screen-eyebrow">Platform</div>
+          <div class="screen-title">Operations</div>
+          <div class="list-rows">
+            <div class="glass-card list-row"><div class="row-icon">⊞</div><div class="row-text"><div class="row-label">Stores</div><div class="row-desc">Locations &amp; status</div></div><div class="row-chevron">›</div></div>
+            <div class="glass-card list-row"><div class="row-icon">⬡</div><div class="row-text"><div class="row-label">Inventory</div><div class="row-desc">Stock &amp; warehouses</div></div><div class="row-chevron">›</div></div>
+            <div class="glass-card list-row"><div class="row-icon">✓</div><div class="row-text"><div class="row-label">Tasks</div><div class="row-desc">Assigned &amp; pending</div></div><div class="row-chevron">›</div></div>
+            <div class="glass-card list-row"><div class="row-icon">◈</div><div class="row-text"><div class="row-label">Orders</div><div class="row-desc">Active &amp; fulfilled</div></div><div class="row-chevron">›</div></div>
+          </div>
+          <div class="section-title">Active Tasks</div>
+          <div class="glass-card empty-card"><div class="empty-text">No active tasks</div></div>
+        </div>
+        <div class="tab-bar">
+          <div class="tab-item"><div class="tab-icon">⌂</div><div class="tab-label">Command</div></div>
+          <div class="tab-item active"><div class="tab-icon">⊞</div><div class="tab-label">Ops</div><div class="tab-dot"></div></div>
+          <div class="tab-item"><div class="tab-icon">◎</div><div class="tab-label">People</div></div>
+          <div class="tab-item"><div class="tab-icon">⟁</div><div class="tab-label">Finance</div></div>
+          <div class="tab-item"><div class="tab-icon">✦</div><div class="tab-label">Intel</div></div>
+        </div>
+      </div>
+
+      <!-- ── PEOPLE ── -->
+      <div class="screen" id="screen-people">
+        <div class="screen-scroll">
+          <div class="screen-eyebrow">Platform</div>
+          <div class="screen-title">People</div>
+          <div class="list-rows">
+            <div class="glass-card list-row"><div class="row-icon">◎</div><div class="row-text"><div class="row-label">Team</div><div class="row-desc">Employees &amp; roles</div></div><div class="row-chevron">›</div></div>
+            <div class="glass-card list-row"><div class="row-icon">⋯</div><div class="row-text"><div class="row-label">Schedule</div><div class="row-desc">Shifts &amp; availability</div></div><div class="row-chevron">›</div></div>
+            <div class="glass-card list-row"><div class="row-icon">◑</div><div class="row-text"><div class="row-label">Payroll</div><div class="row-desc">Salaries &amp; payments</div></div><div class="row-chevron">›</div></div>
+            <div class="glass-card list-row"><div class="row-icon">⎇</div><div class="row-text"><div class="row-label">Org Chart</div><div class="row-desc">Structure &amp; hierarchy</div></div><div class="row-chevron">›</div></div>
+          </div>
+          <div class="section-title">Today on Shift</div>
+          <div class="glass-card empty-card"><div class="empty-text">Schedule data unavailable</div></div>
+        </div>
+        <div class="tab-bar">
+          <div class="tab-item"><div class="tab-icon">⌂</div><div class="tab-label">Command</div></div>
+          <div class="tab-item"><div class="tab-icon">⊞</div><div class="tab-label">Ops</div></div>
+          <div class="tab-item active"><div class="tab-icon">◎</div><div class="tab-label">People</div><div class="tab-dot"></div></div>
+          <div class="tab-item"><div class="tab-icon">⟁</div><div class="tab-label">Finance</div></div>
+          <div class="tab-item"><div class="tab-icon">✦</div><div class="tab-label">Intel</div></div>
+        </div>
+      </div>
+
+      <!-- ── FINANCE ── -->
+      <div class="screen" id="screen-finance">
+        <div class="screen-scroll">
+          <div class="screen-eyebrow">Platform</div>
+          <div class="screen-title">Finance</div>
+          <div class="kpi-grid">
+            <div class="kpi-card"><div class="kpi-value" style="font-size:22px;">—</div><div class="kpi-label">Revenue</div><div class="kpi-sub">This Month</div></div>
+            <div class="kpi-card"><div class="kpi-value" style="font-size:22px;">—</div><div class="kpi-label">Expenses</div><div class="kpi-sub">This Month</div></div>
+            <div class="kpi-card"><div class="kpi-value" style="font-size:22px;">—</div><div class="kpi-label">Profit</div><div class="kpi-sub">This Month</div></div>
+            <div class="kpi-card"><div class="kpi-value" style="font-size:22px;">—</div><div class="kpi-label">Forecast</div><div class="kpi-sub">End of Month</div></div>
+          </div>
+          <div class="section-title">Modules</div>
+          <div class="list-rows">
+            <div class="glass-card list-row"><div class="row-icon">⟁</div><div class="row-text"><div class="row-label">Revenue</div><div class="row-desc">Income &amp; invoices</div></div><div class="row-chevron">›</div></div>
+            <div class="glass-card list-row"><div class="row-icon">◫</div><div class="row-text"><div class="row-label">Expenses</div><div class="row-desc">Costs &amp; approvals</div></div><div class="row-chevron">›</div></div>
+            <div class="glass-card list-row"><div class="row-icon">≡</div><div class="row-text"><div class="row-label">Reports</div><div class="row-desc">P&amp;L, Balance sheet</div></div><div class="row-chevron">›</div></div>
+            <div class="glass-card list-row"><div class="row-icon">◩</div><div class="row-text"><div class="row-label">Tax</div><div class="row-desc">VAT &amp; declarations</div></div><div class="row-chevron">›</div></div>
+          </div>
+        </div>
+        <div class="tab-bar">
+          <div class="tab-item"><div class="tab-icon">⌂</div><div class="tab-label">Command</div></div>
+          <div class="tab-item"><div class="tab-icon">⊞</div><div class="tab-label">Ops</div></div>
+          <div class="tab-item"><div class="tab-icon">◎</div><div class="tab-label">People</div></div>
+          <div class="tab-item active"><div class="tab-icon">⟁</div><div class="tab-label">Finance</div><div class="tab-dot"></div></div>
+          <div class="tab-item"><div class="tab-icon">✦</div><div class="tab-label">Intel</div></div>
+        </div>
+      </div>
+
+      <!-- ── INTELLIGENCE ── -->
+      <div class="screen" id="screen-intel">
+        <div class="screen-scroll">
+          <div class="screen-eyebrow">Platform</div>
+          <div class="screen-title">Intelligence</div>
+          <div class="glass-card ai-card">
+            <div class="ai-header"><span class="ai-header-icon">✦</span><span class="ai-header-title">PRV AI</span></div>
+            <div class="ai-body-text">AI-powered insights, forecasts, and anomaly detection across all your company data. Powered by pgvector and real-time analytics.</div>
+          </div>
+          <div class="section-title">Modules</div>
+          <div class="list-rows">
+            <div class="glass-card list-row"><div class="row-icon">✦</div><div class="row-text"><div class="row-label">AI Insights</div><div class="row-desc">Patterns &amp; anomalies</div></div><div class="row-chevron">›</div></div>
+            <div class="glass-card list-row"><div class="row-icon">◈</div><div class="row-text"><div class="row-label">Analytics</div><div class="row-desc">KPIs &amp; dashboards</div></div><div class="row-chevron">›</div></div>
+            <div class="glass-card list-row"><div class="row-icon">≋</div><div class="row-text"><div class="row-label">Reports</div><div class="row-desc">Custom &amp; scheduled</div></div><div class="row-chevron">›</div></div>
+            <div class="glass-card list-row"><div class="row-icon">⟳</div><div class="row-text"><div class="row-label">Forecast</div><div class="row-desc">Predictive models</div></div><div class="row-chevron">›</div></div>
+          </div>
+        </div>
+        <div class="tab-bar">
+          <div class="tab-item"><div class="tab-icon">⌂</div><div class="tab-label">Command</div></div>
+          <div class="tab-item"><div class="tab-icon">⊞</div><div class="tab-label">Ops</div></div>
+          <div class="tab-item"><div class="tab-icon">◎</div><div class="tab-label">People</div></div>
+          <div class="tab-item"><div class="tab-icon">⟁</div><div class="tab-label">Finance</div></div>
+          <div class="tab-item active"><div class="tab-icon">✦</div><div class="tab-label">Intel</div><div class="tab-dot"></div></div>
+        </div>
+      </div>
+
+    </div><!-- /phone -->
+  </div><!-- /phone-wrap -->
+
+  <!-- Spec panel -->
+  <div class="spec-panel">
+
+    <div class="spec-block">
+      <div class="spec-label">Files Shipped · 17</div>
+      <div class="file-tree">
+<div class="dir">apps/mobile/</div>
+<div class="dir">  app/</div>
+<div class="new done">    _layout.tsx</div>
+<div class="dir">    (auth)/</div>
+<div class="new done">      _layout.tsx</div>
+<div class="new done">      login.tsx</div>
+<div class="new done">      mfa.tsx</div>
+<div class="dir">    (tabs)/</div>
+<div class="new done">      _layout.tsx</div>
+<div class="new done">      command.tsx</div>
+<div class="new done">      operations.tsx</div>
+<div class="new done">      people.tsx</div>
+<div class="new done">      finance.tsx</div>
+<div class="new done">      intelligence.tsx</div>
+<div class="dir">  src/</div>
+<div class="new done">    tokens/index.ts</div>
+<div class="new done">    lib/session.ts</div>
+<div class="new done">    store/auth.ts</div>
+<div class="new done">    components/PRVMark.tsx</div>
+<div class="new done">    components/Glass.tsx</div>
+<div class="new done">    components/TabBar.tsx</div>
+      </div>
+    </div>
+
+    <div class="spec-block">
+      <div class="spec-label">Auth Flow</div>
+      <div class="spec-row"><div class="spec-key">Login</div><div class="spec-val">email + password</div></div>
+      <div class="spec-row"><div class="spec-key">Biometric</div><div class="spec-val">Face ID / Touch ID</div></div>
+      <div class="spec-row"><div class="spec-key">MFA</div><div class="spec-val">6-digit TOTP OTP</div></div>
+      <div class="spec-row"><div class="spec-key">Session</div><div class="spec-val mono">expo-secure-store</div></div>
+      <div class="spec-row"><div class="spec-key">State</div><div class="spec-val mono">Zustand v5</div></div>
+      <div class="spec-row"><div class="spec-key">Guard</div><div class="spec-val">Root layout effect</div></div>
+    </div>
+
+    <div class="spec-block">
+      <div class="spec-label">Design Tokens</div>
+      <div class="spec-row"><div class="spec-key">Background</div><div class="spec-val mono">#000000</div></div>
+      <div class="spec-row"><div class="spec-key">Glass 1</div><div class="spec-val mono">rgba(255,255,255,0.06)</div></div>
+      <div class="spec-row"><div class="spec-key">Glass 2</div><div class="spec-val mono">rgba(255,255,255,0.10)</div></div>
+      <div class="spec-row"><div class="spec-key">Glass 3</div><div class="spec-val mono">rgba(255,255,255,0.16)</div></div>
+      <div class="spec-row"><div class="spec-key">Tab bar</div><div class="spec-val mono">rgba(20,20,20,0.92)</div></div>
+      <div class="spec-row"><div class="spec-key">Blur levels</div><div class="spec-val">16 / 32 / 48 / 64</div></div>
+    </div>
+
+    <div class="spec-block">
+      <div class="spec-label">Navigation Architecture</div>
+      <div class="spec-row"><div class="spec-key">Router</div><div class="spec-val">Expo Router 4</div></div>
+      <div class="spec-row"><div class="spec-key">Auth group</div><div class="spec-val mono">(auth)/login, mfa</div></div>
+      <div class="spec-row"><div class="spec-key">Tabs group</div><div class="spec-val">5 screens</div></div>
+      <div class="spec-row"><div class="spec-key">Tab bar</div><div class="spec-val">Floating glass pill</div></div>
+      <div class="spec-row"><div class="spec-key">Animation</div><div class="spec-val">fade / fade_from_bottom</div></div>
+    </div>
+
+    <div class="spec-block">
+      <div class="spec-label">Commit</div>
+      <div class="spec-row"><div class="spec-key">Hash</div><div class="spec-val mono">46fb444</div></div>
+      <div class="spec-row"><div class="spec-key">Branch</div><div class="spec-val mono" style="font-size:10px;">claude/session-continuation-npPKD</div></div>
+      <div class="spec-row"><div class="spec-key">Files</div><div class="spec-val">17 files · +1,537 lines</div></div>
+    </div>
+
+  </div><!-- /spec-panel -->
+</div><!-- /scene -->
+
+<script>
+const SCREEN_MAP = {
+  login: 'login', mfa: 'mfa',
+  command: 'command', operations: 'operations',
+  people: 'people', finance: 'finance', intel: 'intel'
+}
+
+function switchScreen(name, btn) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'))
+  document.querySelectorAll('.sw-btn').forEach(b => b.classList.remove('active'))
+  const screen = document.getElementById('screen-' + SCREEN_MAP[name])
+  if (screen) screen.classList.add('active')
+  if (btn) btn.classList.add('active')
+}
+</script>
+</body>
+</html>
