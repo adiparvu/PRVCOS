@@ -1,10 +1,10 @@
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import { getSession } from "@prv/auth"
-import { LearningWorkspace } from "./LearningWorkspace"
+import { LearningListClient } from "./LearningListClient"
 
 export const dynamic = "force-dynamic"
-export const metadata = { title: "Learning Center" }
+export const metadata = { title: "Centrul de Învățare · PRV" }
 
 export default async function LearningPage() {
   const cookieStore = await cookies()
@@ -17,9 +17,5 @@ export default async function LearningPage() {
     redirect("/auth/login")
   }
 
-  return (
-    <div className="pt-14 max-w-2xl mx-auto">
-      <LearningWorkspace />
-    </div>
-  )
+  return <LearningListClient />
 }
