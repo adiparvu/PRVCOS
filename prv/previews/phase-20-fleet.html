@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Phase 20 — Fleet Deep Dive · PRV Preview</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#000;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',sans-serif;-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:40px 20px 80px;gap:48px}
+  h2{font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:12px;text-align:center}
+  .row{display:flex;gap:24px;align-items:flex-start;justify-content:center;flex-wrap:wrap}
+  .phone{width:390px;background:#000;border-radius:44px;border:1px solid rgba(255,255,255,.12);overflow:hidden;position:relative;box-shadow:0 32px 80px rgba(0,0,0,.8),0 8px 24px rgba(0,0,0,.5)}
+  .screen{padding:52px 0 120px;overflow:hidden;max-height:820px}
+  .label{font-size:12px;font-weight:600;color:rgba(255,255,255,.4);margin-top:10px;text-align:center}
+
+  .content{padding:0 16px}
+  .card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.07);border-radius:18px;position:relative;overflow:hidden;margin-bottom:12px}
+  .top-edge{position:absolute;inset:0 0 auto;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.12),transparent)}
+  .section-label{font-size:11px;font-weight:600;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.07em;margin:18px 2px 10px}
+
+  /* kpi */
+  .kpi-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+  .kpi{padding:12px 8px;border-radius:14px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.07);text-align:center}
+  .kpi-val{font-size:17px;font-weight:700;color:rgba(255,255,255,.95)}
+  .kpi-lbl{font-size:10px;font-weight:600;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.06em;margin-top:3px}
+
+  /* pills */
+  .pill{display:inline-block;font-size:10px;font-weight:600;padding:3px 8px;border-radius:6px}
+  .pill-active{background:rgba(48,209,88,.13);color:rgba(48,209,88,.95)}
+  .pill-service{background:rgba(255,159,10,.13);color:rgba(255,159,10,.95)}
+  .pill-idle{background:rgba(255,255,255,.08);color:rgba(255,255,255,.55)}
+  .pill-unavail{background:rgba(255,69,58,.12);color:rgba(255,69,58,.95)}
+
+  /* filter */
+  .filter-bar{display:flex;gap:4px;padding:4px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.07);border-radius:12px;margin-bottom:14px}
+  .filter-btn{flex:1;padding:6px 0;border-radius:8px;font-size:12px;font-weight:600;border:none;cursor:pointer;background:transparent;color:rgba(255,255,255,.35)}
+  .filter-btn.active{background:rgba(255,255,255,.10);color:rgba(255,255,255,.95)}
+
+  /* vehicle row */
+  .v-row{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.07);position:relative}
+  .v-row:last-child{border-bottom:none}
+  .v-row.service{border-left:3px solid transparent;border-image:linear-gradient(180deg,rgba(255,159,10,.7),rgba(255,159,10,.4)) 1;padding-left:13px}
+  .v-row.unavail{border-left:3px solid transparent;border-image:linear-gradient(180deg,rgba(255,69,58,.7),rgba(255,69,58,.4)) 1;padding-left:13px}
+
+  .v-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .v-icon.active{background:rgba(48,209,88,.10)}
+  .v-icon.service-ic{background:rgba(255,159,10,.10)}
+  .v-icon.idle{background:rgba(255,255,255,.06)}
+
+  .plate{font-size:11px;font-weight:800;letter-spacing:.06em;font-family:monospace;color:rgba(255,255,255,.95);background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.07);padding:2px 7px;border-radius:5px;display:inline-block;margin-bottom:3px}
+  .v-model{font-size:13px;font-weight:700;color:rgba(255,255,255,.95);line-height:1.2}
+  .v-meta{font-size:11px;color:rgba(255,255,255,.35);margin-top:2px}
+
+  /* fuel bar */
+  .fuel-row{display:flex;align-items:center;gap:5px;margin-top:5px}
+  .fuel-track{flex:1;height:4px;background:rgba(255,255,255,.07);border-radius:2px;overflow:hidden}
+  .fuel-fill{height:100%;border-radius:2px}
+  .fuel-lbl{font-size:10px;color:rgba(255,255,255,.35);width:24px;text-align:right}
+
+  /* detail hero */
+  .hero-plate{font-size:14px;font-weight:800;letter-spacing:.08em;font-family:monospace;color:rgba(255,255,255,.95);background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.09);padding:4px 10px;border-radius:6px;display:inline-block;margin-bottom:6px}
+  .hero-model{font-size:20px;font-weight:700;color:rgba(255,255,255,.95)}
+
+  /* detail rows */
+  .detail-row{display:flex;justify-content:space-between;align-items:center;padding:11px 16px;border-bottom:1px solid rgba(255,255,255,.07)}
+  .detail-row:last-child{border-bottom:none}
+  .dr-label{font-size:13px;color:rgba(255,255,255,.65)}
+  .dr-val{font-size:13px;font-weight:600;color:rgba(255,255,255,.95)}
+
+  /* live dispatch card */
+  .dispatch-card{background:rgba(48,209,88,.05);border:1px solid rgba(48,209,88,.18);border-radius:16px;padding:13px 14px;margin-bottom:12px;position:relative;overflow:hidden}
+  .dispatch-label{font-size:11px;font-weight:600;color:rgba(48,209,88,.7);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px}
+  .dispatch-route{font-size:14px;font-weight:700;color:rgba(255,255,255,.95);margin-bottom:3px}
+  .dispatch-driver{font-size:13px;color:rgba(255,255,255,.65)}
+
+  /* odometer */
+  .odo-row{display:flex;gap:10px;margin-bottom:12px}
+  .odo-tile{flex:1;padding:11px 12px;border-radius:14px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.07)}
+  .odo-val{font-size:14px;font-weight:700;color:rgba(255,255,255,.95)}
+  .odo-lbl{font-size:10px;font-weight:600;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.05em;margin-top:3px}
+
+  /* maintenance rows */
+  .mx-row{display:flex;align-items:center;gap:10px;padding:11px 16px;border-bottom:1px solid rgba(255,255,255,.07)}
+  .mx-row:last-child{border-bottom:none}
+  .mx-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+  .mx-label{font-size:13px;font-weight:600;color:rgba(255,255,255,.95)}
+  .mx-detail{font-size:11px;color:rgba(255,255,255,.35);margin-top:2px}
+
+  /* activity */
+  .act-row{display:flex;align-items:flex-start;gap:10px;padding:10px 16px;border-bottom:1px solid rgba(255,255,255,.07)}
+  .act-row:last-child{border-bottom:none}
+  .act-time{font-size:11px;font-family:monospace;color:rgba(255,255,255,.35);width:36px;flex-shrink:0;padding-top:2px}
+
+  /* alert banner */
+  .alert-banner{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:14px;margin-bottom:14px}
+
+  /* sheet */
+  .sheet-overlay{position:absolute;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);display:flex;flex-direction:column;justify-content:flex-end}
+  .sheet{background:rgba(20,20,22,.92);backdrop-filter:blur(48px);border:1px solid rgba(255,255,255,.12);border-radius:32px 32px 0 0;padding:20px 16px 40px;box-shadow:0 -24px 64px rgba(0,0,0,.7)}
+  .sheet-pill{width:36px;height:4px;background:rgba(255,255,255,.15);border-radius:2px;margin:0 auto 20px}
+  .sheet-title{font-size:13px;font-weight:600;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.06em;margin-bottom:14px;padding:0 4px}
+  .sheet-btn{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:14px;margin-bottom:8px;border:none;cursor:pointer;width:100%;text-align:left}
+  .sheet-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .sheet-lbl{font-size:15px;font-weight:600}
+  .sheet-sub{font-size:12px;color:rgba(255,255,255,.35);margin-top:2px}
+
+  /* back */
+  .back-btn{display:flex;align-items:center;gap:6px;background:none;border:none;color:rgba(255,255,255,.65);font-size:14px;font-weight:500;cursor:pointer;padding:0 16px;margin-bottom:20px}
+
+  /* tab bar */
+  .tab-bar{position:absolute;bottom:0;left:0;right:0;height:88px;display:flex;align-items:flex-start;justify-content:space-around;padding:12px 8px 0;background:rgba(255,255,255,.06);backdrop-filter:blur(32px);border-top:1px solid rgba(255,255,255,.07)}
+  .tab{display:flex;flex-direction:column;align-items:center;gap:4px;opacity:.45;padding:0 12px}
+  .tab.active{opacity:1}
+  .tab-lbl{font-size:10px;font-weight:600}
+
+  /* fab */
+  .fab{position:absolute;bottom:130px;right:16px;width:52px;height:52px;border-radius:26px;background:rgba(255,255,255,.12);backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+
+  /* doc row */
+  .doc-row{display:flex;align-items:center;justify-content:space-between;padding:11px 16px;border-bottom:1px solid rgba(255,255,255,.07)}
+  .doc-row:last-child{border-bottom:none}
+</style>
+</head>
+<body>
+
+<h2>Phase 20 — Fleet Deep Dive</h2>
+
+<div class="row">
+
+  <!-- SCREEN 1: Fleet List -->
+  <div>
+    <div class="phone">
+      <div class="screen">
+        <div class="content">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px">
+            <div>
+              <p style="font-size:13px;color:rgba(255,255,255,.35);margin-bottom:2px">Operations</p>
+              <h1 style="font-size:26px;font-weight:700;letter-spacing:-.02em;color:rgba(255,255,255,.95)">Fleet</h1>
+            </div>
+            <div style="padding:6px 12px;border-radius:10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.07);font-size:12px;font-weight:500;color:rgba(255,255,255,.65)">4 vehicule</div>
+          </div>
+
+          <!-- KPI -->
+          <div class="kpi-strip">
+            <div class="kpi"><div class="kpi-val">4</div><div class="kpi-lbl">Total</div></div>
+            <div class="kpi"><div class="kpi-val" style="color:rgba(48,209,88,.95)">2</div><div class="kpi-lbl">Active</div></div>
+            <div class="kpi"><div class="kpi-val" style="color:rgba(255,159,10,.95)">1</div><div class="kpi-lbl">Service</div></div>
+            <div class="kpi"><div class="kpi-val" style="color:rgba(48,209,88,.95)">69%</div><div class="kpi-lbl">Fuel Avg</div></div>
+          </div>
+
+          <!-- Service alert -->
+          <div class="alert-banner" style="background:rgba(255,159,10,.07);border:1px solid rgba(255,159,10,.18)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,159,10,.9)" stroke-width="1.8" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <div>
+              <p style="font-size:13px;font-weight:700;color:rgba(255,159,10,.95);margin:0">Service Necesar</p>
+              <p style="font-size:12px;color:rgba(255,159,10,.65);margin:2px 0 0">CJ-12-PRV în service · 2 vehicule cu service scadent</p>
+            </div>
+          </div>
+
+          <!-- Filter -->
+          <div class="filter-bar">
+            <button class="filter-btn active">Toate</button>
+            <button class="filter-btn">Active</button>
+            <button class="filter-btn">Service</button>
+            <button class="filter-btn">Idle</button>
+          </div>
+        </div>
+
+        <!-- Vehicle list -->
+        <div class="card" style="margin:0 16px 12px">
+          <div class="top-edge"></div>
+
+          <!-- Active -->
+          <div class="v-row">
+            <div class="v-icon active">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(48,209,88,.85)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+            </div>
+            <div style="flex:1;min-width:0">
+              <span class="plate">B-44-PRV</span>
+              <p class="v-model">Ford Transit 2023</p>
+              <p class="v-meta">Andrei Popescu · Cluj → Timișoara</p>
+              <div class="fuel-row">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.3)" stroke-width="2"><path d="M3 22V7l7-5 7 5v15"/><path d="M17 22v-5h4l2 2v3h-6z"/></svg>
+                <div class="fuel-track"><div class="fuel-fill" style="width:78%;background:rgba(48,209,88,.6)"></div></div>
+                <span class="fuel-lbl">78%</span>
+              </div>
+            </div>
+            <span class="pill pill-active" style="flex-shrink:0;align-self:flex-start">Active</span>
+          </div>
+
+          <!-- Active 2 -->
+          <div class="v-row">
+            <div class="v-icon active">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(48,209,88,.85)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+            </div>
+            <div style="flex:1;min-width:0">
+              <span class="plate">CJ-03-PRV</span>
+              <p class="v-model">VW Crafter 2022</p>
+              <p class="v-meta">Elena Marin · Timișoara site</p>
+              <div class="fuel-row">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.3)" stroke-width="2"><path d="M3 22V7l7-5 7 5v15"/><path d="M17 22v-5h4l2 2v3h-6z"/></svg>
+                <div class="fuel-track"><div class="fuel-fill" style="width:45%;background:rgba(255,159,10,.7)"></div></div>
+                <span class="fuel-lbl">45%</span>
+              </div>
+            </div>
+            <span class="pill pill-active" style="flex-shrink:0;align-self:flex-start">Active</span>
+          </div>
+
+          <!-- Service (amber border) -->
+          <div class="v-row service">
+            <div class="v-icon service-ic">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,159,10,.85)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+            </div>
+            <div style="flex:1;min-width:0">
+              <span class="plate">CJ-12-PRV</span>
+              <p class="v-model">Mercedes Sprinter 2021</p>
+              <p class="v-meta">AutoPro Service · Schimb ulei + frâne</p>
+              <div class="fuel-row">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.3)" stroke-width="2"><path d="M3 22V7l7-5 7 5v15"/><path d="M17 22v-5h4l2 2v3h-6z"/></svg>
+                <div class="fuel-track"><div class="fuel-fill" style="width:60%;background:rgba(48,209,88,.6)"></div></div>
+                <span class="fuel-lbl">60%</span>
+              </div>
+            </div>
+            <span class="pill pill-service" style="flex-shrink:0;align-self:flex-start">Service</span>
+          </div>
+
+          <!-- Idle -->
+          <div class="v-row" style="border-bottom:none">
+            <div class="v-icon idle">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+            </div>
+            <div style="flex:1;min-width:0">
+              <span class="plate">TM-08-PRV</span>
+              <p class="v-model">Renault Master 2022</p>
+              <p class="v-meta">Neasignat · Depozit Timișoara</p>
+              <div class="fuel-row">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.3)" stroke-width="2"><path d="M3 22V7l7-5 7 5v15"/><path d="M17 22v-5h4l2 2v3h-6z"/></svg>
+                <div class="fuel-track"><div class="fuel-fill" style="width:92%;background:rgba(48,209,88,.6)"></div></div>
+                <span class="fuel-lbl">92%</span>
+              </div>
+            </div>
+            <span class="pill pill-idle" style="flex-shrink:0;align-self:flex-start">Idle</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- FAB -->
+      <div class="fab">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.9)" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </div>
+
+      <!-- Tab bar -->
+      <div class="tab-bar">
+        <div class="tab"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span class="tab-lbl">Command</span></div>
+        <div class="tab active"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg><span class="tab-lbl">Operations</span></div>
+        <div class="tab"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><span class="tab-lbl">People</span></div>
+        <div class="tab"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span class="tab-lbl">Finance</span></div>
+        <div class="tab"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span class="tab-lbl">Intelligence</span></div>
+      </div>
+    </div>
+    <div class="label">Lista vehicule · /fleet</div>
+  </div>
+
+  <!-- SCREEN 2: Vehicle Detail (Active) -->
+  <div>
+    <div class="phone">
+      <div class="screen">
+
+        <button class="back-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+          Fleet
+        </button>
+
+        <div class="content">
+
+          <!-- Hero card -->
+          <div class="card" style="margin-bottom:12px">
+            <div class="top-edge"></div>
+            <div style="padding:16px">
+              <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px">
+                <div>
+                  <span class="hero-plate">B-44-PRV</span>
+                  <p class="hero-model">Ford Transit 2023</p>
+                </div>
+                <span class="pill pill-active">Active</span>
+              </div>
+              <!-- meta pills -->
+              <div style="display:flex;gap:7px;flex-wrap:wrap">
+                <div style="padding:4px 9px;border-radius:8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.07);font-size:11px;font-weight:500;color:rgba(255,255,255,.65)">Van</div>
+                <div style="padding:4px 9px;border-radius:8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.07);font-size:11px;font-weight:500;color:rgba(255,255,255,.65)">Diesel</div>
+                <div style="padding:4px 9px;border-radius:8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.07);font-size:11px;font-weight:500;color:rgba(255,255,255,.65)">Cluj</div>
+              </div>
+
+              <!-- Fuel bar -->
+              <div style="margin-top:12px">
+                <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;color:rgba(255,255,255,.65);margin-bottom:6px">
+                  <span>Combustibil</span>
+                  <span style="color:rgba(48,209,88,.95);font-weight:700">78%</span>
+                </div>
+                <div style="height:6px;background:rgba(255,255,255,.07);border-radius:3px;overflow:hidden">
+                  <div style="width:78%;height:100%;border-radius:3px;background:rgba(48,209,88,.6)"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Live dispatch card -->
+          <div class="dispatch-card">
+            <p class="dispatch-label">Misiune Activă</p>
+            <p class="dispatch-route">Cluj → Timișoara</p>
+            <p class="dispatch-driver">Andrei Popescu · 214 km azi</p>
+            <div style="display:flex;gap:8px;margin-top:8px">
+              <div style="padding:4px 9px;border-radius:7px;background:rgba(48,209,88,.10);border:1px solid rgba(48,209,88,.18);font-size:11px;font-weight:600;color:rgba(48,209,88,.85)">Return 17:00</div>
+            </div>
+          </div>
+
+          <!-- Odometer + next service -->
+          <div class="odo-row">
+            <div class="odo-tile">
+              <p class="odo-val">38,412</p>
+              <p class="odo-lbl">Km total</p>
+            </div>
+            <div class="odo-tile">
+              <p class="odo-val" style="color:rgba(255,159,10,.95)">~3,588</p>
+              <p class="odo-lbl">Km to service</p>
+            </div>
+            <div class="odo-tile">
+              <p class="odo-val">214</p>
+              <p class="odo-lbl">Km azi</p>
+            </div>
+          </div>
+
+          <!-- Documents -->
+          <p class="section-label">Documente</p>
+          <div class="card">
+            <div class="top-edge"></div>
+            <div class="doc-row">
+              <div>
+                <p style="font-size:13px;font-weight:600;color:rgba(255,255,255,.95);margin:0">Asigurare RCA</p>
+                <p style="font-size:11px;color:rgba(255,255,255,.35);margin:2px 0 0">Valabilă · Dec 2026</p>
+              </div>
+              <span class="pill pill-active">Valid</span>
+            </div>
+            <div class="doc-row">
+              <div>
+                <p style="font-size:13px;font-weight:600;color:rgba(255,255,255,.95);margin:0">ITP</p>
+                <p style="font-size:11px;color:rgba(255,255,255,.35);margin:2px 0 0">Valabilă · Mar 2027</p>
+              </div>
+              <span class="pill pill-active">Valid</span>
+            </div>
+          </div>
+
+          <!-- Maintenance -->
+          <p class="section-label">Istoric Mentenanță</p>
+          <div class="card">
+            <div class="top-edge"></div>
+            <div class="mx-row">
+              <div class="mx-dot" style="background:rgba(48,209,88,.85)"></div>
+              <div style="flex:1">
+                <p class="mx-label">Full Service</p>
+                <p class="mx-detail">Apr 12 · 34,100 km · €320</p>
+              </div>
+              <span class="pill pill-active" style="font-size:9px">Efectuat</span>
+            </div>
+            <div class="mx-row">
+              <div class="mx-dot" style="background:rgba(48,209,88,.85)"></div>
+              <div style="flex:1">
+                <p class="mx-label">Rotație anvelope</p>
+                <p class="mx-detail">Feb 3 · 28,600 km · €80</p>
+              </div>
+              <span class="pill pill-active" style="font-size:9px">Efectuat</span>
+            </div>
+            <div class="mx-row" style="border-bottom:none">
+              <div class="mx-dot" style="background:rgba(255,159,10,.85)"></div>
+              <div style="flex:1">
+                <p class="mx-label">Schimb ulei + filtru</p>
+                <p class="mx-detail" style="color:rgba(255,159,10,.7)">La 42,000 km · ~3,588 km distanță</p>
+              </div>
+              <span class="pill pill-service" style="font-size:9px">Scadent</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- FAB -->
+      <div class="fab">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.9)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+      </div>
+
+      <!-- Tab bar -->
+      <div class="tab-bar">
+        <div class="tab"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span class="tab-lbl">Command</span></div>
+        <div class="tab active"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg><span class="tab-lbl">Operations</span></div>
+        <div class="tab"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><span class="tab-lbl">People</span></div>
+        <div class="tab"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span class="tab-lbl">Finance</span></div>
+        <div class="tab"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span class="tab-lbl">Intelligence</span></div>
+      </div>
+    </div>
+    <div class="label">Detalii vehicul (Active) · /fleet/v1</div>
+  </div>
+
+  <!-- SCREEN 3: FAB Action Sheet on vehicle detail -->
+  <div>
+    <div class="phone">
+      <div class="screen" style="position:relative">
+
+        <button class="back-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+          Fleet
+        </button>
+
+        <!-- Blurred background -->
+        <div class="content" style="opacity:.25">
+          <div class="card" style="margin-bottom:12px;height:130px"></div>
+          <div class="dispatch-card" style="height:80px"></div>
+          <div class="odo-row">
+            <div class="odo-tile" style="height:56px"></div>
+            <div class="odo-tile" style="height:56px"></div>
+            <div class="odo-tile" style="height:56px"></div>
+          </div>
+        </div>
+
+        <!-- Sheet overlay -->
+        <div class="sheet-overlay">
+          <div class="sheet">
+            <div class="sheet-pill"></div>
+            <div class="sheet-title">Acțiuni Vehicul</div>
+
+            <button class="sheet-btn" style="background:rgba(255,159,10,.10);border:1px solid rgba(255,159,10,.2);margin-bottom:8px">
+              <div class="sheet-icon" style="background:rgba(255,159,10,.18)">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,159,10,.9)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+              </div>
+              <div>
+                <p class="sheet-lbl" style="color:rgba(255,159,10,.95)">Planifică Service</p>
+                <p class="sheet-sub">Schimb ulei scadent la 42,000 km</p>
+              </div>
+            </button>
+
+            <button class="sheet-btn" style="background:rgba(10,132,255,.15);border:1px solid rgba(10,132,255,.25);margin-bottom:8px">
+              <div class="sheet-icon" style="background:rgba(10,132,255,.2)">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(10,132,255,.9)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="23" y1="11" x2="23" y2="17"/><line x1="20" y1="14" x2="26" y2="14"/></svg>
+              </div>
+              <div>
+                <p class="sheet-lbl" style="color:rgba(10,132,255,.9)">Asignează Șofer</p>
+                <p class="sheet-sub">Schimbă sau asignează şofer nou</p>
+              </div>
+            </button>
+
+            <button class="sheet-btn" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.09);margin-bottom:8px">
+              <div class="sheet-icon" style="background:rgba(255,255,255,.08)">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              </div>
+              <div>
+                <p class="sheet-lbl">Editează Vehicul</p>
+                <p class="sheet-sub">Date, documente, bază</p>
+              </div>
+            </button>
+
+            <button class="sheet-btn" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.09);margin-bottom:8px">
+              <div class="sheet-icon" style="background:rgba(255,255,255,.08)">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+              </div>
+              <div>
+                <p class="sheet-lbl">Raport Vehicul</p>
+                <p class="sheet-sub">Export km, consum, costuri</p>
+              </div>
+            </button>
+
+            <button class="sheet-btn" style="background:rgba(255,69,58,.10);border:1px solid rgba(255,69,58,.2)">
+              <div class="sheet-icon" style="background:rgba(255,69,58,.15)">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,69,58,.9)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+              </div>
+              <div>
+                <p class="sheet-lbl" style="color:rgba(255,69,58,.95)">Marchează Indisponibil</p>
+                <p class="sheet-sub">Avarie, blocat sau retras</p>
+              </div>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab bar -->
+      <div class="tab-bar">
+        <div class="tab"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span class="tab-lbl">Command</span></div>
+        <div class="tab active"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg><span class="tab-lbl">Operations</span></div>
+        <div class="tab"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><span class="tab-lbl">People</span></div>
+        <div class="tab"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span class="tab-lbl">Finance</span></div>
+        <div class="tab"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span class="tab-lbl">Intelligence</span></div>
+      </div>
+    </div>
+    <div class="label">Sheet acțiuni · Planifică / Asignează / Blochează</div>
+  </div>
+
+</div>
+
+</body>
+</html>
