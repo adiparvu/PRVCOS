@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
+import { useRouter } from "next/navigation"
 import type { Product, ProductCategory } from "@/app/api/shop/products/route"
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
@@ -254,10 +255,14 @@ function CartSheet({
   items,
   onClose,
   onQtyChange,
+  onPlaceOrder,
+  placing,
 }: {
   items: CartItem[]
   onClose: () => void
   onQtyChange: (id: string, delta: number) => void
+  onPlaceOrder: () => void
+  placing: boolean
 }) {
   const total = items.reduce((s, i) => s + i.product.price * i.qty, 0)
   return (
@@ -395,6 +400,8 @@ function CartSheet({
         ))}
         {items.length > 0 && (
           <button
+            onClick={onPlaceOrder}
+            disabled={placing}
             style={{
               width: "100%",
               marginTop: 20,
@@ -405,10 +412,11 @@ function CartSheet({
               fontSize: 15,
               fontWeight: 700,
               border: "none",
-              cursor: "pointer",
+              cursor: placing ? "default" : "pointer",
+              opacity: placing ? 0.7 : 1,
             }}
           >
-            Finalizează comanda
+            {placing ? "Se procesează..." : "Finalizează comanda"}
           </button>
         )}
       </div>
@@ -609,6 +617,8 @@ export function ShopWorkspace() {
   const [search, setSearch] = useState("")
   const [cart, setCart] = useState<CartItem[]>([])
   const [cartOpen, setCartOpen] = useState(false)
+  const [placing, setPlacing] = useState(false)
+  const router = useRouter()
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -643,6 +653,31 @@ export function ShopWorkspace() {
   }
 
   const cartCount = cart.reduce((s, i) => s + i.qty, 0)
+
+  const placeOrder = async () => {
+    setPlacing(true)
+    try {
+      await fetch("/api/shop/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: cart.map((i) => ({
+            productId: i.product.id,
+            productName: i.product.name,
+            category: i.product.category,
+            qty: i.qty,
+            unitPrice: i.product.price,
+          })),
+          deliveryAddress: "Str. Fabricii 12, Cluj-Napoca",
+        }),
+      })
+      setCart([])
+      setCartOpen(false)
+      router.push("/shop/orders")
+    } finally {
+      setPlacing(false)
+    }
+  }
 
   if (loading) return <Skeleton />
 
@@ -1014,7 +1049,13 @@ export function ShopWorkspace() {
 
       {/* Cart sheet */}
       {cartOpen && (
-        <CartSheet items={cart} onClose={() => setCartOpen(false)} onQtyChange={changeQty} />
+        <CartSheet
+          items={cart}
+          onClose={() => setCartOpen(false)}
+          onQtyChange={changeQty}
+          onPlaceOrder={placeOrder}
+          placing={placing}
+        />
       )}
     </>
   )
