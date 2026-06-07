@@ -1,10 +1,10 @@
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import { getSession } from "@prv/auth"
-import { ScheduleWorkspace } from "./ScheduleWorkspace"
+import { ScheduleListClient } from "./ScheduleListClient"
 
 export const dynamic = "force-dynamic"
-export const metadata = { title: "Schedule" }
+export const metadata = { title: "Program · PRV" }
 
 export default async function SchedulePage() {
   const cookieStore = await cookies()
@@ -17,9 +17,5 @@ export default async function SchedulePage() {
     redirect("/auth/login")
   }
 
-  return (
-    <div className="pt-14 max-w-2xl mx-auto">
-      <ScheduleWorkspace storeName="Cluj · Main" />
-    </div>
-  )
+  return <ScheduleListClient />
 }
