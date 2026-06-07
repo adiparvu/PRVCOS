@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Phase 17 — CRM Clients Deep Dive</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0a0a;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text",sans-serif;color:rgba(255,255,255,0.92);min-height:100vh}
+.scene{display:flex;gap:32px;padding:40px;justify-content:center;flex-wrap:wrap;align-items:flex-start}
+.phone{width:375px;background:#000;border-radius:44px;overflow:hidden;border:1px solid rgba(255,255,255,0.08);box-shadow:0 40px 120px rgba(0,0,0,0.8);flex-shrink:0}
+.label{text-align:center;margin-bottom:12px;font-size:11px;font-weight:600;color:rgba(255,255,255,0.35);letter-spacing:0.08em;text-transform:uppercase}
+.screen{padding-bottom:90px}
+:root{--g1:rgba(255,255,255,0.06);--g2:rgba(255,255,255,0.10);--g3:rgba(255,255,255,0.14);--bs:rgba(255,255,255,0.07);--b:rgba(255,255,255,0.12)}
+.status-bar{display:flex;justify-content:space-between;align-items:center;padding:12px 20px 6px;font-size:12px;font-weight:600;color:rgba(255,255,255,0.7)}
+.status-time{font-size:15px;font-weight:700;color:rgba(255,255,255,0.9)}
+.status-icons{display:flex;align-items:center;gap:5px}
+/* header */
+.page-header{padding:12px 20px 8px;display:flex;align-items:center;justify-content:space-between}
+.back-row{display:flex;align-items:center;gap:8px}
+.page-title{font-size:24px;font-weight:700;letter-spacing:-0.5px;color:rgba(255,255,255,0.95)}
+.fab-plus{width:32px;height:32px;background:rgba(255,255,255,0.92);border-radius:100px;display:flex;align-items:center;justify-content:center}
+/* kpi */
+.kpi-strip{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:4px 20px 10px}
+.kpi-tile{background:var(--g1);border:1px solid var(--bs);border-radius:16px;padding:10px 10px 8px}
+.kpi-v{font-size:15px;font-weight:700;letter-spacing:-0.3px}
+.kpi-l{font-size:9px;font-weight:500;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.05em;margin-top:2px}
+/* filter */
+.filter-row{display:flex;gap:6px;padding:0 20px 14px;overflow-x:auto}
+.chip-on{flex-shrink:0;padding:5px 12px;border-radius:100px;font-size:11px;font-weight:500;background:rgba(255,255,255,0.14);border:1px solid rgba(255,255,255,0.28);color:rgba(255,255,255,0.95)}
+.chip-off{flex-shrink:0;padding:5px 12px;border-radius:100px;font-size:11px;font-weight:500;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.10);color:rgba(255,255,255,0.55)}
+/* client card */
+.client-card{position:relative;background:var(--g1);border:1px solid var(--bs);border-radius:16px;padding:12px 14px;margin:0 20px 8px;overflow:hidden}
+/* big avatar */
+.c-avatar{width:38px;height:38px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0}
+.row-top{display:flex;align-items:flex-start;gap:10px;margin-bottom:8px}
+.c-info{flex:1}
+.c-name{font-size:14px;font-weight:600;color:rgba(255,255,255,0.92);margin-bottom:2px}
+.c-sub{font-size:11px;color:rgba(255,255,255,0.35)}
+.c-right{text-align:right}
+.c-ltv{font-size:15px;font-weight:700;letter-spacing:-0.3px}
+.c-since{font-size:10px;color:rgba(255,255,255,0.25);margin-top:2px}
+.pill{font-size:10px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;padding:3px 8px;border-radius:100px}
+.row-bottom{display:flex;align-items:center;justify-content:space-between}
+.stat-row{display:flex;gap:12px}
+.stat-item{display:flex;align-items:center;gap:4px;font-size:10px;color:rgba(255,255,255,0.35)}
+.nps-value{font-size:10px;font-weight:600}
+/* section */
+.section-label{font-size:11px;font-weight:700;color:rgba(255,255,255,0.20);text-transform:uppercase;letter-spacing:0.9px;padding:0 20px;margin:14px 0 8px;display:flex;justify-content:space-between;align-items:center}
+.see-all{font-size:10px;font-weight:600;color:rgba(100,160,255,0.80);text-transform:none;letter-spacing:0}
+/* detail header */
+.detail-back{display:inline-flex;align-items:center;gap:4px;font-size:13px;color:rgba(255,255,255,0.35);padding:12px 20px 4px}
+.detail-hero{padding:4px 20px 10px}
+.hero-top{display:flex;align-items:center;gap:14px;margin-bottom:12px}
+.hero-avatar{width:52px;height:52px;border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700}
+.hero-text{flex:1}
+.hero-name{font-size:20px;font-weight:700;letter-spacing:-0.4px;color:rgba(255,255,255,0.95);margin-bottom:3px}
+.hero-meta{font-size:11px;color:rgba(255,255,255,0.35)}
+/* kpi 3-col */
+.kpi-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:0 20px 4px}
+.kpi-3 .kpi-tile{text-align:center}
+.kpi-3 .kpi-v{font-size:17px}
+/* linked entity rows */
+.entity-list{margin:0 20px;border-radius:16px;border:1px solid var(--bs);overflow:hidden}
+.entity-row{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--g1);border-bottom:1px solid var(--bs)}
+.entity-row:last-child{border-bottom:none}
+.entity-ref{font-size:11px;font-weight:700;color:rgba(255,255,255,0.55);width:48px;flex-shrink:0}
+.entity-name{font-size:12px;color:rgba(255,255,255,0.65);flex:1}
+.entity-amount{font-size:12px;font-weight:600;color:rgba(255,255,255,0.92);margin-right:8px;flex-shrink:0}
+/* active project mini-card */
+.project-mini{margin:0 20px;background:var(--g1);border:1px solid var(--bs);border-radius:16px;padding:12px 14px}
+.project-mini-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
+.project-mini-name{font-size:13px;font-weight:600;color:rgba(255,255,255,0.92)}
+.project-mini-phase{font-size:10px;color:rgba(255,255,255,0.40);margin-top:2px}
+.progress-track{height:4px;border-radius:100px;background:rgba(255,255,255,0.07);overflow:hidden;margin-bottom:4px}
+.progress-fill{height:100%;border-radius:100px}
+.project-mini-footer{display:flex;justify-content:space-between;align-items:center}
+/* activity */
+.activity-list{margin:0 20px;border-radius:16px;border:1px solid var(--bs);overflow:hidden}
+.act-row{display:flex;gap:10px;padding:10px 14px;background:var(--g1);border-bottom:1px solid var(--bs)}
+.act-row:last-child{border-bottom:none}
+.act-dot{width:8px;height:8px;border-radius:50%;margin-top:4px;flex-shrink:0}
+.act-text{font-size:12px;color:rgba(255,255,255,0.65);line-height:1.4;margin-bottom:2px}
+.act-time{font-size:10px;color:rgba(255,255,255,0.25)}
+/* sheet */
+.sheet{background:rgba(22,22,22,0.97);border-radius:32px 32px 0 0;padding:20px 0 0}
+.sheet-handle{width:36px;height:4px;border-radius:100px;background:rgba(255,255,255,0.18);margin:0 auto 14px}
+.sheet-title{font-size:16px;font-weight:700;color:rgba(255,255,255,0.92);padding:0 20px;margin-bottom:14px}
+.contact-block{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:16px;background:var(--g1);border:1px solid var(--bs);margin:0 20px 14px}
+.cb-avatar{width:40px;height:40px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700}
+.cb-info{flex:1}
+.cb-name{font-size:13px;font-weight:600;color:rgba(255,255,255,0.92);margin-bottom:2px}
+.cb-sub{font-size:11px;color:rgba(255,255,255,0.35)}
+.cb-btns{display:flex;gap:7px}
+.cb-btn{width:32px;height:32px;border-radius:10px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.10);display:flex;align-items:center;justify-content:center}
+.action-list{border-radius:16px;border:1px solid var(--bs);overflow:hidden;margin:0 20px}
+.action-row{display:flex;align-items:center;gap:12px;padding:13px 14px;background:var(--g1);border-bottom:1px solid var(--bs)}
+.action-row:last-child{border-bottom:none}
+.action-icon-box{width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.action-icon-box.white{background:rgba(255,255,255,0.10);border:1px solid rgba(255,255,255,0.14)}
+.action-icon-box.blue{background:rgba(100,160,255,0.12);border:1px solid rgba(100,160,255,0.20)}
+.action-icon-box.green{background:rgba(80,255,140,0.10);border:1px solid rgba(80,255,140,0.18)}
+.action-label-text{font-size:14px;font-weight:500;flex:1}
+.action-label-text.white{color:rgba(255,255,255,0.92)}
+.action-label-text.blue{color:rgba(126,184,255,0.95)}
+.action-label-text.green{color:rgba(90,255,160,0.95)}
+.cancel-btn{width:100%;padding:12px;margin-top:10px;border-radius:14px;background:transparent;border:none;color:rgba(255,255,255,0.25);font-size:14px;cursor:pointer;margin-bottom:24px;text-align:center}
+</style>
+</head>
+<body>
+<div style="text-align:center;padding:32px 20px 8px">
+  <div style="font-size:11px;color:rgba(255,255,255,0.30);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px">PRV — Company OS · Phase 17</div>
+  <h1 style="font-size:26px;font-weight:700;color:rgba(255,255,255,0.92);letter-spacing:-0.5px">CRM Clients Deep Dive</h1>
+  <p style="font-size:13px;color:rgba(255,255,255,0.40);margin-top:6px">Client list · Client detail · Linked quotes, invoices &amp; projects · Actions sheet</p>
+</div>
+
+<div class="scene">
+
+<!-- ── Screen 1: /crm/clients list ── -->
+<div>
+  <div class="label">Screen 1 — /crm/clients (new ClientListClient)</div>
+  <div class="phone">
+    <div class="screen">
+      <div class="status-bar">
+        <span class="status-time">9:41</span>
+        <div class="status-icons">
+          <svg width="16" height="11" viewBox="0 0 16 11" fill="rgba(255,255,255,0.7)"><rect x="0" y="4" width="3" height="7" rx="1"/><rect x="4.5" y="2.5" width="3" height="8.5" rx="1"/><rect x="9" y="1" width="3" height="10" rx="1"/><rect x="13.5" y="0" width="2.5" height="11" rx="1"/></svg>
+          <svg width="25" height="11" viewBox="0 0 25 11" fill="rgba(255,255,255,0.7)"><rect x="0" y="1" width="21" height="9" rx="2" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="1"/><rect x="22" y="4" width="2" height="3" rx="1"/><rect x="1.5" y="2.5" width="16" height="6" rx="1"/></svg>
+        </div>
+      </div>
+
+      <div class="page-header">
+        <div class="back-row">
+          <a href="#" style="display:flex;align-items:center;color:rgba(255,255,255,0.35);text-decoration:none;margin-right:2px">
+            <svg width="9" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
+          </a>
+          <span class="page-title">Clienți</span>
+        </div>
+        <div class="fab-plus">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        </div>
+      </div>
+
+      <!-- KPI strip -->
+      <div class="kpi-strip">
+        <div class="kpi-tile">
+          <div class="kpi-v" style="color:#ffcc44">2</div>
+          <div class="kpi-l">VIP</div>
+        </div>
+        <div class="kpi-tile">
+          <div class="kpi-v" style="color:#5affa0">4</div>
+          <div class="kpi-l">Activi</div>
+        </div>
+        <div class="kpi-tile">
+          <div class="kpi-v" style="color:#7eb8ff">€184k</div>
+          <div class="kpi-l">LTV Total</div>
+        </div>
+      </div>
+
+      <!-- Filter chips -->
+      <div class="filter-row">
+        <div class="chip-on">Toți</div>
+        <div class="chip-off">VIP <span style="font-size:10px;font-weight:700;color:#ffcc44;margin-left:4px">2</span></div>
+        <div class="chip-off">Activi <span style="font-size:10px;font-weight:700;color:rgba(255,255,255,0.55);margin-left:4px">4</span></div>
+        <div class="chip-off">Lead</div>
+        <div class="chip-off">Cold</div>
+      </div>
+
+      <!-- Client cards -->
+
+      <!-- c1: VIP — gold left border -->
+      <div class="client-card" style="border-left:3px solid #ffcc44;padding-left:11px">
+        <div class="row-top">
+          <div class="c-avatar" style="background:rgba(255,204,68,0.14);border:1px solid rgba(255,204,68,0.22);color:#ffcc44">AG</div>
+          <div class="c-info">
+            <div class="c-name">Andronic Group SRL</div>
+            <div class="c-sub">București · 2 proiecte active</div>
+          </div>
+          <div class="c-right">
+            <div class="c-ltv" style="color:#5affa0">€62,400</div>
+            <div class="c-since">din 2023</div>
+          </div>
+        </div>
+        <div class="row-bottom">
+          <div class="stat-row">
+            <!-- project icon -->
+            <div class="stat-item">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="2" stroke-linecap="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
+              <span>2 proiecte</span>
+            </div>
+            <!-- quote icon -->
+            <div class="stat-item">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="rgba(100,160,255,0.8)" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              <span style="color:#7eb8ff">2 oferte</span>
+            </div>
+            <!-- nps -->
+            <div class="stat-item">
+              <span class="nps-value" style="color:#5affa0">NPS 9.2</span>
+            </div>
+          </div>
+          <span class="pill" style="background:rgba(255,204,68,0.12);border:1px solid rgba(255,204,68,0.22);color:#ffcc44">VIP</span>
+        </div>
+      </div>
+
+      <!-- c2: Biroul Construct SRL — active -->
+      <div class="client-card">
+        <div class="row-top">
+          <div class="c-avatar" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.65)">BC</div>
+          <div class="c-info">
+            <div class="c-name">Biroul Construct SRL</div>
+            <div class="c-sub">Cluj · 1 proiect activ</div>
+          </div>
+          <div class="c-right">
+            <div class="c-ltv" style="color:rgba(255,255,255,0.92)">€32,200</div>
+            <div class="c-since">din 2024</div>
+          </div>
+        </div>
+        <div class="row-bottom">
+          <div class="stat-row">
+            <div class="stat-item">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="2" stroke-linecap="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
+              <span>1 proiect</span>
+            </div>
+            <div class="stat-item">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="rgba(100,160,255,0.8)" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              <span style="color:#7eb8ff">1 ofertă</span>
+            </div>
+            <div class="stat-item">
+              <span class="nps-value" style="color:rgba(255,255,255,0.55)">NPS 7.8</span>
+            </div>
+          </div>
+          <span class="pill" style="background:rgba(80,255,140,0.10);border:1px solid rgba(80,255,140,0.18);color:#5affa0">Activ</span>
+        </div>
+      </div>
+
+      <!-- c3: Radu Construct SRL — active, VIP -->
+      <div class="client-card" style="border-left:3px solid #ffcc44;padding-left:11px">
+        <div class="row-top">
+          <div class="c-avatar" style="background:rgba(255,204,68,0.14);border:1px solid rgba(255,204,68,0.22);color:#ffcc44">RC</div>
+          <div class="c-info">
+            <div class="c-name">Radu Construct SRL</div>
+            <div class="c-sub">Timișoara · 1 proiect</div>
+          </div>
+          <div class="c-right">
+            <div class="c-ltv" style="color:#5affa0">€47,800</div>
+            <div class="c-since">din 2022</div>
+          </div>
+        </div>
+        <div class="row-bottom">
+          <div class="stat-row">
+            <div class="stat-item">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="2" stroke-linecap="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
+              <span>1 proiect</span>
+            </div>
+            <div class="stat-item">
+              <span class="nps-value" style="color:#5affa0">NPS 8.9</span>
+            </div>
+          </div>
+          <span class="pill" style="background:rgba(255,204,68,0.12);border:1px solid rgba(255,204,68,0.22);color:#ffcc44">VIP</span>
+        </div>
+      </div>
+
+      <!-- c4: Lead -->
+      <div class="client-card">
+        <div class="row-top">
+          <div class="c-avatar" style="background:rgba(100,160,255,0.10);border:1px solid rgba(100,160,255,0.16);color:#7eb8ff">AB</div>
+          <div class="c-info">
+            <div class="c-name">Alfa Business SRL</div>
+            <div class="c-sub">Brașov · Lead nou</div>
+          </div>
+          <div class="c-right">
+            <div class="c-ltv" style="color:rgba(255,255,255,0.65)">€8,700</div>
+            <div class="c-since">din 2026</div>
+          </div>
+        </div>
+        <div class="row-bottom">
+          <div class="stat-row">
+            <div class="stat-item">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="rgba(100,160,255,0.8)" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              <span style="color:#7eb8ff">1 ofertă acceptată</span>
+            </div>
+          </div>
+          <span class="pill" style="background:rgba(100,160,255,0.10);border:1px solid rgba(100,160,255,0.18);color:#7eb8ff">Lead</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ── Screen 2: /crm/clients/c1 — detail ── -->
+<div>
+  <div class="label">Screen 2 — /crm/clients/c1 (Andronic Group SRL)</div>
+  <div class="phone">
+    <div class="screen">
+      <div class="status-bar">
+        <span class="status-time">9:41</span>
+        <div class="status-icons">
+          <svg width="16" height="11" viewBox="0 0 16 11" fill="rgba(255,255,255,0.7)"><rect x="0" y="4" width="3" height="7" rx="1"/><rect x="4.5" y="2.5" width="3" height="8.5" rx="1"/><rect x="9" y="1" width="3" height="10" rx="1"/><rect x="13.5" y="0" width="2.5" height="11" rx="1"/></svg>
+          <svg width="25" height="11" viewBox="0 0 25 11" fill="rgba(255,255,255,0.7)"><rect x="0" y="1" width="21" height="9" rx="2" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="1"/><rect x="22" y="4" width="2" height="3" rx="1"/><rect x="1.5" y="2.5" width="16" height="6" rx="1"/></svg>
+        </div>
+      </div>
+
+      <!-- Back + hero -->
+      <div class="detail-back">
+        <svg width="9" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
+        Clienți
+      </div>
+      <div class="detail-hero">
+        <div class="hero-top">
+          <div class="hero-avatar" style="background:rgba(255,204,68,0.14);border:1px solid rgba(255,204,68,0.22);color:#ffcc44">AG</div>
+          <div class="hero-text">
+            <div class="hero-name">Andronic Group SRL</div>
+            <div class="hero-meta">București · CIF: RO12345678</div>
+          </div>
+          <span class="pill" style="background:rgba(255,204,68,0.12);border:1px solid rgba(255,204,68,0.22);color:#ffcc44;margin-left:auto;align-self:flex-start;margin-top:2px">VIP</span>
+        </div>
+        <!-- contact row -->
+        <div style="display:flex;gap:8px">
+          <a href="#" style="display:flex;align-items:center;gap:5px;padding:7px 12px;border-radius:100px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);text-decoration:none;color:rgba(255,255,255,0.65);font-size:11px;font-weight:500">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.9 9.71a19.79 19.79 0 01-3.07-8.67A2 2 0 012.98 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L7.09 9.91a16 16 0 006.21 6.21l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
+            Sună
+          </a>
+          <a href="#" style="display:flex;align-items:center;gap:5px;padding:7px 12px;border-radius:100px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);text-decoration:none;color:rgba(255,255,255,0.65);font-size:11px;font-weight:500">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 7 10-7"/></svg>
+            Email
+          </a>
+          <a href="#" style="display:flex;align-items:center;gap:5px;padding:7px 12px;border-radius:100px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);text-decoration:none;color:rgba(255,255,255,0.65);font-size:11px;font-weight:500">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
+            Maps
+          </a>
+        </div>
+      </div>
+
+      <!-- KPI -->
+      <div class="kpi-3">
+        <div class="kpi-tile">
+          <div class="kpi-v" style="color:#5affa0">€62.4k</div>
+          <div class="kpi-l">Facturat</div>
+        </div>
+        <div class="kpi-tile">
+          <div class="kpi-v" style="color:#ffcc44">€24.4k</div>
+          <div class="kpi-l">Pipeline</div>
+        </div>
+        <div class="kpi-tile">
+          <div class="kpi-v" style="color:#5affa0">9.2</div>
+          <div class="kpi-l">NPS</div>
+        </div>
+      </div>
+
+      <!-- Oferte section -->
+      <div class="section-label" style="margin-top:16px">
+        <span>Oferte</span>
+        <a href="#" class="see-all">Toate →</a>
+      </div>
+      <div class="entity-list">
+        <div class="entity-row">
+          <span class="entity-ref">Q-048</span>
+          <span class="entity-name">Renovare birouri București</span>
+          <span class="entity-amount">€24,400</span>
+          <span class="pill" style="background:rgba(100,160,255,0.10);border:1px solid rgba(100,160,255,0.18);color:#7eb8ff;font-size:9px">Trimisă</span>
+        </div>
+        <div class="entity-row">
+          <span class="entity-ref">Q-044</span>
+          <span class="entity-name">Amenajare intrare sediu</span>
+          <span class="entity-amount">€8,700</span>
+          <span class="pill" style="background:rgba(80,255,140,0.08);border:1px solid rgba(80,255,140,0.16);color:#5affa0;font-size:9px">Acceptată</span>
+        </div>
+      </div>
+
+      <!-- Facturi section -->
+      <div class="section-label" style="margin-top:14px">
+        <span>Facturi</span>
+        <a href="#" class="see-all">Toate →</a>
+      </div>
+      <div class="entity-list">
+        <div class="entity-row">
+          <span class="entity-ref">INV-208</span>
+          <span class="entity-name">Pardoseli Comerciale Brașov</span>
+          <span class="entity-amount">€18,200</span>
+          <span class="pill" style="background:rgba(255,80,80,0.10);border:1px solid rgba(255,80,80,0.18);color:#ff6b6b;font-size:9px">Restantă</span>
+        </div>
+        <div class="entity-row">
+          <span class="entity-ref">INV-204</span>
+          <span class="entity-name">Renovare birou etaj 2</span>
+          <span class="entity-amount">€14,200</span>
+          <span class="pill" style="background:rgba(80,255,140,0.08);border:1px solid rgba(80,255,140,0.16);color:#5affa0;font-size:9px">Plătită</span>
+        </div>
+      </div>
+
+      <!-- Proiect activ -->
+      <div class="section-label" style="margin-top:14px">
+        <span>Proiect Activ</span>
+        <a href="#" class="see-all">Toate →</a>
+      </div>
+      <a href="#" style="text-decoration:none;display:block">
+        <div class="project-mini">
+          <div class="project-mini-top">
+            <div>
+              <div class="project-mini-name">Pardoseli Comerciale Brașov</div>
+              <div class="project-mini-phase">Floor Installation · 8 zile rămase</div>
+            </div>
+            <span class="pill" style="background:rgba(255,255,255,0.10);border:1px solid rgba(255,255,255,0.16);color:rgba(255,255,255,0.85);font-size:9px">Active</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" style="width:91%;background:rgba(255,99,90,0.7)"></div>
+          </div>
+          <div class="project-mini-footer">
+            <span style="font-size:10px;font-weight:600;color:#ff6b6b">€19,200 / €17,000 — depășit</span>
+            <span style="font-size:10px;font-weight:600;color:rgba(255,255,255,0.50)">91%</span>
+          </div>
+        </div>
+      </a>
+
+      <!-- Activity feed -->
+      <div class="section-label" style="margin-top:14px"><span>Activitate</span></div>
+      <div class="activity-list">
+        <div class="act-row">
+          <div class="act-dot" style="background:#7eb8ff"></div>
+          <div><div class="act-text">Ofertă Q-048 trimisă — email confirmat</div><div class="act-time">28 Mai · 14:30</div></div>
+        </div>
+        <div class="act-row">
+          <div class="act-dot" style="background:#ff6b6b"></div>
+          <div><div class="act-text">Factură INV-208 scadentă neachitată — +14 zile</div><div class="act-time">25 Mai</div></div>
+        </div>
+        <div class="act-row">
+          <div class="act-dot" style="background:#5affa0"></div>
+          <div><div class="act-text">Ofertă Q-044 acceptată de Ion Andronic</div><div class="act-time">3 Iun · 14:00</div></div>
+        </div>
+        <div class="act-row">
+          <div class="act-dot" style="background:rgba(255,255,255,0.25)"></div>
+          <div><div class="act-text">Cont client creat — Andronic Group SRL</div><div class="act-time">Iun 2023</div></div>
+        </div>
+      </div>
+
+      <!-- FAB -->
+      <div style="display:flex;justify-content:flex-end;padding:12px 20px 0">
+        <div style="width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,0.92);display:flex;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(0,0,0,0.5)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="#000" stroke="none"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ── Screen 3: Actions Sheet ── -->
+<div>
+  <div class="label">Screen 3 — Actions Sheet (context-aware)</div>
+  <div class="phone">
+    <div class="screen">
+      <div class="status-bar"><span class="status-time">9:41</span></div>
+
+      <!-- dimmed bg -->
+      <div style="padding:12px 20px;opacity:0.25">
+        <div style="font-size:20px;font-weight:700;color:rgba(255,255,255,0.95)">Andronic Group SRL</div>
+        <div style="font-size:12px;color:rgba(255,255,255,0.45);margin-top:4px">București · VIP · din 2023</div>
+        <div style="height:80px;margin-top:12px;border-radius:16px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06)"></div>
+        <div style="height:60px;margin-top:8px;border-radius:16px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06)"></div>
+      </div>
+
+      <!-- Sheet -->
+      <div class="sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-title">Andronic Group SRL</div>
+
+        <!-- Contact card -->
+        <div class="contact-block">
+          <div class="cb-avatar" style="background:rgba(255,204,68,0.14);border:1px solid rgba(255,204,68,0.22);color:#ffcc44">AG</div>
+          <div class="cb-info">
+            <div class="cb-name">Ion Andronic</div>
+            <div class="cb-sub">+40 744 123 456 · office@andronic.ro</div>
+          </div>
+          <div class="cb-btns">
+            <!-- Phone SVG -->
+            <a class="cb-btn" href="#">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.65)" stroke-width="1.8" stroke-linecap="round">
+                <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.9 9.71a19.79 19.79 0 01-3.07-8.67A2 2 0 012.98 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L7.09 9.91a16 16 0 006.21 6.21l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/>
+              </svg>
+            </a>
+            <!-- Mail SVG -->
+            <a class="cb-btn" href="#">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.65)" stroke-width="1.8" stroke-linecap="round">
+                <rect x="2" y="4" width="20" height="16" rx="2"/>
+                <path d="M2 7l10 7 10-7"/>
+              </svg>
+            </a>
+          </div>
+        </div>
+
+        <!-- Action list -->
+        <div class="action-list">
+          <!-- New quote -->
+          <div class="action-row">
+            <div class="action-icon-box blue">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(126,184,255,0.9)" stroke-width="1.8" stroke-linecap="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="12" y1="18" x2="12" y2="12"/>
+                <line x1="9" y1="15" x2="15" y2="15"/>
+              </svg>
+            </div>
+            <span class="action-label-text blue">Ofertă Nouă</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.20)" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+          <!-- New invoice -->
+          <div class="action-row">
+            <div class="action-icon-box green">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(90,255,160,0.9)" stroke-width="1.8" stroke-linecap="round">
+                <rect x="2" y="3" width="20" height="18" rx="2"/>
+                <line x1="2" y1="9" x2="22" y2="9"/>
+                <line x1="8" y1="3" x2="8" y2="9"/>
+                <line x1="12" y1="14" x2="16" y2="14"/>
+                <line x1="12" y1="18" x2="16" y2="18"/>
+              </svg>
+            </div>
+            <span class="action-label-text green">Factură Nouă</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.20)" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+          <!-- Edit client -->
+          <div class="action-row">
+            <div class="action-icon-box white">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.75)" stroke-width="1.8" stroke-linecap="round">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+              </svg>
+            </div>
+            <span class="action-label-text white">Editează Client</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.20)" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+          <!-- View all quotes -->
+          <div class="action-row">
+            <div class="action-icon-box white">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.75)" stroke-width="1.8" stroke-linecap="round">
+                <line x1="8" y1="6" x2="21" y2="6"/>
+                <line x1="8" y1="12" x2="21" y2="12"/>
+                <line x1="8" y1="18" x2="21" y2="18"/>
+                <line x1="3" y1="6" x2="3.01" y2="6"/>
+                <line x1="3" y1="12" x2="3.01" y2="12"/>
+                <line x1="3" y1="18" x2="3.01" y2="18"/>
+              </svg>
+            </div>
+            <span class="action-label-text white">Toate Ofertele</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.20)" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+        </div>
+
+        <div class="cancel-btn">Anulează</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /scene -->
+
+<!-- Phase description -->
+<div style="max-width:900px;margin:0 auto;padding:40px 24px">
+  <h2 style="font-size:18px;font-weight:700;color:rgba(255,255,255,0.80);margin-bottom:20px;letter-spacing:-0.3px">Phase 17 — What Gets Built</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px">
+    <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:14px">
+      <div style="font-size:11px;font-weight:700;color:#7eb8ff;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:8px">API Routes (new)</div>
+      <div style="font-size:12px;color:rgba(255,255,255,0.50);line-height:1.9">
+        <code>/api/crm/clients/route.ts</code><br>
+        → GET list with status filter<br><br>
+        <code>/api/crm/clients/[id]/route.ts</code><br>
+        → GET detail with linked quotes, invoices, projects
+      </div>
+    </div>
+    <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:14px">
+      <div style="font-size:11px;font-weight:700;color:#5affa0;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:8px">UI Components (new)</div>
+      <div style="font-size:12px;color:rgba(255,255,255,0.50);line-height:1.9">
+        <code>crm/clients/page.tsx</code><br>
+        <code>crm/clients/ClientListClient.tsx</code><br>
+        KPI strip · filter chips · client cards<br><br>
+        <code>crm/clients/[id]/page.tsx</code><br>
+        <code>crm/clients/[id]/ClientDetailClient.tsx</code><br>
+        Hero · linked entities · activity · actions
+      </div>
+    </div>
+    <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:14px">
+      <div style="font-size:11px;font-weight:700;color:#ffcc44;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:8px">CRMWorkspace (updated)</div>
+      <div style="font-size:12px;color:rgba(255,255,255,0.50);line-height:1.9">
+        Client list rows → <code>Link</code> to<br>
+        <code>/crm/clients/[id]</code><br><br>
+        "Clienți" header → <code>Link</code> to<br>
+        <code>/crm/clients</code><br><br>
+        Consistent with Quotes (Phase 15)<br>
+        and Projects (Phase 16) linking
+      </div>
+    </div>
+  </div>
+  <div style="margin-top:14px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:14px">
+    <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.30);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:8px">Status &amp; Card Logic</div>
+    <div style="display:flex;gap:28px;font-size:12px;color:rgba(255,255,255,0.50)">
+      <div><span style="display:inline-block;width:8px;height:8px;border-radius:100px;background:#ffcc44;margin-right:6px;vertical-align:middle"></span>Gold left-border + pill → VIP client</div>
+      <div><span style="display:inline-block;width:8px;height:8px;border-radius:100px;background:#5affa0;margin-right:6px;vertical-align:middle"></span>Green pill → Active client</div>
+      <div><span style="display:inline-block;width:8px;height:8px;border-radius:100px;background:#7eb8ff;margin-right:6px;vertical-align:middle"></span>Blue pill → Lead / new client</div>
+      <div><span style="display:inline-block;width:8px;height:8px;border-radius:100px;background:rgba(255,255,255,0.20);margin-right:6px;vertical-align:middle"></span>Dim pill → Cold</div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
