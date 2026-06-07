@@ -1,0 +1,1310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phase 15 — CRM Quotes Deep Dive</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #000;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', sans-serif;
+    color: #fff;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 48px 24px;
+    gap: 16px;
+  }
+  h1 {
+    font-size: 13px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.35);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .screens {
+    display: flex;
+    gap: 32px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .screen-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+  .screen-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.35);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  /* iPhone frame */
+  .phone {
+    width: 320px;
+    height: 692px;
+    background: #0a0a0a;
+    border-radius: 44px;
+    border: 1px solid rgba(255,255,255,0.12);
+    box-shadow:
+      0 0 0 1px rgba(255,255,255,0.06) inset,
+      0 32px 80px rgba(0,0,0,0.8),
+      0 8px 24px rgba(0,0,0,0.5);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .phone::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 50%; transform: translateX(-50%);
+    width: 120px; height: 34px;
+    background: #000;
+    border-radius: 0 0 20px 20px;
+    z-index: 100;
+  }
+  .phone::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: rgba(255,255,255,0.18);
+    border-radius: 44px 44px 0 0;
+    z-index: 101;
+  }
+  .phone-content {
+    flex: 1;
+    overflow: hidden;
+    padding-top: 44px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  /* tab bar */
+  .tab-bar {
+    height: 64px;
+    background: rgba(255,255,255,0.06);
+    backdrop-filter: blur(32px);
+    border-top: 1px solid rgba(255,255,255,0.10);
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    padding: 0 8px;
+    flex-shrink: 0;
+  }
+  .tab-item { display: flex; flex-direction: column; align-items: center; gap: 3px; opacity: 0.35; }
+  .tab-item.active { opacity: 1; }
+  .tab-dot { width: 4px; height: 4px; background: #fff; border-radius: 100%; margin-top: 2px; }
+  .tab-icon { width: 22px; height: 22px; }
+
+  /* status pills */
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border-radius: 100px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .pill-draft    { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.14); color: rgba(255,255,255,0.45); }
+  .pill-sent     { background: rgba(100,160,255,0.12); border: 1px solid rgba(100,160,255,0.24); color: #7eb8ff; }
+  .pill-accepted { background: rgba(80,255,140,0.10); border: 1px solid rgba(80,255,140,0.20); color: #5affa0; }
+  .pill-rejected { background: rgba(255,60,60,0.12);  border: 1px solid rgba(255,80,80,0.22);  color: #ff6b6b; }
+  .pill-expired  { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.10); color: rgba(255,255,255,0.30); }
+
+  /* ══════════════════════════════════════════
+     SCREEN 1 — Quote List
+  ══════════════════════════════════════════ */
+  .s1-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 16px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  .s1-scroll::-webkit-scrollbar { display: none; }
+
+  .list-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 0 14px;
+  }
+  .list-title { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; color: rgba(255,255,255,0.95); }
+  .add-btn {
+    width: 32px; height: 32px;
+    background: rgba(255,255,255,0.92);
+    border-radius: 100px;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  /* KPI strip */
+  .kpi-strip {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .kpi-tile {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 16px;
+    padding: 10px 10px 8px;
+  }
+  .kpi-value { font-size: 14px; font-weight: 700; color: rgba(255,255,255,0.95); letter-spacing: -0.3px; }
+  .kpi-value.blue  { color: #7eb8ff; }
+  .kpi-value.green { color: #5affa0; }
+  .kpi-label { font-size: 9px; font-weight: 500; color: rgba(255,255,255,0.35); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 2px; }
+
+  /* filter chips */
+  .filter-row {
+    display: flex; gap: 6px;
+    margin-bottom: 12px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+  .filter-row::-webkit-scrollbar { display: none; }
+  .chip {
+    flex-shrink: 0;
+    padding: 5px 12px;
+    border-radius: 100px;
+    font-size: 11px; font-weight: 500;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.10);
+    color: rgba(255,255,255,0.55);
+  }
+  .chip.active {
+    background: rgba(255,255,255,0.14);
+    border-color: rgba(255,255,255,0.28);
+    color: rgba(255,255,255,0.95);
+  }
+
+  /* quote cards */
+  .quote-card {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 16px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    position: relative;
+    overflow: hidden;
+  }
+  .quote-card.sent::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: linear-gradient(180deg,#5090ff,#7eb8ff);
+    border-radius: 16px 0 0 16px;
+  }
+  .quote-card.expiring::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: linear-gradient(180deg,#ffaa00,#ffcc44);
+    border-radius: 16px 0 0 16px;
+  }
+  .qc-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  .qc-num { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.40); letter-spacing: 0.03em; margin-bottom: 2px; }
+  .qc-name { font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.92); }
+  .qc-project { font-size: 11px; color: rgba(255,255,255,0.35); margin-top: 1px; }
+  .qc-amount { font-size: 17px; font-weight: 700; letter-spacing: -0.3px; color: rgba(255,255,255,0.92); }
+  .qc-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .qc-validity {
+    font-size: 10px;
+    color: rgba(255,255,255,0.35);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .qc-validity.urgent { color: #ffcc44; }
+  .qc-chevron { color: rgba(255,255,255,0.20); }
+
+  /* ══════════════════════════════════════════
+     SCREEN 2 — Quote Detail
+  ══════════════════════════════════════════ */
+  .s2-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 16px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .s2-scroll::-webkit-scrollbar { display: none; }
+
+  .back-row {
+    display: flex; align-items: center; gap: 6px;
+    padding: 2px 0 6px;
+  }
+  .back-label { font-size: 13px; color: rgba(255,255,255,0.55); }
+
+  /* hero card */
+  .hero-card {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 20px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .hero-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+  .hero-num { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.40); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 3px; }
+  .hero-client { font-size: 19px; font-weight: 700; letter-spacing: -0.4px; color: rgba(255,255,255,0.95); }
+  .hero-amount { font-size: 26px; font-weight: 800; letter-spacing: -0.8px; color: rgba(255,255,255,0.95); line-height: 1; }
+  .hero-vat { font-size: 10px; color: rgba(255,255,255,0.35); text-align: right; margin-top: 3px; }
+  .hero-meta {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .meta-item {}
+  .meta-lbl { font-size: 9px; text-transform: uppercase; letter-spacing: 0.06em; color: rgba(255,255,255,0.35); }
+  .meta-val { font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.80); margin-top: 2px; }
+  .meta-val.urgent { color: #ffcc44; }
+
+  /* client block */
+  .client-block {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px;
+    padding: 11px 13px;
+    display: flex;
+    align-items: center;
+    gap: 11px;
+  }
+  .client-avatar {
+    width: 40px; height: 40px;
+    background: rgba(255,255,255,0.10);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700;
+    flex-shrink: 0;
+  }
+  .client-info { flex: 1; min-width: 0; }
+  .client-name { font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.90); }
+  .client-sub  { font-size: 10px; color: rgba(255,255,255,0.40); margin-top: 1px; }
+  .client-actions { display: flex; gap: 6px; }
+  .action-circle {
+    width: 30px; height: 30px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 100px;
+    display: flex; align-items: center; justify-content: center;
+    color: rgba(255,255,255,0.65);
+  }
+
+  /* section label */
+  .sec-lbl {
+    font-size: 11px; font-weight: 600;
+    color: rgba(255,255,255,0.40);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+  }
+
+  /* line items */
+  .li-card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+  .li-row {
+    display: flex;
+    align-items: center;
+    padding: 9px 13px;
+    gap: 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .li-row:last-child { border-bottom: none; }
+  .li-idx {
+    width: 20px; height: 20px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 6px;
+    font-size: 10px; font-weight: 700;
+    color: rgba(255,255,255,0.50);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .li-info { flex: 1; min-width: 0; }
+  .li-name { font-size: 12px; font-weight: 500; color: rgba(255,255,255,0.85); }
+  .li-qty  { font-size: 10px; color: rgba(255,255,255,0.35); margin-top: 1px; }
+  .li-price { font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.88); }
+
+  /* totals */
+  .totals-card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+  .total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 13px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .total-row:last-child { border-bottom: none; background: rgba(255,255,255,0.03); }
+  .t-lbl { font-size: 12px; color: rgba(255,255,255,0.50); }
+  .t-val { font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.80); }
+  .total-row.grand .t-lbl { font-size: 13px; font-weight: 700; color: rgba(255,255,255,0.75); }
+  .total-row.grand .t-val { font-size: 16px; font-weight: 800; color: rgba(255,255,255,0.95); letter-spacing: -0.3px; }
+
+  /* approval chain */
+  .approval-chain {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+  .approval-step {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 13px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .approval-step:last-child { border-bottom: none; }
+  .appr-dot {
+    width: 22px; height: 22px;
+    border-radius: 100%;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .appr-dot.done    { background: rgba(90,255,160,0.20); color: #5affa0; border: 1px solid rgba(90,255,160,0.30); }
+  .appr-dot.pending { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.35); border: 1px solid rgba(255,255,255,0.12); }
+  .appr-dot.waiting { background: rgba(255,180,0,0.12); color: #ffcc44; border: 1px solid rgba(255,180,0,0.22); }
+  .appr-info { flex: 1; }
+  .appr-name { font-size: 12px; font-weight: 500; color: rgba(255,255,255,0.80); }
+  .appr-role { font-size: 10px; color: rgba(255,255,255,0.35); margin-top: 1px; }
+  .appr-status { font-size: 10px; font-weight: 600; }
+  .appr-status.green  { color: #5affa0; }
+  .appr-status.yellow { color: #ffcc44; }
+  .appr-status.dim    { color: rgba(255,255,255,0.25); }
+
+  /* activity */
+  .activity-feed { display: flex; flex-direction: column; gap: 0; }
+  .act-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 9px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .act-item:last-child { border-bottom: none; }
+  .act-dot {
+    width: 8px; height: 8px;
+    border-radius: 100%;
+    margin-top: 4px;
+    flex-shrink: 0;
+  }
+  .act-main { font-size: 12px; color: rgba(255,255,255,0.78); line-height: 1.35; }
+  .act-time { font-size: 10px; color: rgba(255,255,255,0.28); margin-top: 2px; }
+
+  /* ══════════════════════════════════════════
+     SCREEN 3 — Quote SnapSheet
+  ══════════════════════════════════════════ */
+  .sheet-bg {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    background: rgba(0,0,0,0.55);
+    backdrop-filter: blur(6px);
+    position: relative;
+  }
+  .blur-lines {
+    position: absolute;
+    inset: 0;
+    padding: 14px 18px;
+    overflow: hidden;
+    opacity: 0.30;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .bl { height: 9px; background: rgba(255,255,255,0.15); border-radius: 4px; }
+
+  .snap-sheet {
+    background: rgba(16,16,16,0.97);
+    backdrop-filter: blur(64px);
+    border-radius: 32px 32px 0 0;
+    border-top: 1px solid rgba(255,255,255,0.14);
+    box-shadow: 0 -24px 64px rgba(0,0,0,0.7);
+    padding: 12px 20px 24px;
+  }
+  .sheet-handle {
+    width: 36px; height: 4px;
+    background: rgba(255,255,255,0.20);
+    border-radius: 100px;
+    margin: 0 auto 16px;
+  }
+  .sheet-inv-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+  }
+  .sheet-inv-num { font-size: 13px; font-weight: 700; color: rgba(255,255,255,0.88); }
+  .sheet-inv-sub { font-size: 11px; color: rgba(255,255,255,0.38); margin-top: 2px; }
+  .sheet-inv-amt { font-size: 18px; font-weight: 800; letter-spacing: -0.4px; color: rgba(255,255,255,0.95); }
+
+  /* primary CTA */
+  .cta-primary {
+    width: 100%; height: 46px;
+    background: rgba(255,255,255,0.92);
+    border-radius: 14px;
+    border: none;
+    font-size: 14px; font-weight: 700;
+    color: #000;
+    display: flex; align-items: center; justify-content: center;
+    gap: 8px;
+    margin-bottom: 10px;
+    cursor: pointer;
+  }
+
+  /* action rows */
+  .sheet-divider { height: 1px; background: rgba(255,255,255,0.07); margin: 4px 0 6px; }
+  .sheet-action {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 9px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .sheet-action:last-child { border-bottom: none; }
+  .sa-icon {
+    width: 34px; height: 34px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .sa-icon.neutral { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.65); }
+  .sa-icon.green   { background: rgba(90,255,160,0.12);  color: #5affa0; }
+  .sa-icon.red     { background: rgba(255,60,60,0.14);   color: #ff6b6b; }
+  .sa-icon.blue    { background: rgba(100,160,255,0.12); color: #7eb8ff; }
+  .sa-text { flex: 1; }
+  .sa-label { font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.85); }
+  .sa-sub   { font-size: 10px; color: rgba(255,255,255,0.35); margin-top: 1px; }
+  .sa-label.red-lbl   { color: #ff6b6b; }
+  .sa-label.green-lbl { color: #5affa0; }
+  .sa-chevron { color: rgba(255,255,255,0.22); }
+
+  /* ══════════════════════════════════════════
+     SCREEN 4 — CRM Workspace
+  ══════════════════════════════════════════ */
+  .ws-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 16px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  .ws-scroll::-webkit-scrollbar { display: none; }
+
+  .ws-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: 6px 0 14px;
+  }
+  .ws-sub  { font-size: 12px; font-weight: 500; color: rgba(255,255,255,0.35); margin-bottom: 2px; }
+  .ws-title { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; color: rgba(255,255,255,0.95); }
+  .ws-add {
+    width: 32px; height: 32px;
+    background: rgba(255,255,255,0.92);
+    border-radius: 100%;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  /* stats row */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .stat-tile {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 16px;
+    padding: 11px 10px 9px;
+  }
+  .st-val  { font-size: 16px; font-weight: 700; letter-spacing: -0.4px; color: rgba(255,255,255,0.95); }
+  .st-lbl  { font-size: 9px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; color: rgba(255,255,255,0.35); margin-top: 2px; }
+
+  /* section title */
+  .sec-title-row {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: 14px; margin-bottom: 8px;
+  }
+  .sec-title { font-size: 13px; font-weight: 700; color: rgba(255,255,255,0.80); }
+  .sec-link  { font-size: 11px; font-weight: 500; color: rgba(255,255,255,0.38); display: flex; align-items: center; gap: 2px; }
+
+  /* client card */
+  .client-card {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 16px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .cc-avatar {
+    width: 38px; height: 38px;
+    background: rgba(255,255,255,0.10);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700;
+    flex-shrink: 0;
+  }
+  .cc-info { flex: 1; min-width: 0; }
+  .cc-name { font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.88); }
+  .cc-sub  { font-size: 10px; color: rgba(255,255,255,0.38); margin-top: 1px; }
+  .cc-badges { display: flex; gap: 5px; align-items: center; }
+  .cc-badge {
+    padding: 3px 7px;
+    border-radius: 100px;
+    font-size: 10px;
+    font-weight: 600;
+  }
+  .badge-quote {
+    background: rgba(100,160,255,0.12);
+    border: 1px solid rgba(100,160,255,0.22);
+    color: #7eb8ff;
+  }
+  .badge-proj {
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.12);
+    color: rgba(255,255,255,0.50);
+  }
+
+  /* pipeline column */
+  .pipeline-wrap {
+    margin-top: 4px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+  .pipeline-wrap::-webkit-scrollbar { display: none; }
+  .pipeline-inner {
+    display: flex;
+    gap: 10px;
+    width: max-content;
+  }
+  .pipeline-col {
+    width: 140px;
+    flex-shrink: 0;
+  }
+  .pipeline-col-title {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: rgba(255,255,255,0.35);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .col-count {
+    font-size: 10px;
+    font-weight: 700;
+    background: rgba(255,255,255,0.10);
+    border-radius: 100px;
+    padding: 1px 6px;
+    color: rgba(255,255,255,0.50);
+  }
+  .deal-card {
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 12px;
+    padding: 9px 10px;
+    margin-bottom: 6px;
+  }
+  .deal-name { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.82); line-height: 1.3; }
+  .deal-val  { font-size: 12px; font-weight: 700; color: rgba(255,255,255,0.92); margin-top: 4px; letter-spacing: -0.2px; }
+  .deal-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    margin-top: 5px;
+    padding: 2px 6px;
+    border-radius: 6px;
+    font-size: 9px;
+    font-weight: 600;
+  }
+  .chip-blue   { background: rgba(100,160,255,0.12); color: #7eb8ff; }
+  .chip-yellow { background: rgba(255,180,0,0.12); color: #ffcc44; }
+  .chip-green  { background: rgba(90,255,160,0.12); color: #5affa0; }
+</style>
+</head>
+<body>
+
+<h1>Phase 15 — CRM Quotes Deep Dive</h1>
+
+<div class="screens">
+
+  <!-- ════════════════════════════════════════
+       SCREEN 1 — Quote List
+  ════════════════════════════════════════ -->
+  <div class="screen-wrap">
+    <div class="screen-label">Quote List</div>
+    <div class="phone">
+      <div class="phone-content">
+        <div class="s1-scroll">
+
+          <div class="list-header">
+            <h2 class="list-title">Oferte</h2>
+            <div class="add-btn">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.2" stroke-linecap="round">
+                <path d="M12 5v14M5 12h14"/>
+              </svg>
+            </div>
+          </div>
+
+          <!-- KPI strip -->
+          <div class="kpi-strip">
+            <div class="kpi-tile">
+              <div class="kpi-value blue">€84,500</div>
+              <div class="kpi-label">Pipeline</div>
+            </div>
+            <div class="kpi-tile">
+              <div class="kpi-value green">68%</div>
+              <div class="kpi-label">Accept. rate</div>
+            </div>
+            <div class="kpi-tile">
+              <div class="kpi-value">11z</div>
+              <div class="kpi-label">Avg. close</div>
+            </div>
+          </div>
+
+          <!-- filters -->
+          <div class="filter-row">
+            <div class="chip active">Toate</div>
+            <div class="chip">Trimise <span style="color:#7eb8ff;font-weight:700;"> 4</span></div>
+            <div class="chip">Ciornă</div>
+            <div class="chip">Acceptate</div>
+            <div class="chip">Respinse</div>
+          </div>
+
+          <!-- quote cards -->
+          <div class="quote-card sent">
+            <div class="qc-top" style="padding-left:4px;">
+              <div>
+                <div class="qc-num">Q-048</div>
+                <div class="qc-name">Andronic Group SRL</div>
+                <div class="qc-project">Renovare birouri București</div>
+              </div>
+              <div style="text-align:right;">
+                <div class="qc-amount">€24,400</div>
+                <div style="margin-top:5px;"><span class="pill pill-sent">Trimisă</span></div>
+              </div>
+            </div>
+            <div class="qc-meta" style="padding-left:4px;">
+              <div class="qc-validity urgent">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                  <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
+                </svg>
+                Expiră în 3 zile
+              </div>
+              <span class="qc-chevron">
+                <svg width="7" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+              </span>
+            </div>
+          </div>
+
+          <div class="quote-card sent">
+            <div class="qc-top" style="padding-left:4px;">
+              <div>
+                <div class="qc-num">Q-047</div>
+                <div class="qc-name">Biroul Construct SRL</div>
+                <div class="qc-project">Amenajare spații comerciale</div>
+              </div>
+              <div style="text-align:right;">
+                <div class="qc-amount">€18,200</div>
+                <div style="margin-top:5px;"><span class="pill pill-sent">Trimisă</span></div>
+              </div>
+            </div>
+            <div class="qc-meta" style="padding-left:4px;">
+              <div class="qc-validity">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                Valabilă 12 zile
+              </div>
+              <span class="qc-chevron"><svg width="7" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></span>
+            </div>
+          </div>
+
+          <div class="quote-card">
+            <div class="qc-top">
+              <div>
+                <div class="qc-num">Q-046</div>
+                <div class="qc-name">Radu Construct SRL</div>
+                <div class="qc-project">Bucătărie industrială Timișoara</div>
+              </div>
+              <div style="text-align:right;">
+                <div class="qc-amount">€31,000</div>
+                <div style="margin-top:5px;"><span class="pill pill-draft">Ciornă</span></div>
+              </div>
+            </div>
+            <div class="qc-meta">
+              <div class="qc-validity">Netrimitere · modificat acum 2 zile</div>
+              <span class="qc-chevron"><svg width="7" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></span>
+            </div>
+          </div>
+
+          <div class="quote-card sent">
+            <div class="qc-top" style="padding-left:4px;">
+              <div>
+                <div class="qc-num">Q-045</div>
+                <div class="qc-name">Prima Biroul SRL</div>
+                <div class="qc-project">Renovare apartament Floreasca</div>
+              </div>
+              <div style="text-align:right;">
+                <div class="qc-amount">€10,900</div>
+                <div style="margin-top:5px;"><span class="pill pill-sent">Trimisă</span></div>
+              </div>
+            </div>
+            <div class="qc-meta" style="padding-left:4px;">
+              <div class="qc-validity">Valabilă 8 zile</div>
+              <span class="qc-chevron"><svg width="7" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></span>
+            </div>
+          </div>
+
+          <div class="quote-card">
+            <div class="qc-top">
+              <div>
+                <div class="qc-num">Q-044</div>
+                <div class="qc-name">Alfa Business SRL</div>
+                <div class="qc-project">Pardoseli epoxidice hală</div>
+              </div>
+              <div style="text-align:right;">
+                <div class="qc-amount" style="color:#5affa0;">€8,700</div>
+                <div style="margin-top:5px;"><span class="pill pill-accepted">Acceptată</span></div>
+              </div>
+            </div>
+            <div class="qc-meta">
+              <div class="qc-validity" style="color:rgba(255,255,255,0.30);">Acceptată · 3 iun 2026</div>
+              <span class="qc-chevron"><svg width="7" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></span>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="tab-bar">
+          <div class="tab-item"><svg class="tab-icon" viewBox="0 0 22 22" fill="none"><rect x="3" y="3" width="7" height="7" rx="2" fill="currentColor" opacity="0.4"/><rect x="12" y="3" width="7" height="7" rx="2" fill="currentColor" opacity="0.4"/><rect x="3" y="12" width="7" height="7" rx="2" fill="currentColor" opacity="0.4"/><rect x="12" y="12" width="7" height="7" rx="2" fill="currentColor" opacity="0.4"/></svg></div>
+          <div class="tab-item active"><svg class="tab-icon" viewBox="0 0 22 22" fill="none"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z" fill="currentColor" opacity="0.9"/></svg><div class="tab-dot"></div></div>
+          <div class="tab-item"><svg class="tab-icon" viewBox="0 0 22 22" fill="none"><rect x="3" y="5" width="16" height="12" rx="3" stroke="currentColor" stroke-width="1.5" opacity="0.4"/><path d="M7 9H15M7 13H11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.4"/></svg></div>
+          <div class="tab-item"><svg class="tab-icon" viewBox="0 0 22 22" fill="none"><path d="M4 16L8 12L11 15L14 10L18 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.4"/></svg></div>
+          <div class="tab-item"><svg class="tab-icon" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="9" r="5" stroke="currentColor" stroke-width="1.5" opacity="0.4"/><path d="M4 19C4 15.5 7 13 11 13C15 13 18 15.5 18 19" stroke="currentColor" stroke-width="1.5" opacity="0.4"/></svg></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════
+       SCREEN 2 — Quote Detail
+  ════════════════════════════════════════ -->
+  <div class="screen-wrap">
+    <div class="screen-label">Quote Detail</div>
+    <div class="phone">
+      <div class="phone-content">
+        <div class="s2-scroll">
+
+          <div class="back-row">
+            <svg width="9" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.40)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+            <span class="back-label">Oferte</span>
+          </div>
+
+          <!-- hero -->
+          <div class="hero-card">
+            <div class="hero-top">
+              <div>
+                <div class="hero-num">Q-048</div>
+                <div class="hero-client">Andronic Group</div>
+              </div>
+              <div style="text-align:right;">
+                <div class="hero-amount">€24,400</div>
+                <div class="hero-vat">incl. 19% TVA</div>
+                <div style="margin-top:5px;"><span class="pill pill-sent">Trimisă</span></div>
+              </div>
+            </div>
+            <div class="hero-meta">
+              <div>
+                <div class="meta-lbl">Emisă</div>
+                <div class="meta-val">28 mai 2026</div>
+              </div>
+              <div>
+                <div class="meta-lbl">Expiră</div>
+                <div class="meta-val urgent">10 iun 2026 · 3z</div>
+              </div>
+              <div>
+                <div class="meta-lbl">Proiect</div>
+                <div class="meta-val" style="font-size:11px;">Renovare birouri Buc.</div>
+              </div>
+              <div>
+                <div class="meta-lbl">Versiune</div>
+                <div class="meta-val">v2.1</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- client -->
+          <div class="client-block">
+            <div class="client-avatar">AG</div>
+            <div class="client-info">
+              <div class="client-name">Andronic Group SRL</div>
+              <div class="client-sub">Ion Andronic · CIF RO12345678</div>
+            </div>
+            <div class="client-actions">
+              <div class="action-circle">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2A19.79 19.79 0 0 1 11.39 19a19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 3.12 4.18 2 2 0 0 1 5.09 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L9.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+              </div>
+              <div class="action-circle">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+              </div>
+            </div>
+          </div>
+
+          <!-- line items -->
+          <div class="sec-lbl">Articole ofertă</div>
+          <div class="li-card">
+            <div class="li-row">
+              <div class="li-idx">1</div>
+              <div class="li-info">
+                <div class="li-name">Manoperă renovare generală</div>
+                <div class="li-qty">200 ore × €55/h</div>
+              </div>
+              <div class="li-price">€11,000</div>
+            </div>
+            <div class="li-row">
+              <div class="li-idx">2</div>
+              <div class="li-info">
+                <div class="li-name">Materiale construcții</div>
+                <div class="li-qty">1 lot</div>
+              </div>
+              <div class="li-price">€5,800</div>
+            </div>
+            <div class="li-row">
+              <div class="li-idx">3</div>
+              <div class="li-info">
+                <div class="li-name">Instalații electrice</div>
+                <div class="li-qty">40 ore × €52/h</div>
+              </div>
+              <div class="li-price">€2,080</div>
+            </div>
+            <div class="li-row">
+              <div class="li-idx">4</div>
+              <div class="li-info">
+                <div class="li-name">Project management</div>
+                <div class="li-qty">1 lună</div>
+              </div>
+              <div class="li-price">€1,620</div>
+            </div>
+          </div>
+
+          <!-- totals -->
+          <div class="totals-card">
+            <div class="total-row">
+              <span class="t-lbl">Subtotal</span>
+              <span class="t-val">€20,504</span>
+            </div>
+            <div class="total-row">
+              <span class="t-lbl">TVA 19%</span>
+              <span class="t-val">€3,895.76</span>
+            </div>
+            <div class="total-row grand">
+              <span class="t-lbl">Total ofertă</span>
+              <span class="t-val">€24,400</span>
+            </div>
+          </div>
+
+          <!-- approval chain -->
+          <div class="sec-lbl">Lanț de aprobare</div>
+          <div class="approval-chain">
+            <div class="approval-step">
+              <div class="appr-dot done">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <div class="appr-info">
+                <div class="appr-name">Elena Popescu</div>
+                <div class="appr-role">Project Manager</div>
+              </div>
+              <div class="appr-status green">Aprobat</div>
+            </div>
+            <div class="approval-step">
+              <div class="appr-dot waiting">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+              </div>
+              <div class="appr-info">
+                <div class="appr-name">Mihai Director</div>
+                <div class="appr-role">Director General</div>
+              </div>
+              <div class="appr-status yellow">În așteptare</div>
+            </div>
+            <div class="approval-step">
+              <div class="appr-dot pending">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="1"/></svg>
+              </div>
+              <div class="appr-info">
+                <div class="appr-name">Ana CFO</div>
+                <div class="appr-role">CFO</div>
+              </div>
+              <div class="appr-status dim">Blocat</div>
+            </div>
+          </div>
+
+          <!-- activity -->
+          <div class="sec-lbl">Activitate</div>
+          <div class="activity-feed">
+            <div class="act-item">
+              <div class="act-dot" style="background:#7eb8ff;box-shadow:0 0 5px rgba(100,160,255,0.6);"></div>
+              <div>
+                <div class="act-main">Ofertă trimisă clientului — email confirmat</div>
+                <div class="act-time">28 mai 2026 · 14:30 · Admin</div>
+              </div>
+            </div>
+            <div class="act-item">
+              <div class="act-dot" style="background:#5affa0;box-shadow:0 0 5px rgba(80,255,140,0.5);"></div>
+              <div>
+                <div class="act-main">Aprobată de Elena Popescu (PM)</div>
+                <div class="act-time">27 mai 2026 · 11:20</div>
+              </div>
+            </div>
+            <div class="act-item">
+              <div class="act-dot" style="background:rgba(255,255,255,0.40);"></div>
+              <div>
+                <div class="act-main">Versiunea v2.1 salvată — adăugate 2 articole</div>
+                <div class="act-time">26 mai 2026 · 16:45 · Admin</div>
+              </div>
+            </div>
+            <div class="act-item">
+              <div class="act-dot" style="background:rgba(255,255,255,0.20);"></div>
+              <div>
+                <div class="act-main">Ofertă Q-048 creată</div>
+                <div class="act-time">25 mai 2026 · 09:00 · Admin</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- FAB -->
+        <div style="position:absolute;bottom:76px;right:20px;width:48px;height:48px;background:rgba(255,255,255,0.92);border-radius:100%;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(0,0,0,0.5);z-index:40;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        </div>
+
+        <div class="tab-bar">
+          <div class="tab-item"><svg class="tab-icon" viewBox="0 0 22 22" fill="none"><rect x="3" y="3" width="7" height="7" rx="2" fill="currentColor" opacity="0.4"/><rect x="12" y="3" width="7" height="7" rx="2" fill="currentColor" opacity="0.4"/><rect x="3" y="12" width="7" height="7" rx="2" fill="currentColor" opacity="0.4"/><rect x="12" y="12" width="7" height="7" rx="2" fill="currentColor" opacity="0.4"/></svg></div>
+          <div class="tab-item active"><svg class="tab-icon" viewBox="0 0 22 22" fill="none"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z" fill="currentColor" opacity="0.9"/></svg><div class="tab-dot"></div></div>
+          <div class="tab-item"><svg class="tab-icon" viewBox="0 0 22 22" fill="none"><rect x="3" y="5" width="16" height="12" rx="3" stroke="currentColor" stroke-width="1.5" opacity="0.4"/><path d="M7 9H15M7 13H11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.4"/></svg></div>
+          <div class="tab-item"><svg class="tab-icon" viewBox="0 0 22 22" fill="none"><path d="M4 16L8 12L11 15L14 10L18 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.4"/></svg></div>
+          <div class="tab-item"><svg class="tab-icon" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="9" r="5" stroke="currentColor" stroke-width="1.5" opacity="0.4"/><path d="M4 19C4 15.5 7 13 11 13C15 13 18 15.5 18 19" stroke="currentColor" stroke-width="1.5" opacity="0.4"/></svg></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════
+       SCREEN 3 — Quote SnapSheet
+  ════════════════════════════════════════ -->
+  <div class="screen-wrap">
+    <div class="screen-label">Quote SnapSheet</div>
+    <div class="phone">
+      <div class="phone-content" style="padding-top:0;">
+        <div class="sheet-bg">
+          <div class="blur-lines">
+            <div class="bl" style="width:45%;height:20px;opacity:0.5;"></div>
+            <div class="bl"></div>
+            <div class="bl" style="width:70%;"></div>
+            <div class="bl" style="width:55%;"></div>
+            <div class="bl"></div>
+            <div class="bl" style="width:80%;"></div>
+            <div class="bl" style="width:60%;"></div>
+            <div class="bl"></div>
+            <div class="bl" style="width:45%;"></div>
+          </div>
+
+          <div class="snap-sheet">
+            <div class="sheet-handle"></div>
+
+            <!-- invoice summary -->
+            <div class="sheet-inv-row">
+              <div>
+                <div class="sheet-inv-num">Q-048 · Andronic Group</div>
+                <div class="sheet-inv-sub">Renovare birouri București</div>
+              </div>
+              <div style="text-align:right;">
+                <div class="sheet-inv-amt">€24,400</div>
+                <div style="margin-top:4px;"><span class="pill pill-sent">Trimisă</span></div>
+              </div>
+            </div>
+
+            <!-- primary CTA: Send for Approval -->
+            <button class="cta-primary">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+              Solicită Aprobare
+            </button>
+
+            <div class="sheet-divider"></div>
+
+            <!-- action rows -->
+            <div class="sheet-action">
+              <div class="sa-icon blue">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+              </div>
+              <div class="sa-text">
+                <div class="sa-label">Trimite Clientului</div>
+                <div class="sa-sub">Email · Ion Andronic</div>
+              </div>
+              <span class="sa-chevron"><svg width="7" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></span>
+            </div>
+
+            <div class="sheet-action">
+              <div class="sa-icon green">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <div class="sa-text">
+                <div class="sa-label green-lbl">Marchează Acceptată</div>
+                <div class="sa-sub">Confirmat de client</div>
+              </div>
+              <span class="sa-chevron"><svg width="7" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></span>
+            </div>
+
+            <div class="sheet-action">
+              <div class="sa-icon neutral">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+              </div>
+              <div class="sa-text">
+                <div class="sa-label">Convertește în Proiect</div>
+                <div class="sa-sub">Creează proiect din ofertă</div>
+              </div>
+              <span class="sa-chevron"><svg width="7" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></span>
+            </div>
+
+            <div class="sheet-action">
+              <div class="sa-icon neutral">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              </div>
+              <div class="sa-text">
+                <div class="sa-label">Descarcă PDF</div>
+                <div class="sa-sub">Q-048-v2.1.pdf · 112 KB</div>
+              </div>
+              <span class="sa-chevron"><svg width="7" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></span>
+            </div>
+
+            <div class="sheet-action">
+              <div class="sa-icon red">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+              </div>
+              <div class="sa-text">
+                <div class="sa-label red-lbl">Marchează Respinsă</div>
+                <div class="sa-sub">Necesită motiv</div>
+              </div>
+              <span class="sa-chevron"><svg width="7" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></span>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════
+       SCREEN 4 — CRM Workspace (updated)
+  ════════════════════════════════════════ -->
+  <div class="screen-wrap">
+    <div class="screen-label">CRM Workspace (updated)</div>
+    <div class="phone">
+      <div class="phone-content">
+        <div class="ws-scroll">
+
+          <div class="ws-header">
+            <div>
+              <div class="ws-sub">PRV</div>
+              <div class="ws-title">CRM</div>
+            </div>
+            <div class="ws-add">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            </div>
+          </div>
+
+          <!-- stats -->
+          <div class="stats-row">
+            <div class="stat-tile">
+              <div class="st-val">24</div>
+              <div class="st-lbl">Clienți</div>
+            </div>
+            <div class="stat-tile">
+              <div class="st-val" style="color:#7eb8ff;">€84.5K</div>
+              <div class="st-lbl">Pipeline</div>
+            </div>
+            <div class="stat-tile">
+              <div class="st-val" style="color:#5affa0;">68%</div>
+              <div class="st-lbl">Accept.</div>
+            </div>
+          </div>
+
+          <!-- clients with quote badges -->
+          <div class="sec-title-row">
+            <div class="sec-title">Clienți activi</div>
+            <div class="sec-link">
+              Vezi toți
+              <svg width="5" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+            </div>
+          </div>
+
+          <div class="client-card">
+            <div class="cc-avatar">AG</div>
+            <div class="cc-info">
+              <div class="cc-name">Andronic Group SRL</div>
+              <div class="cc-sub">3 proiecte · €67K valoare totală</div>
+            </div>
+            <div class="cc-badges">
+              <!-- quote badge links to /crm/quotes?clientId=c1 -->
+              <div class="cc-badge badge-quote">2 oferte</div>
+              <div class="cc-badge badge-proj">3 pr.</div>
+            </div>
+          </div>
+
+          <div class="client-card">
+            <div class="cc-avatar">BC</div>
+            <div class="cc-info">
+              <div class="cc-name">Biroul Construct SRL</div>
+              <div class="cc-sub">1 proiect · €18K valoare</div>
+            </div>
+            <div class="cc-badges">
+              <div class="cc-badge badge-quote">1 ofertă</div>
+              <div class="cc-badge badge-proj">1 pr.</div>
+            </div>
+          </div>
+
+          <div class="client-card">
+            <div class="cc-avatar">RC</div>
+            <div class="cc-info">
+              <div class="cc-name">Radu Construct SRL</div>
+              <div class="cc-sub">Ofertă în progres · €31K</div>
+            </div>
+            <div class="cc-badges">
+              <div class="cc-badge badge-quote">1 ofertă</div>
+            </div>
+          </div>
+
+          <!-- pipeline -->
+          <div class="sec-title-row" style="margin-top:6px;">
+            <div class="sec-title">Pipeline oferte</div>
+            <div class="sec-link">
+              Toate
+              <svg width="5" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+            </div>
+          </div>
+
+          <div class="pipeline-wrap">
+            <div class="pipeline-inner">
+
+              <div class="pipeline-col">
+                <div class="pipeline-col-title">
+                  Ciornă
+                  <span class="col-count">1</span>
+                </div>
+                <div class="deal-card">
+                  <div class="deal-name">Bucătărie ind. Timișoara</div>
+                  <div class="deal-val">€31,000</div>
+                  <div class="deal-chip chip-yellow">
+                    <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                    Netrimitere
+                  </div>
+                </div>
+              </div>
+
+              <div class="pipeline-col">
+                <div class="pipeline-col-title">
+                  Trimisă
+                  <span class="col-count">3</span>
+                </div>
+                <div class="deal-card">
+                  <div class="deal-name">Renovare birouri Buc.</div>
+                  <div class="deal-val">€24,400</div>
+                  <div class="deal-chip chip-yellow">
+                    <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                    3z left
+                  </div>
+                </div>
+                <div class="deal-card">
+                  <div class="deal-name">Amenajare comerciale</div>
+                  <div class="deal-val">€18,200</div>
+                  <div class="deal-chip chip-blue">
+                    Approb. req.
+                  </div>
+                </div>
+              </div>
+
+              <div class="pipeline-col">
+                <div class="pipeline-col-title">
+                  Acceptată
+                  <span class="col-count">1</span>
+                </div>
+                <div class="deal-card">
+                  <div class="deal-name">Pardoseli epoxidice</div>
+                  <div class="deal-val" style="color:#5affa0;">€8,700</div>
+                  <div class="deal-chip chip-green">
+                    <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    Acceptată
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+
+        <div class="tab-bar">
+          <div class="tab-item"><svg class="tab-icon" viewBox="0 0 22 22" fill="none"><rect x="3" y="3" width="7" height="7" rx="2" fill="currentColor" opacity="0.4"/><rect x="12" y="3" width="7" height="7" rx="2" fill="currentColor" opacity="0.4"/><rect x="3" y="12" width="7" height="7" rx="2" fill="currentColor" opacity="0.4"/><rect x="12" y="12" width="7" height="7" rx="2" fill="currentColor" opacity="0.4"/></svg></div>
+          <div class="tab-item active"><svg class="tab-icon" viewBox="0 0 22 22" fill="none"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z" fill="currentColor" opacity="0.9"/></svg><div class="tab-dot"></div></div>
+          <div class="tab-item"><svg class="tab-icon" viewBox="0 0 22 22" fill="none"><rect x="3" y="5" width="16" height="12" rx="3" stroke="currentColor" stroke-width="1.5" opacity="0.4"/><path d="M7 9H15M7 13H11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.4"/></svg></div>
+          <div class="tab-item"><svg class="tab-icon" viewBox="0 0 22 22" fill="none"><path d="M4 16L8 12L11 15L14 10L18 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.4"/></svg></div>
+          <div class="tab-item"><svg class="tab-icon" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="9" r="5" stroke="currentColor" stroke-width="1.5" opacity="0.4"/><path d="M4 19C4 15.5 7 13 11 13C15 13 18 15.5 18 19" stroke="currentColor" stroke-width="1.5" opacity="0.4"/></svg></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
