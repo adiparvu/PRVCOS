@@ -7,8 +7,10 @@ import {
   GlassProgressBar,
   GlassStatusDot,
   GlassTabs,
+  GlassKanban,
   type SegmentItem,
   type TabItem,
+  type KanbanColumn,
 } from "@prv/ui"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -56,6 +58,24 @@ const FILTER_ITEMS: SegmentItem[] = [
   { id: "internal", label: "Internal" },
   { id: "done", label: "Done" },
 ]
+
+const BOARD_COLS: Array<{ id: ProjectStatus; title: string; color: string }> = [
+  { id: "hold", title: "On Hold", color: "var(--prv-text-3)" },
+  { id: "active", title: "Active", color: "rgba(10,132,255,0.9)" },
+  { id: "review", title: "Review", color: "rgba(255,159,10,0.95)" },
+  { id: "done", title: "Done", color: "rgba(48,209,88,0.95)" },
+]
+
+function buildBoardColumns(projects: Project[]): KanbanColumn[] {
+  return BOARD_COLS.map((col) => ({
+    id: col.id,
+    title: col.title,
+    color: col.color,
+    cards: projects
+      .filter((p) => p.status === col.id)
+      .map((p) => ({ id: p.id, title: p.name, data: p })),
+  }))
+}
 
 const DETAIL_TABS: TabItem[] = [
   { value: "overview", label: "Overview" },
@@ -705,6 +725,8 @@ function ProjectDetail({ project, onBack }: { project: Project; onBack: () => vo
 
 export function ProjectsWorkspace() {
   const [filter, setFilter] = useState("all")
+  const [view, setView] = useState<"list" | "board">("list")
+  const [boardCols, setBoardCols] = useState<KanbanColumn[]>(() => buildBoardColumns(PROJECTS))
 
   const activeCount = PROJECTS.filter((p) => p.status === "active").length
   const reviewCount = PROJECTS.filter((p) => p.status === "review").length
@@ -718,6 +740,20 @@ export function ProjectsWorkspace() {
     return true
   })
 
+  function handleBoardMove(cardId: string, fromCol: string, toCol: string) {
+    setBoardCols((prev) => {
+      const next = prev.map((col) => ({ ...col, cards: [...col.cards] }))
+      const from = next.find((c) => c.id === fromCol)
+      const to = next.find((c) => c.id === toCol)
+      if (!from || !to) return prev
+      const idx = from.cards.findIndex((c) => c.id === cardId)
+      if (idx === -1) return prev
+      const [card] = from.cards.splice(idx, 1)
+      to.cards.push(card!)
+      return next
+    })
+  }
+
   return (
     <div className="px-4 pt-14 pb-28 max-w-2xl mx-auto">
       {/* Header */}
@@ -728,42 +764,47 @@ export function ProjectsWorkspace() {
             Projects
           </h1>
         </div>
-        <div className="flex gap-2">
-          <div
-            className="w-9 h-9 rounded-[10px] flex items-center justify-center"
-            style={{ background: "var(--prv-g1)", border: "1px solid var(--prv-border-subtle)" }}
-          >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="var(--prv-text-2)"
-              strokeWidth="1.8"
-              strokeLinecap="round"
+        <div className="flex gap-1.5">
+          {(["list", "board"] as const).map((v) => (
+            <button
+              key={v}
+              onClick={() => setView(v)}
+              className="w-9 h-9 rounded-[10px] flex items-center justify-center"
+              style={{
+                background: view === v ? "rgba(255,255,255,0.14)" : "var(--prv-g1)",
+                border: `1px solid ${view === v ? "rgba(255,255,255,0.22)" : "var(--prv-border-subtle)"}`,
+              }}
             >
-              <line x1="4" y1="6" x2="20" y2="6" />
-              <line x1="4" y1="12" x2="14" y2="12" />
-              <line x1="4" y1="18" x2="10" y2="18" />
-            </svg>
-          </div>
-          <div
-            className="w-9 h-9 rounded-[10px] flex items-center justify-center"
-            style={{ background: "var(--prv-g1)", border: "1px solid var(--prv-border-subtle)" }}
-          >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="var(--prv-text-2)"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-            >
-              <circle cx="11" cy="11" r="8" />
-              <line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
-          </div>
+              <svg
+                width="15"
+                height="15"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke={view === v ? "rgba(255,255,255,0.85)" : "var(--prv-text-2)"}
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                {v === "list" ? (
+                  <>
+                    <line x1="9" y1="6" x2="20" y2="6" />
+                    <line x1="9" y1="12" x2="20" y2="12" />
+                    <line x1="9" y1="18" x2="20" y2="18" />
+                    <circle cx="4" cy="6" r="1" fill="currentColor" />
+                    <circle cx="4" cy="12" r="1" fill="currentColor" />
+                    <circle cx="4" cy="18" r="1" fill="currentColor" />
+                  </>
+                ) : (
+                  <>
+                    <rect x="3" y="3" width="7" height="7" rx="1" />
+                    <rect x="14" y="3" width="7" height="7" rx="1" />
+                    <rect x="14" y="14" width="7" height="7" rx="1" />
+                    <rect x="3" y="14" width="7" height="7" rx="1" />
+                  </>
+                )}
+              </svg>
+            </button>
+          ))}
         </div>
       </div>
 
@@ -790,26 +831,83 @@ export function ProjectsWorkspace() {
         ))}
       </div>
 
-      {/* Filter */}
-      <GlassSegmentedControl
-        items={FILTER_ITEMS}
-        activeId={filter}
-        onChange={setFilter}
-        fullWidth
-        className="mb-4"
-      />
+      {/* Filter — list view only */}
+      {view === "list" && (
+        <GlassSegmentedControl
+          items={FILTER_ITEMS}
+          activeId={filter}
+          onChange={setFilter}
+          fullWidth
+          className="mb-4"
+        />
+      )}
 
       {/* Project list */}
-      <div
-        className="rounded-[18px] overflow-hidden relative"
-        style={{ background: "var(--prv-g1)", border: "1px solid var(--prv-border-subtle)" }}
-      >
-        {filtered.length === 0 ? (
-          <div className="py-12 text-center text-white/35 text-[14px]">No projects found.</div>
-        ) : (
-          filtered.map((p) => <ProjectCard key={p.id} project={p} />)
-        )}
-      </div>
+      {view === "list" && (
+        <div
+          className="rounded-[18px] overflow-hidden relative"
+          style={{ background: "var(--prv-g1)", border: "1px solid var(--prv-border-subtle)" }}
+        >
+          {filtered.length === 0 ? (
+            <div className="py-12 text-center text-white/35 text-[14px]">No projects found.</div>
+          ) : (
+            filtered.map((p) => <ProjectCard key={p.id} project={p} />)
+          )}
+        </div>
+      )}
+
+      {/* Board view */}
+      {view === "board" && (
+        <GlassKanban
+          columns={boardCols}
+          onCardMove={handleBoardMove}
+          renderCard={(card) => {
+            const p = card.data as Project
+            const s = STATUS_STYLE[p.status]
+            const budgetPct = Math.round((p.financials.spent / p.financials.estimated) * 100)
+            const budgetColor =
+              budgetPct > 100
+                ? "rgba(255,59,48,0.8)"
+                : budgetPct > 80
+                  ? "rgba(255,159,10,0.8)"
+                  : "rgba(255,255,255,0.45)"
+            return (
+              <Link href={`/projects/${p.id}`} style={{ textDecoration: "none", display: "block" }}>
+                <p className="text-[13px] font-semibold text-white/90 mb-1.5 leading-snug">
+                  {p.name}
+                </p>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[11px] text-white/45">{p.pm}</span>
+                  <span
+                    className="text-[10px] font-semibold px-1.5 py-0.5 rounded-[5px]"
+                    style={{ background: s.bg, color: s.color }}
+                  >
+                    {p.pct}%
+                  </span>
+                </div>
+                <div
+                  className="h-1 rounded-full overflow-hidden mb-2"
+                  style={{ background: "rgba(255,255,255,0.08)" }}
+                >
+                  <div
+                    className="h-full rounded-full"
+                    style={{
+                      width: `${p.pct}%`,
+                      background: s.color,
+                    }}
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px]" style={{ color: budgetColor }}>
+                    {budgetPct}% budget
+                  </span>
+                  <span className="text-[11px] text-white/30">{p.due}</span>
+                </div>
+              </Link>
+            )
+          }}
+        />
+      )}
     </div>
   )
 }
