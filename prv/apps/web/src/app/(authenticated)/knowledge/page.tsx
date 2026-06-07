@@ -1,10 +1,10 @@
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import { getSession } from "@prv/auth"
-import { KnowledgeWorkspace } from "./KnowledgeWorkspace"
+import { KnowledgeListClient } from "./KnowledgeListClient"
 
 export const dynamic = "force-dynamic"
-export const metadata = { title: "Knowledge Base" }
+export const metadata = { title: "Cunoștințe · PRV" }
 
 export default async function KnowledgePage() {
   const cookieStore = await cookies()
@@ -17,9 +17,5 @@ export default async function KnowledgePage() {
     redirect("/auth/login")
   }
 
-  return (
-    <div className="pt-14 max-w-2xl mx-auto">
-      <KnowledgeWorkspace />
-    </div>
-  )
+  return <KnowledgeListClient />
 }
