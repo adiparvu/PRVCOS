@@ -6,83 +6,134 @@
 <title>Task 8 — Expense Report Builder</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: #000; font-family: -apple-system, 'SF Pro Text', BlinkMacSystemFont, sans-serif;
-         color: rgba(255,255,255,0.9); -webkit-font-smoothing: antialiased;
-         padding: 56px 16px 100px; max-width: 480px; margin: 0 auto; }
+  body {
+    background: #000;
+    font-family: -apple-system, 'SF Pro Text', BlinkMacSystemFont, sans-serif;
+    color: rgba(255,255,255,0.9);
+    -webkit-font-smoothing: antialiased;
+    padding: 56px 16px 100px;
+    max-width: 480px;
+    margin: 0 auto;
+  }
 
-  .back { display: flex; align-items: center; gap: 5px; font-size: 13px;
-          color: rgba(255,255,255,0.35); margin-bottom: 4px; cursor: pointer; }
+  .back {
+    display: flex; align-items: center; gap: 5px;
+    font-size: 13px; color: rgba(255,255,255,0.35);
+    margin-bottom: 4px; cursor: pointer;
+  }
   h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; }
 
-  .slabel { font-size: 10px; font-weight: 700; letter-spacing: 0.07em;
-            text-transform: uppercase; color: rgba(255,255,255,0.35); margin: 0 2px 8px; }
+  .slabel {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.07em;
+    text-transform: uppercase; color: rgba(255,255,255,0.35);
+    margin: 0 2px 8px;
+  }
+  .field-label {
+    font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .06em; color: rgba(255,255,255,0.35); margin-bottom: 6px;
+  }
 
-  .card { border-radius: 18px; padding: 14px; margin-bottom: 14px;
-          background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); position: relative; overflow: hidden; }
-  .card::before { content:''; position:absolute; top:0; left:0; right:0; height:1px;
-                  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent); }
+  .card {
+    border-radius: 18px; padding: 14px; margin-bottom: 14px;
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
+    position: relative; overflow: hidden;
+  }
+  .card::before {
+    content:''; position:absolute; top:0; left:0; right:0; height:1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
+  }
 
-  .field-label { font-size: 10px; font-weight: 700; text-transform: uppercase;
-                 letter-spacing: .06em; color: rgba(255,255,255,0.35); margin-bottom: 6px; }
-  .input-stub { height: 38px; border-radius: 10px;
-                background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.10);
-                display: flex; align-items: center; padding: 0 11px;
-                font-size: 13px; color: rgba(255,255,255,0.30); }
+  .input-stub {
+    height: 38px; border-radius: 10px;
+    background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.10);
+    display: flex; align-items: center; padding: 0 11px;
+    font-size: 13px; color: rgba(255,255,255,0.28);
+  }
   .input-filled { color: rgba(255,255,255,0.85); }
   .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
 
   /* category strip */
-  .cats { display: flex; gap: 6px; margin-bottom: 14px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
-  .cat { padding: 6px 13px; border-radius: 100px; font-size: 12px; font-weight: 600;
-         white-space: nowrap; cursor: pointer; }
+  .cats { display: flex; gap: 6px; margin-bottom: 14px; overflow-x: auto; scrollbar-width: none; }
+  .cat {
+    display: flex; align-items: center; gap: 5px;
+    padding: 6px 12px; border-radius: 100px; font-size: 12px; font-weight: 600;
+    white-space: nowrap; cursor: pointer;
+  }
   .cat-on  { background: rgba(255,255,255,0.92); color: #000; }
-  .cat-off { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.11);
-             color: rgba(255,255,255,0.50); }
+  .cat-off {
+    background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.11);
+    color: rgba(255,255,255,0.50);
+  }
 
-  /* line items list */
-  .lines-card { border-radius: 18px; overflow: hidden; margin-bottom: 14px;
-                background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); }
-  .line-row { display: flex; align-items: center; gap: 10px; padding: 11px 14px;
-              border-bottom: 1px solid rgba(255,255,255,0.07); }
-  .cat-icon { width: 34px; height: 34px; border-radius: 9px; display: flex;
-              align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
-  .icon-transport  { background: rgba(10,132,255,0.15); }
-  .icon-materiale  { background: rgba(255,159,10,0.15); }
-  .icon-subcontr   { background: rgba(130,100,255,0.15); }
-  .icon-utilitati  { background: rgba(48,209,88,0.12); }
-  .icon-diverse    { background: rgba(255,255,255,0.08); }
+  /* line items */
+  .lines-card {
+    border-radius: 18px; overflow: hidden; margin-bottom: 14px;
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
+  }
+  .line-row {
+    display: flex; align-items: center; gap: 10px; padding: 11px 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+  }
+  .cat-icon {
+    width: 34px; height: 34px; border-radius: 9px;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .icon-transport { background: rgba(10,132,255,0.15); }
+  .icon-materiale { background: rgba(255,159,10,0.15); }
+  .icon-subcontr  { background: rgba(130,100,255,0.15); }
+  .icon-utilitati { background: rgba(48,209,88,0.12); }
+  .icon-diverse   { background: rgba(255,255,255,0.08); }
 
-  /* add-row (expanded) */
+  /* new line form */
   .add-row { padding: 12px 14px; background: rgba(255,255,255,0.03); }
   .add-top { display: flex; gap: 8px; margin-bottom: 8px; }
-  .add-desc { flex: 1; height: 38px; border-radius: 10px; background: rgba(255,255,255,0.07);
-              border: 1px solid rgba(255,255,255,0.10); display: flex; align-items: center;
-              padding: 0 11px; font-size: 13px; color: rgba(255,255,255,0.28); }
-  .btn-remove { width: 38px; height: 38px; border-radius: 9px; flex-shrink: 0;
-                background: rgba(255,69,58,0.12); color: rgba(255,69,58,0.8);
-                display: flex; align-items: center; justify-content: center; font-size: 13px; cursor: pointer; }
+  .add-desc {
+    flex: 1; height: 38px; border-radius: 10px;
+    background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.10);
+    display: flex; align-items: center; padding: 0 11px;
+    font-size: 13px; color: rgba(255,255,255,0.28);
+  }
+  .btn-remove {
+    width: 38px; height: 38px; flex-shrink: 0; border-radius: 9px;
+    background: rgba(255,69,58,0.12); display: flex;
+    align-items: center; justify-content: center; cursor: pointer;
+  }
 
   /* totals */
-  .totals-card { border-radius: 18px; overflow: hidden; margin-bottom: 14px;
-                 background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); }
-  .total-row { display: flex; justify-content: space-between; align-items: center;
-               padding: 10px 14px; border-bottom: 1px solid rgba(255,255,255,0.07); }
+  .totals-card {
+    border-radius: 18px; overflow: hidden; margin-bottom: 14px;
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
+  }
+  .total-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 14px; border-bottom: 1px solid rgba(255,255,255,0.07);
+  }
   .total-row:last-child { border-bottom: none; padding: 13px 14px; }
 
-  /* approval badge */
-  .badge-approval { display: inline-flex; align-items: center; gap: 5px; padding: 4px 11px;
-                    border-radius: 8px; font-size: 11px; font-weight: 600; }
+  /* status badge */
+  .badge {
+    display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px;
+    border-radius: 8px; font-size: 11px; font-weight: 600;
+    background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.45);
+  }
 
   /* actions */
   .actions { display: flex; gap: 10px; }
-  .btn-draft  { flex: 1; padding: 14px; border-radius: 14px; font-size: 14px; font-weight: 600;
-                background: rgba(255,255,255,0.09); border: 1px solid rgba(255,255,255,0.12);
-                color: rgba(255,255,255,0.60); text-align: center; cursor: pointer; }
-  .btn-submit { flex: 1; padding: 14px; border-radius: 14px; font-size: 14px; font-weight: 700;
-                background: rgba(255,255,255,0.92); color: #000; text-align: center; cursor: pointer; }
+  .btn-draft {
+    flex: 1; padding: 14px; border-radius: 14px; font-size: 14px; font-weight: 600;
+    background: rgba(255,255,255,0.09); border: 1px solid rgba(255,255,255,0.12);
+    color: rgba(255,255,255,0.60); text-align: center; cursor: pointer;
+  }
+  .btn-submit {
+    flex: 1; padding: 14px; border-radius: 14px; font-size: 14px; font-weight: 700;
+    background: rgba(255,255,255,0.92); color: #000; text-align: center; cursor: pointer;
+  }
 
-  .section-row { display: flex; justify-content: space-between; align-items: center; margin: 18px 2px 8px; }
+  .section-row {
+    display: flex; justify-content: space-between; align-items: center;
+    margin: 18px 2px 8px;
+  }
   .add-link { font-size: 12px; font-weight: 600; color: rgba(10,132,255,0.9); cursor: pointer; }
 </style>
 </head>
@@ -90,22 +141,28 @@
 
 <!-- Header -->
 <div class="back">
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M19 12H5M12 5l-7 7 7 7"/>
+  </svg>
   Cheltuieli
 </div>
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:22px">
   <h1>Raport Cheltuieli</h1>
-  <span class="badge-approval" style="background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.45);">
-    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+  <span class="badge">
+    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+      <circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/>
+    </svg>
     Ciornă
   </span>
 </div>
 
-<!-- General info -->
+<!-- General -->
 <p class="slabel">Informații generale</p>
 <div class="card">
   <p class="field-label">Titlu raport</p>
-  <div class="input-stub" style="margin-bottom:10px">Deplasare Cluj – București 07.06.2026</div>
+  <div class="input-stub" style="margin-bottom:10px;color:rgba(255,255,255,0.75)">
+    Deplasare Cluj – București 07.06.2026
+  </div>
   <div class="grid2">
     <div>
       <p class="field-label">Data</p>
@@ -118,26 +175,72 @@
   </div>
 </div>
 
-<!-- Category filter -->
+<!-- Category strip -->
 <p class="slabel">Categorie</p>
 <div class="cats">
-  <div class="cat cat-on">Transport</div>
-  <div class="cat cat-off">Materiale</div>
-  <div class="cat cat-off">Subcontr.</div>
-  <div class="cat cat-off">Utilități</div>
-  <div class="cat cat-off">Diverse</div>
+
+  <!-- Transport -->
+  <div class="cat cat-on">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
+    </svg>
+    Transport
+  </div>
+
+  <!-- Materiale -->
+  <div class="cat cat-off">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+    </svg>
+    Materiale
+  </div>
+
+  <!-- Subcontractori -->
+  <div class="cat cat-off">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+    </svg>
+    Subcontr.
+  </div>
+
+  <!-- Utilități -->
+  <div class="cat cat-off">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+    </svg>
+    Utilități
+  </div>
+
+  <!-- Diverse -->
+  <div class="cat cat-off">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+      <circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>
+    </svg>
+    Diverse
+  </div>
+
 </div>
 
 <!-- Line items -->
 <div class="section-row">
   <p class="slabel" style="margin:0">Linii cheltuieli (3)</p>
-  <span class="add-link">+ Adaugă</span>
+  <span class="add-link" style="display:flex;align-items:center;gap:4px">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+      <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+    </svg>
+    Adaugă
+  </span>
 </div>
 
 <div class="lines-card">
-  <!-- row 1 -->
+
+  <!-- Row 1 — plane -->
   <div class="line-row">
-    <div class="cat-icon icon-transport">✈️</div>
+    <div class="cat-icon icon-transport">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(10,132,255,0.85)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M17.8 19.2L16 11l3.5-3.5C21 6 21 4 19 4s-2 1-3.5 2.5L9 11 1 9.5l-.5.5 3.5 3.5L1 21l2 2 7.5-3.5L14.5 23l.5-.5L13.5 15z"/>
+      </svg>
+    </div>
     <div style="flex:1">
       <p style="font-size:13px;font-weight:600;color:rgba(255,255,255,0.88)">Bilet avion Cluj – București</p>
       <p style="font-size:11px;color:rgba(255,255,255,0.32);margin-top:2px">Transport · Bon #AF2204</p>
@@ -147,9 +250,14 @@
       <p style="font-size:10px;color:rgba(255,255,255,0.28);margin-top:1px">TVA 0%</p>
     </div>
   </div>
-  <!-- row 2 -->
+
+  <!-- Row 2 — car -->
   <div class="line-row">
-    <div class="cat-icon icon-transport">🚕</div>
+    <div class="cat-icon icon-transport">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(10,132,255,0.85)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
+      </svg>
+    </div>
     <div style="flex:1">
       <p style="font-size:13px;font-weight:600;color:rgba(255,255,255,0.88)">Taxi aeroport Otopeni</p>
       <p style="font-size:11px;color:rgba(255,255,255,0.32);margin-top:2px">Transport · Bon #TX0482</p>
@@ -159,11 +267,16 @@
       <p style="font-size:10px;color:rgba(255,255,255,0.28);margin-top:1px">TVA 0%</p>
     </div>
   </div>
-  <!-- row 3 — new line being entered -->
+
+  <!-- Row 3 — being entered -->
   <div class="add-row">
     <div class="add-top">
       <div class="add-desc">Descriere cheltuială nouă...</div>
-      <div class="btn-remove">✕</div>
+      <div class="btn-remove">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,69,58,0.8)" stroke-width="2.5" stroke-linecap="round">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </div>
     </div>
     <div class="grid3">
       <div>
@@ -180,6 +293,7 @@
       </div>
     </div>
   </div>
+
 </div>
 
 <!-- Totals -->
