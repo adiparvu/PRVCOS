@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Phase 21 · Mobile API · PRV</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: #080808;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 24px 80px;
+  gap: 36px;
+  color: rgba(255,255,255,0.88);
+}
+
+.header { text-align: center; }
+.header-eyebrow { font-size: 11px; font-weight: 600; letter-spacing: 0.12em; color: rgba(255,255,255,0.35); text-transform: uppercase; margin-bottom: 8px; }
+.header-title { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 6px; }
+.header-sub { font-size: 14px; color: rgba(255,255,255,0.4); }
+
+/* Tabs */
+.tabs { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
+.tab-btn {
+  padding: 7px 16px; border-radius: 100px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.05);
+  color: rgba(255,255,255,0.5); font-size: 12px; font-weight: 500;
+  cursor: pointer; transition: all 0.18s; font-family: inherit;
+}
+.tab-btn:hover { background: rgba(255,255,255,0.09); color: rgba(255,255,255,0.75); }
+.tab-btn.active { background: rgba(255,255,255,0.14); border-color: rgba(255,255,255,0.3); color: rgba(255,255,255,0.92); }
+
+/* Main layout */
+.content { width: 100%; max-width: 960px; display: none; flex-direction: column; gap: 16px; }
+.content.active { display: flex; }
+
+/* Cards */
+.card {
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.09);
+  border-radius: 18px; padding: 20px; position: relative; overflow: hidden;
+}
+.card::before { content:''; position:absolute; top:0;left:0;right:0;height:1px; background:rgba(255,255,255,0.16); }
+
+.card-title { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.35); margin-bottom: 14px; }
+
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+
+@media (max-width: 700px) {
+  .two-col, .three-col { grid-template-columns: 1fr; }
+}
+
+/* Code blocks */
+pre {
+  font-family: "SF Mono", "Fira Code", "JetBrains Mono", monospace;
+  font-size: 12px; line-height: 18px;
+  background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px; padding: 16px; overflow-x: auto;
+  color: rgba(255,255,255,0.75);
+}
+.kw { color: #bf5af2; } /* keyword */
+.fn { color: #0a84ff; } /* function */
+.str { color: #30d158; } /* string */
+.cm { color: rgba(255,255,255,0.25); font-style: italic; } /* comment */
+.ty { color: #ff9f0a; } /* type */
+.nu { color: #ff453a; } /* number */
+
+/* Flow diagram */
+.flow { display: flex; align-items: center; gap: 0; flex-wrap: wrap; justify-content: center; }
+.flow-box {
+  padding: 10px 16px; border-radius: 10px;
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
+  font-size: 12px; font-weight: 500; color: rgba(255,255,255,0.75); text-align: center;
+  min-width: 100px;
+}
+.flow-box.highlight { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.28); color: rgba(255,255,255,0.92); }
+.flow-box.green { background: rgba(48,209,88,0.08); border-color: rgba(48,209,88,0.25); color: rgba(48,209,88,0.9); }
+.flow-box.red { background: rgba(255,69,58,0.08); border-color: rgba(255,69,58,0.25); color: rgba(255,69,58,0.9); }
+.flow-arrow { font-size: 16px; color: rgba(255,255,255,0.25); padding: 0 8px; }
+
+/* File list */
+.file-list { display: flex; flex-direction: column; gap: 8px; }
+.file-item {
+  display: flex; align-items: flex-start; gap: 12px; padding: 12px 14px;
+  background: rgba(255,255,255,0.04); border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.07);
+}
+.file-badge {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.06em; padding: 3px 7px;
+  border-radius: 5px; flex-shrink: 0; margin-top: 1px;
+  text-transform: uppercase;
+}
+.badge-new { background: rgba(48,209,88,0.12); color: rgba(48,209,88,0.9); border: 1px solid rgba(48,209,88,0.2); }
+.badge-mod { background: rgba(255,159,10,0.12); color: rgba(255,159,10,0.9); border: 1px solid rgba(255,159,10,0.2); }
+.file-path { font-family: "SF Mono","Fira Code",monospace; font-size: 11px; color: rgba(255,255,255,0.7); margin-bottom: 3px; }
+.file-desc { font-size: 12px; color: rgba(255,255,255,0.4); }
+
+/* Role table */
+.role-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.role-table th { text-align: left; padding: 8px 12px; color: rgba(255,255,255,0.35); font-weight: 600; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; border-bottom: 1px solid rgba(255,255,255,0.07); }
+.role-table td { padding: 10px 12px; color: rgba(255,255,255,0.65); border-bottom: 1px solid rgba(255,255,255,0.05); vertical-align: top; }
+.role-table tr:last-child td { border-bottom: none; }
+.role-name { color: rgba(255,255,255,0.88); font-weight: 600; }
+
+/* JSON tree */
+.json { font-family: "SF Mono","Fira Code",monospace; font-size: 11.5px; line-height: 19px; color: rgba(255,255,255,0.65); }
+.json .jk { color: rgba(255,255,255,0.5); } /* key */
+.json .js { color: rgba(48,209,88,0.85); } /* string value */
+.json .jn { color: rgba(255,159,10,0.85); } /* number */
+.json .jb { color: rgba(10,132,255,0.85); } /* bool */
+.json .jc { color: rgba(255,255,255,0.22); font-style: italic; } /* comment */
+
+/* Section row */
+.section-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.section-row:last-child { border-bottom: none; }
+.section-glyph { font-size: 15px; width: 22px; text-align: center; flex-shrink: 0; }
+.section-name { font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.8); flex: 1; }
+.section-source { font-family: "SF Mono","Fira Code",monospace; font-size: 10px; color: rgba(255,255,255,0.35); }
+
+/* Pill */
+.pill { display: inline-flex; padding: 3px 9px; border-radius: 100px; font-size: 10px; font-weight: 600; letter-spacing: 0.04em; border: 1px solid; }
+.pill-get { background: rgba(48,209,88,0.08); color: rgba(48,209,88,0.9); border-color: rgba(48,209,88,0.2); }
+.pill-post { background: rgba(10,132,255,0.08); color: rgba(10,132,255,0.9); border-color: rgba(10,132,255,0.2); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-eyebrow">Phase 21 · Design</div>
+  <div class="header-title">Mobile API</div>
+  <div class="header-sub">Bearer auth · Role-aware data assembly · Drizzle queries</div>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="show('overview', this)">Overview</button>
+  <button class="tab-btn" onclick="show('auth', this)">Auth Flow</button>
+  <button class="tab-btn" onclick="show('response', this)">Response Shape</button>
+  <button class="tab-btn" onclick="show('roles', this)">Role Logic</button>
+  <button class="tab-btn" onclick="show('files', this)">Files</button>
+</div>
+
+<!-- OVERVIEW -->
+<div class="content active" id="tab-overview">
+
+  <div class="card">
+    <div class="card-title">Endpoint</div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+      <span class="pill pill-get">GET</span>
+      <span style="font-family:monospace;font-size:14px;color:rgba(255,255,255,0.88);">/api/mobile/command</span>
+    </div>
+    <div class="flow">
+      <div class="flow-box">Mobile App<br/><span style="font-size:10px;color:rgba(255,255,255,0.35);">Bearer token</span></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box highlight">withMobileAuth()<br/><span style="font-size:10px;color:rgba(255,255,255,0.35);">Redis session lookup</span></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box">assembleCommand()<br/><span style="font-size:10px;color:rgba(255,255,255,0.35);">role-aware query</span></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box green">CommandData JSON<br/><span style="font-size:10px;color:rgba(48,209,88,0.6);">200 OK</span></div>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="card">
+      <div class="card-title">Response Sections</div>
+      <div class="section-row"><div class="section-glyph">◎</div><div class="section-name">user</div><div class="section-source">users table</div></div>
+      <div class="section-row"><div class="section-glyph">▦</div><div class="section-name">kpis[4]</div><div class="section-source">orders · projects · users</div></div>
+      <div class="section-row"><div class="section-glyph">⊟</div><div class="section-name">secondary[3]</div><div class="section-source">tasks · alerts · invoices</div></div>
+      <div class="section-row"><div class="section-glyph">✦</div><div class="section-name">aiBriefing</div><div class="section-source">rule-based (Phase 21)</div></div>
+      <div class="section-row"><div class="section-glyph">⚠</div><div class="section-name">alerts[]</div><div class="section-source">system_alerts table</div></div>
+      <div class="section-row"><div class="section-glyph">◈</div><div class="section-name">quickActions[]</div><div class="section-source">role constant map</div></div>
+      <div class="section-row"><div class="section-glyph">✉</div><div class="section-name">inbox[]</div><div class="section-source">notifications table</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Key Design Decisions</div>
+      <div class="section-row"><div class="section-glyph">🔑</div><div class="section-name">Bearer = session ID</div><div class="section-source">same Redis key as web</div></div>
+      <div class="section-row"><div class="section-glyph">⟳</div><div class="section-name">Single endpoint</div><div class="section-source">role-aware, not 3 routes</div></div>
+      <div class="section-row"><div class="section-glyph">◑</div><div class="section-name">Pre-formatted values</div><div class="section-source">"€124k" not 124500</div></div>
+      <div class="section-row"><div class="section-glyph">⊞</div><div class="section-name">Parallel queries</div><div class="section-source">Promise.all for speed</div></div>
+      <div class="section-row"><div class="section-glyph">✦</div><div class="section-name">AI: rule-based now</div><div class="section-source">real AI in Phase 25</div></div>
+      <div class="section-row"><div class="section-glyph">◎</div><div class="section-name">writeAuditLog</div><div class="section-source">every mobile request</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- AUTH FLOW -->
+<div class="content" id="tab-auth">
+  <div class="card">
+    <div class="card-title">withMobileAuth() — Bearer Token Validation</div>
+    <pre><span class="cm">// apps/web/src/lib/mobile/auth.ts</span>
+
+<span class="kw">export type</span> <span class="ty">MobileHandler</span> = (
+  req: NextRequest,
+  ctx: <span class="ty">MobileContext</span>
+) => <span class="ty">Promise</span>&lt;NextResponse&gt;
+
+<span class="kw">export interface</span> <span class="ty">MobileContext</span> {
+  userId:    string
+  companyId: string
+  role:      string
+  scopeLevel: string
+  storeId?:  string
+  regionId?: string
+}
+
+<span class="kw">export function</span> <span class="fn">withMobileAuth</span>(handler: <span class="ty">MobileHandler</span>) {
+  <span class="kw">return async</span> (req: <span class="ty">NextRequest</span>) => {
+    <span class="cm">// 1. Extract Bearer token</span>
+    <span class="kw">const</span> authHeader = req.headers.<span class="fn">get</span>(<span class="str">"authorization"</span>)
+    <span class="kw">if</span> (!authHeader?.startsWith(<span class="str">"Bearer "</span>))
+      <span class="kw">return</span> <span class="fn">unauthorized</span>()
+
+    <span class="kw">const</span> token = authHeader.<span class="fn">slice</span>(<span class="nu">7</span>)
+
+    <span class="cm">// 2. Look up session in Redis (same store as web sessions)</span>
+    <span class="kw">const</span> session = <span class="kw">await</span> <span class="fn">getSession</span>(token)
+    <span class="kw">if</span> (!session) <span class="kw">return</span> <span class="fn">unauthorized</span>()
+
+    <span class="cm">// 3. Extend TTL on activity</span>
+    <span class="kw">await</span> <span class="fn">refreshSession</span>(token, session)
+
+    <span class="cm">// 4. Invoke handler with typed context</span>
+    <span class="kw">return</span> <span class="fn">handler</span>(req, {
+      userId:    session.userId,
+      companyId: session.companyId,
+      role:      session.role,
+      scopeLevel: session.scopeLevel,
+      storeId:   session.storeId,
+      regionId:  session.regionId,
+    })
+  }
+}</pre>
+  </div>
+
+  <div class="two-col">
+    <div class="card">
+      <div class="card-title">Auth: Success Path</div>
+      <div class="flow" style="flex-direction:column;align-items:flex-start;gap:8px;">
+        <div class="flow-box" style="width:100%;">1. Header: Authorization: Bearer &lt;token&gt;</div>
+        <div class="flow-arrow" style="padding:0 0 0 12px;">↓</div>
+        <div class="flow-box" style="width:100%;">2. Redis GET prv:session:&lt;token&gt;</div>
+        <div class="flow-arrow" style="padding:0 0 0 12px;">↓</div>
+        <div class="flow-box" style="width:100%;">3. Parse session → MobileContext</div>
+        <div class="flow-arrow" style="padding:0 0 0 12px;">↓</div>
+        <div class="flow-box green" style="width:100%;">4. Handler runs → 200 OK</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Auth: Failure Cases</div>
+      <div class="section-row"><div class="section-glyph" style="color:rgba(255,69,58,0.8);">✕</div><div class="section-name">No Authorization header</div><div class="section-source">401</div></div>
+      <div class="section-row"><div class="section-glyph" style="color:rgba(255,69,58,0.8);">✕</div><div class="section-name">Not "Bearer " prefix</div><div class="section-source">401</div></div>
+      <div class="section-row"><div class="section-glyph" style="color:rgba(255,69,58,0.8);">✕</div><div class="section-name">Token not in Redis</div><div class="section-source">401</div></div>
+      <div class="section-row"><div class="section-glyph" style="color:rgba(255,69,58,0.8);">✕</div><div class="section-name">Session expired (TTL)</div><div class="section-source">401</div></div>
+      <div class="section-row"><div class="section-glyph" style="color:rgba(255,159,10,0.8);">⚠</div><div class="section-name">User inactive/suspended</div><div class="section-source">403</div></div>
+      <div class="section-row"><div class="section-glyph" style="color:rgba(255,159,10,0.8);">⚠</div><div class="section-name">Rate limit exceeded</div><div class="section-source">429</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- RESPONSE SHAPE -->
+<div class="content" id="tab-response">
+  <div class="card">
+    <div class="card-title">GET /api/mobile/command — Response (CEO example)</div>
+    <pre><span class="jc">// CommandData — matches src/hooks/useCommand.ts on mobile</span>
+{
+  <span class="jk">"user"</span>: {
+    <span class="jk">"firstName"</span>: <span class="js">"Alexandru"</span>,
+    <span class="jk">"role"</span>: <span class="js">"CEO"</span>,
+    <span class="jk">"scopeName"</span>: <span class="js">"PRV Group"</span>
+  },
+
+  <span class="jk">"kpis"</span>: [
+    { <span class="jk">"value"</span>: <span class="js">"€124k"</span>, <span class="jk">"label"</span>: <span class="js">"Revenue"</span>,         <span class="jk">"delta"</span>: <span class="js">"↑ 12% vs last week"</span>, <span class="jk">"deltaType"</span>: <span class="js">"up"</span> },
+    { <span class="jk">"value"</span>: <span class="js">"€31k"</span>,  <span class="jk">"label"</span>: <span class="js">"Profit"</span>,          <span class="jk">"delta"</span>: <span class="js">"↑ 8% vs last week"</span>,  <span class="jk">"deltaType"</span>: <span class="js">"up"</span>,  <span class="jk">"valueColor"</span>: <span class="js">"#30d158"</span> },
+    { <span class="jk">"value"</span>: <span class="js">"8"</span>,     <span class="jk">"label"</span>: <span class="js">"Active Projects"</span>, <span class="jk">"delta"</span>: <span class="js">"2 on hold"</span>,          <span class="jk">"deltaType"</span>: <span class="js">"neutral"</span> },
+    { <span class="jk">"value"</span>: <span class="js">"47"</span>,    <span class="jk">"label"</span>: <span class="js">"Team Online"</span>,     <span class="jk">"delta"</span>: <span class="js">"↑ 3 since yesterday"</span>, <span class="jk">"deltaType"</span>: <span class="js">"up"</span> }
+  ],
+
+  <span class="jk">"secondary"</span>: [
+    { <span class="jk">"label"</span>: <span class="js">"Open Tasks"</span>, <span class="jk">"value"</span>: <span class="js">"23"</span>, <span class="jk">"valueColor"</span>: <span class="js">"#ff9f0a"</span> },
+    { <span class="jk">"label"</span>: <span class="js">"Alerts"</span>,     <span class="jk">"value"</span>: <span class="js">"2"</span>,  <span class="jk">"valueColor"</span>: <span class="js">"#ff453a"</span> },
+    { <span class="jk">"label"</span>: <span class="js">"Inv. Due"</span>,   <span class="jk">"value"</span>: <span class="js">"€8.4k"</span> }
+  ],
+
+  <span class="jk">"aiBriefing"</span>: {
+    <span class="jk">"summary"</span>: <span class="js">"3 things need your attention today."</span>,
+    <span class="jk">"insights"</span>: [
+      <span class="js">"Store Brăila revenue down 18% — staffing gap on Fridays detected."</span>,
+      <span class="js">"Project #P-041 is 6 days behind schedule. 2 blockers unresolved."</span>,
+      <span class="js">"Inventory forecast predicts stock-out for SKU-2291 in 4 days."</span>
+    ]
+  },
+
+  <span class="jk">"alerts"</span>: [
+    { <span class="jk">"id"</span>: <span class="js">"a1"</span>, <span class="jk">"severity"</span>: <span class="js">"amber"</span>, <span class="jk">"title"</span>: <span class="js">"Low stock — SKU-2291"</span>,              <span class="jk">"subtitle"</span>: <span class="js">"Depozit Centrale · 4 days to stockout"</span>, <span class="jk">"timeAgo"</span>: <span class="js">"2h ago"</span> },
+    { <span class="jk">"id"</span>: <span class="js">"a2"</span>, <span class="jk">"severity"</span>: <span class="js">"red"</span>,   <span class="jk">"title"</span>: <span class="js">"Invoice overdue — Ionescu SRL"</span>, <span class="jk">"subtitle"</span>: <span class="js">"€4,200 · 12 days past due"</span>,            <span class="jk">"timeAgo"</span>: <span class="js">"1d ago"</span> }
+  ],
+
+  <span class="jk">"quickActions"</span>: [
+    { <span class="jk">"id"</span>: <span class="js">"new-task"</span>,      <span class="jk">"icon"</span>: <span class="js">"＋"</span>, <span class="jk">"label"</span>: <span class="js">"New Task"</span>,      <span class="jk">"route"</span>: <span class="js">"/(tabs)/operations"</span> },
+    { <span class="jk">"id"</span>: <span class="js">"add-employee"</span>,  <span class="jk">"icon"</span>: <span class="js">"◎"</span>, <span class="jk">"label"</span>: <span class="js">"Add Employee"</span>,  <span class="jk">"route"</span>: <span class="js">"/(tabs)/people"</span>     },
+    { <span class="jk">"id"</span>: <span class="js">"new-invoice"</span>,   <span class="jk">"icon"</span>: <span class="js">"⟁"</span>, <span class="jk">"label"</span>: <span class="js">"New Invoice"</span>,   <span class="jk">"route"</span>: <span class="js">"/(tabs)/finance"</span>    },
+    { <span class="jk">"id"</span>: <span class="js">"view-reports"</span>,  <span class="jk">"icon"</span>: <span class="js">"⊞"</span>, <span class="jk">"label"</span>: <span class="js">"View Reports"</span>, <span class="jk">"route"</span>: <span class="js">"/(tabs)/intelligence"</span> }
+  ],
+
+  <span class="jk">"inbox"</span>: [
+    { <span class="jk">"id"</span>: <span class="js">"m1"</span>, <span class="jk">"initials"</span>: <span class="js">"MV"</span>, <span class="jk">"sender"</span>: <span class="js">"Mihai Vlad"</span>, <span class="jk">"preview"</span>: <span class="js">"Proiectul P-041 are o problema..."</span>, <span class="jk">"timeAgo"</span>: <span class="js">"10m"</span>, <span class="jk">"unread"</span>: <span class="jb">true</span>  },
+    { <span class="jk">"id"</span>: <span class="js">"m2"</span>, <span class="jk">"initials"</span>: <span class="js">"AP"</span>, <span class="jk">"sender"</span>: <span class="js">"Ana Pop"</span>,   <span class="jk">"preview"</span>: <span class="js">"Raportul de luna trecuta..."</span>,          <span class="jk">"timeAgo"</span>: <span class="js">"1h"</span>,  <span class="jk">"unread"</span>: <span class="jb">true</span>  },
+    { <span class="jk">"id"</span>: <span class="js">"m3"</span>, <span class="jk">"initials"</span>: <span class="js">"RD"</span>, <span class="jk">"sender"</span>: <span class="js">"Radu Dima"</span>, <span class="jk">"preview"</span>: <span class="js">"Confirmat — echipa e disponibila..."</span>,   <span class="jk">"timeAgo"</span>: <span class="js">"3h"</span>,  <span class="jk">"unread"</span>: <span class="jb">false</span> }
+  ]
+}</pre>
+  </div>
+</div>
+
+<!-- ROLE LOGIC -->
+<div class="content" id="tab-roles">
+  <div class="card">
+    <div class="card-title">Role-Aware Data Assembly</div>
+    <table class="role-table">
+      <thead>
+        <tr>
+          <th>Role</th>
+          <th>Revenue scope</th>
+          <th>Projects scope</th>
+          <th>Team scope</th>
+          <th>Alerts scope</th>
+          <th>Inbox scope</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="role-name">group_ceo / ceo</span></td>
+          <td>All companies</td>
+          <td>All companies</td>
+          <td>All companies</td>
+          <td>All companies</td>
+          <td>All direct reports</td>
+        </tr>
+        <tr>
+          <td><span class="role-name">regional_manager</span></td>
+          <td>Assigned region</td>
+          <td>Region stores</td>
+          <td>Region stores</td>
+          <td>Region stores</td>
+          <td>Store managers in region</td>
+        </tr>
+        <tr>
+          <td><span class="role-name">store_manager</span></td>
+          <td>Own store</td>
+          <td>Own store tasks</td>
+          <td>Own store staff</td>
+          <td>Own store</td>
+          <td>Own store team</td>
+        </tr>
+        <tr>
+          <td><span class="role-name">team_leader</span></td>
+          <td>—</td>
+          <td>Own team tasks</td>
+          <td>Own team</td>
+          <td>Own team</td>
+          <td>Own team members</td>
+        </tr>
+        <tr>
+          <td><span class="role-name">worker / seller</span></td>
+          <td>—</td>
+          <td>Assigned to self</td>
+          <td>—</td>
+          <td>Self only</td>
+          <td>From manager</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-title">assembleCommand() — Role Switch</div>
+    <pre><span class="cm">// apps/web/src/lib/mobile/command.ts</span>
+
+<span class="kw">export async function</span> <span class="fn">assembleCommand</span>(ctx: <span class="ty">MobileContext</span>): <span class="ty">Promise</span>&lt;<span class="ty">CommandData</span>&gt; {
+  <span class="kw">const</span> scope = <span class="fn">resolveScope</span>(ctx)  <span class="cm">// { companyIds, storeIds, regionId }</span>
+
+  <span class="cm">// Run all queries in parallel for speed</span>
+  <span class="kw">const</span> [kpis, secondary, alerts, inbox] = <span class="kw">await</span> Promise.<span class="fn">all</span>([
+    <span class="fn">queryKPIs</span>(scope, ctx.role),
+    <span class="fn">querySecondary</span>(scope, ctx.userId),
+    <span class="fn">queryAlerts</span>(scope),
+    <span class="fn">queryInbox</span>(ctx.userId),
+  ])
+
+  <span class="kw">return</span> {
+    user:         <span class="fn">buildUser</span>(ctx),
+    kpis:         <span class="fn">formatKPIs</span>(kpis, ctx.role),
+    secondary:    <span class="fn">formatSecondary</span>(secondary, ctx.role),
+    aiBriefing:   <span class="fn">buildAIBriefing</span>(kpis, alerts, ctx.role),
+    alerts:       <span class="fn">formatAlerts</span>(alerts),
+    quickActions: <span class="fn">QUICK_ACTIONS</span>[ctx.role] ?? <span class="fn">QUICK_ACTIONS</span>.default,
+    inbox:        <span class="fn">formatInbox</span>(inbox),
+  }
+}</pre>
+  </div>
+</div>
+
+<!-- FILES -->
+<div class="content" id="tab-files">
+  <div class="card">
+    <div class="card-title">Files — apps/web</div>
+    <div class="file-list">
+      <div class="file-item">
+        <span class="file-badge badge-new">new</span>
+        <div>
+          <div class="file-path">src/lib/mobile/auth.ts</div>
+          <div class="file-desc">withMobileAuth() — extracts Bearer token, looks up Redis session, returns MobileContext</div>
+        </div>
+      </div>
+      <div class="file-item">
+        <span class="file-badge badge-new">new</span>
+        <div>
+          <div class="file-path">src/lib/mobile/types.ts</div>
+          <div class="file-desc">Shared TypeScript types — CommandData, KPIItem, AlertItem, InboxItem, QuickAction (mirrors mobile hook)</div>
+        </div>
+      </div>
+      <div class="file-item">
+        <span class="file-badge badge-new">new</span>
+        <div>
+          <div class="file-path">src/lib/mobile/command.ts</div>
+          <div class="file-desc">assembleCommand() — resolveScope, queryKPIs, querySecondary, queryAlerts, queryInbox, buildAIBriefing, formatters</div>
+        </div>
+      </div>
+      <div class="file-item">
+        <span class="file-badge badge-new">new</span>
+        <div>
+          <div class="file-path">src/app/api/mobile/command/route.ts</div>
+          <div class="file-desc">GET handler — withMobileAuth() → assembleCommand() → NextResponse.json() + audit log</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="card">
+      <div class="card-title">Data Sources per Section</div>
+      <div class="section-row"><div class="section-glyph">◎</div><div class="section-name">user</div><div class="section-source">MobileContext (no DB)</div></div>
+      <div class="section-row"><div class="section-glyph">€</div><div class="section-name">revenue KPI</div><div class="section-source">orders (sum, scoped)</div></div>
+      <div class="section-row"><div class="section-glyph">◑</div><div class="section-name">profit KPI</div><div class="section-source">orders − expenses</div></div>
+      <div class="section-row"><div class="section-glyph">⊞</div><div class="section-name">projects KPI</div><div class="section-source">projects (count, status)</div></div>
+      <div class="section-row"><div class="section-glyph">◎</div><div class="section-name">team online KPI</div><div class="section-source">users (lastActiveAt)</div></div>
+      <div class="section-row"><div class="section-glyph">✓</div><div class="section-name">open tasks</div><div class="section-source">tasks (status=open)</div></div>
+      <div class="section-row"><div class="section-glyph">⚠</div><div class="section-name">alerts</div><div class="section-source">system_alerts table</div></div>
+      <div class="section-row"><div class="section-glyph">⟁</div><div class="section-name">invoices due</div><div class="section-source">invoices (overdue)</div></div>
+      <div class="section-row"><div class="section-glyph">✉</div><div class="section-name">inbox</div><div class="section-source">notifications (3 latest)</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Quick Actions by Role</div>
+      <div class="section-row"><div class="section-glyph">👔</div><div class="section-name">CEO / group_ceo</div><div class="section-source">Reports · Approvals · AI · Projects</div></div>
+      <div class="section-row"><div class="section-glyph">🗂</div><div class="section-name">regional_manager</div><div class="section-source">Stores · Tasks · Schedule · Reports</div></div>
+      <div class="section-row"><div class="section-glyph">🏪</div><div class="section-name">store_manager</div><div class="section-source">Task · Schedule · Inventory · Team</div></div>
+      <div class="section-row"><div class="section-glyph">👥</div><div class="section-name">team_leader</div><div class="section-source">Task · Schedule · Team · Reports</div></div>
+      <div class="section-row"><div class="section-glyph">👤</div><div class="section-name">worker</div><div class="section-source">My Tasks · Clock In · Schedule · —</div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+function show(tab, btn) {
+  document.querySelectorAll('.content').forEach(c => c.classList.remove('active'))
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'))
+  document.getElementById('tab-' + tab).classList.add('active')
+  if (btn) btn.classList.add('active')
+}
+</script>
+</body>
+</html>
