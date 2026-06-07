@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Phase 21 — Tools Deep Dive · PRV Preview</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#000;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',sans-serif;-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:40px 20px 80px;gap:48px}
+  h2{font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:12px;text-align:center}
+  .row{display:flex;gap:24px;align-items:flex-start;justify-content:center;flex-wrap:wrap}
+  .phone{width:390px;background:#000;border-radius:44px;border:1px solid rgba(255,255,255,.12);overflow:hidden;position:relative;box-shadow:0 32px 80px rgba(0,0,0,.8),0 8px 24px rgba(0,0,0,.5)}
+  .screen{padding:52px 0 120px;overflow:hidden;max-height:820px}
+  .label{font-size:12px;font-weight:600;color:rgba(255,255,255,.4);margin-top:10px;text-align:center}
+
+  .content{padding:0 16px}
+  .card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.07);border-radius:18px;position:relative;overflow:hidden;margin-bottom:12px}
+  .top-edge{position:absolute;inset:0 0 auto;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.12),transparent)}
+  .section-label{font-size:11px;font-weight:600;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.07em;margin:18px 2px 10px}
+
+  /* kpi */
+  .kpi-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+  .kpi{padding:12px 8px;border-radius:14px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.07);text-align:center}
+  .kpi-val{font-size:17px;font-weight:700}
+  .kpi-lbl{font-size:10px;font-weight:600;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.06em;margin-top:3px}
+
+  /* pills */
+  .pill{display:inline-block;font-size:10px;font-weight:600;padding:3px 8px;border-radius:6px}
+  .pill-inuse{background:rgba(10,132,255,.12);color:rgba(10,132,255,.9)}
+  .pill-avail{background:rgba(48,209,88,.13);color:rgba(48,209,88,.95)}
+  .pill-maint{background:rgba(255,159,10,.13);color:rgba(255,159,10,.95)}
+  .pill-missing{background:rgba(255,69,58,.12);color:rgba(255,69,58,.95)}
+
+  /* filter */
+  .filter-bar{display:flex;gap:4px;padding:4px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.07);border-radius:12px;margin-bottom:14px}
+  .filter-btn{flex:1;padding:6px 0;border-radius:8px;font-size:12px;font-weight:600;border:none;cursor:pointer;background:transparent;color:rgba(255,255,255,.35)}
+  .filter-btn.active{background:rgba(255,255,255,.10);color:rgba(255,255,255,.95)}
+
+  /* tool row */
+  .t-row{display:flex;align-items:center;gap:12px;padding:13px 16px;border-bottom:1px solid rgba(255,255,255,.07)}
+  .t-row:last-child{border-bottom:none}
+  .t-row.maint{border-left:3px solid transparent;border-image:linear-gradient(180deg,rgba(255,159,10,.7),rgba(255,159,10,.4)) 1;padding-left:13px}
+  .t-row.missing{border-left:3px solid transparent;border-image:linear-gradient(180deg,rgba(255,69,58,.7),rgba(255,69,58,.4)) 1;padding-left:13px}
+
+  .t-icon{width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .t-name{font-size:13px;font-weight:700;color:rgba(255,255,255,.95);line-height:1.3}
+  .t-meta{font-size:11px;color:rgba(255,255,255,.35);margin-top:2px}
+
+  /* util bar */
+  .util-row{display:flex;align-items:center;gap:5px;margin-top:5px}
+  .util-track{flex:1;height:3px;background:rgba(255,255,255,.07);border-radius:2px;overflow:hidden}
+  .util-fill{height:100%;border-radius:2px}
+  .util-pct{font-size:10px;color:rgba(255,255,255,.35);width:28px;text-align:right}
+
+  /* category bars */
+  .cat-row{display:flex;align-items:center;gap:10px;padding:9px 16px;border-bottom:1px solid rgba(255,255,255,.07)}
+  .cat-row:last-child{border-bottom:none}
+  .cat-name{font-size:12px;font-weight:600;color:rgba(255,255,255,.85);width:110px;flex-shrink:0}
+  .cat-track{flex:1;height:5px;background:rgba(255,255,255,.07);border-radius:3px;overflow:hidden}
+  .cat-fill{height:100%;border-radius:3px;background:rgba(255,255,255,.3)}
+  .cat-count{font-size:12px;font-weight:700;color:rgba(255,255,255,.65);width:24px;text-align:right}
+
+  /* back */
+  .back-btn{display:flex;align-items:center;gap:6px;background:none;border:none;color:rgba(255,255,255,.65);font-size:14px;font-weight:500;cursor:pointer;padding:0 16px;margin-bottom:20px}
+
+  /* detail */
+  .detail-row{display:flex;justify-content:space-between;align-items:center;padding:11px 16px;border-bottom:1px solid rgba(255,255,255,.07)}
+  .detail-row:last-child{border-bottom:none}
+  .dr-label{font-size:13px;color:rgba(255,255,255,.65)}
+  .dr-val{font-size:13px;font-weight:600;color:rgba(255,255,255,.95)}
+
+  /* assign card */
+  .assign-card{background:rgba(10,132,255,.05);border:1px solid rgba(10,132,255,.18);border-radius:16px;padding:13px 14px;margin-bottom:12px;position:relative;overflow:hidden}
+
+  /* stat tiles */
+  .stat-row{display:flex;gap:10px;margin-bottom:12px}
+  .stat-tile{flex:1;padding:11px 12px;border-radius:14px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.07)}
+  .stat-val{font-size:14px;font-weight:700;color:rgba(255,255,255,.95)}
+  .stat-lbl{font-size:10px;font-weight:600;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.05em;margin-top:3px}
+
+  /* alert */
+  .alert-banner{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:14px;margin-bottom:14px}
+
+  /* sheet */
+  .sheet-overlay{position:absolute;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);display:flex;flex-direction:column;justify-content:flex-end}
+  .sheet{background:rgba(20,20,22,.92);backdrop-filter:blur(48px);border:1px solid rgba(255,255,255,.12);border-radius:32px 32px 0 0;padding:20px 16px 40px;box-shadow:0 -24px 64px rgba(0,0,0,.7)}
+  .sheet-pill{width:36px;height:4px;background:rgba(255,255,255,.15);border-radius:2px;margin:0 auto 20px}
+  .sheet-title{font-size:13px;font-weight:600;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.06em;margin-bottom:14px;padding:0 4px}
+  .sheet-btn{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:14px;margin-bottom:8px;border:none;cursor:pointer;width:100%;text-align:left}
+  .sheet-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .sheet-lbl{font-size:15px;font-weight:600}
+  .sheet-sub{font-size:12px;color:rgba(255,255,255,.35);margin-top:2px}
+
+  /* fab */
+  .fab{position:absolute;bottom:130px;right:16px;width:52px;height:52px;border-radius:26px;background:rgba(255,255,255,.12);backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+
+  /* tab bar */
+  .tab-bar{position:absolute;bottom:0;left:0;right:0;height:88px;display:flex;align-items:flex-start;justify-content:space-around;padding:12px 8px 0;background:rgba(255,255,255,.06);backdrop-filter:blur(32px);border-top:1px solid rgba(255,255,255,.07)}
+  .tab{display:flex;flex-direction:column;align-items:center;gap:4px;opacity:.45;padding:0 12px}
+  .tab.active{opacity:1}
+  .tab-lbl{font-size:10px;font-weight:600}
+</style>
+</head>
+<body>
+
+<h2>Phase 21 — Tools Deep Dive</h2>
+
+<div class="row">
+
+  <!-- SCREEN 1: Tools List -->
+  <div>
+    <div class="phone">
+      <div class="screen">
+        <div class="content">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px">
+            <div>
+              <p style="font-size:13px;color:rgba(255,255,255,.35);margin-bottom:2px">Operations</p>
+              <h1 style="font-size:26px;font-weight:700;letter-spacing:-.02em;color:rgba(255,255,255,.95)">Scule</h1>
+            </div>
+            <div style="padding:6px 12px;border-radius:10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.07);font-size:12px;font-weight:500;color:rgba(255,255,255,.65)">142 unelte</div>
+          </div>
+
+          <!-- KPI -->
+          <div class="kpi-strip">
+            <div class="kpi"><div class="kpi-val">142</div><div class="kpi-lbl">Total</div></div>
+            <div class="kpi"><div class="kpi-val" style="color:rgba(10,132,255,.9)">3</div><div class="kpi-lbl">În Uz</div></div>
+            <div class="kpi"><div class="kpi-val" style="color:rgba(255,159,10,.95)">2</div><div class="kpi-lbl">Service</div></div>
+            <div class="kpi"><div class="kpi-val" style="color:rgba(255,69,58,.95)">0</div><div class="kpi-lbl">Lipsă</div></div>
+          </div>
+
+          <!-- Service overdue alert -->
+          <div class="alert-banner" style="background:rgba(255,159,10,.07);border:1px solid rgba(255,159,10,.18)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,159,10,.9)" stroke-width="1.8" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <div>
+              <p style="font-size:13px;font-weight:700;color:rgba(255,159,10,.95);margin:0">Service Restant</p>
+              <p style="font-size:12px;color:rgba(255,159,10,.65);margin:2px 0 0">Angle Grinder +12z · Plate Compactor +27z</p>
+            </div>
+          </div>
+
+          <!-- Category breakdown -->
+          <div class="card">
+            <div class="top-edge"></div>
+            <div class="cat-row"><span class="cat-name">Hand Tools</span><div class="cat-track"><div class="cat-fill" style="width:100%"></div></div><span class="cat-count">41</span></div>
+            <div class="cat-row"><span class="cat-name">Power Tools</span><div class="cat-track"><div class="cat-fill" style="width:93%"></div></div><span class="cat-count">38</span></div>
+            <div class="cat-row"><span class="cat-name">Heavy Equip.</span><div class="cat-track"><div class="cat-fill" style="width:88%"></div></div><span class="cat-count">36</span></div>
+            <div class="cat-row"><span class="cat-name">Measuring</span><div class="cat-track"><div class="cat-fill" style="width:66%"></div></div><span class="cat-count">27</span></div>
+          </div>
+
+          <!-- Filter -->
+          <div class="filter-bar">
+            <button class="filter-btn active">Toate</button>
+            <button class="filter-btn">Disponibil</button>
+            <button class="filter-btn">În Uz</button>
+            <button class="filter-btn">Service</button>
+            <button class="filter-btn">Lipsă</button>
+          </div>
+        </div>
+
+        <!-- Tools list -->
+        <div class="card" style="margin:0 16px 12px">
+          <div class="top-edge"></div>
+
+          <!-- In Use row -->
+          <div class="t-row">
+            <div class="t-icon" style="background:rgba(10,132,255,.10)">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(10,132,255,.85)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+            </div>
+            <div style="flex:1;min-width:0">
+              <p class="t-name">Rotary Hammer</p>
+              <p class="t-meta">Bosch GBH 2-28 · Ion Crișan · Cluj Mănăștur</p>
+              <div class="util-row">
+                <div class="util-track"><div class="util-fill" style="width:94%;background:rgba(48,209,88,.6)"></div></div>
+                <span class="util-pct">94%</span>
+              </div>
+            </div>
+            <span class="pill pill-inuse" style="flex-shrink:0;align-self:flex-start">În Uz</span>
+          </div>
+
+          <!-- Maintenance (amber border) -->
+          <div class="t-row maint">
+            <div class="t-icon" style="background:rgba(255,159,10,.10)">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,159,10,.85)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+            </div>
+            <div style="flex:1;min-width:0">
+              <p class="t-name">Angle Grinder</p>
+              <p class="t-meta" style="color:rgba(255,159,10,.7)">Makita GA9020 · Service restant +12 zile</p>
+              <div class="util-row">
+                <div class="util-track"><div class="util-fill" style="width:71%;background:rgba(255,159,10,.6)"></div></div>
+                <span class="util-pct">71%</span>
+              </div>
+            </div>
+            <span class="pill pill-maint" style="flex-shrink:0;align-self:flex-start">Service</span>
+          </div>
+
+          <!-- Available -->
+          <div class="t-row">
+            <div class="t-icon" style="background:rgba(48,209,88,.10)">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(48,209,88,.85)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+            </div>
+            <div style="flex:1;min-width:0">
+              <p class="t-name">Cordless Drill</p>
+              <p class="t-meta">DeWalt DCD796 · Warehouse A · Ultima uz: 3 Iun</p>
+              <div class="util-row">
+                <div class="util-track"><div class="util-fill" style="width:68%;background:rgba(255,159,10,.6)"></div></div>
+                <span class="util-pct">68%</span>
+              </div>
+            </div>
+            <span class="pill pill-avail" style="flex-shrink:0;align-self:flex-start">Disponibil</span>
+          </div>
+
+          <!-- Maintenance overdue (red left-border) -->
+          <div class="t-row" style="border-left:3px solid transparent;border-image:linear-gradient(180deg,rgba(255,69,58,.7),rgba(255,69,58,.4)) 1;padding-left:13px;border-bottom:none">
+            <div class="t-icon" style="background:rgba(255,69,58,.10)">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,69,58,.85)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+            </div>
+            <div style="flex:1;min-width:0">
+              <p class="t-name">Plate Compactor</p>
+              <p class="t-meta" style="color:rgba(255,69,58,.7)">Wacker Neuson · Service restant +27 zile</p>
+              <div class="util-row">
+                <div class="util-track"><div class="util-fill" style="width:77%;background:rgba(255,159,10,.6)"></div></div>
+                <span class="util-pct">77%</span>
+              </div>
+            </div>
+            <span class="pill pill-maint" style="flex-shrink:0;align-self:flex-start">Service</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="fab">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.9)" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </div>
+
+      <div class="tab-bar">
+        <div class="tab"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span class="tab-lbl">Command</span></div>
+        <div class="tab active"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg><span class="tab-lbl">Operations</span></div>
+        <div class="tab"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><span class="tab-lbl">People</span></div>
+        <div class="tab"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span class="tab-lbl">Finance</span></div>
+        <div class="tab"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span class="tab-lbl">Intelligence</span></div>
+      </div>
+    </div>
+    <div class="label">Lista scule · /tools</div>
+  </div>
+
+  <!-- SCREEN 2: Tool Detail (In Use) -->
+  <div>
+    <div class="phone">
+      <div class="screen">
+        <button class="back-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+          Scule
+        </button>
+
+        <div class="content">
+          <!-- Hero card -->
+          <div class="card" style="margin-bottom:12px">
+            <div class="top-edge"></div>
+            <div style="padding:16px">
+              <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px">
+                <div>
+                  <p style="font-size:11px;font-weight:600;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px">Power Tools</p>
+                  <h1 style="font-size:20px;font-weight:700;color:rgba(255,255,255,.95);margin:0">Rotary Hammer</h1>
+                  <p style="font-size:13px;color:rgba(255,255,255,.55);margin:3px 0 0">Bosch GBH 2-28</p>
+                </div>
+                <span class="pill pill-inuse">În Uz</span>
+              </div>
+              <!-- stat tiles inline -->
+              <div style="display:flex;gap:8px">
+                <div style="flex:1;padding:8px 10px;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07)">
+                  <p style="font-size:13px;font-weight:700;color:rgba(48,209,88,.95);margin:0">94%</p>
+                  <p style="font-size:10px;font-weight:600;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.05em;margin:2px 0 0">Utilizare</p>
+                </div>
+                <div style="flex:1;padding:8px 10px;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07)">
+                  <p style="font-size:13px;font-weight:700;color:rgba(255,255,255,.95);margin:0">12</p>
+                  <p style="font-size:10px;font-weight:600;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.05em;margin:2px 0 0">Uz Luna</p>
+                </div>
+                <div style="flex:1;padding:8px 10px;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07)">
+                  <p style="font-size:13px;font-weight:700;color:rgba(255,255,255,.95);margin:0">€380</p>
+                  <p style="font-size:10px;font-weight:600;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.05em;margin:2px 0 0">Valoare</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Assignment card (blue, only when In Use) -->
+          <div class="assign-card">
+            <div style="position:absolute;inset:0 0 auto;height:1px;background:linear-gradient(90deg,transparent,rgba(10,132,255,.2),transparent)"></div>
+            <p style="font-size:11px;font-weight:600;color:rgba(10,132,255,.7);text-transform:uppercase;letter-spacing:.07em;margin:0 0 8px">Asignat</p>
+            <p style="font-size:14px;font-weight:700;color:rgba(255,255,255,.95);margin:0 0 3px">Ion Crișan · Cluj Mănăștur</p>
+            <div style="display:flex;gap:8px;margin-top:8px">
+              <div style="padding:4px 9px;border-radius:7px;background:rgba(10,132,255,.10);border:1px solid rgba(10,132,255,.18);font-size:11px;font-weight:600;color:rgba(10,132,255,.85)">Retur 9 Iun</div>
+            </div>
+          </div>
+
+          <!-- Stats tiles -->
+          <div class="stat-row">
+            <div class="stat-tile">
+              <p class="stat-val">3.2 ani</p>
+              <p class="stat-lbl">Vârstă</p>
+            </div>
+            <div class="stat-tile">
+              <p class="stat-val">Apr 2</p>
+              <p class="stat-lbl">Ultimul service</p>
+            </div>
+            <div class="stat-tile">
+              <p class="stat-val" style="color:rgba(48,209,88,.95)">15 Iul</p>
+              <p class="stat-lbl">Următor</p>
+            </div>
+          </div>
+
+          <!-- Specs -->
+          <p class="section-label">Specificații</p>
+          <div class="card">
+            <div class="top-edge"></div>
+            <div class="detail-row"><span class="dr-label">Categorie</span><span class="dr-val">Power Tools</span></div>
+            <div class="detail-row"><span class="dr-label">Model</span><span class="dr-val">Bosch GBH 2-28</span></div>
+            <div class="detail-row"><span class="dr-label">Vârstă</span><span class="dr-val">3.2 ani</span></div>
+            <div class="detail-row"><span class="dr-label">Valoare</span><span class="dr-val">€380</span></div>
+            <div class="detail-row"><span class="dr-label">Utilizare luna</span><span class="dr-val" style="color:rgba(48,209,88,.95)">12 utilizări</span></div>
+          </div>
+
+          <!-- Service history -->
+          <p class="section-label">Mentenanță</p>
+          <div class="card">
+            <div class="top-edge"></div>
+            <div style="display:flex;align-items:center;gap:10px;padding:11px 16px;border-bottom:1px solid rgba(255,255,255,.07)">
+              <div style="width:8px;height:8px;border-radius:50%;background:rgba(48,209,88,.85);flex-shrink:0"></div>
+              <div style="flex:1">
+                <p style="font-size:13px;font-weight:600;color:rgba(255,255,255,.95);margin:0">Full Service</p>
+                <p style="font-size:11px;color:rgba(255,255,255,.35);margin:2px 0 0">Apr 2, 2026</p>
+              </div>
+              <span class="pill pill-avail" style="font-size:9px">Efectuat</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;padding:11px 16px;border-bottom:none">
+              <div style="width:8px;height:8px;border-radius:50%;background:rgba(48,209,88,.85);flex-shrink:0"></div>
+              <div style="flex:1">
+                <p style="font-size:13px;font-weight:600;color:rgba(255,255,255,.95);margin:0">Următor service</p>
+                <p style="font-size:11px;color:rgba(48,209,88,.75);margin:2px 0 0">15 Iul 2026</p>
+              </div>
+              <span style="font-size:9px;font-weight:600;padding:3px 7px;border-radius:5px;background:rgba(48,209,88,.13);color:rgba(48,209,88,.95)">La timp</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="fab">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.9)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+      </div>
+
+      <div class="tab-bar">
+        <div class="tab"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span class="tab-lbl">Command</span></div>
+        <div class="tab active"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg><span class="tab-lbl">Operations</span></div>
+        <div class="tab"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><span class="tab-lbl">People</span></div>
+        <div class="tab"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span class="tab-lbl">Finance</span></div>
+        <div class="tab"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span class="tab-lbl">Intelligence</span></div>
+      </div>
+    </div>
+    <div class="label">Detalii sculă (În Uz) · /tools/t1</div>
+  </div>
+
+  <!-- SCREEN 3: FAB Sheet -->
+  <div>
+    <div class="phone">
+      <div class="screen" style="position:relative">
+        <button class="back-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+          Scule
+        </button>
+        <div class="content" style="opacity:.25">
+          <div class="card" style="height:130px;margin-bottom:12px"></div>
+          <div style="background:rgba(10,132,255,.05);border:1px solid rgba(10,132,255,.18);border-radius:16px;height:80px;margin-bottom:12px"></div>
+          <div style="display:flex;gap:10px;margin-bottom:12px">
+            <div style="flex:1;height:56px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.07);border-radius:14px"></div>
+            <div style="flex:1;height:56px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.07);border-radius:14px"></div>
+            <div style="flex:1;height:56px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.07);border-radius:14px"></div>
+          </div>
+        </div>
+
+        <div class="sheet-overlay">
+          <div class="sheet">
+            <div class="sheet-pill"></div>
+            <div class="sheet-title">Acțiuni Sculă</div>
+
+            <button class="sheet-btn" style="background:rgba(10,132,255,.15);border:1px solid rgba(10,132,255,.25);margin-bottom:8px">
+              <div class="sheet-icon" style="background:rgba(10,132,255,.2)">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(10,132,255,.9)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="23" y1="11" x2="23" y2="17"/><line x1="20" y1="14" x2="26" y2="14"/></svg>
+              </div>
+              <div>
+                <p class="sheet-lbl" style="color:rgba(10,132,255,.9)">Asignează</p>
+                <p class="sheet-sub">Trimite la angajat sau șantier</p>
+              </div>
+            </button>
+
+            <button class="sheet-btn" style="background:rgba(255,159,10,.10);border:1px solid rgba(255,159,10,.2);margin-bottom:8px">
+              <div class="sheet-icon" style="background:rgba(255,159,10,.18)">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,159,10,.9)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+              </div>
+              <div>
+                <p class="sheet-lbl" style="color:rgba(255,159,10,.95)">Trimite la Service</p>
+                <p class="sheet-sub">Programare mentenanță</p>
+              </div>
+            </button>
+
+            <button class="sheet-btn" style="background:rgba(48,209,88,.12);border:1px solid rgba(48,209,88,.2);margin-bottom:8px">
+              <div class="sheet-icon" style="background:rgba(48,209,88,.15)">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(48,209,88,.9)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <div>
+                <p class="sheet-lbl" style="color:rgba(48,209,88,.95)">Marchează Returnat</p>
+                <p class="sheet-sub">Returnare la depozit</p>
+              </div>
+            </button>
+
+            <button class="sheet-btn" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.09);margin-bottom:8px">
+              <div class="sheet-icon" style="background:rgba(255,255,255,.08)">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              </div>
+              <div>
+                <p class="sheet-lbl">Editează</p>
+                <p class="sheet-sub">Model, valoare, categorie</p>
+              </div>
+            </button>
+
+            <button class="sheet-btn" style="background:rgba(255,69,58,.10);border:1px solid rgba(255,69,58,.2)">
+              <div class="sheet-icon" style="background:rgba(255,69,58,.15)">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,69,58,.9)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+              </div>
+              <div>
+                <p class="sheet-lbl" style="color:rgba(255,69,58,.95)">Marchează Lipsă</p>
+                <p class="sheet-sub">Pierdut sau furat</p>
+              </div>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-bar">
+        <div class="tab"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span class="tab-lbl">Command</span></div>
+        <div class="tab active"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg><span class="tab-lbl">Operations</span></div>
+        <div class="tab"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><span class="tab-lbl">People</span></div>
+        <div class="tab"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span class="tab-lbl">Finance</span></div>
+        <div class="tab"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span class="tab-lbl">Intelligence</span></div>
+      </div>
+    </div>
+    <div class="label">Sheet acțiuni · Asignează / Service / Returnare / Lipsă</div>
+  </div>
+
+</div>
+
+</body>
+</html>
