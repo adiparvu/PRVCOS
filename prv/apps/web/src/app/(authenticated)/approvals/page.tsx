@@ -1,10 +1,10 @@
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import { getSession } from "@prv/auth"
-import { ApprovalsWorkspace } from "./ApprovalsWorkspace"
+import { ApprovalListClient } from "./ApprovalListClient"
 
 export const dynamic = "force-dynamic"
-export const metadata = { title: "Approvals" }
+export const metadata = { title: "Aprobări · PRV" }
 
 export default async function ApprovalsPage() {
   const cookieStore = await cookies()
@@ -17,9 +17,5 @@ export default async function ApprovalsPage() {
     redirect("/auth/login")
   }
 
-  return (
-    <div className="pt-14 max-w-2xl mx-auto">
-      <ApprovalsWorkspace />
-    </div>
-  )
+  return <ApprovalListClient />
 }
