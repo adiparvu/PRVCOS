@@ -1,10 +1,10 @@
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import { getSession } from "@prv/auth"
-import { PayrollWorkspace } from "./PayrollWorkspace"
+import { PayrollListClient } from "./PayrollListClient"
 
 export const dynamic = "force-dynamic"
-export const metadata = { title: "Payroll" }
+export const metadata = { title: "Salarizare · PRV" }
 
 export default async function PayrollPage() {
   const cookieStore = await cookies()
@@ -17,9 +17,5 @@ export default async function PayrollPage() {
     redirect("/auth/login")
   }
 
-  return (
-    <div className="pt-14 max-w-2xl mx-auto">
-      <PayrollWorkspace />
-    </div>
-  )
+  return <PayrollListClient />
 }
