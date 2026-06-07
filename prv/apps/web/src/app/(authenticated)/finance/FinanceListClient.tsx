@@ -815,6 +815,76 @@ export function FinanceListClient() {
         </div>
       </div>
 
+      {/* Cash Flow shortcut */}
+      <div style={{ padding: "0 20px", marginBottom: 16 }}>
+        <Link
+          href="/finance/cash-flow"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "14px 16px",
+            borderRadius: 16,
+            background: "rgba(10,132,255,0.08)",
+            border: "1px solid rgba(10,132,255,0.2)",
+            textDecoration: "none",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 10,
+                background: "rgba(10,132,255,0.15)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="rgba(10,132,255,0.9)"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+              </svg>
+            </div>
+            <div>
+              <p
+                style={{
+                  fontSize: 14,
+                  fontWeight: 600,
+                  color: "rgba(255,255,255,0.90)",
+                  margin: 0,
+                }}
+              >
+                Cash Flow
+              </p>
+              <p style={{ fontSize: 12, color: "rgba(255,255,255,0.40)", margin: "2px 0 0" }}>
+                Balanță · Prognoză 30/60/90d · Breakdown
+              </p>
+            </div>
+          </div>
+          <svg
+            width="8"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="rgba(255,255,255,0.25)"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+          >
+            <path d="M9 18l6-6-6-6" />
+          </svg>
+        </Link>
+      </div>
+
       {/* Filter chips */}
       <div
         style={{
