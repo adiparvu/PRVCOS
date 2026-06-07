@@ -1,10 +1,10 @@
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import { getSession } from "@prv/auth"
-import { AttendanceWorkspace } from "./AttendanceWorkspace"
+import { AttendanceListClient } from "./AttendanceListClient"
 
 export const dynamic = "force-dynamic"
-export const metadata = { title: "Attendance" }
+export const metadata = { title: "Prezență · PRV" }
 
 export default async function AttendancePage() {
   const cookieStore = await cookies()
@@ -17,9 +17,5 @@ export default async function AttendancePage() {
     redirect("/auth/login")
   }
 
-  return (
-    <div className="pt-14 max-w-2xl mx-auto">
-      <AttendanceWorkspace />
-    </div>
-  )
+  return <AttendanceListClient />
 }
