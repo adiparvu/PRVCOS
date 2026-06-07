@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Link from "next/link"
 import {
   GlassStatCard,
   GlassAlertBanner,
@@ -346,13 +347,18 @@ export function FinanceWorkspace() {
         />
       </div>
 
-      {/* Overdue alert */}
+      {/* Overdue alert — links to invoice list */}
       <div className="mb-4">
-        <GlassAlertBanner
-          type="error"
-          title="2 invoices overdue"
-          description="Total outstanding: €3,240 · Action required"
-        />
+        <Link
+          href="/finance/invoices?filter=overdue"
+          style={{ textDecoration: "none", display: "block" }}
+        >
+          <GlassAlertBanner
+            type="error"
+            title="3 facturi restante"
+            description="Total restant: €8,340 · Necesită acțiune"
+          />
+        </Link>
       </div>
 
       {/* Main tabs */}
@@ -455,10 +461,138 @@ export function FinanceWorkspace() {
       {/* ── Invoices tab ── */}
       {activeTab === "invoices" && (
         <>
-          <Label>Open Invoices</Label>
-          <GlassCard>
-            <GlassTable<InvoiceRow> columns={INV_COLUMNS} data={INVOICES} keyField="id" />
-          </GlassCard>
+          <div className="flex items-center justify-between mx-1 mt-6 mb-2.5">
+            <p className="text-[11px] font-semibold text-white/35 uppercase tracking-widest">
+              Facturi recente
+            </p>
+            <Link
+              href="/finance/invoices"
+              className="text-[11px] font-medium text-white/40 flex items-center gap-1"
+              style={{ textDecoration: "none" }}
+            >
+              Vezi toate
+              <svg
+                width="5"
+                height="9"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M9 18l6-6-6-6" />
+              </svg>
+            </Link>
+          </div>
+          <div className="flex flex-col gap-2">
+            {INVOICES.map((inv) => {
+              const s = STATUS_STYLE[inv.status]!
+              const isOverdue = inv.status === "overdue"
+              const isDue = inv.status === "due"
+              return (
+                <Link
+                  key={inv.id}
+                  href={`/finance/invoices/${inv.id}`}
+                  style={{
+                    display: "block",
+                    background: "var(--prv-g1)",
+                    border: "1px solid var(--prv-border-subtle)",
+                    borderRadius: 16,
+                    padding: "12px 14px",
+                    position: "relative",
+                    overflow: "hidden",
+                    textDecoration: "none",
+                  }}
+                >
+                  {(isOverdue || isDue) && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        left: 0,
+                        top: 0,
+                        bottom: 0,
+                        width: 3,
+                        background: isOverdue
+                          ? "linear-gradient(180deg,#ff4444,#ff6b6b)"
+                          : "linear-gradient(180deg,#ffaa00,#ffcc44)",
+                        borderRadius: "16px 0 0 16px",
+                      }}
+                    />
+                  )}
+                  <div
+                    style={{
+                      paddingLeft: isOverdue || isDue ? 4 : 0,
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "flex-start",
+                    }}
+                  >
+                    <div>
+                      <p
+                        style={{
+                          fontSize: 11,
+                          fontWeight: 600,
+                          color: "rgba(255,255,255,0.40)",
+                          letterSpacing: "0.03em",
+                        }}
+                      >
+                        {inv.ref}
+                      </p>
+                      <p
+                        style={{
+                          fontSize: 14,
+                          fontWeight: 600,
+                          color: "rgba(255,255,255,0.92)",
+                          marginTop: 2,
+                        }}
+                      >
+                        {inv.client}
+                      </p>
+                    </div>
+                    <div style={{ textAlign: "right" }}>
+                      <p
+                        style={{
+                          fontSize: 15,
+                          fontWeight: 700,
+                          color: isOverdue ? "#ff6b6b" : "rgba(255,255,255,0.92)",
+                          letterSpacing: "-0.3px",
+                        }}
+                      >
+                        {inv.amount}
+                      </p>
+                      <span
+                        style={{
+                          fontSize: 10,
+                          fontWeight: 600,
+                          textTransform: "uppercase",
+                          letterSpacing: "0.04em",
+                          padding: "2px 7px",
+                          borderRadius: 100,
+                          background: s.bg,
+                          color: s.color,
+                          marginTop: 4,
+                          display: "inline-block",
+                        }}
+                      >
+                        {s.label}
+                      </span>
+                    </div>
+                  </div>
+                  <p
+                    style={{
+                      fontSize: 11,
+                      color: "rgba(255,255,255,0.30)",
+                      marginTop: 6,
+                      paddingLeft: isOverdue || isDue ? 4 : 0,
+                    }}
+                  >
+                    Scad. {inv.due}
+                  </p>
+                </Link>
+              )
+            })}
+          </div>
         </>
       )}
     </div>
