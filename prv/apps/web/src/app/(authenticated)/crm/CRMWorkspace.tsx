@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Link from "next/link"
 import {
   GlassSegmentedControl,
   GlassTabs,
@@ -393,7 +394,7 @@ function ClientDetail({ client, onBack }: { client: Client; onBack: () => void }
               l: "NPS",
               color: "rgba(10,132,255,0.9)",
             },
-            { v: String(client.openQuotes), l: "Quotes", color: "rgba(255,159,10,0.95)" },
+            { v: String(client.openQuotes), l: "Oferte", color: "rgba(100,160,255,0.95)" },
           ].map(({ v, l, color }) => (
             <div
               key={l}
@@ -431,10 +432,15 @@ function ClientDetail({ client, onBack }: { client: Client; onBack: () => void }
             {client.openQuotes > 0 && (
               <>
                 {" "}
-                <span className="text-white/90 font-semibold">
-                  {client.openQuotes} open quote
-                </span>{" "}
-                awaiting response.
+                <Link
+                  href={`/crm/quotes?clientId=${client.id}`}
+                  className="font-semibold"
+                  style={{ color: "#7eb8ff", textDecoration: "none" }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {client.openQuotes} ofert{client.openQuotes > 1 ? "e" : "ă"} active
+                </Link>{" "}
+                în așteptare.
               </>
             )}
           </p>
@@ -555,32 +561,59 @@ export function CRMWorkspace() {
       {/* KPI strip */}
       <div className="grid grid-cols-4 gap-2.5 mb-4">
         {[
-          { v: String(CLIENTS.length), l: "Clients", c: "var(--prv-text-1)" },
+          { v: String(CLIENTS.length), l: "Clients", c: "var(--prv-text-1)", href: undefined },
           {
             v: String(CLIENTS.filter((c) => c.status === "lead").length),
             l: "Leads",
             c: "rgba(10,132,255,0.9)",
+            href: undefined,
           },
           {
             v: String(CLIENTS.reduce((s, c) => s + c.openQuotes, 0)),
-            l: "Proposals",
-            c: "rgba(255,159,10,0.95)",
+            l: "Oferte",
+            c: "rgba(100,160,255,0.95)",
+            href: "/crm/quotes",
           },
-          { v: `€${(totalLTV / 1000).toFixed(0)}K`, l: "LTV", c: "rgba(48,209,88,0.95)" },
-        ].map(({ v, l, c }) => (
-          <div
-            key={l}
-            className="py-3 rounded-[14px] text-center"
-            style={{ background: "var(--prv-g1)", border: "1px solid var(--prv-border-subtle)" }}
-          >
-            <p className="text-[18px] font-bold" style={{ color: c }}>
-              {v}
-            </p>
-            <p className="text-[10px] font-semibold text-white/35 uppercase tracking-widest mt-1">
-              {l}
-            </p>
-          </div>
-        ))}
+          {
+            v: `€${(totalLTV / 1000).toFixed(0)}K`,
+            l: "LTV",
+            c: "rgba(48,209,88,0.95)",
+            href: undefined,
+          },
+        ].map(({ v, l, c, href }) => {
+          const inner = (
+            <>
+              <p className="text-[18px] font-bold" style={{ color: c }}>
+                {v}
+              </p>
+              <p className="text-[10px] font-semibold text-white/35 uppercase tracking-widest mt-1">
+                {l}
+              </p>
+            </>
+          )
+          return href ? (
+            <Link
+              key={l}
+              href={href}
+              className="py-3 rounded-[14px] text-center block"
+              style={{
+                background: "var(--prv-g1)",
+                border: "1px solid var(--prv-border-subtle)",
+                textDecoration: "none",
+              }}
+            >
+              {inner}
+            </Link>
+          ) : (
+            <div
+              key={l}
+              className="py-3 rounded-[14px] text-center"
+              style={{ background: "var(--prv-g1)", border: "1px solid var(--prv-border-subtle)" }}
+            >
+              {inner}
+            </div>
+          )
+        })}
       </div>
 
       {/* Filter */}
@@ -613,14 +646,31 @@ export function CRMWorkspace() {
                 <p className="text-[14px] font-bold text-white/90 truncate">{client.name}</p>
                 <p className="text-[12px] text-white/35 mt-0.5 truncate">{client.sub}</p>
               </div>
-              <div className="text-right shrink-0">
+              <div className="text-right shrink-0 flex flex-col items-end gap-1">
                 <p className="text-[14px] font-bold text-white/90">{client.value}</p>
-                <span
-                  className="text-[10px] font-semibold px-2 py-0.5 rounded-[6px] mt-1 inline-block"
-                  style={{ background: s.bg, color: s.color }}
-                >
-                  {s.label}
-                </span>
+                <div className="flex items-center gap-1.5">
+                  {client.openQuotes > 0 && (
+                    <Link
+                      href={`/crm/quotes?clientId=${client.id}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="text-[10px] font-semibold px-2 py-0.5 rounded-[6px]"
+                      style={{
+                        background: "rgba(100,160,255,0.12)",
+                        border: "1px solid rgba(100,160,255,0.22)",
+                        color: "#7eb8ff",
+                        textDecoration: "none",
+                      }}
+                    >
+                      {client.openQuotes} ofert{client.openQuotes > 1 ? "e" : "ă"}
+                    </Link>
+                  )}
+                  <span
+                    className="text-[10px] font-semibold px-2 py-0.5 rounded-[6px]"
+                    style={{ background: s.bg, color: s.color }}
+                  >
+                    {s.label}
+                  </span>
+                </div>
               </div>
             </button>
           )
