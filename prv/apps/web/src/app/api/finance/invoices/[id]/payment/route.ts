@@ -30,9 +30,9 @@ export const POST = withGates(
       actorId: ctx.session.userId,
       companyId: ctx.session.companyId,
       action: "finance.invoice.payment",
-      resourceType: "invoice",
-      resourceId: id,
-      metadata: { method, paidDate, amount: amount ?? null, note: note ?? null },
+      entityType: "invoice",
+      entityId: id,
+      payload: { method, paidDate, amount: amount ?? null, note: note ?? null },
       ipAddress: req.headers.get("x-forwarded-for") ?? "unknown",
       userAgent: req.headers.get("user-agent") ?? "unknown",
     })

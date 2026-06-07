@@ -28,10 +28,26 @@ function IconChevronLeft() {
   )
 }
 
-function Skeleton({ w, h, radius = 6 }: { w: number | string; h: number; radius?: number }) {
+function Skeleton({
+  w,
+  h,
+  radius = 6,
+  style,
+}: {
+  w: number | string
+  h: number
+  radius?: number
+  style?: React.CSSProperties
+}) {
   return (
     <div
-      style={{ width: w, height: h, borderRadius: radius, background: "rgba(255,255,255,0.07)" }}
+      style={{
+        width: w,
+        height: h,
+        borderRadius: radius,
+        background: "rgba(255,255,255,0.07)",
+        ...style,
+      }}
     />
   )
 }

@@ -28,9 +28,9 @@ export const POST = withGates(
       actorId: ctx.session.userId,
       companyId: ctx.session.companyId,
       action: `crm.quote.${decision}`,
-      resourceType: "quote",
-      resourceId: id,
-      metadata: { decision, note: note ?? null },
+      entityType: "quote",
+      entityId: id,
+      payload: { decision, note: note ?? null },
       ipAddress: req.headers.get("x-forwarded-for") ?? "unknown",
       userAgent: req.headers.get("user-agent") ?? "unknown",
     })

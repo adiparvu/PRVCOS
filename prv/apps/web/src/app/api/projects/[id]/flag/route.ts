@@ -29,9 +29,9 @@ export const POST = withGates(
       actorId: ctx.session.userId,
       companyId: ctx.session.companyId,
       action: `projects.flag.${type}`,
-      resourceType: "project",
-      resourceId: id,
-      metadata: { type, severity, note },
+      entityType: "project",
+      entityId: id,
+      payload: { type, severity, note },
       ipAddress: req.headers.get("x-forwarded-for") ?? "unknown",
       userAgent: req.headers.get("user-agent") ?? "unknown",
     })

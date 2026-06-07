@@ -30,9 +30,9 @@ export const POST = withGates(
       actorId: ctx.session.userId,
       companyId: ctx.session.companyId,
       action: `hr.time_off.${action}`,
-      resourceType: "time_off_request",
-      resourceId: id,
-      metadata: { reason: reason ?? null },
+      entityType: "time_off_request",
+      entityId: id,
+      payload: { reason: reason ?? null },
       ipAddress: req.headers.get("x-forwarded-for") ?? "unknown",
       userAgent: req.headers.get("user-agent") ?? "unknown",
     })
