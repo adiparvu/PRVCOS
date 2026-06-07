@@ -1,10 +1,10 @@
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import { getSession } from "@prv/auth"
-import { DocumentsWorkspace } from "./DocumentsWorkspace"
+import { DocumentsListClient } from "./DocumentsListClient"
 
 export const dynamic = "force-dynamic"
-export const metadata = { title: "Documents" }
+export const metadata = { title: "Documente · PRV" }
 
 export default async function DocumentsPage() {
   const cookieStore = await cookies()
@@ -17,9 +17,5 @@ export default async function DocumentsPage() {
     redirect("/auth/login")
   }
 
-  return (
-    <div className="pt-14 max-w-2xl mx-auto">
-      <DocumentsWorkspace />
-    </div>
-  )
+  return <DocumentsListClient />
 }
