@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phase 22 — Approvals Deep Dive</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #000;
+    color: rgba(255,255,255,.93);
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    padding: 40px 20px 80px;
+  }
+
+  /* ── layout ── */
+  .page-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(255,255,255,.35);
+    text-transform: uppercase;
+    letter-spacing: .1em;
+    margin-bottom: 6px;
+  }
+  .page-sub {
+    font-size: 22px;
+    font-weight: 700;
+    color: rgba(255,255,255,.93);
+    margin-bottom: 32px;
+  }
+
+  .screens {
+    display: flex;
+    gap: 28px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  /* ── phone frame ── */
+  .phone {
+    width: 320px;
+    min-height: 640px;
+    background: #0a0a0a;
+    border-radius: 44px;
+    border: 1.5px solid rgba(255,255,255,.1);
+    overflow: hidden;
+    box-shadow: 0 32px 80px rgba(0,0,0,.8), inset 0 1px 0 rgba(255,255,255,.14);
+    flex-shrink: 0;
+  }
+  .phone-inner {
+    padding: 0 0 40px;
+    overflow-y: auto;
+  }
+
+  /* ── screen label ── */
+  .screen-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(255,255,255,.35);
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    margin-bottom: 10px;
+    padding-left: 4px;
+  }
+
+  /* ── tokens ── */
+  :root {
+    --g1: rgba(255,255,255,.055);
+    --g2: rgba(255,255,255,.09);
+    --bd: rgba(255,255,255,.1);
+    --bds: rgba(255,255,255,.07);
+    --t1: rgba(255,255,255,.93);
+    --t2: rgba(255,255,255,.6);
+    --t3: rgba(255,255,255,.35);
+
+    --green:    rgba(48,209,88,.95);
+    --green-bg: rgba(48,209,88,.13);
+    --blue:     rgba(10,132,255,.9);
+    --blue-bg:  rgba(10,132,255,.13);
+    --amber:    rgba(255,159,10,.95);
+    --amber-bg: rgba(255,159,10,.13);
+    --red:      rgba(255,69,58,.95);
+    --red-bg:   rgba(255,69,58,.12);
+    --purple:   rgba(191,90,242,.9);
+    --purple-bg:rgba(191,90,242,.12);
+  }
+
+  /* ── header ── */
+  .hdr {
+    padding: 36px 16px 0;
+    margin-bottom: 18px;
+  }
+  .hdr-row { display: flex; align-items: flex-start; justify-content: space-between; }
+  .hdr-sup { font-size: 12px; color: var(--t3); margin-bottom: 3px; }
+  .hdr-title { font-size: 24px; font-weight: 700; letter-spacing: -.02em; color: var(--t1); }
+  .hdr-badge {
+    padding: 5px 11px;
+    border-radius: 9px;
+    background: var(--g1);
+    border: 1px solid var(--bds);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--t2);
+  }
+
+  /* ── kpi strip ── */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4,1fr);
+    gap: 8px;
+    padding: 0 16px;
+    margin-bottom: 12px;
+  }
+  .kpi-tile {
+    padding: 10px 6px;
+    border-radius: 13px;
+    background: var(--g1);
+    border: 1px solid var(--bds);
+    text-align: center;
+  }
+  .kpi-val { font-size: 16px; font-weight: 700; }
+  .kpi-lbl { font-size: 9px; font-weight: 600; color: var(--t3); text-transform: uppercase; letter-spacing: .06em; margin-top: 3px; }
+
+  /* ── alert banner ── */
+  .alert-banner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 16px 12px;
+    padding: 11px 13px;
+    border-radius: 13px;
+    background: rgba(255,159,10,.07);
+    border: 1px solid rgba(255,159,10,.18);
+  }
+  .alert-banner .alert-title { font-size: 12px; font-weight: 700; color: var(--amber); }
+  .alert-banner .alert-sub { font-size: 11px; color: rgba(255,159,10,.55); margin-top: 1px; }
+
+  /* ── filter bar ── */
+  .filter-bar {
+    display: flex;
+    gap: 4px;
+    padding: 4px;
+    background: var(--g1);
+    border: 1px solid var(--bds);
+    border-radius: 11px;
+    margin: 0 16px 14px;
+    overflow-x: auto;
+  }
+  .filter-btn {
+    flex: 0 0 auto;
+    padding: 5px 11px;
+    border-radius: 7px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--t3);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .filter-btn.active { background: var(--g2); color: var(--t1); }
+
+  /* ── section label ── */
+  .section-lbl {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--t3);
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    margin: 0 18px 8px;
+  }
+
+  /* ── approval list ── */
+  .approval-list {
+    background: var(--g1);
+    border: 1px solid var(--bds);
+    border-radius: 17px;
+    margin: 0 16px;
+    position: relative;
+    overflow: hidden;
+  }
+  .approval-list::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto;
+    height: 1px;
+    background: linear-gradient(90deg,transparent,var(--bd),transparent);
+  }
+
+  .approval-row {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 13px 15px;
+    border-bottom: 1px solid var(--bds);
+    text-decoration: none;
+    position: relative;
+  }
+  .approval-row:last-child { border-bottom: none; }
+  .approval-row.border-amber {
+    border-left: 3px solid transparent;
+    border-image: linear-gradient(180deg,rgba(255,159,10,.7),rgba(255,159,10,.4)) 1;
+    padding-left: 12px;
+  }
+  .approval-row.border-red {
+    border-left: 3px solid transparent;
+    border-image: linear-gradient(180deg,rgba(255,69,58,.7),rgba(255,69,58,.4)) 1;
+    padding-left: 12px;
+  }
+
+  /* ── type icon ── */
+  .type-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .approval-meta { flex: 1; min-width: 0; }
+  .approval-type { font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--t3); margin-bottom: 2px; }
+  .approval-name { font-size: 13px; font-weight: 700; color: var(--t1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 2px; }
+  .approval-sub { font-size: 11px; color: var(--t3); }
+
+  .pill {
+    font-size: 9px;
+    font-weight: 600;
+    padding: 3px 7px;
+    border-radius: 5px;
+    flex-shrink: 0;
+    align-self: flex-start;
+    white-space: nowrap;
+  }
+
+  /* ── detail view ── */
+  .back-link {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--t2);
+    padding: 32px 16px 18px;
+  }
+
+  .card {
+    background: var(--g1);
+    border: 1px solid var(--bds);
+    border-radius: 18px;
+    margin: 0 16px 12px;
+    position: relative;
+    overflow: hidden;
+  }
+  .card::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto;
+    height: 1px;
+    background: linear-gradient(90deg,transparent,var(--bd),transparent);
+  }
+  .card-pad { padding: 14px 15px; }
+
+  .hero-type {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    color: var(--t3);
+    margin-bottom: 4px;
+  }
+  .hero-title { font-size: 18px; font-weight: 700; color: var(--t1); margin-bottom: 3px; }
+  .hero-sub { font-size: 13px; color: var(--t2); margin-bottom: 11px; }
+  .hero-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+  .meta-pill {
+    padding: 4px 9px;
+    border-radius: 7px;
+    background: var(--g1);
+    border: 1px solid var(--bds);
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--t2);
+  }
+
+  /* ── stat tiles ── */
+  .stat-tiles {
+    display: flex;
+    gap: 8px;
+    padding: 0 16px;
+    margin-bottom: 12px;
+  }
+  .stat-tile {
+    flex: 1;
+    padding: 10px 11px;
+    border-radius: 13px;
+    background: var(--g1);
+    border: 1px solid var(--bds);
+  }
+  .stat-val { font-size: 14px; font-weight: 700; color: var(--t1); }
+  .stat-lbl { font-size: 9px; font-weight: 600; color: var(--t3); text-transform: uppercase; letter-spacing: .05em; margin-top: 3px; }
+
+  /* ── info rows ── */
+  .info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 15px;
+    border-bottom: 1px solid var(--bds);
+  }
+  .info-row:last-child { border-bottom: none; }
+  .info-key { font-size: 12px; color: var(--t3); }
+  .info-val { font-size: 12px; font-weight: 600; color: var(--t1); }
+
+  /* ── approval chain ── */
+  .chain-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 15px;
+    border-bottom: 1px solid var(--bds);
+  }
+  .chain-row:last-child { border-bottom: none; }
+  .chain-dot {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .chain-info { flex: 1; }
+  .chain-name { font-size: 12px; font-weight: 600; color: var(--t1); }
+  .chain-role { font-size: 10px; color: var(--t3); margin-top: 1px; }
+
+  /* ── inline CTAs ── */
+  .cta-row {
+    display: flex;
+    gap: 8px;
+    padding: 0 16px;
+    margin-bottom: 12px;
+  }
+  .cta-btn {
+    flex: 1;
+    padding: 13px;
+    border-radius: 13px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+    text-align: center;
+  }
+  .cta-reject {
+    background: rgba(255,69,58,.14);
+    color: var(--red);
+    flex: 1;
+  }
+  .cta-approve {
+    background: rgba(48,209,88,.18);
+    color: var(--green);
+    flex: 2;
+  }
+
+  /* ── comments / activity ── */
+  .activity-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 9px 15px;
+    border-bottom: 1px solid var(--bds);
+  }
+  .activity-row:last-child { border-bottom: none; }
+  .activity-avatar {
+    width: 26px;
+    height: 26px;
+    border-radius: 7px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    font-weight: 800;
+    flex-shrink: 0;
+  }
+  .activity-body { flex: 1; }
+  .activity-name { font-size: 12px; font-weight: 600; color: var(--t1); }
+  .activity-text { font-size: 11px; color: var(--t2); margin-top: 2px; }
+  .activity-time { font-size: 10px; color: var(--t3); margin-top: 2px; }
+
+  /* ── action sheet ── */
+  .sheet {
+    background: rgba(18,18,20,.97);
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 28px;
+    padding: 0 14px 28px;
+    position: relative;
+  }
+  .sheet::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto;
+    height: 1px;
+    background: linear-gradient(90deg,transparent,rgba(255,255,255,.14),transparent);
+    border-radius: 28px 28px 0 0;
+  }
+  .sheet-grip {
+    display: flex;
+    justify-content: center;
+    padding: 10px 0 8px;
+  }
+  .sheet-grip div {
+    width: 34px;
+    height: 4px;
+    border-radius: 2px;
+    background: rgba(255,255,255,.15);
+  }
+  .sheet-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--t3);
+    text-align: center;
+    margin-bottom: 14px;
+  }
+  .sheet-btn {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    padding: 12px 14px;
+    border-radius: 13px;
+    margin-bottom: 8px;
+    cursor: pointer;
+  }
+  .sheet-btn:last-child { margin-bottom: 0; }
+  .sheet-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .sheet-label { font-size: 14px; font-weight: 600; }
+  .sheet-sub { font-size: 11px; color: var(--t3); margin-top: 2px; }
+
+  /* ── FAB ── */
+  .fab {
+    width: 50px;
+    height: 50px;
+    border-radius: 25px;
+    background: rgba(255,255,255,.11);
+    border: 1px solid rgba(255,255,255,.16);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 20px auto 0;
+    box-shadow: 0 8px 24px rgba(0,0,0,.5);
+  }
+</style>
+</head>
+<body>
+
+<p class="page-title">Phase 22 Preview</p>
+<p class="page-sub">Approvals Deep Dive</p>
+
+<div class="screens">
+
+  <!-- ══════════════════════════════════════════════════
+       SCREEN 1 — LIST VIEW /approvals
+  ══════════════════════════════════════════════════ -->
+  <div>
+    <p class="screen-label">1 · List · /approvals</p>
+    <div class="phone">
+      <div class="phone-inner">
+
+        <!-- Header -->
+        <div class="hdr">
+          <div class="hdr-row">
+            <div>
+              <p class="hdr-sup">Operations</p>
+              <h1 class="hdr-title">Aprobări</h1>
+            </div>
+            <span class="hdr-badge">8 în așteptare</span>
+          </div>
+        </div>
+
+        <!-- KPI strip -->
+        <div class="kpi-grid">
+          <div class="kpi-tile">
+            <div class="kpi-val" style="color:var(--t1)">8</div>
+            <div class="kpi-lbl">Pending</div>
+          </div>
+          <div class="kpi-tile">
+            <div class="kpi-val" style="color:var(--red)">3</div>
+            <div class="kpi-lbl">Urgente</div>
+          </div>
+          <div class="kpi-tile">
+            <div class="kpi-val" style="color:var(--amber)">2</div>
+            <div class="kpi-lbl">Expirate</div>
+          </div>
+          <div class="kpi-tile">
+            <div class="kpi-val" style="color:var(--green)">14</div>
+            <div class="kpi-lbl">Azi</div>
+          </div>
+        </div>
+
+        <!-- Alert banner -->
+        <div class="alert-banner">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(255,159,10,.9)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          <div>
+            <p class="alert-title">2 cereri expirate</p>
+            <p class="alert-sub">PO CJ-0192 · Concediu Radu Dima · necesită acțiune</p>
+          </div>
+        </div>
+
+        <!-- Filter -->
+        <div class="filter-bar">
+          <button class="filter-btn active">Toate</button>
+          <button class="filter-btn">Achiziții</button>
+          <button class="filter-btn">Concedii</button>
+          <button class="filter-btn">Cheltuieli</button>
+          <button class="filter-btn">Contracte</button>
+        </div>
+
+        <!-- Section label -->
+        <p class="section-lbl">Urgente</p>
+
+        <!-- Approval list – urgent -->
+        <div class="approval-list" style="margin-bottom:12px">
+
+          <!-- Expired PO – red left border -->
+          <div class="approval-row border-red">
+            <div class="type-icon" style="background:rgba(255,69,58,.10);border:1px solid rgba(255,69,58,.15)">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(255,69,58,.85)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+                <line x1="3" y1="6" x2="21" y2="6"/>
+                <path d="M16 10a4 4 0 0 1-8 0"/>
+              </svg>
+            </div>
+            <div class="approval-meta">
+              <p class="approval-type">Achiziție</p>
+              <p class="approval-name">Ciment CEM II · 40 saci</p>
+              <p class="approval-sub">Ana Stoica · €3,200 · Exp. 5 Iun</p>
+            </div>
+            <span class="pill" style="background:rgba(255,69,58,.12);color:var(--red)">Expirat</span>
+          </div>
+
+          <!-- Time-off – amber left border -->
+          <div class="approval-row border-amber">
+            <div class="type-icon" style="background:rgba(255,159,10,.10);border:1px solid rgba(255,159,10,.15)">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(255,159,10,.85)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                <line x1="16" y1="2" x2="16" y2="6"/>
+                <line x1="8" y1="2" x2="8" y2="6"/>
+                <line x1="3" y1="10" x2="21" y2="10"/>
+              </svg>
+            </div>
+            <div class="approval-meta">
+              <p class="approval-type">Concediu</p>
+              <p class="approval-name">Radu Dima — 7 zile</p>
+              <p class="approval-sub">10–17 Iun · Expirat din 4 Iun</p>
+            </div>
+            <span class="pill" style="background:rgba(255,159,10,.13);color:var(--amber)">Expirat</span>
+          </div>
+
+          <!-- Expense – red -->
+          <div class="approval-row border-red">
+            <div class="type-icon" style="background:rgba(255,69,58,.10);border:1px solid rgba(255,69,58,.15)">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(255,69,58,.85)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="1" x2="12" y2="23"/>
+                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+              </svg>
+            </div>
+            <div class="approval-meta">
+              <p class="approval-type">Cheltuială</p>
+              <p class="approval-name">Diurnă deplasare Brașov</p>
+              <p class="approval-sub">Sorin Florea · €420 · Urgent</p>
+            </div>
+            <span class="pill" style="background:rgba(255,69,58,.12);color:var(--red)">Urgent</span>
+          </div>
+        </div>
+
+        <!-- Section label -->
+        <p class="section-lbl">În Așteptare</p>
+
+        <!-- Approval list – regular -->
+        <div class="approval-list" style="margin-bottom:16px">
+
+          <div class="approval-row">
+            <div class="type-icon" style="background:rgba(10,132,255,.10);border:1px solid rgba(10,132,255,.15)">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(10,132,255,.85)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+                <line x1="3" y1="6" x2="21" y2="6"/>
+                <path d="M16 10a4 4 0 0 1-8 0"/>
+              </svg>
+            </div>
+            <div class="approval-meta">
+              <p class="approval-type">Achiziție</p>
+              <p class="approval-name">Scânduri grinzi 14×14 cm</p>
+              <p class="approval-sub">Ion Crișan · €1,850 · 8 Iun</p>
+            </div>
+            <span class="pill" style="background:rgba(10,132,255,.13);color:var(--blue)">Pending</span>
+          </div>
+
+          <div class="approval-row">
+            <div class="type-icon" style="background:rgba(191,90,242,.10);border:1px solid rgba(191,90,242,.15)">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(191,90,242,.85)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/>
+                <line x1="16" y1="17" x2="8" y2="17"/>
+                <polyline points="10 9 9 9 8 9"/>
+              </svg>
+            </div>
+            <div class="approval-meta">
+              <p class="approval-type">Contract</p>
+              <p class="approval-name">Contract Renovare — Bloc A4</p>
+              <p class="approval-sub">Elena Marin · €48,000 · 10 Iun</p>
+            </div>
+            <span class="pill" style="background:rgba(191,90,242,.12);color:var(--purple)">Pending</span>
+          </div>
+
+          <div class="approval-row">
+            <div class="type-icon" style="background:rgba(48,209,88,.10);border:1px solid rgba(48,209,88,.15)">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(48,209,88,.85)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                <line x1="16" y1="2" x2="16" y2="6"/>
+                <line x1="8" y1="2" x2="8" y2="6"/>
+                <line x1="3" y1="10" x2="21" y2="10"/>
+              </svg>
+            </div>
+            <div class="approval-meta">
+              <p class="approval-type">Concediu</p>
+              <p class="approval-name">Ana Stoica — 5 zile</p>
+              <p class="approval-sub">1–5 Iul · 2 zile la termen</p>
+            </div>
+            <span class="pill" style="background:rgba(10,132,255,.13);color:var(--blue)">Pending</span>
+          </div>
+
+          <div class="approval-row">
+            <div class="type-icon" style="background:rgba(10,132,255,.10);border:1px solid rgba(10,132,255,.15)">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(10,132,255,.85)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="1" x2="12" y2="23"/>
+                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+              </svg>
+            </div>
+            <div class="approval-meta">
+              <p class="approval-type">Cheltuială</p>
+              <p class="approval-name">Combustibil + autostradă</p>
+              <p class="approval-sub">Radu Dima · €185 · 9 Iun</p>
+            </div>
+            <span class="pill" style="background:rgba(10,132,255,.13);color:var(--blue)">Pending</span>
+          </div>
+
+          <div class="approval-row">
+            <div class="type-icon" style="background:rgba(48,209,88,.10);border:1px solid rgba(48,209,88,.15)">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(48,209,88,.85)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+                <line x1="3" y1="6" x2="21" y2="6"/>
+                <path d="M16 10a4 4 0 0 1-8 0"/>
+              </svg>
+            </div>
+            <div class="approval-meta">
+              <p class="approval-type">Achiziție</p>
+              <p class="approval-name">Vopsea lavabilă 20L × 8</p>
+              <p class="approval-sub">Elena Marin · €640 · 12 Iun</p>
+            </div>
+            <span class="pill" style="background:rgba(10,132,255,.13);color:var(--blue)">Pending</span>
+          </div>
+        </div>
+
+        <!-- FAB -->
+        <div class="fab">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.85)" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       SCREEN 2 — DETAIL VIEW
+  ══════════════════════════════════════════════════ -->
+  <div>
+    <p class="screen-label">2 · Detail · /approvals/a1 (Achiziție)</p>
+    <div class="phone">
+      <div class="phone-inner">
+
+        <!-- Back -->
+        <div class="back-link">
+          <svg width="8" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
+          Aprobări
+        </div>
+
+        <!-- Hero card -->
+        <div class="card">
+          <div class="card-pad">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px">
+              <div style="flex:1">
+                <p class="hero-type">Comandă Achiziție · PO-0195</p>
+                <p class="hero-title">Scânduri grinzi 14×14 cm</p>
+                <p class="hero-sub">Materiale construcții · Proiect A4 Brașov</p>
+              </div>
+              <span class="pill" style="background:rgba(10,132,255,.13);color:var(--blue);font-size:10px;padding:4px 9px;border-radius:7px">Pending</span>
+            </div>
+            <div class="hero-pills">
+              <span class="meta-pill">Ion Crișan</span>
+              <span class="meta-pill">8 Iun 2026</span>
+              <span class="meta-pill">€1,850</span>
+              <span class="meta-pill">LemnPro SRL</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stat tiles -->
+        <div class="stat-tiles">
+          <div class="stat-tile">
+            <p class="stat-val" style="color:var(--t1)">€1,850</p>
+            <p class="stat-lbl">Valoare</p>
+          </div>
+          <div class="stat-tile">
+            <p class="stat-val" style="color:var(--amber)">1 zi</p>
+            <p class="stat-lbl">La Termen</p>
+          </div>
+          <div class="stat-tile">
+            <p class="stat-val" style="color:var(--t1)">3</p>
+            <p class="stat-lbl">Articole</p>
+          </div>
+        </div>
+
+        <!-- Details -->
+        <div class="card" style="margin-bottom:12px">
+          <div class="info-row"><span class="info-key">Solicitat de</span><span class="info-val">Ion Crișan</span></div>
+          <div class="info-row"><span class="info-key">Proiect</span><span class="info-val">A4 Brașov</span></div>
+          <div class="info-row"><span class="info-key">Furnizor</span><span class="info-val">LemnPro SRL</span></div>
+          <div class="info-row"><span class="info-key">Necesar până</span><span class="info-val" style="color:var(--amber)">9 Iun 2026</span></div>
+          <div class="info-row"><span class="info-key">Livrare</span><span class="info-val">Ex Works Cluj</span></div>
+          <div class="info-row"><span class="info-key">Plată</span><span class="info-val">Net 30</span></div>
+        </div>
+
+        <!-- Approval chain -->
+        <p class="section-lbl">Lanț de Aprobare</p>
+        <div class="card" style="margin-bottom:12px">
+          <div class="chain-row">
+            <div class="chain-dot" style="background:rgba(48,209,88,.15);color:var(--green)">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <div class="chain-info">
+              <p class="chain-name">Ion Crișan</p>
+              <p class="chain-role">Solicitant · Creat 6 Iun 10:24</p>
+            </div>
+            <span class="pill" style="background:rgba(48,209,88,.13);color:var(--green)">Creat</span>
+          </div>
+          <div class="chain-row">
+            <div class="chain-dot" style="background:rgba(255,159,10,.15);color:var(--amber)">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </div>
+            <div class="chain-info">
+              <p class="chain-name">Tu · Manager Proiect</p>
+              <p class="chain-role">Nivel 1 · Termen: 9 Iun</p>
+            </div>
+            <span class="pill" style="background:rgba(255,159,10,.13);color:var(--amber)">Necesar</span>
+          </div>
+          <div class="chain-row">
+            <div class="chain-dot" style="background:rgba(255,255,255,.06);color:var(--t3)">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+            </div>
+            <div class="chain-info">
+              <p class="chain-name">Elena Marin</p>
+              <p class="chain-role">Director · Nivel 2 · €2,000+</p>
+            </div>
+            <span class="pill" style="background:rgba(255,255,255,.07);color:var(--t3)">Urmează</span>
+          </div>
+        </div>
+
+        <!-- Inline CTAs -->
+        <div class="cta-row">
+          <button class="cta-btn cta-reject">Respinge</button>
+          <button class="cta-btn cta-approve">Aprobă</button>
+        </div>
+
+        <!-- Activity / comments -->
+        <p class="section-lbl">Activitate</p>
+        <div class="card" style="margin-bottom:12px">
+          <div class="activity-row">
+            <div class="activity-avatar" style="background:rgba(48,209,88,.15);color:var(--green)">IC</div>
+            <div class="activity-body">
+              <p class="activity-name">Ion Crișan</p>
+              <p class="activity-text">Am verificat prețul cu 3 furnizori. LemnPro oferă cel mai bun raport calitate/preț.</p>
+              <p class="activity-time">6 Iun · 10:24</p>
+            </div>
+          </div>
+          <div class="activity-row">
+            <div class="activity-avatar" style="background:rgba(10,132,255,.15);color:var(--blue)">SY</div>
+            <div class="activity-body">
+              <p class="activity-name">System</p>
+              <p class="activity-text">Cerere trimisă spre aprobare → Manager Proiect</p>
+              <p class="activity-time">6 Iun · 10:25</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       SCREEN 3 — ACTION SHEET
+  ══════════════════════════════════════════════════ -->
+  <div>
+    <p class="screen-label">3 · Action Sheet</p>
+    <div class="phone" style="min-height:auto">
+      <div style="padding: 20px 16px 28px">
+
+        <!-- Dim overlay suggestion -->
+        <div style="background:rgba(255,255,255,.03);border:1px dashed rgba(255,255,255,.08);border-radius:16px;padding:12px 14px;margin-bottom:16px;text-align:center">
+          <p style="font-size:11px;color:var(--t3)">← detaliu cerere (dim)</p>
+        </div>
+
+        <div class="sheet">
+          <div class="sheet-grip"><div></div></div>
+          <p class="sheet-title">Acțiuni Aprobare</p>
+
+          <!-- Aprobă -->
+          <div class="sheet-btn" style="background:rgba(48,209,88,.10);border:1px solid rgba(48,209,88,.2)">
+            <div class="sheet-icon" style="background:rgba(48,209,88,.18)">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(48,209,88,.9)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <div>
+              <p class="sheet-label" style="color:var(--green)">Aprobă</p>
+              <p class="sheet-sub">Trimite la nivelul următor</p>
+            </div>
+          </div>
+
+          <!-- Respinge -->
+          <div class="sheet-btn" style="background:rgba(255,69,58,.10);border:1px solid rgba(255,69,58,.2)">
+            <div class="sheet-icon" style="background:rgba(255,69,58,.15)">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,69,58,.9)" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </div>
+            <div>
+              <p class="sheet-label" style="color:var(--red)">Respinge</p>
+              <p class="sheet-sub">Returnează cu motiv</p>
+            </div>
+          </div>
+
+          <!-- Deleghează -->
+          <div class="sheet-btn" style="background:rgba(255,159,10,.10);border:1px solid rgba(255,159,10,.2)">
+            <div class="sheet-icon" style="background:rgba(255,159,10,.18)">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,159,10,.9)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </div>
+            <div>
+              <p class="sheet-label" style="color:var(--amber)">Deleghează</p>
+              <p class="sheet-sub">Transferă la alt aprobator</p>
+            </div>
+          </div>
+
+          <!-- Solicită Info -->
+          <div class="sheet-btn" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.09)">
+            <div class="sheet-icon" style="background:rgba(255,255,255,.08)">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            </div>
+            <div>
+              <p class="sheet-label" style="color:var(--t1)">Solicită Informații</p>
+              <p class="sheet-sub">Trimite întrebare solicitantului</p>
+            </div>
+          </div>
+
+          <!-- Amânare -->
+          <div class="sheet-btn" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.09)">
+            <div class="sheet-icon" style="background:rgba(255,255,255,.08)">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </div>
+            <div>
+              <p class="sheet-label" style="color:var(--t1)">Amânare</p>
+              <p class="sheet-sub">Reprogramează termenul</p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>
