@@ -22,6 +22,137 @@ function getRelativeTime(iso: string) {
   return `${days}d ago`
 }
 
+// ── SF Symbol icons for the actions sheet ────────────────────────────────────
+
+function IconChevronLeftSmall() {
+  return (
+    <svg
+      width="8"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M15 18l-6-6 6-6" />
+    </svg>
+  )
+}
+
+function IconPhone() {
+  return (
+    <svg
+      width="15"
+      height="15"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.13 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 2.98 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 18z" />
+    </svg>
+  )
+}
+
+function IconMail() {
+  return (
+    <svg
+      width="15"
+      height="15"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+      <polyline points="22,6 12,13 2,6" />
+    </svg>
+  )
+}
+
+function IconArrowRight() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <line x1="5" y1="12" x2="19" y2="12" />
+      <polyline points="12 5 19 12 12 19" />
+    </svg>
+  )
+}
+
+function IconPencil() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
+    </svg>
+  )
+}
+
+function IconFlagIssue() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+      <line x1="4" y1="22" x2="4" y2="15" />
+    </svg>
+  )
+}
+
+function IconPause() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+    >
+      <rect x="6" y="4" width="4" height="16" rx="1" />
+      <rect x="14" y="4" width="4" height="16" rx="1" />
+    </svg>
+  )
+}
+
+const ACTION_ICONS: Record<string, React.ReactNode> = {
+  advance: <IconArrowRight />,
+  note: <IconPencil />,
+  flag: <IconFlagIssue />,
+  pause: <IconPause />,
+}
+
 const ACTIVITY_DOT: Record<string, string> = {
   complete: "rgba(48,209,88,0.8)",
   warning: "rgba(255,159,10,0.8)",
@@ -825,7 +956,7 @@ function ProjectActionsSheet({
           style={{
             display: "flex",
             alignItems: "center",
-            gap: 4,
+            gap: 6,
             fontSize: 13,
             color: "var(--prv-text-3)",
             background: "none",
@@ -835,7 +966,8 @@ function ProjectActionsSheet({
             padding: 0,
           }}
         >
-          ‹ Back
+          <IconChevronLeftSmall />
+          Back
         </button>
         <p
           style={{ fontSize: 16, fontWeight: 700, color: "var(--prv-text-1)", margin: "0 0 14px" }}
@@ -903,7 +1035,7 @@ function ProjectActionsSheet({
           style={{
             display: "flex",
             alignItems: "center",
-            gap: 4,
+            gap: 6,
             fontSize: 13,
             color: "var(--prv-text-3)",
             background: "none",
@@ -913,7 +1045,8 @@ function ProjectActionsSheet({
             padding: 0,
           }}
         >
-          ‹ Back
+          <IconChevronLeftSmall />
+          Back
         </button>
         <p
           style={{ fontSize: 16, fontWeight: 700, color: "var(--prv-text-1)", margin: "0 0 14px" }}
@@ -1032,7 +1165,7 @@ function ProjectActionsSheet({
           style={{
             display: "flex",
             alignItems: "center",
-            gap: 4,
+            gap: 6,
             fontSize: 13,
             color: "var(--prv-text-3)",
             background: "none",
@@ -1042,7 +1175,8 @@ function ProjectActionsSheet({
             padding: 0,
           }}
         >
-          ‹ Back
+          <IconChevronLeftSmall />
+          Back
         </button>
         <p style={{ fontSize: 16, fontWeight: 700, color: "var(--prv-text-1)", margin: "0 0 6px" }}>
           Advance Phase
@@ -1112,7 +1246,7 @@ function ProjectActionsSheet({
           style={{
             display: "flex",
             alignItems: "center",
-            gap: 4,
+            gap: 6,
             fontSize: 13,
             color: "var(--prv-text-3)",
             background: "none",
@@ -1122,7 +1256,8 @@ function ProjectActionsSheet({
             padding: 0,
           }}
         >
-          ‹ Back
+          <IconChevronLeftSmall />
+          Back
         </button>
         <p style={{ fontSize: 16, fontWeight: 700, color: "var(--prv-text-1)", margin: "0 0 6px" }}>
           Pause Project
@@ -1187,14 +1322,18 @@ function ProjectActionsSheet({
   }
 
   // Default: menu
-  const actions = [
+  const actions: {
+    id: "advance" | "note" | "flag" | "pause"
+    label: string
+    style: "white" | "warn" | "danger"
+  }[] = [
     ...(nextPhase
-      ? [{ id: "advance", icon: "▶", label: `Advance to ${nextPhase.name}`, style: "white" }]
+      ? [{ id: "advance" as const, label: `Advance to ${nextPhase.name}`, style: "white" as const }]
       : []),
-    { id: "note", icon: "✎", label: "Add Site Note", style: "white" },
-    { id: "flag", icon: "⚑", label: "Flag Budget Risk", style: "warn" },
-    { id: "pause", icon: "⏸", label: "Pause Project", style: "danger" },
-  ] as const
+    { id: "note", label: "Add Site Note", style: "white" },
+    { id: "flag", label: "Flag Budget Risk", style: "warn" },
+    { id: "pause", label: "Pause Project", style: "danger" },
+  ]
 
   return (
     <div style={{ padding: "4px 20px 32px" }}>
@@ -1238,32 +1377,40 @@ function ProjectActionsSheet({
           </p>
         </div>
         <div style={{ display: "flex", gap: 7 }}>
-          {[
-            { label: "📞", href: `tel:${project.clientPhone}` },
-            {
-              label: "✉",
-              href: `mailto:${project.clientName.toLowerCase().replace(/\s/g, "")}@client.ro`,
-            },
-          ].map(({ label, href }) => (
-            <a
-              key={label}
-              href={href}
-              style={{
-                width: 32,
-                height: 32,
-                borderRadius: 10,
-                background: "var(--prv-g2)",
-                border: "1px solid var(--prv-border)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: 14,
-                textDecoration: "none",
-              }}
-            >
-              {label}
-            </a>
-          ))}
+          <a
+            href={`tel:${project.clientPhone}`}
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: 10,
+              background: "var(--prv-g2)",
+              border: "1px solid var(--prv-border)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "var(--prv-text-2)",
+              textDecoration: "none",
+            }}
+          >
+            <IconPhone />
+          </a>
+          <a
+            href={`mailto:${project.clientName.toLowerCase().replace(/\s/g, "")}@client.ro`}
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: 10,
+              background: "var(--prv-g2)",
+              border: "1px solid var(--prv-border)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "var(--prv-text-2)",
+              textDecoration: "none",
+            }}
+          >
+            <IconMail />
+          </a>
         </div>
       </div>
 
@@ -1302,6 +1449,12 @@ function ProjectActionsSheet({
                 justifyContent: "center",
                 fontSize: 13,
                 flexShrink: 0,
+                color:
+                  action.style === "warn"
+                    ? "rgba(255,179,64,0.9)"
+                    : action.style === "danger"
+                      ? "rgba(255,99,90,0.9)"
+                      : "var(--prv-text-2)",
                 ...(action.style === "warn"
                   ? {
                       background: "rgba(255,159,10,0.12)",
@@ -1315,7 +1468,7 @@ function ProjectActionsSheet({
                     : { background: "var(--prv-g2)", border: "1px solid var(--prv-border)" }),
               }}
             >
-              {action.icon}
+              {ACTION_ICONS[action.id]}
             </div>
             <span
               style={{

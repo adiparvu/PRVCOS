@@ -1,10 +1,10 @@
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import { getSession } from "@prv/auth"
-import { ProjectsWorkspace } from "./ProjectsWorkspace"
+import { ProjectListClient } from "./ProjectListClient"
 
 export const dynamic = "force-dynamic"
-export const metadata = { title: "Projects" }
+export const metadata = { title: "Proiecte · PRV" }
 
 export default async function ProjectsPage() {
   const cookieStore = await cookies()
@@ -17,9 +17,5 @@ export default async function ProjectsPage() {
     redirect("/auth/login")
   }
 
-  return (
-    <div className="pt-14 max-w-2xl mx-auto">
-      <ProjectsWorkspace />
-    </div>
-  )
+  return <ProjectListClient />
 }
