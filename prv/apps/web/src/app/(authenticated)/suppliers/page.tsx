@@ -1,10 +1,10 @@
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import { getSession } from "@prv/auth"
-import { SuppliersWorkspace } from "./SuppliersWorkspace"
+import { SupplierListClient } from "./SupplierListClient"
 
 export const dynamic = "force-dynamic"
-export const metadata = { title: "Suppliers" }
+export const metadata = { title: "Furnizori · PRV" }
 
 export default async function SuppliersPage() {
   const cookieStore = await cookies()
@@ -17,9 +17,5 @@ export default async function SuppliersPage() {
     redirect("/auth/login")
   }
 
-  return (
-    <div className="pt-14 max-w-2xl mx-auto">
-      <SuppliersWorkspace />
-    </div>
-  )
+  return <SupplierListClient />
 }
