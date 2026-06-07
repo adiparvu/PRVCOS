@@ -1,4 +1,5 @@
 import { withGates } from "@/lib/with-gates"
+import { writeAuditLog } from "@prv/auth"
 import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
 
@@ -133,5 +134,60 @@ export const GET = withGates(
     if (status) results = results.filter((q) => q.status === status)
     if (clientId) results = results.filter((q) => q.clientId === clientId)
     return NextResponse.json({ quotes: results, count: results.length })
+  }
+)
+
+export const POST = withGates(
+  { action: "crm.quotes.create", endpointClass: "api_write" },
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
+    const body = await req.json()
+    const { clientId, projectName, items, validityDays, notes, coverText, status } = body
+
+    const quoteId = `q-${Date.now()}`
+    const nextRef = `Q-0${49 + Math.floor(Math.random() * 10)}`
+    const today = new Date().toISOString().slice(0, 10)
+    const expiry = new Date()
+    expiry.setDate(expiry.getDate() + (validityDays ?? 30))
+
+    const totalAmount = (items ?? []).reduce(
+      (sum: number, it: { qty: number; unitPrice: number; discount: number; taxRate: number }) => {
+        const lineNet = it.qty * it.unitPrice * (1 - (it.discount ?? 0) / 100)
+        return sum + lineNet + lineNet * (it.taxRate / 100)
+      },
+      0
+    )
+
+    const newQuote: QuoteSummary = {
+      id: quoteId,
+      ref: nextRef,
+      clientId: clientId ?? "",
+      clientName: "",
+      clientInitials: "",
+      status: (status as QuoteStatus) ?? "draft",
+      amount: Math.round(totalAmount),
+      issuedDate: today,
+      expiryDate: expiry.toISOString().slice(0, 10),
+      daysUntilExpiry: validityDays ?? 30,
+      projectName: projectName ?? "",
+      version: "v1.0",
+    }
+
+    await writeAuditLog({
+      companyId: ctx.session.companyId,
+      actorId: ctx.session.userId,
+      sessionId: ctx.session.sessionId,
+      action: "crm.quotes.create",
+      entityType: "quote",
+      entityId: quoteId,
+      payload: {
+        clientId,
+        projectName,
+        itemCount: (items ?? []).length,
+        totalAmount: newQuote.amount,
+        status: newQuote.status,
+      },
+    })
+
+    return NextResponse.json({ quote: newQuote }, { status: 201 })
   }
 )

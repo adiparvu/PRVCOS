@@ -391,7 +391,8 @@ export function QuoteListClient() {
             Oferte
           </h1>
         </div>
-        <button
+        <Link
+          href="/crm/quotes/new"
           style={{
             width: 32,
             height: 32,
@@ -400,13 +401,12 @@ export function QuoteListClient() {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            border: "none",
-            cursor: "pointer",
             color: "#000",
+            textDecoration: "none",
           }}
         >
           <IconPlus />
-        </button>
+        </Link>
       </div>
 
       {/* KPI strip */}
