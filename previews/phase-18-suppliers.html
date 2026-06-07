@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Phase 18 — Suppliers Deep Dive · Preview</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #000;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", system-ui, sans-serif;
+    color: rgba(255,255,255,0.90);
+    display: flex;
+    gap: 32px;
+    padding: 48px 32px;
+    min-height: 100vh;
+    justify-content: center;
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  /* Phone frames */
+  .phone {
+    width: 390px;
+    min-height: 844px;
+    background: #000;
+    border-radius: 50px;
+    border: 1.5px solid rgba(255,255,255,0.12);
+    box-shadow: 0 40px 80px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.04), inset 0 1px 0 rgba(255,255,255,0.08);
+    overflow: hidden;
+    position: relative;
+    flex-shrink: 0;
+  }
+  .phone-label {
+    text-align: center;
+    margin-bottom: 12px;
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.35);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .screen {
+    width: 100%;
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 56px 16px 112px;
+    scrollbar-width: none;
+  }
+  .screen::-webkit-scrollbar { display: none; }
+
+  /* Design tokens */
+  :root {
+    --g1: rgba(255,255,255,0.06);
+    --g2: rgba(255,255,255,0.10);
+    --g3: rgba(255,255,255,0.16);
+    --border: rgba(255,255,255,0.12);
+    --border-subtle: rgba(255,255,255,0.07);
+    --t1: rgba(255,255,255,0.90);
+    --t2: rgba(255,255,255,0.65);
+    --t3: rgba(255,255,255,0.35);
+    --t4: rgba(255,255,255,0.15);
+    --green: #5affa0;
+    --green-bg: rgba(90,255,160,0.12);
+    --blue: #7eb8ff;
+    --blue-bg: rgba(126,184,255,0.13);
+    --gold: #ffcc44;
+    --gold-bg: rgba(255,204,68,0.13);
+    --red: #ff6b6b;
+    --red-bg: rgba(255,107,107,0.12);
+    --amber: #ffcc44;
+  }
+
+  /* Atoms */
+  .card {
+    background: var(--g1);
+    border: 1px solid var(--border-subtle);
+    border-radius: 18px;
+    overflow: hidden;
+    position: relative;
+  }
+  .card::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto;
+    height: 1px;
+    background: linear-gradient(90deg,transparent,rgba(255,255,255,0.14),transparent);
+    pointer-events: none;
+  }
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 20px;
+    white-space: nowrap;
+  }
+  .pill-green  { background: var(--green-bg);  color: var(--green); }
+  .pill-blue   { background: var(--blue-bg);   color: var(--blue);  }
+  .pill-gold   { background: var(--gold-bg);   color: var(--gold);  }
+  .pill-red    { background: var(--red-bg);    color: var(--red);   }
+  .pill-dim    { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.35); }
+  .pill-amber  { background: rgba(255,204,68,0.13); color: #ffcc44; }
+
+  .back-nav {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: rgba(255,255,255,0.45);
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: 20px;
+  }
+  .back-nav svg { opacity: 0.6; }
+
+  .section-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.35);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin: 20px 4px 8px;
+  }
+
+  .kpi-strip {
+    display: grid;
+    grid-template-columns: repeat(4,1fr);
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .kpi-tile {
+    padding: 10px 0;
+    border-radius: 14px;
+    text-align: center;
+    background: var(--g1);
+    border: 1px solid var(--border-subtle);
+  }
+  .kpi-v { font-size: 17px; font-weight: 700; margin: 0; }
+  .kpi-l { font-size: 10px; font-weight: 600; color: var(--t3); text-transform: uppercase; letter-spacing: 0.07em; margin: 3px 0 0; }
+
+  .filter-row {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    margin-bottom: 16px;
+    scrollbar-width: none;
+  }
+  .filter-chip {
+    flex-shrink: 0;
+    padding: 6px 14px;
+    border-radius: 100px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid var(--border-subtle);
+    background: var(--g1);
+    color: rgba(255,255,255,0.45);
+  }
+  .filter-chip.active {
+    background: rgba(255,255,255,0.14);
+    border-color: rgba(255,255,255,0.28);
+    color: rgba(255,255,255,0.95);
+  }
+
+  /* Supplier row */
+  .supplier-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border-subtle);
+    position: relative;
+  }
+  .supplier-row:last-child { border-bottom: none; }
+  .supplier-row.at-risk {
+    border-left: 3px solid transparent;
+    border-image: linear-gradient(180deg,#ff4444,#ff6b6b) 1;
+    padding-left: 13px;
+  }
+
+  .avatar {
+    width: 42px; height: 42px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700;
+    flex-shrink: 0;
+  }
+  .avatar-sq {
+    border-radius: 13px;
+    width: 44px; height: 44px;
+  }
+
+  .stars { display: flex; align-items: center; gap: 2px; margin-top: 3px; }
+  .star { width: 9px; height: 9px; }
+  .star-fill { fill: #ffcc44; }
+  .star-empty { fill: rgba(255,255,255,0.12); }
+
+  /* Alert banner */
+  .alert-banner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: rgba(255,107,107,0.07);
+    border: 1px solid rgba(255,107,107,0.18);
+    margin-bottom: 14px;
+  }
+
+  /* Entity row (orders, invoices) */
+  .entity-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 13px 16px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .entity-row:last-child { border-bottom: none; }
+
+  /* Delivery bar */
+  .perf-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .perf-row:last-child { border-bottom: none; }
+
+  /* Activity dot */
+  .act-row {
+    display: flex;
+    gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .act-row:last-child { border-bottom: none; }
+  .act-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    margin-top: 4px;
+    flex-shrink: 0;
+  }
+
+  /* FAB */
+  .fab {
+    position: fixed;
+    bottom: 96px; right: 20px;
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.15);
+    backdrop-filter: blur(32px);
+    -webkit-backdrop-filter: blur(32px);
+    border: 1px solid rgba(255,255,255,0.28);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.22);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255,255,255,0.90);
+    cursor: pointer;
+  }
+
+  /* SnapSheet overlay */
+  .sheet-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.55);
+    backdrop-filter: blur(6px);
+    display: flex;
+    align-items: flex-end;
+    z-index: 50;
+    border-radius: 50px;
+    overflow: hidden;
+  }
+  .sheet-panel {
+    width: 100%;
+    background: rgba(255,255,255,0.10);
+    backdrop-filter: blur(64px);
+    -webkit-backdrop-filter: blur(64px);
+    border: 1px solid rgba(255,255,255,0.16);
+    border-radius: 28px 28px 0 0;
+    padding-bottom: 36px;
+    position: relative;
+  }
+  .sheet-panel::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto;
+    height: 1px;
+    background: linear-gradient(90deg,transparent,rgba(255,255,255,0.32),transparent);
+    border-radius: 28px 28px 0 0;
+  }
+  .sheet-handle {
+    width: 36px; height: 4px;
+    border-radius: 2px;
+    background: rgba(255,255,255,0.25);
+    margin: 10px auto 14px;
+  }
+  .sheet-title {
+    font-size: 15px; font-weight: 600;
+    color: rgba(255,255,255,0.85);
+    text-align: center;
+    margin-bottom: 16px;
+    padding: 0 20px;
+  }
+  .sheet-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 16px;
+    border-radius: 14px;
+    margin: 0 20px 10px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid var(--border-subtle);
+    background: var(--g1);
+    color: rgba(255,255,255,0.75);
+  }
+  .sheet-btn-blue  { background: rgba(126,184,255,0.12); border-color: rgba(126,184,255,0.22); color: #7eb8ff; }
+  .sheet-btn-green { background: rgba(90,255,160,0.09);  border-color: rgba(90,255,160,0.18);  color: #5affa0; }
+  .sheet-btn-icon {
+    width: 32px; height: 32px;
+    border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .icon-blue-bg  { background: rgba(126,184,255,0.14); }
+  .icon-green-bg { background: rgba(90,255,160,0.11);  }
+  .icon-dim-bg   { background: rgba(255,255,255,0.08); }
+
+  /* Progress bar */
+  .prog-track {
+    flex: 1;
+    height: 4px;
+    border-radius: 2px;
+    background: rgba(255,255,255,0.08);
+    overflow: hidden;
+  }
+  .prog-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: var(--green);
+  }
+  .prog-fill-yellow { background: var(--gold); }
+  .prog-fill-red    { background: var(--red);  }
+</style>
+</head>
+<body>
+
+<!-- ── SCREEN 1: Supplier List ──────────────────────────────────────────────── -->
+<div>
+  <p class="phone-label">Suppliers List · /suppliers</p>
+  <div class="phone">
+    <div class="screen">
+      <!-- Back + Title -->
+      <div class="back-nav">
+        <svg width="9" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
+        Procurement
+      </div>
+      <div style="margin-bottom:20px">
+        <p style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px">Achiziții</p>
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <h1 style="font-size:26px;font-weight:600;color:rgba(255,255,255,0.90);letter-spacing:-0.5px">Furnizori</h1>
+          <div style="width:36px;height:36px;border-radius:10px;background:var(--g1);border:1px solid var(--border-subtle);display:flex;align-items:center;justify-content:center">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.65)" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- KPI strip -->
+      <div class="kpi-strip">
+        <div class="kpi-tile">
+          <p class="kpi-v" style="color:rgba(255,255,255,0.90)">7</p>
+          <p class="kpi-l">Total</p>
+        </div>
+        <div class="kpi-tile">
+          <p class="kpi-v" style="color:#5affa0">4</p>
+          <p class="kpi-l">Activi</p>
+        </div>
+        <div class="kpi-tile">
+          <p class="kpi-v" style="color:#ff6b6b">1</p>
+          <p class="kpi-l">Risc</p>
+        </div>
+        <div class="kpi-tile">
+          <p class="kpi-v" style="color:#5affa0">€285K</p>
+          <p class="kpi-l">Anual</p>
+        </div>
+      </div>
+
+      <!-- At Risk alert -->
+      <div class="alert-banner">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ff6b6b" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <div style="flex:1">
+          <p style="font-size:13px;font-weight:600;color:#ff6b6b;margin:0 0 2px">1 furnizor necesită atenție</p>
+          <p style="font-size:11px;color:rgba(255,255,255,0.35);margin:0">Contract expirat · 3 livrări întârziate</p>
+        </div>
+        <svg width="7" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+      </div>
+
+      <!-- Filter chips -->
+      <div class="filter-row">
+        <div class="filter-chip active">Toți</div>
+        <div class="filter-chip">Activi</div>
+        <div class="filter-chip">În așteptare</div>
+        <div class="filter-chip">Risc</div>
+        <div class="filter-chip">Inactivi</div>
+      </div>
+
+      <!-- Supplier list -->
+      <div class="card">
+        <!-- s2: Radu Construct - Active, high trust -->
+        <div class="supplier-row">
+          <div class="avatar" style="background:rgba(90,255,160,0.10);border:1px solid rgba(90,255,160,0.20);color:#5affa0">RC</div>
+          <div style="flex:1;min-width:0">
+            <p style="font-size:14px;font-weight:700;color:rgba(255,255,255,0.90);margin:0 0 2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Radu Construct SRL</p>
+            <p style="font-size:12px;color:rgba(255,255,255,0.35);margin:0 0 3px">Steel &amp; Concrete · 24 comenzi</p>
+            <div class="stars">
+              <svg class="star star-fill" viewBox="0 0 12 12"><polygon points="6 1 7.5 4.5 11 5 8.5 7.5 9 11 6 9 3 11 3.5 7.5 1 5 4.5 4.5"/></svg>
+              <svg class="star star-fill" viewBox="0 0 12 12"><polygon points="6 1 7.5 4.5 11 5 8.5 7.5 9 11 6 9 3 11 3.5 7.5 1 5 4.5 4.5"/></svg>
+              <svg class="star star-fill" viewBox="0 0 12 12"><polygon points="6 1 7.5 4.5 11 5 8.5 7.5 9 11 6 9 3 11 3.5 7.5 1 5 4.5 4.5"/></svg>
+              <svg class="star star-fill" viewBox="0 0 12 12"><polygon points="6 1 7.5 4.5 11 5 8.5 7.5 9 11 6 9 3 11 3.5 7.5 1 5 4.5 4.5"/></svg>
+              <svg class="star star-fill" viewBox="0 0 12 12"><polygon points="6 1 7.5 4.5 11 5 8.5 7.5 9 11 6 9 3 11 3.5 7.5 1 5 4.5 4.5"/></svg>
+              <span style="font-size:10px;color:rgba(255,255,255,0.35);margin-left:4px">4.8</span>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0">
+            <span class="pill pill-green">Active</span>
+            <p style="font-size:12px;color:rgba(255,255,255,0.35);margin:0">€62k / an</p>
+          </div>
+          <svg width="7" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.20)" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+        </div>
+
+        <!-- s1: Materiale Grigore - Active -->
+        <div class="supplier-row">
+          <div class="avatar" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.70)">MG</div>
+          <div style="flex:1;min-width:0">
+            <p style="font-size:14px;font-weight:700;color:rgba(255,255,255,0.90);margin:0 0 2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Materiale Grigore SRL</p>
+            <p style="font-size:12px;color:rgba(255,255,255,0.35);margin:0 0 3px">Building Materials · 38 comenzi</p>
+            <div class="stars">
+              <svg class="star star-fill" viewBox="0 0 12 12"><polygon points="6 1 7.5 4.5 11 5 8.5 7.5 9 11 6 9 3 11 3.5 7.5 1 5 4.5 4.5"/></svg>
+              <svg class="star star-fill" viewBox="0 0 12 12"><polygon points="6 1 7.5 4.5 11 5 8.5 7.5 9 11 6 9 3 11 3.5 7.5 1 5 4.5 4.5"/></svg>
+              <svg class="star star-fill" viewBox="0 0 12 12"><polygon points="6 1 7.5 4.5 11 5 8.5 7.5 9 11 6 9 3 11 3.5 7.5 1 5 4.5 4.5"/></svg>
+              <svg class="star star-fill" viewBox="0 0 12 12"><polygon points="6 1 7.5 4.5 11 5 8.5 7.5 9 11 6 9 3 11 3.5 7.5 1 5 4.5 4.5"/></svg>
+              <svg class="star star-empty" viewBox="0 0 12 12"><polygon points="6 1 7.5 4.5 11 5 8.5 7.5 9 11 6 9 3 11 3.5 7.5 1 5 4.5 4.5"/></svg>
+              <span style="font-size:10px;color:rgba(255,255,255,0.35);margin-left:4px">4.2</span>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0">
+            <span class="pill pill-green">Active</span>
+            <p style="font-size:12px;color:rgba(255,255,255,0.35);margin:0">€84k / an</p>
+          </div>
+          <svg width="7" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.20)" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+        </div>
+
+        <!-- s5: Faianță - Active -->
+        <div class="supplier-row">
+          <div class="avatar" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.70)">FP</div>
+          <div style="flex:1;min-width:0">
+            <p style="font-size:14px;font-weight:700;color:rgba(255,255,255,0.90);margin:0 0 2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Faianță &amp; Pardoseli SRL</p>
+            <p style="font-size:12px;color:rgba(255,255,255,0.35);margin:0 0 3px">Tiles &amp; Flooring · 19 comenzi</p>
+            <div class="stars">
+              <svg class="star star-fill" viewBox="0 0 12 12"><polygon points="6 1 7.5 4.5 11 5 8.5 7.5 9 11 6 9 3 11 3.5 7.5 1 5 4.5 4.5"/></svg>
+              <svg class="star star-fill" viewBox="0 0 12 12"><polygon points="6 1 7.5 4.5 11 5 8.5 7.5 9 11 6 9 3 11 3.5 7.5 1 5 4.5 4.5"/></svg>
+              <svg class="star star-fill" viewBox="0 0 12 12"><polygon points="6 1 7.5 4.5 11 5 8.5 7.5 9 11 6 9 3 11 3.5 7.5 1 5 4.5 4.5"/></svg>
+              <svg class="star star-fill" viewBox="0 0 12 12"><polygon points="6 1 7.5 4.5 11 5 8.5 7.5 9 11 6 9 3 11 3.5 7.5 1 5 4.5 4.5"/></svg>
+              <svg class="star star-empty" viewBox="0 0 12 12"><polygon points="6 1 7.5 4.5 11 5 8.5 7.5 9 11 6 9 3 11 3.5 7.5 1 5 4.5 4.5"/></svg>
+              <span style="font-size:10px;color:rgba(255,255,255,0.35);margin-left:4px">4.0</span>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0">
+            <span class="pill pill-green">Active</span>
+            <p style="font-size:12px;color:rgba(255,255,255,0.35);margin:0">€41k / an</p>
+          </div>
+          <svg width="7" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.20)" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+        </div>
+
+        <!-- s4: ElectroLux - Pending -->
+        <div class="supplier-row">
+          <div class="avatar" style="background:rgba(255,204,68,0.10);border:1px solid rgba(255,204,68,0.20);color:#ffcc44">EL</div>
+          <div style="flex:1;min-width:0">
+            <p style="font-size:14px;font-weight:700;color:rgba(255,255,255,0.90);margin:0 0 2px">ElectroLux Instalații SRL</p>
+            <p style="font-size:12px;color:rgba(255,255,255,0.35);margin:0 0 3px">Electrical · Furnizor nou</p>
+            <p style="font-size:11px;color:rgba(255,204,68,0.70);margin:0">Onboarding în așteptare</p>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0">
+            <span class="pill pill-amber">Pending</span>
+          </div>
+          <svg width="7" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.20)" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+        </div>
+
+        <!-- s3: Tehno Construct - At Risk (red left border) -->
+        <div class="supplier-row at-risk">
+          <div class="avatar" style="background:rgba(255,107,107,0.10);border:1px solid rgba(255,107,107,0.22);color:#ff6b6b">TC</div>
+          <div style="flex:1;min-width:0">
+            <p style="font-size:14px;font-weight:700;color:rgba(255,255,255,0.90);margin:0 0 2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Tehno Construct SA</p>
+            <p style="font-size:12px;color:rgba(255,255,255,0.35);margin:0 0 3px">Tools &amp; Equipment · 12 comenzi</p>
+            <p style="font-size:11px;color:#ff6b6b;margin:0">3 livrări întârziate · contract expirat</p>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0">
+            <span class="pill pill-red">Risc</span>
+            <p style="font-size:12px;color:rgba(255,255,255,0.35);margin:0">€28k / an</p>
+          </div>
+          <svg width="7" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.20)" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+        </div>
+      </div>
+
+      <!-- Spend by Category -->
+      <p class="section-label">Cheltuieli pe categorii</p>
+      <div class="card" style="padding:14px 16px">
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <!-- Building Materials -->
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px">
+              <span style="color:rgba(255,255,255,0.65)">Building Materials</span>
+              <span style="font-weight:600;color:rgba(255,255,255,0.85)">€84k</span>
+            </div>
+            <div class="prog-track"><div class="prog-fill" style="width:72%"></div></div>
+          </div>
+          <!-- Steel & Concrete -->
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px">
+              <span style="color:rgba(255,255,255,0.65)">Steel &amp; Concrete</span>
+              <span style="font-weight:600;color:rgba(255,255,255,0.85)">€62k</span>
+            </div>
+            <div class="prog-track"><div class="prog-fill" style="width:53%"></div></div>
+          </div>
+          <!-- Tiles & Flooring -->
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px">
+              <span style="color:rgba(255,255,255,0.65)">Tiles &amp; Flooring</span>
+              <span style="font-weight:600;color:rgba(255,255,255,0.85)">€41k</span>
+            </div>
+            <div class="prog-track"><div class="prog-fill" style="width:35%"></div></div>
+          </div>
+          <!-- Plumbing -->
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px">
+              <span style="color:rgba(255,255,255,0.65)">Plumbing</span>
+              <span style="font-weight:600;color:rgba(255,255,255,0.85)">€32k</span>
+            </div>
+            <div class="prog-track"><div class="prog-fill" style="width:28%"></div></div>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.07)">
+          <span style="font-size:13px;color:rgba(255,255,255,0.35)">Total anual</span>
+          <span style="font-size:14px;font-weight:700;color:#5affa0">€285k</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── SCREEN 2: Supplier Detail ─────────────────────────────────────────────── -->
+<div>
+  <p class="phone-label">Supplier Detail · /suppliers/s2</p>
+  <div class="phone">
+    <div class="screen">
+      <!-- Back -->
+      <div class="back-nav">
+        <svg width="9" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
+        Furnizori
+      </div>
+
+      <!-- Hero card -->
+      <div class="card" style="padding:16px;margin-bottom:12px;border-radius:20px">
+        <!-- Avatar + name -->
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px">
+          <div style="width:64px;height:64px;border-radius:18px;background:rgba(90,255,160,0.10);border:1.5px solid rgba(90,255,160,0.25);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:#5affa0;flex-shrink:0">RC</div>
+          <div style="flex:1;min-width:0">
+            <p style="font-size:19px;font-weight:700;color:rgba(255,255,255,0.92);margin:0 0 5px;line-height:1.2">Radu Construct SRL</p>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              <span class="pill pill-dim" style="font-size:11px;padding:4px 9px">Steel &amp; Concrete</span>
+              <span class="pill pill-green">Active</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Contact pills -->
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+          <a href="#" style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:5px 11px;border-radius:8px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.10);color:rgba(255,255,255,0.70);text-decoration:none">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.5 2 2 0 0 1 3.59 1.3h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.96a16 16 0 0 0 6.13 6.13l.97-.97a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            Sună
+          </a>
+          <a href="#" style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:5px 11px;border-radius:8px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.10);color:rgba(255,255,255,0.70);text-decoration:none">
+            <svg width="14" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="2,4 12,13 22,4"/></svg>
+            Email
+          </a>
+          <span style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:500;padding:5px 10px;border-radius:8px;background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.30)">
+            Net 15
+          </span>
+          <span style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:500;padding:5px 10px;border-radius:8px;background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.30)">
+            Exp. Mar 2027
+          </span>
+        </div>
+
+        <!-- KPI row -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px">
+          <div style="padding:10px 0;border-radius:12px;text-align:center;background:rgba(255,255,255,0.06)">
+            <p style="font-size:15px;font-weight:700;color:#5affa0;margin:0">96</p>
+            <p style="font-size:10px;font-weight:600;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.07em;margin:3px 0 0">Trust</p>
+          </div>
+          <div style="padding:10px 0;border-radius:12px;text-align:center;background:rgba(255,255,255,0.06)">
+            <p style="font-size:15px;font-weight:700;color:rgba(255,255,255,0.85);margin:0">24</p>
+            <p style="font-size:10px;font-weight:600;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.07em;margin:3px 0 0">Comenzi</p>
+          </div>
+          <div style="padding:10px 0;border-radius:12px;text-align:center;background:rgba(255,255,255,0.06)">
+            <p style="font-size:15px;font-weight:700;color:#5affa0;margin:0">€62k</p>
+            <p style="font-size:10px;font-weight:600;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.07em;margin:3px 0 0">Anual</p>
+          </div>
+          <div style="padding:10px 0;border-radius:12px;text-align:center;background:rgba(255,255,255,0.06)">
+            <p style="font-size:15px;font-weight:700;color:#ffcc44;margin:0">4.8</p>
+            <p style="font-size:10px;font-weight:600;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.07em;margin:3px 0 0">Rating</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Orders -->
+      <p class="section-label">Comenzi recente</p>
+      <div class="card" style="margin-bottom:4px">
+        <div class="entity-row">
+          <div style="flex:1;min-width:0">
+            <p style="font-size:13px;font-weight:600;color:rgba(255,255,255,0.85);margin:0 0 3px">PO-2024-088</p>
+            <p style="font-size:12px;color:rgba(255,255,255,0.35);margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Beton armat C25/30 · Brașov Site</p>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+            <p style="font-size:14px;font-weight:700;color:rgba(255,255,255,0.80);margin:0">€7,600</p>
+            <span class="pill pill-green">Livrat</span>
+            <svg width="7" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.20)" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+        </div>
+        <div class="entity-row">
+          <div style="flex:1;min-width:0">
+            <p style="font-size:13px;font-weight:600;color:rgba(255,255,255,0.85);margin:0 0 3px">PO-2024-071</p>
+            <p style="font-size:12px;color:rgba(255,255,255,0.35);margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Oțel beton PC52 · Cluj</p>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+            <p style="font-size:14px;font-weight:700;color:rgba(255,255,255,0.80);margin:0">€5,200</p>
+            <span class="pill pill-green">Livrat</span>
+            <svg width="7" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.20)" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+        </div>
+        <div class="entity-row">
+          <div style="flex:1;min-width:0">
+            <p style="font-size:13px;font-weight:600;color:rgba(255,255,255,0.85);margin:0 0 3px">PO-2024-092</p>
+            <p style="font-size:12px;color:rgba(255,255,255,0.35);margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Fundație bloc D · Timișoara</p>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+            <p style="font-size:14px;font-weight:700;color:rgba(255,255,255,0.80);margin:0">€9,100</p>
+            <span class="pill" style="background:rgba(126,184,255,0.13);color:#7eb8ff">În livrare</span>
+            <svg width="7" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.20)" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+        </div>
+      </div>
+      <div style="text-align:right;margin-bottom:4px">
+        <a href="#" style="font-size:12px;font-weight:600;color:#7eb8ff;text-decoration:none;padding:4px">Toate comenzile →</a>
+      </div>
+
+      <!-- Delivery Performance -->
+      <p class="section-label">Performanță livrări</p>
+      <div class="card" style="padding:14px 16px">
+        <div class="perf-row">
+          <p style="font-size:12px;color:rgba(255,255,255,0.65);margin:0;width:110px;flex-shrink:0">La timp</p>
+          <div class="prog-track"><div class="prog-fill" style="width:98%"></div></div>
+          <p style="font-size:12px;font-weight:700;color:#5affa0;margin:0;width:36px;text-align:right">98%</p>
+        </div>
+        <div class="perf-row">
+          <p style="font-size:12px;color:rgba(255,255,255,0.65);margin:0;width:110px;flex-shrink:0">Calitate</p>
+          <div class="prog-track"><div class="prog-fill" style="width:95%"></div></div>
+          <p style="font-size:12px;font-weight:700;color:#5affa0;margin:0;width:36px;text-align:right">95%</p>
+        </div>
+        <div class="perf-row">
+          <p style="font-size:12px;color:rgba(255,255,255,0.65);margin:0;width:110px;flex-shrink:0">Documentație</p>
+          <div class="prog-track"><div class="prog-fill" style="width:92%"></div></div>
+          <p style="font-size:12px;font-weight:700;color:#5affa0;margin:0;width:36px;text-align:right">92%</p>
+        </div>
+        <div class="perf-row">
+          <p style="font-size:12px;color:rgba(255,255,255,0.65);margin:0;width:110px;flex-shrink:0">Trust Score</p>
+          <div class="prog-track"><div class="prog-fill" style="width:96%"></div></div>
+          <p style="font-size:12px;font-weight:700;color:#5affa0;margin:0;width:36px;text-align:right">96</p>
+        </div>
+      </div>
+
+      <!-- Activity -->
+      <p class="section-label">Activitate</p>
+      <div class="card">
+        <div class="act-row">
+          <div class="act-dot" style="background:#5affa0"></div>
+          <div>
+            <p style="font-size:13px;color:rgba(255,255,255,0.75);margin:0 0 3px;line-height:1.4">Comandă PO-2024-088 livrată — €7,600</p>
+            <p style="font-size:11px;color:rgba(255,255,255,0.30);margin:0">2z în urmă</p>
+          </div>
+        </div>
+        <div class="act-row">
+          <div class="act-dot" style="background:#7eb8ff"></div>
+          <div>
+            <p style="font-size:13px;color:rgba(255,255,255,0.75);margin:0 0 3px;line-height:1.4">Comandă PO-2024-092 plasată — €9,100</p>
+            <p style="font-size:11px;color:rgba(255,255,255,0.30);margin:0">4z în urmă</p>
+          </div>
+        </div>
+        <div class="act-row">
+          <div class="act-dot" style="background:#5affa0"></div>
+          <div>
+            <p style="font-size:13px;color:rgba(255,255,255,0.75);margin:0 0 3px;line-height:1.4">Factură INV-S-044 achitată — €5,200</p>
+            <p style="font-size:11px;color:rgba(255,255,255,0.30);margin:0">8z în urmă</p>
+          </div>
+        </div>
+        <div class="act-row">
+          <div class="act-dot" style="background:rgba(255,255,255,0.35)"></div>
+          <div>
+            <p style="font-size:13px;color:rgba(255,255,255,0.75);margin:0 0 3px;line-height:1.4">Contract reînnoit până Mar 2027</p>
+            <p style="font-size:11px;color:rgba(255,255,255,0.30);margin:0">12z în urmă</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- FAB -->
+      <div class="fab" style="position:absolute;bottom:96px;right:20px">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── SCREEN 3: Actions Sheet (At Risk supplier) ────────────────────────────── -->
+<div>
+  <p class="phone-label">Actions Sheet · Tehno Construct (At Risk)</p>
+  <div class="phone">
+    <div class="screen" style="padding:0;display:flex;flex-direction:column;justify-content:flex-end;height:844px">
+      <!-- Background hint -->
+      <div style="position:absolute;inset:0;padding:56px 16px 112px;opacity:0.25;overflow:hidden">
+        <div class="back-nav">
+          <svg width="9" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
+          Furnizori
+        </div>
+        <div class="card" style="padding:16px;border-left:3px solid transparent;border-image:linear-gradient(180deg,#ff4444,#ff6b6b) 1;padding-left:13px">
+          <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px">
+            <div style="width:64px;height:64px;border-radius:18px;background:rgba(255,107,107,0.10);border:1.5px solid rgba(255,107,107,0.25);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:#ff6b6b;flex-shrink:0">TC</div>
+            <div>
+              <p style="font-size:19px;font-weight:700;color:rgba(255,255,255,0.92);margin:0 0 5px">Tehno Construct SA</p>
+              <span class="pill pill-red">Risc</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sheet overlay -->
+      <div class="sheet-overlay">
+        <div class="sheet-panel" style="width:100%">
+          <div class="sheet-handle"></div>
+          <p class="sheet-title">Tehno Construct SA</p>
+
+          <!-- Risk alert in sheet -->
+          <div style="margin:0 20px 10px;padding:10px 12px;border-radius:12px;background:rgba(255,107,107,0.07);border:1px solid rgba(255,107,107,0.18);display:flex;align-items:center;gap:8px">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ff6b6b" stroke-width="1.8" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <p style="font-size:12px;color:#ff6b6b;margin:0">3 livrări întârziate · contract expirat</p>
+          </div>
+
+          <!-- Contact card -->
+          <div style="margin:0 20px 10px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.10);border-radius:14px;padding:10px;display:flex;gap:8px">
+            <a href="#" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:10px 0;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.10);color:rgba(255,255,255,0.75);text-decoration:none;font-size:13px;font-weight:600">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.5 2 2 0 0 1 3.59 1.3h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.96a16 16 0 0 0 6.13 6.13l.97-.97a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+              Sună
+            </a>
+            <a href="#" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:10px 0;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.10);color:rgba(255,255,255,0.75);text-decoration:none;font-size:13px;font-weight:600">
+              <svg width="14" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="2,4 12,13 22,4"/></svg>
+              Email
+            </a>
+          </div>
+
+          <!-- New Order -->
+          <div class="sheet-btn sheet-btn-blue">
+            <div class="sheet-btn-icon icon-blue-bg">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            </div>
+            Comandă Nouă
+          </div>
+
+          <!-- Reînnoire Contract -->
+          <div class="sheet-btn" style="background:rgba(255,204,68,0.10);border-color:rgba(255,204,68,0.20);color:#ffcc44">
+            <div class="sheet-btn-icon" style="background:rgba(255,204,68,0.12)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            </div>
+            Reînnoire Contract
+          </div>
+
+          <!-- Edit -->
+          <div class="sheet-btn">
+            <div class="sheet-btn-icon icon-dim-bg">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+            </div>
+            Editează Furnizor
+          </div>
+
+          <!-- All Orders -->
+          <div class="sheet-btn">
+            <div class="sheet-btn-icon icon-dim-bg">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+            </div>
+            Toate Comenzile
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
