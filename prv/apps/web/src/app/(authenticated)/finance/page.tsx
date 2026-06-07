@@ -1,10 +1,10 @@
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import { getSession } from "@prv/auth"
-import { FinanceWorkspace } from "./FinanceWorkspace"
+import { FinanceListClient } from "./FinanceListClient"
 
 export const dynamic = "force-dynamic"
-export const metadata = { title: "Finance" }
+export const metadata = { title: "Finanțe · PRV" }
 
 export default async function FinancePage() {
   const cookieStore = await cookies()
@@ -17,9 +17,5 @@ export default async function FinancePage() {
     redirect("/auth/login")
   }
 
-  return (
-    <div className="pt-14 max-w-2xl mx-auto">
-      <FinanceWorkspace />
-    </div>
-  )
+  return <FinanceListClient />
 }
