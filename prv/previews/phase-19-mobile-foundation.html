@@ -1,0 +1,1375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Phase 19 · Mobile Foundation · PRV</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #0a0a0a;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 48px 24px 64px;
+    gap: 48px;
+  }
+
+  /* ── Header ── */
+  .header {
+    text-align: center;
+  }
+  .header-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    color: rgba(255,255,255,0.35);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .header-title {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: rgba(255,255,255,0.92);
+    margin-bottom: 6px;
+  }
+  .header-sub {
+    font-size: 14px;
+    color: rgba(255,255,255,0.45);
+    letter-spacing: -0.01em;
+  }
+
+  /* ── Scene row ── */
+  .scene-row {
+    display: flex;
+    gap: 40px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  /* ── Section label ── */
+  .scene-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    color: rgba(255,255,255,0.28);
+    text-transform: uppercase;
+    text-align: center;
+    margin-bottom: 16px;
+  }
+
+  /* ── iPhone frame ── */
+  .phone-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+  .phone {
+    width: 320px;
+    height: 672px;
+    background: #111;
+    border-radius: 52px;
+    border: 1px solid rgba(255,255,255,0.14);
+    box-shadow:
+      0 0 0 1px rgba(0,0,0,0.8),
+      inset 0 1px 0 rgba(255,255,255,0.18),
+      0 40px 80px rgba(0,0,0,0.9),
+      0 16px 40px rgba(0,0,0,0.6);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Phone screen */
+  .phone-screen {
+    flex: 1;
+    background: #000;
+    border-radius: 51px;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Status bar */
+  .status-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 28px 0;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 10;
+  }
+  .status-time {
+    font-size: 15px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.90);
+    letter-spacing: -0.01em;
+  }
+  .status-icons {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+  .status-icon {
+    color: rgba(255,255,255,0.90);
+    font-size: 13px;
+  }
+
+  /* Dynamic Island */
+  .dynamic-island {
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 110px;
+    height: 34px;
+    background: #000;
+    border-radius: 20px;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: width 0.4s cubic-bezier(0.34,1.56,0.64,1), height 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  .dynamic-island.expanded {
+    width: 260px;
+    height: 68px;
+    border-radius: 28px;
+  }
+  .di-content {
+    display: none;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    padding: 0 14px;
+    width: 100%;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .dynamic-island.expanded .di-content {
+    display: flex;
+    opacity: 1;
+    transition: opacity 0.3s 0.2s;
+  }
+  .di-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #1a1a1a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .di-text { flex: 1; }
+  .di-title { font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.9); }
+  .di-sub { font-size: 10px; color: rgba(255,255,255,0.5); margin-top: 1px; }
+  .di-badge {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: rgba(48,209,88,0.2);
+    border: 1px solid rgba(48,209,88,0.4);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+  }
+
+  /* Page content area */
+  .page-content {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 8px 0 100px;
+    scrollbar-width: none;
+  }
+  .page-content::-webkit-scrollbar { display: none; }
+
+  /* Screens */
+  .screen {
+    display: none;
+    flex-direction: column;
+    height: 100%;
+    padding: 0;
+    animation: screenIn 0.35s cubic-bezier(0.34,1.56,0.64,1) both;
+  }
+  .screen.active { display: flex; }
+
+  @keyframes screenIn {
+    from { opacity: 0; transform: scale(0.97) translateY(6px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  /* ── Auth Screen ── */
+  .auth-bg {
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse 80% 60% at 50% 20%, rgba(255,255,255,0.04) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .auth-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0 24px 0;
+    gap: 0;
+    position: relative;
+  }
+  .auth-mark {
+    width: 72px; height: 72px;
+    border-radius: 18px;
+    background: #0d0d0d;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.10), 0 8px 32px rgba(0,0,0,0.6);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 20px;
+  }
+  .auth-mark svg { width: 37px; height: 57px; }
+  .auth-title {
+    font-size: 28px; font-weight: 700; letter-spacing: -0.025em;
+    color: rgba(255,255,255,0.92);
+    margin-bottom: 6px;
+  }
+  .auth-sub {
+    font-size: 14px; color: rgba(255,255,255,0.45);
+    text-align: center; line-height: 1.4;
+    margin-bottom: 36px;
+  }
+  .auth-form {
+    width: 100%;
+    display: flex; flex-direction: column; gap: 10px;
+    margin-bottom: 14px;
+  }
+  .auth-input {
+    width: 100%;
+    height: 48px;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 14px;
+    padding: 0 16px;
+    font-size: 15px;
+    color: rgba(255,255,255,0.92);
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .auth-input::placeholder { color: rgba(255,255,255,0.30); }
+  .auth-input:focus {
+    border-color: rgba(255,255,255,0.28);
+    background: rgba(255,255,255,0.10);
+  }
+  .auth-btn {
+    width: 100%; height: 50px;
+    background: #fff;
+    border: none; border-radius: 14px;
+    font-size: 16px; font-weight: 600;
+    color: #000; cursor: pointer;
+    font-family: inherit;
+    transition: opacity 0.15s, transform 0.15s;
+    margin-top: 4px;
+  }
+  .auth-btn:active { opacity: 0.85; transform: scale(0.98); }
+  .auth-divider {
+    display: flex; align-items: center; gap: 10px;
+    margin: 14px 0;
+  }
+  .auth-divider-line {
+    flex: 1; height: 1px; background: rgba(255,255,255,0.10);
+  }
+  .auth-divider-text {
+    font-size: 12px; color: rgba(255,255,255,0.30);
+  }
+  .auth-faceid {
+    width: 100%; height: 50px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    font-size: 15px; font-weight: 500;
+    color: rgba(255,255,255,0.80);
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.15s;
+  }
+  .auth-faceid:active { background: rgba(255,255,255,0.10); }
+  .auth-footer {
+    position: absolute; bottom: 100px; left: 24px; right: 24px;
+    text-align: center;
+    font-size: 12px; color: rgba(255,255,255,0.28);
+  }
+
+  /* ── Command/Dashboard ── */
+  .dash-header {
+    padding: 16px 20px 0;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .dash-greeting {
+    font-size: 22px; font-weight: 700; letter-spacing: -0.02em;
+    color: rgba(255,255,255,0.92);
+  }
+  .dash-sub {
+    font-size: 13px; color: rgba(255,255,255,0.40);
+    margin-top: 1px;
+  }
+  .avatar-sm {
+    width: 34px; height: 34px; border-radius: 50%;
+    background: rgba(255,255,255,0.10);
+    border: 1px solid rgba(255,255,255,0.14);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.7);
+  }
+  .kpi-row {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    padding: 14px 20px 0;
+  }
+  .kpi-card {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 16px;
+    padding: 14px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.12);
+  }
+  .kpi-label {
+    font-size: 10px; font-weight: 500;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    color: rgba(255,255,255,0.35);
+    margin-bottom: 6px;
+  }
+  .kpi-value {
+    font-size: 22px; font-weight: 700; letter-spacing: -0.03em;
+    color: rgba(255,255,255,0.92);
+    margin-bottom: 2px;
+  }
+  .kpi-delta {
+    font-size: 11px; font-weight: 500;
+    color: rgba(48,209,88,0.85);
+  }
+  .kpi-delta.down { color: rgba(255,69,58,0.85); }
+  .section-header {
+    padding: 18px 20px 8px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .section-title {
+    font-size: 15px; font-weight: 600; letter-spacing: -0.01em;
+    color: rgba(255,255,255,0.75);
+  }
+  .section-action {
+    font-size: 13px; color: rgba(255,255,255,0.40);
+  }
+  .activity-list {
+    padding: 0 20px;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .activity-item {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px;
+    padding: 11px 13px;
+    display: flex; align-items: center; gap: 11px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+  }
+  .activity-dot {
+    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+  }
+  .activity-text {
+    flex: 1; font-size: 13px; color: rgba(255,255,255,0.75);
+    line-height: 1.3;
+  }
+  .activity-time {
+    font-size: 11px; color: rgba(255,255,255,0.30);
+  }
+  .ai-card {
+    margin: 10px 20px 0;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 16px;
+    padding: 14px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.12);
+  }
+  .ai-card-header {
+    display: flex; align-items: center; gap: 7px;
+    margin-bottom: 8px;
+  }
+  .ai-icon {
+    width: 20px; height: 20px; border-radius: 6px;
+    background: rgba(255,255,255,0.10);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px;
+  }
+  .ai-label { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; color: rgba(255,255,255,0.45); text-transform: uppercase; }
+  .ai-body { font-size: 13px; color: rgba(255,255,255,0.70); line-height: 1.45; }
+
+  /* ── Operations screen ── */
+  .list-section { padding: 14px 20px 0; }
+  .list-card {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.12);
+  }
+  .list-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 13px 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .list-item:last-child { border-bottom: none; }
+  .list-item:active { background: rgba(255,255,255,0.04); }
+  .list-item-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: rgba(255,255,255,0.08);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 17px; flex-shrink: 0;
+  }
+  .list-item-body { flex: 1; min-width: 0; }
+  .list-item-title { font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.88); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .list-item-sub { font-size: 12px; color: rgba(255,255,255,0.38); margin-top: 1px; }
+  .list-item-badge {
+    font-size: 12px; font-weight: 600;
+    color: rgba(255,255,255,0.50);
+    background: rgba(255,255,255,0.08);
+    padding: 2px 8px; border-radius: 20px;
+  }
+  .list-item-badge.green { color: rgba(48,209,88,0.85); background: rgba(48,209,88,0.12); }
+  .list-item-badge.amber { color: rgba(255,159,10,0.85); background: rgba(255,159,10,0.12); }
+  .list-item-badge.red { color: rgba(255,69,58,0.85); background: rgba(255,69,58,0.12); }
+  .chevron { color: rgba(255,255,255,0.20); font-size: 14px; }
+
+  /* ── People screen ── */
+  .search-bar {
+    margin: 10px 20px 0;
+    height: 38px;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 12px;
+    display: flex; align-items: center;
+    padding: 0 12px; gap: 7px;
+  }
+  .search-bar-icon { color: rgba(255,255,255,0.30); font-size: 14px; }
+  .search-bar-text { font-size: 14px; color: rgba(255,255,255,0.28); }
+  .people-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    padding: 12px 20px 0;
+  }
+  .people-card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 16px;
+    padding: 14px 12px;
+    text-align: center;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.10);
+  }
+  .people-avatar {
+    width: 44px; height: 44px; border-radius: 50%;
+    margin: 0 auto 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; font-weight: 700; color: rgba(255,255,255,0.80);
+  }
+  .people-name { font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.85); }
+  .people-role { font-size: 11px; color: rgba(255,255,255,0.35); margin-top: 2px; }
+  .presence-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    display: inline-block; margin-right: 4px;
+  }
+  .presence-dot.online { background: #30d158; }
+  .presence-dot.busy { background: #ff3b30; }
+  .presence-dot.away { background: #ff9f0a; }
+
+  /* ── Finance screen ── */
+  .finance-hero {
+    margin: 12px 20px 0;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 20px;
+    padding: 18px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.16);
+  }
+  .finance-hero-label { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,255,255,0.35); margin-bottom: 6px; }
+  .finance-hero-value { font-size: 32px; font-weight: 700; letter-spacing: -0.04em; color: rgba(255,255,255,0.94); margin-bottom: 4px; }
+  .finance-hero-sub { font-size: 13px; color: rgba(255,255,255,0.40); }
+  .finance-chips {
+    display: flex; gap: 7px;
+    padding: 10px 20px 0;
+  }
+  .finance-chip {
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 20px;
+    padding: 5px 12px;
+    font-size: 12px; font-weight: 500;
+    color: rgba(255,255,255,0.60);
+    cursor: pointer;
+  }
+  .finance-chip.active {
+    background: rgba(255,255,255,0.14);
+    border-color: rgba(255,255,255,0.22);
+    color: rgba(255,255,255,0.90);
+  }
+
+  /* ── Intelligence screen ── */
+  .intel-chart {
+    margin: 12px 20px 0;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 20px;
+    padding: 16px;
+    height: 130px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.12);
+  }
+  .intel-chart-label { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,255,255,0.35); margin-bottom: 4px; }
+  .intel-chart-value { font-size: 24px; font-weight: 700; letter-spacing: -0.03em; color: rgba(255,255,255,0.90); }
+  .chart-sparkline {
+    position: absolute; bottom: 16px; left: 16px; right: 16px;
+    height: 50px;
+    opacity: 0.6;
+  }
+  .intel-metrics {
+    display: grid; grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    padding: 10px 20px 0;
+  }
+  .intel-metric {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px;
+    padding: 12px;
+    text-align: center;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.10);
+  }
+  .intel-metric-val { font-size: 18px; font-weight: 700; letter-spacing: -0.03em; color: rgba(255,255,255,0.88); }
+  .intel-metric-lbl { font-size: 10px; color: rgba(255,255,255,0.35); margin-top: 2px; }
+
+  /* ── Floating Tab Bar ── */
+  .tab-bar {
+    position: absolute;
+    bottom: 20px;
+    left: 12px; right: 12px;
+    height: 72px;
+    background: rgba(20,20,20,0.92);
+    backdrop-filter: blur(48px) saturate(200%);
+    -webkit-backdrop-filter: blur(48px) saturate(200%);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 28px;
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.22),
+      0 16px 48px rgba(0,0,0,0.7),
+      0 4px 16px rgba(0,0,0,0.4);
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    padding: 0 8px;
+    z-index: 200;
+  }
+  .tab-item {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 4px; padding: 8px 12px; cursor: pointer;
+    border-radius: 16px;
+    transition: background 0.2s;
+    min-width: 52px;
+  }
+  .tab-item:active { background: rgba(255,255,255,0.06); }
+  .tab-icon {
+    font-size: 22px;
+    line-height: 1;
+    color: rgba(255,255,255,0.30);
+    transition: color 0.2s, transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  .tab-item.active .tab-icon {
+    color: rgba(255,255,255,0.92);
+    transform: scale(1.12);
+  }
+  .tab-label {
+    font-size: 9px; font-weight: 600; letter-spacing: 0.02em;
+    color: rgba(255,255,255,0.28);
+    text-transform: uppercase;
+    transition: color 0.2s;
+  }
+  .tab-item.active .tab-label { color: rgba(255,255,255,0.75); }
+  .tab-dot {
+    width: 4px; height: 4px; border-radius: 50%;
+    background: rgba(255,255,255,0.90);
+    display: none;
+  }
+  .tab-item.active .tab-dot { display: block; }
+
+  /* ── Home indicator ── */
+  .home-indicator {
+    position: absolute; bottom: 7px;
+    left: 50%; transform: translateX(-50%);
+    width: 100px; height: 4px;
+    background: rgba(255,255,255,0.22);
+    border-radius: 2px;
+    z-index: 300;
+  }
+
+  /* ── Nav bar inside screens ── */
+  .nav-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 6px 20px 0;
+  }
+  .nav-title {
+    font-size: 26px; font-weight: 700; letter-spacing: -0.025em;
+    color: rgba(255,255,255,0.92);
+  }
+  .nav-btn {
+    width: 34px; height: 34px; border-radius: 50%;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.12);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; cursor: pointer;
+    transition: background 0.15s;
+  }
+  .nav-btn:active { background: rgba(255,255,255,0.14); }
+
+  /* ── Spec panel ── */
+  .spec-panel {
+    width: 300px;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  .spec-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 20px;
+    padding: 18px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.10);
+  }
+  .spec-section-title {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.10em;
+    text-transform: uppercase; color: rgba(255,255,255,0.35);
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+  }
+  .spec-row {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    gap: 12px;
+  }
+  .spec-row:last-child { border-bottom: none; }
+  .spec-key { font-size: 12px; color: rgba(255,255,255,0.40); flex-shrink: 0; }
+  .spec-val { font-size: 12px; color: rgba(255,255,255,0.78); text-align: right; font-weight: 500; }
+  .spec-val.green { color: rgba(48,209,88,0.80); }
+  .spec-val.amber { color: rgba(255,159,10,0.80); }
+
+  .tab-flow {
+    display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px;
+  }
+  .tab-pill {
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 20px;
+    padding: 5px 10px;
+    font-size: 11px; font-weight: 500;
+    color: rgba(255,255,255,0.55);
+  }
+
+  /* ── Tabs switcher ── */
+  .tabs-switcher {
+    display: flex; gap: 6px;
+    justify-content: center;
+    flex-wrap: wrap;
+    max-width: 340px;
+  }
+  .switcher-btn {
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.05);
+    font-size: 12px; font-weight: 500;
+    color: rgba(255,255,255,0.50);
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+  }
+  .switcher-btn.active {
+    background: rgba(255,255,255,0.12);
+    border-color: rgba(255,255,255,0.22);
+    color: rgba(255,255,255,0.90);
+  }
+  .switcher-btn:hover {
+    background: rgba(255,255,255,0.09);
+    color: rgba(255,255,255,0.75);
+  }
+
+  /* PRV mark inline SVG helper */
+  .prv-mark { display: inline-flex; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-label">Phase 19 · Preview · PRV</div>
+  <div class="header-title">Mobile Foundation</div>
+  <div class="header-sub">Expo Router · Auth · Tab Shell · 5 Platform Views</div>
+</div>
+
+<!-- Tab switcher -->
+<div style="display:flex;flex-direction:column;align-items:center;gap:10px;">
+  <div class="scene-label">TAP TO SWITCH SCREENS</div>
+  <div class="tabs-switcher" id="switcher">
+    <button class="switcher-btn active" onclick="switchScreen('auth')">Login</button>
+    <button class="switcher-btn" onclick="switchScreen('command')">⌂ Command</button>
+    <button class="switcher-btn" onclick="switchScreen('operations')">⊞ Operations</button>
+    <button class="switcher-btn" onclick="switchScreen('people')">◎ People</button>
+    <button class="switcher-btn" onclick="switchScreen('finance')">⟁ Finance</button>
+    <button class="switcher-btn" onclick="switchScreen('intelligence')">✦ Intelligence</button>
+  </div>
+</div>
+
+<!-- Scene -->
+<div class="scene-row">
+
+  <!-- iPhone -->
+  <div class="phone-wrap">
+    <div class="scene-label">iPhone 15 Pro · Liquid Glass</div>
+    <div class="phone">
+      <div class="phone-screen">
+
+        <!-- Dynamic Island -->
+        <div class="dynamic-island" id="dynamicIsland">
+          <div class="di-content">
+            <div class="di-avatar">
+              <svg width="22" height="33" viewBox="0 0 52 80" fill="rgba(255,255,255,0.9)" xmlns="http://www.w3.org/2000/svg">
+                <path fill-rule="evenodd" clip-rule="evenodd" d="M0 0H36Q52 0 52 23Q52 46 36 46H18V80H0Z M18 12H32Q42 12 42 23Q42 34 32 34H18Z M18 12H30V24H18Z"/>
+              </svg>
+            </div>
+            <div class="di-text">
+              <div class="di-title">PRV · Live Activity</div>
+              <div class="di-sub">3 tasks · Shift ends 18:00</div>
+            </div>
+            <div class="di-badge">✓</div>
+          </div>
+        </div>
+
+        <!-- Status bar -->
+        <div class="status-bar">
+          <span class="status-time">9:41</span>
+          <div class="status-icons">
+            <span class="status-icon">●●●●</span>
+            <span class="status-icon">WiFi</span>
+            <span class="status-icon">⬛</span>
+          </div>
+        </div>
+
+        <!-- Screen content -->
+        <div class="page-content" id="pageContent">
+
+          <!-- AUTH SCREEN -->
+          <div class="screen active" id="screen-auth">
+            <div class="auth-bg"></div>
+            <div class="auth-content">
+              <div class="auth-mark">
+                <svg width="37" height="57" viewBox="0 0 52 80" fill="rgba(255,255,255,0.92)" xmlns="http://www.w3.org/2000/svg">
+                  <path fill-rule="evenodd" clip-rule="evenodd" d="M0 0H36Q52 0 52 23Q52 46 36 46H18V80H0Z M18 12H32Q42 12 42 23Q42 34 32 34H18Z M18 12H30V24H18Z"/>
+                </svg>
+              </div>
+              <div class="auth-title">PRV</div>
+              <div class="auth-sub">Sign in to your company<br>operating system</div>
+              <div class="auth-form">
+                <input class="auth-input" type="email" placeholder="work@company.ro"/>
+                <input class="auth-input" type="password" placeholder="Password"/>
+                <button class="auth-btn">Continue</button>
+              </div>
+              <div class="auth-divider">
+                <div class="auth-divider-line"></div>
+                <span class="auth-divider-text">or</span>
+                <div class="auth-divider-line"></div>
+              </div>
+              <button class="auth-faceid">
+                <span>⬡</span> Sign in with Face ID
+              </button>
+            </div>
+            <div class="auth-footer">
+              Forgot password? · Need access?
+            </div>
+          </div>
+
+          <!-- COMMAND SCREEN -->
+          <div class="screen" id="screen-command">
+            <div class="dash-header">
+              <div>
+                <div class="dash-greeting">Good morning, Ion</div>
+                <div class="dash-sub">Saturday, 7 Jun · CEO</div>
+              </div>
+              <div class="avatar-sm">IM</div>
+            </div>
+            <div class="kpi-row">
+              <div class="kpi-card">
+                <div class="kpi-label">Revenue MTD</div>
+                <div class="kpi-value">€182K</div>
+                <div class="kpi-delta">↑ 12.4% vs last month</div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-label">Active Projects</div>
+                <div class="kpi-value">34</div>
+                <div class="kpi-delta">↑ 3 new this week</div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-label">Workforce</div>
+                <div class="kpi-value">142</div>
+                <div class="kpi-delta">127 on shift today</div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-label">Open Alerts</div>
+                <div class="kpi-value">7</div>
+                <div class="kpi-delta down">↑ 2 critical</div>
+              </div>
+            </div>
+            <div class="ai-card">
+              <div class="ai-card-header">
+                <div class="ai-icon">✦</div>
+                <span class="ai-label">AI Briefing</span>
+              </div>
+              <div class="ai-body">Revenue is tracking 12% above plan. Warehouse 3 has a low-stock alert on 4 SKUs. Team utilisation is at 89% — optimal range.</div>
+            </div>
+            <div class="section-header">
+              <span class="section-title">Live Activity</span>
+              <span class="section-action">See all</span>
+            </div>
+            <div class="activity-list">
+              <div class="activity-item">
+                <div class="activity-dot" style="background:#30d158;"></div>
+                <div class="activity-text">Invoice #INV-0421 approved by Maria</div>
+                <div class="activity-time">2m</div>
+              </div>
+              <div class="activity-item">
+                <div class="activity-dot" style="background:#ff9f0a;"></div>
+                <div class="activity-text">Project "Bloc B4" milestone overdue by 1 day</div>
+                <div class="activity-time">8m</div>
+              </div>
+              <div class="activity-item">
+                <div class="activity-dot" style="background:#0a84ff;"></div>
+                <div class="activity-text">New lead: Ionescu Group · €240K budget</div>
+                <div class="activity-time">14m</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- OPERATIONS SCREEN -->
+          <div class="screen" id="screen-operations">
+            <div class="nav-bar">
+              <span class="nav-title">Operations</span>
+              <div class="nav-btn">＋</div>
+            </div>
+            <div class="search-bar" style="margin-top:12px;">
+              <span class="search-bar-icon">⌕</span>
+              <span class="search-bar-text">Search stores, tasks…</span>
+            </div>
+            <div class="section-header" style="padding-top:14px;">
+              <span class="section-title">Stores</span>
+              <span class="section-action">Map view</span>
+            </div>
+            <div class="list-section" style="padding-top:0;">
+              <div class="list-card">
+                <div class="list-item">
+                  <div class="list-item-icon">🏪</div>
+                  <div class="list-item-body">
+                    <div class="list-item-title">PRV Store · Centru</div>
+                    <div class="list-item-sub">14 staff · €12.4K today</div>
+                  </div>
+                  <div class="list-item-badge green">Open</div>
+                  <span class="chevron">›</span>
+                </div>
+                <div class="list-item">
+                  <div class="list-item-icon">🏪</div>
+                  <div class="list-item-body">
+                    <div class="list-item-title">PRV Store · Nord</div>
+                    <div class="list-item-sub">9 staff · €7.8K today</div>
+                  </div>
+                  <div class="list-item-badge green">Open</div>
+                  <span class="chevron">›</span>
+                </div>
+                <div class="list-item">
+                  <div class="list-item-icon">🏪</div>
+                  <div class="list-item-body">
+                    <div class="list-item-title">PRV Warehouse · Vest</div>
+                    <div class="list-item-sub">6 staff · 2 alerts</div>
+                  </div>
+                  <div class="list-item-badge amber">Alert</div>
+                  <span class="chevron">›</span>
+                </div>
+              </div>
+            </div>
+            <div class="section-header">
+              <span class="section-title">Today's Tasks</span>
+              <span class="section-action">34 total</span>
+            </div>
+            <div class="list-section" style="padding-top:0;">
+              <div class="list-card">
+                <div class="list-item">
+                  <div class="list-item-icon">📦</div>
+                  <div class="list-item-body">
+                    <div class="list-item-title">Inventory count · Vest</div>
+                    <div class="list-item-sub">Due 14:00 · Andrei P.</div>
+                  </div>
+                  <div class="list-item-badge amber">Due</div>
+                  <span class="chevron">›</span>
+                </div>
+                <div class="list-item">
+                  <div class="list-item-icon">🔧</div>
+                  <div class="list-item-body">
+                    <div class="list-item-title">Maintenance check · Centru</div>
+                    <div class="list-item-sub">Completed 09:30 · Maria I.</div>
+                  </div>
+                  <div class="list-item-badge green">Done</div>
+                  <span class="chevron">›</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- PEOPLE SCREEN -->
+          <div class="screen" id="screen-people">
+            <div class="nav-bar">
+              <span class="nav-title">People</span>
+              <div class="nav-btn">⊕</div>
+            </div>
+            <div class="search-bar" style="margin-top:12px;">
+              <span class="search-bar-icon">⌕</span>
+              <span class="search-bar-text">Search employees…</span>
+            </div>
+            <div class="section-header" style="padding-top:14px;">
+              <span class="section-title">On Shift Now · 127</span>
+              <span class="section-action">Org chart</span>
+            </div>
+            <div class="people-grid">
+              <div class="people-card">
+                <div class="people-avatar" style="background:rgba(10,132,255,0.15);">AP</div>
+                <div class="people-name">Andrei Popescu</div>
+                <div class="people-role"><span class="presence-dot online"></span>Store Mgr</div>
+              </div>
+              <div class="people-card">
+                <div class="people-avatar" style="background:rgba(48,209,88,0.12);">MI</div>
+                <div class="people-name">Maria Ionescu</div>
+                <div class="people-role"><span class="presence-dot online"></span>HR Director</div>
+              </div>
+              <div class="people-card">
+                <div class="people-avatar" style="background:rgba(255,159,10,0.12);">GC</div>
+                <div class="people-name">George Constantin</div>
+                <div class="people-role"><span class="presence-dot busy"></span>Technician</div>
+              </div>
+              <div class="people-card">
+                <div class="people-avatar" style="background:rgba(191,90,242,0.12);">EA</div>
+                <div class="people-name">Elena Avram</div>
+                <div class="people-role"><span class="presence-dot away"></span>Cashier</div>
+              </div>
+            </div>
+            <div class="section-header">
+              <span class="section-title">Time Off Requests</span>
+              <span class="section-action">3 pending</span>
+            </div>
+            <div class="list-section" style="padding-top:0;">
+              <div class="list-card">
+                <div class="list-item">
+                  <div class="list-item-icon">🏖</div>
+                  <div class="list-item-body">
+                    <div class="list-item-title">Radu Florescu</div>
+                    <div class="list-item-sub">10–17 Jun · Annual leave</div>
+                  </div>
+                  <div class="list-item-badge amber">Review</div>
+                  <span class="chevron">›</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- FINANCE SCREEN -->
+          <div class="screen" id="screen-finance">
+            <div class="nav-bar">
+              <span class="nav-title">Finance</span>
+              <div class="nav-btn">＋</div>
+            </div>
+            <div class="finance-hero">
+              <div class="finance-hero-label">Revenue · June 2026</div>
+              <div class="finance-hero-value">€182,400</div>
+              <div class="finance-hero-sub">↑ 12.4% vs May · Profit margin 34%</div>
+            </div>
+            <div class="finance-chips">
+              <div class="finance-chip active">Overview</div>
+              <div class="finance-chip">Invoices</div>
+              <div class="finance-chip">Expenses</div>
+              <div class="finance-chip">Cash Flow</div>
+            </div>
+            <div class="section-header" style="padding-top:14px;">
+              <span class="section-title">Recent Invoices</span>
+              <span class="section-action">See all</span>
+            </div>
+            <div class="list-section" style="padding-top:0;">
+              <div class="list-card">
+                <div class="list-item">
+                  <div class="list-item-icon">📄</div>
+                  <div class="list-item-body">
+                    <div class="list-item-title">INV-0421 · Ionescu Group</div>
+                    <div class="list-item-sub">€24,500 · Due 15 Jun</div>
+                  </div>
+                  <div class="list-item-badge green">Paid</div>
+                  <span class="chevron">›</span>
+                </div>
+                <div class="list-item">
+                  <div class="list-item-icon">📄</div>
+                  <div class="list-item-body">
+                    <div class="list-item-title">INV-0420 · Construct SRL</div>
+                    <div class="list-item-sub">€18,200 · Due 20 Jun</div>
+                  </div>
+                  <div class="list-item-badge amber">Pending</div>
+                  <span class="chevron">›</span>
+                </div>
+                <div class="list-item">
+                  <div class="list-item-icon">📄</div>
+                  <div class="list-item-body">
+                    <div class="list-item-title">INV-0419 · Vest Partners</div>
+                    <div class="list-item-sub">€9,800 · Overdue 3 days</div>
+                  </div>
+                  <div class="list-item-badge red">Overdue</div>
+                  <span class="chevron">›</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- INTELLIGENCE SCREEN -->
+          <div class="screen" id="screen-intelligence">
+            <div class="nav-bar">
+              <span class="nav-title">Intelligence</span>
+              <div class="nav-btn">✦</div>
+            </div>
+            <div class="intel-chart">
+              <div class="intel-chart-label">Revenue Trend · 30d</div>
+              <div class="intel-chart-value">€182K</div>
+              <svg class="chart-sparkline" viewBox="0 0 280 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="rgba(255,255,255,0.3)"/>
+                    <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+                  </linearGradient>
+                </defs>
+                <path d="M0 40 C20 38 40 30 60 28 C80 26 100 32 120 22 C140 12 160 18 180 14 C200 10 220 20 240 12 C260 4 270 8 280 6" stroke="rgba(255,255,255,0.5)" stroke-width="2" fill="none"/>
+                <path d="M0 40 C20 38 40 30 60 28 C80 26 100 32 120 22 C140 12 160 18 180 14 C200 10 220 20 240 12 C260 4 270 8 280 6 L280 50 L0 50Z" fill="url(#chartGrad)"/>
+              </svg>
+            </div>
+            <div class="intel-metrics">
+              <div class="intel-metric">
+                <div class="intel-metric-val">89%</div>
+                <div class="intel-metric-lbl">Utilisation</div>
+              </div>
+              <div class="intel-metric">
+                <div class="intel-metric-val">34%</div>
+                <div class="intel-metric-lbl">Margin</div>
+              </div>
+              <div class="intel-metric">
+                <div class="intel-metric-val">142</div>
+                <div class="intel-metric-lbl">Headcount</div>
+              </div>
+            </div>
+            <div class="section-header" style="padding-top:14px;">
+              <span class="section-title">AI Recommendations</span>
+              <span class="section-action">Ask AI</span>
+            </div>
+            <div class="activity-list">
+              <div class="activity-item">
+                <div class="activity-dot" style="background:#0a84ff;"></div>
+                <div class="activity-text">Increase stock of cement (SKU 4821) — 3 projects start next week</div>
+                <div class="activity-time">AI</div>
+              </div>
+              <div class="activity-item">
+                <div class="activity-dot" style="background:#30d158;"></div>
+                <div class="activity-text">Collect overdue invoices: €28K at risk past 30 days</div>
+                <div class="activity-time">AI</div>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- end page-content -->
+
+        <!-- Tab Bar (hidden on auth) -->
+        <div class="tab-bar" id="tabBar" style="display:none;">
+          <div class="tab-item" id="tab-command" onclick="switchTab('command')">
+            <div class="tab-icon">⌂</div>
+            <div class="tab-label">Command</div>
+            <div class="tab-dot"></div>
+          </div>
+          <div class="tab-item" id="tab-operations" onclick="switchTab('operations')">
+            <div class="tab-icon">⊞</div>
+            <div class="tab-label">Ops</div>
+            <div class="tab-dot"></div>
+          </div>
+          <div class="tab-item" id="tab-people" onclick="switchTab('people')">
+            <div class="tab-icon">◎</div>
+            <div class="tab-label">People</div>
+            <div class="tab-dot"></div>
+          </div>
+          <div class="tab-item" id="tab-finance" onclick="switchTab('finance')">
+            <div class="tab-icon">⟁</div>
+            <div class="tab-label">Finance</div>
+            <div class="tab-dot"></div>
+          </div>
+          <div class="tab-item" id="tab-intelligence" onclick="switchTab('intelligence')">
+            <div class="tab-icon">✦</div>
+            <div class="tab-label">Intel</div>
+            <div class="tab-dot"></div>
+          </div>
+        </div>
+
+        <!-- Home indicator -->
+        <div class="home-indicator"></div>
+
+      </div><!-- end phone-screen -->
+    </div><!-- end phone -->
+  </div><!-- end phone-wrap -->
+
+  <!-- Spec panel -->
+  <div class="spec-panel">
+
+    <div class="spec-card">
+      <div class="spec-section-title">Navigation Architecture</div>
+      <div class="spec-row">
+        <span class="spec-key">Router</span>
+        <span class="spec-val">Expo Router 4</span>
+      </div>
+      <div class="spec-row">
+        <span class="spec-key">Tab structure</span>
+        <span class="spec-val">5 root tabs</span>
+      </div>
+      <div class="spec-row">
+        <span class="spec-key">Tab bar style</span>
+        <span class="spec-val">Floating glass pill</span>
+      </div>
+      <div class="spec-row">
+        <span class="spec-key">Max depth</span>
+        <span class="spec-val">3 levels</span>
+      </div>
+      <div class="spec-row">
+        <span class="spec-key">Sheet pattern</span>
+        <span class="spec-val">Bottom sheet (primary)</span>
+      </div>
+    </div>
+
+    <div class="spec-card">
+      <div class="spec-section-title">Auth Flow</div>
+      <div class="spec-row">
+        <span class="spec-key">Provider</span>
+        <span class="spec-val">Supabase Auth</span>
+      </div>
+      <div class="spec-row">
+        <span class="spec-key">Session store</span>
+        <span class="spec-val">expo-secure-store</span>
+      </div>
+      <div class="spec-row">
+        <span class="spec-key">Biometric</span>
+        <span class="spec-val green">Face ID / Touch ID</span>
+      </div>
+      <div class="spec-row">
+        <span class="spec-key">MFA</span>
+        <span class="spec-val green">TOTP enforced</span>
+      </div>
+      <div class="spec-row">
+        <span class="spec-key">Re-auth</span>
+        <span class="spec-val">Sensitive ops gate</span>
+      </div>
+    </div>
+
+    <div class="spec-card">
+      <div class="spec-section-title">Design System</div>
+      <div class="spec-row">
+        <span class="spec-key">Language</span>
+        <span class="spec-val">Liquid Glass</span>
+      </div>
+      <div class="spec-row">
+        <span class="spec-key">Background</span>
+        <span class="spec-val">#000000 pure black</span>
+      </div>
+      <div class="spec-row">
+        <span class="spec-key">Glass level 1</span>
+        <span class="spec-val">rgba(255,255,255,0.06)</span>
+      </div>
+      <div class="spec-row">
+        <span class="spec-key">Blur level 1</span>
+        <span class="spec-val">blur(32px)</span>
+      </div>
+      <div class="spec-row">
+        <span class="spec-key">Tab bar blur</span>
+        <span class="spec-val">blur(48px) sat 200%</span>
+      </div>
+      <div class="spec-row">
+        <span class="spec-key">Motion</span>
+        <span class="spec-val">Spring physics</span>
+      </div>
+      <div class="spec-row">
+        <span class="spec-key">Dynamic Island</span>
+        <span class="spec-val green">Live Activity</span>
+      </div>
+      <div class="spec-row">
+        <span class="spec-key">Haptics</span>
+        <span class="spec-val green">Every action</span>
+      </div>
+    </div>
+
+    <div class="spec-card">
+      <div class="spec-section-title">5 Tabs</div>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-top:4px;">
+        <div>
+          <div style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.75);margin-bottom:4px;">⌂ Command</div>
+          <div class="tab-flow">
+            <span class="tab-pill">Dashboard</span>
+            <span class="tab-pill">KPIs</span>
+            <span class="tab-pill">AI Briefing</span>
+            <span class="tab-pill">Inbox</span>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.75);margin-bottom:4px;">⊞ Operations</div>
+          <div class="tab-flow">
+            <span class="tab-pill">Stores</span>
+            <span class="tab-pill">Inventory</span>
+            <span class="tab-pill">Tasks</span>
+            <span class="tab-pill">Orders</span>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.75);margin-bottom:4px;">◎ People</div>
+          <div class="tab-flow">
+            <span class="tab-pill">Directory</span>
+            <span class="tab-pill">Schedule</span>
+            <span class="tab-pill">Payroll</span>
+            <span class="tab-pill">Org Chart</span>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.75);margin-bottom:4px;">⟁ Finance</div>
+          <div class="tab-flow">
+            <span class="tab-pill">Revenue</span>
+            <span class="tab-pill">Invoices</span>
+            <span class="tab-pill">Expenses</span>
+            <span class="tab-pill">Cash Flow</span>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.75);margin-bottom:4px;">✦ Intelligence</div>
+          <div class="tab-flow">
+            <span class="tab-pill">Analytics</span>
+            <span class="tab-pill">AI Chat</span>
+            <span class="tab-pill">Reports</span>
+            <span class="tab-pill">Forecast</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="spec-card">
+      <div class="spec-section-title">Phase 19 Scope</div>
+      <div class="spec-row">
+        <span class="spec-key">Expo Router layout</span>
+        <span class="spec-val green">✓ In scope</span>
+      </div>
+      <div class="spec-row">
+        <span class="spec-key">Auth screens</span>
+        <span class="spec-val green">✓ In scope</span>
+      </div>
+      <div class="spec-row">
+        <span class="spec-key">Tab shell + bar</span>
+        <span class="spec-val green">✓ In scope</span>
+      </div>
+      <div class="spec-row">
+        <span class="spec-key">Dynamic Island</span>
+        <span class="spec-val green">✓ In scope</span>
+      </div>
+      <div class="spec-row">
+        <span class="spec-key">Liquid Glass DS</span>
+        <span class="spec-val green">✓ In scope</span>
+      </div>
+      <div class="spec-row">
+        <span class="spec-key">Platform screens</span>
+        <span class="spec-val amber">Phase 20+</span>
+      </div>
+    </div>
+
+  </div><!-- end spec panel -->
+
+</div><!-- end scene-row -->
+
+<script>
+let currentScreen = 'auth';
+
+function switchScreen(name) {
+  // Update switcher buttons
+  document.querySelectorAll('.switcher-btn').forEach((btn, i) => {
+    btn.classList.remove('active');
+  });
+  event.target.classList.add('active');
+
+  // Hide all screens
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+
+  // Show target
+  const target = document.getElementById('screen-' + name);
+  if (target) target.classList.add('active');
+
+  // Tab bar visibility
+  const tabBar = document.getElementById('tabBar');
+  if (name === 'auth') {
+    tabBar.style.display = 'none';
+  } else {
+    tabBar.style.display = 'flex';
+    // Activate matching tab
+    document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+    const tab = document.getElementById('tab-' + name);
+    if (tab) tab.classList.add('active');
+  }
+
+  // Dynamic Island: expand on command/intelligence, collapse otherwise
+  const di = document.getElementById('dynamicIsland');
+  if (name === 'command' || name === 'intelligence') {
+    di.classList.add('expanded');
+  } else {
+    di.classList.remove('expanded');
+  }
+
+  currentScreen = name;
+
+  // Scroll to top
+  document.getElementById('pageContent').scrollTop = 0;
+}
+
+function switchTab(name) {
+  // Update tabs
+  document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+
+  // Update screens
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+
+  // Update switcher
+  document.querySelectorAll('.switcher-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.textContent.toLowerCase().includes(name) ||
+      (name === 'command' && btn.textContent.includes('Command')));
+  });
+
+  // Dynamic Island
+  const di = document.getElementById('dynamicIsland');
+  if (name === 'command' || name === 'intelligence') {
+    di.classList.add('expanded');
+  } else {
+    di.classList.remove('expanded');
+  }
+
+  document.getElementById('pageContent').scrollTop = 0;
+}
+</script>
+
+</body>
+</html>
