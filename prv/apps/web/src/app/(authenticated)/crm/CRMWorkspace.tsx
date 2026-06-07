@@ -576,7 +576,7 @@ export function CRMWorkspace() {
             v: String(CLIENTS.filter((c) => c.status === "lead").length),
             l: "Leads",
             c: "rgba(10,132,255,0.9)",
-            href: undefined,
+            href: "/crm/leads",
           },
           {
             v: String(CLIENTS.reduce((s, c) => s + c.openQuotes, 0)),
