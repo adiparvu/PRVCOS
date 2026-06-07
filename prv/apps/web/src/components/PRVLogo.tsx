@@ -1,11 +1,14 @@
 import type { CSSProperties } from "react"
 
 // ── PRV Mark ──────────────────────────────────────────────────────────────────
-// Bold geometric P with a small filled square inside the upper counter.
+// Bold geometric P with a small filled square in the upper-left of the counter.
 // fillRule="evenodd" compound path:
 //   subpath 1 → outer P (filled)
-//   subpath 2 → inner counter (hole)
-//   subpath 3 → square in upper counter (re-fills through the hole)
+//   subpath 2 → inner counter (creates hole)
+//   subpath 3 → small square at upper-left of counter (re-fills through hole)
+//
+// ViewBox 52×80 — stem ≈ 35% width, bowl spans top 57% of height.
+// Square is flush against the inner-left wall (stem) at the top of the counter.
 
 export function PRVMark({
   size = 32,
@@ -20,9 +23,9 @@ export function PRVMark({
 }) {
   return (
     <svg
-      width={Math.round(size * 0.7)}
+      width={Math.round(size * 0.65)}
       height={size}
-      viewBox="0 0 56 80"
+      viewBox="0 0 52 80"
       fill={color}
       xmlns="http://www.w3.org/2000/svg"
       className={className}
@@ -32,7 +35,7 @@ export function PRVMark({
       <path
         fillRule="evenodd"
         clipRule="evenodd"
-        d="M0 0H36Q56 0 56 22Q56 44 36 44H12V80H0Z M12 12H32Q44 12 44 22Q44 32 32 32H12Z M12 12H24V24H12Z"
+        d="M0 0H36Q52 0 52 23Q52 46 36 46H18V80H0Z M18 12H32Q42 12 42 23Q42 34 32 34H18Z M18 12H30V24H18Z"
       />
     </svg>
   )
@@ -43,7 +46,7 @@ export function PRVMark({
 export function PRVLogo({
   height = 28,
   color = "currentColor",
-  gap = 9,
+  gap = 10,
   className,
   style,
 }: {
@@ -58,11 +61,11 @@ export function PRVLogo({
       className={className}
       style={{ display: "inline-flex", alignItems: "center", gap, color, ...style }}
     >
-      <PRVMark size={Math.round(height * 0.86)} color={color} />
+      <PRVMark size={Math.round(height * 0.88)} color={color} />
       <span
         style={{
-          fontSize: Math.round(height * 0.82),
-          fontWeight: 700,
+          fontSize: Math.round(height * 0.85),
+          fontWeight: 800,
           letterSpacing: "-0.04em",
           lineHeight: 1,
           color,
@@ -74,7 +77,7 @@ export function PRVLogo({
   )
 }
 
-// ── PRV App Icon (mark on glass square) ────────────────────────────────────────
+// ── PRV App Icon (mark on glass square, used on auth pages / splash) ───────────
 
 export function PRVAppIcon({
   size = 56,
@@ -107,8 +110,8 @@ export function PRVAppIcon({
       }}
     >
       <PRVMark
-        size={Math.round(size * 0.5)}
-        color={dark ? "rgba(255,255,255,0.90)" : "rgba(0,0,0,0.82)"}
+        size={Math.round(size * 0.52)}
+        color={dark ? "rgba(255,255,255,0.92)" : "rgba(0,0,0,0.82)"}
       />
     </div>
   )
