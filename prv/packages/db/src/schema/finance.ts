@@ -235,6 +235,68 @@ export const invoiceItems = pgTable(
   (table) => [index("invoice_items_invoice_id_idx").on(table.invoiceId)]
 )
 
+// ─── Expenses ────────────────────────────────────────────────────────────────
+
+export const expenseCategoryEnum = pgEnum("expense_category", [
+  "materials",
+  "labor",
+  "equipment",
+  "transport",
+  "rent",
+  "utilities",
+  "marketing",
+  "salaries",
+  "subscriptions",
+  "other",
+])
+
+export const expenseStatusEnum = pgEnum("expense_status", [
+  "draft",
+  "submitted",
+  "approved",
+  "rejected",
+  "paid",
+])
+
+export const expenses = pgTable(
+  "expenses",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id, { onDelete: "cascade" }),
+    storeId: uuid("store_id").references(() => stores.id, { onDelete: "set null" }),
+    submittedById: uuid("submitted_by_id").references(() => users.id, { onDelete: "set null" }),
+
+    title: varchar("title", { length: 255 }).notNull(),
+    category: expenseCategoryEnum("category").notNull().default("other"),
+    status: expenseStatusEnum("status").notNull().default("draft"),
+
+    amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
+    currency: varchar("currency", { length: 3 }).notNull().default("RON"),
+
+    date: date("date").notNull(),
+    notes: text("notes"),
+    receiptUrl: text("receipt_url"),
+
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
+  },
+  (table) => [
+    index("expenses_company_id_idx").on(table.companyId),
+    index("expenses_date_idx").on(table.date),
+    index("expenses_status_idx").on(table.status),
+    index("expenses_category_idx").on(table.category),
+  ]
+)
+
+export const expensesRelations = relations(expenses, ({ one }) => ({
+  company: one(companies, { fields: [expenses.companyId], references: [companies.id] }),
+  store: one(stores, { fields: [expenses.storeId], references: [stores.id] }),
+  submittedBy: one(users, { fields: [expenses.submittedById], references: [users.id] }),
+}))
+
 // ─── Relations ───────────────────────────────────────────────────────────────
 
 export const productCategoriesRelations = relations(productCategories, ({ one, many }) => ({

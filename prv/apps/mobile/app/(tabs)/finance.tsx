@@ -16,9 +16,13 @@ import { FABWithSheets } from "@/components/FABWithSheets"
 import { colors, radius, spacing, type } from "@/tokens"
 import {
   useFinance,
+  useExpenses,
   type DayRevenue,
   type FinanceInvoiceItem,
   type FinanceOrderItem,
+  type ExpensesData,
+  type ExpenseCategoryRow,
+  type ExpenseItem,
 } from "@/hooks/useFinance"
 
 // ─── Segment Control ──────────────────────────────────────────────────────────
@@ -168,18 +172,6 @@ function KpiStrip({ items }: { items: { label: string; value: string; valueColor
   )
 }
 
-// ─── Placeholder ─────────────────────────────────────────────────────────────
-
-function Placeholder({ label }: { label: string }) {
-  return (
-    <GlassCard style={styles.placeholder}>
-      <Text style={styles.placeholderIcon}>◫</Text>
-      <Text style={styles.placeholderTitle}>{label}</Text>
-      <Text style={styles.placeholderSub}>Coming in a future release</Text>
-    </GlassCard>
-  )
-}
-
 // ─── Revenue Content ──────────────────────────────────────────────────────────
 
 function RevenueContent({
@@ -292,6 +284,144 @@ function InvoicesContent({
   )
 }
 
+// ─── Expenses Content ─────────────────────────────────────────────────────────
+
+const CATEGORY_ICONS: Record<string, string> = {
+  materials: "◈",
+  labor: "◐",
+  equipment: "⊟",
+  transport: "◎",
+  rent: "⊙",
+  utilities: "◉",
+  marketing: "◇",
+  salaries: "◐",
+  subscriptions: "⊕",
+  other: "◫",
+}
+
+const EXPENSE_STATUS_BADGE: Record<string, { bg: string; text: string }> = {
+  draft: { bg: "rgba(255,255,255,0.08)", text: colors.text3 },
+  submitted: { bg: "rgba(255,214,10,0.15)", text: colors.amber },
+  approved: { bg: "rgba(52,199,89,0.15)", text: colors.green },
+  rejected: { bg: "rgba(255,59,48,0.18)", text: colors.red },
+  paid: { bg: "rgba(52,199,89,0.15)", text: colors.green },
+}
+
+function CategoryBar({ row, maxAmt }: { row: ExpenseCategoryRow; maxAmt: number }) {
+  const barW = maxAmt > 0 ? Math.max(4, Math.round((row.amount / maxAmt) * 100)) : 0
+  const icon = CATEGORY_ICONS[row.category] ?? "◫"
+  const label = row.category.charAt(0).toUpperCase() + row.category.slice(1)
+  return (
+    <View style={styles.catRow}>
+      <View style={styles.catLeft}>
+        <Text style={styles.catIcon}>{icon}</Text>
+        <Text style={styles.catLabel} numberOfLines={1}>
+          {label}
+        </Text>
+      </View>
+      <View style={styles.catBarWrap}>
+        <View style={[styles.catBar, { width: `${barW}%` as any }]} />
+      </View>
+      <View style={styles.catRight}>
+        <Text style={styles.catAmt}>{row.amountFormatted}</Text>
+        <Text style={styles.catPct}>{row.pct}%</Text>
+      </View>
+    </View>
+  )
+}
+
+function ExpenseRow({ item }: { item: ExpenseItem }) {
+  const icon = CATEGORY_ICONS[item.category] ?? "◫"
+  const badge = EXPENSE_STATUS_BADGE[item.status] ?? EXPENSE_STATUS_BADGE.draft!
+  const d = new Date(item.date + "T00:00:00")
+  const dateStr = `${d.getDate()} ${d.toLocaleString("en", { month: "short" })}`
+  return (
+    <View style={styles.expRow}>
+      <View style={styles.expIconWrap}>
+        <Text style={styles.expIcon}>{icon}</Text>
+      </View>
+      <View style={styles.rowMain}>
+        <Text style={styles.rowTitle} numberOfLines={1}>
+          {item.title}
+        </Text>
+        <Text style={styles.rowSub}>{dateStr}</Text>
+      </View>
+      <View style={styles.expRight}>
+        <Text style={styles.rowAmount}>{item.amountFormatted}</Text>
+        <View style={[styles.badge, { backgroundColor: badge.bg }]}>
+          <Text style={[styles.badgeText, { color: badge.text }]}>
+            {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
+          </Text>
+        </View>
+      </View>
+    </View>
+  )
+}
+
+function ExpensesContent({ data }: { data: ExpensesData }) {
+  const maxAmt = data.categoryBreakdown[0]?.amount ?? 0
+  const topLabel = data.kpi.topCategory
+    ? data.kpi.topCategory.charAt(0).toUpperCase() + data.kpi.topCategory.slice(1)
+    : "—"
+
+  const kpis = [
+    { label: "Spent MTD", value: data.kpi.totalMtd, valueColor: colors.red },
+    {
+      label: "vs Last Month",
+      value:
+        data.kpi.deltaPercent != null
+          ? `${data.kpi.deltaPercent >= 0 ? "+" : ""}${data.kpi.deltaPercent}%`
+          : "—",
+      valueColor:
+        data.kpi.deltaPercent != null
+          ? data.kpi.deltaPercent <= 0
+            ? colors.green
+            : colors.red
+          : undefined,
+    },
+    { label: "Entries", value: String(data.kpi.countMtd) },
+    { label: "Top Category", value: topLabel },
+  ]
+
+  return (
+    <View style={styles.segContent}>
+      <KpiStrip items={kpis} />
+
+      {data.categoryBreakdown.length > 0 ? (
+        <>
+          <Text style={styles.listTitle}>By Category · This Month</Text>
+          <GlassCard style={styles.listCard}>
+            {data.categoryBreakdown.map((row, i) => (
+              <View key={row.category}>
+                {i > 0 && <View style={styles.divider} />}
+                <CategoryBar row={row} maxAmt={maxAmt} />
+              </View>
+            ))}
+          </GlassCard>
+        </>
+      ) : null}
+
+      {data.recent.length > 0 ? (
+        <>
+          <Text style={styles.listTitle}>Recent</Text>
+          <GlassCard style={styles.listCard}>
+            {data.recent.map((item, i) => (
+              <View key={item.id}>
+                {i > 0 && <View style={styles.divider} />}
+                <ExpenseRow item={item} />
+              </View>
+            ))}
+          </GlassCard>
+        </>
+      ) : (
+        <GlassCard style={styles.emptyCard}>
+          <Text style={styles.emptyText}>No expenses recorded yet</Text>
+        </GlassCard>
+      )}
+    </View>
+  )
+}
+
 // ─── Reports Content ──────────────────────────────────────────────────────────
 
 const REPORT_TILES = [
@@ -329,6 +459,7 @@ export default function FinanceScreen() {
   const insets = useSafeAreaInsets()
   const [seg, setSeg] = useState<Segment>("Revenue")
   const { data, isLoading, isError, refetch, isFetching } = useFinance()
+  const { data: expensesData, isLoading: expLoading, refetch: refetchExp } = useExpenses()
 
   const headerH = insets.top + 52
   const segH = 48
@@ -387,7 +518,13 @@ export default function FinanceScreen() {
           ) : seg === "Invoices" ? (
             <InvoicesContent data={data} />
           ) : seg === "Expenses" ? (
-            <Placeholder label="Expenses" />
+            expLoading ? (
+              <View style={styles.center}>
+                <ActivityIndicator color={colors.text3} />
+              </View>
+            ) : expensesData ? (
+              <ExpensesContent data={expensesData} />
+            ) : null
           ) : (
             <ReportsContent />
           )
@@ -524,8 +661,48 @@ const styles = StyleSheet.create({
   retryText: { ...type.subhead, color: colors.text2 },
   emptyCard: { padding: 24, alignItems: "center" },
   emptyText: { ...type.body, color: colors.text3 },
-  placeholder: { padding: 32, alignItems: "center", gap: 8 },
-  placeholderIcon: { fontSize: 28, color: colors.text3 },
-  placeholderTitle: { ...type.headline, color: colors.text2 },
-  placeholderSub: { ...type.footnote, color: colors.text3 },
+  // Category breakdown bars
+  catRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    gap: 8,
+  },
+  catLeft: { flexDirection: "row", alignItems: "center", gap: 6, width: 104 },
+  catIcon: { fontSize: 13, color: colors.text3, width: 18, textAlign: "center" },
+  catLabel: { ...type.footnote, color: colors.text2, flex: 1 },
+  catBarWrap: {
+    flex: 1,
+    height: 4,
+    backgroundColor: "rgba(255,255,255,0.08)",
+    borderRadius: 2,
+    overflow: "hidden",
+  },
+  catBar: { height: 4, backgroundColor: "rgba(255,255,255,0.45)", borderRadius: 2 },
+  catRight: { width: 80, alignItems: "flex-end", gap: 1 },
+  catAmt: { ...type.footnote, color: colors.text1, fontWeight: "600" },
+  catPct: { ...type.caption2, color: colors.text3 },
+
+  // Expense row
+  expRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    gap: 10,
+  },
+  expIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 9,
+    backgroundColor: "rgba(255,255,255,0.07)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.09)",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  expIcon: { fontSize: 14, color: colors.text2 },
+  expRight: { alignItems: "flex-end", gap: 4 },
 })

@@ -1,6 +1,47 @@
 import { useQuery } from "@tanstack/react-query"
 import { api } from "@/lib/api"
 
+// ── Expenses ───────────────────────────────────────────────────────────────────
+
+export interface ExpenseCategoryRow {
+  category: string
+  amount: number
+  amountFormatted: string
+  count: number
+  pct: number
+}
+
+export interface ExpenseItem {
+  id: string
+  title: string
+  category: string
+  amount: number
+  amountFormatted: string
+  date: string
+  status: string
+}
+
+export interface ExpensesData {
+  kpi: {
+    totalMtd: string
+    totalMtdRaw: number
+    countMtd: number
+    deltaPercent: number | null
+    topCategory: string | null
+  }
+  categoryBreakdown: ExpenseCategoryRow[]
+  recent: ExpenseItem[]
+}
+
+export function useExpenses() {
+  return useQuery<ExpensesData>({
+    queryKey: ["expenses"],
+    queryFn: () => api.get<ExpensesData>("/api/mobile/expenses"),
+    staleTime: 60_000,
+    retry: 2,
+  })
+}
+
 export interface DayRevenue {
   date: string
   total: number
