@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=390,initial-scale=1"/>
+<title>PRV · Inbox</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:#000;
+    font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','SF Pro Display',sans-serif;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+    color:#fff;
+  }
+
+  /* ── Phone frame ── */
+  .frame{
+    width:390px;min-height:844px;margin:24px auto;
+    background:#000;
+    border-radius:44px;
+    border:1px solid rgba(255,255,255,0.12);
+    box-shadow:0 40px 120px rgba(0,0,0,0.9),0 8px 32px rgba(0,0,0,0.6);
+    overflow:hidden;position:relative;
+  }
+  /* notch */
+  .notch{
+    position:absolute;top:0;left:50%;transform:translateX(-50%);
+    width:120px;height:34px;
+    background:#000;border-radius:0 0 20px 20px;
+    z-index:99;
+  }
+
+  /* ── Scrollable content ── */
+  .screen{
+    height:844px;overflow-y:auto;
+    padding-bottom:100px;
+    scrollbar-width:none;
+  }
+  .screen::-webkit-scrollbar{display:none}
+
+  /* ── Status bar ── */
+  .statusBar{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:14px 28px 0;height:50px;
+  }
+  .statusTime{font-size:15px;font-weight:600;letter-spacing:-.2px}
+  .statusIcons{display:flex;gap:6px;align-items:center;font-size:12px;opacity:.9}
+
+  /* ── Header ── */
+  .header{
+    padding:8px 20px 0;
+    display:flex;align-items:flex-end;justify-content:space-between;
+  }
+  .headerTitle{
+    font-size:34px;font-weight:700;letter-spacing:-.5px;
+    color:rgba(255,255,255,.95);
+  }
+  .headerBadge{
+    display:inline-flex;align-items:center;justify-content:center;
+    background:rgba(255,255,255,.9);color:#000;
+    font-size:13px;font-weight:700;
+    width:24px;height:24px;border-radius:50%;
+    margin-left:8px;margin-bottom:4px;
+    vertical-align:bottom;
+  }
+  .headerActions{
+    display:flex;gap:8px;align-items:center;padding-bottom:4px;
+  }
+  .headerBtn{
+    width:32px;height:32px;border-radius:50%;
+    background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);
+    display:flex;align-items:center;justify-content:center;
+    font-size:14px;color:rgba(255,255,255,.7);
+    cursor:pointer;
+  }
+
+  /* ── Filter chips ── */
+  .filters{
+    display:flex;gap:8px;
+    padding:14px 20px 0;
+    overflow-x:auto;
+    scrollbar-width:none;
+  }
+  .filters::-webkit-scrollbar{display:none}
+  .chip{
+    flex-shrink:0;
+    height:30px;padding:0 14px;
+    border-radius:100px;
+    background:rgba(255,255,255,.08);
+    border:1px solid rgba(255,255,255,.10);
+    font-size:13px;font-weight:500;
+    color:rgba(255,255,255,.6);
+    display:flex;align-items:center;gap:5px;
+    white-space:nowrap;cursor:pointer;
+  }
+  .chip.active{
+    background:rgba(255,255,255,.16);
+    border-color:rgba(255,255,255,.25);
+    color:rgba(255,255,255,.95);
+  }
+  .chipDot{
+    width:6px;height:6px;border-radius:50%;
+    background:rgba(255,255,255,.9);
+  }
+
+  /* ── Section label ── */
+  .sectionLabel{
+    font-size:12px;font-weight:600;letter-spacing:.4px;
+    color:rgba(255,255,255,.3);
+    text-transform:uppercase;
+    padding:20px 20px 8px;
+  }
+
+  /* ── Glass card container ── */
+  .card{
+    margin:0 16px;border-radius:20px;overflow:hidden;
+    background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.10);
+    /* top specular */
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.18),
+               0 8px 32px rgba(0,0,0,.5);
+  }
+
+  /* ── Inbox row ── */
+  .row{
+    display:flex;align-items:flex-start;gap:12px;
+    padding:14px 16px;
+    position:relative;
+    cursor:pointer;transition:background .15s;
+  }
+  .row:not(:last-child){
+    border-bottom:1px solid rgba(255,255,255,.07);
+  }
+  .row:active{background:rgba(255,255,255,.04)}
+
+  /* Avatar / Icon */
+  .rowAvatar{
+    width:40px;height:40px;flex-shrink:0;border-radius:50%;
+    background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.14);
+    display:flex;align-items:center;justify-content:center;
+    font-size:15px;font-weight:700;color:rgba(255,255,255,.8);
+    position:relative;
+  }
+  .rowAvatarIcon{
+    width:40px;height:40px;flex-shrink:0;border-radius:12px;
+    background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);
+    display:flex;align-items:center;justify-content:center;
+    font-size:17px;
+  }
+  .unreadDot{
+    position:absolute;top:-2px;right:-2px;
+    width:10px;height:10px;border-radius:50%;
+    background:#fff;border:2px solid #000;
+  }
+
+  /* Row body */
+  .rowBody{flex:1;min-width:0}
+  .rowTop{
+    display:flex;justify-content:space-between;align-items:center;
+    margin-bottom:2px;
+  }
+  .rowSender{
+    font-size:15px;font-weight:600;
+    color:rgba(255,255,255,.92);
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+    flex:1;min-width:0;margin-right:8px;
+  }
+  .rowSender.read{color:rgba(255,255,255,.6);font-weight:500}
+  .rowTime{
+    font-size:12px;color:rgba(255,255,255,.35);
+    flex-shrink:0;
+  }
+  .rowSubject{
+    font-size:13px;font-weight:500;
+    color:rgba(255,255,255,.7);
+    margin-bottom:3px;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  .rowPreview{
+    font-size:13px;color:rgba(255,255,255,.4);
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+
+  /* Badges */
+  .badge{
+    display:inline-flex;align-items:center;justify-content:center;
+    height:18px;padding:0 7px;border-radius:6px;
+    font-size:10px;font-weight:700;letter-spacing:.3px;
+    text-transform:uppercase;
+    margin-top:5px;
+  }
+  .badgeAlert{background:rgba(255,80,80,.25);color:rgba(255,120,120,.9)}
+  .badgeTask{background:rgba(255,255,255,.12);color:rgba(255,255,255,.6)}
+  .badgeApproval{background:rgba(255,200,80,.18);color:rgba(255,200,80,.85)}
+  .badgeSystem{background:rgba(255,255,255,.07);color:rgba(255,255,255,.4)}
+
+  /* ── Alert card (critical, red-tinted) ── */
+  .alertRow{
+    background:rgba(255,50,50,.06);
+  }
+  .alertRowAmber{
+    background:rgba(255,180,50,.05);
+  }
+
+  /* ── "Mark all read" row ── */
+  .markAllRow{
+    padding:14px 20px;
+    display:flex;justify-content:flex-end;
+  }
+  .markAllBtn{
+    font-size:13px;font-weight:500;
+    color:rgba(255,255,255,.45);
+    background:none;border:none;cursor:pointer;
+  }
+
+  /* ── Empty state ── */
+  .empty{
+    margin:32px 16px;
+    padding:40px 24px;
+    border-radius:20px;
+    background:rgba(255,255,255,.04);
+    border:1px solid rgba(255,255,255,.08);
+    display:flex;flex-direction:column;align-items:center;gap:10px;
+  }
+  .emptyIcon{font-size:40px;opacity:.3}
+  .emptyTitle{font-size:17px;font-weight:600;color:rgba(255,255,255,.5)}
+  .emptyDesc{font-size:14px;color:rgba(255,255,255,.3);text-align:center;line-height:1.5}
+
+  /* ── Tab bar placeholder ── */
+  .tabBar{
+    position:sticky;bottom:0;left:0;right:0;
+    height:82px;
+    background:rgba(0,0,0,.6);
+    backdrop-filter:blur(24px);
+    -webkit-backdrop-filter:blur(24px);
+    border-top:1px solid rgba(255,255,255,.08);
+    display:flex;align-items:center;justify-content:space-around;
+    padding:0 8px 16px;
+  }
+  .tabItem{
+    display:flex;flex-direction:column;align-items:center;gap:4px;
+    min-width:44px;
+  }
+  .tabIcon{font-size:20px;color:rgba(255,255,255,.35)}
+  .tabIcon.active{color:rgba(255,255,255,.95)}
+  .tabLabel{font-size:10px;color:rgba(255,255,255,.3)}
+  .tabLabel.active{color:rgba(255,255,255,.8)}
+
+  /* swipe hint */
+  .swipeHint{
+    display:flex;align-items:center;gap:6px;
+    padding:0 20px 8px;
+    font-size:11px;color:rgba(255,255,255,.25);
+  }
+</style>
+</head>
+<body>
+<div class="frame">
+  <div class="notch"></div>
+  <div class="screen">
+
+    <!-- Status bar -->
+    <div class="statusBar">
+      <span class="statusTime">9:41</span>
+      <div class="statusIcons">
+        <span>●●●</span>
+        <span>WiFi</span>
+        <span>⬛</span>
+      </div>
+    </div>
+
+    <!-- Header -->
+    <div class="header">
+      <div>
+        <span class="headerTitle">Inbox</span>
+        <span class="headerBadge">9</span>
+      </div>
+      <div class="headerActions">
+        <div class="headerBtn">⊘</div><!-- compose / filter -->
+        <div class="headerBtn">≡</div>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filters">
+      <div class="chip active"><div class="chipDot"></div>All</div>
+      <div class="chip">Unread · 9</div>
+      <div class="chip">Alerts</div>
+      <div class="chip">Approvals</div>
+      <div class="chip">Messages</div>
+      <div class="chip">Tasks</div>
+      <div class="chip">System</div>
+    </div>
+
+    <!-- Mark all read -->
+    <div class="markAllRow">
+      <button class="markAllBtn">Mark all as read</button>
+    </div>
+
+    <!-- ── Critical Alerts ── -->
+    <div class="sectionLabel">Critical</div>
+    <div class="card">
+
+      <div class="row alertRow">
+        <div class="rowAvatarIcon">⚠</div>
+        <div class="rowBody">
+          <div class="rowTop">
+            <span class="rowSender">Stock Alert — Floreasca</span>
+            <span class="rowTime">2m ago</span>
+          </div>
+          <div class="rowSubject">Tile inventory critically low</div>
+          <div class="rowPreview">Porcelain 60×60 stock at 12 units — reorder threshold reached</div>
+          <span class="badge badgeAlert">CRITICAL</span>
+        </div>
+        <div class="unreadDot" style="position:static;margin-top:2px;flex-shrink:0;width:8px;height:8px;border-radius:50%;background:#ff4444;border:none"></div>
+      </div>
+
+      <div class="row alertRowAmber">
+        <div class="rowAvatarIcon">●</div>
+        <div class="rowBody">
+          <div class="rowTop">
+            <span class="rowSender">Finance Alert</span>
+            <span class="rowTime">18m ago</span>
+          </div>
+          <div class="rowSubject">Cash flow projection — Q2</div>
+          <div class="rowPreview">Projected shortfall of €14,200 in week 3 — review recommended</div>
+          <span class="badge badgeApproval">ATTENTION</span>
+        </div>
+        <div style="width:8px;height:8px;border-radius:50%;background:rgba(255,200,80,.9);flex-shrink:0;margin-top:4px"></div>
+      </div>
+
+    </div>
+
+    <!-- ── Approvals Pending ── -->
+    <div class="sectionLabel">Approvals · 3</div>
+    <div class="card">
+
+      <div class="row">
+        <div class="rowAvatar">
+          AR
+          <div class="unreadDot"></div>
+        </div>
+        <div class="rowBody">
+          <div class="rowTop">
+            <span class="rowSender">Andrei Radu</span>
+            <span class="rowTime">1h ago</span>
+          </div>
+          <div class="rowSubject">Material Request · €2,840</div>
+          <div class="rowPreview">Bathroom renovation supplies — Băneasa project Ph.3</div>
+          <span class="badge badgeApproval">APPROVAL NEEDED</span>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="rowAvatar">
+          MI
+          <div class="unreadDot"></div>
+        </div>
+        <div class="rowBody">
+          <div class="rowTop">
+            <span class="rowSender">Maria Ionescu</span>
+            <span class="rowTime">2h ago</span>
+          </div>
+          <div class="rowSubject">Leave Request · Jul 14–18</div>
+          <div class="rowPreview">Annual leave — 5 days, no coverage conflict detected</div>
+          <span class="badge badgeApproval">APPROVAL NEEDED</span>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="rowAvatar" style="background:rgba(255,255,255,.07)">
+          <span style="font-size:16px">📄</span>
+        </div>
+        <div class="rowBody">
+          <div class="rowTop">
+            <span class="rowSender">Contract · Vasile Popescu</span>
+            <span class="rowTime">4h ago</span>
+          </div>
+          <div class="rowSubject">Service Contract — Pending Signature</div>
+          <div class="rowPreview">Kitchen renovation agreement ready for your e-signature</div>
+          <span class="badge badgeApproval">SIGN REQUIRED</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── Messages ── -->
+    <div class="sectionLabel">Messages</div>
+    <div class="card">
+
+      <div class="row">
+        <div class="rowAvatar">
+          DM
+          <div class="unreadDot"></div>
+        </div>
+        <div class="rowBody">
+          <div class="rowTop">
+            <span class="rowSender">Dan Mihai</span>
+            <span class="rowTime">3h ago</span>
+          </div>
+          <div class="rowSubject">Re: Băneasa Phase 3 Timeline</div>
+          <div class="rowPreview">The subcontractor confirmed — we can start tiling on Monday</div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="rowAvatar" style="opacity:.7">
+          CT
+        </div>
+        <div class="rowBody">
+          <div class="rowTop">
+            <span class="rowSender read">Cristina Toma</span>
+            <span class="rowTime">Yesterday</span>
+          </div>
+          <div class="rowSubject">Site report uploaded</div>
+          <div class="rowPreview">Daily report for Floreasca project — 6 photos attached</div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="rowAvatar" style="opacity:.7">
+          RB
+        </div>
+        <div class="rowBody">
+          <div class="rowTop">
+            <span class="rowSender read">Radu Barbu</span>
+            <span class="rowTime">Yesterday</span>
+          </div>
+          <div class="rowSubject">Invoice #INV-2024-0891 sent</div>
+          <div class="rowPreview">Client invoice €12,400 dispatched via email — awaiting payment</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── Tasks assigned ── -->
+    <div class="sectionLabel">Tasks Assigned to You</div>
+    <div class="card">
+
+      <div class="row">
+        <div class="rowAvatarIcon">⬡</div>
+        <div class="rowBody">
+          <div class="rowTop">
+            <span class="rowSender">Inventory Review</span>
+            <span class="rowTime">Today</span>
+          </div>
+          <div class="rowSubject">Monthly stock audit — Floreasca</div>
+          <div class="rowPreview">Due Friday · Assigned by Alexandru Petrescu</div>
+          <span class="badge badgeTask">DUE FRI</span>
+        </div>
+        <div style="width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.5);flex-shrink:0;margin-top:4px"></div>
+      </div>
+
+      <div class="row">
+        <div class="rowAvatarIcon" style="opacity:.6">⊞</div>
+        <div class="rowBody">
+          <div class="rowTop">
+            <span class="rowSender read">Project Check-in</span>
+            <span class="rowTime">Mon</span>
+          </div>
+          <div class="rowSubject">Weekly progress review · All active sites</div>
+          <div class="rowPreview">Due next Monday · Recurring · 3 of 8 submitted</div>
+          <span class="badge badgeTask">RECURRING</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── System ── -->
+    <div class="sectionLabel">System</div>
+    <div class="card">
+
+      <div class="row">
+        <div class="rowAvatarIcon" style="font-size:18px">⚙</div>
+        <div class="rowBody">
+          <div class="rowTop">
+            <span class="rowSender read">PRV System</span>
+            <span class="rowTime">Mon</span>
+          </div>
+          <div class="rowSubject">Payroll processing completed</div>
+          <div class="rowPreview">June payroll processed — 47 employees, total €142,600</div>
+          <span class="badge badgeSystem">SYSTEM</span>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="rowAvatarIcon" style="font-size:15px;opacity:.5">🔒</div>
+        <div class="rowBody">
+          <div class="rowTop">
+            <span class="rowSender read">Security</span>
+            <span class="rowTime">Sun</span>
+          </div>
+          <div class="rowSubject">New sign-in from iPhone · Bucharest</div>
+          <div class="rowPreview">iPhone 16 Pro · Jun 1, 08:34 — If this wasn't you, review sessions</div>
+          <span class="badge badgeSystem">SECURITY</span>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="swipeHint">⟵ swipe left to dismiss · swipe right to mark read</div>
+
+    <!-- Spacer for tab bar -->
+    <div style="height:16px"></div>
+
+  </div><!-- /screen -->
+
+  <!-- Floating tab bar hint -->
+  <div style="position:absolute;bottom:0;left:0;right:0;height:82px;
+    background:linear-gradient(to top, rgba(0,0,0,.95) 0%, rgba(0,0,0,.8) 60%, transparent 100%);
+    pointer-events:none;z-index:10;"></div>
+  <div style="position:absolute;bottom:12px;left:16px;right:16px;height:60px;
+    background:rgba(255,255,255,.08);
+    border:1px solid rgba(255,255,255,.14);
+    border-radius:30px;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 8px 32px rgba(0,0,0,.5);
+    display:flex;align-items:center;justify-content:space-around;
+    padding:0 16px;z-index:20;">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:3px">
+      <span style="font-size:18px;color:rgba(255,255,255,.35)">⌂</span>
+      <span style="font-size:9px;color:rgba(255,255,255,.3)">Command</span>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:3px">
+      <span style="font-size:18px;color:rgba(255,255,255,.35)">⊞</span>
+      <span style="font-size:9px;color:rgba(255,255,255,.3)">Operations</span>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:3px">
+      <span style="font-size:18px;color:rgba(255,255,255,.35)">◎</span>
+      <span style="font-size:9px;color:rgba(255,255,255,.3)">People</span>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:3px">
+      <span style="font-size:18px;color:rgba(255,255,255,.35)">⟁</span>
+      <span style="font-size:9px;color:rgba(255,255,255,.3)">Finance</span>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:3px">
+      <span style="font-size:18px;color:rgba(255,255,255,.35)">✦</span>
+      <span style="font-size:9px;color:rgba(255,255,255,.3)">Intel</span>
+    </div>
+  </div>
+
+</div><!-- /frame -->
+</body>
+</html>
