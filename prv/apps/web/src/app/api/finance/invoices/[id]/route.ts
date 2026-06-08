@@ -1,7 +1,17 @@
 import { withGates } from "@/lib/with-gates"
 import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
-import type { InvoiceSummary } from "../route"
+import type { InvoiceSummary, InvoiceStatus } from "../route"
+import { db } from "@prv/db"
+import {
+  invoices,
+  invoiceItems,
+  clients,
+  clientContacts,
+  projects,
+  auditLogs,
+} from "@prv/db/schema"
+import { eq, and, isNull, desc } from "drizzle-orm"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -38,294 +48,188 @@ export interface InvoiceDetail extends InvoiceSummary {
   activities: InvoiceActivity[]
 }
 
-const MOCK_DETAIL: Record<string, InvoiceDetail> = {
-  "inv-208": {
-    id: "inv-208",
-    ref: "INV-208",
-    clientId: "c1",
-    clientName: "Andronic Group SRL",
-    clientInitials: "AG",
-    clientContactName: "Ion Andronic",
-    clientPhone: "+40 744 123 456",
-    clientCif: "RO12345678",
-    status: "overdue",
-    series: "PRV-2026",
-    amount: 2100,
-    amountPaid: 0,
-    vatRate: 19,
-    subtotal: 1764,
-    vatAmount: 335.16,
-    dueDate: "2026-05-28",
-    issuedDate: "2026-05-14",
-    projectName: "Renovare Apartament Floreasca",
-    daysOverdue: 10,
-    lineItems: [
-      {
-        id: "li1",
-        description: "Manoperă electrică",
-        quantity: 20,
-        unit: "ore",
-        unitPrice: 42,
-        total: 840,
-      },
-      {
-        id: "li2",
-        description: "Materiale electrice",
-        quantity: 1,
-        unit: "lot",
-        unitPrice: 420,
-        total: 420,
-      },
-      {
-        id: "li3",
-        description: "Instalații sanitare",
-        quantity: 12,
-        unit: "ore",
-        unitPrice: 38,
-        total: 456,
-      },
-      {
-        id: "li4",
-        description: "Materiale sanitare",
-        quantity: 1,
-        unit: "lot",
-        unitPrice: 48,
-        total: 48,
-      },
-    ],
-    activities: [
-      {
-        id: "a4",
-        type: "overdue",
-        text: "Factură restantă — client notificat automat",
-        timestamp: "2026-06-04T09:00:00Z",
-      },
-      {
-        id: "a3",
-        type: "reminder",
-        text: "Reminder trimis către Ion Andronic",
-        timestamp: "2026-05-28T08:30:00Z",
-        actor: "System",
-      },
-      {
-        id: "a2",
-        type: "sent",
-        text: "Factură transmisă clientului",
-        timestamp: "2026-05-14T14:20:00Z",
-        actor: "Admin",
-      },
-      {
-        id: "a1",
-        type: "created",
-        text: "Factură INV-208 creată",
-        timestamp: "2026-05-14T11:05:00Z",
-        actor: "Admin",
-      },
-    ],
-  },
-  "inv-207": {
-    id: "inv-207",
-    ref: "INV-207",
-    clientId: "c2",
-    clientName: "Biroul Construct SRL",
-    clientInitials: "BC",
-    clientContactName: "Pavel Birău",
-    clientPhone: "+40 722 987 654",
-    clientCif: "RO23456789",
-    status: "overdue",
-    series: "PRV-2026",
-    amount: 1140,
-    amountPaid: 0,
-    vatRate: 19,
-    subtotal: 957.98,
-    vatAmount: 182.02,
-    dueDate: "2026-05-30",
-    issuedDate: "2026-05-16",
-    projectName: "Baie Modernă Cluj",
-    daysOverdue: 8,
-    lineItems: [
-      {
-        id: "li1",
-        description: "Finisaje baie",
-        quantity: 8,
-        unit: "ore",
-        unitPrice: 45,
-        total: 360,
-      },
-      {
-        id: "li2",
-        description: "Accesorii sanitare",
-        quantity: 1,
-        unit: "lot",
-        unitPrice: 598,
-        total: 598,
-      },
-    ],
-    activities: [
-      {
-        id: "a3",
-        type: "overdue",
-        text: "Factură restantă — client notificat",
-        timestamp: "2026-06-02T09:00:00Z",
-      },
-      {
-        id: "a2",
-        type: "sent",
-        text: "Factură transmisă clientului",
-        timestamp: "2026-05-16T10:00:00Z",
-        actor: "Admin",
-      },
-      {
-        id: "a1",
-        type: "created",
-        text: "Factură INV-207 creată",
-        timestamp: "2026-05-16T09:45:00Z",
-        actor: "Admin",
-      },
-    ],
-  },
-  "inv-209": {
-    id: "inv-209",
-    ref: "INV-209",
-    clientId: "c1",
-    clientName: "Andronic Group SRL",
-    clientInitials: "AG",
-    clientContactName: "Ion Andronic",
-    clientPhone: "+40 744 123 456",
-    clientCif: "RO12345678",
-    status: "due",
-    series: "PRV-2026",
-    amount: 7800,
-    amountPaid: 0,
-    vatRate: 19,
-    subtotal: 6554.62,
-    vatAmount: 1245.38,
-    dueDate: "2026-06-10",
-    issuedDate: "2026-05-27",
-    projectName: "Pardoseli Comerciale Brașov",
-    daysOverdue: null,
-    lineItems: [
-      {
-        id: "li1",
-        description: "Montaj pardoseli comerciale",
-        quantity: 180,
-        unit: "mp",
-        unitPrice: 28,
-        total: 5040,
-      },
-      {
-        id: "li2",
-        description: "Materiale pardoseli",
-        quantity: 1,
-        unit: "lot",
-        unitPrice: 1515,
-        total: 1515,
-      },
-    ],
-    activities: [
-      {
-        id: "a2",
-        type: "sent",
-        text: "Factură transmisă clientului",
-        timestamp: "2026-05-27T15:30:00Z",
-        actor: "Admin",
-      },
-      {
-        id: "a1",
-        type: "created",
-        text: "Factură INV-209 creată",
-        timestamp: "2026-05-27T14:00:00Z",
-        actor: "Admin",
-      },
-    ],
-  },
-  "inv-204": {
-    id: "inv-204",
-    ref: "INV-204",
-    clientId: "c1",
-    clientName: "Andronic Group SRL",
-    clientInitials: "AG",
-    clientContactName: "Ion Andronic",
-    clientPhone: "+40 744 123 456",
-    clientCif: "RO12345678",
-    status: "paid",
-    series: "PRV-2026",
-    amount: 12400,
-    amountPaid: 12400,
-    vatRate: 19,
-    subtotal: 10420.17,
-    vatAmount: 1979.83,
-    dueDate: "2026-06-02",
-    issuedDate: "2026-05-10",
-    projectName: "Renovare Apartament Floreasca",
-    daysOverdue: null,
-    lineItems: [
-      {
-        id: "li1",
-        description: "Manoperă renovare generală",
-        quantity: 120,
-        unit: "ore",
-        unitPrice: 45,
-        total: 5400,
-      },
-      {
-        id: "li2",
-        description: "Materiale construcții",
-        quantity: 1,
-        unit: "lot",
-        unitPrice: 3200,
-        total: 3200,
-      },
-      {
-        id: "li3",
-        description: "Echipamente și scule",
-        quantity: 1,
-        unit: "lot",
-        unitPrice: 820,
-        total: 820,
-      },
-      {
-        id: "li4",
-        description: "Transport și logistică",
-        quantity: 1,
-        unit: "lot",
-        unitPrice: 1000,
-        total: 1000,
-      },
-    ],
-    activities: [
-      {
-        id: "a3",
-        type: "payment",
-        text: "Plată de €12,400 înregistrată — Transfer bancar",
-        timestamp: "2026-06-02T11:20:00Z",
-        actor: "Admin",
-      },
-      {
-        id: "a2",
-        type: "sent",
-        text: "Factură transmisă clientului",
-        timestamp: "2026-05-10T12:00:00Z",
-        actor: "Admin",
-      },
-      {
-        id: "a1",
-        type: "created",
-        text: "Factură INV-204 creată",
-        timestamp: "2026-05-10T10:30:00Z",
-        actor: "Admin",
-      },
-    ],
-  },
+function toUiStatus(dbStatus: string, dueDate: string): InvoiceStatus {
+  if (dbStatus === "paid") return "paid"
+  if (dbStatus === "cancelled") return "void"
+  if (dbStatus === "refunded") return "partial"
+  if (dbStatus === "overdue") return "overdue"
+  if (dbStatus === "draft") return "draft"
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  return new Date(dueDate) < today ? "overdue" : "due"
+}
+
+function calcDaysOverdue(dueDate: string, status: InvoiceStatus): number | null {
+  if (status !== "overdue") return null
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  return Math.max(0, Math.floor((today.getTime() - new Date(dueDate).getTime()) / 86400000))
+}
+
+function nameInitials(name: string): string {
+  return name
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() ?? "")
+    .join("")
+}
+
+function actionToType(action: string): InvoiceActivityType {
+  if (action.includes(".create")) return "created"
+  if (action.includes(".send")) return "sent"
+  if (action.includes(".payment") || action.includes(".pay")) return "payment"
+  if (action.includes(".remind")) return "reminder"
+  if (action.includes(".void") || action.includes(".cancel")) return "voided"
+  if (action.includes(".overdue")) return "overdue"
+  return "created"
+}
+
+function actionToText(action: string, ref: string): string {
+  if (action.includes(".create")) return `Factură ${ref} creată`
+  if (action.includes(".send")) return "Factură transmisă clientului"
+  if (action.includes(".payment") || action.includes(".pay")) return "Plată înregistrată"
+  if (action.includes(".remind")) return "Reminder trimis clientului"
+  if (action.includes(".void") || action.includes(".cancel")) return "Factură anulată"
+  if (action.includes(".overdue")) return "Factură restantă — client notificat"
+  return action
 }
 
 export const GET = withGates(
   { action: "finance.invoices.read", endpointClass: "api_read" },
-  async (req: NextRequest, _ctx: GateContext): Promise<NextResponse> => {
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
     const id = req.nextUrl.pathname.split("/").pop()
     if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 })
-    const invoice = MOCK_DETAIL[id]
-    if (!invoice) return NextResponse.json({ error: "Not found" }, { status: 404 })
-    return NextResponse.json({ invoice })
+
+    const rows = await db
+      .select({
+        id: invoices.id,
+        invoiceNumber: invoices.invoiceNumber,
+        status: invoices.status,
+        issueDate: invoices.issueDate,
+        dueDate: invoices.dueDate,
+        paidAt: invoices.paidAt,
+        subtotal: invoices.subtotal,
+        vatAmount: invoices.vatAmount,
+        total: invoices.total,
+        clientId: invoices.clientId,
+        clientName: clients.name,
+        clientVatNumber: clients.vatNumber,
+        projectName: projects.name,
+      })
+      .from(invoices)
+      .leftJoin(clients, eq(invoices.clientId, clients.id))
+      .leftJoin(projects, eq(invoices.projectId, projects.id))
+      .where(
+        and(
+          eq(invoices.id, id),
+          eq(invoices.companyId, ctx.session.companyId),
+          isNull(invoices.deletedAt)
+        )
+      )
+      .limit(1)
+
+    const inv = rows[0]
+    if (!inv) return NextResponse.json({ error: "Not found" }, { status: 404 })
+
+    // Parallel: line items + primary contact + audit activity
+    const contactPromise: Promise<
+      Array<{ firstName: string; lastName: string; phone: string | null }>
+    > = inv.clientId
+      ? db
+          .select({
+            firstName: clientContacts.firstName,
+            lastName: clientContacts.lastName,
+            phone: clientContacts.phone,
+          })
+          .from(clientContacts)
+          .where(and(eq(clientContacts.clientId, inv.clientId), eq(clientContacts.isPrimary, true)))
+          .limit(1)
+      : Promise.resolve([])
+
+    const [itemRows, contactRows, logRows] = await Promise.all([
+      db
+        .select()
+        .from(invoiceItems)
+        .where(eq(invoiceItems.invoiceId, id))
+        .orderBy(invoiceItems.sortOrder),
+      contactPromise,
+      db
+        .select({
+          id: auditLogs.id,
+          action: auditLogs.action,
+          actorId: auditLogs.actorId,
+          createdAt: auditLogs.createdAt,
+        })
+        .from(auditLogs)
+        .where(
+          and(
+            eq(auditLogs.companyId, ctx.session.companyId),
+            eq(auditLogs.entityType, "invoice"),
+            eq(auditLogs.entityId, id)
+          )
+        )
+        .orderBy(desc(auditLogs.createdAt))
+        .limit(20),
+    ])
+
+    const uiStatus = toUiStatus(inv.status, inv.dueDate)
+    const clientName = inv.clientName ?? "—"
+    const primaryContact = contactRows[0]
+    const contactName = primaryContact
+      ? [primaryContact.firstName, primaryContact.lastName].filter(Boolean).join(" ")
+      : "—"
+    const issueYear = inv.issueDate.slice(0, 4)
+    const firstItem = itemRows[0]
+
+    const lineItems: InvoiceLineItem[] = itemRows.map((item) => ({
+      id: item.id,
+      description: item.description,
+      quantity: Number(item.quantity),
+      unit: item.unit,
+      unitPrice: Number(item.unitPrice),
+      total: Number(item.total),
+    }))
+
+    const activities: InvoiceActivity[] = logRows.map((log) => ({
+      id: log.id,
+      type: actionToType(log.action),
+      text: actionToText(log.action, inv.invoiceNumber),
+      timestamp: log.createdAt.toISOString(),
+    }))
+
+    if (activities.length === 0) {
+      activities.push({
+        id: `${id}-created`,
+        type: "created",
+        text: `Factură ${inv.invoiceNumber} creată`,
+        timestamp: `${inv.issueDate}T00:00:00Z`,
+      })
+    }
+
+    const detail: InvoiceDetail = {
+      id: inv.id,
+      ref: inv.invoiceNumber,
+      clientId: inv.clientId ?? "",
+      clientName,
+      clientInitials: nameInitials(clientName),
+      clientContactName: contactName,
+      clientPhone: primaryContact?.phone ?? "—",
+      clientCif: inv.clientVatNumber ?? "—",
+      status: uiStatus,
+      series: `PRV-${issueYear}`,
+      amount: Number(inv.total),
+      amountPaid: inv.paidAt ? Number(inv.total) : 0,
+      vatRate: Number(firstItem?.vatRate ?? "19"),
+      subtotal: Number(inv.subtotal),
+      vatAmount: Number(inv.vatAmount),
+      dueDate: inv.dueDate,
+      issuedDate: inv.issueDate,
+      projectName: inv.projectName ?? "—",
+      daysOverdue: calcDaysOverdue(inv.dueDate, uiStatus),
+      lineItems,
+      activities,
+    }
+
+    return NextResponse.json({ invoice: detail })
   }
 )

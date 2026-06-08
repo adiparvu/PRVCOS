@@ -2,6 +2,9 @@ import { withGates } from "@/lib/with-gates"
 import { writeAuditLog } from "@prv/auth"
 import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
+import { db } from "@prv/db"
+import { invoices, expenses } from "@prv/db/schema"
+import { eq, and, isNull, desc, sum, inArray, gte, lt, notInArray } from "drizzle-orm"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -47,207 +50,407 @@ export interface FinanceMeta {
   vatLabel: string
 }
 
-const MOCK_EXPENSES: Expense[] = [
-  {
-    id: "exp-001",
-    category: "materiale",
-    status: "pending",
-    title: "Materiale construcție lot 3/2026",
-    amount: 8740,
-    amountLabel: "€8,740",
-    vatAmount: 1395,
-    vatLabel: "€1,395",
-    vendorName: "Materiale Building SRL",
-    date: "2026-06-05",
-    dueDate: "2026-06-20",
-    approvalStage: 2,
-  },
-  {
-    id: "exp-002",
-    category: "personal",
-    status: "approved",
-    title: "Salarii echipă mai 2026",
-    amount: 42000,
-    amountLabel: "€42,000",
-    vatAmount: 0,
-    vatLabel: "—",
-    vendorName: "HR Intern",
-    date: "2026-05-31",
-    dueDate: "2026-06-01",
-    approvalStage: 3,
-  },
-  {
-    id: "exp-003",
-    category: "logistica",
-    status: "approved",
-    title: "Combustibil flotă mai 2026",
-    amount: 3280,
-    amountLabel: "€3,280",
-    vatAmount: 524,
-    vatLabel: "€524",
-    vendorName: "OMV România",
-    date: "2026-05-30",
-    dueDate: "2026-06-05",
-    approvalStage: 3,
-  },
-  {
-    id: "exp-004",
-    category: "marketing",
-    status: "approved",
-    title: "Marketing digital Q2 2026",
-    amount: 5600,
-    amountLabel: "€5,600",
-    vatAmount: 896,
-    vatLabel: "€896",
-    vendorName: "Digital Agency SRL",
-    date: "2026-05-28",
-    dueDate: "2026-06-10",
-    approvalStage: 3,
-  },
-  {
-    id: "exp-005",
-    category: "utilitati",
-    status: "approved",
-    title: "Utilități magazine mai 2026",
-    amount: 4120,
-    amountLabel: "€4,120",
-    vatAmount: 659,
-    vatLabel: "€659",
-    vendorName: "E.ON Energie România",
-    date: "2026-05-27",
-    dueDate: "2026-06-07",
-    approvalStage: 3,
-  },
-  {
-    id: "exp-006",
-    category: "logistica",
-    status: "pending",
-    title: "Leasing utilaje Q2 2026",
-    amount: 12800,
-    amountLabel: "€12,800",
-    vatAmount: 2048,
-    vatLabel: "€2,048",
-    vendorName: "UniCredit Leasing",
-    date: "2026-06-01",
-    dueDate: "2026-06-15",
-    approvalStage: 1,
-  },
-  {
-    id: "exp-007",
-    category: "altele",
-    status: "approved",
-    title: "Servicii contabilitate mai 2026",
-    amount: 2400,
-    amountLabel: "€2,400",
-    vatAmount: 384,
-    vatLabel: "€384",
-    vendorName: "Audit & Tax SRL",
-    date: "2026-05-25",
-    dueDate: "2026-06-01",
-    approvalStage: 3,
-  },
-  {
-    id: "exp-008",
-    category: "materiale",
-    status: "draft",
-    title: "Reparații urgente magazin Iași",
-    amount: 1860,
-    amountLabel: "€1,860",
-    vatAmount: 297,
-    vatLabel: "€297",
-    vendorName: "Service Rapid SRL",
-    date: "2026-06-06",
-    dueDate: "2026-06-21",
-    approvalStage: 0,
-  },
-]
+// ─── Category / Status Maps ───────────────────────────────────────────────────
 
-const MOCK_PL: PlRow[] = [
-  { label: "Venituri totale", valueLabel: "€545k", pct: 100, colorKey: "green" },
-  { label: "Cost Bunuri", valueLabel: "€183k", pct: 34, colorKey: "red" },
-  { label: "Profit Brut", valueLabel: "€362k", pct: 66, colorKey: "blue" },
-  { label: "Cheltuieli Op.", valueLabel: "€103k", pct: 19, colorKey: "amber" },
-  { label: "Profit Net", valueLabel: "€259k", pct: 47, colorKey: "green" },
-]
-
-const MOCK_META: FinanceMeta = {
-  totalRevenueLabel: "€545k",
-  revenueTrend: "+8%",
-  totalExpensesLabel: "€286k",
-  expensesTrend: "+3%",
-  profitLabel: "€259k",
-  profitTrend: "+14%",
-  vatLabel: "€62k",
+const DB_TO_UI_CATEGORY: Record<string, ExpenseCategory> = {
+  materials: "materiale",
+  labor: "personal",
+  salaries: "personal",
+  equipment: "logistica",
+  transport: "logistica",
+  rent: "utilitati",
+  utilities: "utilitati",
+  subscriptions: "utilitati",
+  marketing: "marketing",
+  other: "altele",
 }
+
+const UI_TO_DB_CATEGORY: Record<ExpenseCategory, string> = {
+  materiale: "materials",
+  personal: "labor",
+  logistica: "equipment",
+  utilitati: "utilities",
+  marketing: "marketing",
+  altele: "other",
+}
+
+const DB_TO_UI_STATUS: Record<string, ExpenseStatus> = {
+  draft: "draft",
+  submitted: "pending",
+  approved: "approved",
+  rejected: "rejected",
+  paid: "approved",
+}
+
+const UI_TO_DB_STATUS: Record<string, string> = {
+  draft: "draft",
+  pending: "submitted",
+  approved: "approved",
+  rejected: "rejected",
+}
+
+type DbExpenseStatus = "draft" | "submitted" | "approved" | "rejected" | "paid"
+type DbExpenseCategory =
+  | "materials"
+  | "labor"
+  | "equipment"
+  | "transport"
+  | "rent"
+  | "utilities"
+  | "marketing"
+  | "salaries"
+  | "subscriptions"
+  | "other"
+
+const ACTIVE_EXP_STATUSES: DbExpenseStatus[] = ["approved", "paid"]
+const COGS_CATEGORIES: DbExpenseCategory[] = ["materials", "labor", "salaries"]
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function fmtLabel(amount: number, currency = "RON"): string {
+  const n = Math.round(amount)
+  const s = n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+  return currency === "EUR" ? `€${s}` : `${s} ${currency}`
+}
+
+function fmtKpi(amount: number, currency = "RON"): string {
+  const abs = Math.abs(amount)
+  let val: string
+  if (abs >= 1_000_000) val = `${(amount / 1_000_000).toFixed(1)}M`
+  else if (abs >= 1_000) val = `${Math.round(amount / 1_000)}k`
+  else val = String(Math.round(amount))
+  return currency === "EUR" ? `€${val}` : `${val} RON`
+}
+
+function fmtTrend(current: number, prev: number): string {
+  if (prev === 0) return current > 0 ? "+100%" : "0%"
+  const pct = Math.round(((current - prev) / Math.abs(prev)) * 100)
+  return pct >= 0 ? `+${pct}%` : `${pct}%`
+}
+
+function stageFromDbStatus(dbStatus: string): number {
+  switch (dbStatus) {
+    case "submitted":
+      return 1
+    case "approved":
+      return 3
+    case "paid":
+      return 3
+    case "rejected":
+      return 2
+    default:
+      return 0
+  }
+}
+
+function vendorFromNotes(notes: string | null): string {
+  if (!notes) return "—"
+  const first = notes.split("\n")[0]?.trim()
+  return first || "—"
+}
+
+// ─── GET ──────────────────────────────────────────────────────────────────────
 
 export const GET = withGates(
   { action: "finance.expenses.read", endpointClass: "api_read" },
-  async (req: NextRequest, _ctx: GateContext): Promise<NextResponse> => {
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
     const { searchParams } = new URL(req.url)
-    const status = searchParams.get("status") as ExpenseStatus | null
-    const category = searchParams.get("category") as ExpenseCategory | null
+    const filterStatus = searchParams.get("status") as ExpenseStatus | null
+    const filterCategory = searchParams.get("category") as ExpenseCategory | null
 
-    let expenses = MOCK_EXPENSES
-    if (status) expenses = expenses.filter((e) => e.status === status)
-    if (category) expenses = expenses.filter((e) => e.category === category)
+    const currentYear = new Date().getFullYear()
+    const yearStart = `${currentYear}-01-01`
+    const yearEnd = `${currentYear + 1}-01-01`
+    const prevYearStart = `${currentYear - 1}-01-01`
 
-    return NextResponse.json({ expenses, plData: MOCK_PL, meta: MOCK_META })
+    // Run all queries in parallel
+    const [expenseRows, revenueAgg, cogsAgg, opexAgg, vatAgg, prevRevenueAgg, prevExpAgg] =
+      await Promise.all([
+        // Expenses list
+        db
+          .select()
+          .from(expenses)
+          .where(and(eq(expenses.companyId, ctx.session.companyId), isNull(expenses.deletedAt)))
+          .orderBy(desc(expenses.date)),
+
+        // Revenue YTD (paid invoices)
+        db
+          .select({ total: sum(invoices.total) })
+          .from(invoices)
+          .where(
+            and(
+              eq(invoices.companyId, ctx.session.companyId),
+              eq(invoices.status, "paid"),
+              gte(invoices.issueDate, yearStart),
+              lt(invoices.issueDate, yearEnd),
+              isNull(invoices.deletedAt)
+            )
+          ),
+
+        // COGS YTD (materials/labor expenses)
+        db
+          .select({ total: sum(expenses.amount) })
+          .from(expenses)
+          .where(
+            and(
+              eq(expenses.companyId, ctx.session.companyId),
+              inArray(expenses.status, ACTIVE_EXP_STATUSES),
+              inArray(expenses.category, COGS_CATEGORIES),
+              gte(expenses.date, yearStart),
+              lt(expenses.date, yearEnd),
+              isNull(expenses.deletedAt)
+            )
+          ),
+
+        // OpEx YTD (non-COGS expenses)
+        db
+          .select({ total: sum(expenses.amount) })
+          .from(expenses)
+          .where(
+            and(
+              eq(expenses.companyId, ctx.session.companyId),
+              inArray(expenses.status, ACTIVE_EXP_STATUSES),
+              notInArray(expenses.category, COGS_CATEGORIES),
+              gte(expenses.date, yearStart),
+              lt(expenses.date, yearEnd),
+              isNull(expenses.deletedAt)
+            )
+          ),
+
+        // VAT YTD (paid invoices)
+        db
+          .select({ total: sum(invoices.vatAmount) })
+          .from(invoices)
+          .where(
+            and(
+              eq(invoices.companyId, ctx.session.companyId),
+              eq(invoices.status, "paid"),
+              gte(invoices.issueDate, yearStart),
+              lt(invoices.issueDate, yearEnd),
+              isNull(invoices.deletedAt)
+            )
+          ),
+
+        // Previous year revenue
+        db
+          .select({ total: sum(invoices.total) })
+          .from(invoices)
+          .where(
+            and(
+              eq(invoices.companyId, ctx.session.companyId),
+              eq(invoices.status, "paid"),
+              gte(invoices.issueDate, prevYearStart),
+              lt(invoices.issueDate, yearStart),
+              isNull(invoices.deletedAt)
+            )
+          ),
+
+        // Previous year expenses
+        db
+          .select({ total: sum(expenses.amount) })
+          .from(expenses)
+          .where(
+            and(
+              eq(expenses.companyId, ctx.session.companyId),
+              inArray(expenses.status, ACTIVE_EXP_STATUSES),
+              gte(expenses.date, prevYearStart),
+              lt(expenses.date, yearStart),
+              isNull(expenses.deletedAt)
+            )
+          ),
+      ])
+
+    // ── Map expense rows to UI shape ──────────────────────────────────────────
+    let list: Expense[] = []
+    for (const r of expenseRows) {
+      const uiStatus = DB_TO_UI_STATUS[r.status] ?? "draft"
+      const uiCategory = DB_TO_UI_CATEGORY[r.category] ?? "altele"
+      if (filterStatus && uiStatus !== filterStatus) continue
+      if (filterCategory && uiCategory !== filterCategory) continue
+
+      const gross = Number(r.amount)
+      const vatAmt = gross * (19 / 119)
+      const currency = r.currency
+
+      // dueDate = date + 15 days (no dueDate column in schema)
+      const d = new Date(r.date)
+      d.setDate(d.getDate() + 15)
+      const dueDate = d.toISOString().slice(0, 10)
+
+      list.push({
+        id: r.id,
+        category: uiCategory,
+        status: uiStatus,
+        title: r.title,
+        amount: gross,
+        amountLabel: fmtLabel(gross, currency),
+        vatAmount: Math.round(vatAmt),
+        vatLabel: vatAmt > 0 ? fmtLabel(Math.round(vatAmt), currency) : "—",
+        vendorName: vendorFromNotes(r.notes),
+        date: r.date,
+        dueDate,
+        approvalStage: stageFromDbStatus(r.status),
+      })
+    }
+
+    // ── Aggregate KPIs ────────────────────────────────────────────────────────
+    const revenue = Number(revenueAgg[0]?.total ?? "0")
+    const cogs = Number(cogsAgg[0]?.total ?? "0")
+    const opex = Number(opexAgg[0]?.total ?? "0")
+    const totalExpenses = cogs + opex
+    const vat = Number(vatAgg[0]?.total ?? "0")
+    const grossProfit = revenue - cogs
+    const netProfit = grossProfit - opex
+    const prevRevenue = Number(prevRevenueAgg[0]?.total ?? "0")
+    const prevExp = Number(prevExpAgg[0]?.total ?? "0")
+
+    const meta: FinanceMeta = {
+      totalRevenueLabel: fmtKpi(revenue),
+      revenueTrend: fmtTrend(revenue, prevRevenue),
+      totalExpensesLabel: fmtKpi(totalExpenses),
+      expensesTrend: fmtTrend(totalExpenses, prevExp),
+      profitLabel: fmtKpi(netProfit),
+      profitTrend: fmtTrend(netProfit, prevRevenue - prevExp),
+      vatLabel: fmtKpi(vat),
+    }
+
+    const plData: PlRow[] =
+      revenue > 0
+        ? [
+            { label: "Venituri totale", valueLabel: fmtKpi(revenue), pct: 100, colorKey: "green" },
+            {
+              label: "Cost Bunuri",
+              valueLabel: fmtKpi(cogs),
+              pct: Math.round((cogs / revenue) * 100),
+              colorKey: "red",
+            },
+            {
+              label: "Profit Brut",
+              valueLabel: fmtKpi(grossProfit),
+              pct: Math.round((grossProfit / revenue) * 100),
+              colorKey: "blue",
+            },
+            {
+              label: "Cheltuieli Op.",
+              valueLabel: fmtKpi(opex),
+              pct: Math.round((opex / revenue) * 100),
+              colorKey: "amber",
+            },
+            {
+              label: "Profit Net",
+              valueLabel: fmtKpi(netProfit),
+              pct: Math.round((netProfit / revenue) * 100),
+              colorKey: "green",
+            },
+          ]
+        : []
+
+    return NextResponse.json({ expenses: list, plData, meta })
   }
 )
+
+// ─── POST ─────────────────────────────────────────────────────────────────────
 
 export const POST = withGates(
   { action: "finance.expenses.create", endpointClass: "api_write" },
   async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
-    const body = await req.json()
-    const { title, period, projectRef, notes, lines, status } = body
+    let body: unknown
+    try {
+      body = await req.json()
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON" }, { status: 400 })
+    }
 
-    const expenseId = `exp-${Date.now()}`
-    const today = new Date().toISOString().slice(0, 10)
+    const { title, period, projectRef, notes, lines, status } = body as {
+      title?: string
+      period?: string
+      projectRef?: string
+      notes?: string
+      lines?: Array<{ amount?: number; vatRate?: number; category?: string; vendorName?: string }>
+      status?: string
+    }
 
-    const totalNet = (lines ?? []).reduce(
-      (s: number, l: { amount: number }) => s + (l.amount ?? 0),
-      0
-    )
+    const totalNet = (lines ?? []).reduce((s, l) => s + (l.amount ?? 0), 0)
     const totalVat = (lines ?? []).reduce(
-      (s: number, l: { amount: number; vatRate: number }) =>
-        s + (l.amount ?? 0) * ((l.vatRate ?? 0) / 100),
+      (s, l) => s + (l.amount ?? 0) * ((l.vatRate ?? 19) / 100),
       0
     )
     const totalGross = totalNet + totalVat
 
-    const newExpense: Expense = {
-      id: expenseId,
-      category: lines?.[0]?.category ?? "altele",
-      status: (status as ExpenseStatus) ?? "draft",
-      title: title ?? "Cheltuială nouă",
-      amount: Math.round(totalNet),
-      amountLabel: `€${Math.round(totalNet).toLocaleString("ro-RO")}`,
-      vatAmount: Math.round(totalVat),
-      vatLabel: totalVat > 0 ? `€${Math.round(totalVat).toLocaleString("ro-RO")}` : "—",
-      vendorName: lines?.[0]?.vendorName ?? "",
-      date: today,
-      dueDate: today,
-      approvalStage: 0,
+    const dbCategory =
+      UI_TO_DB_CATEGORY[(lines?.[0]?.category as ExpenseCategory) ?? "altele"] ?? "other"
+    const dbStatus = UI_TO_DB_STATUS[status ?? "draft"] ?? "draft"
+    const today = new Date().toISOString().slice(0, 10)
+
+    // Store vendor name as first line of notes
+    const vendorName = lines?.[0]?.vendorName ?? ""
+    const combinedNotes =
+      vendorName && notes ? `${vendorName}\n${notes}` : vendorName || notes || null
+
+    const [created] = await db
+      .insert(expenses)
+      .values({
+        companyId: ctx.session.companyId,
+        submittedById: ctx.session.userId,
+        title: title ?? "Cheltuială nouă",
+        category: dbCategory as (typeof expenses.$inferInsert)["category"],
+        status: dbStatus as (typeof expenses.$inferInsert)["status"],
+        amount: String(Math.round(totalGross * 100) / 100),
+        currency: "RON",
+        date: today,
+        notes: combinedNotes,
+      })
+      .returning({ id: expenses.id })
+
+    if (!created) {
+      return NextResponse.json({ error: "Failed to create expense" }, { status: 500 })
     }
 
-    await writeAuditLog({
+    void writeAuditLog({
       companyId: ctx.session.companyId,
       actorId: ctx.session.userId,
       sessionId: ctx.session.sessionId,
       action: "finance.expenses.create",
       entityType: "expense",
-      entityId: expenseId,
+      entityId: created.id,
       payload: {
         title,
         period,
         projectRef,
         lineCount: (lines ?? []).length,
-        totalNet: newExpense.amount,
-        totalVat: newExpense.vatAmount,
+        totalNet: Math.round(totalNet),
+        totalVat: Math.round(totalVat),
         totalGross: Math.round(totalGross),
-        status: newExpense.status,
+        status: dbStatus,
       },
+      method: "POST",
+      path: "/api/finance/expenses",
+      ipAddress: ctx.ipAddress,
+      userAgent: ctx.userAgent,
     })
+
+    const uiStatus = DB_TO_UI_STATUS[dbStatus] ?? "draft"
+    const uiCategory = DB_TO_UI_CATEGORY[dbCategory] ?? "altele"
+    const gross = Math.round(totalGross)
+    const vatAmt = Math.round(totalVat)
+
+    const dueDate = new Date()
+    dueDate.setDate(dueDate.getDate() + 15)
+
+    const newExpense: Expense = {
+      id: created.id,
+      category: uiCategory,
+      status: uiStatus,
+      title: title ?? "Cheltuială nouă",
+      amount: gross,
+      amountLabel: fmtLabel(gross),
+      vatAmount: vatAmt,
+      vatLabel: vatAmt > 0 ? fmtLabel(vatAmt) : "—",
+      vendorName: vendorName || "—",
+      date: today,
+      dueDate: dueDate.toISOString().slice(0, 10),
+      approvalStage: stageFromDbStatus(dbStatus),
+    }
 
     return NextResponse.json({ expense: newExpense }, { status: 201 })
   }

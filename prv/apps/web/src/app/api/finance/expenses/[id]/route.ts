@@ -2,6 +2,9 @@ import { withGates } from "@/lib/with-gates"
 import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
 import type { ExpenseCategory, ExpenseStatus } from "../route"
+import { db } from "@prv/db"
+import { expenses } from "@prv/db/schema"
+import { eq, and, isNull } from "drizzle-orm"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -48,210 +51,160 @@ export interface ExpenseDetail {
   lineItems: ExpenseLineItem[]
 }
 
-const MOCK_DETAILS: Record<string, ExpenseDetail> = {
-  "exp-001": {
-    id: "exp-001",
-    category: "materiale",
-    status: "pending",
-    title: "Materiale construcție lot 3/2026",
-    amount: 8740,
-    amountLabel: "€8,740",
-    baseAmount: 7345,
-    baseAmountLabel: "€7,345",
-    vatAmount: 1395,
-    vatLabel: "€1,395",
-    vatPct: 19,
-    vendorName: "Materiale Building SRL",
-    vendorId: "v-001",
-    vendorAddress: "Str. Industriei 14, Cluj-Napoca",
-    vendorCui: "RO12345678",
-    date: "2026-06-05",
-    dueDate: "2026-06-20",
-    description:
-      "Achiziție materiale de construcție pentru șantierele active din lotul 3/2026: Cluj, Timișoara și Brașov.",
-    approvalStage: 2,
-    approvalSteps: [
-      {
-        id: "step-1",
-        role: "Manager Regional",
-        name: "Ion Popescu",
-        avatar: "IP",
-        status: "approved",
-        approvedAt: "acum 2h",
-        note: "Verificat cu șeful de șantier. Prețuri corecte.",
-      },
-      {
-        id: "step-2",
-        role: "Director Financiar",
-        name: "Maria Ionescu",
-        avatar: "MI",
-        status: "pending",
-        approvedAt: "",
-        note: "",
-      },
-      {
-        id: "step-3",
-        role: "CEO",
-        name: "Adrian Pârvulescu",
-        avatar: "AP",
-        status: "locked",
-        approvedAt: "",
-        note: "",
-      },
-    ],
-    lineItems: [
-      {
-        id: "li-1",
-        description: "Ciment Portland 42.5N (25kg)",
-        quantity: 80,
-        unitPriceLabel: "€16.00",
-        totalLabel: "€1,280",
-      },
-      {
-        id: "li-2",
-        description: "Polistiren EPS 10cm (m²)",
-        quantity: 120,
-        unitPriceLabel: "€20.00",
-        totalLabel: "€2,400",
-      },
-      {
-        id: "li-3",
-        description: "Vopsea lavabilă interior (15L)",
-        quantity: 30,
-        unitPriceLabel: "€44.00",
-        totalLabel: "€1,320",
-      },
-      {
-        id: "li-4",
-        description: "Primer siliconic (5L)",
-        quantity: 24,
-        unitPriceLabel: "€24.00",
-        totalLabel: "€576",
-      },
-      {
-        id: "li-5",
-        description: "Hârtie renovare (rolă 50m)",
-        quantity: 40,
-        unitPriceLabel: "€7.50",
-        totalLabel: "€300",
-      },
-      {
-        id: "li-6",
-        description: "Plasă fibră sticlă (m²)",
-        quantity: 150,
-        unitPriceLabel: "€3.00",
-        totalLabel: "€450",
-      },
-      {
-        id: "li-7",
-        description: "Diverse consumabile",
-        quantity: 1,
-        unitPriceLabel: "€1,019",
-        totalLabel: "€1,019",
-      },
-    ],
-  },
-  "exp-006": {
-    id: "exp-006",
-    category: "logistica",
-    status: "pending",
-    title: "Leasing utilaje Q2 2026",
-    amount: 12800,
-    amountLabel: "€12,800",
-    baseAmount: 10756,
-    baseAmountLabel: "€10,756",
-    vatAmount: 2044,
-    vatLabel: "€2,044",
-    vatPct: 19,
-    vendorName: "UniCredit Leasing",
-    vendorId: "v-002",
-    vendorAddress: "Calea Victoriei 161, București",
-    vendorCui: "RO87654321",
-    date: "2026-06-01",
-    dueDate: "2026-06-15",
-    description:
-      "Rată lunară leasing excavator Caterpillar 320 și compactor Dynapac CA2500 pentru șantierele active.",
-    approvalStage: 1,
-    approvalSteps: [
-      {
-        id: "step-1",
-        role: "Manager Regional",
-        name: "Ion Popescu",
-        avatar: "IP",
-        status: "pending",
-        approvedAt: "",
-        note: "",
-      },
-      {
-        id: "step-2",
-        role: "Director Financiar",
-        name: "Maria Ionescu",
-        avatar: "MI",
-        status: "locked",
-        approvedAt: "",
-        note: "",
-      },
-      {
-        id: "step-3",
-        role: "CEO",
-        name: "Adrian Pârvulescu",
-        avatar: "AP",
-        status: "locked",
-        approvedAt: "",
-        note: "",
-      },
-    ],
-    lineItems: [
-      {
-        id: "li-1",
-        description: "Leasing excavator Caterpillar 320",
-        quantity: 1,
-        unitPriceLabel: "€7,200",
-        totalLabel: "€7,200",
-      },
-      {
-        id: "li-2",
-        description: "Leasing compactor Dynapac CA2500",
-        quantity: 1,
-        unitPriceLabel: "€3,556",
-        totalLabel: "€3,556",
-      },
-    ],
-  },
+// ─── Maps ─────────────────────────────────────────────────────────────────────
+
+const DB_TO_UI_CATEGORY: Record<string, ExpenseCategory> = {
+  materials: "materiale",
+  labor: "personal",
+  salaries: "personal",
+  equipment: "logistica",
+  transport: "logistica",
+  rent: "utilitati",
+  utilities: "utilitati",
+  subscriptions: "utilitati",
+  marketing: "marketing",
+  other: "altele",
 }
 
-function fallbackDetail(id: string): ExpenseDetail {
-  return {
-    id,
-    category: "altele",
-    status: "draft",
-    title: id,
-    amount: 0,
-    amountLabel: "—",
-    baseAmount: 0,
-    baseAmountLabel: "—",
-    vatAmount: 0,
-    vatLabel: "—",
-    vatPct: 19,
-    vendorName: "—",
-    vendorId: "—",
-    vendorAddress: "—",
-    vendorCui: "—",
-    date: "—",
-    dueDate: "—",
-    description: "—",
-    approvalStage: 0,
-    approvalSteps: [],
-    lineItems: [],
+const DB_TO_UI_STATUS: Record<string, ExpenseStatus> = {
+  draft: "draft",
+  submitted: "pending",
+  approved: "approved",
+  rejected: "rejected",
+  paid: "approved",
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function fmtLabel(amount: number, currency = "RON"): string {
+  const n = Math.round(amount)
+  const s = n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+  return currency === "EUR" ? `€${s}` : `${s} ${currency}`
+}
+
+function stageFromDbStatus(dbStatus: string): number {
+  switch (dbStatus) {
+    case "submitted":
+      return 1
+    case "approved":
+      return 3
+    case "paid":
+      return 3
+    case "rejected":
+      return 2
+    default:
+      return 0
   }
 }
 
+function vendorFromNotes(notes: string | null): string {
+  if (!notes) return "—"
+  const first = notes.split("\n")[0]?.trim()
+  return first || "—"
+}
+
+function descriptionFromNotes(notes: string | null): string {
+  if (!notes) return "—"
+  const lines = notes.split("\n")
+  // If first line is vendor name, skip it and return rest
+  return lines.slice(1).join(" ").trim() || lines[0] || "—"
+}
+
+function buildApprovalSteps(dbStatus: string, stage: number): ApprovalStep[] {
+  type StepStatus = "approved" | "pending" | "locked"
+
+  const resolveStatus = (stepIndex: number): StepStatus => {
+    if (dbStatus === "approved" || dbStatus === "paid") return "approved"
+    if (dbStatus === "rejected") {
+      if (stepIndex < stage) return "approved"
+      if (stepIndex === stage) return "pending"
+      return "locked"
+    }
+    // draft or submitted
+    if (stepIndex < stage) return "approved"
+    if (stepIndex === stage) return "pending"
+    return "locked"
+  }
+
+  const steps: Array<{ role: string; name: string; avatar: string }> = [
+    { role: "Manager Regional", name: "Manager Regional", avatar: "MR" },
+    { role: "Director Financiar", name: "Director Financiar", avatar: "DF" },
+    { role: "CEO", name: "CEO", avatar: "CE" },
+  ]
+
+  return steps.map((s, i) => {
+    const st = resolveStatus(i)
+    return {
+      id: `step-${i + 1}`,
+      role: s.role,
+      name: s.name,
+      avatar: s.avatar,
+      status: st,
+      approvedAt: st === "approved" ? "Aprobat" : "",
+      note: "",
+    }
+  })
+}
+
+// ─── GET ──────────────────────────────────────────────────────────────────────
+
 export const GET = withGates(
   { action: "finance.expenses.read", endpointClass: "api_read" },
-  async (req: NextRequest, _ctx: GateContext): Promise<NextResponse> => {
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
     const id = req.nextUrl.pathname.split("/").pop()
     if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 })
-    const detail = MOCK_DETAILS[id] ?? fallbackDetail(id)
+
+    const rows = await db
+      .select()
+      .from(expenses)
+      .where(
+        and(
+          eq(expenses.id, id),
+          eq(expenses.companyId, ctx.session.companyId),
+          isNull(expenses.deletedAt)
+        )
+      )
+      .limit(1)
+
+    const row = rows[0]
+    if (!row) return NextResponse.json({ error: "Not found" }, { status: 404 })
+
+    const gross = Number(row.amount)
+    const vatAmt = gross * (19 / 119)
+    const baseAmt = gross - vatAmt
+    const currency = row.currency
+    const stage = stageFromDbStatus(row.status)
+    const uiStatus = DB_TO_UI_STATUS[row.status] ?? "draft"
+    const uiCategory = DB_TO_UI_CATEGORY[row.category] ?? "altele"
+
+    const dueD = new Date(row.date)
+    dueD.setDate(dueD.getDate() + 15)
+    const dueDate = dueD.toISOString().slice(0, 10)
+
+    const detail: ExpenseDetail = {
+      id: row.id,
+      category: uiCategory,
+      status: uiStatus,
+      title: row.title,
+      amount: gross,
+      amountLabel: fmtLabel(gross, currency),
+      baseAmount: Math.round(baseAmt),
+      baseAmountLabel: fmtLabel(Math.round(baseAmt), currency),
+      vatAmount: Math.round(vatAmt),
+      vatLabel: fmtLabel(Math.round(vatAmt), currency),
+      vatPct: 19,
+      vendorName: vendorFromNotes(row.notes),
+      vendorId: "—",
+      vendorAddress: "—",
+      vendorCui: "—",
+      date: row.date,
+      dueDate,
+      description: descriptionFromNotes(row.notes),
+      approvalStage: stage,
+      approvalSteps: buildApprovalSteps(row.status, stage),
+      lineItems: [],
+    }
+
     return NextResponse.json(detail)
   }
 )
