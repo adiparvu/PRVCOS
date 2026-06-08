@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Re-auth Screen — PRV Preview</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0a0a0a;
+    font-family: -apple-system, 'SF Pro Display', sans-serif;
+    display: flex;
+    gap: 32px;
+    padding: 40px;
+    min-height: 100vh;
+    align-items: flex-start;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .phone {
+    width: 390px;
+    min-height: 844px;
+    background: #000;
+    border-radius: 50px;
+    border: 1.5px solid rgba(255,255,255,0.12);
+    overflow: hidden;
+    box-shadow: 0 32px 80px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.04);
+    display: flex;
+    flex-direction: column;
+  }
+  .label {
+    color: rgba(255,255,255,0.35);
+    font-size: 11px; font-weight: 500;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    text-align: center; margin-bottom: 12px;
+  }
+  .screen {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 56px 28px 44px;
+  }
+
+  /* Back / cancel */
+  .back-btn {
+    align-self: flex-start;
+    display: flex; align-items: center; gap: 6px;
+    margin-bottom: 40px; cursor: pointer;
+  }
+  .back-label { font-size: 15px; color: rgba(255,255,255,0.65); }
+
+  /* Shield card */
+  .shield-card {
+    width: 72px; height: 72px;
+    border-radius: 22px;
+    background: rgba(255,179,64,0.08);
+    border: 1px solid rgba(255,179,64,0.18);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 24px;
+    box-shadow: 0 0 32px rgba(255,179,64,0.06), inset 0 1px 0 rgba(255,179,64,0.15);
+  }
+
+  /* Title */
+  .title {
+    font-size: 22px; font-weight: 700;
+    color: rgba(255,255,255,0.95);
+    margin-bottom: 8px; text-align: center;
+  }
+  .subtitle {
+    font-size: 14px; font-weight: 400;
+    color: rgba(255,255,255,0.4);
+    text-align: center; line-height: 1.55;
+    margin-bottom: 40px;
+  }
+  .subtitle strong { color: rgba(255,255,255,0.65); font-weight: 600; }
+
+  /* Reason chip */
+  .reason-chip {
+    display: flex; align-items: center; gap: 8px;
+    background: rgba(255,179,64,0.07);
+    border: 1px solid rgba(255,179,64,0.14);
+    border-radius: 12px;
+    padding: 10px 14px;
+    margin-bottom: 32px;
+    width: 100%;
+  }
+  .reason-text { font-size: 13px; color: rgba(255,179,64,0.8); line-height: 1.4; }
+
+  /* Password field */
+  .field-wrap {
+    width: 100%;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 14px;
+    display: flex; align-items: center;
+    padding: 0 16px;
+    height: 54px;
+    margin-bottom: 12px;
+    gap: 10px;
+  }
+  .field-wrap.focused { border-color: rgba(255,255,255,0.4); }
+  .field-label {
+    flex: 1;
+    font-size: 16px;
+    color: rgba(255,255,255,0.9);
+    letter-spacing: 0.12em;
+  }
+  .field-placeholder { color: rgba(255,255,255,0.25); letter-spacing: 0; font-size: 15px; }
+  .field-icon { opacity: 0.35; flex-shrink: 0; cursor: pointer; }
+
+  /* Error */
+  .error-text {
+    font-size: 12px; color: rgba(255,59,48,0.85);
+    text-align: center; margin-bottom: 12px;
+    width: 100%;
+  }
+
+  /* Primary button */
+  .btn-primary {
+    width: 100%; height: 54px;
+    background: #fff;
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; font-weight: 600; color: #000;
+    margin-top: 4px; cursor: pointer;
+  }
+  .btn-primary.dim {
+    background: rgba(255,255,255,0.08);
+    color: rgba(255,255,255,0.25);
+  }
+
+  /* Divider */
+  .divider {
+    display: flex; align-items: center; gap: 12px;
+    margin: 20px 0; width: 100%;
+  }
+  .divider-line { flex: 1; height: 1px; background: rgba(255,255,255,0.08); }
+  .divider-text { font-size: 12px; color: rgba(255,255,255,0.3); }
+
+  /* Face ID button */
+  .btn-faceid {
+    width: 100%; height: 50px;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    gap: 10px; cursor: pointer;
+  }
+  .btn-faceid-text { font-size: 15px; color: rgba(255,255,255,0.65); font-weight: 500; }
+
+  /* Cancel */
+  .cancel-link {
+    margin-top: 28px;
+    font-size: 14px;
+    color: rgba(255,255,255,0.35);
+    cursor: pointer;
+  }
+
+  /* Success state */
+  .success-card {
+    width: 80px; height: 80px;
+    border-radius: 24px;
+    background: rgba(52,199,89,0.10);
+    border: 1px solid rgba(52,199,89,0.2);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 28px;
+  }
+</style>
+</head>
+<body>
+
+<!-- STATE 1: Default (empty password) -->
+<div style="display:flex;flex-direction:column;align-items:center;">
+  <div class="label">Default</div>
+  <div class="phone">
+    <div class="screen">
+      <div class="back-btn">
+        <svg width="10" height="18" viewBox="0 0 10 18" fill="none">
+          <path d="M9 1L1 9L9 17" stroke="rgba(255,255,255,0.65)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span class="back-label">Cancel</span>
+      </div>
+
+      <!-- person.badge.shield.checkmark SF Symbol -->
+      <div class="shield-card">
+        <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+          <!-- person head -->
+          <circle cx="15" cy="10" r="5" stroke="rgba(255,179,64,0.85)" stroke-width="2"/>
+          <!-- person body -->
+          <path d="M6 28C6 22.48 10.03 18 15 18" stroke="rgba(255,179,64,0.85)" stroke-width="2" stroke-linecap="round"/>
+          <!-- shield -->
+          <path d="M22 16L16 19V24C16 27.3 18.8 30.4 22 31C25.2 30.4 28 27.3 28 24V19L22 16Z" fill="rgba(255,179,64,0.85)"/>
+          <!-- checkmark in shield -->
+          <path d="M19.5 23.5L21.5 25.5L25 21.5" stroke="rgba(0,0,0,0.55)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+
+      <div class="title">Confirm Identity</div>
+      <div class="subtitle">
+        For your security, re-enter your password<br/>
+        before continuing.
+      </div>
+
+      <!-- Reason chip -->
+      <div class="reason-chip">
+        <!-- exclamationmark.shield -->
+        <svg width="16" height="18" viewBox="0 0 22 24" fill="none" style="flex-shrink:0;">
+          <path d="M11 1L2 5V11C2 16.5 5.9 21.7 11 23C16.1 21.7 20 16.5 20 11V5L11 1Z" stroke="rgba(255,179,64,0.8)" stroke-width="1.8" stroke-linejoin="round"/>
+          <path d="M11 8V13" stroke="rgba(255,179,64,0.8)" stroke-width="1.8" stroke-linecap="round"/>
+          <circle cx="11" cy="16" r="0.9" fill="rgba(255,179,64,0.8)"/>
+        </svg>
+        <span class="reason-text">Disable two-factor authentication</span>
+      </div>
+
+      <!-- Password field (empty) -->
+      <div class="field-wrap">
+        <svg width="18" height="20" viewBox="0 0 22 24" fill="none" style="opacity:0.3;flex-shrink:0;">
+          <path d="M7 11V8C7 5.24 8.69 3 11 3C13.31 3 15 5.24 15 8V11" stroke="white" stroke-width="2" stroke-linecap="round"/>
+          <rect x="3" y="10" width="16" height="12" rx="3" stroke="white" stroke-width="2"/>
+          <circle cx="11" cy="16" r="1.5" fill="white"/>
+        </svg>
+        <span class="field-placeholder">Password</span>
+        <div class="field-icon">
+          <!-- eye.slash -->
+          <svg width="20" height="14" viewBox="0 0 22 16" fill="none">
+            <path d="M1 1L21 15M9.5 4.5C10 4.18 10.49 4 11 4C13.76 4 16 6.24 16 9C16 9.51 15.92 10 15.76 10.47" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+            <path d="M6.24 7.53C6.08 8 6 8.49 6 9C6 11.76 8.24 14 11 14C11.51 14 12 13.92 12.47 13.76" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+            <path d="M3 4C1.67 5.48 1 7.18 1 9C1 11 2 13 3.76 14.24" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+            <path d="M19 4C20.33 5.48 21 7.18 21 9C21 11 20 13 18.24 14.24" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="btn-primary dim">Confirm</div>
+
+      <div class="divider">
+        <div class="divider-line"></div>
+        <span class="divider-text">or</span>
+        <div class="divider-line"></div>
+      </div>
+
+      <div class="btn-faceid">
+        <!-- faceid SVG -->
+        <svg width="22" height="22" viewBox="0 0 26 26" fill="none">
+          <path d="M1 7V3C1 1.9 1.9 1 3 1H7" stroke="rgba(255,255,255,0.75)" stroke-width="1.8" stroke-linecap="round"/>
+          <path d="M19 1H23C24.1 1 25 1.9 25 3V7" stroke="rgba(255,255,255,0.75)" stroke-width="1.8" stroke-linecap="round"/>
+          <path d="M25 19V23C25 24.1 24.1 25 23 25H19" stroke="rgba(255,255,255,0.75)" stroke-width="1.8" stroke-linecap="round"/>
+          <path d="M7 25H3C1.9 25 1 24.1 1 23V19" stroke="rgba(255,255,255,0.75)" stroke-width="1.8" stroke-linecap="round"/>
+          <path d="M9 10V11.5" stroke="rgba(255,255,255,0.75)" stroke-width="1.8" stroke-linecap="round"/>
+          <path d="M17 10V11.5" stroke="rgba(255,255,255,0.75)" stroke-width="1.8" stroke-linecap="round"/>
+          <path d="M13 10V15.5" stroke="rgba(255,255,255,0.75)" stroke-width="1.8" stroke-linecap="round"/>
+          <path d="M9 18C9 18 10.5 20 13 20C15.5 20 17 18 17 18" stroke="rgba(255,255,255,0.75)" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+        <span class="btn-faceid-text">Use Face ID</span>
+      </div>
+
+      <span class="cancel-link">Cancel</span>
+    </div>
+  </div>
+</div>
+
+<!-- STATE 2: Password entered (ready to confirm) -->
+<div style="display:flex;flex-direction:column;align-items:center;">
+  <div class="label">Password entered</div>
+  <div class="phone">
+    <div class="screen">
+      <div class="back-btn">
+        <svg width="10" height="18" viewBox="0 0 10 18" fill="none">
+          <path d="M9 1L1 9L9 17" stroke="rgba(255,255,255,0.65)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span class="back-label">Cancel</span>
+      </div>
+
+      <div class="shield-card">
+        <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+          <circle cx="15" cy="10" r="5" stroke="rgba(255,179,64,0.85)" stroke-width="2"/>
+          <path d="M6 28C6 22.48 10.03 18 15 18" stroke="rgba(255,179,64,0.85)" stroke-width="2" stroke-linecap="round"/>
+          <path d="M22 16L16 19V24C16 27.3 18.8 30.4 22 31C25.2 30.4 28 27.3 28 24V19L22 16Z" fill="rgba(255,179,64,0.85)"/>
+          <path d="M19.5 23.5L21.5 25.5L25 21.5" stroke="rgba(0,0,0,0.55)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+
+      <div class="title">Confirm Identity</div>
+      <div class="subtitle">
+        For your security, re-enter your password<br/>
+        before continuing.
+      </div>
+
+      <div class="reason-chip">
+        <svg width="16" height="18" viewBox="0 0 22 24" fill="none" style="flex-shrink:0;">
+          <path d="M11 1L2 5V11C2 16.5 5.9 21.7 11 23C16.1 21.7 20 16.5 20 11V5L11 1Z" stroke="rgba(255,179,64,0.8)" stroke-width="1.8" stroke-linejoin="round"/>
+          <path d="M11 8V13" stroke="rgba(255,179,64,0.8)" stroke-width="1.8" stroke-linecap="round"/>
+          <circle cx="11" cy="16" r="0.9" fill="rgba(255,179,64,0.8)"/>
+        </svg>
+        <span class="reason-text">Disable two-factor authentication</span>
+      </div>
+
+      <!-- Password field (filled) -->
+      <div class="field-wrap focused">
+        <svg width="18" height="20" viewBox="0 0 22 24" fill="none" style="opacity:0.55;flex-shrink:0;">
+          <path d="M7 11V8C7 5.24 8.69 3 11 3C13.31 3 15 5.24 15 8V11" stroke="white" stroke-width="2" stroke-linecap="round"/>
+          <rect x="3" y="10" width="16" height="12" rx="3" stroke="white" stroke-width="2"/>
+          <circle cx="11" cy="16" r="1.5" fill="white"/>
+        </svg>
+        <span class="field-label">••••••••••</span>
+        <div class="field-icon">
+          <svg width="20" height="14" viewBox="0 0 22 16" fill="none">
+            <path d="M11 2C7.13 2 3.5 4.5 1 8C3.5 11.5 7.13 14 11 14C14.87 14 18.5 11.5 21 8C18.5 4.5 14.87 2 11 2Z" stroke="white" stroke-width="1.8"/>
+            <circle cx="11" cy="8" r="3" stroke="white" stroke-width="1.8"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="btn-primary">Confirm</div>
+
+      <div class="divider">
+        <div class="divider-line"></div>
+        <span class="divider-text">or</span>
+        <div class="divider-line"></div>
+      </div>
+
+      <div class="btn-faceid">
+        <svg width="22" height="22" viewBox="0 0 26 26" fill="none">
+          <path d="M1 7V3C1 1.9 1.9 1 3 1H7" stroke="rgba(255,255,255,0.75)" stroke-width="1.8" stroke-linecap="round"/>
+          <path d="M19 1H23C24.1 1 25 1.9 25 3V7" stroke="rgba(255,255,255,0.75)" stroke-width="1.8" stroke-linecap="round"/>
+          <path d="M25 19V23C25 24.1 24.1 25 23 25H19" stroke="rgba(255,255,255,0.75)" stroke-width="1.8" stroke-linecap="round"/>
+          <path d="M7 25H3C1.9 25 1 24.1 1 23V19" stroke="rgba(255,255,255,0.75)" stroke-width="1.8" stroke-linecap="round"/>
+          <path d="M9 10V11.5" stroke="rgba(255,255,255,0.75)" stroke-width="1.8" stroke-linecap="round"/>
+          <path d="M17 10V11.5" stroke="rgba(255,255,255,0.75)" stroke-width="1.8" stroke-linecap="round"/>
+          <path d="M13 10V15.5" stroke="rgba(255,255,255,0.75)" stroke-width="1.8" stroke-linecap="round"/>
+          <path d="M9 18C9 18 10.5 20 13 20C15.5 20 17 18 17 18" stroke="rgba(255,255,255,0.75)" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+        <span class="btn-faceid-text">Use Face ID</span>
+      </div>
+
+      <span class="cancel-link">Cancel</span>
+    </div>
+  </div>
+</div>
+
+<!-- STATE 3: Error -->
+<div style="display:flex;flex-direction:column;align-items:center;">
+  <div class="label">Wrong password</div>
+  <div class="phone">
+    <div class="screen">
+      <div class="back-btn">
+        <svg width="10" height="18" viewBox="0 0 10 18" fill="none">
+          <path d="M9 1L1 9L9 17" stroke="rgba(255,255,255,0.65)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span class="back-label">Cancel</span>
+      </div>
+
+      <div class="shield-card" style="background:rgba(255,59,48,0.08);border-color:rgba(255,59,48,0.2);">
+        <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+          <circle cx="15" cy="10" r="5" stroke="rgba(255,59,48,0.75)" stroke-width="2"/>
+          <path d="M6 28C6 22.48 10.03 18 15 18" stroke="rgba(255,59,48,0.75)" stroke-width="2" stroke-linecap="round"/>
+          <path d="M22 16L16 19V24C16 27.3 18.8 30.4 22 31C25.2 30.4 28 27.3 28 24V19L22 16Z" fill="rgba(255,59,48,0.75)"/>
+          <path d="M20 22L24 26M24 22L20 26" stroke="rgba(0,0,0,0.5)" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+      </div>
+
+      <div class="title">Confirm Identity</div>
+      <div class="subtitle">
+        For your security, re-enter your password<br/>
+        before continuing.
+      </div>
+
+      <div class="reason-chip">
+        <svg width="16" height="18" viewBox="0 0 22 24" fill="none" style="flex-shrink:0;">
+          <path d="M11 1L2 5V11C2 16.5 5.9 21.7 11 23C16.1 21.7 20 16.5 20 11V5L11 1Z" stroke="rgba(255,179,64,0.8)" stroke-width="1.8" stroke-linejoin="round"/>
+          <path d="M11 8V13" stroke="rgba(255,179,64,0.8)" stroke-width="1.8" stroke-linecap="round"/>
+          <circle cx="11" cy="16" r="0.9" fill="rgba(255,179,64,0.8)"/>
+        </svg>
+        <span class="reason-text">Disable two-factor authentication</span>
+      </div>
+
+      <!-- Password field (error) -->
+      <div class="field-wrap" style="border-color:rgba(255,59,48,0.5);background:rgba(255,59,48,0.06);">
+        <svg width="18" height="20" viewBox="0 0 22 24" fill="none" style="opacity:0.55;flex-shrink:0;">
+          <path d="M7 11V8C7 5.24 8.69 3 11 3C13.31 3 15 5.24 15 8V11" stroke="white" stroke-width="2" stroke-linecap="round"/>
+          <rect x="3" y="10" width="16" height="12" rx="3" stroke="white" stroke-width="2"/>
+          <circle cx="11" cy="16" r="1.5" fill="white"/>
+        </svg>
+        <span class="field-label">••••••••••</span>
+        <div class="field-icon">
+          <svg width="20" height="14" viewBox="0 0 22 16" fill="none">
+            <path d="M1 1L21 15M9.5 4.5C10 4.18 10.49 4 11 4C13.76 4 16 6.24 16 9C16 9.51 15.92 10 15.76 10.47" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+            <path d="M6.24 7.53C6.08 8 6 8.49 6 9C6 11.76 8.24 14 11 14C11.51 14 12 13.92 12.47 13.76" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+            <path d="M3 4C1.67 5.48 1 7.18 1 9C1 11 2 13 3.76 14.24" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+            <path d="M19 4C20.33 5.48 21 7.18 21 9C21 11 20 13 18.24 14.24" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="error-text">Incorrect password. Please try again.</div>
+
+      <div class="btn-primary">Confirm</div>
+
+      <div class="divider">
+        <div class="divider-line"></div>
+        <span class="divider-text">or</span>
+        <div class="divider-line"></div>
+      </div>
+
+      <div class="btn-faceid">
+        <svg width="22" height="22" viewBox="0 0 26 26" fill="none">
+          <path d="M1 7V3C1 1.9 1.9 1 3 1H7" stroke="rgba(255,255,255,0.75)" stroke-width="1.8" stroke-linecap="round"/>
+          <path d="M19 1H23C24.1 1 25 1.9 25 3V7" stroke="rgba(255,255,255,0.75)" stroke-width="1.8" stroke-linecap="round"/>
+          <path d="M25 19V23C25 24.1 24.1 25 23 25H19" stroke="rgba(255,255,255,0.75)" stroke-width="1.8" stroke-linecap="round"/>
+          <path d="M7 25H3C1.9 25 1 24.1 1 23V19" stroke="rgba(255,255,255,0.75)" stroke-width="1.8" stroke-linecap="round"/>
+          <path d="M9 10V11.5" stroke="rgba(255,255,255,0.75)" stroke-width="1.8" stroke-linecap="round"/>
+          <path d="M17 10V11.5" stroke="rgba(255,255,255,0.75)" stroke-width="1.8" stroke-linecap="round"/>
+          <path d="M13 10V15.5" stroke="rgba(255,255,255,0.75)" stroke-width="1.8" stroke-linecap="round"/>
+          <path d="M9 18C9 18 10.5 20 13 20C15.5 20 17 18 17 18" stroke="rgba(255,255,255,0.75)" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+        <span class="btn-faceid-text">Use Face ID</span>
+      </div>
+
+      <span class="cancel-link">Cancel</span>
+    </div>
+  </div>
+</div>
+
+<!-- STATE 4: Success -->
+<div style="display:flex;flex-direction:column;align-items:center;">
+  <div class="label">Confirmed</div>
+  <div class="phone">
+    <div class="screen" style="justify-content:center;">
+
+      <div class="success-card">
+        <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+          <circle cx="20" cy="20" r="18" fill="rgba(52,199,89,0.85)"/>
+          <path d="M12 20L17.5 25.5L28 15" stroke="#000" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+
+      <div class="title" style="margin-bottom:10px;">Identity Confirmed</div>
+      <div class="subtitle" style="margin-bottom:0;">
+        You can now proceed to<br/>
+        <strong>disable two-factor authentication.</strong>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
