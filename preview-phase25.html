@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phase 25 — Intelligence Tab Preview</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #000;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+    padding: 40px 20px;
+    gap: 32px;
+    flex-wrap: wrap;
+  }
+
+  /* Phone shell */
+  .phone {
+    width: 393px;
+    min-height: 852px;
+    background: #000;
+    border-radius: 52px;
+    border: 1px solid rgba(255,255,255,0.14);
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.06), 0 32px 80px rgba(0,0,0,0.9), 0 8px 32px rgba(0,0,0,0.6);
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+  .phone-label {
+    color: rgba(255,255,255,0.3);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-align: center;
+    margin-bottom: 12px;
+    text-transform: uppercase;
+  }
+
+  /* Dynamic island */
+  .island {
+    width: 120px; height: 34px;
+    background: #000;
+    border-radius: 20px;
+    border: 1px solid rgba(255,255,255,0.08);
+    margin: 12px auto 0;
+    position: relative;
+    z-index: 20;
+  }
+
+  /* Screen content */
+  .screen {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+    padding-bottom: 0;
+  }
+
+  /* Status bar */
+  .status {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 24px 0;
+    font-size: 12px;
+    color: rgba(255,255,255,0.7);
+    font-weight: 600;
+  }
+
+  /* Fixed header */
+  .header {
+    padding: 10px 20px 6px;
+    background: #000;
+  }
+  .header-row {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+  }
+  .header-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.95);
+    letter-spacing: -0.5px;
+  }
+  .ai-badge {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 100px;
+    padding: 4px 10px 4px 8px;
+    font-size: 11px;
+    color: rgba(255,255,255,0.7);
+    font-weight: 500;
+    letter-spacing: 0.02em;
+  }
+  .ai-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.6);
+    animation: pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%,100% { opacity: 0.6; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.2); }
+  }
+
+  /* Segment control */
+  .seg-bar {
+    display: flex;
+    gap: 5px;
+    padding: 6px 20px 8px;
+    background: #000;
+  }
+  .seg-btn {
+    flex: 1;
+    padding: 6px 4px;
+    border-radius: 10px;
+    border: none;
+    background: transparent;
+    color: rgba(255,255,255,0.35);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    text-align: center;
+    font-family: inherit;
+  }
+  .seg-btn.active {
+    background: rgba(255,255,255,0.12);
+    color: rgba(255,255,255,0.95);
+  }
+
+  /* Content area */
+  .content {
+    padding: 0 16px;
+    overflow-y: auto;
+    height: calc(100% - 130px);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-bottom: 100px;
+  }
+
+  /* Glass card */
+  .glass {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 18px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.12);
+    padding: 14px;
+  }
+
+  /* AI Briefing card */
+  .ai-card {
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.13);
+    border-radius: 18px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.18);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .ai-card-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .ai-icon {
+    width: 30px; height: 30px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.10);
+    border: 1px solid rgba(255,255,255,0.14);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+  }
+  .ai-card-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.95);
+  }
+  .ai-card-sub {
+    font-size: 11px;
+    color: rgba(255,255,255,0.4);
+    margin-top: 1px;
+  }
+  .ai-summary {
+    font-size: 13px;
+    color: rgba(255,255,255,0.7);
+    line-height: 1.55;
+  }
+  .ai-insight {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 10px 12px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.07);
+  }
+  .insight-dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.5);
+    margin-top: 5px;
+    flex-shrink: 0;
+  }
+  .insight-text {
+    font-size: 12px;
+    color: rgba(255,255,255,0.65);
+    line-height: 1.4;
+  }
+  .ai-insights-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  /* Section label */
+  .section-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.45);
+    margin-bottom: -4px;
+  }
+
+  /* Alert card */
+  .alert-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+  }
+  .alert-row:last-child { border-bottom: none; }
+  .alert-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .alert-dot.red { background: #FF3B30; box-shadow: 0 0 6px rgba(255,59,48,0.6); }
+  .alert-dot.amber { background: #FF9500; box-shadow: 0 0 6px rgba(255,149,0,0.6); }
+  .alert-title { font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.9); flex: 1; }
+  .alert-time { font-size: 11px; color: rgba(255,255,255,0.3); }
+
+  /* Analytics — bar chart */
+  .chart-card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+  .chart-title { font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.9); }
+  .chart-period { font-size: 11px; color: rgba(255,255,255,0.35); }
+  .chart-bars-30 {
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    height: 80px;
+  }
+  .bar30 {
+    flex: 1;
+    border-radius: 2px;
+    background: rgba(255,255,255,0.14);
+    min-height: 3px;
+  }
+  .bar30.highlight { background: rgba(255,255,255,0.85); }
+  .bar30.medium { background: rgba(255,255,255,0.30); }
+  .chart-axis {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: rgba(255,255,255,0.25);
+    margin-top: 4px;
+  }
+
+  /* Month comparison bars */
+  .month-compare {
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+    height: 64px;
+  }
+  .month-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+  }
+  .month-bar-wrap {
+    flex: 1;
+    width: 100%;
+    display: flex;
+    align-items: flex-end;
+  }
+  .month-bar {
+    width: 100%;
+    border-radius: 4px 4px 0 0;
+  }
+  .month-label { font-size: 10px; color: rgba(255,255,255,0.3); }
+  .month-val { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.7); }
+
+  /* Metrics grid */
+  .metrics-grid {
+    display: flex;
+    gap: 8px;
+  }
+  .metric-tile {
+    flex: 1;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 14px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.10);
+  }
+  .metric-val { font-size: 16px; font-weight: 700; color: rgba(255,255,255,0.9); }
+  .metric-lbl { font-size: 10px; color: rgba(255,255,255,0.4); line-height: 1.3; }
+  .metric-delta { font-size: 10px; font-weight: 600; }
+  .green { color: #34C759; }
+  .red { color: #FF3B30; }
+  .amber { color: #FF9500; }
+
+  /* Forecast bars */
+  .forecast-bars {
+    display: flex;
+    gap: 6px;
+    align-items: flex-end;
+    height: 100px;
+  }
+  .fc-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+  }
+  .fc-bar-wrap {
+    flex: 1;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    position: relative;
+  }
+  .fc-bar-actual {
+    width: 100%;
+    border-radius: 4px;
+    background: rgba(255,255,255,0.75);
+  }
+  .fc-bar-projected {
+    width: 100%;
+    border-radius: 4px;
+    background: rgba(255,255,255,0.20);
+    border: 1px dashed rgba(255,255,255,0.30);
+  }
+  .fc-label { font-size: 10px; color: rgba(255,255,255,0.3); }
+  .fc-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border-radius: 100px;
+    font-size: 10px;
+    font-weight: 600;
+  }
+  .fc-tag.actual { background: rgba(255,255,255,0.10); color: rgba(255,255,255,0.7); }
+  .fc-tag.projected { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.4); border: 1px dashed rgba(255,255,255,0.20); }
+  .fc-legend { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  /* Report tile */
+  .report-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+  .report-tile {
+    width: calc(50% - 4px);
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 16px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.12);
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .tile-icon { font-size: 20px; color: rgba(255,255,255,0.5); margin-bottom: 2px; }
+  .tile-label { font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.9); }
+  .tile-sub { font-size: 11px; color: rgba(255,255,255,0.35); line-height: 1.3; }
+  .tile-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 7px;
+    background: rgba(255,255,255,0.07);
+    border-radius: 100px;
+    font-size: 10px;
+    color: rgba(255,255,255,0.4);
+    width: fit-content;
+    margin-top: 2px;
+  }
+  .tile-badge.ready { background: rgba(52,199,89,0.12); color: #34C759; }
+
+  /* Module note */
+  .module-note {
+    padding: 13px 14px;
+    border-radius: 14px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.07);
+    font-size: 12px;
+    color: rgba(255,255,255,0.35);
+    line-height: 1.5;
+  }
+
+  /* Floating tab bar */
+  .tab-bar {
+    position: absolute;
+    bottom: 16px;
+    left: 16px;
+    right: 16px;
+    height: 64px;
+    background: rgba(255,255,255,0.10);
+    backdrop-filter: blur(48px);
+    border: 1px solid rgba(255,255,255,0.14);
+    border-radius: 36px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.20), 0 16px 48px rgba(0,0,0,0.6);
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    padding: 0 8px;
+    z-index: 100;
+  }
+  .tab-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    flex: 1;
+    opacity: 0.35;
+  }
+  .tab-item.active { opacity: 1; }
+  .tab-icon { font-size: 18px; }
+  .tab-label { font-size: 9px; font-weight: 500; color: rgba(255,255,255,0.8); }
+  .tab-item.active .tab-label { color: rgba(255,255,255,1); }
+</style>
+</head>
+<body>
+
+<!-- SEGMENT 1: Insights -->
+<div>
+  <p class="phone-label">Segment 1 — Insights</p>
+  <div class="phone">
+    <div class="island"></div>
+    <div class="screen">
+      <div class="status">
+        <span>9:41</span>
+        <span>●●● ◼ 🔋</span>
+      </div>
+      <div class="header">
+        <div class="header-row">
+          <span class="header-title">Intelligence</span>
+          <div class="ai-badge">
+            <div class="ai-dot"></div>
+            AI Powered
+          </div>
+        </div>
+      </div>
+      <div class="seg-bar">
+        <button class="seg-btn active">Insights</button>
+        <button class="seg-btn">Analytics</button>
+        <button class="seg-btn">Forecast</button>
+        <button class="seg-btn">Reports</button>
+      </div>
+      <div class="content">
+
+        <!-- AI Briefing -->
+        <div class="ai-card">
+          <div class="ai-card-header">
+            <div class="ai-icon">✦</div>
+            <div>
+              <div class="ai-card-title">AI Briefing</div>
+              <div class="ai-card-sub">Updated just now</div>
+            </div>
+          </div>
+          <div class="ai-summary">
+            Revenue is tracking 18% above last month, driven by 3 high-value renovation projects closing this week. Two overdue invoices require immediate attention.
+          </div>
+          <div class="ai-insights-list">
+            <div class="ai-insight">
+              <div class="insight-dot"></div>
+              <div class="insight-text">Invoice #INV-2024-088 is 12 days overdue — follow up with Ionescu Group today</div>
+            </div>
+            <div class="ai-insight">
+              <div class="insight-dot"></div>
+              <div class="insight-text">Project pipeline value increased 31% — consider expanding the operations team</div>
+            </div>
+            <div class="ai-insight">
+              <div class="insight-dot"></div>
+              <div class="insight-text">Avg. order value up 22% — premium service tier is resonating with new clients</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Alerts -->
+        <div class="section-label">Active Alerts</div>
+        <div class="glass" style="padding: 4px 14px;">
+          <div class="alert-row">
+            <div class="alert-dot red"></div>
+            <div class="alert-title">Invoice overdue · 12 days</div>
+            <div class="alert-time">2h ago</div>
+          </div>
+          <div class="alert-row">
+            <div class="alert-dot amber"></div>
+            <div class="alert-title">3 tasks approaching deadline</div>
+            <div class="alert-time">4h ago</div>
+          </div>
+          <div class="alert-row">
+            <div class="alert-dot amber"></div>
+            <div class="alert-title">Project budget at 82% utilization</div>
+            <div class="alert-time">1d ago</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+    <div class="tab-bar">
+      <div class="tab-item"><div class="tab-icon">⌂</div><div class="tab-label">Command</div></div>
+      <div class="tab-item"><div class="tab-icon">⊞</div><div class="tab-label">Operations</div></div>
+      <div class="tab-item"><div class="tab-icon">◎</div><div class="tab-label">People</div></div>
+      <div class="tab-item"><div class="tab-icon">⟁</div><div class="tab-label">Finance</div></div>
+      <div class="tab-item active"><div class="tab-icon">✦</div><div class="tab-label">Intelligence</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- SEGMENT 2: Analytics -->
+<div>
+  <p class="phone-label">Segment 2 — Analytics</p>
+  <div class="phone">
+    <div class="island"></div>
+    <div class="screen">
+      <div class="status">
+        <span>9:41</span>
+        <span>●●● ◼ 🔋</span>
+      </div>
+      <div class="header">
+        <div class="header-row">
+          <span class="header-title">Intelligence</span>
+          <div class="ai-badge"><div class="ai-dot"></div>AI Powered</div>
+        </div>
+      </div>
+      <div class="seg-bar">
+        <button class="seg-btn">Insights</button>
+        <button class="seg-btn active">Analytics</button>
+        <button class="seg-btn">Forecast</button>
+        <button class="seg-btn">Reports</button>
+      </div>
+      <div class="content">
+
+        <!-- 30-day revenue chart -->
+        <div class="glass chart-card">
+          <div class="chart-header">
+            <span class="chart-title">Revenue Trend</span>
+            <span class="chart-period">Last 30 days</span>
+          </div>
+          <div class="chart-bars-30">
+            <!-- 30 bars, varied heights -->
+            <div class="bar30" style="height:22%"></div>
+            <div class="bar30" style="height:38%"></div>
+            <div class="bar30" style="height:18%"></div>
+            <div class="bar30" style="height:45%"></div>
+            <div class="bar30" style="height:29%"></div>
+            <div class="bar30" style="height:52%"></div>
+            <div class="bar30" style="height:35%"></div>
+            <div class="bar30" style="height:41%"></div>
+            <div class="bar30" style="height:28%"></div>
+            <div class="bar30 medium" style="height:60%"></div>
+            <div class="bar30" style="height:33%"></div>
+            <div class="bar30" style="height:47%"></div>
+            <div class="bar30" style="height:24%"></div>
+            <div class="bar30" style="height:56%"></div>
+            <div class="bar30 medium" style="height:72%"></div>
+            <div class="bar30" style="height:38%"></div>
+            <div class="bar30" style="height:44%"></div>
+            <div class="bar30" style="height:31%"></div>
+            <div class="bar30 medium" style="height:65%"></div>
+            <div class="bar30" style="height:49%"></div>
+            <div class="bar30" style="height:37%"></div>
+            <div class="bar30 medium" style="height:80%"></div>
+            <div class="bar30" style="height:42%"></div>
+            <div class="bar30 medium" style="height:70%"></div>
+            <div class="bar30" style="height:55%"></div>
+            <div class="bar30" style="height:48%"></div>
+            <div class="bar30 medium" style="height:86%"></div>
+            <div class="bar30" style="height:61%"></div>
+            <div class="bar30 medium" style="height:75%"></div>
+            <div class="bar30 highlight" style="height:92%"></div>
+          </div>
+          <div class="chart-axis">
+            <span>1 Jun</span>
+            <span>10 Jun</span>
+            <span>20 Jun</span>
+            <span>Today</span>
+          </div>
+        </div>
+
+        <!-- Month comparison -->
+        <div class="glass chart-card">
+          <div class="chart-header">
+            <span class="chart-title">Month Comparison</span>
+            <span class="chart-period">Last 3 months</span>
+          </div>
+          <div class="month-compare">
+            <div class="month-col">
+              <div class="month-bar-wrap">
+                <div class="month-bar" style="height:42px; background: rgba(255,255,255,0.15);"></div>
+              </div>
+              <div class="month-label">Apr</div>
+              <div class="month-val">42k</div>
+            </div>
+            <div class="month-col">
+              <div class="month-bar-wrap">
+                <div class="month-bar" style="height:55px; background: rgba(255,255,255,0.25);"></div>
+              </div>
+              <div class="month-label">May</div>
+              <div class="month-val">55k</div>
+            </div>
+            <div class="month-col">
+              <div class="month-bar-wrap">
+                <div class="month-bar" style="height:48px; background: rgba(255,255,255,0.80); border-radius: 4px 4px 0 0;"></div>
+              </div>
+              <div class="month-label">Jun</div>
+              <div class="month-val" style="color:rgba(255,255,255,0.9)">65k</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Key metrics -->
+        <div class="metrics-grid">
+          <div class="metric-tile">
+            <div class="metric-val">78%</div>
+            <div class="metric-lbl">Invoice Collection Rate</div>
+            <div class="metric-delta green">+6%</div>
+          </div>
+          <div class="metric-tile">
+            <div class="metric-val">14</div>
+            <div class="metric-lbl">Active Clients</div>
+            <div class="metric-delta green">+2</div>
+          </div>
+          <div class="metric-tile">
+            <div class="metric-val">4.2k</div>
+            <div class="metric-lbl">Avg. Deal Size</div>
+            <div class="metric-delta green">+22%</div>
+          </div>
+        </div>
+
+        <!-- Project completion rate -->
+        <div class="glass" style="display:flex; flex-direction:column; gap:10px;">
+          <div class="chart-header">
+            <span class="chart-title">Project Completion</span>
+            <span class="chart-period">This quarter</span>
+          </div>
+          <div style="height:8px; background:rgba(255,255,255,0.08); border-radius:100px; overflow:hidden;">
+            <div style="width:67%; height:100%; background:rgba(255,255,255,0.75); border-radius:100px;"></div>
+          </div>
+          <div style="display:flex; justify-content:space-between; font-size:11px; color:rgba(255,255,255,0.4);">
+            <span>8 of 12 projects on track</span>
+            <span class="green" style="font-weight:600;">67%</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+    <div class="tab-bar">
+      <div class="tab-item"><div class="tab-icon">⌂</div><div class="tab-label">Command</div></div>
+      <div class="tab-item"><div class="tab-icon">⊞</div><div class="tab-label">Operations</div></div>
+      <div class="tab-item"><div class="tab-icon">◎</div><div class="tab-label">People</div></div>
+      <div class="tab-item"><div class="tab-icon">⟁</div><div class="tab-label">Finance</div></div>
+      <div class="tab-item active"><div class="tab-icon">✦</div><div class="tab-label">Intelligence</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- SEGMENT 3: Forecast -->
+<div>
+  <p class="phone-label">Segment 3 — Forecast</p>
+  <div class="phone">
+    <div class="island"></div>
+    <div class="screen">
+      <div class="status">
+        <span>9:41</span>
+        <span>●●● ◼ 🔋</span>
+      </div>
+      <div class="header">
+        <div class="header-row">
+          <span class="header-title">Intelligence</span>
+          <div class="ai-badge"><div class="ai-dot"></div>AI Powered</div>
+        </div>
+      </div>
+      <div class="seg-bar">
+        <button class="seg-btn">Insights</button>
+        <button class="seg-btn">Analytics</button>
+        <button class="seg-btn active">Forecast</button>
+        <button class="seg-btn">Reports</button>
+      </div>
+      <div class="content">
+
+        <!-- Forecast KPIs -->
+        <div class="metrics-grid">
+          <div class="metric-tile">
+            <div class="metric-val">87k</div>
+            <div class="metric-lbl">Month End Est.</div>
+            <div class="metric-delta green">+18% vs last</div>
+          </div>
+          <div class="metric-tile">
+            <div class="metric-val">94%</div>
+            <div class="metric-lbl">Confidence</div>
+            <div class="metric-delta" style="color:rgba(255,255,255,0.4)">AI model</div>
+          </div>
+        </div>
+
+        <!-- 8-week forecast -->
+        <div class="glass chart-card">
+          <div class="chart-header">
+            <span class="chart-title">Revenue Forecast</span>
+            <span class="chart-period">Next 8 weeks</span>
+          </div>
+          <div class="forecast-bars">
+            <!-- Weeks 1-4 actual (solid), weeks 5-8 projected (dashed) -->
+            <div class="fc-col">
+              <div class="fc-bar-wrap">
+                <div class="fc-bar-actual" style="height:52px;"></div>
+              </div>
+              <div class="fc-label">W1</div>
+            </div>
+            <div class="fc-col">
+              <div class="fc-bar-wrap">
+                <div class="fc-bar-actual" style="height:68px;"></div>
+              </div>
+              <div class="fc-label">W2</div>
+            </div>
+            <div class="fc-col">
+              <div class="fc-bar-wrap">
+                <div class="fc-bar-actual" style="height:44px;"></div>
+              </div>
+              <div class="fc-label">W3</div>
+            </div>
+            <div class="fc-col">
+              <div class="fc-bar-wrap">
+                <div class="fc-bar-actual" style="height:80px;"></div>
+              </div>
+              <div class="fc-label">W4</div>
+            </div>
+            <div class="fc-col">
+              <div class="fc-bar-wrap">
+                <div class="fc-bar-projected" style="height:72px;"></div>
+              </div>
+              <div class="fc-label">W5</div>
+            </div>
+            <div class="fc-col">
+              <div class="fc-bar-wrap">
+                <div class="fc-bar-projected" style="height:88px;"></div>
+              </div>
+              <div class="fc-label">W6</div>
+            </div>
+            <div class="fc-col">
+              <div class="fc-bar-wrap">
+                <div class="fc-bar-projected" style="height:76px;"></div>
+              </div>
+              <div class="fc-label">W7</div>
+            </div>
+            <div class="fc-col">
+              <div class="fc-bar-wrap">
+                <div class="fc-bar-projected" style="height:95px;"></div>
+              </div>
+              <div class="fc-label">W8</div>
+            </div>
+          </div>
+          <div class="fc-legend">
+            <div class="fc-tag actual">● Actual</div>
+            <div class="fc-tag projected">- - Projected</div>
+          </div>
+        </div>
+
+        <!-- Forecast breakdown -->
+        <div class="section-label">Forecast Drivers</div>
+        <div class="glass" style="display:flex; flex-direction:column; gap:0; padding:4px 14px;">
+          <div class="alert-row">
+            <div style="width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,0.7);"></div>
+            <div class="alert-title">Active projects pipeline</div>
+            <div style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.8);">+32k</div>
+          </div>
+          <div class="alert-row">
+            <div style="width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,0.45);"></div>
+            <div class="alert-title">Recurring service contracts</div>
+            <div style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.8);">+18k</div>
+          </div>
+          <div class="alert-row">
+            <div style="width:7px;height:7px;border-radius:50%;background:rgba(255,149,0,0.8);"></div>
+            <div class="alert-title">Pending invoices at risk</div>
+            <div style="font-size:12px;font-weight:600;color:#FF9500;">–6k</div>
+          </div>
+        </div>
+
+        <div class="module-note">
+          Forecast powered by historical revenue patterns, active pipeline, and seasonality data. Full AI forecasting with scenario modelling coming soon.
+        </div>
+
+      </div>
+    </div>
+    <div class="tab-bar">
+      <div class="tab-item"><div class="tab-icon">⌂</div><div class="tab-label">Command</div></div>
+      <div class="tab-item"><div class="tab-icon">⊞</div><div class="tab-label">Operations</div></div>
+      <div class="tab-item"><div class="tab-icon">◎</div><div class="tab-label">People</div></div>
+      <div class="tab-item"><div class="tab-icon">⟁</div><div class="tab-label">Finance</div></div>
+      <div class="tab-item active"><div class="tab-icon">✦</div><div class="tab-label">Intelligence</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- SEGMENT 4: Reports -->
+<div>
+  <p class="phone-label">Segment 4 — Reports</p>
+  <div class="phone">
+    <div class="island"></div>
+    <div class="screen">
+      <div class="status">
+        <span>9:41</span>
+        <span>●●● ◼ 🔋</span>
+      </div>
+      <div class="header">
+        <div class="header-row">
+          <span class="header-title">Intelligence</span>
+          <div class="ai-badge"><div class="ai-dot"></div>AI Powered</div>
+        </div>
+      </div>
+      <div class="seg-bar">
+        <button class="seg-btn">Insights</button>
+        <button class="seg-btn">Analytics</button>
+        <button class="seg-btn">Forecast</button>
+        <button class="seg-btn active">Reports</button>
+      </div>
+      <div class="content">
+
+        <!-- Report tiles 2×3 grid -->
+        <div class="report-grid">
+          <div class="report-tile">
+            <div class="tile-icon">≡</div>
+            <div class="tile-label">Revenue</div>
+            <div class="tile-sub">Monthly breakdown by source</div>
+            <div class="tile-badge ready">Ready</div>
+          </div>
+          <div class="report-tile">
+            <div class="tile-icon">⟁</div>
+            <div class="tile-label">Projects</div>
+            <div class="tile-sub">Pipeline & completion rates</div>
+            <div class="tile-badge ready">Ready</div>
+          </div>
+          <div class="report-tile">
+            <div class="tile-icon">◎</div>
+            <div class="tile-label">Workforce</div>
+            <div class="tile-sub">Team activity & utilization</div>
+            <div class="tile-badge ready">Ready</div>
+          </div>
+          <div class="report-tile">
+            <div class="tile-icon">◩</div>
+            <div class="tile-label">Invoices</div>
+            <div class="tile-sub">Collection & aging report</div>
+            <div class="tile-badge ready">Ready</div>
+          </div>
+          <div class="report-tile">
+            <div class="tile-icon">◫</div>
+            <div class="tile-label">P&amp;L</div>
+            <div class="tile-sub">Profit & loss statement</div>
+            <div class="tile-badge">Soon</div>
+          </div>
+          <div class="report-tile">
+            <div class="tile-icon">✦</div>
+            <div class="tile-label">AI Report</div>
+            <div class="tile-sub">AI-generated executive summary</div>
+            <div class="tile-badge">Soon</div>
+          </div>
+        </div>
+
+        <div class="module-note">
+          Export reports as PDF or CSV. Schedule automated delivery to your inbox. Full BI suite with custom reports coming in a future release.
+        </div>
+
+      </div>
+    </div>
+    <div class="tab-bar">
+      <div class="tab-item"><div class="tab-icon">⌂</div><div class="tab-label">Command</div></div>
+      <div class="tab-item"><div class="tab-icon">⊞</div><div class="tab-label">Operations</div></div>
+      <div class="tab-item"><div class="tab-icon">◎</div><div class="tab-label">People</div></div>
+      <div class="tab-item"><div class="tab-icon">⟁</div><div class="tab-label">Finance</div></div>
+      <div class="tab-item active"><div class="tab-icon">✦</div><div class="tab-label">Intelligence</div></div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
