@@ -9,6 +9,7 @@ import {
   writeAuditLog,
   logSecurityEvent,
 } from "@prv/auth"
+import { getRedis } from "@prv/cache"
 import type { PRVSession } from "@prv/auth"
 import { db } from "@prv/db"
 import { users } from "@prv/db/schema"
@@ -190,9 +191,26 @@ export async function POST(req: NextRequest) {
   const mfaVerified = aalData?.currentLevel === "aal2"
 
   if (needsMfa) {
-    // Return MFA challenge info — client must complete TOTP before session is created
     const factors = await supabase.auth.mfa.listFactors()
     const totpFactor = factors.data?.totp?.[0]
+
+    // Bridge Supabase session to the MFA verify route via Redis (300s TTL)
+    const {
+      data: { session: sbSession },
+    } = await supabase.auth.getSession()
+    if (sbSession && totpFactor) {
+      const redis = getRedis()
+      await redis.set(
+        `mfa_pending:${totpFactor.id}`,
+        JSON.stringify({
+          accessToken: sbSession.access_token,
+          refreshToken: sbSession.refresh_token,
+          supabaseUserId: supabaseUser.id,
+        }),
+        { ex: 300 }
+      )
+    }
+
     return NextResponse.json(
       {
         requiresMfa: true,
