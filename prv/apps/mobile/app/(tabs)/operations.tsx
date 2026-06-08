@@ -184,10 +184,15 @@ function OrderRow({ item, last }: { item: OrderItem; last: boolean }) {
 }
 
 function TaskRow({ item, last }: { item: TaskItem; last: boolean }) {
+  const router = useRouter()
   const due = formatDueDate(item.dueDate)
 
   return (
-    <View style={[s.listRow, last ? s.listRowLast : null]}>
+    <TouchableOpacity
+      style={[s.listRow, last ? s.listRowLast : null]}
+      activeOpacity={0.7}
+      onPress={() => router.push({ pathname: "/(auth)/task-detail", params: { id: item.id } })}
+    >
       <View
         style={[
           s.taskCheck,
@@ -212,7 +217,7 @@ function TaskRow({ item, last }: { item: TaskItem; last: boolean }) {
           <Text style={[s.taskDue, { color: colors.green }]}>Done</Text>
         )}
       </View>
-    </View>
+    </TouchableOpacity>
   )
 }
 
