@@ -15,6 +15,7 @@ import {
   type StoreGroup,
   type AttendanceRecord,
 } from "@/hooks/usePeople"
+import { useRouter } from "expo-router"
 import { colors, radius, spacing } from "@/tokens"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -81,8 +82,13 @@ function Avatar({
 }
 
 function MemberRow({ item, last }: { item: TeamMember; last: boolean }) {
+  const router = useRouter()
   return (
-    <View style={[s.listRow, last ? s.listRowLast : null]}>
+    <TouchableOpacity
+      style={[s.listRow, last ? s.listRowLast : null]}
+      activeOpacity={0.7}
+      onPress={() => router.push({ pathname: "/(auth)/employee-detail", params: { id: item.id } })}
+    >
       <Avatar initials={item.initials} isOnline={item.isOnline} />
       <View style={s.rowInfo}>
         <Text style={s.rowName}>
@@ -98,7 +104,7 @@ function MemberRow({ item, last }: { item: TeamMember; last: boolean }) {
           {item.lastActiveAt ?? "—"}
         </Text>
       </View>
-    </View>
+    </TouchableOpacity>
   )
 }
 
@@ -153,8 +159,13 @@ function StoreCard({ group }: { group: StoreGroup }) {
 }
 
 function AttendanceRow({ item, last }: { item: AttendanceRecord; last: boolean }) {
+  const router = useRouter()
   return (
-    <View style={[s.listRow, last ? s.listRowLast : null]}>
+    <TouchableOpacity
+      style={[s.listRow, last ? s.listRowLast : null]}
+      activeOpacity={0.7}
+      onPress={() => router.push({ pathname: "/(auth)/employee-detail", params: { id: item.id } })}
+    >
       <Avatar
         initials={item.initials}
         isOnline={item.isActiveToday}
@@ -185,7 +196,7 @@ function AttendanceRow({ item, last }: { item: AttendanceRecord; last: boolean }
           </Text>
         ) : null}
       </View>
-    </View>
+    </TouchableOpacity>
   )
 }
 
