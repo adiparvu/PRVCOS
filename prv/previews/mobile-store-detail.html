@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=390,initial-scale=1"/>
+<title>PRV · Store Detail</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:#000;
+    font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','SF Pro Display',sans-serif;
+    -webkit-font-smoothing:antialiased;
+    color:#fff;
+  }
+
+  .frame{
+    width:390px;min-height:844px;margin:24px auto;
+    background:#000;border-radius:44px;
+    border:1px solid rgba(255,255,255,0.12);
+    box-shadow:0 40px 120px rgba(0,0,0,0.9),0 8px 32px rgba(0,0,0,0.6);
+    overflow:hidden;position:relative;
+  }
+  .notch{
+    position:absolute;top:0;left:50%;transform:translateX(-50%);
+    width:120px;height:34px;background:#000;border-radius:0 0 20px 20px;z-index:99;
+  }
+  .screen{height:844px;overflow-y:auto;padding-bottom:80px;scrollbar-width:none}
+  .screen::-webkit-scrollbar{display:none}
+
+  /* Status bar */
+  .statusBar{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:14px 28px 0;height:50px;
+  }
+  .statusTime{font-size:15px;font-weight:600;letter-spacing:-.2px}
+  .statusIcons{display:flex;gap:6px;align-items:center;font-size:12px;opacity:.9}
+
+  /* Nav bar */
+  .navBar{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:6px 16px 12px;
+  }
+  .backBtn{display:flex;align-items:center;gap:5px;color:rgba(255,255,255,.65);font-size:16px}
+  .navTitle{font-size:17px;font-weight:600;color:rgba(255,255,255,.92);letter-spacing:-.2px}
+  .navAction{
+    width:32px;height:32px;border-radius:50%;
+    background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);
+    display:flex;align-items:center;justify-content:center;
+    font-size:14px;color:rgba(255,255,255,.6);cursor:pointer;
+  }
+
+  /* Hero card */
+  .heroCard{
+    margin:0 16px 4px;
+    padding:20px;
+    border-radius:24px;
+    background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.10);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 12px 40px rgba(0,0,0,.5);
+    position:relative;overflow:hidden;
+  }
+  .heroShine{
+    position:absolute;top:0;left:0;right:0;height:1px;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,.35),transparent);
+  }
+  .storeHeader{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px}
+  .storeName{font-size:22px;font-weight:700;letter-spacing:-.3px;color:rgba(255,255,255,.95)}
+  .storeAddr{font-size:13px;color:rgba(255,255,255,.4);margin-top:3px}
+  .statusPill{
+    display:flex;align-items:center;gap:5px;
+    padding:5px 10px;border-radius:100px;
+    background:rgba(48,209,88,.12);border:1px solid rgba(48,209,88,.22);
+    font-size:12px;font-weight:600;color:rgba(48,209,88,.9);
+    white-space:nowrap;flex-shrink:0;margin-left:8px;
+  }
+  .statusDot{width:6px;height:6px;border-radius:50%;background:rgba(48,209,88,.9)}
+
+  /* KPI row */
+  .kpiRow{display:flex;gap:8px}
+  .kpiPill{
+    flex:1;padding:10px 12px;border-radius:14px;
+    background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);
+  }
+  .kpiVal{font-size:18px;font-weight:700;letter-spacing:-.3px;color:rgba(255,255,255,.92)}
+  .kpiLbl{font-size:11px;color:rgba(255,255,255,.35);margin-top:2px;white-space:nowrap}
+  .kpiDelta{font-size:11px;margin-top:3px}
+  .up{color:rgba(48,209,88,.85)}
+  .down{color:rgba(255,69,58,.85)}
+  .neu{color:rgba(255,255,255,.35)}
+
+  /* Section */
+  .section{padding:16px 16px 0}
+  .sectionHead{
+    display:flex;align-items:center;justify-content:space-between;
+    margin-bottom:10px;
+  }
+  .sectionLabel{
+    font-size:11px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;
+    color:rgba(255,255,255,.3);
+  }
+  .sectionLink{font-size:12px;font-weight:500;color:rgba(255,255,255,.35)}
+
+  /* Glass card */
+  .card{
+    border-radius:20px;overflow:hidden;
+    background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.10);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 8px 24px rgba(0,0,0,.4);
+  }
+
+  /* Row base */
+  .row{
+    display:flex;align-items:center;gap:12px;
+    padding:13px 16px;
+    cursor:pointer;
+  }
+  .row:not(:last-child){border-bottom:1px solid rgba(255,255,255,.06)}
+
+  /* Staff row */
+  .staffAvatar{
+    width:36px;height:36px;border-radius:50%;flex-shrink:0;
+    background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.12);
+    display:flex;align-items:center;justify-content:center;
+    font-size:13px;font-weight:700;color:rgba(255,255,255,.8);
+  }
+  .staffBody{flex:1;min-width:0}
+  .staffName{font-size:15px;font-weight:600;color:rgba(255,255,255,.88)}
+  .staffRole{font-size:13px;color:rgba(255,255,255,.4);margin-top:1px}
+  .shiftBadge{
+    font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px;
+    background:rgba(255,255,255,.08);color:rgba(255,255,255,.5);
+    flex-shrink:0;
+  }
+  .shiftOnline{background:rgba(48,209,88,.12);color:rgba(48,209,88,.8)}
+
+  /* Inventory alert row */
+  .invIcon{
+    width:36px;height:36px;border-radius:12px;flex-shrink:0;
+    background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10);
+    display:flex;align-items:center;justify-content:center;font-size:16px;
+  }
+  .invBody{flex:1;min-width:0}
+  .invName{font-size:15px;font-weight:500;color:rgba(255,255,255,.80);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .invSub{font-size:13px;color:rgba(255,255,255,.4);margin-top:1px}
+  .invBadge{
+    font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px;
+    letter-spacing:.3px;text-transform:uppercase;flex-shrink:0;
+  }
+  .badgeCrit{background:rgba(255,69,58,.2);color:rgba(255,100,80,.9)}
+  .badgeWarn{background:rgba(255,159,10,.18);color:rgba(255,180,50,.85)}
+
+  /* Task row */
+  .taskCheck{
+    width:22px;height:22px;border-radius:50%;flex-shrink:0;
+    border:1.5px solid rgba(255,255,255,.2);
+  }
+  .taskBody{flex:1;min-width:0}
+  .taskTitle{font-size:15px;font-weight:500;color:rgba(255,255,255,.80)}
+  .taskMeta{font-size:12px;color:rgba(255,255,255,.35);margin-top:2px}
+  .priorityDot{
+    width:8px;height:8px;border-radius:50%;flex-shrink:0;
+  }
+
+  /* Quick actions grid */
+  .actionsGrid{display:flex;gap:8px;padding:0 16px 16px}
+  .actionCard{
+    flex:1;padding:14px 10px;border-radius:16px;
+    background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.14);
+    display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;
+  }
+  .actionIcon{font-size:20px}
+  .actionLabel{font-size:11px;font-weight:500;color:rgba(255,255,255,.55);text-align:center}
+
+  /* Revenue mini chart placeholder */
+  .chartCard{
+    margin:0 16px;padding:16px;border-radius:20px;
+    background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.14);
+  }
+  .chartTitle{font-size:13px;font-weight:600;color:rgba(255,255,255,.55);margin-bottom:12px}
+  .chartBars{display:flex;align-items:flex-end;gap:4px;height:48px}
+  .bar{
+    flex:1;border-radius:3px 3px 0 0;
+    background:rgba(255,255,255,.15);min-height:4px;
+  }
+  .barActive{background:rgba(255,255,255,.55)}
+  .chartDays{display:flex;gap:4px;margin-top:6px}
+  .chartDay{flex:1;font-size:9px;color:rgba(255,255,255,.25);text-align:center}
+  .chartDay.today{color:rgba(255,255,255,.55)}
+</style>
+</head>
+<body>
+<div class="frame">
+  <div class="notch"></div>
+  <div class="screen">
+
+    <!-- Status bar -->
+    <div class="statusBar">
+      <span class="statusTime">9:41</span>
+      <div class="statusIcons"><span>●●●</span><span>WiFi</span><span>⬛</span></div>
+    </div>
+
+    <!-- Nav bar -->
+    <div class="navBar">
+      <div class="backBtn">
+        <span style="font-size:18px">‹</span>
+        <span style="font-size:15px">Operations</span>
+      </div>
+      <span class="navTitle">Store Detail</span>
+      <div class="navAction">⋯</div>
+    </div>
+
+    <!-- Hero card -->
+    <div class="heroCard">
+      <div class="heroShine"></div>
+      <div class="storeHeader">
+        <div>
+          <div class="storeName">Floreasca</div>
+          <div class="storeAddr">Str. Floreasca 14, Sector 1, București</div>
+        </div>
+        <div class="statusPill">
+          <div class="statusDot"></div>
+          Open
+        </div>
+      </div>
+      <div class="kpiRow">
+        <div class="kpiPill">
+          <div class="kpiVal">€8,240</div>
+          <div class="kpiLbl">Revenue today</div>
+          <div class="kpiDelta up">↑ 12%</div>
+        </div>
+        <div class="kpiPill">
+          <div class="kpiVal">47</div>
+          <div class="kpiLbl">Transactions</div>
+          <div class="kpiDelta up">↑ 8%</div>
+        </div>
+        <div class="kpiPill">
+          <div class="kpiVal" style="color:rgba(255,69,58,.9)">3</div>
+          <div class="kpiLbl">Tasks open</div>
+          <div class="kpiDelta down">2 urgent</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Weekly revenue -->
+    <div class="section" style="padding-bottom:12px">
+      <div class="sectionHead">
+        <span class="sectionLabel">Revenue — This Week</span>
+        <span class="sectionLink">View full →</span>
+      </div>
+      <div class="chartCard" style="margin:0">
+        <div class="chartBars">
+          <div class="bar" style="height:62%"></div>
+          <div class="bar" style="height:78%"></div>
+          <div class="bar" style="height:55%"></div>
+          <div class="bar" style="height:90%"></div>
+          <div class="bar" style="height:70%"></div>
+          <div class="bar barActive" style="height:84%"></div>
+          <div class="bar" style="height:20%;opacity:.4"></div>
+        </div>
+        <div class="chartDays">
+          <div class="chartDay">Mon</div>
+          <div class="chartDay">Tue</div>
+          <div class="chartDay">Wed</div>
+          <div class="chartDay">Thu</div>
+          <div class="chartDay">Fri</div>
+          <div class="chartDay today">Sat</div>
+          <div class="chartDay">Sun</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick actions -->
+    <div class="actionsGrid">
+      <div class="actionCard">
+        <span class="actionIcon">＋</span>
+        <span class="actionLabel">New Task</span>
+      </div>
+      <div class="actionCard">
+        <span class="actionIcon">⬡</span>
+        <span class="actionLabel">Inventory</span>
+      </div>
+      <div class="actionCard">
+        <span class="actionIcon">⟁</span>
+        <span class="actionLabel">Report</span>
+      </div>
+      <div class="actionCard">
+        <span class="actionIcon">◎</span>
+        <span class="actionLabel">Staff</span>
+      </div>
+    </div>
+
+    <!-- Active Staff -->
+    <div class="section">
+      <div class="sectionHead">
+        <span class="sectionLabel">On Shift Now · 5</span>
+        <span class="sectionLink">Schedule →</span>
+      </div>
+      <div class="card">
+        <div class="row">
+          <div class="staffAvatar">DM</div>
+          <div class="staffBody">
+            <div class="staffName">Dan Mihai</div>
+            <div class="staffRole">Store Manager</div>
+          </div>
+          <div class="shiftBadge shiftOnline">On site</div>
+        </div>
+        <div class="row">
+          <div class="staffAvatar">AR</div>
+          <div class="staffBody">
+            <div class="staffName">Andrei Radu</div>
+            <div class="staffRole">Sales Associate</div>
+          </div>
+          <div class="shiftBadge shiftOnline">On site</div>
+        </div>
+        <div class="row">
+          <div class="staffAvatar">CT</div>
+          <div class="staffBody">
+            <div class="staffName">Cristina Toma</div>
+            <div class="staffRole">Cashier</div>
+          </div>
+          <div class="shiftBadge shiftOnline">On site</div>
+        </div>
+        <div class="row">
+          <div class="staffAvatar" style="opacity:.6">MI</div>
+          <div class="staffBody">
+            <div class="staffName" style="color:rgba(255,255,255,.55)">Maria Ionescu</div>
+            <div class="staffRole">Sales Associate</div>
+          </div>
+          <div class="shiftBadge">Break</div>
+        </div>
+        <div class="row">
+          <div class="staffAvatar" style="opacity:.6">RB</div>
+          <div class="staffBody">
+            <div class="staffName" style="color:rgba(255,255,255,.55)">Radu Barbu</div>
+            <div class="staffRole">Warehouse</div>
+          </div>
+          <div class="shiftBadge">Break</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Inventory Alerts -->
+    <div class="section">
+      <div class="sectionHead">
+        <span class="sectionLabel">Inventory Alerts · 4</span>
+        <span class="sectionLink">View all →</span>
+      </div>
+      <div class="card">
+        <div class="row">
+          <div class="invIcon">⬡</div>
+          <div class="invBody">
+            <div class="invName">Porcelain Tile 60×60 White</div>
+            <div class="invSub">12 units — reorder threshold: 50</div>
+          </div>
+          <div class="invBadge badgeCrit">Critical</div>
+        </div>
+        <div class="row">
+          <div class="invIcon">⬡</div>
+          <div class="invBody">
+            <div class="invName">Grout Mapei 5kg Beige</div>
+            <div class="invSub">28 units — reorder threshold: 40</div>
+          </div>
+          <div class="invBadge badgeWarn">Low</div>
+        </div>
+        <div class="row">
+          <div class="invIcon">⬡</div>
+          <div class="invBody">
+            <div class="invName">Wall Paint 15L White</div>
+            <div class="invSub">31 units — reorder threshold: 40</div>
+          </div>
+          <div class="invBadge badgeWarn">Low</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Open Tasks -->
+    <div class="section">
+      <div class="sectionHead">
+        <span class="sectionLabel">Open Tasks</span>
+        <span class="sectionLink">All tasks →</span>
+      </div>
+      <div class="card">
+        <div class="row">
+          <div class="taskCheck"></div>
+          <div class="taskBody">
+            <div class="taskTitle">Stock audit — tile section</div>
+            <div class="taskMeta">Due today · Dan Mihai</div>
+          </div>
+          <div class="priorityDot" style="background:rgba(255,69,58,.8)"></div>
+        </div>
+        <div class="row">
+          <div class="taskCheck"></div>
+          <div class="taskBody">
+            <div class="taskTitle">Reorder porcelain tiles</div>
+            <div class="taskMeta">Due today · Andrei Radu</div>
+          </div>
+          <div class="priorityDot" style="background:rgba(255,69,58,.8)"></div>
+        </div>
+        <div class="row">
+          <div class="taskCheck" style="border-color:rgba(255,255,255,.1)"></div>
+          <div class="taskBody">
+            <div class="taskTitle" style="color:rgba(255,255,255,.6)">Monthly display refresh</div>
+            <div class="taskMeta">Due Fri · Cristina Toma</div>
+          </div>
+          <div class="priorityDot" style="background:rgba(255,255,255,.2)"></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="height:20px"></div>
+
+  </div><!-- /screen -->
+
+  <!-- Tab bar -->
+  <div style="position:absolute;bottom:0;left:0;right:0;height:82px;
+    background:linear-gradient(to top,rgba(0,0,0,.95) 0%,rgba(0,0,0,.8) 60%,transparent 100%);
+    pointer-events:none;z-index:10;"></div>
+  <div style="position:absolute;bottom:12px;left:16px;right:16px;height:60px;
+    background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);
+    border-radius:30px;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 8px 32px rgba(0,0,0,.5);
+    display:flex;align-items:center;justify-content:space-around;padding:0 16px;z-index:20;">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:3px">
+      <span style="font-size:18px;color:rgba(255,255,255,.35)">⌂</span>
+      <span style="font-size:9px;color:rgba(255,255,255,.3)">Command</span>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:3px">
+      <span style="font-size:18px;color:rgba(255,255,255,.95)">⊞</span>
+      <span style="font-size:9px;color:rgba(255,255,255,.8);font-weight:600">Operations</span>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:3px">
+      <span style="font-size:18px;color:rgba(255,255,255,.35)">◎</span>
+      <span style="font-size:9px;color:rgba(255,255,255,.3)">People</span>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:3px">
+      <span style="font-size:18px;color:rgba(255,255,255,.35)">⟁</span>
+      <span style="font-size:9px;color:rgba(255,255,255,.3)">Finance</span>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:3px">
+      <span style="font-size:18px;color:rgba(255,255,255,.35)">✦</span>
+      <span style="font-size:9px;color:rgba(255,255,255,.3)">Intel</span>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

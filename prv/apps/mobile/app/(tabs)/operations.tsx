@@ -10,12 +10,14 @@ import {
   View,
 } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
+import { useRouter } from "expo-router"
 import {
   useOperations,
   type ProjectItem,
   type OrderItem,
   type TaskItem,
 } from "@/hooks/useOperations"
+import { useStores, formatRevenue } from "@/hooks/useStores"
 import { colors, radius, spacing, type as t } from "@/tokens"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -229,16 +231,86 @@ function EmptyState({ label }: { label: string }) {
   )
 }
 
-function StoresPlaceholder() {
-  return (
-    <View style={s.comingSoon}>
-      <View style={s.comingSoonInner}>
-        <View style={s.cardShine} pointerEvents="none" />
-        <Text style={s.comingSoonIcon}>⊟</Text>
-        <Text style={s.comingSoonTitle}>Stores</Text>
-        <Text style={s.comingSoonSub}>Store management coming in the next release.</Text>
+function StoresContent() {
+  const router = useRouter()
+  const { data, isLoading, error } = useStores()
+
+  if (isLoading) {
+    return (
+      <View style={{ paddingTop: spacing.xxl, alignItems: "center" }}>
+        <ActivityIndicator color={colors.text3} />
       </View>
-    </View>
+    )
+  }
+
+  if (error || !data) {
+    return (
+      <View style={s.empty}>
+        <Text style={s.emptyText}>Could not load stores.</Text>
+      </View>
+    )
+  }
+
+  if (data.stores.length === 0) {
+    return (
+      <View style={s.empty}>
+        <Text style={s.emptyText}>No stores found.</Text>
+      </View>
+    )
+  }
+
+  return (
+    <>
+      {data.stores.map((store, i) => (
+        <TouchableOpacity
+          key={store.id}
+          style={[s.storeCard, i > 0 && { marginTop: 10 }]}
+          activeOpacity={0.8}
+          onPress={() =>
+            router.push({ pathname: "/(auth)/store-detail", params: { id: store.id } })
+          }
+        >
+          <View style={s.cardShine} pointerEvents="none" />
+          <View style={s.storeCardTop}>
+            <View style={s.storeCardLeft}>
+              <Text style={s.storeName}>{store.name}</Text>
+              {store.city && <Text style={s.storeCity}>{store.city}</Text>}
+            </View>
+            <View style={s.storeStatusPill}>
+              <View style={s.storeStatusDot} />
+              <Text style={s.storeStatusText}>Open</Text>
+            </View>
+          </View>
+          <View style={s.storeKpiRow}>
+            <View style={s.storeKpiItem}>
+              <Text style={s.storeKpiVal}>{formatRevenue(store.revenueToday)}</Text>
+              <Text style={s.storeKpiLbl}>Today</Text>
+            </View>
+            <View style={s.storeKpiDivider} />
+            <View style={s.storeKpiItem}>
+              <Text style={s.storeKpiVal}>{store.transactionsToday}</Text>
+              <Text style={s.storeKpiLbl}>Transactions</Text>
+            </View>
+            <View style={s.storeKpiDivider} />
+            <View style={s.storeKpiItem}>
+              <Text style={s.storeKpiVal}>{store.staffCount}</Text>
+              <Text style={s.storeKpiLbl}>Staff</Text>
+            </View>
+            {store.inventoryAlerts > 0 && (
+              <>
+                <View style={s.storeKpiDivider} />
+                <View style={s.storeKpiItem}>
+                  <Text style={[s.storeKpiVal, { color: colors.red }]}>
+                    {store.inventoryAlerts}
+                  </Text>
+                  <Text style={s.storeKpiLbl}>Alerts</Text>
+                </View>
+              </>
+            )}
+          </View>
+        </TouchableOpacity>
+      ))}
+    </>
   )
 }
 
@@ -486,7 +558,7 @@ export default function OperationsScreen() {
           {segment === "projects" && <ProjectsContent data={data} />}
           {segment === "orders" && <OrdersContent data={data} />}
           {segment === "tasks" && <TasksContent data={data} />}
-          {segment === "stores" && <StoresPlaceholder />}
+          {segment === "stores" && <StoresContent />}
         </ScrollView>
       )}
 
@@ -877,7 +949,50 @@ const s = StyleSheet.create({
     color: colors.text1,
   },
 
-  // Stores placeholder
+  // Stores
+  storeCard: {
+    borderRadius: radius.card,
+    overflow: "hidden",
+    backgroundColor: colors.glass1,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.10)",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 20,
+    elevation: 4,
+    padding: 16,
+  },
+  storeCardTop: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 14,
+  },
+  storeCardLeft: { flex: 1 },
+  storeName: { fontSize: 17, fontWeight: "700", color: colors.text1, letterSpacing: -0.3 },
+  storeCity: { fontSize: 12, color: colors.text3, marginTop: 2 },
+  storeStatusPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: radius.pill,
+    backgroundColor: "rgba(48,209,88,0.10)",
+    borderWidth: 1,
+    borderColor: "rgba(48,209,88,0.2)",
+    marginLeft: 8,
+  },
+  storeStatusDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: colors.green },
+  storeStatusText: { fontSize: 11, fontWeight: "600", color: colors.green },
+  storeKpiRow: { flexDirection: "row", alignItems: "center" },
+  storeKpiItem: { flex: 1, alignItems: "center", gap: 3 },
+  storeKpiVal: { fontSize: 17, fontWeight: "700", color: colors.text1, letterSpacing: -0.3 },
+  storeKpiLbl: { fontSize: 10, color: colors.text3 },
+  storeKpiDivider: { width: 1, height: 28, backgroundColor: "rgba(255,255,255,0.08)" },
+
+  // Stores placeholder (keep for compat)
   comingSoon: {
     paddingTop: spacing.xxl,
     alignItems: "center",
