@@ -152,11 +152,16 @@ function ProjectCard({ item }: { item: ProjectItem }) {
 }
 
 function OrderRow({ item, last }: { item: OrderItem; last: boolean }) {
+  const router = useRouter()
   const statusColor = ORDER_STATUS[item.status]?.color ?? colors.text3
   const statusLabel = item.status.charAt(0).toUpperCase() + item.status.slice(1)
 
   return (
-    <View style={[s.listRow, last ? s.listRowLast : null]}>
+    <TouchableOpacity
+      style={[s.listRow, last ? s.listRowLast : null]}
+      activeOpacity={0.7}
+      onPress={() => router.push({ pathname: "/(auth)/order-detail", params: { id: item.id } })}
+    >
       <View style={s.orderIcon}>
         <Text style={{ fontSize: 16 }}>◈</Text>
       </View>
@@ -173,7 +178,7 @@ function OrderRow({ item, last }: { item: OrderItem; last: boolean }) {
           <Text style={[s.statusDotLabel, { color: statusColor }]}>{statusLabel}</Text>
         </View>
       </View>
-    </View>
+    </TouchableOpacity>
   )
 }
 
