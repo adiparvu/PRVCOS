@@ -98,11 +98,16 @@ function KPIPill({
 }
 
 function ProjectCard({ item }: { item: ProjectItem }) {
+  const router = useRouter()
   const status = PROJECT_STATUS[item.status] ?? PROJECT_STATUS.draft!
   const due = formatDueDate(item.dueDate)
 
   return (
-    <View style={s.card}>
+    <TouchableOpacity
+      style={s.card}
+      activeOpacity={0.8}
+      onPress={() => router.push({ pathname: "/(auth)/project-detail", params: { id: item.id } })}
+    >
       <View style={s.cardShine} pointerEvents="none" />
       <View style={s.cardTop}>
         <Text style={s.cardTitle} numberOfLines={2}>
@@ -142,7 +147,7 @@ function ProjectCard({ item }: { item: ProjectItem }) {
           {item.progress}%
         </Text>
       </View>
-    </View>
+    </TouchableOpacity>
   )
 }
 
