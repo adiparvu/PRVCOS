@@ -157,3 +157,23 @@ export function useCreateExpense() {
     },
   })
 }
+
+export interface CreateEmployeeInput {
+  firstName: string
+  lastName: string
+  email: string
+  jobTitle?: string
+  phone?: string
+  role: string
+}
+
+export function useCreateEmployee() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (input: CreateEmployeeInput) =>
+      api.post<{ success: boolean; message: string }>("/api/mobile/employees", input),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["people"] })
+    },
+  })
+}

@@ -16,6 +16,7 @@ import {
   type AttendanceRecord,
 } from "@/hooks/usePeople"
 import { useRouter } from "expo-router"
+import { FABWithSheets } from "@/components/FABWithSheets"
 import { colors, radius, spacing } from "@/tokens"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -488,6 +489,8 @@ export default function PeopleScreen() {
           {segment === "org" && <OrgPlaceholder />}
         </ScrollView>
       )}
+
+      <FABWithSheets />
     </View>
   )
 }

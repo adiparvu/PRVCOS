@@ -19,9 +19,15 @@ const ACTIONS = [
   { type: "project" as const, icon: "◎", title: "New Project", sub: "Start a new renovation job" },
   { type: "client" as const, icon: "◇", title: "New Client", sub: "Add a person or company" },
   { type: "expense" as const, icon: "◫", title: "New Expense", sub: "Record a business expense" },
+  {
+    type: "employee" as const,
+    icon: "◉",
+    title: "Invite Employee",
+    sub: "Add a new team member by email",
+  },
 ]
 
-export type CreateType = "invoice" | "order" | "project" | "client" | "expense"
+export type CreateType = "invoice" | "order" | "project" | "client" | "expense" | "employee"
 
 interface Props {
   visible: boolean
