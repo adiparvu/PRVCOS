@@ -9,6 +9,7 @@ import {
   View,
 } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
+import { useRouter } from "expo-router"
 import { useState, useRef, useEffect } from "react"
 import { GlassCard } from "@/components/Glass"
 import { colors, radius, spacing, type } from "@/tokens"
@@ -394,36 +395,63 @@ function DriverRow({ driver }: { driver: IntelligenceForecastDriver }) {
 // ─── Reports Content ──────────────────────────────────────────────────────────
 
 const REPORT_TILES = [
-  { icon: "≡", label: "Revenue", desc: "Monthly breakdown", ready: true },
-  { icon: "⟁", label: "Projects", desc: "Pipeline & completion", ready: true },
-  { icon: "◎", label: "Workforce", desc: "Activity & utilization", ready: true },
-  { icon: "◩", label: "Invoices", desc: "Collection & aging", ready: true },
-  { icon: "◫", label: "P&L", desc: "Profit & loss statement", ready: false },
-  { icon: "✦", label: "AI Report", desc: "Executive AI summary", ready: false },
-]
+  { icon: "≡", label: "Revenue", desc: "Monthly breakdown", ready: true, route: "/report-revenue" },
+  {
+    icon: "⟁",
+    label: "Projects",
+    desc: "Pipeline & completion",
+    ready: true,
+    route: "/report-projects",
+  },
+  {
+    icon: "◎",
+    label: "Workforce",
+    desc: "Activity & utilization",
+    ready: true,
+    route: "/report-workforce",
+  },
+  {
+    icon: "◩",
+    label: "Invoices",
+    desc: "Collection & aging",
+    ready: true,
+    route: "/report-invoices",
+  },
+  { icon: "◫", label: "P&L", desc: "Profit & loss statement", ready: false, route: null },
+  { icon: "✦", label: "AI Report", desc: "Executive AI summary", ready: false, route: null },
+] as const
 
 function ReportsContent() {
+  const router = useRouter()
+
   return (
     <View style={styles.segContent}>
       <View style={styles.reportGrid}>
         {REPORT_TILES.map((t) => (
-          <GlassCard key={t.label} style={styles.reportTile}>
-            <Text style={styles.tileIcon}>{t.icon}</Text>
-            <Text style={styles.tileLabel}>{t.label}</Text>
-            <Text style={styles.tileSub}>{t.desc}</Text>
-            <View
-              style={[styles.tileBadge, t.ready ? styles.tileBadgeReady : styles.tileBadgeSoon]}
-            >
-              <Text
-                style={[
-                  styles.tileBadgeText,
-                  t.ready ? styles.tileBadgeTextReady : styles.tileBadgeTextSoon,
-                ]}
+          <Pressable
+            key={t.label}
+            style={({ pressed }) => [{ opacity: t.ready && pressed ? 0.7 : 1 }]}
+            onPress={() => t.route && router.push(t.route as never)}
+            disabled={!t.ready}
+          >
+            <GlassCard style={styles.reportTile}>
+              <Text style={styles.tileIcon}>{t.icon}</Text>
+              <Text style={styles.tileLabel}>{t.label}</Text>
+              <Text style={styles.tileSub}>{t.desc}</Text>
+              <View
+                style={[styles.tileBadge, t.ready ? styles.tileBadgeReady : styles.tileBadgeSoon]}
               >
-                {t.ready ? "View" : "Soon"}
-              </Text>
-            </View>
-          </GlassCard>
+                <Text
+                  style={[
+                    styles.tileBadgeText,
+                    t.ready ? styles.tileBadgeTextReady : styles.tileBadgeTextSoon,
+                  ]}
+                >
+                  {t.ready ? "View" : "Soon"}
+                </Text>
+              </View>
+            </GlassCard>
+          </Pressable>
         ))}
       </View>
       <Text style={styles.moduleNote}>
