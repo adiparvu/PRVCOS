@@ -1,6 +1,9 @@
 import { withGates } from "@/lib/with-gates"
 import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
+import { db } from "@prv/db"
+import { suppliers } from "@prv/db/schema"
+import { eq, and, isNull, desc } from "drizzle-orm"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -24,127 +27,91 @@ export interface SupplierSummary {
   lastOrderAmount: number
 }
 
-const MOCK_SUPPLIERS: SupplierSummary[] = [
-  {
-    id: "s1",
-    initials: "MG",
-    name: "Materiale Grigore SRL",
-    category: "Building Materials",
-    status: "active",
-    trustScore: 88,
-    onTimeDelivery: 94,
-    rating: 4.2,
-    orders: 38,
-    annualSpend: 84000,
-    contractExpiry: "2026-12-31",
-    paymentTerms: "Net 30",
-    lastOrder: "2026-06-04",
-    lastOrderAmount: 4200,
-  },
-  {
-    id: "s2",
-    initials: "RC",
-    name: "Radu Construct SRL",
-    category: "Steel & Concrete",
-    status: "active",
-    trustScore: 96,
-    onTimeDelivery: 98,
-    rating: 4.8,
-    orders: 24,
-    annualSpend: 62000,
-    contractExpiry: "2027-03-31",
-    paymentTerms: "Net 15",
-    lastOrder: "2026-06-02",
-    lastOrderAmount: 7600,
-  },
-  {
-    id: "s3",
-    initials: "TC",
-    name: "Tehno Construct SA",
-    category: "Tools & Equipment",
-    status: "at_risk",
-    trustScore: 42,
-    onTimeDelivery: 61,
-    rating: 2.3,
-    orders: 12,
-    annualSpend: 28000,
-    contractExpiry: "2026-06-30",
-    paymentTerms: "Net 45",
-    lastOrder: "2026-05-20",
-    lastOrderAmount: 1800,
-  },
-  {
-    id: "s4",
-    initials: "EL",
-    name: "ElectroLux Instalații SRL",
-    category: "Electrical",
-    status: "pending",
-    trustScore: 0,
-    onTimeDelivery: 0,
-    rating: 0,
-    orders: 0,
-    annualSpend: 0,
-    contractExpiry: "",
-    paymentTerms: "",
-    lastOrder: "",
-    lastOrderAmount: 0,
-  },
-  {
-    id: "s5",
-    initials: "FP",
-    name: "Faianță & Pardoseli SRL",
-    category: "Tiles & Flooring",
-    status: "active",
-    trustScore: 80,
-    onTimeDelivery: 91,
-    rating: 4.0,
-    orders: 19,
-    annualSpend: 41000,
-    contractExpiry: "2026-09-30",
-    paymentTerms: "Net 30",
-    lastOrder: "2026-05-30",
-    lastOrderAmount: 3200,
-  },
-  {
-    id: "s6",
-    initials: "AS",
-    name: "AquaSan Instalații SRL",
-    category: "Plumbing",
-    status: "active",
-    trustScore: 84,
-    onTimeDelivery: 93,
-    rating: 4.5,
-    orders: 15,
-    annualSpend: 32000,
-    contractExpiry: "2026-11-30",
-    paymentTerms: "Net 30",
-    lastOrder: "2026-06-01",
-    lastOrderAmount: 2900,
-  },
-  {
-    id: "s7",
-    initials: "VP",
-    name: "Vopsele & Protecție SA",
-    category: "Paints & Coatings",
-    status: "active",
-    trustScore: 82,
-    onTimeDelivery: 89,
-    rating: 4.1,
-    orders: 22,
-    annualSpend: 38000,
-    contractExpiry: "2027-02-28",
-    paymentTerms: "Net 30",
-    lastOrder: "2026-06-03",
-    lastOrderAmount: 5100,
-  },
-]
+function getInitials(name: string): string {
+  return name
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() ?? "")
+    .join("")
+}
+
+type MetaBag = {
+  trustScore?: number
+  onTimeDelivery?: number
+  rating?: number
+  orders?: number
+  annualSpend?: number
+  contractExpiry?: string
+  lastOrder?: string
+  lastOrderAmount?: number
+  qualityScore?: number
+  documentationScore?: number
+  riskReason?: string
+}
+
+function mapRow(row: {
+  id: string
+  name: string
+  category: string | null
+  status: string
+  paymentTermsDays: number
+  metadata: unknown
+  createdAt: Date
+}): SupplierSummary {
+  const m = (row.metadata ?? {}) as MetaBag
+
+  // Map DB status to UI status — DB has "blacklisted" which maps to "at_risk" for UI
+  let uiStatus: SupplierStatus = "active"
+  if (row.status === "inactive") uiStatus = "inactive"
+  else if (row.status === "pending") uiStatus = "pending"
+  else if (row.status === "blacklisted") uiStatus = "at_risk"
+  else if (m.trustScore != null && m.trustScore < 50) uiStatus = "at_risk"
+
+  return {
+    id: row.id,
+    initials: getInitials(row.name),
+    name: row.name,
+    category: row.category ?? "General",
+    status: uiStatus,
+    trustScore: m.trustScore ?? 0,
+    onTimeDelivery: m.onTimeDelivery ?? 0,
+    rating: m.rating ?? 0,
+    orders: m.orders ?? 0,
+    annualSpend: m.annualSpend ?? 0,
+    contractExpiry: m.contractExpiry ?? "",
+    paymentTerms: row.paymentTermsDays > 0 ? `Net ${row.paymentTermsDays}` : "",
+    lastOrder: m.lastOrder ?? "",
+    lastOrderAmount: m.lastOrderAmount ?? 0,
+  }
+}
 
 export const GET = withGates(
   { action: "suppliers.read", endpointClass: "api_read" },
-  async (req: NextRequest, _ctx: GateContext): Promise<NextResponse> => {
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
     const { searchParams } = new URL(req.url)
-    const status = searchParams.get("status") as SupplierStatus | null
-    const results = status ? MOCK_SUPPLIERS.filter((s) => s.status === status) : MOCK_SUPPLIERS
+    const statusFilter = searchParams.get("status") as SupplierStatus | null
+
+    const rows = await db
+      .select({
+        id: suppliers.id,
+        name: suppliers.name,
+        category: suppliers.category,
+        status: suppliers.status,
+        paymentTermsDays: suppliers.paymentTermsDays,
+        metadata: suppliers.metadata,
+        createdAt: suppliers.createdAt,
+      })
+      .from(suppliers)
+      .where(and(eq(suppliers.companyId, ctx.session.companyId), isNull(suppliers.deletedAt)))
+      .orderBy(desc(suppliers.createdAt))
+      .limit(200)
+
+    let results = rows.map(mapRow)
+
+    if (statusFilter) {
+      results = results.filter((s) => s.status === statusFilter)
+    }
+
     return NextResponse.json({ suppliers: results, count: results.length })
   }
 )
