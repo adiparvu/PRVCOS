@@ -50,12 +50,12 @@ export default function LoginScreen() {
       if (!res.ok) throw new Error(data.error ?? "Login failed")
 
       if (data.requiresMfa) {
-        router.push({ pathname: "/(auth)/mfa", params: { token: data.mfaToken } })
+        router.push({ pathname: "/(auth)/mfa", params: { token: data.factorId } })
         return
       }
 
       await login({
-        token: data.token,
+        token: data.sessionId,
         userId: data.userId,
         role: data.role,
         companyId: data.companyId,
