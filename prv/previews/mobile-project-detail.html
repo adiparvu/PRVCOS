@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=390,initial-scale=1"/>
+<title>PRV · Project Detail</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:#000;
+    font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','SF Pro Display',sans-serif;
+    -webkit-font-smoothing:antialiased;color:#fff;
+  }
+  .frame{
+    width:390px;min-height:844px;margin:24px auto;background:#000;border-radius:44px;
+    border:1px solid rgba(255,255,255,0.12);
+    box-shadow:0 40px 120px rgba(0,0,0,0.9),0 8px 32px rgba(0,0,0,0.6);
+    overflow:hidden;position:relative;
+  }
+  .notch{position:absolute;top:0;left:50%;transform:translateX(-50%);width:120px;height:34px;background:#000;border-radius:0 0 20px 20px;z-index:99}
+  .screen{height:844px;overflow-y:auto;padding-bottom:100px;scrollbar-width:none}
+  .screen::-webkit-scrollbar{display:none}
+
+  .statusBar{display:flex;justify-content:space-between;align-items:center;padding:14px 28px 0;height:50px}
+  .statusTime{font-size:15px;font-weight:600;letter-spacing:-.2px}
+  .statusIcons{display:flex;gap:6px;align-items:center;font-size:12px;opacity:.9}
+
+  /* Nav */
+  .navBar{display:flex;align-items:center;justify-content:space-between;padding:6px 16px 12px}
+  .backBtn{display:flex;align-items:center;gap:5px;color:rgba(255,255,255,.65);font-size:16px;min-width:72px}
+  .navTitle{font-size:17px;font-weight:600;color:rgba(255,255,255,.92);letter-spacing:-.2px}
+  .navAction{width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;font-size:14px;color:rgba(255,255,255,.6)}
+
+  /* Hero card */
+  .heroCard{
+    margin:0 16px 14px;padding:20px;border-radius:24px;
+    background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.20),0 16px 48px rgba(0,0,0,.55);
+    position:relative;overflow:hidden;
+  }
+  .heroShine{position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.35),transparent)}
+
+  .projectMeta{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px}
+  .projectName{font-size:22px;font-weight:700;letter-spacing:-.3px;color:rgba(255,255,255,.95);line-height:1.25}
+  .projectClient{font-size:13px;color:rgba(255,255,255,.4);margin-top:4px}
+  .statusBadge{
+    padding:5px 11px;border-radius:100px;flex-shrink:0;margin-left:10px;margin-top:2px;
+    font-size:12px;font-weight:700;letter-spacing:.2px;
+  }
+  .statusActive{background:rgba(48,209,88,.14);color:rgba(48,209,88,.9);border:1px solid rgba(48,209,88,.24)}
+
+  /* Progress bar */
+  .progressWrap{margin-bottom:14px}
+  .progressTop{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px}
+  .progressLabel{font-size:12px;color:rgba(255,255,255,.45);font-weight:500}
+  .progressPct{font-size:13px;font-weight:700;color:rgba(255,255,255,.85)}
+  .progressTrack{height:5px;background:rgba(255,255,255,.08);border-radius:100px;overflow:hidden}
+  .progressFill{height:100%;border-radius:100px;background:rgba(255,255,255,.6)}
+
+  /* Budget row */
+  .budgetRow{display:flex;gap:8px}
+  .budgetPill{
+    flex:1;padding:10px 12px;border-radius:12px;
+    background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);
+  }
+  .budgetVal{font-size:16px;font-weight:700;letter-spacing:-.3px;color:rgba(255,255,255,.9)}
+  .budgetLbl{font-size:10px;color:rgba(255,255,255,.35);margin-top:2px}
+
+  /* Timeline */
+  .timeline{display:flex;align-items:center;gap:0;margin:0 16px 14px;padding:14px 16px;border-radius:16px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08)}
+  .tlItem{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px}
+  .tlDot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.2)}
+  .tlDotActive{background:rgba(255,255,255,.85);box-shadow:0 0 0 3px rgba(255,255,255,.1)}
+  .tlLine{flex:1;height:1px;background:rgba(255,255,255,.12);margin:0 -1px;align-self:center;margin-top:-16px}
+  .tlLabel{font-size:10px;color:rgba(255,255,255,.4);text-align:center}
+  .tlDate{font-size:11px;font-weight:500;color:rgba(255,255,255,.65);text-align:center}
+
+  /* Quick actions */
+  .actions{display:flex;gap:8px;margin:0 16px 14px}
+  .actionBtn{
+    flex:1;padding:13px 8px;border-radius:16px;
+    background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 4px 12px rgba(0,0,0,.35);
+    display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;
+    position:relative;overflow:hidden;
+  }
+  .actionShine{position:absolute;top:0;left:0;right:0;height:1px;background:rgba(255,255,255,.18)}
+  .actionIcon{font-size:18px}
+  .actionLabel{font-size:10px;font-weight:500;color:rgba(255,255,255,.55);text-align:center}
+
+  /* Section */
+  .section{padding:0 16px;margin-bottom:4px}
+  .sectionHead{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px;padding-left:4px}
+  .sectionLabel{font-size:11px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;color:rgba(255,255,255,.3)}
+  .sectionLink{font-size:12px;font-weight:500;color:rgba(255,255,255,.35)}
+
+  /* Card */
+  .card{border-radius:20px;overflow:hidden;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10);box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 8px 28px rgba(0,0,0,.4)}
+
+  /* Row */
+  .row{display:flex;align-items:center;gap:12px;padding:13px 16px}
+  .row:not(:last-child){border-bottom:1px solid rgba(255,255,255,.06)}
+
+  /* Team member */
+  .memberAvatar{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:rgba(255,255,255,.8);flex-shrink:0}
+  .memberBody{flex:1}
+  .memberName{font-size:15px;font-weight:600;color:rgba(255,255,255,.85)}
+  .memberRole{font-size:12px;color:rgba(255,255,255,.35);margin-top:1px}
+  .rolePill{padding:3px 9px;border-radius:6px;font-size:10px;font-weight:700;background:rgba(255,255,255,.08);color:rgba(255,255,255,.45);flex-shrink:0}
+  .roleOwner{background:rgba(255,255,255,.13);color:rgba(255,255,255,.7)}
+
+  /* Milestone */
+  .taskCircle{width:22px;height:22px;border-radius:50%;border:1.5px solid rgba(255,255,255,.2);flex-shrink:0}
+  .taskCircleOverdue{border-color:rgba(255,69,58,.5);background:rgba(255,69,58,.08)}
+  .taskCircleNear{border-color:rgba(255,159,10,.45)}
+  .taskBody{flex:1}
+  .taskTitle{font-size:15px;font-weight:500;color:rgba(255,255,255,.82)}
+  .taskMeta{font-size:12px;color:rgba(255,255,255,.35);margin-top:2px}
+  .taskDue{font-size:11px;font-weight:600;flex-shrink:0}
+  .overdue{color:rgba(255,69,58,.9)}
+  .dueToday{color:rgba(255,159,10,.9)}
+  .dueSoon{color:rgba(255,255,255,.55)}
+
+  /* Activity */
+  .actIcon{width:32px;height:32px;border-radius:10px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.10);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+  .actBody{flex:1}
+  .actTitle{font-size:14px;font-weight:500;color:rgba(255,255,255,.75)}
+  .actMeta{font-size:12px;color:rgba(255,255,255,.35);margin-top:1px}
+  .actTime{font-size:11px;color:rgba(255,255,255,.3);flex-shrink:0}
+
+  /* Docs row */
+  .docRow{display:flex;align-items:center;gap:12px;padding:12px 16px}
+  .docIcon{width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.10);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+  .docBody{flex:1}
+  .docName{font-size:14px;font-weight:500;color:rgba(255,255,255,.80)}
+  .docMeta{font-size:12px;color:rgba(255,255,255,.35);margin-top:1px}
+  .docArrow{font-size:14px;color:rgba(255,255,255,.2)}
+
+  /* Phase progress track */
+  .phaseTrack{display:flex;gap:4px;margin:0 16px 14px}
+  .phaseItem{flex:1;height:4px;border-radius:100px;background:rgba(255,255,255,.08)}
+  .phaseItemDone{background:rgba(255,255,255,.55)}
+  .phaseItemActive{background:rgba(255,255,255,.35)}
+</style>
+</head>
+<body>
+<div class="frame">
+  <div class="notch"></div>
+  <div class="screen">
+
+    <div class="statusBar">
+      <span class="statusTime">9:41</span>
+      <div class="statusIcons"><span>●●●</span><span>WiFi</span><span>⬛</span></div>
+    </div>
+
+    <!-- Nav -->
+    <div class="navBar">
+      <div class="backBtn"><span style="font-size:18px">‹</span><span style="font-size:15px">Operations</span></div>
+      <span class="navTitle">Project</span>
+      <div class="navAction">⋯</div>
+    </div>
+
+    <!-- Hero card -->
+    <div class="heroCard">
+      <div class="heroShine"></div>
+      <div class="projectMeta">
+        <div>
+          <div class="projectName">Băneasa<br>Renovation</div>
+          <div class="projectClient">Client: Familia Ionescu · PRJ-2024-0041</div>
+        </div>
+        <div class="statusBadge statusActive">Active</div>
+      </div>
+
+      <!-- Phase progress track -->
+      <div style="margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+          <span style="font-size:11px;color:rgba(255,255,255,.4)">Phase 3 of 5 — Tiling</span>
+          <span style="font-size:11px;font-weight:600;color:rgba(255,255,255,.75)">62%</span>
+        </div>
+        <div style="display:flex;gap:4px;margin-bottom:4px">
+          <div style="flex:1;height:4px;border-radius:100px;background:rgba(255,255,255,.55)"></div>
+          <div style="flex:1;height:4px;border-radius:100px;background:rgba(255,255,255,.55)"></div>
+          <div style="flex:1;height:4px;border-radius:100px;background:rgba(255,255,255,.35)"></div>
+          <div style="flex:1;height:4px;border-radius:100px;background:rgba(255,255,255,.08)"></div>
+          <div style="flex:1;height:4px;border-radius:100px;background:rgba(255,255,255,.08)"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:9px;color:rgba(255,255,255,.25);margin-top:4px">
+          <span>Demo</span><span>Structural</span><span>Tiling</span><span>Finishing</span><span>Handover</span>
+        </div>
+      </div>
+
+      <!-- Budget row -->
+      <div class="budgetRow">
+        <div class="budgetPill">
+          <div class="budgetVal">€48,500</div>
+          <div class="budgetLbl">Budget</div>
+        </div>
+        <div class="budgetPill">
+          <div class="budgetVal" style="color:rgba(255,159,10,.9)">€31,200</div>
+          <div class="budgetLbl">Spent (64%)</div>
+        </div>
+        <div class="budgetPill">
+          <div class="budgetVal">€17,300</div>
+          <div class="budgetLbl">Remaining</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Timeline -->
+    <div style="margin:0 16px 14px;padding:14px 16px;border-radius:16px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08)">
+      <div style="display:flex;align-items:center">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:0 0 auto">
+          <div style="width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.55)"></div>
+          <div style="font-size:10px;color:rgba(255,255,255,.4)">Started</div>
+          <div style="font-size:11px;font-weight:500;color:rgba(255,255,255,.65)">Mar 4</div>
+        </div>
+        <div style="flex:1;height:1px;background:rgba(255,255,255,.12);margin:0 10px;margin-top:-10px"></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:0 0 auto">
+          <div style="width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.9);box-shadow:0 0 0 3px rgba(255,255,255,.12)"></div>
+          <div style="font-size:10px;color:rgba(255,255,255,.5)">Now</div>
+          <div style="font-size:11px;font-weight:600;color:rgba(255,255,255,.85)">Phase 3</div>
+        </div>
+        <div style="flex:1;height:1px;background:rgba(255,255,255,.07);margin:0 10px;margin-top:-10px;border-top:1px dashed rgba(255,255,255,.12)"></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:0 0 auto">
+          <div style="width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.15)"></div>
+          <div style="font-size:10px;color:rgba(255,255,255,.35)">Due</div>
+          <div style="font-size:11px;font-weight:500;color:rgba(255,255,255,.5)">Jul 28</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick actions -->
+    <div class="actions">
+      <div class="actionBtn">
+        <div class="actionShine"></div>
+        <span class="actionIcon">＋</span>
+        <span class="actionLabel">New Task</span>
+      </div>
+      <div class="actionBtn">
+        <div class="actionShine"></div>
+        <span class="actionIcon">⌄</span>
+        <span class="actionLabel">Log Update</span>
+      </div>
+      <div class="actionBtn">
+        <div class="actionShine"></div>
+        <span class="actionIcon">⟁</span>
+        <span class="actionLabel">Invoice</span>
+      </div>
+      <div class="actionBtn">
+        <div class="actionShine"></div>
+        <span class="actionIcon">◎</span>
+        <span class="actionLabel">Site Photos</span>
+      </div>
+    </div>
+
+    <!-- Open Milestones -->
+    <div class="section">
+      <div class="sectionHead">
+        <span class="sectionLabel">Open Milestones · 4</span>
+        <span class="sectionLink">All tasks →</span>
+      </div>
+      <div class="card">
+        <div class="row">
+          <div class="taskCircle taskCircleOverdue"></div>
+          <div class="taskBody">
+            <div class="taskTitle">Tile bathroom floor — main</div>
+            <div class="taskMeta">Assigned · Andrei Radu</div>
+          </div>
+          <span class="taskDue overdue">2d overdue</span>
+        </div>
+        <div class="row">
+          <div class="taskCircle taskCircleNear"></div>
+          <div class="taskBody">
+            <div class="taskTitle">Waterproofing inspection</div>
+            <div class="taskMeta">Assigned · Dan Mihai</div>
+          </div>
+          <span class="taskDue dueToday">Today</span>
+        </div>
+        <div class="row">
+          <div class="taskCircle taskCircleNear"></div>
+          <div class="taskBody">
+            <div class="taskTitle">Tile walls — kitchen backsplash</div>
+            <div class="taskMeta">Unassigned</div>
+          </div>
+          <span class="taskDue dueSoon">3d</span>
+        </div>
+        <div class="row">
+          <div class="taskCircle"></div>
+          <div class="taskBody">
+            <div class="taskTitle">Grout application — bathrooms</div>
+            <div class="taskMeta">Unassigned</div>
+          </div>
+          <span class="taskDue dueSoon">Jun 20</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Team -->
+    <div class="section" style="margin-top:14px">
+      <div class="sectionHead">
+        <span class="sectionLabel">Team · 4</span>
+        <span class="sectionLink">Manage →</span>
+      </div>
+      <div class="card">
+        <div class="row">
+          <div class="memberAvatar">AP</div>
+          <div class="memberBody">
+            <div class="memberName">Alexandru Petrescu</div>
+            <div class="memberRole">Project Manager</div>
+          </div>
+          <div class="rolePill roleOwner">OWNER</div>
+        </div>
+        <div class="row">
+          <div class="memberAvatar">DM</div>
+          <div class="memberBody">
+            <div class="memberName">Dan Mihai</div>
+            <div class="memberRole">Site Supervisor</div>
+          </div>
+          <div class="rolePill">MEMBER</div>
+        </div>
+        <div class="row">
+          <div class="memberAvatar">AR</div>
+          <div class="memberBody">
+            <div class="memberName">Andrei Radu</div>
+            <div class="memberRole">Tile Specialist</div>
+          </div>
+          <div class="rolePill">MEMBER</div>
+        </div>
+        <div class="row">
+          <div class="memberAvatar">CT</div>
+          <div class="memberBody">
+            <div class="memberName">Cristina Toma</div>
+            <div class="memberRole">Client Liaison</div>
+          </div>
+          <div class="rolePill">MEMBER</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="section" style="margin-top:14px">
+      <div class="sectionHead">
+        <span class="sectionLabel">Recent Activity</span>
+        <span class="sectionLink">Full log →</span>
+      </div>
+      <div class="card">
+        <div class="row">
+          <div class="actIcon">📸</div>
+          <div class="actBody">
+            <div class="actTitle">12 site photos uploaded</div>
+            <div class="actMeta">Dan Mihai · Bathroom progress</div>
+          </div>
+          <span class="actTime">2h ago</span>
+        </div>
+        <div class="row">
+          <div class="actIcon">✓</div>
+          <div class="actBody">
+            <div class="actTitle">Structural phase completed</div>
+            <div class="actMeta">Alexandru Petrescu</div>
+          </div>
+          <span class="actTime">Yesterday</span>
+        </div>
+        <div class="row">
+          <div class="actIcon">⟁</div>
+          <div class="actBody">
+            <div class="actTitle">Invoice #INV-0087 sent — €14,200</div>
+            <div class="actMeta">Phase 2 billing · Client notified</div>
+          </div>
+          <span class="actTime">Mon</span>
+        </div>
+        <div class="row">
+          <div class="actIcon">📄</div>
+          <div class="actBody">
+            <div class="actTitle">Material request approved</div>
+            <div class="actMeta">Porcelain tiles · €2,840</div>
+          </div>
+          <span class="actTime">Mon</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Documents -->
+    <div class="section" style="margin-top:14px;margin-bottom:16px">
+      <div class="sectionHead">
+        <span class="sectionLabel">Documents · 8</span>
+        <span class="sectionLink">View all →</span>
+      </div>
+      <div class="card">
+        <div class="docRow">
+          <div class="docIcon">📋</div>
+          <div class="docBody">
+            <div class="docName">Contract — Signed</div>
+            <div class="docMeta">PDF · 2.1 MB · Mar 4</div>
+          </div>
+          <span class="docArrow">›</span>
+        </div>
+        <div style="height:1px;background:rgba(255,255,255,.06);margin:0 16px"></div>
+        <div class="docRow">
+          <div class="docIcon">📐</div>
+          <div class="docBody">
+            <div class="docName">Architectural Plans v2</div>
+            <div class="docMeta">PDF · 8.4 MB · Apr 12</div>
+          </div>
+          <span class="docArrow">›</span>
+        </div>
+        <div style="height:1px;background:rgba(255,255,255,.06);margin:0 16px"></div>
+        <div class="docRow">
+          <div class="docIcon">⟁</div>
+          <div class="docBody">
+            <div class="docName">Invoice #INV-0087</div>
+            <div class="docMeta">PDF · 184 KB · Jun 3</div>
+          </div>
+          <span class="docArrow">›</span>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /screen -->
+
+  <!-- Tab bar -->
+  <div style="position:absolute;bottom:0;left:0;right:0;height:82px;background:linear-gradient(to top,rgba(0,0,0,.95) 0%,rgba(0,0,0,.8) 60%,transparent 100%);pointer-events:none;z-index:10;"></div>
+  <div style="position:absolute;bottom:12px;left:16px;right:16px;height:60px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:30px;box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 8px 32px rgba(0,0,0,.5);display:flex;align-items:center;justify-content:space-around;padding:0 16px;z-index:20;">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:3px"><span style="font-size:18px;color:rgba(255,255,255,.35)">⌂</span><span style="font-size:9px;color:rgba(255,255,255,.3)">Command</span></div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:3px"><span style="font-size:18px;color:rgba(255,255,255,.95)">⊞</span><span style="font-size:9px;color:rgba(255,255,255,.8);font-weight:600">Operations</span></div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:3px"><span style="font-size:18px;color:rgba(255,255,255,.35)">◎</span><span style="font-size:9px;color:rgba(255,255,255,.3)">People</span></div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:3px"><span style="font-size:18px;color:rgba(255,255,255,.35)">⟁</span><span style="font-size:9px;color:rgba(255,255,255,.3)">Finance</span></div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:3px"><span style="font-size:18px;color:rgba(255,255,255,.35)">✦</span><span style="font-size:9px;color:rgba(255,255,255,.3)">Intel</span></div>
+  </div>
+</div>
+</body>
+</html>
