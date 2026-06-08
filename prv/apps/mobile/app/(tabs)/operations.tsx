@@ -18,6 +18,7 @@ import {
   type TaskItem,
 } from "@/hooks/useOperations"
 import { useStores, formatRevenue } from "@/hooks/useStores"
+import { FABWithSheets } from "@/components/FABWithSheets"
 import { colors, radius, spacing, type as t } from "@/tokens"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -520,9 +521,6 @@ export default function OperationsScreen() {
       {/* Fixed header */}
       <View style={s.header}>
         <Text style={s.title}>Operations</Text>
-        <TouchableOpacity style={s.headerBtn} activeOpacity={0.7}>
-          <Text style={s.headerBtnText}>＋</Text>
-        </TouchableOpacity>
       </View>
 
       {/* Fixed segment control */}
@@ -572,13 +570,7 @@ export default function OperationsScreen() {
         </ScrollView>
       )}
 
-      {/* FAB */}
-      {segment !== "stores" ? (
-        <TouchableOpacity style={[s.fab, { bottom: insets.bottom + 90 }]} activeOpacity={0.8}>
-          <View style={s.fabShine} pointerEvents="none" />
-          <Text style={s.fabIcon}>＋</Text>
-        </TouchableOpacity>
-      ) : null}
+      <FABWithSheets />
     </View>
   )
 }

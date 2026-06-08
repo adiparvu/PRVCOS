@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { useState } from "react"
 import { useRouter } from "expo-router"
 import { GlassCard } from "@/components/Glass"
+import { FABWithSheets } from "@/components/FABWithSheets"
 import { colors, radius, spacing, type } from "@/tokens"
 import {
   useFinance,
@@ -392,6 +393,8 @@ export default function FinanceScreen() {
           )
         ) : null}
       </ScrollView>
+
+      <FABWithSheets />
     </View>
   )
 }

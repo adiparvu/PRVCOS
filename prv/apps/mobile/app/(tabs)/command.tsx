@@ -4,6 +4,7 @@ import { useRouter } from "expo-router"
 import { KPICard } from "@/components/KPICard"
 import { GlassCard } from "@/components/Glass"
 import { SkeletonKPICard, SkeletonCard, SkeletonRow } from "@/components/Skeleton"
+import { FABWithSheets } from "@/components/FABWithSheets"
 import { useCommand, type AlertItem, type InboxItem, type QuickAction } from "@/hooks/useCommand"
 import { useProfile, getInitials } from "@/hooks/useProfile"
 import { colors, spacing, type, radius } from "@/tokens"
@@ -117,173 +118,180 @@ export default function CommandScreen() {
     : (data?.user.firstName?.[0]?.toUpperCase() ?? "?")
 
   return (
-    <ScrollView
-      style={styles.root}
-      contentContainerStyle={[
-        styles.content,
-        { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 104 },
-      ]}
-      showsVerticalScrollIndicator={false}
-      refreshControl={
-        <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.text3} />
-      }
-    >
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerRow}>
-          <View style={styles.headerLeft}>
-            <Text style={styles.dateText}>{formatDate()}</Text>
-            <Text style={styles.greeting}>
-              {getGreeting()},{"\n"}
-              {data?.user.firstName ?? ""}
-            </Text>
-            {data?.user && (
-              <View style={styles.roleChip}>
-                <View style={styles.roleDot} />
-                <Text style={styles.roleText}>
-                  {data.user.role} · {data.user.scopeName}
-                </Text>
-              </View>
-            )}
-          </View>
-          <View style={styles.headerBtns}>
-            <TouchableOpacity
-              style={styles.searchBtn}
-              onPress={() => router.push("/(auth)/search")}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.searchBtnIcon}>⌕</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.profileBtn}
-              onPress={() => router.push("/(auth)/profile")}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.profileInitials}>{profileInitials}</Text>
-            </TouchableOpacity>
+    <View style={[styles.root, { flex: 1 }]}>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={[
+          styles.content,
+          { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 104 },
+        ]}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.text3} />
+        }
+      >
+        {/* Header */}
+        <View style={styles.header}>
+          <View style={styles.headerRow}>
+            <View style={styles.headerLeft}>
+              <Text style={styles.dateText}>{formatDate()}</Text>
+              <Text style={styles.greeting}>
+                {getGreeting()},{"\n"}
+                {data?.user.firstName ?? ""}
+              </Text>
+              {data?.user && (
+                <View style={styles.roleChip}>
+                  <View style={styles.roleDot} />
+                  <Text style={styles.roleText}>
+                    {data.user.role} · {data.user.scopeName}
+                  </Text>
+                </View>
+              )}
+            </View>
+            <View style={styles.headerBtns}>
+              <TouchableOpacity
+                style={styles.searchBtn}
+                onPress={() => router.push("/(auth)/search")}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.searchBtnIcon}>⌕</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.profileBtn}
+                onPress={() => router.push("/(auth)/profile")}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.profileInitials}>{profileInitials}</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
-      </View>
 
-      {/* Loading state */}
-      {isLoading && <LoadingSkeleton />}
+        {/* Loading state */}
+        {isLoading && <LoadingSkeleton />}
 
-      {/* Error state */}
-      {error && !isLoading && (
-        <GlassCard style={styles.errorCard}>
-          <Text style={styles.errorText}>Could not load dashboard data.</Text>
-          <TouchableOpacity onPress={() => refetch()} activeOpacity={0.75} style={styles.retryBtn}>
-            <Text style={styles.retryText}>Try again</Text>
-          </TouchableOpacity>
-        </GlassCard>
-      )}
+        {/* Error state */}
+        {error && !isLoading && (
+          <GlassCard style={styles.errorCard}>
+            <Text style={styles.errorText}>Could not load dashboard data.</Text>
+            <TouchableOpacity
+              onPress={() => refetch()}
+              activeOpacity={0.75}
+              style={styles.retryBtn}
+            >
+              <Text style={styles.retryText}>Try again</Text>
+            </TouchableOpacity>
+          </GlassCard>
+        )}
 
-      {/* Content */}
-      {data && (
-        <>
-          {/* Primary KPI grid — chunked into rows of 2 */}
-          {[0, 2].map((offset) => (
-            <View key={offset} style={styles.kpiGrid}>
-              {data.kpis.slice(offset, offset + 2).map((kpi) => (
-                <KPICard
-                  key={kpi.label}
-                  value={kpi.value}
-                  label={kpi.label}
-                  delta={kpi.delta}
-                  deltaType={kpi.deltaType}
-                  valueColor={kpi.valueColor}
-                />
-              ))}
-            </View>
-          ))}
-
-          {/* Secondary strip */}
-          <View style={styles.stripRow}>
-            {data.secondary.map((m) => (
-              <View key={m.label} style={styles.stripPill}>
-                <Text style={[styles.stripVal, m.valueColor ? { color: m.valueColor } : null]}>
-                  {m.value}
-                </Text>
-                <Text style={styles.stripLbl}>{m.label}</Text>
-              </View>
-            ))}
-          </View>
-
-          {/* AI Briefing */}
-          {data.aiBriefing && (
-            <>
-              <Text style={styles.sectionTitle}>AI Briefing</Text>
-              <GlassCard style={styles.aiCard}>
-                <View style={styles.aiTop}>
-                  <Text style={styles.aiGlyph}>✦</Text>
-                  <View style={styles.aiBadge}>
-                    <Text style={styles.aiBadgeText}>PRV AI</Text>
-                  </View>
-                  <Text style={styles.aiTs}>Just now</Text>
-                </View>
-                <Text style={styles.aiSummary}>{data.aiBriefing.summary}</Text>
-                {data.aiBriefing.insights.map((insight, i) => (
-                  <View key={i} style={styles.aiInsight}>
-                    <Text style={styles.aiBullet}>●</Text>
-                    <Text style={styles.aiInsightText} numberOfLines={3}>
-                      {insight}
-                    </Text>
-                  </View>
-                ))}
-              </GlassCard>
-            </>
-          )}
-
-          {/* Critical Alerts */}
-          {data.alerts.length > 0 && (
-            <>
-              <Text style={styles.sectionTitle}>Critical Alerts</Text>
-              {data.alerts.map((alert) => (
-                <AlertCard key={alert.id} alert={alert} />
-              ))}
-            </>
-          )}
-
-          {/* Quick Actions */}
-          {data.quickActions.length > 0 && (
-            <>
-              <Text style={styles.sectionTitle}>Quick Actions</Text>
-              <View style={styles.actionsGrid}>
-                {data.quickActions.map((action) => (
-                  <ActionButton key={action.id} action={action} />
-                ))}
-              </View>
-            </>
-          )}
-
-          {/* Inbox */}
-          {data.inbox.length > 0 && (
-            <>
-              <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Inbox</Text>
-                <TouchableOpacity
-                  onPress={() => router.push("/(auth)/inbox")}
-                  activeOpacity={0.6}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                >
-                  <Text style={styles.seeAll}>See all →</Text>
-                </TouchableOpacity>
-              </View>
-              <GlassCard style={styles.inboxCard}>
-                {data.inbox.map((item, i) => (
-                  <InboxRow
-                    key={item.id}
-                    item={item}
-                    last={i === data.inbox.length - 1}
-                    onPress={() => router.push("/(auth)/inbox")}
+        {/* Content */}
+        {data && (
+          <>
+            {/* Primary KPI grid — chunked into rows of 2 */}
+            {[0, 2].map((offset) => (
+              <View key={offset} style={styles.kpiGrid}>
+                {data.kpis.slice(offset, offset + 2).map((kpi) => (
+                  <KPICard
+                    key={kpi.label}
+                    value={kpi.value}
+                    label={kpi.label}
+                    delta={kpi.delta}
+                    deltaType={kpi.deltaType}
+                    valueColor={kpi.valueColor}
                   />
                 ))}
-              </GlassCard>
-            </>
-          )}
-        </>
-      )}
-    </ScrollView>
+              </View>
+            ))}
+
+            {/* Secondary strip */}
+            <View style={styles.stripRow}>
+              {data.secondary.map((m) => (
+                <View key={m.label} style={styles.stripPill}>
+                  <Text style={[styles.stripVal, m.valueColor ? { color: m.valueColor } : null]}>
+                    {m.value}
+                  </Text>
+                  <Text style={styles.stripLbl}>{m.label}</Text>
+                </View>
+              ))}
+            </View>
+
+            {/* AI Briefing */}
+            {data.aiBriefing && (
+              <>
+                <Text style={styles.sectionTitle}>AI Briefing</Text>
+                <GlassCard style={styles.aiCard}>
+                  <View style={styles.aiTop}>
+                    <Text style={styles.aiGlyph}>✦</Text>
+                    <View style={styles.aiBadge}>
+                      <Text style={styles.aiBadgeText}>PRV AI</Text>
+                    </View>
+                    <Text style={styles.aiTs}>Just now</Text>
+                  </View>
+                  <Text style={styles.aiSummary}>{data.aiBriefing.summary}</Text>
+                  {data.aiBriefing.insights.map((insight, i) => (
+                    <View key={i} style={styles.aiInsight}>
+                      <Text style={styles.aiBullet}>●</Text>
+                      <Text style={styles.aiInsightText} numberOfLines={3}>
+                        {insight}
+                      </Text>
+                    </View>
+                  ))}
+                </GlassCard>
+              </>
+            )}
+
+            {/* Critical Alerts */}
+            {data.alerts.length > 0 && (
+              <>
+                <Text style={styles.sectionTitle}>Critical Alerts</Text>
+                {data.alerts.map((alert) => (
+                  <AlertCard key={alert.id} alert={alert} />
+                ))}
+              </>
+            )}
+
+            {/* Quick Actions */}
+            {data.quickActions.length > 0 && (
+              <>
+                <Text style={styles.sectionTitle}>Quick Actions</Text>
+                <View style={styles.actionsGrid}>
+                  {data.quickActions.map((action) => (
+                    <ActionButton key={action.id} action={action} />
+                  ))}
+                </View>
+              </>
+            )}
+
+            {/* Inbox */}
+            {data.inbox.length > 0 && (
+              <>
+                <View style={styles.sectionHeader}>
+                  <Text style={styles.sectionTitle}>Inbox</Text>
+                  <TouchableOpacity
+                    onPress={() => router.push("/(auth)/inbox")}
+                    activeOpacity={0.6}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Text style={styles.seeAll}>See all →</Text>
+                  </TouchableOpacity>
+                </View>
+                <GlassCard style={styles.inboxCard}>
+                  {data.inbox.map((item, i) => (
+                    <InboxRow
+                      key={item.id}
+                      item={item}
+                      last={i === data.inbox.length - 1}
+                      onPress={() => router.push("/(auth)/inbox")}
+                    />
+                  ))}
+                </GlassCard>
+              </>
+            )}
+          </>
+        )}
+      </ScrollView>
+      <FABWithSheets />
+    </View>
   )
 }
 
