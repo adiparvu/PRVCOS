@@ -380,7 +380,11 @@ export default function ProfileScreen() {
               </>
             )}
           </View>
-          <TouchableOpacity style={s.editBtn} activeOpacity={0.7}>
+          <TouchableOpacity
+            style={s.editBtn}
+            activeOpacity={0.7}
+            onPress={() => router.push("/(auth)/edit-profile")}
+          >
             <PencilIcon />
           </TouchableOpacity>
         </BlurView>
@@ -401,17 +405,13 @@ export default function ProfileScreen() {
             icon={<PersonIcon />}
             title="Edit Profile"
             subtitle="Name, phone, avatar"
-            onPress={() => {
-              /* future screen */
-            }}
+            onPress={() => router.push("/(auth)/edit-profile")}
           />
           <SettingsRow
             icon={<BellIcon />}
             title="Notifications"
             subtitle="Alerts, reports, mentions"
-            onPress={() => {
-              /* future screen */
-            }}
+            onPress={() => router.push("/(auth)/notification-preferences")}
           />
           <SettingsRow
             icon={<GlobeIcon />}
