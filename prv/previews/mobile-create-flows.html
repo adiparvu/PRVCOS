@@ -1,0 +1,1305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PRV Mobile — Create Flows Preview</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0a0a0a;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 48px 24px 80px;
+    gap: 48px;
+  }
+
+  h1 {
+    color: rgba(255,255,255,0.9);
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.4px;
+    text-align: center;
+  }
+
+  .subtitle {
+    color: rgba(255,255,255,0.35);
+    font-size: 13px;
+    text-align: center;
+    margin-top: 6px;
+  }
+
+  /* Row of phones */
+  .row {
+    display: flex;
+    gap: 28px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .phone-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .phone-label {
+    color: rgba(255,255,255,0.4);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  /* Phone frame */
+  .phone {
+    width: 320px;
+    height: 650px;
+    background: #000;
+    border-radius: 44px;
+    border: 1px solid rgba(255,255,255,0.14);
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 32px 80px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.06) inset;
+  }
+
+  /* Status bar */
+  .status-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 22px 0;
+    height: 50px;
+  }
+
+  .status-time {
+    font-size: 15px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.9);
+  }
+
+  .status-icons {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .status-icons span {
+    font-size: 12px;
+    color: rgba(255,255,255,0.8);
+  }
+
+  /* Navbar */
+  .navbar {
+    display: flex;
+    align-items: center;
+    padding: 8px 18px;
+    gap: 8px;
+  }
+
+  .back-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.10);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    color: rgba(255,255,255,0.8);
+    line-height: 1;
+  }
+
+  .nav-title {
+    flex: 1;
+    text-align: center;
+    font-size: 17px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.9);
+    letter-spacing: -0.2px;
+  }
+
+  .nav-spacer { width: 34px; }
+
+  /* Tab bar */
+  .tab-bar {
+    position: absolute;
+    bottom: 18px;
+    left: 16px;
+    right: 16px;
+    background: rgba(255,255,255,0.08);
+    backdrop-filter: blur(32px);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 28px;
+    display: flex;
+    padding: 10px 0;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  }
+
+  .tab-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+  }
+
+  .tab-icon {
+    font-size: 16px;
+    color: rgba(255,255,255,0.3);
+  }
+
+  .tab-icon.active {
+    color: rgba(255,255,255,0.95);
+  }
+
+  .tab-dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.9);
+  }
+
+  /* FAB */
+  .fab {
+    position: absolute;
+    bottom: 100px;
+    right: 22px;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.95);
+    border: 1px solid rgba(255,255,255,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    color: #000;
+    font-weight: 300;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.1) inset;
+    line-height: 1;
+  }
+
+  /* Finance tab content */
+  .scroll-content {
+    padding: 0 16px;
+    overflow: hidden;
+  }
+
+  .section-head {
+    display: flex;
+    align-items: center;
+    padding: 10px 2px 8px;
+    gap: 8px;
+  }
+
+  .section-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.35);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .glass-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 18px;
+    overflow: hidden;
+    position: relative;
+    margin-bottom: 8px;
+  }
+
+  .glass-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 16px; right: 16px;
+    height: 1px;
+    background: rgba(255,255,255,0.12);
+  }
+
+  .list-row {
+    display: flex;
+    align-items: center;
+    padding: 12px 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    gap: 10px;
+  }
+
+  .list-row:last-child { border-bottom: none; }
+
+  .row-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    color: rgba(255,255,255,0.6);
+    flex-shrink: 0;
+  }
+
+  .row-info { flex: 1; min-width: 0; }
+
+  .row-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.9);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .row-sub {
+    font-size: 11px;
+    color: rgba(255,255,255,0.35);
+    margin-top: 2px;
+  }
+
+  .badge {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 100px;
+    flex-shrink: 0;
+  }
+
+  .badge-green { background: rgba(48,209,88,0.12); color: #30d158; border: 1px solid rgba(48,209,88,0.25); }
+  .badge-amber { background: rgba(255,159,10,0.10); color: #ff9f0a; border: 1px solid rgba(255,159,10,0.22); }
+  .badge-blue { background: rgba(100,210,255,0.10); color: #64d2ff; border: 1px solid rgba(100,210,255,0.22); }
+  .badge-muted { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.4); border: 1px solid rgba(255,255,255,0.10); }
+
+  /* ─── BOTTOM SHEET ─────────────────────────────────────────────────────── */
+
+  .sheet-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.55);
+    backdrop-filter: blur(4px);
+    z-index: 10;
+  }
+
+  .bottom-sheet {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(28,28,30,0.96);
+    backdrop-filter: blur(48px);
+    border-top-left-radius: 28px;
+    border-top-right-radius: 28px;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-bottom: none;
+    z-index: 11;
+    overflow: hidden;
+  }
+
+  .sheet-shine {
+    position: absolute;
+    top: 0; left: 24px; right: 24px;
+    height: 1px;
+    background: rgba(255,255,255,0.22);
+    z-index: 1;
+  }
+
+  .sheet-handle-row {
+    display: flex;
+    justify-content: center;
+    padding: 12px 0 4px;
+  }
+
+  .sheet-handle {
+    width: 36px;
+    height: 4px;
+    border-radius: 2px;
+    background: rgba(255,255,255,0.18);
+  }
+
+  .sheet-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 18px 12px;
+  }
+
+  .sheet-title {
+    font-size: 17px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.95);
+    letter-spacing: -0.3px;
+  }
+
+  .sheet-close {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.10);
+    border: 1px solid rgba(255,255,255,0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    color: rgba(255,255,255,0.5);
+  }
+
+  .sheet-body {
+    padding: 0 16px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  /* Form rows inside sheet */
+  .form-section-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.3);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    padding: 4px 2px 2px;
+  }
+
+  .form-card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 16px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .form-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 14px; right: 14px;
+    height: 1px;
+    background: rgba(255,255,255,0.12);
+  }
+
+  .form-row {
+    display: flex;
+    align-items: center;
+    padding: 11px 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    gap: 10px;
+  }
+
+  .form-row:last-child { border-bottom: none; }
+
+  .form-icon {
+    font-size: 14px;
+    color: rgba(255,255,255,0.4);
+    width: 18px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  .form-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.85);
+    flex: 1;
+  }
+
+  .form-value {
+    font-size: 13px;
+    color: rgba(255,255,255,0.4);
+    text-align: right;
+  }
+
+  .form-value.filled {
+    color: rgba(255,255,255,0.8);
+    font-weight: 500;
+  }
+
+  .form-chevron {
+    font-size: 16px;
+    color: rgba(255,255,255,0.18);
+    margin-left: 2px;
+  }
+
+  .form-input-row {
+    display: flex;
+    align-items: center;
+    padding: 11px 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    gap: 10px;
+  }
+
+  .form-input-row:last-child { border-bottom: none; }
+
+  .form-input {
+    flex: 1;
+    font-size: 13px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.85);
+    background: none;
+    border: none;
+    outline: none;
+  }
+
+  .form-input::placeholder { color: rgba(255,255,255,0.2); }
+
+  /* Line items */
+  .line-item-row {
+    display: flex;
+    align-items: center;
+    padding: 10px 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    gap: 8px;
+  }
+
+  .line-item-row:last-child { border-bottom: none; }
+
+  .li-num {
+    font-size: 11px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.2);
+    width: 16px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  .li-info { flex: 1; min-width: 0; }
+
+  .li-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.88);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .li-sub {
+    font-size: 11px;
+    color: rgba(255,255,255,0.35);
+    margin-top: 1px;
+  }
+
+  .li-total {
+    font-size: 13px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.85);
+    flex-shrink: 0;
+  }
+
+  .add-item-row {
+    display: flex;
+    align-items: center;
+    padding: 11px 14px;
+    gap: 10px;
+    opacity: 0.6;
+  }
+
+  .add-icon {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    color: rgba(255,255,255,0.6);
+    line-height: 1;
+  }
+
+  .add-label {
+    font-size: 13px;
+    color: rgba(255,255,255,0.4);
+    font-weight: 500;
+  }
+
+  /* Totals row */
+  .totals-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 14px;
+    border-top: 1px solid rgba(255,255,255,0.07);
+  }
+
+  .totals-label {
+    font-size: 12px;
+    color: rgba(255,255,255,0.4);
+  }
+
+  .totals-value {
+    font-size: 13px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.88);
+  }
+
+  /* CTA Button */
+  .sheet-cta {
+    margin: 4px 0 8px;
+    background: rgba(255,255,255,0.95);
+    border-radius: 16px;
+    padding: 15px;
+    text-align: center;
+    font-size: 15px;
+    font-weight: 700;
+    color: #000;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .sheet-cta::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 20px; right: 20px;
+    height: 1px;
+    background: rgba(255,255,255,0.5);
+  }
+
+  /* Step indicator */
+  .step-row {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+    padding: 0 0 6px;
+  }
+
+  .step-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.15);
+  }
+
+  .step-dot.active {
+    width: 18px;
+    border-radius: 3px;
+    background: rgba(255,255,255,0.8);
+  }
+
+  /* Member picker row */
+  .member-chip-row {
+    display: flex;
+    gap: 8px;
+    padding: 10px 14px;
+    flex-wrap: wrap;
+  }
+
+  .member-chip {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 100px;
+    padding: 4px 10px 4px 4px;
+  }
+
+  .member-avatar {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 8px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.8);
+  }
+
+  .member-name {
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.7);
+  }
+
+  .add-member-chip {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.06);
+    border: 1px dashed rgba(255,255,255,0.18);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    color: rgba(255,255,255,0.3);
+  }
+
+  /* Currency pills */
+  .currency-row {
+    display: flex;
+    gap: 6px;
+    padding: 10px 14px;
+  }
+
+  .currency-pill {
+    padding: 5px 14px;
+    border-radius: 100px;
+    font-size: 12px;
+    font-weight: 700;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.10);
+    color: rgba(255,255,255,0.4);
+  }
+
+  .currency-pill.active {
+    background: rgba(255,255,255,0.15);
+    border-color: rgba(255,255,255,0.28);
+    color: rgba(255,255,255,0.9);
+  }
+
+  /* Entry points section */
+  .entry-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    width: 100%;
+    max-width: 880px;
+  }
+
+  .entry-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.3);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .entry-grid {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .entry-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 180px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .entry-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 12px; right: 12px;
+    height: 1px;
+    background: rgba(255,255,255,0.12);
+  }
+
+  .entry-card-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.85);
+  }
+
+  .entry-card-sub {
+    font-size: 11px;
+    color: rgba(255,255,255,0.35);
+    line-height: 1.5;
+  }
+
+  .divider {
+    width: 100%;
+    max-width: 880px;
+    height: 1px;
+    background: rgba(255,255,255,0.07);
+  }
+</style>
+</head>
+<body>
+
+<h1>Create Flows — Bottom Sheets</h1>
+<p class="subtitle">Glass bottom sheets · New Invoice · New Project · New Order</p>
+
+<!-- ═══════════════════════════════════════════════
+     ROW 1 — New Invoice (2 steps)
+════════════════════════════════════════════════ -->
+<div class="row">
+
+  <!-- Phone 1: Finance tab + FAB visible -->
+  <div class="phone-wrap">
+    <div class="phone-label">Finance tab · FAB</div>
+    <div class="phone">
+      <div class="status-bar">
+        <span class="status-time">9:41</span>
+        <div class="status-icons">
+          <span>●●●</span><span>WiFi</span><span>█</span>
+        </div>
+      </div>
+      <div class="navbar">
+        <div style="width:34px"></div>
+        <div class="nav-title">Finance</div>
+        <div class="nav-spacer"></div>
+      </div>
+      <div class="scroll-content">
+        <div class="section-head"><span class="section-title">Invoices</span></div>
+        <div class="glass-card">
+          <div class="list-row">
+            <div class="row-icon">⊕</div>
+            <div class="row-info">
+              <div class="row-title">INV-2024-0041</div>
+              <div class="row-sub">Arc Build SRL · Due 15 Mar</div>
+            </div>
+            <div class="badge badge-amber">Sent</div>
+          </div>
+          <div class="list-row">
+            <div class="row-icon">⊕</div>
+            <div class="row-info">
+              <div class="row-title">INV-2024-0040</div>
+              <div class="row-sub">Nexus Group · Due 8 Mar</div>
+            </div>
+            <div class="badge badge-green">Paid</div>
+          </div>
+          <div class="list-row">
+            <div class="row-icon">⊕</div>
+            <div class="row-info">
+              <div class="row-title">INV-2024-0039</div>
+              <div class="row-sub">Primavera SRL · Overdue</div>
+            </div>
+            <div class="badge badge-amber" style="color:#ff453a;background:rgba(255,69,58,0.10);border-color:rgba(255,69,58,0.22)">Overdue</div>
+          </div>
+        </div>
+        <div class="section-head"><span class="section-title">Orders</span></div>
+        <div class="glass-card">
+          <div class="list-row">
+            <div class="row-icon">◈</div>
+            <div class="row-info">
+              <div class="row-title">ORD-2024-0088</div>
+              <div class="row-sub">Store Cluj · 4 items</div>
+            </div>
+            <div class="badge badge-blue">Shipped</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FAB -->
+      <div class="fab">+</div>
+
+      <!-- Tab bar -->
+      <div class="tab-bar">
+        <div class="tab-item"><span class="tab-icon">⌂</span></div>
+        <div class="tab-item"><span class="tab-icon">⊞</span></div>
+        <div class="tab-item"><span class="tab-icon">◎</span></div>
+        <div class="tab-item"><span class="tab-icon">⟁</span><div class="tab-dot"></div></div>
+        <div class="tab-item"><span class="tab-icon">✦</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Phone 2: New Invoice sheet step 1 -->
+  <div class="phone-wrap">
+    <div class="phone-label">New Invoice · Step 1</div>
+    <div class="phone">
+      <div class="status-bar">
+        <span class="status-time">9:41</span>
+        <div class="status-icons">
+          <span>●●●</span><span>WiFi</span><span>█</span>
+        </div>
+      </div>
+
+      <!-- Blurred background content -->
+      <div class="scroll-content" style="opacity:0.3">
+        <div class="section-head"><span class="section-title">Invoices</span></div>
+        <div class="glass-card">
+          <div class="list-row">
+            <div class="row-icon">⊕</div>
+            <div class="row-info">
+              <div class="row-title">INV-2024-0041</div>
+              <div class="row-sub">Arc Build SRL · Due 15 Mar</div>
+            </div>
+          </div>
+          <div class="list-row">
+            <div class="row-icon">⊕</div>
+            <div class="row-info">
+              <div class="row-title">INV-2024-0040</div>
+              <div class="row-sub">Nexus Group · Due 8 Mar</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sheet overlay -->
+      <div class="sheet-overlay"></div>
+
+      <!-- Sheet -->
+      <div class="bottom-sheet">
+        <div class="sheet-shine"></div>
+        <div class="sheet-handle-row"><div class="sheet-handle"></div></div>
+        <div class="sheet-header">
+          <div class="sheet-title">New Invoice</div>
+          <div class="sheet-close">✕</div>
+        </div>
+        <div class="step-row">
+          <div class="step-dot active"></div>
+          <div class="step-dot"></div>
+        </div>
+        <div class="sheet-body">
+          <div class="form-section-label">Client</div>
+          <div class="form-card">
+            <div class="form-row">
+              <span class="form-icon">◇</span>
+              <span class="form-label">Client</span>
+              <span class="form-value filled">Arc Build SRL</span>
+              <span class="form-chevron">›</span>
+            </div>
+          </div>
+
+          <div class="form-section-label">Details</div>
+          <div class="form-card">
+            <div class="form-row">
+              <span class="form-icon">◎</span>
+              <span class="form-label">Issue Date</span>
+              <span class="form-value filled">6 Jun 2026</span>
+              <span class="form-chevron">›</span>
+            </div>
+            <div class="form-row">
+              <span class="form-icon">◉</span>
+              <span class="form-label">Due Date</span>
+              <span class="form-value filled">20 Jun 2026</span>
+              <span class="form-chevron">›</span>
+            </div>
+            <div class="form-row">
+              <span class="form-icon">⊗</span>
+              <span class="form-label">Currency</span>
+              <div class="currency-row" style="padding:0;gap:5px">
+                <div class="currency-pill active">RON</div>
+                <div class="currency-pill">EUR</div>
+              </div>
+            </div>
+            <div class="form-input-row">
+              <span class="form-icon">⊞</span>
+              <input class="form-input" placeholder="Reference / PO number" value="" style="font-size:13px;color:rgba(255,255,255,0.3)" />
+            </div>
+          </div>
+
+          <div class="sheet-cta">Continue → Line Items</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Phone 3: New Invoice sheet step 2 (line items) -->
+  <div class="phone-wrap">
+    <div class="phone-label">New Invoice · Step 2</div>
+    <div class="phone">
+      <div class="status-bar">
+        <span class="status-time">9:41</span>
+        <div class="status-icons">
+          <span>●●●</span><span>WiFi</span><span>█</span>
+        </div>
+      </div>
+
+      <div class="scroll-content" style="opacity:0.3">
+        <div class="glass-card" style="margin-top:8px">
+          <div class="list-row">
+            <div class="row-info"><div class="row-title">INV-2024-0041</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sheet-overlay"></div>
+
+      <div class="bottom-sheet" style="height: 82%;">
+        <div class="sheet-shine"></div>
+        <div class="sheet-handle-row"><div class="sheet-handle"></div></div>
+        <div class="sheet-header">
+          <div class="sheet-title">Line Items</div>
+          <div class="sheet-close">✕</div>
+        </div>
+        <div class="step-row">
+          <div class="step-dot"></div>
+          <div class="step-dot active"></div>
+        </div>
+        <div class="sheet-body">
+          <div class="form-card">
+            <div class="line-item-row">
+              <span class="li-num">1</span>
+              <div class="li-info">
+                <div class="li-name">Bathroom Renovation — Labor</div>
+                <div class="li-sub">2 × RON 4,500 · VAT 19%</div>
+              </div>
+              <div class="li-total">RON 10,710</div>
+            </div>
+            <div class="line-item-row">
+              <span class="li-num">2</span>
+              <div class="li-info">
+                <div class="li-name">Materials — Tiles</div>
+                <div class="li-sub">1 × RON 2,200 · VAT 19%</div>
+              </div>
+              <div class="li-total">RON 2,618</div>
+            </div>
+            <div class="line-item-row">
+              <span class="li-num">3</span>
+              <div class="li-info">
+                <div class="li-name">Project Management</div>
+                <div class="li-sub">1 × RON 800 · VAT 19%</div>
+              </div>
+              <div class="li-total">RON 952</div>
+            </div>
+            <div class="add-item-row">
+              <div class="add-icon">+</div>
+              <span class="add-label">Add line item</span>
+            </div>
+          </div>
+
+          <!-- Totals -->
+          <div class="form-card" style="gap:0">
+            <div class="totals-row">
+              <span class="totals-label">Subtotal</span>
+              <span class="totals-value">RON 11,900.00</span>
+            </div>
+            <div class="totals-row">
+              <span class="totals-label">VAT (19%)</span>
+              <span class="totals-value">RON 2,261.00</span>
+            </div>
+            <div class="totals-row" style="border-top:1px solid rgba(255,255,255,0.10)">
+              <span class="totals-label" style="color:rgba(255,255,255,0.7);font-weight:600">Total</span>
+              <span class="totals-value" style="font-size:15px">RON 14,161.00</span>
+            </div>
+          </div>
+
+          <div class="sheet-cta">Create Invoice</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="divider"></div>
+
+<!-- ═══════════════════════════════════════════════
+     ROW 2 — New Project + New Order
+════════════════════════════════════════════════ -->
+<div class="row">
+
+  <!-- Phone 4: New Project sheet -->
+  <div class="phone-wrap">
+    <div class="phone-label">New Project</div>
+    <div class="phone">
+      <div class="status-bar">
+        <span class="status-time">9:41</span>
+        <div class="status-icons">
+          <span>●●●</span><span>WiFi</span><span>█</span>
+        </div>
+      </div>
+
+      <div class="scroll-content" style="opacity:0.3">
+        <div class="section-head"><span class="section-title">Active Projects</span></div>
+        <div class="glass-card">
+          <div class="list-row">
+            <div class="row-icon">◎</div>
+            <div class="row-info"><div class="row-title">Kitchen Reno — Florescu</div></div>
+            <div class="badge badge-green">Active</div>
+          </div>
+          <div class="list-row">
+            <div class="row-icon">◎</div>
+            <div class="row-info"><div class="row-title">Bathroom — Ionescu</div></div>
+            <div class="badge badge-amber">On Hold</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sheet-overlay"></div>
+
+      <div class="bottom-sheet" style="height:86%">
+        <div class="sheet-shine"></div>
+        <div class="sheet-handle-row"><div class="sheet-handle"></div></div>
+        <div class="sheet-header">
+          <div class="sheet-title">New Project</div>
+          <div class="sheet-close">✕</div>
+        </div>
+        <div class="sheet-body">
+
+          <div class="form-card">
+            <div class="form-input-row">
+              <span class="form-icon">◎</span>
+              <input class="form-input" placeholder="Project name" value="Kitchen Renovation — Popa" style="color:rgba(255,255,255,0.85)" />
+            </div>
+            <div class="form-input-row">
+              <span class="form-icon">⊞</span>
+              <input class="form-input" placeholder="Project code (auto)" style="color:rgba(255,255,255,0.25)" />
+            </div>
+          </div>
+
+          <div class="form-section-label">Client & Scope</div>
+          <div class="form-card">
+            <div class="form-row">
+              <span class="form-icon">◇</span>
+              <span class="form-label">Client</span>
+              <span class="form-value filled">Popa Gheorghe</span>
+              <span class="form-chevron">›</span>
+            </div>
+            <div class="form-row">
+              <span class="form-icon">◈</span>
+              <span class="form-label">Store</span>
+              <span class="form-value">Select store</span>
+              <span class="form-chevron">›</span>
+            </div>
+            <div class="form-row">
+              <span class="form-icon">◉</span>
+              <span class="form-label">Due Date</span>
+              <span class="form-value filled">30 Aug 2026</span>
+              <span class="form-chevron">›</span>
+            </div>
+          </div>
+
+          <div class="form-section-label">Team</div>
+          <div class="form-card">
+            <div class="member-chip-row">
+              <div class="member-chip">
+                <div class="member-avatar">AM</div>
+                <span class="member-name">Ana M.</span>
+              </div>
+              <div class="member-chip">
+                <div class="member-avatar">DP</div>
+                <span class="member-name">Dan P.</span>
+              </div>
+              <div class="add-member-chip">+</div>
+            </div>
+          </div>
+
+          <div class="form-section-label">Status</div>
+          <div class="form-card">
+            <div class="form-row">
+              <span class="form-icon">⊙</span>
+              <span class="form-label">Start as</span>
+              <div style="display:flex;gap:6px">
+                <div class="currency-pill active">Draft</div>
+                <div class="currency-pill">Active</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="sheet-cta">Create Project</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Phone 5: New Order sheet -->
+  <div class="phone-wrap">
+    <div class="phone-label">New Order</div>
+    <div class="phone">
+      <div class="status-bar">
+        <span class="status-time">9:41</span>
+        <div class="status-icons">
+          <span>●●●</span><span>WiFi</span><span>█</span>
+        </div>
+      </div>
+
+      <div class="scroll-content" style="opacity:0.3">
+        <div class="section-head"><span class="section-title">Orders</span></div>
+        <div class="glass-card">
+          <div class="list-row">
+            <div class="row-icon">◈</div>
+            <div class="row-info"><div class="row-title">ORD-2024-0088</div></div>
+            <div class="badge badge-blue">Shipped</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sheet-overlay"></div>
+
+      <div class="bottom-sheet" style="height:88%">
+        <div class="sheet-shine"></div>
+        <div class="sheet-handle-row"><div class="sheet-handle"></div></div>
+        <div class="sheet-header">
+          <div class="sheet-title">New Order</div>
+          <div class="sheet-close">✕</div>
+        </div>
+        <div class="sheet-body">
+
+          <div class="form-section-label">Origin</div>
+          <div class="form-card">
+            <div class="form-row">
+              <span class="form-icon">◇</span>
+              <span class="form-label">Client</span>
+              <span class="form-value">Select client</span>
+              <span class="form-chevron">›</span>
+            </div>
+            <div class="form-row">
+              <span class="form-icon">◈</span>
+              <span class="form-label">Store</span>
+              <span class="form-value filled">Store Cluj</span>
+              <span class="form-chevron">›</span>
+            </div>
+            <div class="form-row">
+              <span class="form-icon">⊗</span>
+              <span class="form-label">Currency</span>
+              <div class="currency-row" style="padding:0;gap:5px">
+                <div class="currency-pill active">RON</div>
+                <div class="currency-pill">EUR</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-section-label">Items</div>
+          <div class="form-card">
+            <div class="line-item-row">
+              <span class="li-num">1</span>
+              <div class="li-info">
+                <div class="li-name">Porcelain Tiles 60×60</div>
+                <div class="li-sub">10 × RON 85.00 · VAT 19%</div>
+              </div>
+              <div class="li-total">RON 1,011.50</div>
+            </div>
+            <div class="line-item-row">
+              <span class="li-num">2</span>
+              <div class="li-info">
+                <div class="li-name">Tile Adhesive 25kg</div>
+                <div class="li-sub">4 × RON 42.00 · VAT 19%</div>
+              </div>
+              <div class="li-total">RON 199.92</div>
+            </div>
+            <div class="add-item-row">
+              <div class="add-icon">+</div>
+              <span class="add-label">Add item</span>
+            </div>
+          </div>
+
+          <div class="form-card" style="gap:0">
+            <div class="totals-row">
+              <span class="totals-label">Subtotal</span>
+              <span class="totals-value">RON 1,010.00</span>
+            </div>
+            <div class="totals-row">
+              <span class="totals-label">VAT (19%)</span>
+              <span class="totals-value">RON 191.90</span>
+            </div>
+            <div class="totals-row" style="border-top:1px solid rgba(255,255,255,0.10)">
+              <span class="totals-label" style="color:rgba(255,255,255,0.7);font-weight:600">Total</span>
+              <span class="totals-value" style="font-size:15px">RON 1,201.90</span>
+            </div>
+          </div>
+
+          <div class="sheet-cta">Create Order</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Phone 6: Entry points summary -->
+  <div class="phone-wrap">
+    <div class="phone-label">+ Button — Action Menu</div>
+    <div class="phone">
+      <div class="status-bar">
+        <span class="status-time">9:41</span>
+        <div class="status-icons">
+          <span>●●●</span><span>WiFi</span><span>█</span>
+        </div>
+      </div>
+
+      <div class="scroll-content" style="opacity:0.25">
+        <div class="section-head"><span class="section-title">Finance</span></div>
+        <div class="glass-card">
+          <div class="list-row">
+            <div class="row-info"><div class="row-title">INV-2024-0041</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sheet-overlay" style="background:rgba(0,0,0,0.45)"></div>
+
+      <!-- Action chooser sheet -->
+      <div class="bottom-sheet" style="height:auto">
+        <div class="sheet-shine"></div>
+        <div class="sheet-handle-row"><div class="sheet-handle"></div></div>
+        <div class="sheet-header">
+          <div class="sheet-title">Create New</div>
+          <div class="sheet-close">✕</div>
+        </div>
+        <div class="sheet-body" style="padding-bottom:24px">
+
+          <div class="form-card">
+            <div class="form-row" style="padding:14px">
+              <div class="row-icon" style="width:40px;height:40px;border-radius:12px;font-size:18px">⊕</div>
+              <div class="row-info">
+                <div class="row-title">New Invoice</div>
+                <div class="row-sub">Bill a client for work done</div>
+              </div>
+              <span class="form-chevron">›</span>
+            </div>
+            <div class="form-row" style="padding:14px">
+              <div class="row-icon" style="width:40px;height:40px;border-radius:12px;font-size:18px">◈</div>
+              <div class="row-info">
+                <div class="row-title">New Order</div>
+                <div class="row-sub">Place a materials order</div>
+              </div>
+              <span class="form-chevron">›</span>
+            </div>
+            <div class="form-row" style="padding:14px">
+              <div class="row-icon" style="width:40px;height:40px;border-radius:12px;font-size:18px">◎</div>
+              <div class="row-info">
+                <div class="row-title">New Project</div>
+                <div class="row-sub">Start a new renovation job</div>
+              </div>
+              <span class="form-chevron">›</span>
+            </div>
+            <div class="form-row" style="padding:14px">
+              <div class="row-icon" style="width:40px;height:40px;border-radius:12px;font-size:18px">◇</div>
+              <div class="row-info">
+                <div class="row-title">New Client</div>
+                <div class="row-sub">Add a person or company</div>
+              </div>
+              <span class="form-chevron">›</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Tab bar -->
+      <div class="tab-bar" style="opacity:0.3">
+        <div class="tab-item"><span class="tab-icon">⌂</span></div>
+        <div class="tab-item"><span class="tab-icon">⊞</span></div>
+        <div class="tab-item"><span class="tab-icon">◎</span></div>
+        <div class="tab-item"><span class="tab-icon">⟁</span><div class="tab-dot"></div></div>
+        <div class="tab-item"><span class="tab-icon">✦</span></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Entry points summary -->
+<div class="entry-section">
+  <div class="entry-title">Entry Points</div>
+  <div class="entry-grid">
+    <div class="entry-card">
+      <div class="entry-card-title">Finance tab FAB</div>
+      <div class="entry-card-sub">⊕ + ◈ (invoice & order)</div>
+    </div>
+    <div class="entry-card">
+      <div class="entry-card-title">Operations tab FAB</div>
+      <div class="entry-card-sub">◎ + ◈ (project & order)</div>
+    </div>
+    <div class="entry-card">
+      <div class="entry-card-title">Client Detail</div>
+      <div class="entry-card-sub">"Invoice" quick action opens pre-filled sheet</div>
+    </div>
+    <div class="entry-card">
+      <div class="entry-card-title">Command tab</div>
+      <div class="entry-card-sub">Global "+" opens action chooser with all 4 types</div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
