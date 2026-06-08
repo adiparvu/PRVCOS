@@ -1,6 +1,8 @@
 "use client"
 
+import { useState, useEffect, useCallback } from "react"
 import Link from "next/link"
+import type { SecuritySession, SecurityActivity } from "@/app/api/me/security/route"
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
@@ -19,93 +21,37 @@ function IconChevronLeft() {
     </svg>
   )
 }
-function IconChevronRight() {
+function IconShieldOn() {
   return (
     <svg
-      width="7"
-      height="12"
+      width="18"
+      height="18"
       viewBox="0 0 24 24"
       fill="none"
-      stroke="rgba(255,255,255,0.20)"
-      strokeWidth="2"
+      stroke="rgba(80,255,140,0.90)"
+      strokeWidth="1.8"
       strokeLinecap="round"
     >
-      <path d="M9 18l6-6-6-6" />
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
     </svg>
   )
 }
-
-// ── Types ─────────────────────────────────────────────────────────────────────
-
-interface Session {
-  id: string
-  device: string
-  deviceIcon: "phone" | "laptop" | "tablet"
-  location: string
-  lastSeen: string
-  isCurrent: boolean
+function IconShieldOff() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="rgba(255,159,10,0.90)"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+    >
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+    </svg>
+  )
 }
-
-// Mock sessions — real data would come from /api/auth/session list endpoint
-const SESSIONS: Session[] = [
-  {
-    id: "s1",
-    device: "iPhone 16 Pro",
-    deviceIcon: "phone",
-    location: "București, RO",
-    lastSeen: "Activ acum",
-    isCurrent: true,
-  },
-  {
-    id: "s2",
-    device: "MacBook Pro",
-    deviceIcon: "laptop",
-    location: "București, RO",
-    lastSeen: "2h în urmă",
-    isCurrent: false,
-  },
-  {
-    id: "s3",
-    device: "iPad Pro",
-    deviceIcon: "tablet",
-    location: "Cluj, RO",
-    lastSeen: "1 zi în urmă",
-    isCurrent: false,
-  },
-]
-
-function DeviceIcon({ type }: { type: Session["deviceIcon"] }) {
-  if (type === "phone")
-    return (
-      <svg
-        width="16"
-        height="16"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="rgba(255,255,255,0.60)"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-      >
-        <rect x="5" y="2" width="14" height="20" rx="2" />
-        <path d="M12 18h.01" />
-      </svg>
-    )
-  if (type === "laptop")
-    return (
-      <svg
-        width="16"
-        height="16"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="rgba(255,255,255,0.60)"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-      >
-        <rect x="2" y="3" width="20" height="14" rx="2" />
-        <line x1="8" y1="21" x2="16" y2="21" />
-        <line x1="12" y1="17" x2="12" y2="21" />
-      </svg>
-    )
+function IconPhone() {
   return (
     <svg
       width="16"
@@ -116,16 +62,200 @@ function DeviceIcon({ type }: { type: Session["deviceIcon"] }) {
       strokeWidth="1.8"
       strokeLinecap="round"
     >
-      <rect x="2" y="6" width="20" height="12" rx="2" />
+      <rect x="5" y="2" width="14" height="20" rx="2" />
+      <path d="M12 18h.01" />
     </svg>
+  )
+}
+function IconLaptop() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="rgba(255,255,255,0.60)"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+    >
+      <rect x="2" y="3" width="20" height="14" rx="2" />
+      <line x1="8" y1="21" x2="16" y2="21" />
+      <line x1="12" y1="17" x2="12" y2="21" />
+    </svg>
+  )
+}
+function IconTablet() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="rgba(255,255,255,0.60)"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+    >
+      <rect x="4" y="2" width="16" height="20" rx="2" />
+      <path d="M12 18h.01" />
+    </svg>
+  )
+}
+function IconGlobe() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="rgba(255,255,255,0.60)"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+    >
+      <circle cx="12" cy="12" r="10" />
+      <path d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z" />
+    </svg>
+  )
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function relativeTime(ts: number | string | null): string {
+  if (!ts) return "—"
+  const ms = typeof ts === "number" ? ts * 1000 : new Date(ts).getTime()
+  const diff = Date.now() - ms
+  if (diff < 60_000) return "Activ acum"
+  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}min în urmă`
+  if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}h în urmă`
+  return `${Math.floor(diff / 86_400_000)}z în urmă`
+}
+
+function DeviceIcon({ platform }: { platform: string | null }) {
+  if (platform === "ios" || platform === "android") return <IconPhone />
+  if (platform === "web") return <IconLaptop />
+  return <IconTablet />
+}
+
+function actionLabel(action: string): string {
+  const map: Record<string, string> = {
+    "auth.login": "Autentificare reușită",
+    "auth.logout": "Deconectare",
+    "auth.mfa": "2FA verificat",
+    "auth.refresh": "Token reînnoit",
+    "auth.failed": "Autentificare eșuată",
+  }
+  return map[action] ?? action
+}
+
+// ── Skeleton ──────────────────────────────────────────────────────────────────
+
+function Skeleton() {
+  return (
+    <div className="px-4 pt-14 pb-28 max-w-2xl mx-auto">
+      <div
+        style={{
+          height: 28,
+          width: 120,
+          background: "rgba(255,255,255,0.08)",
+          borderRadius: 8,
+          marginBottom: 24,
+        }}
+        className="animate-pulse"
+      />
+      <div
+        style={{
+          height: 72,
+          background: "rgba(255,255,255,0.06)",
+          borderRadius: 16,
+          marginBottom: 20,
+        }}
+        className="animate-pulse"
+      />
+      {[1, 2].map((i) => (
+        <div
+          key={i}
+          style={{
+            height: 140,
+            background: "rgba(255,255,255,0.06)",
+            borderRadius: 16,
+            marginBottom: 12,
+          }}
+          className="animate-pulse"
+        />
+      ))}
+    </div>
   )
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function SecurityClient() {
+  const [mfa, setMfa] = useState<{ enabled: boolean; backupCodesRemaining: number } | null>(null)
+  const [sessions, setSessions] = useState<SecuritySession[]>([])
+  const [activity, setActivity] = useState<SecurityActivity[]>([])
+  const [loading, setLoading] = useState(true)
+  const [revoking, setRevoking] = useState<string | null>(null)
+  const [revokeAllBusy, setRevokeAllBusy] = useState(false)
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    try {
+      const res = await fetch("/api/me/security")
+      if (res.ok) {
+        const data = await res.json()
+        setMfa(data.mfa)
+        setSessions(data.sessions ?? [])
+        setActivity(data.recentActivity ?? [])
+      }
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    load()
+  }, [load])
+
+  const revokeSession = async (sessionId: string) => {
+    setRevoking(sessionId)
+    try {
+      const res = await fetch(`/api/me/security?sessionId=${encodeURIComponent(sessionId)}`, {
+        method: "DELETE",
+      })
+      if (res.ok) setSessions((prev) => prev.filter((s) => s.sessionId !== sessionId))
+    } finally {
+      setRevoking(null)
+    }
+  }
+
+  const revokeAll = async () => {
+    setRevokeAllBusy(true)
+    try {
+      const toRevoke = sessions.filter((s) => !s.isCurrent)
+      await Promise.all(
+        toRevoke.map((s) =>
+          fetch(`/api/me/security?sessionId=${encodeURIComponent(s.sessionId)}`, {
+            method: "DELETE",
+          })
+        )
+      )
+      setSessions((prev) => prev.filter((s) => s.isCurrent))
+    } finally {
+      setRevokeAllBusy(false)
+    }
+  }
+
+  if (loading) return <Skeleton />
+
+  const otherSessions = sessions.filter((s) => !s.isCurrent)
+
   return (
-    <div className="px-4 pt-14 pb-28 max-w-2xl mx-auto">
+    <div
+      className="px-4 pt-14 pb-28 max-w-2xl mx-auto"
+      style={{
+        fontFamily: "-apple-system, 'SF Pro Text', BlinkMacSystemFont, sans-serif",
+        WebkitFontSmoothing: "antialiased",
+      }}
+    >
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
         <Link
@@ -149,8 +279,8 @@ export function SecurityClient() {
       {/* 2FA status banner */}
       <div
         style={{
-          background: "rgba(80,255,140,0.07)",
-          border: "1px solid rgba(80,255,140,0.18)",
+          background: mfa?.enabled ? "rgba(80,255,140,0.07)" : "rgba(255,159,10,0.07)",
+          border: `1px solid ${mfa?.enabled ? "rgba(80,255,140,0.18)" : "rgba(255,159,10,0.18)"}`,
           borderRadius: 16,
           padding: "14px 16px",
           marginBottom: 20,
@@ -165,23 +295,19 @@ export function SecurityClient() {
             left: 0,
             right: 0,
             height: 1,
-            background: "linear-gradient(90deg,transparent,rgba(80,255,140,0.30),transparent)",
+            background: `linear-gradient(90deg,transparent,${mfa?.enabled ? "rgba(80,255,140,0.30)" : "rgba(255,159,10,0.25)"},transparent)`,
           }}
         />
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-          <svg
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="rgba(80,255,140,0.90)"
-            strokeWidth="1.8"
-            strokeLinecap="round"
+          {mfa?.enabled ? <IconShieldOn /> : <IconShieldOff />}
+          <span
+            style={{
+              fontSize: 14,
+              fontWeight: 600,
+              color: mfa?.enabled ? "rgba(80,255,140,0.95)" : "rgba(255,159,10,0.95)",
+            }}
           >
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-          </svg>
-          <span style={{ fontSize: 14, fontWeight: 600, color: "rgba(80,255,140,0.95)" }}>
-            2FA activat
+            {mfa?.enabled ? "2FA activat" : "2FA dezactivat"}
           </span>
           <span
             style={{
@@ -190,20 +316,22 @@ export function SecurityClient() {
               fontWeight: 700,
               padding: "2px 8px",
               borderRadius: 100,
-              background: "rgba(80,255,140,0.18)",
-              color: "rgba(80,255,140,0.90)",
-              border: "1px solid rgba(80,255,140,0.28)",
+              background: mfa?.enabled ? "rgba(80,255,140,0.18)" : "rgba(255,159,10,0.18)",
+              color: mfa?.enabled ? "rgba(80,255,140,0.90)" : "rgba(255,159,10,0.90)",
+              border: `1px solid ${mfa?.enabled ? "rgba(80,255,140,0.28)" : "rgba(255,159,10,0.28)"}`,
             }}
           >
-            Activ
+            {mfa?.enabled ? "Activ" : "Inactiv"}
           </span>
         </div>
         <p style={{ fontSize: 12, color: "rgba(255,255,255,0.40)" }}>
-          Aplicație autentificator · Ultimul cod folosit acum 2h
+          {mfa?.enabled
+            ? `Coduri de backup rămase: ${mfa.backupCodesRemaining}`
+            : "Activați 2FA pentru securitate sporită a contului."}
         </p>
       </div>
 
-      {/* 2FA Methods */}
+      {/* 2FA Methods (static — setup flow out of scope) */}
       <p
         style={{
           fontSize: 11,
@@ -218,11 +346,11 @@ export function SecurityClient() {
       </p>
       <div
         style={{
-          background: "var(--prv-g1)",
-          border: "1px solid var(--prv-border-subtle)",
+          background: "rgba(255,255,255,0.06)",
+          border: "1px solid rgba(255,255,255,0.12)",
           borderRadius: 16,
           overflow: "hidden",
-          marginBottom: 20,
+          marginBottom: 24,
           position: "relative",
         }}
       >
@@ -236,48 +364,24 @@ export function SecurityClient() {
             background: "linear-gradient(90deg,transparent,rgba(255,255,255,0.18),transparent)",
           }}
         />
-
         {[
           {
-            icon: (
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="rgba(255,255,255,0.60)"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-              >
-                <rect x="5" y="2" width="14" height="20" rx="2" />
-                <path d="M12 18h.01" />
-              </svg>
-            ),
+            icon: <IconPhone />,
             label: "Aplicație autentificator",
             sub: "Google Authenticator / Authy",
-            badge: {
-              text: "Activ",
-              color: "rgba(80,255,140,0.90)",
-              bg: "rgba(80,255,140,0.15)",
-              border: "rgba(80,255,140,0.28)",
-            },
+            badge: mfa?.enabled
+              ? {
+                  text: "Activ",
+                  color: "rgba(80,255,140,0.90)",
+                  bg: "rgba(80,255,140,0.15)",
+                  border: "rgba(80,255,140,0.28)",
+                }
+              : null,
           },
           {
-            icon: (
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="rgba(255,255,255,0.60)"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-              >
-                <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" />
-              </svg>
-            ),
+            icon: <IconPhone />,
             label: "SMS",
-            sub: "+40 723 *** 789",
+            sub: "+40 7xx *** xxx",
             badge: {
               text: "Backup",
               color: "rgba(255,200,50,0.90)",
@@ -286,22 +390,9 @@ export function SecurityClient() {
             },
           },
           {
-            icon: (
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="rgba(255,255,255,0.60)"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-              >
-                <rect x="2" y="4" width="20" height="16" rx="2" />
-                <path d="M8 4v4M16 4v4M2 10h20" />
-              </svg>
-            ),
+            icon: <IconGlobe />,
             label: "Coduri de backup",
-            sub: "8 coduri rămase",
+            sub: mfa ? `${mfa.backupCodesRemaining} coduri rămase` : "—",
             badge: null,
           },
         ].map(({ icon, label, sub, badge }, i) => (
@@ -350,7 +441,6 @@ export function SecurityClient() {
                 {badge.text}
               </span>
             )}
-            {!badge && <IconChevronRight />}
           </div>
         ))}
       </div>
@@ -366,107 +456,227 @@ export function SecurityClient() {
           marginBottom: 8,
         }}
       >
-        Sesiuni active — {SESSIONS.length} dispozitive
+        Sesiuni active — {sessions.length} {sessions.length === 1 ? "dispozitiv" : "dispozitive"}
       </p>
-      <div
-        style={{
-          background: "var(--prv-g1)",
-          border: "1px solid var(--prv-border-subtle)",
-          borderRadius: 16,
-          overflow: "hidden",
-          marginBottom: 16,
-          position: "relative",
-        }}
-      >
+
+      {sessions.length === 0 ? (
         <div
           style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            height: 1,
-            background: "linear-gradient(90deg,transparent,rgba(255,255,255,0.18),transparent)",
+            padding: "32px 16px",
+            textAlign: "center",
+            color: "rgba(255,255,255,0.25)",
+            fontSize: 13,
           }}
-        />
-        {SESSIONS.map((s, i) => (
+        >
+          Nicio sesiune activă detectată
+        </div>
+      ) : (
+        <div
+          style={{
+            background: "rgba(255,255,255,0.06)",
+            border: "1px solid rgba(255,255,255,0.12)",
+            borderRadius: 16,
+            overflow: "hidden",
+            marginBottom: 16,
+            position: "relative",
+          }}
+        >
           <div
-            key={s.id}
             style={{
-              display: "flex",
-              alignItems: "flex-start",
-              padding: "13px 14px",
-              borderBottom: i < SESSIONS.length - 1 ? "1px solid rgba(255,255,255,0.07)" : "none",
-              gap: 12,
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 1,
+              background: "linear-gradient(90deg,transparent,rgba(255,255,255,0.18),transparent)",
+            }}
+          />
+          {sessions.map((s, i) => (
+            <div
+              key={s.sessionId}
+              style={{
+                display: "flex",
+                alignItems: "flex-start",
+                padding: "13px 14px",
+                borderBottom: i < sessions.length - 1 ? "1px solid rgba(255,255,255,0.07)" : "none",
+                gap: 12,
+              }}
+            >
+              <div
+                style={{
+                  width: 30,
+                  height: 30,
+                  borderRadius: 8,
+                  background: "rgba(255,255,255,0.08)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                  marginTop: 2,
+                }}
+              >
+                <DeviceIcon platform={s.platform} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <p style={{ fontSize: 13, fontWeight: 500, color: "rgba(255,255,255,0.85)" }}>
+                  {s.deviceName ??
+                    (s.platform === "ios"
+                      ? "iPhone"
+                      : s.platform === "android"
+                        ? "Android"
+                        : s.platform === "web"
+                          ? "Browser web"
+                          : "Dispozitiv")}
+                </p>
+                <p style={{ fontSize: 11, color: "rgba(255,255,255,0.30)", marginTop: 1 }}>
+                  {relativeTime(s.lastActiveAt)}
+                  {s.sessionId && (
+                    <>
+                      {" "}
+                      ·{" "}
+                      <span style={{ fontVariantNumeric: "tabular-nums", opacity: 0.6 }}>
+                        {s.sessionId.slice(0, 8)}…
+                      </span>
+                    </>
+                  )}
+                </p>
+              </div>
+              {s.isCurrent ? (
+                <span
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 600,
+                    padding: "2px 7px",
+                    borderRadius: 100,
+                    background: "rgba(80,255,140,0.10)",
+                    color: "rgba(80,255,140,0.80)",
+                    border: "1px solid rgba(80,255,140,0.20)",
+                  }}
+                >
+                  Curent
+                </span>
+              ) : (
+                <button
+                  onClick={() => revokeSession(s.sessionId)}
+                  disabled={revoking === s.sessionId}
+                  style={{
+                    fontSize: 11,
+                    color:
+                      revoking === s.sessionId ? "rgba(255,80,80,0.35)" : "rgba(255,80,80,0.70)",
+                    fontWeight: 500,
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    padding: 0,
+                  }}
+                >
+                  {revoking === s.sessionId ? "…" : "Revocă"}
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {otherSessions.length > 1 && (
+        <button
+          onClick={revokeAll}
+          disabled={revokeAllBusy}
+          style={{
+            width: "100%",
+            padding: "13px",
+            marginBottom: 24,
+            background: "rgba(255,60,60,0.08)",
+            border: "1px solid rgba(255,60,60,0.18)",
+            borderRadius: 14,
+            color: "rgba(255,80,80,0.80)",
+            fontSize: 14,
+            fontWeight: 600,
+            cursor: revokeAllBusy ? "default" : "pointer",
+            opacity: revokeAllBusy ? 0.5 : 1,
+          }}
+        >
+          {revokeAllBusy
+            ? "Se procesează..."
+            : `Revocă toate celelalte sesiuni (${otherSessions.length})`}
+        </button>
+      )}
+
+      {/* Recent auth activity */}
+      {activity.length > 0 && (
+        <>
+          <p
+            style={{
+              fontSize: 11,
+              fontWeight: 600,
+              letterSpacing: "0.06em",
+              textTransform: "uppercase",
+              color: "rgba(255,255,255,0.30)",
+              marginBottom: 8,
+            }}
+          >
+            Activitate recentă
+          </p>
+          <div
+            style={{
+              background: "rgba(255,255,255,0.06)",
+              border: "1px solid rgba(255,255,255,0.12)",
+              borderRadius: 16,
+              overflow: "hidden",
+              position: "relative",
             }}
           >
             <div
               style={{
-                width: 30,
-                height: 30,
-                borderRadius: 8,
-                background: "rgba(255,255,255,0.08)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                flexShrink: 0,
-                marginTop: 2,
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 1,
+                background: "linear-gradient(90deg,transparent,rgba(255,255,255,0.18),transparent)",
               }}
-            >
-              <DeviceIcon type={s.deviceIcon} />
-            </div>
-            <div style={{ flex: 1 }}>
-              <p style={{ fontSize: 13, fontWeight: 500, color: "rgba(255,255,255,0.85)" }}>
-                {s.device}
-              </p>
-              <p style={{ fontSize: 11, color: "rgba(255,255,255,0.30)", marginTop: 1 }}>
-                {s.location} · {s.lastSeen}
-              </p>
-            </div>
-            {s.isCurrent ? (
-              <span
+            />
+            {activity.map((log, i) => (
+              <div
+                key={log.id}
                 style={{
-                  fontSize: 10,
-                  fontWeight: 600,
-                  padding: "2px 7px",
-                  borderRadius: 100,
-                  background: "rgba(80,255,140,0.10)",
-                  color: "rgba(80,255,140,0.80)",
-                  border: "1px solid rgba(80,255,140,0.20)",
+                  display: "flex",
+                  alignItems: "center",
+                  padding: "11px 14px",
+                  borderBottom:
+                    i < activity.length - 1 ? "1px solid rgba(255,255,255,0.07)" : "none",
+                  gap: 12,
                 }}
               >
-                Curent
-              </span>
-            ) : (
-              <span
-                style={{
-                  fontSize: 11,
-                  color: "rgba(255,80,80,0.70)",
-                  fontWeight: 500,
-                  cursor: "pointer",
-                }}
-              >
-                Revocă
-              </span>
-            )}
+                <div
+                  style={{
+                    width: 7,
+                    height: 7,
+                    borderRadius: "50%",
+                    background: log.action.includes("failed")
+                      ? "rgba(255,69,58,0.70)"
+                      : "rgba(80,255,140,0.70)",
+                    flexShrink: 0,
+                  }}
+                />
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontSize: 13, fontWeight: 500, color: "rgba(255,255,255,0.80)" }}>
+                    {actionLabel(log.action)}
+                  </p>
+                  {log.ipAddress && (
+                    <p style={{ fontSize: 11, color: "rgba(255,255,255,0.25)", marginTop: 1 }}>
+                      {log.ipAddress}
+                    </p>
+                  )}
+                </div>
+                <span style={{ fontSize: 11, color: "rgba(255,255,255,0.25)" }}>
+                  {relativeTime(log.createdAt)}
+                </span>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
-
-      <button
-        style={{
-          width: "100%",
-          padding: "13px",
-          background: "rgba(255,60,60,0.08)",
-          border: "1px solid rgba(255,60,60,0.18)",
-          borderRadius: 14,
-          color: "rgba(255,80,80,0.80)",
-          fontSize: 14,
-          fontWeight: 600,
-          cursor: "pointer",
-        }}
-      >
-        Revocă toate celelalte sesiuni
-      </button>
+        </>
+      )}
     </div>
   )
 }
