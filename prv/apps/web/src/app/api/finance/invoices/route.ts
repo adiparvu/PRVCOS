@@ -25,26 +25,25 @@ export interface InvoiceSummary {
   daysOverdue: number | null
 }
 
-function toUiStatus(dbStatus: string, dueDate: string): InvoiceStatus {
+export function toUiStatus(dbStatus: string, dueDate: string): InvoiceStatus {
   if (dbStatus === "paid") return "paid"
   if (dbStatus === "cancelled") return "void"
   if (dbStatus === "refunded") return "partial"
   if (dbStatus === "overdue") return "overdue"
   if (dbStatus === "draft") return "draft"
-  // "sent" — compare dueDate against today
   const today = new Date()
   today.setHours(0, 0, 0, 0)
   return new Date(dueDate) < today ? "overdue" : "due"
 }
 
-function calcDaysOverdue(dueDate: string, status: InvoiceStatus): number | null {
+export function calcDaysOverdue(dueDate: string, status: InvoiceStatus): number | null {
   if (status !== "overdue") return null
   const today = new Date()
   today.setHours(0, 0, 0, 0)
   return Math.max(0, Math.floor((today.getTime() - new Date(dueDate).getTime()) / 86400000))
 }
 
-function nameInitials(name: string): string {
+export function nameInitials(name: string): string {
   return name
     .split(/\s+/)
     .slice(0, 2)
