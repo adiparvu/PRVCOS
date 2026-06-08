@@ -285,7 +285,17 @@ export default function InvoiceDetailScreen() {
               }
             />
           ) : null}
-          {client ? <InfoRow icon="◇" label="Client" value={client.name} chevron /> : null}
+          {client ? (
+            <InfoRow
+              icon="◇"
+              label="Client"
+              value={client.name}
+              chevron
+              onPress={() =>
+                router.push({ pathname: "/(auth)/client-detail", params: { id: client.id } })
+              }
+            />
+          ) : null}
           {createdBy ? <InfoRow icon="⊙" label="Created by" value={createdBy.name} /> : null}
           <InfoRow icon="⊗" label="Currency" value={invoice.currency} />
           {invoice.notes ? <InfoRow icon="≡" label="Notes" value={invoice.notes} /> : null}

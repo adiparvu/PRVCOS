@@ -323,7 +323,17 @@ export default function OrderDetailScreen() {
         <SectionHead title="Details" />
         <View style={s.card}>
           <View style={s.cardShine} pointerEvents="none" />
-          {client ? <InfoRow icon="◇" label="Client" value={client.name} chevron /> : null}
+          {client ? (
+            <InfoRow
+              icon="◇"
+              label="Client"
+              value={client.name}
+              chevron
+              onPress={() =>
+                router.push({ pathname: "/(auth)/client-detail", params: { id: client.id } })
+              }
+            />
+          ) : null}
           {store ? <InfoRow icon="⊟" label="Store" value={store} /> : null}
           {assignedTo ? <InfoRow icon="⊙" label="Assigned to" value={assignedTo.name} /> : null}
           <InfoRow icon="⊗" label="Currency" value={order.currency} />
