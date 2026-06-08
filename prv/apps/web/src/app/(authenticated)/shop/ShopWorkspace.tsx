@@ -426,10 +426,19 @@ function CartSheet({
 
 // ── Product card ──────────────────────────────────────────────────────────────
 
-function ProductCard({ product, onAdd }: { product: Product; onAdd: (p: Product) => void }) {
+function ProductCard({
+  product,
+  onAdd,
+  onNavigate,
+}: {
+  product: Product
+  onAdd: (p: Product) => void
+  onNavigate: (id: string) => void
+}) {
   const badge = product.badge ? BADGE_CONFIG[product.badge] : null
   return (
     <div
+      onClick={() => onNavigate(product.id)}
       style={{
         borderRadius: 18,
         overflow: "hidden",
@@ -437,6 +446,7 @@ function ProductCard({ product, onAdd }: { product: Product; onAdd: (p: Product)
         background: "rgba(255,255,255,0.06)",
         border: "1px solid rgba(255,255,255,0.11)",
         boxShadow: "inset 0 1px 0 rgba(255,255,255,0.12)",
+        cursor: "pointer",
       }}
     >
       <div
@@ -517,7 +527,10 @@ function ProductCard({ product, onAdd }: { product: Product; onAdd: (p: Product)
           )}
         </div>
         <button
-          onClick={() => onAdd(product)}
+          onClick={(e) => {
+            e.stopPropagation()
+            onAdd(product)
+          }}
           style={{
             width: "100%",
             marginTop: 8,
@@ -544,9 +557,10 @@ function ProductCard({ product, onAdd }: { product: Product; onAdd: (p: Product)
 
 // ── Featured card ─────────────────────────────────────────────────────────────
 
-function FeatCard({ product }: { product: Product }) {
+function FeatCard({ product, onNavigate }: { product: Product; onNavigate: (id: string) => void }) {
   return (
     <div
+      onClick={() => onNavigate(product.id)}
       style={{
         flexShrink: 0,
         width: 155,
@@ -556,6 +570,7 @@ function FeatCard({ product }: { product: Product }) {
         border: "1px solid rgba(255,255,255,0.11)",
         position: "relative",
         boxShadow: "inset 0 1px 0 rgba(255,255,255,0.12)",
+        cursor: "pointer",
       }}
     >
       <div
@@ -610,6 +625,38 @@ function FeatCard({ product }: { product: Product }) {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
+const CART_KEY = "prv_shop_cart"
+
+function readStoredCart(): CartItem[] {
+  if (typeof window === "undefined") return []
+  try {
+    const raw = sessionStorage.getItem(CART_KEY)
+    if (!raw) return []
+    const stored = JSON.parse(raw) as { id: string; name: string; price: number; qty: number }[]
+    return stored.map((s) => ({
+      product: { id: s.id, name: s.name, price: s.price } as Product,
+      qty: s.qty,
+    }))
+  } catch {
+    return []
+  }
+}
+
+function persistCart(items: CartItem[]) {
+  if (typeof window === "undefined") return
+  sessionStorage.setItem(
+    CART_KEY,
+    JSON.stringify(
+      items.map((i) => ({
+        id: i.product.id,
+        name: i.product.name,
+        price: i.product.price,
+        qty: i.qty,
+      }))
+    )
+  )
+}
+
 export function ShopWorkspace() {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
@@ -633,24 +680,31 @@ export function ShopWorkspace() {
 
   useEffect(() => {
     load()
+    setCart(readStoredCart())
   }, [load])
 
   const addToCart = (product: Product) => {
     setCart((prev) => {
       const existing = prev.find((i) => i.product.id === product.id)
-      if (existing)
-        return prev.map((i) => (i.product.id === product.id ? { ...i, qty: i.qty + 1 } : i))
-      return [...prev, { product, qty: 1 }]
+      const next = existing
+        ? prev.map((i) => (i.product.id === product.id ? { ...i, qty: i.qty + 1 } : i))
+        : [...prev, { product, qty: 1 }]
+      persistCart(next)
+      return next
     })
   }
 
   const changeQty = (id: string, delta: number) => {
-    setCart((prev) =>
-      prev
+    setCart((prev) => {
+      const next = prev
         .map((i) => (i.product.id === id ? { ...i, qty: i.qty + delta } : i))
         .filter((i) => i.qty > 0)
-    )
+      persistCart(next)
+      return next
+    })
   }
+
+  const navigateToProduct = (id: string) => router.push(`/shop/${id}`)
 
   const cartCount = cart.reduce((s, i) => s + i.qty, 0)
 
@@ -672,6 +726,7 @@ export function ShopWorkspace() {
         }),
       })
       setCart([])
+      persistCart([])
       setCartOpen(false)
       router.push("/shop/orders")
     } finally {
@@ -938,7 +993,7 @@ export function ShopWorkspace() {
               }}
             >
               {featured.map((p) => (
-                <FeatCard key={p.id} product={p} />
+                <FeatCard key={p.id} product={p} onNavigate={navigateToProduct} />
               ))}
             </div>
           </>
@@ -986,7 +1041,7 @@ export function ShopWorkspace() {
           }}
         >
           {visible.map((p) => (
-            <ProductCard key={p.id} product={p} onAdd={addToCart} />
+            <ProductCard key={p.id} product={p} onAdd={addToCart} onNavigate={navigateToProduct} />
           ))}
           {visible.length === 0 && (
             <div
