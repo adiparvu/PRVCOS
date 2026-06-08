@@ -123,3 +123,44 @@ export function useUpdateInvoiceStatus(invoiceId: string) {
     },
   })
 }
+
+// ── Expense Detail ─────────────────────────────────────────────────────────────
+
+export interface ExpenseDetail {
+  expense: {
+    id: string
+    title: string
+    category: string
+    status: string
+    amount: number
+    amountFormatted: string
+    currency: string
+    date: string
+    notes: string | null
+    receiptUrl: string | null
+    createdAt: string
+  }
+  submittedBy: { name: string } | null
+}
+
+export function useExpenseDetail(expenseId: string) {
+  return useQuery<ExpenseDetail>({
+    queryKey: ["expense-detail", expenseId],
+    queryFn: () => api.get<ExpenseDetail>(`/api/mobile/expenses/${expenseId}`),
+    staleTime: 30_000,
+    retry: 2,
+    enabled: !!expenseId,
+  })
+}
+
+export function useUpdateExpenseStatus(expenseId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (status: "submitted" | "approved" | "rejected" | "paid") =>
+      api.patch<{ id: string; status: string }>(`/api/mobile/expenses/${expenseId}`, { status }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["expense-detail", expenseId] })
+      void qc.invalidateQueries({ queryKey: ["expenses"] })
+    },
+  })
+}

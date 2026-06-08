@@ -331,12 +331,17 @@ function CategoryBar({ row, maxAmt }: { row: ExpenseCategoryRow; maxAmt: number 
 }
 
 function ExpenseRow({ item }: { item: ExpenseItem }) {
+  const router = useRouter()
   const icon = CATEGORY_ICONS[item.category] ?? "◫"
   const badge = EXPENSE_STATUS_BADGE[item.status] ?? EXPENSE_STATUS_BADGE.draft!
   const d = new Date(item.date + "T00:00:00")
   const dateStr = `${d.getDate()} ${d.toLocaleString("en", { month: "short" })}`
   return (
-    <View style={styles.expRow}>
+    <TouchableOpacity
+      style={styles.expRow}
+      activeOpacity={0.7}
+      onPress={() => router.push({ pathname: "/(auth)/expense-detail", params: { id: item.id } })}
+    >
       <View style={styles.expIconWrap}>
         <Text style={styles.expIcon}>{icon}</Text>
       </View>
@@ -354,7 +359,7 @@ function ExpenseRow({ item }: { item: ExpenseItem }) {
           </Text>
         </View>
       </View>
-    </View>
+    </TouchableOpacity>
   )
 }
 
