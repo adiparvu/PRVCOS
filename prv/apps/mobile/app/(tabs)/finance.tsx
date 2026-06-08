@@ -5,10 +5,12 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { useState } from "react"
+import { useRouter } from "expo-router"
 import { GlassCard } from "@/components/Glass"
 import { colors, radius, spacing, type } from "@/tokens"
 import {
@@ -81,19 +83,24 @@ const STATUS_DOTS: Record<string, string> = {
 }
 
 function OrderRow({ item }: { item: FinanceOrderItem }) {
+  const router = useRouter()
   const dotColor = STATUS_DOTS[item.status] ?? colors.text3
   const date = new Date(item.createdAt)
   const dateStr = `${date.getDate()} ${date.toLocaleString("en", { month: "short" })}`
 
   return (
-    <View style={styles.row}>
+    <TouchableOpacity
+      style={styles.row}
+      activeOpacity={0.7}
+      onPress={() => router.push({ pathname: "/(auth)/order-detail", params: { id: item.id } })}
+    >
       <View style={[styles.statusDot, { backgroundColor: dotColor }]} />
       <View style={styles.rowMain}>
         <Text style={styles.rowTitle}>{item.orderNumber}</Text>
         <Text style={styles.rowSub}>{dateStr}</Text>
       </View>
       <Text style={styles.rowAmount}>{item.amount}</Text>
-    </View>
+    </TouchableOpacity>
   )
 }
 
@@ -107,6 +114,7 @@ const INVOICE_BADGE: Record<string, { bg: string; text: string }> = {
 }
 
 function InvoiceRow({ item }: { item: FinanceInvoiceItem }) {
+  const router = useRouter()
   const badge = INVOICE_BADGE[item.status] ?? INVOICE_BADGE.draft
   const amountColor =
     item.status === "overdue" ? colors.red : item.status === "paid" ? colors.green : colors.text1
@@ -115,7 +123,11 @@ function InvoiceRow({ item }: { item: FinanceInvoiceItem }) {
   if (item.dueDate) sub += ` · Due ${item.dueDate}`
 
   return (
-    <View style={styles.invoiceRow}>
+    <TouchableOpacity
+      style={styles.invoiceRow}
+      activeOpacity={0.7}
+      onPress={() => router.push({ pathname: "/(auth)/invoice-detail", params: { id: item.id } })}
+    >
       <View style={styles.rowMain}>
         <Text style={styles.rowTitle}>{item.invoiceNumber}</Text>
         <Text style={styles.rowSub} numberOfLines={1}>
@@ -130,7 +142,7 @@ function InvoiceRow({ item }: { item: FinanceInvoiceItem }) {
           </Text>
         </View>
       </View>
-    </View>
+    </TouchableOpacity>
   )
 }
 
