@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Profile / Settings — PRV Preview</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0a0a0a;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 24px;
+    padding: 40px 20px;
+    flex-wrap: wrap;
+    min-height: 100vh;
+  }
+  .col { display: flex; flex-direction: column; gap: 0; }
+  .label {
+    color: rgba(255,255,255,0.35);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    text-align: center;
+    margin-bottom: 12px;
+  }
+
+  /* iPhone frame */
+  .phone {
+    width: 390px;
+    height: 844px;
+    background: #000;
+    border-radius: 54px;
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.08);
+    box-shadow:
+      0 0 0 1px rgba(255,255,255,0.04),
+      0 48px 120px rgba(0,0,0,0.9),
+      0 16px 48px rgba(0,0,0,0.6),
+      inset 0 1px 0 rgba(255,255,255,0.12);
+    flex-shrink: 0;
+  }
+  .phone-inner {
+    width: 100%;
+    height: 100%;
+    background: #000;
+    border-radius: 54px;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Dynamic island */
+  .island {
+    width: 120px; height: 34px;
+    background: #000; border-radius: 20px;
+    position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
+    z-index: 100; border: 1px solid rgba(255,255,255,0.06);
+  }
+
+  /* Status bar */
+  .status-bar {
+    height: 59px;
+    display: flex; align-items: flex-end; justify-content: space-between;
+    padding: 0 28px 10px;
+    flex-shrink: 0; position: relative; z-index: 10;
+  }
+  .status-time { font-size: 15px; font-weight: 600; color: rgba(255,255,255,0.9); letter-spacing: -0.3px; }
+  .status-icons { display: flex; align-items: center; gap: 6px; }
+
+  /* Home indicator */
+  .home-indicator { height: 34px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .home-bar { width: 134px; height: 5px; background: rgba(255,255,255,0.3); border-radius: 3px; }
+
+  /* ── Command header with profile button ─────────────────────────── */
+  .cmd-header {
+    padding: 0 20px 16px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+  .cmd-greeting { font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.4); letter-spacing: -0.1px; margin-bottom: 2px; }
+  .cmd-name { font-size: 26px; font-weight: 700; color: rgba(255,255,255,0.95); letter-spacing: -0.6px; }
+  .cmd-date { font-size: 13px; color: rgba(255,255,255,0.35); margin-top: 2px; }
+
+  .profile-btn {
+    width: 42px; height: 42px; border-radius: 21px;
+    background: rgba(255,255,255,0.10);
+    border: 1.5px solid rgba(255,255,255,0.18);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.22), 0 4px 16px rgba(0,0,0,0.4);
+    display: flex; align-items: center; justify-content: center;
+    margin-top: 4px;
+  }
+  .profile-btn-initials { font-size: 15px; font-weight: 700; color: rgba(255,255,255,0.88); letter-spacing: -0.3px; }
+
+  /* KPI row placeholder */
+  .kpi-row { display: flex; gap: 10px; padding: 0 20px; margin-bottom: 16px; }
+  .kpi-card {
+    flex: 1; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 16px; padding: 14px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.10);
+  }
+  .kpi-label { font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.35); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 6px; }
+  .kpi-value { font-size: 22px; font-weight: 700; color: rgba(255,255,255,0.92); letter-spacing: -0.5px; }
+  .kpi-sub { font-size: 11px; color: rgba(255,255,255,0.35); margin-top: 2px; }
+
+  /* Tab bar */
+  .tab-bar {
+    position: absolute; bottom: 40px; left: 12px; right: 12px;
+    height: 72px;
+    background: rgba(20,20,20,0.92);
+    border-radius: 28px;
+    border: 1px solid rgba(255,255,255,0.12);
+    box-shadow: 0 16px 48px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.18);
+    display: flex; align-items: center; justify-content: space-around; padding: 0 8px;
+  }
+  .tab-item { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 12px; flex: 1; }
+  .tab-icon { font-size: 20px; color: rgba(255,255,255,0.35); line-height: 24px; }
+  .tab-icon.active { color: rgba(255,255,255,0.92); }
+  .tab-label { font-size: 9px; font-weight: 600; letter-spacing: 0.3px; text-transform: uppercase; color: rgba(255,255,255,0.35); }
+  .tab-label.active { color: rgba(255,255,255,0.65); }
+  .tab-dot { width: 4px; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.92); }
+
+  /* ── Profile screen ─────────────────────────────────────────────── */
+  .screen { flex: 1; overflow: hidden; position: relative; }
+
+  .profile-screen {
+    flex: 1; overflow-y: auto;
+    padding: 0 20px;
+  }
+
+  /* Profile back header */
+  .profile-nav {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 0 20px;
+  }
+  .profile-nav-label { font-size: 17px; font-weight: 400; color: rgba(255,255,255,0.6); letter-spacing: -0.2px; }
+
+  /* Avatar card */
+  .avatar-card {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 24px;
+    padding: 20px;
+    display: flex; align-items: center; gap: 16px;
+    margin-bottom: 12px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 8px 24px rgba(0,0,0,0.4);
+    position: relative; overflow: hidden;
+  }
+  .avatar-large {
+    width: 64px; height: 64px; border-radius: 32px;
+    background: rgba(255,255,255,0.12);
+    border: 1.5px solid rgba(255,255,255,0.20);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.28), 0 4px 16px rgba(0,0,0,0.4);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .avatar-initials-lg { font-size: 22px; font-weight: 700; color: rgba(255,255,255,0.9); letter-spacing: -0.4px; }
+  .avatar-info-name { font-size: 19px; font-weight: 600; color: rgba(255,255,255,0.92); letter-spacing: -0.4px; margin-bottom: 4px; }
+  .avatar-info-email { font-size: 13px; color: rgba(255,255,255,0.4); letter-spacing: -0.1px; }
+  .role-badge {
+    display: inline-flex; align-items: center;
+    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 8px; padding: 3px 10px; margin-top: 6px;
+  }
+  .role-badge-text { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.55); letter-spacing: 0.04em; text-transform: uppercase; }
+  .edit-icon {
+    position: absolute; top: 16px; right: 16px;
+    width: 32px; height: 32px; border-radius: 10px;
+    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.10);
+  }
+
+  /* Company strip */
+  .company-strip {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px;
+    padding: 12px 16px;
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 20px;
+  }
+  .company-dot { width: 8px; height: 8px; border-radius: 4px; background: rgba(52,211,153,0.7); flex-shrink: 0; }
+  .company-name { font-size: 14px; font-weight: 500; color: rgba(255,255,255,0.65); }
+  .company-since { font-size: 12px; color: rgba(255,255,255,0.3); margin-left: auto; }
+
+  /* Section */
+  .section { margin-bottom: 20px; }
+  .section-title {
+    font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.3);
+    letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 8px; padding-left: 4px;
+  }
+  .settings-card {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.10);
+  }
+
+  /* Row */
+  .row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 16px; position: relative;
+  }
+  .row:not(:last-child)::after {
+    content: ''; position: absolute; bottom: 0; left: 48px; right: 0;
+    height: 1px; background: rgba(255,255,255,0.06);
+  }
+  .row-icon {
+    width: 32px; height: 32px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .row-icon.white { background: rgba(255,255,255,0.10); border: 1px solid rgba(255,255,255,0.12); }
+  .row-icon.amber { background: rgba(251,191,36,0.12); border: 1px solid rgba(251,191,36,0.20); }
+  .row-icon.green { background: rgba(52,211,153,0.10); border: 1px solid rgba(52,211,153,0.18); }
+  .row-icon.red { background: rgba(255,69,58,0.10); border: 1px solid rgba(255,69,58,0.18); }
+  .row-icon.blue { background: rgba(10,132,255,0.10); border: 1px solid rgba(10,132,255,0.18); }
+
+  .row-body { flex: 1; }
+  .row-title { font-size: 15px; font-weight: 500; color: rgba(255,255,255,0.88); letter-spacing: -0.2px; }
+  .row-sub { font-size: 12px; color: rgba(255,255,255,0.35); margin-top: 2px; }
+  .row-badge {
+    background: rgba(255,59,48,0.15); border: 1px solid rgba(255,59,48,0.25);
+    border-radius: 6px; padding: 2px 7px;
+    font-size: 11px; font-weight: 600; color: rgba(255,59,48,0.9);
+  }
+  .row-badge.amber {
+    background: rgba(251,191,36,0.12); border-color: rgba(251,191,36,0.22);
+    color: rgba(251,191,36,0.9);
+  }
+  .row-chevron { opacity: 0.25; }
+
+  /* Toggle */
+  .toggle {
+    width: 44px; height: 26px; border-radius: 13px;
+    border: 1px solid rgba(255,255,255,0.15);
+    background: rgba(255,255,255,0.10);
+    position: relative; flex-shrink: 0;
+  }
+  .toggle.on { background: rgba(52,211,153,0.35); border-color: rgba(52,211,153,0.4); }
+  .toggle-knob {
+    width: 20px; height: 20px; border-radius: 10px;
+    background: rgba(255,255,255,0.5);
+    position: absolute; top: 2px; left: 2px;
+  }
+  .toggle.on .toggle-knob { left: 20px; background: rgba(52,211,153,1); }
+
+  /* Sign out */
+  .signout-btn {
+    background: rgba(255,59,48,0.08);
+    border: 1px solid rgba(255,59,48,0.18);
+    border-radius: 16px;
+    padding: 17px;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    margin-bottom: 8px;
+    box-shadow: inset 0 1px 0 rgba(255,59,48,0.12);
+  }
+  .signout-text { font-size: 16px; font-weight: 600; color: rgba(255,59,48,0.9); letter-spacing: -0.2px; }
+
+  /* Version */
+  .version-text { font-size: 12px; color: rgba(255,255,255,0.2); text-align: center; margin-bottom: 100px; margin-top: 4px; }
+
+  /* SVG icons */
+  svg { display: block; }
+</style>
+</head>
+<body>
+
+<!-- SCREEN 1: Command tab with profile button -->
+<div class="col">
+  <div class="label">Command — Profile Button Entry</div>
+  <div class="phone">
+    <div class="phone-inner">
+      <div class="island"></div>
+      <div class="status-bar">
+        <span class="status-time">9:41</span>
+        <div class="status-icons">
+          <svg width="17" height="12" viewBox="0 0 17 12" fill="none"><rect x="0" y="3" width="3" height="9" rx="1" fill="white" opacity="0.4"/><rect x="4.5" y="2" width="3" height="10" rx="1" fill="white" opacity="0.6"/><rect x="9" y="0" width="3" height="12" rx="1" fill="white" opacity="0.8"/><rect x="13.5" y="0" width="3" height="12" rx="1" fill="white"/></svg>
+          <svg width="16" height="12" viewBox="0 0 16 12" fill="none"><path d="M8 2.5C9.8 2.5 11.4 3.2 12.6 4.4L14 3C12.4 1.4 10.3 0.5 8 0.5C5.7 0.5 3.6 1.4 2 3L3.4 4.4C4.6 3.2 6.2 2.5 8 2.5Z" fill="white" opacity="0.5"/><path d="M8 5.5C9.1 5.5 10.1 5.9 10.8 6.7L12.2 5.3C11.1 4.2 9.6 3.5 8 3.5C6.4 3.5 4.9 4.2 3.8 5.3L5.2 6.7C5.9 5.9 6.9 5.5 8 5.5Z" fill="white" opacity="0.75"/><circle cx="8" cy="10" r="1.5" fill="white"/></svg>
+          <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3.5" stroke="white" stroke-opacity="0.35"/><rect x="2" y="2" width="16" height="8" rx="2" fill="white"/><path d="M23 4.5V7.5C23.8 7.2 24.5 6.5 24.5 6C24.5 5.5 23.8 4.8 23 4.5Z" fill="white" opacity="0.4"/></svg>
+        </div>
+      </div>
+
+      <!-- Command content -->
+      <div class="cmd-header">
+        <div>
+          <div class="cmd-greeting">Good morning</div>
+          <div class="cmd-name">Alexandru</div>
+          <div class="cmd-date">Monday, 8 June 2026</div>
+        </div>
+        <!-- Profile avatar button — top right -->
+        <div class="profile-btn">
+          <span class="profile-btn-initials">AP</span>
+        </div>
+      </div>
+
+      <!-- KPI row -->
+      <div class="kpi-row">
+        <div class="kpi-card">
+          <div class="kpi-label">Revenue</div>
+          <div class="kpi-value">€84.2k</div>
+          <div class="kpi-sub">+12% vs last wk</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Active Jobs</div>
+          <div class="kpi-value">23</div>
+          <div class="kpi-sub">4 need attention</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Staff In</div>
+          <div class="kpi-value">41</div>
+          <div class="kpi-sub">of 47 today</div>
+        </div>
+      </div>
+
+      <!-- Alert -->
+      <div style="margin: 0 20px 0; background:rgba(255,179,64,0.08);border:1px solid rgba(255,179,64,0.18);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:12px;box-shadow:inset 0 1px 0 rgba(255,179,64,0.14)">
+        <div style="width:28px;height:28px;border-radius:8px;background:rgba(255,179,64,0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2L13 12H1L7 2Z" stroke="rgba(255,179,64,0.9)" stroke-width="1.4" stroke-linejoin="round"/><path d="M7 6V9" stroke="rgba(255,179,64,0.9)" stroke-width="1.5" stroke-linecap="round"/><circle cx="7" cy="10.5" r="0.7" fill="rgba(255,179,64,0.9)"/></svg>
+        </div>
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:600;color:rgba(255,255,255,0.85)">Warehouse B stock low</div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:2px">3 SKUs below reorder threshold</div>
+        </div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.25)">2h ago</div>
+      </div>
+
+      <!-- Tab bar -->
+      <div class="tab-bar">
+        <div class="tab-item">
+          <div class="tab-icon active">⌂</div>
+          <div class="tab-label active">Command</div>
+          <div class="tab-dot"></div>
+        </div>
+        <div class="tab-item"><div class="tab-icon">⊞</div><div class="tab-label">Ops</div></div>
+        <div class="tab-item"><div class="tab-icon">◎</div><div class="tab-label">People</div></div>
+        <div class="tab-item"><div class="tab-icon">⟁</div><div class="tab-label">Finance</div></div>
+        <div class="tab-item"><div class="tab-icon">✦</div><div class="tab-label">Intel</div></div>
+      </div>
+
+      <div class="home-indicator"><div class="home-bar"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 2: Profile / Settings -->
+<div class="col">
+  <div class="label">Profile / Settings Screen</div>
+  <div class="phone">
+    <div class="phone-inner">
+      <div class="island"></div>
+      <div class="status-bar">
+        <span class="status-time">9:41</span>
+        <div class="status-icons">
+          <svg width="17" height="12" viewBox="0 0 17 12" fill="none"><rect x="0" y="3" width="3" height="9" rx="1" fill="white" opacity="0.4"/><rect x="4.5" y="2" width="3" height="10" rx="1" fill="white" opacity="0.6"/><rect x="9" y="0" width="3" height="12" rx="1" fill="white" opacity="0.8"/><rect x="13.5" y="0" width="3" height="12" rx="1" fill="white"/></svg>
+          <svg width="16" height="12" viewBox="0 0 16 12" fill="none"><path d="M8 2.5C9.8 2.5 11.4 3.2 12.6 4.4L14 3C12.4 1.4 10.3 0.5 8 0.5C5.7 0.5 3.6 1.4 2 3L3.4 4.4C4.6 3.2 6.2 2.5 8 2.5Z" fill="white" opacity="0.5"/><path d="M8 5.5C9.1 5.5 10.1 5.9 10.8 6.7L12.2 5.3C11.1 4.2 9.6 3.5 8 3.5C6.4 3.5 4.9 4.2 3.8 5.3L5.2 6.7C5.9 5.9 6.9 5.5 8 5.5Z" fill="white" opacity="0.75"/><circle cx="8" cy="10" r="1.5" fill="white"/></svg>
+          <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3.5" stroke="white" stroke-opacity="0.35"/><rect x="2" y="2" width="16" height="8" rx="2" fill="white"/><path d="M23 4.5V7.5C23.8 7.2 24.5 6.5 24.5 6C24.5 5.5 23.8 4.8 23 4.5Z" fill="white" opacity="0.4"/></svg>
+        </div>
+      </div>
+
+      <div style="flex:1;overflow-y:auto;padding:0 20px">
+        <!-- Nav -->
+        <div class="profile-nav">
+          <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9L9 17" stroke="rgba(255,255,255,0.6)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span class="profile-nav-label">Command</span>
+        </div>
+
+        <!-- Avatar card -->
+        <div class="avatar-card">
+          <div class="avatar-large">
+            <span class="avatar-initials-lg">AP</span>
+          </div>
+          <div style="flex:1">
+            <div class="avatar-info-name">Alexandru Parvu</div>
+            <div class="avatar-info-email">alex@prvrenovations.ro</div>
+            <div class="role-badge"><span class="role-badge-text">Company Owner</span></div>
+          </div>
+          <!-- Edit pencil -->
+          <div class="edit-icon">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M9.5 2L12 4.5L4.5 12H2V9.5L9.5 2Z" stroke="rgba(255,255,255,0.55)" stroke-width="1.4" stroke-linejoin="round"/>
+              <path d="M8 3.5L10.5 6" stroke="rgba(255,255,255,0.55)" stroke-width="1.4" stroke-linecap="round"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Company strip -->
+        <div class="company-strip">
+          <div class="company-dot"></div>
+          <span class="company-name">PRV Renovations SRL</span>
+          <span class="company-since">Since Jan 2024</span>
+        </div>
+
+        <!-- Account section -->
+        <div class="section">
+          <div class="section-title">Account</div>
+          <div class="settings-card">
+            <!-- Edit Profile -->
+            <div class="row">
+              <div class="row-icon white">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <circle cx="8" cy="6" r="3" stroke="rgba(255,255,255,0.65)" stroke-width="1.4"/>
+                  <path d="M2 14C2 11.24 4.69 9 8 9C11.31 9 14 11.24 14 14" stroke="rgba(255,255,255,0.65)" stroke-width="1.4" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <div class="row-body">
+                <div class="row-title">Edit Profile</div>
+                <div class="row-sub">Name, phone, avatar</div>
+              </div>
+              <div class="row-chevron">
+                <svg width="7" height="12" viewBox="0 0 7 12" fill="none"><path d="M1 1L6 6L1 11" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+            </div>
+            <!-- Notifications -->
+            <div class="row">
+              <div class="row-icon white">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d="M8 2C5.24 2 3 4.24 3 7V11H13V7C13 4.24 10.76 2 8 2Z" stroke="rgba(255,255,255,0.65)" stroke-width="1.4"/>
+                  <path d="M3 11H13" stroke="rgba(255,255,255,0.65)" stroke-width="1.4" stroke-linecap="round"/>
+                  <path d="M6.5 13C6.5 13.83 7.17 14.5 8 14.5C8.83 14.5 9.5 13.83 9.5 13" stroke="rgba(255,255,255,0.65)" stroke-width="1.4" stroke-linecap="round"/>
+                  <circle cx="12" cy="4" r="2.5" fill="rgba(255,59,48,0.9)" stroke="#000" stroke-width="0.8"/>
+                </svg>
+              </div>
+              <div class="row-body">
+                <div class="row-title">Notifications</div>
+                <div class="row-sub">Alerts, reports, mentions</div>
+              </div>
+              <div class="row-badge">3 new</div>
+              <div class="row-chevron" style="margin-left:8px">
+                <svg width="7" height="12" viewBox="0 0 7 12" fill="none"><path d="M1 1L6 6L1 11" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+            </div>
+            <!-- Language -->
+            <div class="row">
+              <div class="row-icon white">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <circle cx="8" cy="8" r="6" stroke="rgba(255,255,255,0.65)" stroke-width="1.4"/>
+                  <path d="M8 2C8 2 6 5 6 8C6 11 8 14 8 14" stroke="rgba(255,255,255,0.65)" stroke-width="1.2"/>
+                  <path d="M8 2C8 2 10 5 10 8C10 11 8 14 8 14" stroke="rgba(255,255,255,0.65)" stroke-width="1.2"/>
+                  <path d="M2 8H14" stroke="rgba(255,255,255,0.65)" stroke-width="1.2"/>
+                  <path d="M2.8 5H13.2M2.8 11H13.2" stroke="rgba(255,255,255,0.45)" stroke-width="1"/>
+                </svg>
+              </div>
+              <div class="row-body">
+                <div class="row-title">Language</div>
+                <div class="row-sub">English (UK)</div>
+              </div>
+              <div class="row-chevron">
+                <svg width="7" height="12" viewBox="0 0 7 12" fill="none"><path d="M1 1L6 6L1 11" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Security section -->
+        <div class="section">
+          <div class="section-title">Security</div>
+          <div class="settings-card">
+            <!-- Security Settings -->
+            <div class="row">
+              <div class="row-icon amber">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d="M8 1L2 4V8C2 11.3 4.8 14.4 8 15C11.2 14.4 14 11.3 14 8V4L8 1Z" fill="rgba(251,191,36,0.12)" stroke="rgba(251,191,36,0.8)" stroke-width="1.4" stroke-linejoin="round"/>
+                  <path d="M5.5 8L7.5 10L10.5 6" stroke="rgba(251,191,36,0.9)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+              <div class="row-body">
+                <div class="row-title">Security Settings</div>
+                <div class="row-sub">MFA enabled · 3 sessions</div>
+              </div>
+              <div class="row-chevron">
+                <svg width="7" height="12" viewBox="0 0 7 12" fill="none"><path d="M1 1L6 6L1 11" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+            </div>
+            <!-- Change Password -->
+            <div class="row">
+              <div class="row-icon white">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d="M5 7V5C5 3.34 6.34 2 8 2C9.66 2 11 3.34 11 5V7" stroke="rgba(255,255,255,0.65)" stroke-width="1.4" stroke-linecap="round"/>
+                  <rect x="2" y="7" width="12" height="8" rx="2.5" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.65)" stroke-width="1.4"/>
+                  <circle cx="8" cy="11" r="1.5" fill="rgba(255,255,255,0.5)"/>
+                </svg>
+              </div>
+              <div class="row-body">
+                <div class="row-title">Change Password</div>
+                <div class="row-sub">Last changed 3 months ago</div>
+              </div>
+              <div class="row-chevron">
+                <svg width="7" height="12" viewBox="0 0 7 12" fill="none"><path d="M1 1L6 6L1 11" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+            </div>
+            <!-- Face ID -->
+            <div class="row">
+              <div class="row-icon green">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d="M1 5V3C1 1.9 1.9 1 3 1H5" stroke="rgba(52,211,153,0.85)" stroke-width="1.4" stroke-linecap="round"/>
+                  <path d="M11 1H13C14.1 1 15 1.9 15 3V5" stroke="rgba(52,211,153,0.85)" stroke-width="1.4" stroke-linecap="round"/>
+                  <path d="M15 11V13C15 14.1 14.1 15 13 15H11" stroke="rgba(52,211,153,0.85)" stroke-width="1.4" stroke-linecap="round"/>
+                  <path d="M5 15H3C1.9 15 1 14.1 1 13V11" stroke="rgba(52,211,153,0.85)" stroke-width="1.4" stroke-linecap="round"/>
+                  <path d="M5 7H5.5M10.5 7H11M5.5 10.5C6 11.33 7 12 8 12C9 12 10 11.33 10.5 10.5" stroke="rgba(52,211,153,0.85)" stroke-width="1.3" stroke-linecap="round"/>
+                  <path d="M8 7V9.5" stroke="rgba(52,211,153,0.85)" stroke-width="1.3" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <div class="row-body">
+                <div class="row-title">Face ID</div>
+                <div class="row-sub">Unlock &amp; re-auth</div>
+              </div>
+              <div class="toggle on"><div class="toggle-knob"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- About section -->
+        <div class="section">
+          <div class="section-title">About</div>
+          <div class="settings-card">
+            <div class="row">
+              <div class="row-icon white">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <rect x="1" y="1" width="14" height="14" rx="3.5" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.5)" stroke-width="1.3"/>
+                  <path d="M5 8H11M5 5.5H11M5 10.5H8.5" stroke="rgba(255,255,255,0.5)" stroke-width="1.2" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <div class="row-body">
+                <div class="row-title">Privacy Policy</div>
+              </div>
+              <div class="row-chevron"><svg width="7" height="12" viewBox="0 0 7 12" fill="none"><path d="M1 1L6 6L1 11" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            </div>
+            <div class="row">
+              <div class="row-icon white">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <rect x="1" y="1" width="14" height="14" rx="3.5" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.5)" stroke-width="1.3"/>
+                  <path d="M5 6H11M5 9H9" stroke="rgba(255,255,255,0.5)" stroke-width="1.2" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <div class="row-body">
+                <div class="row-title">Terms of Service</div>
+              </div>
+              <div class="row-chevron"><svg width="7" height="12" viewBox="0 0 7 12" fill="none"><path d="M1 1L6 6L1 11" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            </div>
+            <div class="row">
+              <div class="row-icon white">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <circle cx="8" cy="8" r="6.5" stroke="rgba(255,255,255,0.5)" stroke-width="1.3"/>
+                  <path d="M8 7.5V11" stroke="rgba(255,255,255,0.5)" stroke-width="1.4" stroke-linecap="round"/>
+                  <circle cx="8" cy="5.5" r="0.9" fill="rgba(255,255,255,0.5)"/>
+                </svg>
+              </div>
+              <div class="row-body">
+                <div class="row-title">App Version</div>
+                <div class="row-sub">1.0.0 (build 42)</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sign out -->
+        <div class="signout-btn">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <path d="M6 9H15M15 9L12 6M15 9L12 12" stroke="rgba(255,59,48,0.9)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M10 4H4C2.9 4 2 4.9 2 6V12C2 13.1 2.9 14 4 14H10" stroke="rgba(255,59,48,0.7)" stroke-width="1.7" stroke-linecap="round"/>
+          </svg>
+          <span class="signout-text">Sign Out</span>
+        </div>
+
+        <div class="version-text">PRV · v1.0.0 · © 2026</div>
+      </div>
+
+      <div class="home-indicator"><div class="home-bar"></div></div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
