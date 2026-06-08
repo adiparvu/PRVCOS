@@ -5,6 +5,7 @@ import { KPICard } from "@/components/KPICard"
 import { GlassCard } from "@/components/Glass"
 import { SkeletonKPICard, SkeletonCard, SkeletonRow } from "@/components/Skeleton"
 import { useCommand, type AlertItem, type InboxItem, type QuickAction } from "@/hooks/useCommand"
+import { useProfile, getInitials } from "@/hooks/useProfile"
 import { colors, spacing, type, radius } from "@/tokens"
 
 function getGreeting() {
@@ -95,7 +96,13 @@ function LoadingSkeleton() {
 
 export default function CommandScreen() {
   const insets = useSafeAreaInsets()
+  const router = useRouter()
   const { data, isLoading, isRefetching, refetch, error } = useCommand()
+  const { data: profile } = useProfile()
+
+  const profileInitials = profile
+    ? getInitials(profile.firstName, profile.lastName)
+    : (data?.user.firstName?.[0]?.toUpperCase() ?? "?")
 
   return (
     <ScrollView
@@ -111,19 +118,30 @@ export default function CommandScreen() {
     >
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.dateText}>{formatDate()}</Text>
-        <Text style={styles.greeting}>
-          {getGreeting()},{"\n"}
-          {data?.user.firstName ?? ""}
-        </Text>
-        {data?.user && (
-          <View style={styles.roleChip}>
-            <View style={styles.roleDot} />
-            <Text style={styles.roleText}>
-              {data.user.role} · {data.user.scopeName}
+        <View style={styles.headerRow}>
+          <View style={styles.headerLeft}>
+            <Text style={styles.dateText}>{formatDate()}</Text>
+            <Text style={styles.greeting}>
+              {getGreeting()},{"\n"}
+              {data?.user.firstName ?? ""}
             </Text>
+            {data?.user && (
+              <View style={styles.roleChip}>
+                <View style={styles.roleDot} />
+                <Text style={styles.roleText}>
+                  {data.user.role} · {data.user.scopeName}
+                </Text>
+              </View>
+            )}
           </View>
-        )}
+          <TouchableOpacity
+            style={styles.profileBtn}
+            onPress={() => router.push("/(auth)/profile")}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.profileInitials}>{profileInitials}</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Loading state */}
@@ -247,6 +265,36 @@ const styles = StyleSheet.create({
   /* Header */
   header: {
     paddingBottom: 18,
+  },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+  },
+  headerLeft: {
+    flex: 1,
+  },
+  profileBtn: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: "rgba(255,255,255,0.10)",
+    borderWidth: 1.5,
+    borderColor: "rgba(255,255,255,0.18)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  profileInitials: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "rgba(255,255,255,0.88)",
+    letterSpacing: -0.3,
   },
   dateText: {
     ...type.caption1,
