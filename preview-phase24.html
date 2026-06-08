@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PRV Phase 24 — Finance Tab Preview</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0a0a0a;
+    font-family: -apple-system, "SF Pro Display", "SF Pro Text", sans-serif;
+    display: flex; justify-content: center; align-items: flex-start;
+    min-height: 100vh; padding: 40px 20px; gap: 32px; flex-wrap: wrap; color: #fff;
+  }
+
+  .phone {
+    width: 393px; min-height: 852px; background: #000;
+    border-radius: 52px; border: 1.5px solid rgba(255,255,255,0.12);
+    box-shadow: 0 0 0 8px #111, 0 0 0 9.5px rgba(255,255,255,0.06), 0 40px 80px rgba(0,0,0,0.8);
+    overflow: hidden; position: relative; display: flex; flex-direction: column;
+  }
+  .label { color: rgba(255,255,255,0.35); font-size: 11px; font-weight: 500; text-align: center;
+           letter-spacing: .06em; text-transform: uppercase; margin-bottom: 12px; }
+  .di { position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+        width: 120px; height: 34px; background: #000; border-radius: 20px; z-index: 10;
+        display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .di-dot { width: 8px; height: 8px; background: rgba(255,255,255,0.15); border-radius: 50%; }
+  .di-txt { font-size: 10px; color: rgba(255,255,255,0.5); font-weight: 500; }
+  .sb { display: flex; justify-content: space-between; align-items: center;
+        padding: 16px 28px 0; height: 52px; flex-shrink: 0; }
+  .sb-t { font-size: 15px; font-weight: 600; }
+  .sb-i { font-size: 13px; opacity: .8; }
+  .scroll { flex: 1; overflow-y: auto; padding: 0 0 120px; scrollbar-width: none; }
+  .scroll::-webkit-scrollbar { display: none; }
+
+  /* Header + segment */
+  .ph { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px 8px; }
+  .pt { font-size: 28px; font-weight: 700; letter-spacing: -.5px; }
+  .hb { width: 36px; height: 36px; border-radius: 50%;
+        background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.1);
+        display: flex; align-items: center; justify-content: center; font-size: 16px; }
+  .seg { display: flex; margin: 8px 20px 16px;
+         background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08);
+         border-radius: 12px; padding: 3px; gap: 2px; }
+  .s { flex: 1; padding: 7px 0; text-align: center; font-size: 13px; font-weight: 500;
+       color: rgba(255,255,255,0.4); border-radius: 9px; }
+  .s.on { background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.95);
+           box-shadow: inset 0 1px 0 rgba(255,255,255,0.18); }
+
+  /* KPI strip */
+  .ks { display: flex; gap: 10px; padding: 0 20px 16px; overflow-x: auto; scrollbar-width: none; }
+  .ks::-webkit-scrollbar { display: none; }
+  .kp { flex-shrink: 0; min-width: 96px; padding: 12px 14px;
+        background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 14px; position: relative; overflow: hidden; }
+  .kp::before { content:''; position: absolute; top:0; left:0; right:0; height:1px;
+                background: linear-gradient(90deg,transparent,rgba(255,255,255,0.22),transparent); }
+  .kv { font-size: 21px; font-weight: 700; letter-spacing: -.5px; margin-bottom: 2px; }
+  .kl { font-size: 11px; font-weight: 500; color: rgba(255,255,255,0.38);
+        text-transform: uppercase; letter-spacing: .04em; }
+  .kd { font-size: 11px; font-weight: 500; margin-top: 4px; }
+  .g { color: #30d158; } .a { color: #ff9f0a; } .r { color: #ff453a; } .b { color: #64d2ff; }
+
+  .sh { display: flex; justify-content: space-between; align-items: center; padding: 4px 20px 10px; }
+  .st { font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.38);
+        text-transform: uppercase; letter-spacing: .06em; }
+  .sl { font-size: 13px; color: rgba(255,255,255,0.3); }
+
+  /* Revenue chart */
+  .chart-card {
+    margin: 0 20px 10px;
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 18px; padding: 16px; position: relative; overflow: hidden;
+  }
+  .chart-card::before { content:''; position: absolute; top:0; left:16px; right:16px; height:1px;
+    background: linear-gradient(90deg,transparent,rgba(255,255,255,0.2),transparent); }
+  .chart-label { font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.5); margin-bottom: 12px; }
+  .bars { display: flex; align-items: flex-end; gap: 5px; height: 72px; }
+  .bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .bar { width: 100%; border-radius: 4px 4px 0 0; background: rgba(255,255,255,0.15); }
+  .bar.today { background: rgba(255,255,255,0.75); }
+  .bar-day { font-size: 9px; color: rgba(255,255,255,0.28); font-weight: 500; letter-spacing: .03em; }
+  .chart-total { display: flex; justify-content: space-between; margin-top: 12px; padding-top: 10px;
+                  border-top: 1px solid rgba(255,255,255,0.06); }
+  .ct-label { font-size: 12px; color: rgba(255,255,255,0.35); }
+  .ct-value { font-size: 14px; font-weight: 700; color: rgba(255,255,255,0.9); }
+
+  /* List card */
+  .lc { margin: 0 20px 10px; background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(255,255,255,0.08); border-radius: 18px; overflow: hidden; position: relative; }
+  .lc::before { content:''; position: absolute; top:0; left:20px; right:20px; height:1px;
+                background: linear-gradient(90deg,transparent,rgba(255,255,255,0.15),transparent); }
+  .row { display: flex; align-items: center; padding: 12px 16px; gap: 12px;
+         border-bottom: 1px solid rgba(255,255,255,0.05); }
+  .row:last-child { border-bottom: none; }
+  .ico { width: 36px; height: 36px; border-radius: 10px;
+         background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1);
+         display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+  .ri { flex: 1; min-width: 0; }
+  .rn { font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.88); margin-bottom: 2px; }
+  .rs { font-size: 12px; color: rgba(255,255,255,0.35); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rr { text-align: right; flex-shrink: 0; }
+  .ra { font-size: 14px; font-weight: 700; color: rgba(255,255,255,0.88); margin-bottom: 3px; }
+  .sp { width: 7px; height: 7px; border-radius: 50%; display: inline-block; margin-right: 4px; vertical-align: middle; }
+
+  /* Invoice row */
+  .inv-badge { font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 20px; }
+  .b-paid { background: rgba(48,209,88,0.12); color: #30d158; border: 1px solid rgba(48,209,88,0.25); }
+  .b-overdue { background: rgba(255,69,58,0.1); color: #ff453a; border: 1px solid rgba(255,69,58,0.22); }
+  .b-pending { background: rgba(255,159,10,0.1); color: #ff9f0a; border: 1px solid rgba(255,159,10,0.22); }
+  .b-draft { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.35); border: 1px solid rgba(255,255,255,0.08); }
+  .b-sent { background: rgba(100,210,255,0.1); color: #64d2ff; border: 1px solid rgba(100,210,255,0.22); }
+
+  /* Placeholder */
+  .ph-card { margin: 32px 20px 10px; background: rgba(255,255,255,0.05);
+             border: 1px solid rgba(255,255,255,0.08); border-radius: 20px;
+             padding: 32px 20px; display: flex; flex-direction: column; align-items: center; gap: 10px; position: relative; overflow: hidden; }
+  .ph-card::before { content:''; position: absolute; top:0; left:20px; right:20px; height:1px;
+    background: linear-gradient(90deg,transparent,rgba(255,255,255,0.18),transparent); }
+  .ph-icon { font-size: 36px; color: rgba(255,255,255,0.5); margin-bottom: 6px; }
+  .ph-title { font-size: 17px; font-weight: 600; color: rgba(255,255,255,0.6); }
+  .ph-sub { font-size: 14px; color: rgba(255,255,255,0.3); text-align: center; line-height: 20px; }
+
+  /* Tab bar */
+  .tab-bar { position: absolute; bottom: 24px; left: 20px; right: 20px; height: 60px;
+             background: rgba(20,20,20,0.9); border: 1px solid rgba(255,255,255,0.12);
+             border-radius: 30px; display: flex; align-items: center; justify-content: space-around;
+             padding: 0 8px; z-index: 10; box-shadow: 0 8px 32px rgba(0,0,0,0.6); }
+  .tab-bar::before { content:''; position: absolute; top:0; left:20px; right:20px; height:1px;
+    background: linear-gradient(90deg,transparent,rgba(255,255,255,0.25),transparent); border-radius:1px; }
+  .ti { display: flex; flex-direction: column; align-items: center; gap: 3px; flex: 1; padding: 8px 0; }
+  .tic { font-size: 18px; opacity: .3; line-height: 1; }
+  .tic.on { opacity: 1; }
+  .td { width: 4px; height: 4px; border-radius: 50%; background: #fff; }
+  .sp16 { height: 16px; }
+</style>
+</head>
+<body>
+
+<!-- ══════════════ Screen 1: Revenue ══════════════ -->
+<div>
+  <p class="label">Finance — Revenue</p>
+  <div class="phone">
+    <div class="di"><div class="di-dot"></div><div class="di-txt">Finance</div><div class="di-dot"></div></div>
+    <div class="sb"><span class="sb-t">9:41</span><span class="sb-i">●●● WiFi 🔋</span></div>
+    <div class="scroll">
+      <div class="ph"><span class="pt">Finance</span><div class="hb">⊕</div></div>
+      <div class="seg">
+        <div class="s on">Revenue</div>
+        <div class="s">Invoices</div>
+        <div class="s">Expenses</div>
+        <div class="s">Reports</div>
+      </div>
+
+      <!-- KPI strip -->
+      <div class="ks">
+        <div class="kp"><div class="kv">€124k</div><div class="kl">This Month</div><div class="kd g">↑ 8% vs last</div></div>
+        <div class="kp"><div class="kv g">€31k</div><div class="kl">Est. Profit</div><div class="kd g">↑ 8%</div></div>
+        <div class="kp"><div class="kv">47</div><div class="kl">Orders</div><div class="kd g">↑ 12%</div></div>
+        <div class="kp"><div class="kv">€2.6k</div><div class="kl">Avg Order</div></div>
+      </div>
+
+      <!-- Revenue chart -->
+      <div class="sh"><span class="st">Last 7 Days</span></div>
+      <div class="chart-card">
+        <div class="bars">
+          <div class="bar-wrap"><div class="bar" style="height:38px"></div><div class="bar-day">MON</div></div>
+          <div class="bar-wrap"><div class="bar" style="height:54px"></div><div class="bar-day">TUE</div></div>
+          <div class="bar-wrap"><div class="bar" style="height:29px"></div><div class="bar-day">WED</div></div>
+          <div class="bar-wrap"><div class="bar" style="height:61px"></div><div class="bar-day">THU</div></div>
+          <div class="bar-wrap"><div class="bar" style="height:45px"></div><div class="bar-day">FRI</div></div>
+          <div class="bar-wrap"><div class="bar" style="height:20px"></div><div class="bar-day">SAT</div></div>
+          <div class="bar-wrap"><div class="bar today" style="height:50px"></div><div class="bar-day">SUN</div></div>
+        </div>
+        <div class="chart-total">
+          <span class="ct-label">7-day total</span>
+          <span class="ct-value">€29,740</span>
+        </div>
+      </div>
+
+      <!-- Recent orders -->
+      <div class="sh"><span class="st">Recent Orders</span><span class="sl">See all →</span></div>
+      <div class="lc">
+        <div class="row">
+          <div class="ico">◈</div>
+          <div class="ri"><div class="rn">#ORD-2847</div><div class="rs">Materiale · Jun 8</div></div>
+          <div class="rr"><div class="ra">€3,240</div><div><span class="sp" style="background:#30d158"></span><span style="font-size:11px;color:#30d158">Fulfilled</span></div></div>
+        </div>
+        <div class="row">
+          <div class="ico">◈</div>
+          <div class="ri"><div class="rn">#ORD-2846</div><div class="rs">Scule · Jun 7</div></div>
+          <div class="rr"><div class="ra">€890</div><div><span class="sp" style="background:#ff9f0a"></span><span style="font-size:11px;color:#ff9f0a">Pending</span></div></div>
+        </div>
+        <div class="row">
+          <div class="ico">◈</div>
+          <div class="ri"><div class="rn">#ORD-2845</div><div class="rs">Mobilier · Jun 7</div></div>
+          <div class="rr"><div class="ra">€7,100</div><div><span class="sp" style="background:#ff9f0a"></span><span style="font-size:11px;color:#ff9f0a">Pending</span></div></div>
+        </div>
+        <div class="row">
+          <div class="ico">◈</div>
+          <div class="ri"><div class="rn">#ORD-2844</div><div class="rs">Electrice · Jun 6</div></div>
+          <div class="rr"><div class="ra">€1,620</div><div><span class="sp" style="background:#30d158"></span><span style="font-size:11px;color:#30d158">Fulfilled</span></div></div>
+        </div>
+      </div>
+      <div class="sp16"></div>
+    </div>
+    <div class="tab-bar">
+      <div class="ti"><div class="tic">⌂</div></div>
+      <div class="ti"><div class="tic">⊞</div></div>
+      <div class="ti"><div class="tic">◎</div></div>
+      <div class="ti"><div class="tic on">⟁</div><div class="td"></div></div>
+      <div class="ti"><div class="tic">✦</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ Screen 2: Invoices ══════════════ -->
+<div>
+  <p class="label">Finance — Invoices</p>
+  <div class="phone">
+    <div class="di"><div class="di-dot"></div><div class="di-txt">3 overdue</div><div class="di-dot"></div></div>
+    <div class="sb"><span class="sb-t">9:41</span><span class="sb-i">●●● WiFi 🔋</span></div>
+    <div class="scroll">
+      <div class="ph"><span class="pt">Finance</span><div class="hb">⊕</div></div>
+      <div class="seg">
+        <div class="s">Revenue</div>
+        <div class="s on">Invoices</div>
+        <div class="s">Expenses</div>
+        <div class="s">Reports</div>
+      </div>
+
+      <!-- KPI strip -->
+      <div class="ks">
+        <div class="kp"><div class="kv a">€48k</div><div class="kl">Outstanding</div><div class="kd a">Needs action</div></div>
+        <div class="kp"><div class="kv r">3</div><div class="kl">Overdue</div><div class="kd r">€21k at risk</div></div>
+        <div class="kp"><div class="kv g">€76k</div><div class="kl">Paid MTD</div><div class="kd g">↑ 14%</div></div>
+        <div class="kp"><div class="kv">5</div><div class="kl">Draft</div></div>
+      </div>
+
+      <!-- Invoice list -->
+      <div class="sh"><span class="st">All Invoices</span><span class="sl">See all →</span></div>
+      <div class="lc">
+        <div class="row">
+          <div class="ico" style="font-size:12px;font-weight:700;color:rgba(255,255,255,0.5)">INV</div>
+          <div class="ri">
+            <div class="rn">#INV-0482</div>
+            <div class="rs">TechCorp SRL · Due Jun 5</div>
+          </div>
+          <div class="rr">
+            <div class="ra r">€12,400</div>
+            <div class="inv-badge b-overdue">Overdue</div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="ico" style="font-size:12px;font-weight:700;color:rgba(255,255,255,0.5)">INV</div>
+          <div class="ri">
+            <div class="rn">#INV-0481</div>
+            <div class="rs">Andrei Marin · Due Jun 10</div>
+          </div>
+          <div class="rr">
+            <div class="ra a">€8,600</div>
+            <div class="inv-badge b-overdue">Overdue</div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="ico" style="font-size:12px;font-weight:700;color:rgba(255,255,255,0.5)">INV</div>
+          <div class="ri">
+            <div class="rn">#INV-0480</div>
+            <div class="rs">Maria Popescu · Due Jun 20</div>
+          </div>
+          <div class="rr">
+            <div class="ra">€5,200</div>
+            <div class="inv-badge b-sent">Sent</div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="ico" style="font-size:12px;font-weight:700;color:rgba(255,255,255,0.5)">INV</div>
+          <div class="ri">
+            <div class="rn">#INV-0479</div>
+            <div class="rs">Ion Radu · Due Jun 25</div>
+          </div>
+          <div class="rr">
+            <div class="ra">€3,800</div>
+            <div class="inv-badge b-pending">Pending</div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="ico" style="font-size:12px;font-weight:700;color:rgba(255,255,255,0.5)">INV</div>
+          <div class="ri">
+            <div class="rn">#INV-0478</div>
+            <div class="rs">Dana Constantin · Jun 1</div>
+          </div>
+          <div class="rr">
+            <div class="ra g">€9,100</div>
+            <div class="inv-badge b-paid">Paid</div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="ico" style="font-size:12px;font-weight:700;color:rgba(255,255,255,0.5)">INV</div>
+          <div class="ri">
+            <div class="rn">#INV-0477</div>
+            <div class="rs">Alexandru M. · May 28</div>
+          </div>
+          <div class="rr">
+            <div class="ra g">€6,750</div>
+            <div class="inv-badge b-paid">Paid</div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="ico" style="font-size:12px;font-weight:700;color:rgba(255,255,255,0.5)">INV</div>
+          <div class="ri">
+            <div class="rn">#INV-0476</div>
+            <div class="rs">PRV Shop — Draft</div>
+          </div>
+          <div class="rr">
+            <div class="ra" style="color:rgba(255,255,255,0.45)">€2,300</div>
+            <div class="inv-badge b-draft">Draft</div>
+          </div>
+        </div>
+      </div>
+      <div class="sp16"></div>
+    </div>
+    <div class="tab-bar">
+      <div class="ti"><div class="tic">⌂</div></div>
+      <div class="ti"><div class="tic">⊞</div></div>
+      <div class="ti"><div class="tic">◎</div></div>
+      <div class="ti"><div class="tic on">⟁</div><div class="td"></div></div>
+      <div class="ti"><div class="tic">✦</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ Screen 3: Expenses + Reports (placeholders) ══════════════ -->
+<div>
+  <p class="label">Finance — Expenses &amp; Reports</p>
+  <div class="phone">
+    <div class="di"><div class="di-dot"></div><div class="di-txt">Finance</div><div class="di-dot"></div></div>
+    <div class="sb"><span class="sb-t">9:41</span><span class="sb-i">●●● WiFi 🔋</span></div>
+    <div class="scroll">
+      <div class="ph"><span class="pt">Finance</span><div class="hb">⊕</div></div>
+      <div class="seg">
+        <div class="s">Revenue</div>
+        <div class="s">Invoices</div>
+        <div class="s on">Expenses</div>
+        <div class="s">Reports</div>
+      </div>
+
+      <div class="ph-card">
+        <div class="ph-icon">⊟</div>
+        <div class="ph-title">Expense Tracking</div>
+        <div class="ph-sub">Expense management with categories, approvals and receipt capture coming in a future release.</div>
+      </div>
+
+      <!-- Reports teaser (shown inline, smaller) -->
+      <div style="margin: 12px 20px 0;">
+        <div style="font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.38); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 10px;">Reports Preview</div>
+        <div style="display:flex; gap: 10px;">
+          <div style="flex:1; background: rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:14px; padding:14px; position:relative; overflow:hidden;">
+            <div style="position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.18),transparent)"></div>
+            <div style="font-size:22px; margin-bottom:8px;">≡</div>
+            <div style="font-size:13px; font-weight:600; color:rgba(255,255,255,0.75); margin-bottom:3px;">P&L Summary</div>
+            <div style="font-size:12px; color:rgba(255,255,255,0.3);">Monthly</div>
+          </div>
+          <div style="flex:1; background: rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:14px; padding:14px; position:relative; overflow:hidden;">
+            <div style="position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.18),transparent)"></div>
+            <div style="font-size:22px; margin-bottom:8px;">◈</div>
+            <div style="font-size:13px; font-weight:600; color:rgba(255,255,255,0.75); margin-bottom:3px;">Cash Flow</div>
+            <div style="font-size:12px; color:rgba(255,255,255,0.3);">Weekly</div>
+          </div>
+        </div>
+        <div style="display:flex; gap: 10px; margin-top: 10px;">
+          <div style="flex:1; background: rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:14px; padding:14px; position:relative; overflow:hidden;">
+            <div style="position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.18),transparent)"></div>
+            <div style="font-size:22px; margin-bottom:8px;">⟁</div>
+            <div style="font-size:13px; font-weight:600; color:rgba(255,255,255,0.75); margin-bottom:3px;">Tax Report</div>
+            <div style="font-size:12px; color:rgba(255,255,255,0.3);">Quarterly</div>
+          </div>
+          <div style="flex:1; background: rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:14px; padding:14px; position:relative; overflow:hidden;">
+            <div style="position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.18),transparent)"></div>
+            <div style="font-size:22px; margin-bottom:8px;">✦</div>
+            <div style="font-size:13px; font-weight:600; color:rgba(255,255,255,0.75); margin-bottom:3px;">Forecast</div>
+            <div style="font-size:12px; color:rgba(255,255,255,0.3);">AI-powered</div>
+          </div>
+        </div>
+        <div style="margin-top:12px; padding:10px 12px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:10px; text-align:center;">
+          <span style="font-size:12px; color:rgba(255,255,255,0.28);">Full reporting suite coming in a future release</span>
+        </div>
+      </div>
+      <div class="sp16"></div>
+    </div>
+    <div class="tab-bar">
+      <div class="ti"><div class="tic">⌂</div></div>
+      <div class="ti"><div class="tic">⊞</div></div>
+      <div class="ti"><div class="tic">◎</div></div>
+      <div class="ti"><div class="tic on">⟁</div><div class="td"></div></div>
+      <div class="ti"><div class="tic">✦</div></div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
