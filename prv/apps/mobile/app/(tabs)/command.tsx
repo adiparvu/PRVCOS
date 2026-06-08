@@ -146,13 +146,22 @@ export default function CommandScreen() {
               </View>
             )}
           </View>
-          <TouchableOpacity
-            style={styles.profileBtn}
-            onPress={() => router.push("/(auth)/profile")}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.profileInitials}>{profileInitials}</Text>
-          </TouchableOpacity>
+          <View style={styles.headerBtns}>
+            <TouchableOpacity
+              style={styles.searchBtn}
+              onPress={() => router.push("/(auth)/search")}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.searchBtnIcon}>⌕</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.profileBtn}
+              onPress={() => router.push("/(auth)/profile")}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.profileInitials}>{profileInitials}</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
 
@@ -299,6 +308,26 @@ const styles = StyleSheet.create({
   },
   headerLeft: {
     flex: 1,
+  },
+  headerBtns: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  searchBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: "rgba(255,255,255,0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.12)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 2,
+  },
+  searchBtnIcon: {
+    fontSize: 17,
+    color: "rgba(255,255,255,0.55)",
   },
   profileBtn: {
     width: 42,
