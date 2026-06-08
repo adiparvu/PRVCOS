@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Security Settings — PRV Preview</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0a0a0a;
+    font-family: -apple-system, 'SF Pro Display', sans-serif;
+    display: flex;
+    gap: 32px;
+    padding: 40px;
+    min-height: 100vh;
+    align-items: flex-start;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .phone {
+    width: 390px;
+    min-height: 844px;
+    background: #000;
+    border-radius: 50px;
+    border: 1.5px solid rgba(255,255,255,0.12);
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 32px 80px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.04);
+    display: flex;
+    flex-direction: column;
+  }
+  .label {
+    color: rgba(255,255,255,0.35);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    text-align: center;
+    margin-bottom: 12px;
+  }
+  .screen {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 56px 0 40px;
+    overflow: hidden;
+  }
+  .scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 20px 24px;
+  }
+  .scroll::-webkit-scrollbar { display: none; }
+
+  /* Header */
+  .header {
+    padding: 0 20px 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  .back-btn {
+    display: flex; align-items: center; gap: 6px; cursor: pointer;
+  }
+  .back-label { font-size: 15px; color: rgba(255,255,255,0.65); }
+  .page-title {
+    font-size: 17px; font-weight: 600;
+    color: rgba(255,255,255,0.9);
+    margin-left: auto; margin-right: auto;
+    padding-right: 60px;
+  }
+
+  /* Section */
+  .section { margin-bottom: 28px; }
+  .section-label {
+    font-size: 11px; font-weight: 600;
+    color: rgba(255,255,255,0.3);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    padding-left: 4px;
+  }
+
+  /* Glass card */
+  .card {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.07);
+  }
+
+  /* Row */
+  .row {
+    display: flex; align-items: center;
+    padding: 14px 16px;
+    gap: 12px;
+    position: relative;
+  }
+  .row + .row::before {
+    content: '';
+    position: absolute; top: 0; left: 16px; right: 0;
+    height: 1px;
+    background: rgba(255,255,255,0.06);
+  }
+  .row-icon {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .row-icon.green { background: rgba(52,199,89,0.15); }
+  .row-icon.blue { background: rgba(10,132,255,0.15); }
+  .row-icon.amber { background: rgba(255,179,64,0.15); }
+  .row-icon.red { background: rgba(255,59,48,0.12); }
+  .row-icon.white { background: rgba(255,255,255,0.08); }
+
+  .row-body { flex: 1; min-width: 0; }
+  .row-title { font-size: 15px; font-weight: 500; color: rgba(255,255,255,0.9); }
+  .row-sub { font-size: 12px; color: rgba(255,255,255,0.35); margin-top: 2px; }
+  .row-title.red { color: rgba(255,59,48,0.9); }
+
+  .row-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+
+  /* Badges */
+  .badge {
+    font-size: 11px; font-weight: 600;
+    padding: 3px 8px; border-radius: 20px;
+  }
+  .badge.green { background: rgba(52,199,89,0.15); color: rgba(52,199,89,0.9); }
+  .badge.gray { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.35); }
+  .badge.amber { background: rgba(255,179,64,0.12); color: rgba(255,179,64,0.85); }
+
+  /* Chevron */
+  .chev { opacity: 0.25; }
+
+  /* Dot */
+  .dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .dot.green { background: #34C759; box-shadow: 0 0 6px rgba(52,199,89,0.5); }
+  .dot.gray { background: rgba(255,255,255,0.2); }
+
+  /* Session card */
+  .session-row { display: flex; align-items: flex-start; padding: 14px 16px; gap: 12px; position: relative; }
+  .session-row + .session-row::before {
+    content: ''; position: absolute; top: 0; left: 16px; right: 0;
+    height: 1px; background: rgba(255,255,255,0.06);
+  }
+  .session-device-icon {
+    width: 36px; height: 36px;
+    background: rgba(255,255,255,0.07);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; margin-top: 1px;
+  }
+  .session-body { flex: 1; }
+  .session-name { font-size: 14px; font-weight: 500; color: rgba(255,255,255,0.85); margin-bottom: 3px; display: flex; align-items: center; gap: 7px; }
+  .session-meta { font-size: 12px; color: rgba(255,255,255,0.3); line-height: 1.5; }
+  .this-device { font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 10px; background: rgba(52,199,89,0.12); color: rgba(52,199,89,0.85); letter-spacing: 0.03em; }
+
+  /* Destructive button */
+  .sign-out-btn {
+    width: 100%; padding: 14px 16px;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    background: rgba(255,59,48,0.07);
+    border: 1px solid rgba(255,59,48,0.16);
+    border-radius: 18px;
+    cursor: pointer;
+  }
+  .sign-out-label { font-size: 15px; font-weight: 500; color: rgba(255,59,48,0.85); }
+
+  /* Activity row */
+  .activity-row {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 12px 16px; position: relative;
+  }
+  .activity-row + .activity-row::before {
+    content: ''; position: absolute; top: 0; left: 16px; right: 0;
+    height: 1px; background: rgba(255,255,255,0.06);
+  }
+  .activity-dot-wrap {
+    width: 36px; display: flex; justify-content: center; padding-top: 3px;
+  }
+  .activity-title { font-size: 14px; font-weight: 500; color: rgba(255,255,255,0.75); margin-bottom: 3px; }
+  .activity-time { font-size: 12px; color: rgba(255,255,255,0.3); }
+</style>
+</head>
+<body>
+
+<!-- MFA ENABLED STATE -->
+<div style="display:flex;flex-direction:column;align-items:center;">
+  <div class="label">MFA Enabled</div>
+  <div class="phone">
+    <div class="screen">
+      <!-- Header -->
+      <div class="header">
+        <div class="back-btn">
+          <svg width="10" height="18" viewBox="0 0 10 18" fill="none">
+            <path d="M9 1L1 9L9 17" stroke="rgba(255,255,255,0.65)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span class="back-label">Back</span>
+        </div>
+        <span class="page-title">Security</span>
+      </div>
+
+      <div class="scroll">
+
+        <!-- Two-Factor Auth section -->
+        <div class="section">
+          <div class="section-label">Two-Factor Authentication</div>
+          <div class="card">
+            <!-- Status row -->
+            <div class="row">
+              <div class="row-icon green">
+                <!-- lock.shield.fill -->
+                <svg width="20" height="22" viewBox="0 0 22 24" fill="none">
+                  <path d="M11 1L2 5V11C2 16.5 5.9 21.7 11 23C16.1 21.7 20 16.5 20 11V5L11 1Z" fill="rgba(52,199,89,0.85)"/>
+                  <path d="M8 11V8.5C8 6.57 9.57 5 11 5C12.43 5 14 6.57 14 8.5V11" stroke="rgba(0,0,0,0.5)" stroke-width="1.8" stroke-linecap="round"/>
+                  <rect x="7" y="10.5" width="8" height="6.5" rx="2" fill="rgba(0,0,0,0.5)"/>
+                </svg>
+              </div>
+              <div class="row-body">
+                <div class="row-title">Two-Factor Auth</div>
+                <div class="row-sub">Authenticator app active</div>
+              </div>
+              <div class="row-right">
+                <span class="badge green">Enabled</span>
+              </div>
+            </div>
+
+            <!-- Backup codes row -->
+            <div class="row" style="cursor:pointer;">
+              <div class="row-icon amber">
+                <!-- key.horizontal -->
+                <svg width="20" height="12" viewBox="0 0 20 12" fill="none">
+                  <circle cx="5" cy="6" r="4.5" stroke="rgba(255,179,64,0.85)" stroke-width="1.8"/>
+                  <path d="M9 6H18" stroke="rgba(255,179,64,0.85)" stroke-width="1.8" stroke-linecap="round"/>
+                  <path d="M16 6V8.5" stroke="rgba(255,179,64,0.85)" stroke-width="1.8" stroke-linecap="round"/>
+                  <circle cx="5" cy="6" r="1.5" fill="rgba(255,179,64,0.85)"/>
+                </svg>
+              </div>
+              <div class="row-body">
+                <div class="row-title">Backup Codes</div>
+                <div class="row-sub">8 of 10 remaining</div>
+              </div>
+              <div class="row-right">
+                <span class="badge amber">Regenerate</span>
+                <svg class="chev" width="7" height="12" viewBox="0 0 7 12" fill="none">
+                  <path d="M1 1L6 6L1 11" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+            </div>
+
+            <!-- Disable 2FA row -->
+            <div class="row" style="cursor:pointer;">
+              <div class="row-icon red">
+                <!-- xmark.shield -->
+                <svg width="18" height="20" viewBox="0 0 22 24" fill="none">
+                  <path d="M11 1L2 5V11C2 16.5 5.9 21.7 11 23C16.1 21.7 20 16.5 20 11V5L11 1Z" stroke="rgba(255,59,48,0.8)" stroke-width="1.8" stroke-linejoin="round"/>
+                  <path d="M8 9L14 15M14 9L8 15" stroke="rgba(255,59,48,0.8)" stroke-width="1.8" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <div class="row-body">
+                <div class="row-title red">Disable 2FA</div>
+                <div class="row-sub">Requires re-authentication</div>
+              </div>
+              <div class="row-right">
+                <svg class="chev" width="7" height="12" viewBox="0 0 7 12" fill="none">
+                  <path d="M1 1L6 6L1 11" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Password section -->
+        <div class="section">
+          <div class="section-label">Account</div>
+          <div class="card">
+            <div class="row" style="cursor:pointer;">
+              <div class="row-icon blue">
+                <!-- lock.rotation -->
+                <svg width="20" height="20" viewBox="0 0 22 22" fill="none">
+                  <path d="M11 3C7.13 3 4 6.13 4 10V13" stroke="rgba(10,132,255,0.85)" stroke-width="2" stroke-linecap="round"/>
+                  <rect x="2" y="12" width="18" height="8" rx="3" stroke="rgba(10,132,255,0.85)" stroke-width="1.8"/>
+                  <circle cx="11" cy="16" r="1.5" fill="rgba(10,132,255,0.85)"/>
+                  <path d="M16 4L18 6L16 8" stroke="rgba(10,132,255,0.85)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+              <div class="row-body">
+                <div class="row-title">Change Password</div>
+                <div class="row-sub">Last changed 3 months ago</div>
+              </div>
+              <div class="row-right">
+                <svg class="chev" width="7" height="12" viewBox="0 0 7 12" fill="none">
+                  <path d="M1 1L6 6L1 11" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Active Sessions -->
+        <div class="section">
+          <div class="section-label">Active Sessions</div>
+          <div class="card">
+            <!-- Current session -->
+            <div class="session-row">
+              <div class="session-device-icon">
+                <!-- iphone SF Symbol -->
+                <svg width="14" height="22" viewBox="0 0 14 22" fill="none">
+                  <rect x="1" y="1" width="12" height="20" rx="3" stroke="rgba(255,255,255,0.65)" stroke-width="1.5"/>
+                  <path d="M5 2.5H9" stroke="rgba(255,255,255,0.65)" stroke-width="1.5" stroke-linecap="round"/>
+                  <circle cx="7" cy="18.5" r="1" fill="rgba(255,255,255,0.65)"/>
+                </svg>
+              </div>
+              <div class="session-body">
+                <div class="session-name">
+                  iPhone 15 Pro
+                  <span class="this-device">This device</span>
+                </div>
+                <div class="session-meta">Bucharest, RO · Active now</div>
+              </div>
+              <div class="dot green"></div>
+            </div>
+
+            <!-- Other session 1 -->
+            <div class="session-row" style="cursor:pointer;">
+              <div class="session-device-icon">
+                <!-- laptopcomputer SF Symbol -->
+                <svg width="22" height="16" viewBox="0 0 24 18" fill="none">
+                  <rect x="3" y="1" width="18" height="12" rx="2" stroke="rgba(255,255,255,0.4)" stroke-width="1.5"/>
+                  <path d="M1 14H23" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <div class="session-body">
+                <div class="session-name" style="color:rgba(255,255,255,0.55);">MacBook Pro</div>
+                <div class="session-meta">Bucharest, RO · 2h ago</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <div class="dot gray"></div>
+                <!-- xmark -->
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style="opacity:0.3;cursor:pointer;">
+                  <path d="M2 2L10 10M10 2L2 10" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+                </svg>
+              </div>
+            </div>
+
+            <!-- Other session 2 -->
+            <div class="session-row" style="cursor:pointer;">
+              <div class="session-device-icon">
+                <!-- ipad SF Symbol -->
+                <svg width="18" height="22" viewBox="0 0 18 24" fill="none">
+                  <rect x="1" y="1" width="16" height="22" rx="3" stroke="rgba(255,255,255,0.4)" stroke-width="1.5"/>
+                  <circle cx="9" cy="20" r="1" fill="rgba(255,255,255,0.4)"/>
+                </svg>
+              </div>
+              <div class="session-body">
+                <div class="session-name" style="color:rgba(255,255,255,0.55);">iPad Pro</div>
+                <div class="session-meta">Bucharest, RO · Yesterday</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <div class="dot gray"></div>
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style="opacity:0.3;cursor:pointer;">
+                  <path d="M2 2L10 10M10 2L2 10" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div style="height:10px;"></div>
+
+          <!-- Sign out all other sessions -->
+          <div class="sign-out-btn">
+            <svg width="18" height="16" viewBox="0 0 18 16" fill="none">
+              <path d="M7 2H3C1.9 2 1 2.9 1 4V12C1 13.1 1.9 14 3 14H7" stroke="rgba(255,59,48,0.8)" stroke-width="1.8" stroke-linecap="round"/>
+              <path d="M12 5L17 8L12 11" stroke="rgba(255,59,48,0.8)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M17 8H7" stroke="rgba(255,59,48,0.8)" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+            <span class="sign-out-label">Sign Out All Other Devices</span>
+          </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="section">
+          <div class="section-label">Recent Activity</div>
+          <div class="card">
+            <div class="activity-row">
+              <div class="activity-dot-wrap">
+                <div class="dot green" style="margin-top:4px;"></div>
+              </div>
+              <div>
+                <div class="activity-title">Successful login</div>
+                <div class="activity-time">Today · 09:41 · iPhone 15 Pro · Bucharest</div>
+              </div>
+            </div>
+            <div class="activity-row">
+              <div class="activity-dot-wrap">
+                <div class="dot green" style="margin-top:4px;"></div>
+              </div>
+              <div>
+                <div class="activity-title">Successful login</div>
+                <div class="activity-time">Yesterday · 08:12 · MacBook Pro · Bucharest</div>
+              </div>
+            </div>
+            <div class="activity-row">
+              <div class="activity-dot-wrap">
+                <div class="dot" style="background:rgba(255,255,255,0.15);margin-top:4px;"></div>
+              </div>
+              <div>
+                <div class="activity-title" style="color:rgba(255,255,255,0.4);">0 failed attempts · last 30 days</div>
+                <div class="activity-time"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MFA DISABLED STATE -->
+<div style="display:flex;flex-direction:column;align-items:center;">
+  <div class="label">MFA Disabled</div>
+  <div class="phone">
+    <div class="screen">
+      <div class="header">
+        <div class="back-btn">
+          <svg width="10" height="18" viewBox="0 0 10 18" fill="none">
+            <path d="M9 1L1 9L9 17" stroke="rgba(255,255,255,0.65)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span class="back-label">Back</span>
+        </div>
+        <span class="page-title">Security</span>
+      </div>
+
+      <div class="scroll">
+
+        <!-- MFA disabled section -->
+        <div class="section">
+          <div class="section-label">Two-Factor Authentication</div>
+
+          <!-- Enable 2FA prompt card -->
+          <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.09);border-radius:18px;padding:20px;margin-bottom:10px;">
+            <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;">
+              <div style="width:44px;height:44px;border-radius:12px;background:rgba(255,59,48,0.1);border:1px solid rgba(255,59,48,0.18);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <!-- exclamationmark.shield -->
+                <svg width="18" height="20" viewBox="0 0 22 24" fill="none">
+                  <path d="M11 1L2 5V11C2 16.5 5.9 21.7 11 23C16.1 21.7 20 16.5 20 11V5L11 1Z" stroke="rgba(255,59,48,0.8)" stroke-width="1.8" stroke-linejoin="round"/>
+                  <path d="M11 8V13" stroke="rgba(255,59,48,0.8)" stroke-width="1.8" stroke-linecap="round"/>
+                  <circle cx="11" cy="16" r="0.9" fill="rgba(255,59,48,0.8)"/>
+                </svg>
+              </div>
+              <div>
+                <div style="font-size:15px;font-weight:600;color:rgba(255,255,255,0.85);margin-bottom:3px;">Your account is at risk</div>
+                <div style="font-size:12px;color:rgba(255,255,255,0.35);line-height:1.4;">Two-factor authentication adds a critical layer of protection.</div>
+              </div>
+            </div>
+            <div style="width:100%;height:48px;background:#fff;border-radius:12px;display:flex;align-items:center;justify-content:center;cursor:pointer;">
+              <span style="font-size:15px;font-weight:600;color:#000;">Enable 2FA Now</span>
+            </div>
+          </div>
+
+          <div class="card" style="opacity:0.5;">
+            <div class="row">
+              <div class="row-icon white">
+                <svg width="20" height="22" viewBox="0 0 22 24" fill="none">
+                  <path d="M11 1L2 5V11C2 16.5 5.9 21.7 11 23C16.1 21.7 20 16.5 20 11V5L11 1Z" stroke="rgba(255,255,255,0.4)" stroke-width="1.8" stroke-linejoin="round"/>
+                </svg>
+              </div>
+              <div class="row-body">
+                <div class="row-title" style="color:rgba(255,255,255,0.4);">Two-Factor Auth</div>
+                <div class="row-sub">Not configured</div>
+              </div>
+              <div class="row-right">
+                <span class="badge gray">Disabled</span>
+              </div>
+            </div>
+            <div class="row" style="opacity:0.5;">
+              <div class="row-icon white">
+                <svg width="20" height="12" viewBox="0 0 20 12" fill="none">
+                  <circle cx="5" cy="6" r="4.5" stroke="rgba(255,255,255,0.3)" stroke-width="1.8"/>
+                  <path d="M9 6H18" stroke="rgba(255,255,255,0.3)" stroke-width="1.8" stroke-linecap="round"/>
+                  <circle cx="5" cy="6" r="1.5" fill="rgba(255,255,255,0.3)"/>
+                </svg>
+              </div>
+              <div class="row-body">
+                <div class="row-title" style="color:rgba(255,255,255,0.3);">Backup Codes</div>
+                <div class="row-sub">Not available</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Password section -->
+        <div class="section">
+          <div class="section-label">Account</div>
+          <div class="card">
+            <div class="row" style="cursor:pointer;">
+              <div class="row-icon blue">
+                <svg width="20" height="20" viewBox="0 0 22 22" fill="none">
+                  <path d="M11 3C7.13 3 4 6.13 4 10V13" stroke="rgba(10,132,255,0.85)" stroke-width="2" stroke-linecap="round"/>
+                  <rect x="2" y="12" width="18" height="8" rx="3" stroke="rgba(10,132,255,0.85)" stroke-width="1.8"/>
+                  <circle cx="11" cy="16" r="1.5" fill="rgba(10,132,255,0.85)"/>
+                  <path d="M16 4L18 6L16 8" stroke="rgba(10,132,255,0.85)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+              <div class="row-body">
+                <div class="row-title">Change Password</div>
+                <div class="row-sub">Last changed 3 months ago</div>
+              </div>
+              <div class="row-right">
+                <svg class="chev" width="7" height="12" viewBox="0 0 7 12" fill="none">
+                  <path d="M1 1L6 6L1 11" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Active Sessions -->
+        <div class="section">
+          <div class="section-label">Active Sessions</div>
+          <div class="card">
+            <div class="session-row">
+              <div class="session-device-icon">
+                <svg width="14" height="22" viewBox="0 0 14 22" fill="none">
+                  <rect x="1" y="1" width="12" height="20" rx="3" stroke="rgba(255,255,255,0.65)" stroke-width="1.5"/>
+                  <path d="M5 2.5H9" stroke="rgba(255,255,255,0.65)" stroke-width="1.5" stroke-linecap="round"/>
+                  <circle cx="7" cy="18.5" r="1" fill="rgba(255,255,255,0.65)"/>
+                </svg>
+              </div>
+              <div class="session-body">
+                <div class="session-name">
+                  iPhone 15 Pro
+                  <span class="this-device">This device</span>
+                </div>
+                <div class="session-meta">Bucharest, RO · Active now</div>
+              </div>
+              <div class="dot green"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="section">
+          <div class="section-label">Recent Activity</div>
+          <div class="card">
+            <div class="activity-row">
+              <div class="activity-dot-wrap">
+                <div class="dot green" style="margin-top:4px;"></div>
+              </div>
+              <div>
+                <div class="activity-title">Successful login</div>
+                <div class="activity-time">Today · 09:41 · iPhone 15 Pro · Bucharest</div>
+              </div>
+            </div>
+            <div class="activity-row">
+              <div class="activity-dot-wrap">
+                <div class="dot" style="background:rgba(255,59,48,0.6);margin-top:4px;box-shadow:0 0 5px rgba(255,59,48,0.3);"></div>
+              </div>
+              <div>
+                <div class="activity-title" style="color:rgba(255,59,48,0.8);">2 failed attempts</div>
+                <div class="activity-time">Yesterday · 23:12 · Unknown device</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
