@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
+import { z } from "zod"
 import { withMobileAuth } from "@/lib/mobile/auth"
 import { db } from "@prv/db"
 import {
@@ -11,6 +12,7 @@ import {
 } from "@prv/db/schema"
 import { clients } from "@prv/db/schema"
 import { users } from "@prv/db/schema"
+import { writeAuditLog } from "@prv/auth"
 import { eq, and, isNull, count, sum, sql, desc, inArray } from "drizzle-orm"
 
 export const dynamic = "force-dynamic"
@@ -235,4 +237,83 @@ export const GET = withMobileAuth(async (req: NextRequest, ctx) => {
       paidAt: i.paidAt ?? null,
     })),
   })
+})
+
+const patchProjectSchema = z.object({
+  status: z.enum(["draft", "active", "on_hold", "completed", "cancelled"]),
+})
+
+export const PATCH = withMobileAuth(async (req: NextRequest, ctx) => {
+  const ipAddress =
+    req.headers.get("x-real-ip") ??
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    "unknown"
+
+  const projectId = req.nextUrl.pathname.split("/").pop() ?? ""
+  if (!projectId) {
+    return NextResponse.json({ error: "Missing project ID" }, { status: 400 })
+  }
+
+  let body: unknown
+  try {
+    body = await req.json()
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 })
+  }
+
+  const parsed = patchProjectSchema.safeParse(body)
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 })
+  }
+
+  const { status } = parsed.data
+
+  const [existing] = await db
+    .select({ id: projects.id, status: projects.status })
+    .from(projects)
+    .where(
+      and(
+        eq(projects.id, projectId),
+        eq(projects.companyId, ctx.companyId),
+        isNull(projects.deletedAt)
+      )
+    )
+    .limit(1)
+
+  if (!existing) {
+    return NextResponse.json({ error: "Project not found" }, { status: 404 })
+  }
+
+  const updateValues: Record<string, unknown> = { status }
+  if (status === "completed") {
+    updateValues.completedAt = new Date()
+  } else if (existing.status === "completed") {
+    updateValues.completedAt = null
+  }
+
+  const [updated] = await db
+    .update(projects)
+    .set(updateValues)
+    .where(eq(projects.id, projectId))
+    .returning({ id: projects.id, status: projects.status })
+
+  if (!updated) {
+    return NextResponse.json({ error: "Failed to update project" }, { status: 500 })
+  }
+
+  void writeAuditLog({
+    companyId: ctx.companyId,
+    actorId: ctx.userId,
+    sessionId: ctx.sessionId,
+    action: "mobile.project.status_update",
+    entityType: "project",
+    entityId: projectId,
+    method: "PATCH",
+    path: `/api/mobile/projects/${projectId}`,
+    ipAddress,
+    userAgent: req.headers.get("user-agent") ?? "",
+    payload: { from: existing.status, to: status },
+  })
+
+  return NextResponse.json({ id: updated.id, status: updated.status })
 })

@@ -10,6 +10,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { useLocalSearchParams, useRouter } from "expo-router"
 import {
   useProjectDetail,
+  useUpdateProjectStatus,
   getProjectInitials,
   formatMilestoneDue,
   formatActivityTime,
@@ -342,6 +343,7 @@ export default function ProjectDetailScreen() {
   const router = useRouter()
   const { id } = useLocalSearchParams<{ id: string }>()
   const { data, isLoading, isError, refetch } = useProjectDetail(id ?? "")
+  const { mutate: updateStatus, isPending: isUpdating } = useUpdateProjectStatus(id ?? "")
 
   if (isLoading) {
     return (
@@ -364,6 +366,26 @@ export default function ProjectDetailScreen() {
 
   const { project, kpis, milestones, team, activity, invoices } = data
   const status = PROJECT_STATUS[project.status] ?? PROJECT_STATUS.draft!
+
+  const statusActions: {
+    label: string
+    icon: string
+    next: "draft" | "active" | "on_hold" | "completed" | "cancelled"
+  }[] = (() => {
+    switch (project.status) {
+      case "draft":
+        return [{ label: "Activate", icon: "▶", next: "active" }]
+      case "active":
+        return [
+          { label: "Pause", icon: "⏸", next: "on_hold" },
+          { label: "Complete", icon: "✓", next: "completed" },
+        ]
+      case "on_hold":
+        return [{ label: "Resume", icon: "▶", next: "active" }]
+      default:
+        return []
+    }
+  })()
 
   const openMilestones = milestones.filter((m) => !m.isComplete)
   const doneMilestones = milestones.filter((m) => m.isComplete)
@@ -432,6 +454,29 @@ export default function ProjectDetailScreen() {
 
         {/* Quick actions */}
         <QuickActions projectId={project.id} />
+
+        {/* Status actions */}
+        {statusActions.length > 0 ? (
+          <View style={s.statusActRow}>
+            {statusActions.map((a) => (
+              <TouchableOpacity
+                key={a.label}
+                style={s.statusActBtn}
+                activeOpacity={0.75}
+                onPress={() => updateStatus(a.next)}
+                disabled={isUpdating}
+              >
+                <View style={s.statusActShine} pointerEvents="none" />
+                {isUpdating ? (
+                  <ActivityIndicator size="small" color={colors.text2} />
+                ) : (
+                  <Text style={s.statusActIcon}>{a.icon}</Text>
+                )}
+                <Text style={s.statusActLabel}>{a.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        ) : null}
 
         {/* Open milestones */}
         {openMilestones.length > 0 ? (
@@ -679,6 +724,35 @@ const s = StyleSheet.create({
   timelineDates: { flexDirection: "row", justifyContent: "space-between" },
   timelineDate: { fontSize: 11, color: colors.text3 },
   timelineDue: { fontSize: 11, color: colors.text3 },
+
+  // Status actions
+  statusActRow: {
+    flexDirection: "row",
+    gap: spacing.sm,
+  },
+  statusActBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 13,
+    gap: 7,
+    backgroundColor: "rgba(255,255,255,0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.16)",
+    borderRadius: 16,
+    overflow: "hidden",
+  },
+  statusActShine: {
+    position: "absolute",
+    top: 0,
+    left: 8,
+    right: 8,
+    height: 1,
+    backgroundColor: "rgba(255,255,255,0.22)",
+  },
+  statusActIcon: { fontSize: 14, color: colors.text1 },
+  statusActLabel: { fontSize: 13, fontWeight: "600", color: colors.text1 },
 
   // Quick actions
   quickRow: {

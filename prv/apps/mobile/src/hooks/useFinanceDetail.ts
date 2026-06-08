@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/lib/api"
 
 // ── Invoice Detail ─────────────────────────────────────────────────────────────
@@ -89,5 +89,17 @@ export function useOrderDetail(orderId: string) {
     staleTime: 30_000,
     retry: 2,
     enabled: !!orderId,
+  })
+}
+
+export function useUpdateInvoiceStatus(invoiceId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (status: "sent" | "paid" | "cancelled") =>
+      api.patch<{ id: string; status: string }>(`/api/mobile/invoices/${invoiceId}`, { status }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["invoice-detail", invoiceId] })
+      void qc.invalidateQueries({ queryKey: ["finance"] })
+    },
   })
 }

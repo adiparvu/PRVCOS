@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
+import { z } from "zod"
 import { withMobileAuth } from "@/lib/mobile/auth"
 import { db } from "@prv/db"
 import { invoices, invoiceItems, projects, clients, stores, users } from "@prv/db/schema"
+import { writeAuditLog } from "@prv/auth"
 import { eq, and, isNull } from "drizzle-orm"
 
 export const dynamic = "force-dynamic"
@@ -131,4 +133,81 @@ export const GET = withMobileAuth(async (req: NextRequest, ctx) => {
       totalFormatted: formatCurrency(Number(item.total), currency),
     })),
   })
+})
+
+const patchSchema = z.object({
+  status: z.enum(["sent", "paid", "cancelled"]),
+})
+
+export const PATCH = withMobileAuth(async (req: NextRequest, ctx) => {
+  const ipAddress =
+    req.headers.get("x-real-ip") ??
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    "unknown"
+
+  const invoiceId = req.nextUrl.pathname.split("/").pop() ?? ""
+  if (!invoiceId) {
+    return NextResponse.json({ error: "Missing invoice ID" }, { status: 400 })
+  }
+
+  let body: unknown
+  try {
+    body = await req.json()
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 })
+  }
+
+  const parsed = patchSchema.safeParse(body)
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 })
+  }
+
+  const { status } = parsed.data
+
+  const [existing] = await db
+    .select({ id: invoices.id, status: invoices.status })
+    .from(invoices)
+    .where(
+      and(
+        eq(invoices.id, invoiceId),
+        eq(invoices.companyId, ctx.companyId),
+        isNull(invoices.deletedAt)
+      )
+    )
+    .limit(1)
+
+  if (!existing) {
+    return NextResponse.json({ error: "Invoice not found" }, { status: 404 })
+  }
+
+  const updateValues: Record<string, unknown> = { status }
+  if (status === "paid") {
+    updateValues.paidAt = new Date()
+  }
+
+  const [updated] = await db
+    .update(invoices)
+    .set(updateValues)
+    .where(eq(invoices.id, invoiceId))
+    .returning({ id: invoices.id, status: invoices.status })
+
+  if (!updated) {
+    return NextResponse.json({ error: "Failed to update invoice" }, { status: 500 })
+  }
+
+  void writeAuditLog({
+    companyId: ctx.companyId,
+    actorId: ctx.userId,
+    sessionId: ctx.sessionId,
+    action: "mobile.invoice.status_update",
+    entityType: "invoice",
+    entityId: invoiceId,
+    method: "PATCH",
+    path: `/api/mobile/invoices/${invoiceId}`,
+    ipAddress,
+    userAgent: req.headers.get("user-agent") ?? "",
+    payload: { from: existing.status, to: status },
+  })
+
+  return NextResponse.json({ id: updated.id, status: updated.status })
 })

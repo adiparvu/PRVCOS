@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/lib/api"
 
 export interface ProjectDetail {
@@ -105,4 +105,18 @@ export function formatActivityTime(iso: string): string {
   const days = Math.floor(hours / 24)
   if (days < 7) return `${days}d ago`
   return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" })
+}
+
+type ProjectStatusUpdate = "draft" | "active" | "on_hold" | "completed" | "cancelled"
+
+export function useUpdateProjectStatus(projectId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (status: ProjectStatusUpdate) =>
+      api.patch<{ id: string; status: string }>(`/api/mobile/projects/${projectId}`, { status }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["project-detail", projectId] })
+      void qc.invalidateQueries({ queryKey: ["operations"] })
+    },
+  })
 }

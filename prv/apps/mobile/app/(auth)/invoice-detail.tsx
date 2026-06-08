@@ -8,7 +8,7 @@ import {
 } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { useLocalSearchParams, useRouter } from "expo-router"
-import { useInvoiceDetail } from "@/hooks/useFinanceDetail"
+import { useInvoiceDetail, useUpdateInvoiceStatus } from "@/hooks/useFinanceDetail"
 import { colors, radius, spacing } from "@/tokens"
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -41,13 +41,6 @@ const STATUS_MAP: Record<string, { label: string; bg: string; fg: string; border
     border: "rgba(255,159,10,0.22)",
   },
 }
-
-const QUICK_ACTIONS = [
-  { label: "Send", icon: "✉" },
-  { label: "Mark Paid", icon: "◉" },
-  { label: "Download", icon: "⊕" },
-  { label: "Duplicate", icon: "◈" },
-]
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
@@ -157,6 +150,7 @@ export default function InvoiceDetailScreen() {
   const router = useRouter()
   const { id } = useLocalSearchParams<{ id: string }>()
   const { data, isLoading, isError, refetch } = useInvoiceDetail(id ?? "")
+  const { mutate: updateStatus, isPending: isUpdating } = useUpdateInvoiceStatus(id ?? "")
 
   if (isLoading) {
     return (
@@ -179,6 +173,32 @@ export default function InvoiceDetailScreen() {
 
   const { invoice, client, project, createdBy, items } = data
   const status = STATUS_MAP[invoice.status] ?? STATUS_MAP.draft!
+
+  const quickActions = [
+    invoice.status === "draft"
+      ? {
+          label: "Send",
+          icon: "✉",
+          onPress: () => updateStatus("sent"),
+          active: true,
+        }
+      : null,
+    invoice.status === "sent" || invoice.status === "overdue"
+      ? {
+          label: "Mark Paid",
+          icon: "◉",
+          onPress: () => updateStatus("paid"),
+          active: true,
+        }
+      : null,
+    { label: "Download", icon: "⊕", onPress: undefined, active: false },
+    { label: "Duplicate", icon: "◈", onPress: undefined, active: false },
+  ].filter(Boolean) as {
+    label: string
+    icon: string
+    onPress: (() => void) | undefined
+    active: boolean
+  }[]
 
   const fmtDate = (d: string | null) =>
     d
@@ -231,11 +251,21 @@ export default function InvoiceDetailScreen() {
 
         {/* Quick actions */}
         <View style={s.quickRow}>
-          {QUICK_ACTIONS.map((a) => (
-            <TouchableOpacity key={a.label} style={s.quickBtn} activeOpacity={0.75}>
+          {quickActions.map((a) => (
+            <TouchableOpacity
+              key={a.label}
+              style={[s.quickBtn, a.active && s.quickBtnActive]}
+              activeOpacity={0.75}
+              onPress={a.onPress}
+              disabled={isUpdating || !a.onPress}
+            >
               <View style={s.quickShine} pointerEvents="none" />
-              <Text style={s.quickIcon}>{a.icon}</Text>
-              <Text style={s.quickLabel}>{a.label}</Text>
+              {isUpdating && a.active ? (
+                <ActivityIndicator size="small" color={colors.text2} />
+              ) : (
+                <Text style={[s.quickIcon, a.active && s.quickIconActive]}>{a.icon}</Text>
+              )}
+              <Text style={[s.quickLabel, a.active && s.quickLabelActive]}>{a.label}</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -437,8 +467,14 @@ const s = StyleSheet.create({
     height: 1,
     backgroundColor: "rgba(255,255,255,0.18)",
   },
+  quickBtnActive: {
+    backgroundColor: "rgba(255,255,255,0.10)",
+    borderColor: "rgba(255,255,255,0.18)",
+  },
   quickIcon: { fontSize: 17, color: colors.text2 },
+  quickIconActive: { color: colors.text1 },
   quickLabel: { fontSize: 11, fontWeight: "500", color: colors.text3 },
+  quickLabelActive: { color: colors.text2, fontWeight: "600" },
 
   // Section head
   sectionHead: {
