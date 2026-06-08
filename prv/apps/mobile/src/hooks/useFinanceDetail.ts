@@ -92,6 +92,26 @@ export function useOrderDetail(orderId: string) {
   })
 }
 
+type OrderStatusUpdate =
+  | "pending"
+  | "confirmed"
+  | "processing"
+  | "shipped"
+  | "delivered"
+  | "cancelled"
+
+export function useUpdateOrderStatus(orderId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (status: OrderStatusUpdate) =>
+      api.patch<{ id: string; status: string }>(`/api/mobile/orders/${orderId}`, { status }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["order-detail", orderId] })
+      void qc.invalidateQueries({ queryKey: ["operations"] })
+    },
+  })
+}
+
 export function useUpdateInvoiceStatus(invoiceId: string) {
   const qc = useQueryClient()
   return useMutation({

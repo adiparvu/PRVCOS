@@ -8,7 +8,7 @@ import {
 } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { useLocalSearchParams, useRouter } from "expo-router"
-import { useOrderDetail } from "@/hooks/useFinanceDetail"
+import { useOrderDetail, useUpdateOrderStatus } from "@/hooks/useFinanceDetail"
 import { colors, radius, spacing } from "@/tokens"
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -56,12 +56,12 @@ const STATUS_MAP: Record<string, { label: string; bg: string; fg: string; border
 const TIMELINE_STEPS = ["Placed", "Confirmed", "Shipped", "Delivered"] as const
 const TIMELINE_STEP_VALUES = [0, 1, 3, 4]
 
-const QUICK_ACTIONS = [
-  { label: "Invoice", icon: "⊕" },
-  { label: "Notify", icon: "◎" },
-  { label: "Cancel", icon: "⊗" },
-  { label: "Duplicate", icon: "◈" },
-]
+const NEXT_STATUS: Record<string, { label: string; icon: string; next: string }> = {
+  pending: { label: "Confirm", icon: "✓", next: "confirmed" },
+  confirmed: { label: "Process", icon: "◎", next: "processing" },
+  processing: { label: "Ship", icon: "◈", next: "shipped" },
+  shipped: { label: "Deliver", icon: "◉", next: "delivered" },
+}
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
@@ -196,6 +196,7 @@ export default function OrderDetailScreen() {
   const router = useRouter()
   const { id } = useLocalSearchParams<{ id: string }>()
   const { data, isLoading, isError, refetch } = useOrderDetail(id ?? "")
+  const { mutate: updateStatus, isPending: isUpdating } = useUpdateOrderStatus(id ?? "")
 
   if (isLoading) {
     return (
@@ -219,6 +220,30 @@ export default function OrderDetailScreen() {
   const { order, client, store, assignedTo, items } = data
   const status = STATUS_MAP[order.status] ?? STATUS_MAP.pending!
   const isCancelled = order.status === "cancelled" || order.status === "refunded"
+  const isTerminal = isCancelled || order.status === "delivered"
+
+  const nextStep = NEXT_STATUS[order.status]
+  const quickActions = [
+    { label: "Invoice", icon: "⊕", onPress: undefined, active: false },
+    nextStep
+      ? {
+          label: nextStep.label,
+          icon: nextStep.icon,
+          onPress: () => updateStatus(nextStep.next as Parameters<typeof updateStatus>[0]),
+          active: true,
+        }
+      : { label: "—", icon: "◎", onPress: undefined, active: false },
+    !isTerminal
+      ? {
+          label: "Cancel",
+          icon: "⊗",
+          onPress: () => updateStatus("cancelled"),
+          active: true,
+          danger: true,
+        }
+      : { label: "Cancel", icon: "⊗", onPress: undefined, active: false, danger: false },
+    { label: "Duplicate", icon: "◈", onPress: undefined, active: false },
+  ]
 
   const fmtDate = (d: string) =>
     new Date(d).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
@@ -267,11 +292,41 @@ export default function OrderDetailScreen() {
 
         {/* Quick actions */}
         <View style={s.quickRow}>
-          {QUICK_ACTIONS.map((a) => (
-            <TouchableOpacity key={a.label} style={s.quickBtn} activeOpacity={0.75}>
+          {quickActions.map((a) => (
+            <TouchableOpacity
+              key={a.label}
+              style={[
+                s.quickBtn,
+                a.active && !("danger" in a && a.danger) && s.quickBtnActive,
+                "danger" in a && a.danger && a.active && s.quickBtnDanger,
+              ]}
+              activeOpacity={0.75}
+              onPress={a.onPress}
+              disabled={isUpdating || !a.onPress}
+            >
               <View style={s.quickShine} pointerEvents="none" />
-              <Text style={s.quickIcon}>{a.icon}</Text>
-              <Text style={s.quickLabel}>{a.label}</Text>
+              {isUpdating && a.active ? (
+                <ActivityIndicator size="small" color={colors.text2} />
+              ) : (
+                <Text
+                  style={[
+                    s.quickIcon,
+                    a.active && !("danger" in a && a.danger) && s.quickIconActive,
+                    "danger" in a && a.danger && a.active && s.quickIconDanger,
+                  ]}
+                >
+                  {a.icon}
+                </Text>
+              )}
+              <Text
+                style={[
+                  s.quickLabel,
+                  a.active && !("danger" in a && a.danger) && s.quickLabelActive,
+                  "danger" in a && a.danger && a.active && s.quickLabelDanger,
+                ]}
+              >
+                {a.label}
+              </Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -473,8 +528,20 @@ const s = StyleSheet.create({
     height: 1,
     backgroundColor: "rgba(255,255,255,0.18)",
   },
+  quickBtnActive: {
+    backgroundColor: "rgba(255,255,255,0.10)",
+    borderColor: "rgba(255,255,255,0.18)",
+  },
+  quickBtnDanger: {
+    backgroundColor: "rgba(255,69,58,0.08)",
+    borderColor: "rgba(255,69,58,0.20)",
+  },
   quickIcon: { fontSize: 17, color: colors.text2 },
+  quickIconActive: { color: colors.text1 },
+  quickIconDanger: { color: colors.red },
   quickLabel: { fontSize: 11, fontWeight: "500", color: colors.text3 },
+  quickLabelActive: { color: colors.text2, fontWeight: "600" },
+  quickLabelDanger: { color: colors.red, fontWeight: "600" },
 
   // Section head
   sectionHead: {

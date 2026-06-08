@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
+import { z } from "zod"
 import { withMobileAuth } from "@/lib/mobile/auth"
 import { db } from "@prv/db"
 import { orders, orderItems, clients, stores, users } from "@prv/db/schema"
+import { writeAuditLog } from "@prv/auth"
 import { eq, and, isNull } from "drizzle-orm"
 
 export const dynamic = "force-dynamic"
@@ -140,4 +142,72 @@ export const GET = withMobileAuth(async (req: NextRequest, ctx) => {
       totalFormatted: formatCurrency(Number(item.total), currency),
     })),
   })
+})
+
+const patchOrderSchema = z.object({
+  status: z.enum(["pending", "confirmed", "processing", "shipped", "delivered", "cancelled"]),
+})
+
+export const PATCH = withMobileAuth(async (req: NextRequest, ctx) => {
+  const ipAddress =
+    req.headers.get("x-real-ip") ??
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    "unknown"
+
+  const orderId = req.nextUrl.pathname.split("/").pop() ?? ""
+  if (!orderId) {
+    return NextResponse.json({ error: "Missing order ID" }, { status: 400 })
+  }
+
+  let body: unknown
+  try {
+    body = await req.json()
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 })
+  }
+
+  const parsed = patchOrderSchema.safeParse(body)
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 })
+  }
+
+  const { status } = parsed.data
+
+  const [existing] = await db
+    .select({ id: orders.id, status: orders.status })
+    .from(orders)
+    .where(
+      and(eq(orders.id, orderId), eq(orders.companyId, ctx.companyId), isNull(orders.deletedAt))
+    )
+    .limit(1)
+
+  if (!existing) {
+    return NextResponse.json({ error: "Order not found" }, { status: 404 })
+  }
+
+  const [updated] = await db
+    .update(orders)
+    .set({ status })
+    .where(eq(orders.id, orderId))
+    .returning({ id: orders.id, status: orders.status })
+
+  if (!updated) {
+    return NextResponse.json({ error: "Failed to update order" }, { status: 500 })
+  }
+
+  void writeAuditLog({
+    companyId: ctx.companyId,
+    actorId: ctx.userId,
+    sessionId: ctx.sessionId,
+    action: "mobile.order.status_update",
+    entityType: "order",
+    entityId: orderId,
+    method: "PATCH",
+    path: `/api/mobile/orders/${orderId}`,
+    ipAddress,
+    userAgent: req.headers.get("user-agent") ?? "",
+    payload: { from: existing.status, to: status },
+  })
+
+  return NextResponse.json({ id: updated.id, status: updated.status })
 })
