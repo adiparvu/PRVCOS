@@ -26,6 +26,7 @@ export interface EmployeeDetail {
   employment: {
     departmentName: string | null
     teamName: string | null
+    storeId: string | null
     storeName: string | null
     manager: { id: string; name: string; jobTitle: string | null } | null
   }

@@ -1,5 +1,6 @@
 import {
   ActivityIndicator,
+  Linking,
   ScrollView,
   StyleSheet,
   Text,
@@ -88,15 +89,17 @@ function DetailRow({
   value,
   chip,
   chevron,
+  onPress,
 }: {
   icon: string
   label: string
   value: string
   chip?: { text: string; bg: string; fg: string; border: string }
   chevron?: boolean
+  onPress?: () => void
 }) {
-  return (
-    <View style={s.detailRow}>
+  const inner = (
+    <>
       <View style={s.detailIcon}>
         <Text style={s.detailIconText}>{icon}</Text>
       </View>
@@ -110,8 +113,17 @@ function DetailRow({
         </View>
       ) : null}
       {chevron && !chip ? <Text style={s.chevron}>›</Text> : null}
-    </View>
+    </>
   )
+
+  if (onPress) {
+    return (
+      <TouchableOpacity style={s.detailRow} activeOpacity={0.7} onPress={onPress}>
+        {inner}
+      </TouchableOpacity>
+    )
+  }
+  return <View style={s.detailRow}>{inner}</View>
 }
 
 function ProjectRow({
@@ -322,7 +334,11 @@ export default function EmployeeDetailScreen() {
 
           {/* Contact strip */}
           <View style={s.contactStrip}>
-            <TouchableOpacity style={s.contactBtn} activeOpacity={0.75}>
+            <TouchableOpacity
+              style={s.contactBtn}
+              activeOpacity={0.75}
+              onPress={() => void Linking.openURL(`mailto:${employee.email}`)}
+            >
               <View style={s.contactBtnShine} pointerEvents="none" />
               <Text style={s.contactIcon}>✉</Text>
               <View style={s.contactTextWrap}>
@@ -333,7 +349,11 @@ export default function EmployeeDetailScreen() {
               </View>
             </TouchableOpacity>
             {employee.phone ? (
-              <TouchableOpacity style={s.contactBtn} activeOpacity={0.75}>
+              <TouchableOpacity
+                style={s.contactBtn}
+                activeOpacity={0.75}
+                onPress={() => void Linking.openURL(`tel:${employee.phone}`)}
+              >
                 <View style={s.contactBtnShine} pointerEvents="none" />
                 <Text style={s.contactIcon}>☎</Text>
                 <View style={s.contactTextWrap}>
@@ -368,16 +388,41 @@ export default function EmployeeDetailScreen() {
         <View style={s.card}>
           <View style={s.cardShine} pointerEvents="none" />
           {employment.departmentName ? (
-            <DetailRow icon="⊞" label="Department" value={employment.departmentName} chevron />
+            <DetailRow icon="⊞" label="Department" value={employment.departmentName} />
           ) : null}
           {employment.teamName ? (
-            <DetailRow icon="◎" label="Team" value={employment.teamName} chevron />
+            <DetailRow icon="◎" label="Team" value={employment.teamName} />
           ) : null}
           {employment.storeName ? (
-            <DetailRow icon="◈" label="Store" value={employment.storeName} chevron />
+            <DetailRow
+              icon="◈"
+              label="Store"
+              value={employment.storeName}
+              chevron={!!employment.storeId}
+              onPress={
+                employment.storeId
+                  ? () =>
+                      router.push({
+                        pathname: "/(auth)/store-detail",
+                        params: { id: employment.storeId! },
+                      })
+                  : undefined
+              }
+            />
           ) : null}
           {employment.manager ? (
-            <DetailRow icon="◇" label="Reports to" value={employment.manager.name} chevron />
+            <DetailRow
+              icon="◇"
+              label="Reports to"
+              value={employment.manager.name}
+              chevron
+              onPress={() =>
+                router.push({
+                  pathname: "/(auth)/employee-detail",
+                  params: { id: employment.manager!.id },
+                })
+              }
+            />
           ) : null}
           {employee.employeeId ? (
             <DetailRow icon="⊗" label="Employee ID" value={employee.employeeId} />

@@ -180,6 +180,7 @@ export const GET = withMobileAuth(async (req: NextRequest, ctx) => {
     employment: {
       departmentName: deptRow[0]?.name ?? null,
       teamName: teamRow[0]?.name ?? null,
+      storeId: userRow.storeId ?? null,
       storeName: storeRow[0]
         ? storeRow[0].city
           ? `${storeRow[0].name} — ${storeRow[0].city}`
