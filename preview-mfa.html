@@ -38,7 +38,6 @@
     margin-bottom: 12px;
     text-transform: uppercase;
   }
-
   .island {
     width: 120px; height: 34px;
     background: #000;
@@ -46,7 +45,6 @@
     border: 1px solid rgba(255,255,255,0.08);
     margin: 12px auto 0;
   }
-
   .status {
     display: flex;
     justify-content: space-between;
@@ -55,7 +53,6 @@
     color: rgba(255,255,255,0.7);
     font-weight: 600;
   }
-
   .screen {
     flex: 1;
     display: flex;
@@ -63,39 +60,38 @@
     padding: 0 28px 48px;
   }
 
+  /* Back */
   .back-btn {
     display: flex;
     align-items: center;
-    gap: 5px;
+    gap: 4px;
     margin-top: 16px;
     width: fit-content;
     padding: 6px 0;
     cursor: pointer;
   }
-  .back-arrow { font-size: 18px; color: rgba(255,255,255,0.5); }
-  .back-label { font-size: 14px; color: rgba(255,255,255,0.5); font-weight: 500; }
+  .back-btn svg { opacity: 0.45; }
+  .back-label { font-size: 14px; color: rgba(255,255,255,0.45); font-weight: 500; }
 
-  .lock-wrap {
+  /* Icon */
+  .icon-wrap {
     margin-top: 44px;
     display: flex;
     justify-content: center;
   }
-  .lock-glass {
+  .icon-glass {
     width: 72px; height: 72px;
     background: rgba(255,255,255,0.07);
     border: 1px solid rgba(255,255,255,0.14);
     border-radius: 22px;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.20), 0 8px 32px rgba(0,0,0,0.5);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.20), 0 8px 32px rgba(0,0,0,0.4);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 32px;
   }
 
-  .heading {
-    margin-top: 24px;
-    text-align: center;
-  }
+  /* Heading */
+  .heading { margin-top: 24px; text-align: center; }
   .title {
     font-size: 26px;
     font-weight: 700;
@@ -111,6 +107,7 @@
   }
   .subtitle strong { color: rgba(255,255,255,0.65); font-weight: 500; }
 
+  /* OTP */
   .otp-wrap {
     margin-top: 40px;
     display: flex;
@@ -149,7 +146,6 @@
     animation: blink 1s step-end infinite;
   }
   @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
-
   .error-msg {
     text-align: center;
     font-size: 13px;
@@ -157,6 +153,7 @@
     margin-top: 12px;
   }
 
+  /* Buttons */
   .verify-btn {
     margin-top: 36px;
     height: 54px;
@@ -172,8 +169,8 @@
     box-shadow: 0 4px 24px rgba(255,255,255,0.12);
   }
   .verify-btn.disabled {
-    background: rgba(255,255,255,0.10);
-    color: rgba(255,255,255,0.22);
+    background: rgba(255,255,255,0.08);
+    color: rgba(255,255,255,0.20);
     box-shadow: none;
   }
   .verify-btn.loading { background: rgba(255,255,255,0.85); }
@@ -193,27 +190,27 @@
     gap: 10px;
     margin-top: 20px;
   }
-  .or-line { flex: 1; height: 1px; background: rgba(255,255,255,0.08); }
-  .or-text { font-size: 12px; color: rgba(255,255,255,0.28); }
+  .or-line { flex: 1; height: 1px; background: rgba(255,255,255,0.07); }
+  .or-text { font-size: 12px; color: rgba(255,255,255,0.25); }
 
   .faceid-btn {
     margin-top: 12px;
-    height: 48px;
-    background: rgba(255,255,255,0.06);
-    border: 1px solid rgba(255,255,255,0.10);
+    height: 50px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.09);
     border-radius: 14px;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.10);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: 9px;
     font-size: 14px;
-    color: rgba(255,255,255,0.55);
+    color: rgba(255,255,255,0.5);
     font-weight: 500;
     cursor: pointer;
   }
-  .faceid-icon { font-size: 18px; }
 
+  /* Footer */
   .footer {
     margin-top: auto;
     padding-top: 32px;
@@ -224,14 +221,14 @@
   }
   .resend-row {
     font-size: 13px;
-    color: rgba(255,255,255,0.35);
+    color: rgba(255,255,255,0.3);
     display: flex;
-    gap: 6px;
+    gap: 5px;
     align-items: center;
   }
-  .resend-active { color: rgba(255,255,255,0.65); font-weight: 500; cursor: pointer; }
-  .resend-timer { color: rgba(255,255,255,0.25); }
-  .switch-method { font-size: 13px; color: rgba(255,255,255,0.3); cursor: pointer; }
+  .resend-active { color: rgba(255,255,255,0.6); font-weight: 500; cursor: pointer; }
+  .resend-timer { color: rgba(255,255,255,0.22); }
+  .switch-method { font-size: 13px; color: rgba(255,255,255,0.28); cursor: pointer; }
   .switch-method span { color: rgba(255,255,255,0.5); font-weight: 500; }
 </style>
 </head>
@@ -244,12 +241,36 @@
     <div class="island"></div>
     <div class="status"><span>9:41</span><span>●●● ◼ 🔋</span></div>
     <div class="screen">
-      <div class="back-btn"><span class="back-arrow">‹</span><span class="back-label">Back</span></div>
-      <div class="lock-wrap"><div class="lock-glass">🔐</div></div>
+
+      <!-- Back: chevron.left SF Symbol -->
+      <div class="back-btn">
+        <svg width="11" height="19" viewBox="0 0 11 19" fill="none">
+          <path d="M9.5 1.5L1.5 9.5L9.5 17.5" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span class="back-label">Back</span>
+      </div>
+
+      <!-- Lock icon: lock.fill SF Symbol -->
+      <div class="icon-wrap">
+        <div class="icon-glass">
+          <svg width="28" height="34" viewBox="0 0 28 34" fill="none">
+            <!-- shackle -->
+            <path d="M7 15V10C7 6.13 10.13 3 14 3C17.87 3 21 6.13 21 10V15" stroke="rgba(255,255,255,0.85)" stroke-width="2.5" stroke-linecap="round"/>
+            <!-- body -->
+            <rect x="3" y="14" width="22" height="17" rx="4" fill="rgba(255,255,255,0.85)"/>
+            <!-- keyhole circle -->
+            <circle cx="14" cy="22.5" r="2.5" fill="rgba(0,0,0,0.45)"/>
+            <!-- keyhole slot -->
+            <rect x="12.8" y="23.5" width="2.4" height="3.5" rx="1" fill="rgba(0,0,0,0.45)"/>
+          </svg>
+        </div>
+      </div>
+
       <div class="heading">
         <div class="title">Two-Factor Auth</div>
         <div class="subtitle">Enter the 6-digit code from your <strong>authenticator app</strong></div>
       </div>
+
       <div class="otp-wrap">
         <div class="otp-box active"><div class="cursor"></div></div>
         <div class="otp-box"></div>
@@ -258,13 +279,33 @@
         <div class="otp-box"></div>
         <div class="otp-box"></div>
       </div>
+
       <div class="verify-btn disabled">Verify</div>
+
       <div class="or-row"><div class="or-line"></div><span class="or-text">or</span><div class="or-line"></div></div>
-      <div class="faceid-btn"><span class="faceid-icon">⊙</span>Use Face ID</div>
+
+      <!-- Face ID: faceid SF Symbol -->
+      <div class="faceid-btn">
+        <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+          <!-- corner brackets -->
+          <path d="M1 6V3C1 1.9 1.9 1 3 1H6" stroke="rgba(255,255,255,0.55)" stroke-width="1.7" stroke-linecap="round"/>
+          <path d="M16 1H19C20.1 1 21 1.9 21 3V6" stroke="rgba(255,255,255,0.55)" stroke-width="1.7" stroke-linecap="round"/>
+          <path d="M21 16V19C21 20.1 20.1 21 19 21H16" stroke="rgba(255,255,255,0.55)" stroke-width="1.7" stroke-linecap="round"/>
+          <path d="M6 21H3C1.9 21 1 20.1 1 19V16" stroke="rgba(255,255,255,0.55)" stroke-width="1.7" stroke-linecap="round"/>
+          <!-- face scan lines -->
+          <path d="M7 9C7 9 7 7.5 8.5 7.5" stroke="rgba(255,255,255,0.55)" stroke-width="1.5" stroke-linecap="round"/>
+          <path d="M15 9C15 9 15 7.5 13.5 7.5" stroke="rgba(255,255,255,0.55)" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="11" y1="8" x2="11" y2="13" stroke="rgba(255,255,255,0.55)" stroke-width="1.5" stroke-linecap="round"/>
+          <path d="M8 14.5C8 14.5 9 16 11 16C13 16 14 14.5 14 14.5" stroke="rgba(255,255,255,0.55)" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        Use Face ID
+      </div>
+
       <div class="footer">
         <div class="resend-row">Didn't receive a code? <span class="resend-timer">Resend in 28s</span></div>
         <div class="switch-method">Use a different method? <span>SMS instead</span></div>
       </div>
+
     </div>
   </div>
 </div>
@@ -276,8 +317,18 @@
     <div class="island"></div>
     <div class="status"><span>9:41</span><span>●●● ◼ 🔋</span></div>
     <div class="screen">
-      <div class="back-btn"><span class="back-arrow">‹</span><span class="back-label">Back</span></div>
-      <div class="lock-wrap"><div class="lock-glass">🔐</div></div>
+      <div class="back-btn">
+        <svg width="11" height="19" viewBox="0 0 11 19" fill="none"><path d="M9.5 1.5L1.5 9.5L9.5 17.5" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span class="back-label">Back</span>
+      </div>
+      <div class="icon-wrap"><div class="icon-glass">
+        <svg width="28" height="34" viewBox="0 0 28 34" fill="none">
+          <path d="M7 15V10C7 6.13 10.13 3 14 3C17.87 3 21 6.13 21 10V15" stroke="rgba(255,255,255,0.85)" stroke-width="2.5" stroke-linecap="round"/>
+          <rect x="3" y="14" width="22" height="17" rx="4" fill="rgba(255,255,255,0.85)"/>
+          <circle cx="14" cy="22.5" r="2.5" fill="rgba(0,0,0,0.45)"/>
+          <rect x="12.8" y="23.5" width="2.4" height="3.5" rx="1" fill="rgba(0,0,0,0.45)"/>
+        </svg>
+      </div></div>
       <div class="heading">
         <div class="title">Two-Factor Auth</div>
         <div class="subtitle">Enter the 6-digit code from your <strong>authenticator app</strong></div>
@@ -292,7 +343,19 @@
       </div>
       <div class="verify-btn disabled">Verify</div>
       <div class="or-row"><div class="or-line"></div><span class="or-text">or</span><div class="or-line"></div></div>
-      <div class="faceid-btn"><span class="faceid-icon">⊙</span>Use Face ID</div>
+      <div class="faceid-btn">
+        <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+          <path d="M1 6V3C1 1.9 1.9 1 3 1H6" stroke="rgba(255,255,255,0.55)" stroke-width="1.7" stroke-linecap="round"/>
+          <path d="M16 1H19C20.1 1 21 1.9 21 3V6" stroke="rgba(255,255,255,0.55)" stroke-width="1.7" stroke-linecap="round"/>
+          <path d="M21 16V19C21 20.1 20.1 21 19 21H16" stroke="rgba(255,255,255,0.55)" stroke-width="1.7" stroke-linecap="round"/>
+          <path d="M6 21H3C1.9 21 1 20.1 1 19V16" stroke="rgba(255,255,255,0.55)" stroke-width="1.7" stroke-linecap="round"/>
+          <path d="M7 9C7 9 7 7.5 8.5 7.5" stroke="rgba(255,255,255,0.55)" stroke-width="1.5" stroke-linecap="round"/>
+          <path d="M15 9C15 9 15 7.5 13.5 7.5" stroke="rgba(255,255,255,0.55)" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="11" y1="8" x2="11" y2="13" stroke="rgba(255,255,255,0.55)" stroke-width="1.5" stroke-linecap="round"/>
+          <path d="M8 14.5C8 14.5 9 16 11 16C13 16 14 14.5 14 14.5" stroke="rgba(255,255,255,0.55)" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        Use Face ID
+      </div>
       <div class="footer">
         <div class="resend-row">Didn't receive a code? <span class="resend-timer">Resend in 21s</span></div>
         <div class="switch-method">Use a different method? <span>SMS instead</span></div>
@@ -308,8 +371,18 @@
     <div class="island"></div>
     <div class="status"><span>9:41</span><span>●●● ◼ 🔋</span></div>
     <div class="screen">
-      <div class="back-btn"><span class="back-arrow">‹</span><span class="back-label">Back</span></div>
-      <div class="lock-wrap"><div class="lock-glass">🔐</div></div>
+      <div class="back-btn">
+        <svg width="11" height="19" viewBox="0 0 11 19" fill="none"><path d="M9.5 1.5L1.5 9.5L9.5 17.5" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span class="back-label">Back</span>
+      </div>
+      <div class="icon-wrap"><div class="icon-glass">
+        <svg width="28" height="34" viewBox="0 0 28 34" fill="none">
+          <path d="M7 15V10C7 6.13 10.13 3 14 3C17.87 3 21 6.13 21 10V15" stroke="rgba(255,255,255,0.85)" stroke-width="2.5" stroke-linecap="round"/>
+          <rect x="3" y="14" width="22" height="17" rx="4" fill="rgba(255,255,255,0.85)"/>
+          <circle cx="14" cy="22.5" r="2.5" fill="rgba(0,0,0,0.45)"/>
+          <rect x="12.8" y="23.5" width="2.4" height="3.5" rx="1" fill="rgba(0,0,0,0.45)"/>
+        </svg>
+      </div></div>
       <div class="heading">
         <div class="title">Two-Factor Auth</div>
         <div class="subtitle">Enter the 6-digit code from your <strong>authenticator app</strong></div>
@@ -324,7 +397,19 @@
       </div>
       <div class="verify-btn">Verify</div>
       <div class="or-row"><div class="or-line"></div><span class="or-text">or</span><div class="or-line"></div></div>
-      <div class="faceid-btn"><span class="faceid-icon">⊙</span>Use Face ID</div>
+      <div class="faceid-btn">
+        <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+          <path d="M1 6V3C1 1.9 1.9 1 3 1H6" stroke="rgba(255,255,255,0.55)" stroke-width="1.7" stroke-linecap="round"/>
+          <path d="M16 1H19C20.1 1 21 1.9 21 3V6" stroke="rgba(255,255,255,0.55)" stroke-width="1.7" stroke-linecap="round"/>
+          <path d="M21 16V19C21 20.1 20.1 21 19 21H16" stroke="rgba(255,255,255,0.55)" stroke-width="1.7" stroke-linecap="round"/>
+          <path d="M6 21H3C1.9 21 1 20.1 1 19V16" stroke="rgba(255,255,255,0.55)" stroke-width="1.7" stroke-linecap="round"/>
+          <path d="M7 9C7 9 7 7.5 8.5 7.5" stroke="rgba(255,255,255,0.55)" stroke-width="1.5" stroke-linecap="round"/>
+          <path d="M15 9C15 9 15 7.5 13.5 7.5" stroke="rgba(255,255,255,0.55)" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="11" y1="8" x2="11" y2="13" stroke="rgba(255,255,255,0.55)" stroke-width="1.5" stroke-linecap="round"/>
+          <path d="M8 14.5C8 14.5 9 16 11 16C13 16 14 14.5 14 14.5" stroke="rgba(255,255,255,0.55)" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        Use Face ID
+      </div>
       <div class="footer">
         <div class="resend-row">Didn't receive a code? <span class="resend-timer">Resend in 14s</span></div>
         <div class="switch-method">Use a different method? <span>SMS instead</span></div>
@@ -340,23 +425,33 @@
     <div class="island"></div>
     <div class="status"><span>9:41</span><span>●●● ◼ 🔋</span></div>
     <div class="screen">
-      <div class="back-btn" style="opacity:0.3;"><span class="back-arrow">‹</span><span class="back-label">Back</span></div>
-      <div class="lock-wrap"><div class="lock-glass">🔐</div></div>
+      <div class="back-btn" style="opacity:0.2;">
+        <svg width="11" height="19" viewBox="0 0 11 19" fill="none"><path d="M9.5 1.5L1.5 9.5L9.5 17.5" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span class="back-label">Back</span>
+      </div>
+      <div class="icon-wrap"><div class="icon-glass">
+        <svg width="28" height="34" viewBox="0 0 28 34" fill="none">
+          <path d="M7 15V10C7 6.13 10.13 3 14 3C17.87 3 21 6.13 21 10V15" stroke="rgba(255,255,255,0.85)" stroke-width="2.5" stroke-linecap="round"/>
+          <rect x="3" y="14" width="22" height="17" rx="4" fill="rgba(255,255,255,0.85)"/>
+          <circle cx="14" cy="22.5" r="2.5" fill="rgba(0,0,0,0.45)"/>
+          <rect x="12.8" y="23.5" width="2.4" height="3.5" rx="1" fill="rgba(0,0,0,0.45)"/>
+        </svg>
+      </div></div>
       <div class="heading">
         <div class="title">Two-Factor Auth</div>
-        <div class="subtitle">Verifying your code…</div>
+        <div class="subtitle" style="color:rgba(255,255,255,0.35);">Verifying your code…</div>
       </div>
       <div class="otp-wrap">
-        <div class="otp-box filled" style="opacity:0.45;">4</div>
-        <div class="otp-box filled" style="opacity:0.45;">8</div>
-        <div class="otp-box filled" style="opacity:0.45;">2</div>
-        <div class="otp-box filled" style="opacity:0.45;">9</div>
-        <div class="otp-box filled" style="opacity:0.45;">1</div>
-        <div class="otp-box filled" style="opacity:0.45;">6</div>
+        <div class="otp-box filled" style="opacity:0.4;">4</div>
+        <div class="otp-box filled" style="opacity:0.4;">8</div>
+        <div class="otp-box filled" style="opacity:0.4;">2</div>
+        <div class="otp-box filled" style="opacity:0.4;">9</div>
+        <div class="otp-box filled" style="opacity:0.4;">1</div>
+        <div class="otp-box filled" style="opacity:0.4;">6</div>
       </div>
       <div class="verify-btn loading"><div class="spinner"></div></div>
       <div class="footer">
-        <div class="resend-row" style="opacity:0.3;">Didn't receive a code? <span class="resend-timer">Resend in 14s</span></div>
+        <div class="resend-row" style="opacity:0.25;">Didn't receive a code? <span class="resend-timer">Resend in 14s</span></div>
       </div>
     </div>
   </div>
@@ -369,8 +464,18 @@
     <div class="island"></div>
     <div class="status"><span>9:41</span><span>●●● ◼ 🔋</span></div>
     <div class="screen">
-      <div class="back-btn"><span class="back-arrow">‹</span><span class="back-label">Back</span></div>
-      <div class="lock-wrap"><div class="lock-glass">🔐</div></div>
+      <div class="back-btn">
+        <svg width="11" height="19" viewBox="0 0 11 19" fill="none"><path d="M9.5 1.5L1.5 9.5L9.5 17.5" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span class="back-label">Back</span>
+      </div>
+      <div class="icon-wrap"><div class="icon-glass">
+        <svg width="28" height="34" viewBox="0 0 28 34" fill="none">
+          <path d="M7 15V10C7 6.13 10.13 3 14 3C17.87 3 21 6.13 21 10V15" stroke="rgba(255,255,255,0.85)" stroke-width="2.5" stroke-linecap="round"/>
+          <rect x="3" y="14" width="22" height="17" rx="4" fill="rgba(255,255,255,0.85)"/>
+          <circle cx="14" cy="22.5" r="2.5" fill="rgba(0,0,0,0.45)"/>
+          <rect x="12.8" y="23.5" width="2.4" height="3.5" rx="1" fill="rgba(0,0,0,0.45)"/>
+        </svg>
+      </div></div>
       <div class="heading">
         <div class="title">Two-Factor Auth</div>
         <div class="subtitle">Enter the 6-digit code from your <strong>authenticator app</strong></div>
@@ -386,7 +491,19 @@
       <div class="error-msg">Incorrect code — please try again</div>
       <div class="verify-btn">Verify</div>
       <div class="or-row"><div class="or-line"></div><span class="or-text">or</span><div class="or-line"></div></div>
-      <div class="faceid-btn"><span class="faceid-icon">⊙</span>Use Face ID</div>
+      <div class="faceid-btn">
+        <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+          <path d="M1 6V3C1 1.9 1.9 1 3 1H6" stroke="rgba(255,255,255,0.55)" stroke-width="1.7" stroke-linecap="round"/>
+          <path d="M16 1H19C20.1 1 21 1.9 21 3V6" stroke="rgba(255,255,255,0.55)" stroke-width="1.7" stroke-linecap="round"/>
+          <path d="M21 16V19C21 20.1 20.1 21 19 21H16" stroke="rgba(255,255,255,0.55)" stroke-width="1.7" stroke-linecap="round"/>
+          <path d="M6 21H3C1.9 21 1 20.1 1 19V16" stroke="rgba(255,255,255,0.55)" stroke-width="1.7" stroke-linecap="round"/>
+          <path d="M7 9C7 9 7 7.5 8.5 7.5" stroke="rgba(255,255,255,0.55)" stroke-width="1.5" stroke-linecap="round"/>
+          <path d="M15 9C15 9 15 7.5 13.5 7.5" stroke="rgba(255,255,255,0.55)" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="11" y1="8" x2="11" y2="13" stroke="rgba(255,255,255,0.55)" stroke-width="1.5" stroke-linecap="round"/>
+          <path d="M8 14.5C8 14.5 9 16 11 16C13 16 14 14.5 14 14.5" stroke="rgba(255,255,255,0.55)" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        Use Face ID
+      </div>
       <div class="footer">
         <div class="resend-row">Didn't receive a code? <span class="resend-active">Resend</span></div>
         <div class="switch-method">Use a different method? <span>SMS instead</span></div>
