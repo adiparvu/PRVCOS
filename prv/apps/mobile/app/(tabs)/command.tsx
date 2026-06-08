@@ -37,9 +37,21 @@ function AlertCard({ alert }: { alert: AlertItem }) {
   )
 }
 
-function InboxRow({ item, last }: { item: InboxItem; last: boolean }) {
+function InboxRow({
+  item,
+  last,
+  onPress,
+}: {
+  item: InboxItem
+  last: boolean
+  onPress: () => void
+}) {
   return (
-    <View style={[styles.inboxRow, !last && styles.inboxRowBorder]}>
+    <TouchableOpacity
+      style={[styles.inboxRow, !last && styles.inboxRowBorder]}
+      onPress={onPress}
+      activeOpacity={0.75}
+    >
       <View style={styles.inboxAvatar}>
         <Text style={styles.inboxInitials}>{item.initials}</Text>
       </View>
@@ -53,7 +65,7 @@ function InboxRow({ item, last }: { item: InboxItem; last: boolean }) {
         <Text style={styles.inboxTime}>{item.timeAgo}</Text>
         {item.unread && <View style={styles.inboxDot} />}
       </View>
-    </View>
+    </TouchableOpacity>
   )
 }
 
@@ -238,10 +250,24 @@ export default function CommandScreen() {
           {/* Inbox */}
           {data.inbox.length > 0 && (
             <>
-              <Text style={styles.sectionTitle}>Inbox</Text>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>Inbox</Text>
+                <TouchableOpacity
+                  onPress={() => router.push("/(auth)/inbox")}
+                  activeOpacity={0.6}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Text style={styles.seeAll}>See all →</Text>
+                </TouchableOpacity>
+              </View>
               <GlassCard style={styles.inboxCard}>
                 {data.inbox.map((item, i) => (
-                  <InboxRow key={item.id} item={item} last={i === data.inbox.length - 1} />
+                  <InboxRow
+                    key={item.id}
+                    item={item}
+                    last={i === data.inbox.length - 1}
+                    onPress={() => router.push("/(auth)/inbox")}
+                  />
                 ))}
               </GlassCard>
             </>
@@ -372,6 +398,13 @@ const styles = StyleSheet.create({
   },
 
   /* Section title */
+  sectionHeader: {
+    flexDirection: "row" as const,
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 8,
+    marginTop: 4,
+  },
   sectionTitle: {
     fontSize: 10,
     fontWeight: "600" as const,
@@ -380,6 +413,11 @@ const styles = StyleSheet.create({
     letterSpacing: 0.8,
     marginBottom: 8,
     marginTop: 4,
+  },
+  seeAll: {
+    fontSize: 12,
+    fontWeight: "500" as const,
+    color: colors.text3,
   },
 
   /* AI briefing */
