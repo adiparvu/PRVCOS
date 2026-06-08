@@ -17,12 +17,14 @@ import { colors, radius, spacing, type } from "@/tokens"
 import {
   useFinance,
   useExpenses,
+  useReports,
   type DayRevenue,
   type FinanceInvoiceItem,
   type FinanceOrderItem,
   type ExpensesData,
   type ExpenseCategoryRow,
   type ExpenseItem,
+  type ReportsData,
 } from "@/hooks/useFinance"
 
 // ─── Segment Control ──────────────────────────────────────────────────────────
@@ -429,31 +431,71 @@ function ExpensesContent({ data }: { data: ExpensesData }) {
 
 // ─── Reports Content ──────────────────────────────────────────────────────────
 
-const REPORT_TILES = [
-  { icon: "≡", label: "P&L", desc: "Profit & Loss" },
-  { icon: "⟁", label: "Cash Flow", desc: "Inflows & Outflows" },
-  { icon: "◩", label: "Tax", desc: "VAT & Declarations" },
-  { icon: "◎", label: "Forecast", desc: "Revenue Forecast" },
-]
+function ReportsContent({ data }: { data: ReportsData | undefined }) {
+  const router = useRouter()
 
-function ReportsContent() {
+  const tiles = [
+    {
+      icon: "≡",
+      label: "P&L",
+      desc: "Profit & Loss",
+      kpi: data?.pl.mtd.profitFormatted,
+      kpiColor: data ? (data.pl.mtd.profit >= 0 ? styles.kpiGreen : styles.kpiRed) : null,
+      route: "/(auth)/report-pl" as const,
+    },
+    {
+      icon: "⟁",
+      label: "Cash Flow",
+      desc: "Inflows & Outflows",
+      kpi: data?.cashflow.mtd.netFormatted,
+      kpiColor: data ? (data.cashflow.mtd.netPositive ? styles.kpiGreen : styles.kpiRed) : null,
+      route: "/(auth)/report-cashflow" as const,
+    },
+    {
+      icon: "◩",
+      label: "Tax",
+      desc: "VAT & Declarations",
+      kpi: data?.tax.vatMtdFormatted,
+      kpiColor: null,
+      route: "/(auth)/report-tax" as const,
+    },
+    {
+      icon: "◎",
+      label: "Forecast",
+      desc: "Revenue Forecast",
+      kpi: data?.forecast.nextMonthFormatted,
+      kpiColor: null,
+      route: null,
+    },
+  ]
+
   return (
     <View style={styles.segContent}>
       <View style={styles.reportGrid}>
-        {REPORT_TILES.map((t) => (
-          <GlassCard key={t.label} style={styles.reportTile}>
+        {tiles.map((t) => (
+          <TouchableOpacity
+            key={t.label}
+            style={styles.reportTile}
+            activeOpacity={t.route ? 0.75 : 1}
+            onPress={t.route ? () => router.push({ pathname: t.route! }) : undefined}
+            disabled={!t.route}
+          >
+            <View style={styles.reportTileShine} pointerEvents="none" />
             <Text style={styles.reportIcon}>{t.icon}</Text>
             <Text style={styles.reportLabel}>{t.label}</Text>
-            <Text style={styles.reportDesc}>{t.desc}</Text>
-          </GlassCard>
+            {t.kpi ? (
+              <Text style={[styles.reportKpi, t.kpiColor ?? null]}>{t.kpi}</Text>
+            ) : (
+              <Text style={styles.reportDesc}>{t.desc}</Text>
+            )}
+            {t.route ? (
+              <Text style={styles.reportChevron}>›</Text>
+            ) : (
+              <Text style={styles.reportSoon}>Soon</Text>
+            )}
+          </TouchableOpacity>
         ))}
       </View>
-      <GlassCard style={styles.moduleNote}>
-        <Text style={styles.moduleNoteText}>
-          Full reporting module with P&L statements, balance sheets, cash flow analysis, and
-          AI-powered forecasting is coming in a future release.
-        </Text>
-      </GlassCard>
     </View>
   )
 }
@@ -465,6 +507,7 @@ export default function FinanceScreen() {
   const [seg, setSeg] = useState<Segment>("Revenue")
   const { data, isLoading, isError, refetch, isFetching } = useFinance()
   const { data: expensesData, isLoading: expLoading, refetch: refetchExp } = useExpenses()
+  const { data: reportsData } = useReports()
 
   const headerH = insets.top + 52
   const segH = 48
@@ -531,7 +574,7 @@ export default function FinanceScreen() {
               <ExpensesContent data={expensesData} />
             ) : null
           ) : (
-            <ReportsContent />
+            <ReportsContent data={reportsData} />
           )
         ) : null}
       </ScrollView>
@@ -647,12 +690,34 @@ const styles = StyleSheet.create({
 
   // Reports
   reportGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
-  reportTile: { width: "47.5%", padding: spacing.base, gap: 6, alignItems: "flex-start" },
+  reportTile: {
+    width: "47.5%",
+    padding: spacing.base,
+    gap: 6,
+    alignItems: "flex-start",
+    backgroundColor: "rgba(255,255,255,0.05)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.09)",
+    borderRadius: 18,
+    overflow: "hidden",
+    position: "relative",
+  },
+  reportTileShine: {
+    position: "absolute",
+    top: 0,
+    left: 12,
+    right: 12,
+    height: 1,
+    backgroundColor: "rgba(255,255,255,0.14)",
+  },
   reportIcon: { fontSize: 22, color: colors.text2 },
   reportLabel: { ...type.headline, color: colors.text1 },
   reportDesc: { ...type.caption1, color: colors.text3 },
-  moduleNote: { padding: 14 },
-  moduleNoteText: { ...type.footnote, color: colors.text3, lineHeight: 18 },
+  reportKpi: { ...type.subhead, color: colors.text1, fontWeight: "700" },
+  reportChevron: { fontSize: 16, color: "rgba(255,255,255,0.25)", marginTop: "auto" as any },
+  reportSoon: { fontSize: 10, fontWeight: "600", color: colors.text3, letterSpacing: 0.5 },
+  kpiGreen: { color: colors.green },
+  kpiRed: { color: colors.red },
 
   // States
   center: { flex: 1, alignItems: "center", justifyContent: "center", paddingTop: 60, gap: 12 },

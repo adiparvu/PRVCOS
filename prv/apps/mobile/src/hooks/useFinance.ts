@@ -94,3 +94,76 @@ export function useFinance() {
     retry: 2,
   })
 }
+
+// ── Reports ────────────────────────────────────────────────────────────────────
+
+export interface PLPeriod {
+  revenue: number
+  revenueFormatted: string
+  expenses: number
+  expensesFormatted: string
+  profit: number
+  profitFormatted: string
+  margin: number
+  delta?: number | null
+}
+
+export interface TrendMonth {
+  month: string
+  revenue: number
+  expenses: number
+  profit: number
+}
+
+export interface CashTrendMonth {
+  month: string
+  in: number
+  out: number
+  net: number
+}
+
+export interface VatTrendMonth {
+  month: string
+  vat: number
+}
+
+export interface ReportsData {
+  pl: {
+    mtd: PLPeriod & { delta: number | null }
+    lastMonth: PLPeriod
+    ytd: PLPeriod
+    trend: TrendMonth[]
+  }
+  cashflow: {
+    mtd: {
+      in: number
+      inFormatted: string
+      out: number
+      outFormatted: string
+      net: number
+      netFormatted: string
+      netPositive: boolean
+    }
+    trend: CashTrendMonth[]
+  }
+  tax: {
+    vatMtd: number
+    vatMtdFormatted: string
+    period: string
+    trend: VatTrendMonth[]
+  }
+  forecast: {
+    nextMonth: number
+    nextMonthFormatted: string
+    basedOn: string
+  }
+}
+
+export function useReports() {
+  return useQuery<ReportsData>({
+    queryKey: ["reports"],
+    queryFn: () => api.get<ReportsData>("/api/mobile/reports"),
+    staleTime: 120_000,
+    retry: 2,
+  })
+}
