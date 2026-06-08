@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PRV Phase 22 — Operations Tab Preview</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0a0a0a;
+    font-family: -apple-system, "SF Pro Display", "SF Pro Text", sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+    padding: 40px 20px;
+    gap: 32px;
+    flex-wrap: wrap;
+    color: #fff;
+  }
+
+  /* ── Phone shell ─────────────────────────── */
+  .phone {
+    width: 393px;
+    min-height: 852px;
+    background: #000;
+    border-radius: 52px;
+    border: 1.5px solid rgba(255,255,255,0.12);
+    box-shadow:
+      0 0 0 8px #111,
+      0 0 0 9.5px rgba(255,255,255,0.06),
+      0 40px 80px rgba(0,0,0,0.8),
+      0 8px 32px rgba(0,0,0,0.6);
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .phone-label {
+    color: rgba(255,255,255,0.35);
+    font-size: 11px;
+    font-weight: 500;
+    text-align: center;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  /* ── Status bar ───────────────────────────── */
+  .status-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 28px 0;
+    height: 52px;
+    flex-shrink: 0;
+  }
+  .status-time { font-size: 15px; font-weight: 600; }
+  .status-icons { display: flex; gap: 6px; align-items: center; }
+  .status-icons span { font-size: 13px; opacity: 0.8; }
+
+  /* Dynamic island */
+  .dynamic-island {
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 120px;
+    height: 34px;
+    background: #000;
+    border-radius: 20px;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .di-dot { width: 8px; height: 8px; background: rgba(255,255,255,0.15); border-radius: 50%; }
+  .di-text { font-size: 10px; color: rgba(255,255,255,0.5); font-weight: 500; }
+
+  /* ── Scroll area ────────────────────────── */
+  .scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 0 120px;
+    scrollbar-width: none;
+  }
+  .scroll::-webkit-scrollbar { display: none; }
+
+  /* ── Page header ────────────────────────── */
+  .page-header {
+    padding: 12px 20px 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .page-title { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; }
+  .header-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+  }
+
+  /* ── Segment control ────────────────────── */
+  .segment {
+    display: flex;
+    margin: 8px 20px 16px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 3px;
+    gap: 2px;
+  }
+  .seg-btn {
+    flex: 1;
+    padding: 7px 0;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.45);
+    border-radius: 9px;
+    cursor: pointer;
+  }
+  .seg-btn.active {
+    background: rgba(255,255,255,0.12);
+    color: rgba(255,255,255,0.95);
+    box-shadow: 0 1px 0 rgba(255,255,255,0.2) inset;
+  }
+
+  /* ── Section header ─────────────────────── */
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 20px 10px;
+  }
+  .section-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.45);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .section-link {
+    font-size: 13px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.35);
+  }
+
+  /* ── KPI strip ──────────────────────────── */
+  .kpi-strip {
+    display: flex;
+    gap: 10px;
+    padding: 0 20px 20px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .kpi-strip::-webkit-scrollbar { display: none; }
+  .kpi-pill {
+    flex-shrink: 0;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 14px;
+    padding: 12px 16px;
+    min-width: 100px;
+    position: relative;
+    overflow: hidden;
+  }
+  .kpi-pill::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.22), transparent);
+  }
+  .kpi-pill-value {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    margin-bottom: 2px;
+  }
+  .kpi-pill-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.4);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .kpi-pill-delta {
+    font-size: 11px;
+    font-weight: 500;
+    margin-top: 4px;
+  }
+  .up { color: #32d74b; }
+  .amber { color: #ff9f0a; }
+  .red { color: #ff453a; }
+
+  /* ── Project cards ──────────────────────── */
+  .project-card {
+    margin: 0 20px 10px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 18px;
+    padding: 16px;
+    position: relative;
+    overflow: hidden;
+  }
+  .project-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 16px; right: 16px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  }
+  .project-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 10px;
+  }
+  .project-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.92);
+    max-width: 200px;
+    line-height: 1.3;
+  }
+  .status-pill {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 20px;
+    letter-spacing: 0.02em;
+  }
+  .status-active { background: rgba(50,215,75,0.15); color: #32d74b; border: 1px solid rgba(50,215,75,0.3); }
+  .status-hold { background: rgba(255,159,10,0.12); color: #ff9f0a; border: 1px solid rgba(255,159,10,0.25); }
+  .status-draft { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.45); border: 1px solid rgba(255,255,255,0.1); }
+  .status-done { background: rgba(100,210,255,0.12); color: #64d2ff; border: 1px solid rgba(100,210,255,0.25); }
+
+  .project-meta {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 12px;
+  }
+  .project-meta-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .project-meta-label {
+    font-size: 11px;
+    color: rgba(255,255,255,0.35);
+    font-weight: 500;
+  }
+  .project-meta-value {
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.8);
+  }
+
+  /* Progress bar */
+  .progress-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .progress-bar {
+    flex: 1;
+    height: 3px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: linear-gradient(90deg, rgba(255,255,255,0.6), rgba(255,255,255,0.9));
+  }
+  .progress-pct {
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.45);
+    min-width: 28px;
+    text-align: right;
+  }
+
+  /* ── Order rows ─────────────────────────── */
+  .orders-list {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 18px;
+    margin: 0 20px 10px;
+    overflow: hidden;
+    position: relative;
+  }
+  .orders-list::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 20px; right: 20px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.16), transparent);
+  }
+  .order-row {
+    display: flex;
+    align-items: center;
+    padding: 13px 16px;
+    gap: 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .order-row:last-child { border-bottom: none; }
+  .order-icon {
+    width: 36px;
+    height: 36px;
+    background: rgba(255,255,255,0.07);
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    flex-shrink: 0;
+  }
+  .order-info { flex: 1; min-width: 0; }
+  .order-id {
+    font-size: 14px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.88);
+    margin-bottom: 2px;
+  }
+  .order-sub {
+    font-size: 12px;
+    color: rgba(255,255,255,0.38);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .order-right { text-align: right; flex-shrink: 0; }
+  .order-amount {
+    font-size: 14px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.88);
+    margin-bottom: 3px;
+  }
+  .order-status-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    margin-right: 4px;
+    vertical-align: middle;
+  }
+  .order-status-text {
+    font-size: 11px;
+    font-weight: 500;
+  }
+
+  /* ── Task rows ──────────────────────────── */
+  .task-list {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 18px;
+    margin: 0 20px 10px;
+    overflow: hidden;
+    position: relative;
+  }
+  .task-list::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 20px; right: 20px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.16), transparent);
+  }
+  .task-row {
+    display: flex;
+    align-items: center;
+    padding: 13px 16px;
+    gap: 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .task-row:last-child { border-bottom: none; }
+  .task-check {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(255,255,255,0.2);
+    flex-shrink: 0;
+  }
+  .task-check.done {
+    background: rgba(50,215,75,0.2);
+    border-color: rgba(50,215,75,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+  }
+  .task-body { flex: 1; min-width: 0; }
+  .task-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.88);
+    margin-bottom: 2px;
+  }
+  .task-name.done-text {
+    color: rgba(255,255,255,0.35);
+    text-decoration: line-through;
+  }
+  .task-sub {
+    font-size: 12px;
+    color: rgba(255,255,255,0.35);
+  }
+  .task-right {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .priority-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+  }
+  .p-high { background: #ff453a; }
+  .p-mid { background: #ff9f0a; }
+  .p-low { background: rgba(255,255,255,0.25); }
+
+  .task-due {
+    font-size: 11px;
+    color: rgba(255,255,255,0.35);
+    font-weight: 500;
+  }
+
+  /* ── FAB ──────────────────────────────── */
+  .fab {
+    position: absolute;
+    bottom: 100px;
+    right: 20px;
+    width: 52px;
+    height: 52px;
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.22);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    box-shadow:
+      0 0 0 0 rgba(255,255,255,0.08),
+      0 8px 24px rgba(0,0,0,0.5);
+    z-index: 5;
+  }
+  .fab::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 6px; right: 6px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+  }
+
+  /* ── Tab bar ────────────────────────────── */
+  .tab-bar {
+    position: absolute;
+    bottom: 24px;
+    left: 20px;
+    right: 20px;
+    height: 60px;
+    background: rgba(20,20,20,0.9);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    padding: 0 8px;
+    z-index: 10;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+  }
+  .tab-bar::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 20px; right: 20px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
+    border-radius: 1px;
+  }
+  .tab-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    flex: 1;
+    padding: 8px 0;
+  }
+  .tab-icon {
+    font-size: 18px;
+    opacity: 0.35;
+    line-height: 1;
+  }
+  .tab-icon.active { opacity: 1; }
+  .tab-dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: #fff;
+  }
+
+  /* spacer */
+  .spacer { height: 16px; }
+</style>
+</head>
+<body>
+
+<!-- ═══ SCREEN 1: Projects ═══ -->
+<div>
+  <p class="phone-label">Operations — Projects</p>
+  <div class="phone">
+    <div class="dynamic-island">
+      <div class="di-dot"></div>
+      <div class="di-text">Operations</div>
+      <div class="di-dot"></div>
+    </div>
+    <div class="status-bar">
+      <span class="status-time">9:41</span>
+      <div class="status-icons">
+        <span>●●●</span><span>WiFi</span><span>🔋</span>
+      </div>
+    </div>
+
+    <div class="scroll">
+      <div class="page-header">
+        <span class="page-title">Operations</span>
+        <div class="header-btn">⊕</div>
+      </div>
+
+      <!-- Segment -->
+      <div class="segment">
+        <div class="seg-btn active">Projects</div>
+        <div class="seg-btn">Orders</div>
+        <div class="seg-btn">Tasks</div>
+        <div class="seg-btn">Stores</div>
+      </div>
+
+      <!-- KPI Strip -->
+      <div class="kpi-strip">
+        <div class="kpi-pill">
+          <div class="kpi-pill-value">14</div>
+          <div class="kpi-pill-label">Active</div>
+          <div class="kpi-pill-delta up">↑ 2 this week</div>
+        </div>
+        <div class="kpi-pill">
+          <div class="kpi-pill-value">3</div>
+          <div class="kpi-pill-label">On Hold</div>
+          <div class="kpi-pill-delta amber">Needs review</div>
+        </div>
+        <div class="kpi-pill">
+          <div class="kpi-pill-value">68%</div>
+          <div class="kpi-pill-label">Avg. Progress</div>
+          <div class="kpi-pill-delta up">↑ 4%</div>
+        </div>
+        <div class="kpi-pill">
+          <div class="kpi-pill-value">€2.4M</div>
+          <div class="kpi-pill-label">Pipeline</div>
+          <div class="kpi-pill-delta" style="color: rgba(255,255,255,0.35)">—</div>
+        </div>
+      </div>
+
+      <div class="section-header">
+        <span class="section-title">Active Projects</span>
+        <span class="section-link">See all →</span>
+      </div>
+
+      <!-- Project cards -->
+      <div class="project-card">
+        <div class="project-card-top">
+          <div class="project-name">Vila Floreasca — Full Renovation</div>
+          <span class="status-pill status-active">Active</span>
+        </div>
+        <div class="project-meta">
+          <div class="project-meta-item">
+            <span class="project-meta-label">Client</span>
+            <span class="project-meta-value">Andrei M.</span>
+          </div>
+          <div class="project-meta-item">
+            <span class="project-meta-label">Value</span>
+            <span class="project-meta-value">€148k</span>
+          </div>
+          <div class="project-meta-item">
+            <span class="project-meta-label">Deadline</span>
+            <span class="project-meta-value amber">Jun 30</span>
+          </div>
+        </div>
+        <div class="progress-wrap">
+          <div class="progress-bar"><div class="progress-fill" style="width:72%"></div></div>
+          <span class="progress-pct">72%</span>
+        </div>
+      </div>
+
+      <div class="project-card">
+        <div class="project-card-top">
+          <div class="project-name">Apartament Dorobanți — Kitchen & Bath</div>
+          <span class="status-pill status-active">Active</span>
+        </div>
+        <div class="project-meta">
+          <div class="project-meta-item">
+            <span class="project-meta-label">Client</span>
+            <span class="project-meta-value">Maria P.</span>
+          </div>
+          <div class="project-meta-item">
+            <span class="project-meta-label">Value</span>
+            <span class="project-meta-value">€62k</span>
+          </div>
+          <div class="project-meta-item">
+            <span class="project-meta-label">Deadline</span>
+            <span class="project-meta-value" style="color:rgba(255,255,255,0.8)">Jul 15</span>
+          </div>
+        </div>
+        <div class="progress-wrap">
+          <div class="progress-bar"><div class="progress-fill" style="width:44%"></div></div>
+          <span class="progress-pct">44%</span>
+        </div>
+      </div>
+
+      <div class="project-card">
+        <div class="project-card-top">
+          <div class="project-name">Birouri Centru — Commercial Fit-out</div>
+          <span class="status-pill status-hold">On Hold</span>
+        </div>
+        <div class="project-meta">
+          <div class="project-meta-item">
+            <span class="project-meta-label">Client</span>
+            <span class="project-meta-value">TechCorp SRL</span>
+          </div>
+          <div class="project-meta-item">
+            <span class="project-meta-label">Value</span>
+            <span class="project-meta-value">€210k</span>
+          </div>
+          <div class="project-meta-item">
+            <span class="project-meta-label">Blocked</span>
+            <span class="project-meta-value red">Permit</span>
+          </div>
+        </div>
+        <div class="progress-wrap">
+          <div class="progress-bar"><div class="progress-fill" style="width:28%"></div></div>
+          <span class="progress-pct">28%</span>
+        </div>
+      </div>
+
+      <div class="project-card">
+        <div class="project-card-top">
+          <div class="project-name">Vila Băneasa — Interior Design</div>
+          <span class="status-pill status-done">Done</span>
+        </div>
+        <div class="project-meta">
+          <div class="project-meta-item">
+            <span class="project-meta-label">Client</span>
+            <span class="project-meta-value">Ion R.</span>
+          </div>
+          <div class="project-meta-item">
+            <span class="project-meta-label">Value</span>
+            <span class="project-meta-value">€89k</span>
+          </div>
+          <div class="project-meta-item">
+            <span class="project-meta-label">Completed</span>
+            <span class="project-meta-value" style="color:rgba(255,255,255,0.8)">Jun 2</span>
+          </div>
+        </div>
+        <div class="progress-wrap">
+          <div class="progress-bar"><div class="progress-fill" style="width:100%"></div></div>
+          <span class="progress-pct" style="color:#32d74b">100%</span>
+        </div>
+      </div>
+
+      <div class="spacer"></div>
+    </div>
+
+    <!-- FAB -->
+    <div class="fab">＋</div>
+
+    <div class="tab-bar">
+      <div class="tab-item"><div class="tab-icon">⌂</div></div>
+      <div class="tab-item"><div class="tab-icon active">⊞</div><div class="tab-dot"></div></div>
+      <div class="tab-item"><div class="tab-icon">◎</div></div>
+      <div class="tab-item"><div class="tab-icon">⟁</div></div>
+      <div class="tab-item"><div class="tab-icon">✦</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SCREEN 2: Orders ═══ -->
+<div>
+  <p class="phone-label">Operations — Orders</p>
+  <div class="phone">
+    <div class="dynamic-island">
+      <div class="di-dot"></div>
+      <div class="di-text">3 pending</div>
+      <div class="di-dot"></div>
+    </div>
+    <div class="status-bar">
+      <span class="status-time">9:41</span>
+      <div class="status-icons">
+        <span>●●●</span><span>WiFi</span><span>🔋</span>
+      </div>
+    </div>
+
+    <div class="scroll">
+      <div class="page-header">
+        <span class="page-title">Operations</span>
+        <div class="header-btn">⊕</div>
+      </div>
+
+      <div class="segment">
+        <div class="seg-btn">Projects</div>
+        <div class="seg-btn active">Orders</div>
+        <div class="seg-btn">Tasks</div>
+        <div class="seg-btn">Stores</div>
+      </div>
+
+      <!-- KPI strip -->
+      <div class="kpi-strip">
+        <div class="kpi-pill">
+          <div class="kpi-pill-value">47</div>
+          <div class="kpi-pill-label">This Week</div>
+          <div class="kpi-pill-delta up">↑ 12%</div>
+        </div>
+        <div class="kpi-pill">
+          <div class="kpi-pill-value">3</div>
+          <div class="kpi-pill-label">Pending</div>
+          <div class="kpi-pill-delta amber">Needs action</div>
+        </div>
+        <div class="kpi-pill">
+          <div class="kpi-pill-value">€124k</div>
+          <div class="kpi-pill-label">Revenue</div>
+          <div class="kpi-pill-delta up">↑ 8%</div>
+        </div>
+        <div class="kpi-pill">
+          <div class="kpi-pill-value">1</div>
+          <div class="kpi-pill-label">Refunded</div>
+          <div class="kpi-pill-delta red">—€420</div>
+        </div>
+      </div>
+
+      <div class="section-header">
+        <span class="section-title">Recent Orders</span>
+        <span class="section-link">See all →</span>
+      </div>
+
+      <div class="orders-list">
+        <div class="order-row">
+          <div class="order-icon">🪣</div>
+          <div class="order-info">
+            <div class="order-id">#ORD-2847</div>
+            <div class="order-sub">Materiale construcții · 14 items</div>
+          </div>
+          <div class="order-right">
+            <div class="order-amount">€3,240</div>
+            <div>
+              <span class="order-status-dot" style="background:#32d74b"></span>
+              <span class="order-status-text" style="color:#32d74b; font-size:11px">Fulfilled</span>
+            </div>
+          </div>
+        </div>
+        <div class="order-row">
+          <div class="order-icon">🔧</div>
+          <div class="order-info">
+            <div class="order-id">#ORD-2846</div>
+            <div class="order-sub">Scule profesionale · 6 items</div>
+          </div>
+          <div class="order-right">
+            <div class="order-amount">€890</div>
+            <div>
+              <span class="order-status-dot" style="background:#ff9f0a"></span>
+              <span class="order-status-text" style="color:#ff9f0a; font-size:11px">Pending</span>
+            </div>
+          </div>
+        </div>
+        <div class="order-row">
+          <div class="order-icon">🏠</div>
+          <div class="order-info">
+            <div class="order-id">#ORD-2845</div>
+            <div class="order-sub">Mobilier · 3 items</div>
+          </div>
+          <div class="order-right">
+            <div class="order-amount">€7,100</div>
+            <div>
+              <span class="order-status-dot" style="background:#ff9f0a"></span>
+              <span class="order-status-text" style="color:#ff9f0a; font-size:11px">Pending</span>
+            </div>
+          </div>
+        </div>
+        <div class="order-row">
+          <div class="order-icon">💡</div>
+          <div class="order-info">
+            <div class="order-id">#ORD-2844</div>
+            <div class="order-sub">Electrice · 22 items</div>
+          </div>
+          <div class="order-right">
+            <div class="order-amount">€1,620</div>
+            <div>
+              <span class="order-status-dot" style="background:#32d74b"></span>
+              <span class="order-status-text" style="color:#32d74b; font-size:11px">Fulfilled</span>
+            </div>
+          </div>
+        </div>
+        <div class="order-row">
+          <div class="order-icon">🚿</div>
+          <div class="order-info">
+            <div class="order-id">#ORD-2843</div>
+            <div class="order-sub">Sanitare · 8 items</div>
+          </div>
+          <div class="order-right">
+            <div class="order-amount">€420</div>
+            <div>
+              <span class="order-status-dot" style="background:#ff453a"></span>
+              <span class="order-status-text" style="color:#ff453a; font-size:11px">Refunded</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="spacer"></div>
+    </div>
+
+    <div class="fab">⊕</div>
+
+    <div class="tab-bar">
+      <div class="tab-item"><div class="tab-icon">⌂</div></div>
+      <div class="tab-item"><div class="tab-icon active">⊞</div><div class="tab-dot"></div></div>
+      <div class="tab-item"><div class="tab-icon">◎</div></div>
+      <div class="tab-item"><div class="tab-icon">⟁</div></div>
+      <div class="tab-item"><div class="tab-icon">✦</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SCREEN 3: Tasks ═══ -->
+<div>
+  <p class="phone-label">Operations — Tasks</p>
+  <div class="phone">
+    <div class="dynamic-island">
+      <div class="di-dot"></div>
+      <div class="di-text">2 overdue</div>
+      <div class="di-dot"></div>
+    </div>
+    <div class="status-bar">
+      <span class="status-time">9:41</span>
+      <div class="status-icons">
+        <span>●●●</span><span>WiFi</span><span>🔋</span>
+      </div>
+    </div>
+
+    <div class="scroll">
+      <div class="page-header">
+        <span class="page-title">Operations</span>
+        <div class="header-btn">⊕</div>
+      </div>
+
+      <div class="segment">
+        <div class="seg-btn">Projects</div>
+        <div class="seg-btn">Orders</div>
+        <div class="seg-btn active">Tasks</div>
+        <div class="seg-btn">Stores</div>
+      </div>
+
+      <!-- KPI strip -->
+      <div class="kpi-strip">
+        <div class="kpi-pill">
+          <div class="kpi-pill-value">28</div>
+          <div class="kpi-pill-label">Open</div>
+          <div class="kpi-pill-delta" style="color:rgba(255,255,255,0.35)">—</div>
+        </div>
+        <div class="kpi-pill">
+          <div class="kpi-pill-value">2</div>
+          <div class="kpi-pill-label">Overdue</div>
+          <div class="kpi-pill-delta red">Urgent</div>
+        </div>
+        <div class="kpi-pill">
+          <div class="kpi-pill-value">11</div>
+          <div class="kpi-pill-label">Done Today</div>
+          <div class="kpi-pill-delta up">↑ 3</div>
+        </div>
+      </div>
+
+      <div class="section-header">
+        <span class="section-title">Overdue</span>
+        <span class="section-link">See all →</span>
+      </div>
+
+      <div class="task-list">
+        <div class="task-row">
+          <div class="task-check" style="border-color:rgba(255,69,58,0.5); background:rgba(255,69,58,0.08)"></div>
+          <div class="task-body">
+            <div class="task-name">Finalize permit application — Birouri Centru</div>
+            <div class="task-sub" style="color:#ff453a">2 days overdue · Mihai V.</div>
+          </div>
+          <div class="task-right">
+            <div class="priority-dot p-high"></div>
+          </div>
+        </div>
+        <div class="task-row">
+          <div class="task-check" style="border-color:rgba(255,69,58,0.5); background:rgba(255,69,58,0.08)"></div>
+          <div class="task-body">
+            <div class="task-name">Submit invoice #INV-0482 to client</div>
+            <div class="task-sub" style="color:#ff453a">1 day overdue · Dana R.</div>
+          </div>
+          <div class="task-right">
+            <div class="priority-dot p-high"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-header">
+        <span class="section-title">Today</span>
+        <span class="section-link">See all →</span>
+      </div>
+
+      <div class="task-list">
+        <div class="task-row">
+          <div class="task-check"></div>
+          <div class="task-body">
+            <div class="task-name">Review supplier quote — Floreasca tiles</div>
+            <div class="task-sub">Today · Alex T.</div>
+          </div>
+          <div class="task-right">
+            <span class="task-due">Today</span>
+            <div class="priority-dot p-mid"></div>
+          </div>
+        </div>
+        <div class="task-row">
+          <div class="task-check"></div>
+          <div class="task-body">
+            <div class="task-name">Schedule site visit — Dorobanți apt.</div>
+            <div class="task-sub">Today · Cristina B.</div>
+          </div>
+          <div class="task-right">
+            <span class="task-due">Today</span>
+            <div class="priority-dot p-mid"></div>
+          </div>
+        </div>
+        <div class="task-row">
+          <div class="task-check done">✓</div>
+          <div class="task-body">
+            <div class="task-name done-text">Update project timeline — Vila Floreasca</div>
+            <div class="task-sub">Done · Radu M.</div>
+          </div>
+          <div class="task-right">
+            <div class="priority-dot p-low"></div>
+          </div>
+        </div>
+        <div class="task-row">
+          <div class="task-check done">✓</div>
+          <div class="task-body">
+            <div class="task-name done-text">Order glazing — Băneasa phase 2</div>
+            <div class="task-sub">Done · Elena P.</div>
+          </div>
+          <div class="task-right">
+            <div class="priority-dot p-low"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="spacer"></div>
+    </div>
+
+    <div class="fab">＋</div>
+
+    <div class="tab-bar">
+      <div class="tab-item"><div class="tab-icon">⌂</div></div>
+      <div class="tab-item"><div class="tab-icon active">⊞</div><div class="tab-dot"></div></div>
+      <div class="tab-item"><div class="tab-icon">◎</div></div>
+      <div class="tab-item"><div class="tab-icon">⟁</div></div>
+      <div class="tab-item"><div class="tab-icon">✦</div></div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
