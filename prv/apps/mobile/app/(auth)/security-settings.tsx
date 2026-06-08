@@ -440,7 +440,11 @@ export default function SecuritySettingsScreen() {
                             {
                               text: "Continue",
                               style: "destructive",
-                              onPress: () => router.push("/(auth)/reauth"),
+                              onPress: () =>
+                                router.push({
+                                  pathname: "/(auth)/reauth",
+                                  params: { reason: "Disable two-factor authentication" },
+                                }),
                             },
                           ]
                         )
