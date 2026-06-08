@@ -18,12 +18,13 @@ import {
   type TaskItem,
 } from "@/hooks/useOperations"
 import { useStores, formatRevenue } from "@/hooks/useStores"
+import { useClients, type ClientListItem } from "@/hooks/useClientDetail"
 import { FABWithSheets } from "@/components/FABWithSheets"
 import { colors, radius, spacing, type as t } from "@/tokens"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type Segment = "projects" | "orders" | "tasks" | "stores"
+type Segment = "projects" | "orders" | "tasks" | "stores" | "clients"
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -330,6 +331,101 @@ function StoresContent() {
   )
 }
 
+// ─── Clients Content ──────────────────────────────────────────────────────────
+
+const CLIENT_STATUS: Record<string, { label: string; bg: string; fg: string }> = {
+  active: { label: "Active", bg: "rgba(48,209,88,0.12)", fg: colors.green },
+  prospect: { label: "Prospect", bg: "rgba(255,214,10,0.10)", fg: colors.amber },
+  inactive: { label: "Inactive", bg: "rgba(255,255,255,0.07)", fg: colors.text3 },
+  archived: { label: "Archived", bg: "rgba(255,255,255,0.07)", fg: colors.text3 },
+}
+
+function ClientRow({ item, onPress }: { item: ClientListItem; onPress: () => void }) {
+  const status = CLIENT_STATUS[item.status] ?? CLIENT_STATUS.inactive!
+  const initials = item.name
+    .split(" ")
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() ?? "")
+    .join("")
+
+  return (
+    <TouchableOpacity style={s.clientRow} onPress={onPress} activeOpacity={0.75}>
+      <View style={s.clientAvatar}>
+        <Text style={s.clientAvatarText}>{initials}</Text>
+      </View>
+      <View style={s.clientInfo}>
+        <Text style={s.clientName} numberOfLines={1}>
+          {item.name}
+        </Text>
+        <Text style={s.clientSub} numberOfLines={1}>
+          {item.email ?? item.city ?? (item.type === "business" ? "Business" : "Individual")}
+        </Text>
+      </View>
+      <View style={[s.clientStatusPill, { backgroundColor: status.bg }]}>
+        <Text style={[s.clientStatusText, { color: status.fg }]}>{status.label}</Text>
+      </View>
+      <Text style={s.clientChevron}>›</Text>
+    </TouchableOpacity>
+  )
+}
+
+function ClientsContent() {
+  const router = useRouter()
+  const [filter, setFilter] = useState<"all" | "active" | "prospect">("all")
+  const { data, isLoading, error } = useClients(filter === "all" ? undefined : filter)
+
+  const rows = data?.clients ?? []
+
+  return (
+    <>
+      {/* Filter pills */}
+      <View style={s.clientFilterRow}>
+        {(["all", "active", "prospect"] as const).map((f) => (
+          <TouchableOpacity
+            key={f}
+            style={[s.clientFilterPill, filter === f && s.clientFilterPillActive]}
+            onPress={() => setFilter(f)}
+            activeOpacity={0.75}
+          >
+            <Text style={[s.clientFilterText, filter === f && s.clientFilterTextActive]}>
+              {f === "all" ? "All" : f === "active" ? "Active" : "Prospects"}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      {isLoading ? (
+        <View style={{ paddingTop: spacing.xxl, alignItems: "center" }}>
+          <ActivityIndicator color={colors.text3} />
+        </View>
+      ) : error ? (
+        <View style={s.empty}>
+          <Text style={s.emptyText}>Could not load clients.</Text>
+        </View>
+      ) : rows.length === 0 ? (
+        <View style={s.empty}>
+          <Text style={s.emptyText}>No clients yet. Tap + to add one.</Text>
+        </View>
+      ) : (
+        <View style={s.clientCard}>
+          <View style={s.cardShine} pointerEvents="none" />
+          {rows.map((item, i) => (
+            <View key={item.id}>
+              {i > 0 && <View style={s.clientDivider} />}
+              <ClientRow
+                item={item}
+                onPress={() =>
+                  router.push({ pathname: "/(auth)/client-detail", params: { id: item.id } })
+                }
+              />
+            </View>
+          ))}
+        </View>
+      )}
+    </>
+  )
+}
+
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
 
 function SkeletonBlock({ w, h, r }: { w?: number | string; h: number; r?: number }) {
@@ -514,6 +610,7 @@ const SEGMENTS: { key: Segment; label: string }[] = [
   { key: "orders", label: "Orders" },
   { key: "tasks", label: "Tasks" },
   { key: "stores", label: "Stores" },
+  { key: "clients", label: "Clients" },
 ]
 
 export default function OperationsScreen() {
@@ -572,6 +669,7 @@ export default function OperationsScreen() {
           {segment === "orders" && <OrdersContent data={data} />}
           {segment === "tasks" && <TasksContent data={data} />}
           {segment === "stores" && <StoresContent />}
+          {segment === "clients" && <ClientsContent />}
         </ScrollView>
       )}
 
@@ -1030,6 +1128,71 @@ const s = StyleSheet.create({
     color: colors.text3,
     textAlign: "center",
     lineHeight: 20,
+  },
+
+  // Clients
+  clientFilterRow: {
+    flexDirection: "row",
+    gap: 8,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.sm,
+  },
+  clientFilterPill: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: radius.pill,
+    backgroundColor: "rgba(255,255,255,0.06)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.10)",
+  },
+  clientFilterPillActive: {
+    backgroundColor: "rgba(255,255,255,0.13)",
+    borderColor: "rgba(255,255,255,0.22)",
+  },
+  clientFilterText: { fontSize: 13, fontWeight: "600", color: colors.text3 },
+  clientFilterTextActive: { color: colors.text1 },
+  clientCard: {
+    marginHorizontal: spacing.lg,
+    backgroundColor: "rgba(255,255,255,0.04)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
+    borderRadius: 18,
+    overflow: "hidden",
+    position: "relative",
+  },
+  clientRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: spacing.base,
+    paddingVertical: 11,
+    gap: 10,
+  },
+  clientAvatar: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: "rgba(255,255,255,0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.12)",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  clientAvatarText: { fontSize: 13, fontWeight: "700", color: colors.text2 },
+  clientInfo: { flex: 1, gap: 3 },
+  clientName: { fontSize: 14, fontWeight: "600", color: colors.text1 },
+  clientSub: { fontSize: 11, color: colors.text3 },
+  clientStatusPill: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: radius.pill,
+  },
+  clientStatusText: { fontSize: 11, fontWeight: "600" },
+  clientChevron: { fontSize: 18, color: "rgba(255,255,255,0.18)", marginLeft: -4 },
+  clientDivider: {
+    height: 1,
+    backgroundColor: "rgba(255,255,255,0.05)",
+    marginHorizontal: spacing.base,
   },
 
   // FAB

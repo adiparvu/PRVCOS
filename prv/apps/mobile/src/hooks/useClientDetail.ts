@@ -1,6 +1,28 @@
 import { useQuery } from "@tanstack/react-query"
 import { api } from "@/lib/api"
 
+export interface ClientListItem {
+  id: string
+  name: string
+  type: "business" | "individual"
+  status: "active" | "prospect" | "inactive" | "archived"
+  email: string | null
+  phone: string | null
+  city: string | null
+  vatNumber: string | null
+  createdAt: string
+}
+
+export function useClients(status?: string) {
+  const params = status ? `?status=${status}` : ""
+  return useQuery<{ clients: ClientListItem[] }>({
+    queryKey: ["clients", status ?? "all"],
+    queryFn: () => api.get<{ clients: ClientListItem[] }>(`/api/mobile/clients${params}`),
+    staleTime: 60_000,
+    retry: 2,
+  })
+}
+
 export interface ClientDetail {
   client: {
     id: string

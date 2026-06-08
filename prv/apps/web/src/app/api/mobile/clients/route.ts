@@ -5,9 +5,44 @@ import { withMobileAuth } from "@/lib/mobile/auth"
 import { db } from "@prv/db"
 import { clients } from "@prv/db/schema"
 import { writeAuditLog } from "@prv/auth"
+import { eq, and, isNull, desc, or, ilike } from "drizzle-orm"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
+
+export const GET = withMobileAuth(async (req: NextRequest, ctx) => {
+  const { searchParams } = req.nextUrl
+  const status = searchParams.get("status") ?? undefined
+  const q = searchParams.get("q")?.trim() ?? undefined
+
+  const conditions = [eq(clients.companyId, ctx.companyId), isNull(clients.deletedAt)]
+  if (status && ["active", "prospect", "inactive", "archived"].includes(status)) {
+    conditions.push(eq(clients.status, status as "active" | "prospect" | "inactive" | "archived"))
+  }
+
+  const rows = await db
+    .select({
+      id: clients.id,
+      name: clients.name,
+      type: clients.type,
+      status: clients.status,
+      email: clients.email,
+      phone: clients.phone,
+      city: clients.city,
+      vatNumber: clients.vatNumber,
+      createdAt: clients.createdAt,
+    })
+    .from(clients)
+    .where(
+      q
+        ? and(...conditions, or(ilike(clients.name, `%${q}%`), ilike(clients.email, `%${q}%`)))
+        : and(...conditions)
+    )
+    .orderBy(desc(clients.createdAt))
+    .limit(100)
+
+  return NextResponse.json({ clients: rows })
+})
 
 const bodySchema = z.object({
   name: z.string().min(1).max(255),
