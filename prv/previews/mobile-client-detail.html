@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PRV Mobile — Client Detail Preview</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0a0a0a;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+    padding: 40px 24px;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif;
+    gap: 32px;
+    flex-wrap: wrap;
+  }
+
+  .label {
+    color: rgba(255,255,255,0.35);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    text-align: center;
+    margin-bottom: 12px;
+  }
+
+  /* Phone frame */
+  .phone {
+    width: 375px;
+    background: #000;
+    border-radius: 44px;
+    border: 1.5px solid rgba(255,255,255,0.12);
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 32px 80px rgba(0,0,0,0.8), 0 8px 24px rgba(0,0,0,0.5),
+                inset 0 1px 0 rgba(255,255,255,0.10);
+  }
+
+  /* Status bar */
+  .status-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 24px 0;
+    height: 54px;
+  }
+  .status-time { font-size: 15px; font-weight: 700; color: #fff; }
+  .status-icons { display: flex; gap: 6px; align-items: center; }
+  .status-icons span { font-size: 12px; color: rgba(255,255,255,0.85); }
+
+  /* Navbar */
+  .navbar {
+    display: flex;
+    align-items: center;
+    padding: 6px 20px 8px;
+    gap: 0;
+  }
+  .back-btn {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.12);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; color: #fff;
+    flex-shrink: 0;
+  }
+  .nav-title {
+    flex: 1; text-align: center;
+    font-size: 17px; font-weight: 600;
+    color: #fff; letter-spacing: -0.2px;
+  }
+  .nav-more {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.12);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; color: rgba(255,255,255,0.65);
+  }
+
+  /* Scroll area */
+  .scroll {
+    height: calc(100vh - 200px);
+    max-height: 740px;
+    overflow-y: auto;
+    padding: 0 16px 120px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    scrollbar-width: none;
+  }
+  .scroll::-webkit-scrollbar { display: none; }
+
+  /* Hero card */
+  .hero {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 22px;
+    padding: 18px;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .hero::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 16px; right: 16px;
+    height: 1px;
+    background: rgba(255,255,255,0.20);
+  }
+  .hero-top {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+  }
+  .avatar {
+    width: 60px; height: 60px;
+    border-radius: 16px;
+    background: rgba(255,255,255,0.10);
+    border: 1px solid rgba(255,255,255,0.14);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; font-weight: 700; color: #fff;
+    flex-shrink: 0;
+    letter-spacing: -1px;
+  }
+  .hero-info { flex: 1; min-width: 0; }
+  .hero-name {
+    font-size: 20px; font-weight: 700;
+    color: #fff; letter-spacing: -0.4px;
+    line-height: 1.2;
+  }
+  .hero-sub {
+    font-size: 13px; color: rgba(255,255,255,0.45);
+    margin-top: 3px;
+  }
+  .badge-row {
+    display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap;
+  }
+  .badge {
+    padding: 3px 10px;
+    border-radius: 100px;
+    border: 1px solid;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.02em;
+  }
+  .badge-active { background: rgba(48,209,88,0.12); color: #30d158; border-color: rgba(48,209,88,0.25); }
+  .badge-prospect { background: rgba(255,214,10,0.10); color: #ffd60a; border-color: rgba(255,214,10,0.22); }
+  .badge-inactive { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.35); border-color: rgba(255,255,255,0.10); }
+  .badge-business { background: rgba(100,210,255,0.08); color: #64d2ff; border-color: rgba(100,210,255,0.18); }
+  .badge-individual { background: rgba(191,90,242,0.10); color: #bf5af2; border-color: rgba(191,90,242,0.22); }
+
+  /* Contact strip */
+  .contact-strip {
+    display: flex; gap: 8px;
+  }
+  .contact-btn {
+    flex: 1;
+    padding: 10px 8px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 12px;
+    display: flex; flex-direction: column;
+    align-items: center; gap: 4px;
+    position: relative; overflow: hidden;
+  }
+  .contact-btn::before {
+    content: "";
+    position: absolute; top: 0; left: 6px; right: 6px; height: 1px;
+    background: rgba(255,255,255,0.10);
+  }
+  .contact-icon { font-size: 16px; color: rgba(255,255,255,0.65); }
+  .contact-label { font-size: 10px; font-weight: 500; color: rgba(255,255,255,0.35); }
+  .contact-btn.disabled { opacity: 0.4; }
+
+  /* Quick actions */
+  .quick-row {
+    display: flex; gap: 8px;
+  }
+  .quick-btn {
+    flex: 1; padding: 13px 6px;
+    display: flex; flex-direction: column;
+    align-items: center; gap: 5px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 16px;
+    position: relative; overflow: hidden;
+  }
+  .quick-btn::before {
+    content: "";
+    position: absolute; top: 0; left: 8px; right: 8px; height: 1px;
+    background: rgba(255,255,255,0.18);
+  }
+  .quick-icon { font-size: 16px; color: rgba(255,255,255,0.65); }
+  .quick-label { font-size: 10px; font-weight: 500; color: rgba(255,255,255,0.35); }
+
+  /* KPI strip */
+  .kpi-strip {
+    display: flex; gap: 8px; overflow-x: auto;
+    scrollbar-width: none; padding-bottom: 2px;
+  }
+  .kpi-strip::-webkit-scrollbar { display: none; }
+  .kpi-card {
+    flex-shrink: 0;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 14px;
+    padding: 10px 14px;
+    min-width: 90px;
+    position: relative; overflow: hidden;
+  }
+  .kpi-card::before {
+    content: "";
+    position: absolute; top: 0; left: 8px; right: 8px; height: 1px;
+    background: rgba(255,255,255,0.12);
+  }
+  .kpi-value { font-size: 16px; font-weight: 700; color: #fff; letter-spacing: -0.3px; }
+  .kpi-label { font-size: 10px; color: rgba(255,255,255,0.35); margin-top: 3px; }
+  .kpi-value.green { color: #30d158; }
+  .kpi-value.amber { color: #ffd60a; }
+  .kpi-value.red { color: #ff453a; }
+
+  /* Section head */
+  .section-head {
+    display: flex; align-items: center; gap: 8px;
+    padding: 4px 0 6px;
+  }
+  .section-title {
+    font-size: 12px; font-weight: 600;
+    color: rgba(255,255,255,0.35);
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .section-count {
+    font-size: 11px; color: rgba(255,255,255,0.25);
+    margin-left: auto;
+  }
+
+  /* Glass card */
+  .card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 18px;
+    overflow: hidden;
+    position: relative;
+  }
+  .card::before {
+    content: "";
+    position: absolute; top: 0; left: 16px; right: 16px; height: 1px;
+    background: rgba(255,255,255,0.12);
+  }
+
+  /* Project row */
+  .project-row {
+    display: flex; align-items: center;
+    padding: 12px 14px; gap: 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .project-row:last-child { border-bottom: none; }
+  .proj-dot {
+    width: 8px; height: 8px; border-radius: 4px;
+    flex-shrink: 0;
+  }
+  .proj-info { flex: 1; min-width: 0; }
+  .proj-name { font-size: 13px; font-weight: 600; color: #fff; }
+  .proj-sub { font-size: 11px; color: rgba(255,255,255,0.35); margin-top: 2px; }
+  .proj-amount { font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.65); }
+  .proj-chevron { font-size: 16px; color: rgba(255,255,255,0.20); }
+
+  /* Invoice row */
+  .invoice-row {
+    display: flex; align-items: center;
+    padding: 12px 14px; gap: 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .invoice-row:last-child { border-bottom: none; }
+  .inv-info { flex: 1; min-width: 0; }
+  .inv-number { font-size: 13px; font-weight: 600; color: #fff; }
+  .inv-sub { font-size: 11px; color: rgba(255,255,255,0.35); margin-top: 2px; }
+  .inv-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+  .inv-amount { font-size: 13px; font-weight: 600; color: #fff; }
+  .inv-badge {
+    padding: 2px 8px; border-radius: 100px;
+    font-size: 10px; font-weight: 700;
+  }
+  .inv-paid { background: rgba(48,209,88,0.15); color: #30d158; }
+  .inv-sent { background: rgba(255,214,10,0.13); color: #ffd60a; }
+  .inv-overdue { background: rgba(255,69,58,0.12); color: #ff453a; }
+
+  /* Info row */
+  .info-row {
+    display: flex; align-items: center;
+    padding: 11px 14px; gap: 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .info-row:last-child { border-bottom: none; }
+  .info-icon {
+    width: 30px; height: 30px; border-radius: 8px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.09);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; color: rgba(255,255,255,0.55);
+    flex-shrink: 0;
+  }
+  .info-content { flex: 1; }
+  .info-label { font-size: 10px; color: rgba(255,255,255,0.35); margin-bottom: 1px; }
+  .info-value { font-size: 13px; font-weight: 600; color: #fff; }
+  .info-value.muted { color: rgba(255,255,255,0.55); }
+  .info-chevron { font-size: 16px; color: rgba(255,255,255,0.20); }
+
+  /* Tags row */
+  .tags-row {
+    display: flex; flex-wrap: wrap; gap: 6px;
+    padding: 10px 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .tags-row:last-child { border-bottom: none; }
+  .tag {
+    padding: 3px 9px; border-radius: 100px;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.10);
+    font-size: 11px; color: rgba(255,255,255,0.55);
+    font-weight: 500;
+  }
+
+  /* Dot colors */
+  .dot-active { background: #30d158; }
+  .dot-progress { background: #64d2ff; }
+  .dot-planning { background: rgba(255,255,255,0.35); }
+</style>
+</head>
+<body>
+
+<!-- ─── Phone 1: Business client (active) ──────────────────────────────────── -->
+<div>
+  <div class="label">Business Client · Active</div>
+  <div class="phone">
+    <!-- Status bar -->
+    <div class="status-bar">
+      <span class="status-time">9:41</span>
+      <div class="status-icons">
+        <span>●●●</span>
+        <span>WiFi</span>
+        <span>🔋</span>
+      </div>
+    </div>
+
+    <!-- Navbar -->
+    <div class="navbar">
+      <div class="back-btn">‹</div>
+      <div class="nav-title">Client</div>
+      <div class="nav-more">···</div>
+    </div>
+
+    <!-- Scroll content -->
+    <div class="scroll">
+
+      <!-- Hero -->
+      <div class="hero">
+        <div class="hero-top">
+          <div class="avatar">AC</div>
+          <div class="hero-info">
+            <div class="hero-name">Arcadia Construct</div>
+            <div class="hero-sub">arcadiaconstruct.ro</div>
+            <div class="badge-row">
+              <span class="badge badge-business">Business</span>
+              <span class="badge badge-active">Active</span>
+            </div>
+          </div>
+        </div>
+        <!-- Contact strip -->
+        <div class="contact-strip">
+          <div class="contact-btn">
+            <div class="contact-icon">✉</div>
+            <div class="contact-label">Email</div>
+          </div>
+          <div class="contact-btn">
+            <div class="contact-icon">☎</div>
+            <div class="contact-label">Call</div>
+          </div>
+          <div class="contact-btn">
+            <div class="contact-icon">⊕</div>
+            <div class="contact-label">Website</div>
+          </div>
+          <div class="contact-btn">
+            <div class="contact-icon">◎</div>
+            <div class="contact-label">Map</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick actions -->
+      <div class="quick-row">
+        <div class="quick-btn">
+          <div class="quick-icon">⊕</div>
+          <div class="quick-label">Invoice</div>
+        </div>
+        <div class="quick-btn">
+          <div class="quick-icon">◎</div>
+          <div class="quick-label">Project</div>
+        </div>
+        <div class="quick-btn">
+          <div class="quick-icon">≡</div>
+          <div class="quick-label">Note</div>
+        </div>
+        <div class="quick-btn">
+          <div class="quick-icon">···</div>
+          <div class="quick-label">More</div>
+        </div>
+      </div>
+
+      <!-- KPI strip -->
+      <div class="kpi-strip">
+        <div class="kpi-card">
+          <div class="kpi-value">RON 84k</div>
+          <div class="kpi-label">Total Billed</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-value amber">2</div>
+          <div class="kpi-label">Open Invoices</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-value">3</div>
+          <div class="kpi-label">Projects</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-value">Jan '24</div>
+          <div class="kpi-label">Client Since</div>
+        </div>
+      </div>
+
+      <!-- Active Projects -->
+      <div class="section-head">
+        <span class="section-title">Active Projects</span>
+        <span class="section-count">3</span>
+      </div>
+      <div class="card">
+        <div class="project-row">
+          <div class="proj-dot dot-active"></div>
+          <div class="proj-info">
+            <div class="proj-name">Büro Renovation Phase 2</div>
+            <div class="proj-sub">In Progress · Due 15 Jul</div>
+          </div>
+          <div class="proj-amount">RON 32k</div>
+          <div class="proj-chevron">›</div>
+        </div>
+        <div class="project-row">
+          <div class="proj-dot dot-progress"></div>
+          <div class="proj-info">
+            <div class="proj-name">Lobby Flooring</div>
+            <div class="proj-sub">Confirmed · Due 28 Jun</div>
+          </div>
+          <div class="proj-amount">RON 14.5k</div>
+          <div class="proj-chevron">›</div>
+        </div>
+        <div class="project-row">
+          <div class="proj-dot dot-planning"></div>
+          <div class="proj-info">
+            <div class="proj-name">Electrical Upgrade</div>
+            <div class="proj-sub">Planning · No due date</div>
+          </div>
+          <div class="proj-amount">RON 8k</div>
+          <div class="proj-chevron">›</div>
+        </div>
+      </div>
+
+      <!-- Recent Invoices -->
+      <div class="section-head">
+        <span class="section-title">Recent Invoices</span>
+        <span class="section-count">5</span>
+      </div>
+      <div class="card">
+        <div class="invoice-row">
+          <div class="inv-info">
+            <div class="inv-number">INV-2024-0081</div>
+            <div class="inv-sub">Issued 1 Jun 2024</div>
+          </div>
+          <div class="inv-right">
+            <div class="inv-amount">RON 18,400</div>
+            <div class="inv-badge inv-sent">Sent</div>
+          </div>
+        </div>
+        <div class="invoice-row">
+          <div class="inv-info">
+            <div class="inv-number">INV-2024-0067</div>
+            <div class="inv-sub">Issued 5 May 2024</div>
+          </div>
+          <div class="inv-right">
+            <div class="inv-amount">RON 12,200</div>
+            <div class="inv-badge inv-overdue">Overdue</div>
+          </div>
+        </div>
+        <div class="invoice-row">
+          <div class="inv-info">
+            <div class="inv-number">INV-2024-0042</div>
+            <div class="inv-sub">Issued 10 Mar 2024</div>
+          </div>
+          <div class="inv-right">
+            <div class="inv-amount">RON 9,600</div>
+            <div class="inv-badge inv-paid">Paid</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Details -->
+      <div class="section-head">
+        <span class="section-title">Details</span>
+      </div>
+      <div class="card">
+        <div class="info-row">
+          <div class="info-icon">⊟</div>
+          <div class="info-content">
+            <div class="info-label">Address</div>
+            <div class="info-value">Str. Victoriei 14, Sector 1</div>
+          </div>
+          <div class="info-chevron">›</div>
+        </div>
+        <div class="info-row">
+          <div class="info-icon">⊙</div>
+          <div class="info-content">
+            <div class="info-label">City · Country</div>
+            <div class="info-value">București · RO</div>
+          </div>
+        </div>
+        <div class="info-row">
+          <div class="info-icon">◈</div>
+          <div class="info-content">
+            <div class="info-label">VAT Number</div>
+            <div class="info-value">RO12345678</div>
+          </div>
+        </div>
+        <div class="info-row">
+          <div class="info-icon">◇</div>
+          <div class="info-content">
+            <div class="info-label">Reg. Number</div>
+            <div class="info-value">J40/1234/2018</div>
+          </div>
+        </div>
+        <div class="info-row">
+          <div class="info-icon">⊙</div>
+          <div class="info-content">
+            <div class="info-label">Account Manager</div>
+            <div class="info-value">Andrei Constantin</div>
+          </div>
+          <div class="info-chevron">›</div>
+        </div>
+        <div class="tags-row">
+          <span class="tag">renovation</span>
+          <span class="tag">enterprise</span>
+          <span class="tag">priority</span>
+        </div>
+      </div>
+
+    </div><!-- end scroll -->
+  </div><!-- end phone -->
+</div>
+
+<!-- ─── Phone 2: Individual client (prospect) ──────────────────────────────── -->
+<div>
+  <div class="label">Individual Client · Prospect</div>
+  <div class="phone">
+    <!-- Status bar -->
+    <div class="status-bar">
+      <span class="status-time">9:41</span>
+      <div class="status-icons">
+        <span>●●●</span>
+        <span>WiFi</span>
+        <span>🔋</span>
+      </div>
+    </div>
+
+    <!-- Navbar -->
+    <div class="navbar">
+      <div class="back-btn">‹</div>
+      <div class="nav-title">Client</div>
+      <div class="nav-more">···</div>
+    </div>
+
+    <!-- Scroll content -->
+    <div class="scroll">
+
+      <!-- Hero -->
+      <div class="hero">
+        <div class="hero-top">
+          <div class="avatar">MI</div>
+          <div class="hero-info">
+            <div class="hero-name">Mihai Ionescu</div>
+            <div class="hero-sub">+40 724 555 890</div>
+            <div class="badge-row">
+              <span class="badge badge-individual">Individual</span>
+              <span class="badge badge-prospect">Prospect</span>
+            </div>
+          </div>
+        </div>
+        <!-- Contact strip -->
+        <div class="contact-strip">
+          <div class="contact-btn">
+            <div class="contact-icon">✉</div>
+            <div class="contact-label">Email</div>
+          </div>
+          <div class="contact-btn">
+            <div class="contact-icon">☎</div>
+            <div class="contact-label">Call</div>
+          </div>
+          <div class="contact-btn disabled">
+            <div class="contact-icon">⊕</div>
+            <div class="contact-label">Website</div>
+          </div>
+          <div class="contact-btn disabled">
+            <div class="contact-icon">◎</div>
+            <div class="contact-label">Map</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick actions -->
+      <div class="quick-row">
+        <div class="quick-btn">
+          <div class="quick-icon">⊕</div>
+          <div class="quick-label">Invoice</div>
+        </div>
+        <div class="quick-btn">
+          <div class="quick-icon">◎</div>
+          <div class="quick-label">Project</div>
+        </div>
+        <div class="quick-btn">
+          <div class="quick-icon">≡</div>
+          <div class="quick-label">Note</div>
+        </div>
+        <div class="quick-btn">
+          <div class="quick-icon">···</div>
+          <div class="quick-label">More</div>
+        </div>
+      </div>
+
+      <!-- KPI strip -->
+      <div class="kpi-strip">
+        <div class="kpi-card">
+          <div class="kpi-value">—</div>
+          <div class="kpi-label">Total Billed</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-value">0</div>
+          <div class="kpi-label">Open Invoices</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-value">1</div>
+          <div class="kpi-label">Projects</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-value">Mar '24</div>
+          <div class="kpi-label">Client Since</div>
+        </div>
+      </div>
+
+      <!-- Active Projects -->
+      <div class="section-head">
+        <span class="section-title">Active Projects</span>
+        <span class="section-count">1</span>
+      </div>
+      <div class="card">
+        <div class="project-row">
+          <div class="proj-dot dot-planning"></div>
+          <div class="proj-info">
+            <div class="proj-name">Bathroom Renovation</div>
+            <div class="proj-sub">Pending · No due date yet</div>
+          </div>
+          <div class="proj-amount">—</div>
+          <div class="proj-chevron">›</div>
+        </div>
+      </div>
+
+      <!-- No invoices — empty state -->
+      <div class="section-head">
+        <span class="section-title">Recent Invoices</span>
+      </div>
+      <div class="card" style="padding: 22px; display:flex; align-items:center; justify-content:center;">
+        <span style="font-size:13px; color:rgba(255,255,255,0.25);">No invoices yet</span>
+      </div>
+
+      <!-- Details -->
+      <div class="section-head">
+        <span class="section-title">Details</span>
+      </div>
+      <div class="card">
+        <div class="info-row">
+          <div class="info-icon">⊟</div>
+          <div class="info-content">
+            <div class="info-label">Address</div>
+            <div class="info-value">Bd. Unirii 22, Ap. 5</div>
+          </div>
+          <div class="info-chevron">›</div>
+        </div>
+        <div class="info-row">
+          <div class="info-icon">⊙</div>
+          <div class="info-content">
+            <div class="info-label">City · Country</div>
+            <div class="info-value">Cluj-Napoca · RO</div>
+          </div>
+        </div>
+        <div class="info-row">
+          <div class="info-icon">◈</div>
+          <div class="info-content">
+            <div class="info-label">VAT Number</div>
+            <div class="info-value muted">Not set</div>
+          </div>
+        </div>
+        <div class="info-row">
+          <div class="info-icon">⊙</div>
+          <div class="info-content">
+            <div class="info-label">Account Manager</div>
+            <div class="info-value muted">Unassigned</div>
+          </div>
+        </div>
+        <div class="info-row">
+          <div class="info-icon">≡</div>
+          <div class="info-content">
+            <div class="info-label">Notes</div>
+            <div class="info-value" style="font-size:12px; line-height:1.4; color:rgba(255,255,255,0.65);">Interested in bathroom + kitchen. Follow up after June vacation. Referred by Arcadia Construct.</div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end scroll -->
+  </div><!-- end phone -->
+</div>
+
+</body>
+</html>
