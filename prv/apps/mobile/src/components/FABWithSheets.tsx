@@ -6,6 +6,7 @@ import { CreateInvoiceSheet } from "./CreateInvoiceSheet"
 import { CreateOrderSheet } from "./CreateOrderSheet"
 import { CreateProjectSheet } from "./CreateProjectSheet"
 import { CreateClientSheet } from "./CreateClientSheet"
+import { CreateExpenseSheet } from "./CreateExpenseSheet"
 
 type FlowState = null | "chooser" | CreateType
 
@@ -42,6 +43,7 @@ export function FABWithSheets({ bottomOffset = 86 }: Props) {
       <CreateOrderSheet visible={flow === "order"} onClose={closeAll} />
       <CreateProjectSheet visible={flow === "project"} onClose={closeAll} />
       <CreateClientSheet visible={flow === "client"} onClose={closeAll} />
+      <CreateExpenseSheet visible={flow === "expense"} onClose={closeAll} />
     </>
   )
 }

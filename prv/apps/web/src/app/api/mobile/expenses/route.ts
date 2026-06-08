@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
+import { z } from "zod"
 import { withMobileAuth } from "@/lib/mobile/auth"
 import { db } from "@prv/db"
 import { expenses } from "@prv/db/schema"
+import { writeAuditLog } from "@prv/auth"
 import { eq, and, isNull, notInArray, gte, lt, sum, count, desc } from "drizzle-orm"
-import { sql } from "drizzle-orm"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -129,4 +130,87 @@ export const GET = withMobileAuth(async (_req: NextRequest, ctx) => {
       status: r.status,
     })),
   })
+})
+
+const postSchema = z.object({
+  title: z.string().min(1).max(255),
+  category: z
+    .enum([
+      "materials",
+      "labor",
+      "equipment",
+      "transport",
+      "rent",
+      "utilities",
+      "marketing",
+      "salaries",
+      "subscriptions",
+      "other",
+    ])
+    .default("other"),
+  amount: z.number().positive(),
+  currency: z.string().length(3).default("RON"),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  status: z.enum(["draft", "submitted"]).default("draft"),
+  notes: z.string().max(2000).optional(),
+  storeId: z.string().uuid().optional(),
+})
+
+export const POST = withMobileAuth(async (req: NextRequest, ctx) => {
+  const ipAddress =
+    req.headers.get("x-real-ip") ??
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    "unknown"
+
+  let body: unknown
+  try {
+    body = await req.json()
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 })
+  }
+
+  const parsed = postSchema.safeParse(body)
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 })
+  }
+
+  const { title, category, amount, currency, date, status, notes, storeId } = parsed.data
+
+  const [expense] = await db
+    .insert(expenses)
+    .values({
+      companyId: ctx.companyId,
+      submittedById: ctx.userId,
+      storeId: storeId ?? null,
+      title,
+      category,
+      status,
+      amount: String(amount),
+      currency: currency.toUpperCase(),
+      date,
+      notes: notes ?? null,
+    })
+    .returning({ id: expenses.id, title: expenses.title, status: expenses.status })
+
+  if (!expense) {
+    return NextResponse.json({ error: "Failed to create expense" }, { status: 500 })
+  }
+
+  void writeAuditLog({
+    companyId: ctx.companyId,
+    actorId: ctx.userId,
+    sessionId: ctx.sessionId,
+    action: "mobile.expense.create",
+    entityType: "expense",
+    entityId: expense.id,
+    method: "POST",
+    path: "/api/mobile/expenses",
+    ipAddress,
+    userAgent: req.headers.get("user-agent") ?? "",
+  })
+
+  return NextResponse.json(
+    { id: expense.id, title: expense.title, status: expense.status },
+    { status: 201 }
+  )
 })

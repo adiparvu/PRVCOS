@@ -61,6 +61,29 @@ export interface CreateClientInput {
   notes?: string
 }
 
+export type ExpenseCategory =
+  | "materials"
+  | "labor"
+  | "equipment"
+  | "transport"
+  | "rent"
+  | "utilities"
+  | "marketing"
+  | "salaries"
+  | "subscriptions"
+  | "other"
+
+export interface CreateExpenseInput {
+  title: string
+  category: ExpenseCategory
+  amount: number
+  currency: string
+  date: string
+  status: "draft" | "submitted"
+  notes?: string
+  storeId?: string
+}
+
 export function useCreateInvoice() {
   const qc = useQueryClient()
   return useMutation({
@@ -120,6 +143,17 @@ export function useCreateClient() {
       ),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["search"] })
+    },
+  })
+}
+
+export function useCreateExpense() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (input: CreateExpenseInput) =>
+      api.post<{ id: string; title: string; status: string }>("/api/mobile/expenses", input),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["expenses"] })
     },
   })
 }
