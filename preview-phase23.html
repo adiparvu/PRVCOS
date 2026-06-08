@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PRV Phase 23 — People Tab Preview</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0a0a0a;
+    font-family: -apple-system, "SF Pro Display", "SF Pro Text", sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+    padding: 40px 20px;
+    gap: 32px;
+    flex-wrap: wrap;
+    color: #fff;
+  }
+
+  .phone {
+    width: 393px;
+    min-height: 852px;
+    background: #000;
+    border-radius: 52px;
+    border: 1.5px solid rgba(255,255,255,0.12);
+    box-shadow:
+      0 0 0 8px #111,
+      0 0 0 9.5px rgba(255,255,255,0.06),
+      0 40px 80px rgba(0,0,0,0.8);
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+  .phone-label {
+    color: rgba(255,255,255,0.35);
+    font-size: 11px;
+    font-weight: 500;
+    text-align: center;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .di {
+    position: absolute;
+    top: 12px; left: 50%; transform: translateX(-50%);
+    width: 120px; height: 34px;
+    background: #000; border-radius: 20px;
+    z-index: 10;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .di-dot { width: 8px; height: 8px; background: rgba(255,255,255,0.15); border-radius: 50%; }
+  .di-text { font-size: 10px; color: rgba(255,255,255,0.5); font-weight: 500; }
+
+  .sb {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 16px 28px 0; height: 52px; flex-shrink: 0;
+  }
+  .sb-time { font-size: 15px; font-weight: 600; }
+  .sb-icons { display: flex; gap: 6px; align-items: center; font-size: 13px; opacity: 0.8; }
+
+  .scroll { flex: 1; overflow-y: auto; padding: 0 0 120px; scrollbar-width: none; }
+  .scroll::-webkit-scrollbar { display: none; }
+
+  .page-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 20px 8px;
+  }
+  .page-title { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; }
+  .header-btn {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.1);
+    display: flex; align-items: center; justify-content: center; font-size: 16px;
+  }
+
+  .segment {
+    display: flex; margin: 8px 20px 16px;
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px; padding: 3px; gap: 2px;
+  }
+  .seg { flex: 1; padding: 7px 0; text-align: center; font-size: 13px; font-weight: 500;
+         color: rgba(255,255,255,0.4); border-radius: 9px; }
+  .seg.on { background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.95);
+             box-shadow: inset 0 1px 0 rgba(255,255,255,0.18); }
+
+  /* KPI strip */
+  .kpi-strip { display: flex; gap: 10px; padding: 0 20px 16px; overflow-x: auto; scrollbar-width: none; }
+  .kpi-strip::-webkit-scrollbar { display: none; }
+  .kpi-pill {
+    flex-shrink: 0; min-width: 90px; padding: 12px 14px;
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 14px; position: relative; overflow: hidden;
+  }
+  .kpi-pill::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.22), transparent);
+  }
+  .kv { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 2px; }
+  .kl { font-size: 11px; font-weight: 500; color: rgba(255,255,255,0.38); text-transform: uppercase; letter-spacing: 0.04em; }
+  .kd { font-size: 11px; font-weight: 500; margin-top: 4px; }
+  .green { color: #30d158; }
+  .amber { color: #ff9f0a; }
+  .red { color: #ff453a; }
+  .blue { color: #64d2ff; }
+
+  .sec-hdr { display: flex; justify-content: space-between; align-items: center; padding: 4px 20px 10px; }
+  .sec-title { font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.4);
+               text-transform: uppercase; letter-spacing: 0.06em; }
+  .sec-link { font-size: 13px; color: rgba(255,255,255,0.3); }
+
+  /* Member rows */
+  .list-card {
+    margin: 0 20px 10px;
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 18px; overflow: hidden; position: relative;
+  }
+  .list-card::before {
+    content: ''; position: absolute; top: 0; left: 20px; right: 20px; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+  }
+  .member-row {
+    display: flex; align-items: center; padding: 12px 16px; gap: 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .member-row:last-child { border-bottom: none; }
+
+  .avatar {
+    width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;
+    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 700; color: rgba(255,255,255,0.7);
+    position: relative;
+  }
+  .online-dot {
+    position: absolute; bottom: 1px; right: 1px;
+    width: 10px; height: 10px; border-radius: 50%;
+    border: 2px solid #000;
+  }
+  .dot-green { background: #30d158; }
+  .dot-gray { background: rgba(255,255,255,0.25); }
+  .dot-amber { background: #ff9f0a; }
+
+  .member-info { flex: 1; min-width: 0; }
+  .member-name { font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.9); margin-bottom: 2px; }
+  .member-role { font-size: 12px; color: rgba(255,255,255,0.38); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .member-right { text-align: right; flex-shrink: 0; }
+  .member-time { font-size: 11px; color: rgba(255,255,255,0.3); font-weight: 500; }
+  .role-tag {
+    font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 20px;
+    margin-bottom: 3px; display: inline-block;
+  }
+
+  /* Schedule cards */
+  .schedule-card {
+    margin: 0 20px 10px;
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 18px; padding: 14px 16px; position: relative; overflow: hidden;
+  }
+  .schedule-card::before {
+    content: ''; position: absolute; top: 0; left: 16px; right: 16px; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  }
+  .shift-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .shift-name { font-size: 15px; font-weight: 600; color: rgba(255,255,255,0.9); }
+  .shift-time { font-size: 13px; color: rgba(255,255,255,0.5); font-weight: 500; }
+  .shift-people { display: flex; align-items: center; gap: 8px; }
+  .shift-avatars { display: flex; margin-right: 4px; }
+  .shift-avatar {
+    width: 24px; height: 24px; border-radius: 50%; border: 2px solid #000;
+    background: rgba(255,255,255,0.12); margin-left: -6px; font-size: 9px;
+    display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.7);
+    font-weight: 700;
+  }
+  .shift-avatar:first-child { margin-left: 0; }
+  .shift-count { font-size: 12px; color: rgba(255,255,255,0.4); }
+  .shift-bar { height: 2px; background: rgba(255,255,255,0.08); border-radius: 1px; margin-top: 10px; overflow: hidden; }
+  .shift-fill { height: 100%; border-radius: 1px; background: linear-gradient(90deg, rgba(255,255,255,0.4), rgba(255,255,255,0.7)); }
+
+  /* Attendance rows */
+  .att-row {
+    display: flex; align-items: center; padding: 12px 16px; gap: 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .att-row:last-child { border-bottom: none; }
+  .att-icon {
+    width: 34px; height: 34px; border-radius: 10px;
+    background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1);
+    display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0;
+  }
+  .att-info { flex: 1; min-width: 0; }
+  .att-name { font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.88); margin-bottom: 2px; }
+  .att-sub { font-size: 12px; color: rgba(255,255,255,0.35); }
+  .att-badge {
+    font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 20px;
+  }
+  .badge-on-time { background: rgba(48,209,88,0.12); color: #30d158; border: 1px solid rgba(48,209,88,0.25); }
+  .badge-late { background: rgba(255,159,10,0.1); color: #ff9f0a; border: 1px solid rgba(255,159,10,0.22); }
+  .badge-absent { background: rgba(255,69,58,0.1); color: #ff453a; border: 1px solid rgba(255,69,58,0.22); }
+  .badge-leave { background: rgba(100,210,255,0.1); color: #64d2ff; border: 1px solid rgba(100,210,255,0.22); }
+
+  .tab-bar {
+    position: absolute; bottom: 24px; left: 20px; right: 20px; height: 60px;
+    background: rgba(20,20,20,0.9); border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 30px; display: flex; align-items: center; justify-content: space-around;
+    padding: 0 8px; z-index: 10; box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+  }
+  .tab-bar::before {
+    content: ''; position: absolute; top: 0; left: 20px; right: 20px; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
+    border-radius: 1px;
+  }
+  .tab { display: flex; flex-direction: column; align-items: center; gap: 3px; flex: 1; padding: 8px 0; }
+  .ti { font-size: 18px; opacity: 0.3; line-height: 1; }
+  .ti.on { opacity: 1; }
+  .td { width: 4px; height: 4px; border-radius: 50%; background: #fff; }
+
+  .sp { height: 16px; }
+</style>
+</head>
+<body>
+
+<!-- ═══ Screen 1: Team ═══ -->
+<div>
+  <p class="phone-label">People — Team</p>
+  <div class="phone">
+    <div class="di"><div class="di-dot"></div><div class="di-text">12 online</div><div class="di-dot"></div></div>
+    <div class="sb"><span class="sb-time">9:41</span><span class="sb-icons">●●● WiFi 🔋</span></div>
+    <div class="scroll">
+      <div class="page-header">
+        <span class="page-title">People</span>
+        <div class="header-btn">⊕</div>
+      </div>
+      <div class="segment">
+        <div class="seg on">Team</div>
+        <div class="seg">Schedule</div>
+        <div class="seg">Attendance</div>
+        <div class="seg">Org</div>
+      </div>
+
+      <div class="kpi-strip">
+        <div class="kpi-pill">
+          <div class="kv">34</div>
+          <div class="kl">Total</div>
+        </div>
+        <div class="kpi-pill">
+          <div class="kv green">12</div>
+          <div class="kl">Online</div>
+          <div class="kd green">↑ 3 today</div>
+        </div>
+        <div class="kpi-pill">
+          <div class="kv amber">2</div>
+          <div class="kl">On Leave</div>
+        </div>
+        <div class="kpi-pill">
+          <div class="kv">6</div>
+          <div class="kl">Roles</div>
+        </div>
+      </div>
+
+      <div class="sec-hdr"><span class="sec-title">Online Now</span><span class="sec-link">See all →</span></div>
+      <div class="list-card">
+        <div class="member-row">
+          <div class="avatar">AM<div class="online-dot dot-green"></div></div>
+          <div class="member-info">
+            <div class="member-name">Alexandru Marin</div>
+            <div class="member-role">Project Director</div>
+          </div>
+          <div class="member-right">
+            <div class="role-tag" style="background:rgba(100,210,255,0.1);color:#64d2ff;border:1px solid rgba(100,210,255,0.2)">Director</div>
+            <div class="member-time">Active now</div>
+          </div>
+        </div>
+        <div class="member-row">
+          <div class="avatar">DC<div class="online-dot dot-green"></div></div>
+          <div class="member-info">
+            <div class="member-name">Dana Constantin</div>
+            <div class="member-role">HR & Payroll</div>
+          </div>
+          <div class="member-right">
+            <div class="role-tag" style="background:rgba(191,90,242,0.1);color:#bf5af2;border:1px solid rgba(191,90,242,0.2)">HR</div>
+            <div class="member-time">Active now</div>
+          </div>
+        </div>
+        <div class="member-row">
+          <div class="avatar">RP<div class="online-dot dot-green"></div></div>
+          <div class="member-info">
+            <div class="member-name">Radu Popescu</div>
+            <div class="member-role">Operations Manager</div>
+          </div>
+          <div class="member-right">
+            <div class="role-tag" style="background:rgba(48,209,88,0.1);color:#30d158;border:1px solid rgba(48,209,88,0.2)">Ops</div>
+            <div class="member-time">2m ago</div>
+          </div>
+        </div>
+        <div class="member-row">
+          <div class="avatar">EB<div class="online-dot dot-amber"></div></div>
+          <div class="member-info">
+            <div class="member-name">Elena Bălan</div>
+            <div class="member-role">Seller</div>
+          </div>
+          <div class="member-right">
+            <div class="role-tag" style="background:rgba(255,159,10,0.1);color:#ff9f0a;border:1px solid rgba(255,159,10,0.2)">Seller</div>
+            <div class="member-time">18m ago</div>
+          </div>
+        </div>
+        <div class="member-row">
+          <div class="avatar" style="color:rgba(255,255,255,0.35)">MV<div class="online-dot dot-gray"></div></div>
+          <div class="member-info">
+            <div class="member-name" style="color:rgba(255,255,255,0.55)">Mihai Voicu</div>
+            <div class="member-role">Worker</div>
+          </div>
+          <div class="member-right">
+            <div class="role-tag" style="background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.3);border:1px solid rgba(255,255,255,0.08)">Worker</div>
+            <div class="member-time">3h ago</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sec-hdr"><span class="sec-title">On Leave</span></div>
+      <div class="list-card">
+        <div class="member-row">
+          <div class="avatar" style="opacity:0.5">AT</div>
+          <div class="member-info">
+            <div class="member-name" style="color:rgba(255,255,255,0.55)">Andreea Tudor</div>
+            <div class="member-role">Team Leader · Medical leave</div>
+          </div>
+          <div class="member-right">
+            <div class="att-badge badge-leave" style="font-size:10px;padding:2px 7px">Leave</div>
+          </div>
+        </div>
+        <div class="member-row">
+          <div class="avatar" style="opacity:0.5">CI</div>
+          <div class="member-info">
+            <div class="member-name" style="color:rgba(255,255,255,0.55)">Claudiu Ionescu</div>
+            <div class="member-role">Worker · Annual leave</div>
+          </div>
+          <div class="member-right">
+            <div class="att-badge badge-leave" style="font-size:10px;padding:2px 7px">Leave</div>
+          </div>
+        </div>
+      </div>
+      <div class="sp"></div>
+    </div>
+    <div class="tab-bar">
+      <div class="tab"><div class="ti">⌂</div></div>
+      <div class="tab"><div class="ti">⊞</div></div>
+      <div class="tab"><div class="ti on">◎</div><div class="td"></div></div>
+      <div class="tab"><div class="ti">⟁</div></div>
+      <div class="tab"><div class="ti">✦</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Screen 2: Schedule ═══ -->
+<div>
+  <p class="phone-label">People — Schedule</p>
+  <div class="phone">
+    <div class="di"><div class="di-dot"></div><div class="di-text">Today</div><div class="di-dot"></div></div>
+    <div class="sb"><span class="sb-time">9:41</span><span class="sb-icons">●●● WiFi 🔋</span></div>
+    <div class="scroll">
+      <div class="page-header">
+        <span class="page-title">People</span>
+        <div class="header-btn">⊕</div>
+      </div>
+      <div class="segment">
+        <div class="seg">Team</div>
+        <div class="seg on">Schedule</div>
+        <div class="seg">Attendance</div>
+        <div class="seg">Org</div>
+      </div>
+
+      <div class="kpi-strip">
+        <div class="kpi-pill">
+          <div class="kv">3</div>
+          <div class="kl">Shifts Today</div>
+        </div>
+        <div class="kpi-pill">
+          <div class="kv green">22</div>
+          <div class="kl">Scheduled</div>
+        </div>
+        <div class="kpi-pill">
+          <div class="kv amber">4</div>
+          <div class="kl">Unassigned</div>
+        </div>
+      </div>
+
+      <!-- Date strip -->
+      <div style="display:flex;gap:6px;padding:0 20px 16px;overflow-x:auto;scrollbar-width:none;">
+        <div style="flex-shrink:0;padding:8px 14px;border-radius:12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);text-align:center;">
+          <div style="font-size:11px;color:rgba(255,255,255,0.35);font-weight:500;margin-bottom:2px;">MON</div>
+          <div style="font-size:16px;font-weight:600;color:rgba(255,255,255,0.4);">9</div>
+        </div>
+        <div style="flex-shrink:0;padding:8px 14px;border-radius:12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);text-align:center;">
+          <div style="font-size:11px;color:rgba(255,255,255,0.35);font-weight:500;margin-bottom:2px;">TUE</div>
+          <div style="font-size:16px;font-weight:600;color:rgba(255,255,255,0.4);">10</div>
+        </div>
+        <div style="flex-shrink:0;padding:8px 16px;border-radius:12px;background:rgba(255,255,255,0.14);border:1px solid rgba(255,255,255,0.22);text-align:center;box-shadow:inset 0 1px 0 rgba(255,255,255,0.2);">
+          <div style="font-size:11px;color:rgba(255,255,255,0.55);font-weight:600;margin-bottom:2px;">WED</div>
+          <div style="font-size:16px;font-weight:700;color:rgba(255,255,255,0.95);">11</div>
+        </div>
+        <div style="flex-shrink:0;padding:8px 14px;border-radius:12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);text-align:center;">
+          <div style="font-size:11px;color:rgba(255,255,255,0.35);font-weight:500;margin-bottom:2px;">THU</div>
+          <div style="font-size:16px;font-weight:600;color:rgba(255,255,255,0.4);">12</div>
+        </div>
+        <div style="flex-shrink:0;padding:8px 14px;border-radius:12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);text-align:center;">
+          <div style="font-size:11px;color:rgba(255,255,255,0.35);font-weight:500;margin-bottom:2px;">FRI</div>
+          <div style="font-size:16px;font-weight:600;color:rgba(255,255,255,0.4);">13</div>
+        </div>
+        <div style="flex-shrink:0;padding:8px 14px;border-radius:12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);text-align:center;">
+          <div style="font-size:11px;color:rgba(255,255,255,0.35);font-weight:500;margin-bottom:2px;">SAT</div>
+          <div style="font-size:16px;font-weight:600;color:rgba(255,255,255,0.4);">14</div>
+        </div>
+      </div>
+
+      <div class="sec-hdr"><span class="sec-title">Today · Jun 11</span></div>
+
+      <div class="schedule-card">
+        <div class="shift-top">
+          <span class="shift-name">Morning Shift</span>
+          <span class="shift-time">07:00 – 15:00</span>
+        </div>
+        <div class="shift-people">
+          <div class="shift-avatars">
+            <div class="shift-avatar">AM</div>
+            <div class="shift-avatar">RP</div>
+            <div class="shift-avatar">MV</div>
+            <div class="shift-avatar" style="background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.4)">+4</div>
+          </div>
+          <span class="shift-count">7 people</span>
+        </div>
+        <div class="shift-bar"><div class="shift-fill" style="width:62%"></div></div>
+      </div>
+
+      <div class="schedule-card">
+        <div class="shift-top">
+          <span class="shift-name">Site — Floreasca</span>
+          <span class="shift-time">08:00 – 17:00</span>
+        </div>
+        <div class="shift-people">
+          <div class="shift-avatars">
+            <div class="shift-avatar">EB</div>
+            <div class="shift-avatar">DC</div>
+            <div class="shift-avatar" style="background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.4)">+3</div>
+          </div>
+          <span class="shift-count">5 people</span>
+        </div>
+        <div class="shift-bar"><div class="shift-fill" style="width:30%"></div></div>
+      </div>
+
+      <div class="schedule-card" style="border-color:rgba(255,159,10,0.2);background:rgba(255,159,10,0.04)">
+        <div class="shift-top">
+          <span class="shift-name">Evening Shift</span>
+          <span class="shift-time">15:00 – 23:00</span>
+        </div>
+        <div class="shift-people">
+          <div class="shift-avatars">
+            <div class="shift-avatar" style="background:rgba(255,255,255,0.06);border:1px dashed rgba(255,255,255,0.15);color:rgba(255,255,255,0.3)">?</div>
+            <div class="shift-avatar" style="background:rgba(255,255,255,0.06);border:1px dashed rgba(255,255,255,0.15);color:rgba(255,255,255,0.3)">?</div>
+          </div>
+          <span class="shift-count" style="color:#ff9f0a">4 unassigned</span>
+        </div>
+        <div class="shift-bar"><div class="shift-fill" style="width:0%"></div></div>
+      </div>
+      <div class="sp"></div>
+    </div>
+    <div class="tab-bar">
+      <div class="tab"><div class="ti">⌂</div></div>
+      <div class="tab"><div class="ti">⊞</div></div>
+      <div class="tab"><div class="ti on">◎</div><div class="td"></div></div>
+      <div class="tab"><div class="ti">⟁</div></div>
+      <div class="tab"><div class="ti">✦</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Screen 3: Attendance ═══ -->
+<div>
+  <p class="phone-label">People — Attendance</p>
+  <div class="phone">
+    <div class="di"><div class="di-dot"></div><div class="di-text">2 late</div><div class="di-dot"></div></div>
+    <div class="sb"><span class="sb-time">9:41</span><span class="sb-icons">●●● WiFi 🔋</span></div>
+    <div class="scroll">
+      <div class="page-header">
+        <span class="page-title">People</span>
+        <div class="header-btn">⊕</div>
+      </div>
+      <div class="segment">
+        <div class="seg">Team</div>
+        <div class="seg">Schedule</div>
+        <div class="seg on">Attendance</div>
+        <div class="seg">Org</div>
+      </div>
+
+      <div class="kpi-strip">
+        <div class="kpi-pill">
+          <div class="kv green">18</div>
+          <div class="kl">On Time</div>
+          <div class="kd green">↑ 2 vs yesterday</div>
+        </div>
+        <div class="kpi-pill">
+          <div class="kv amber">2</div>
+          <div class="kl">Late</div>
+        </div>
+        <div class="kpi-pill">
+          <div class="kv red">1</div>
+          <div class="kl">Absent</div>
+        </div>
+        <div class="kpi-pill">
+          <div class="kv blue">2</div>
+          <div class="kl">Leave</div>
+        </div>
+      </div>
+
+      <div class="sec-hdr"><span class="sec-title">Today · Jun 11</span><span class="sec-link">Export →</span></div>
+
+      <div class="list-card">
+        <div class="att-row">
+          <div class="att-icon">✓</div>
+          <div class="att-info">
+            <div class="att-name">Alexandru Marin</div>
+            <div class="att-sub">Checked in 07:02 · Morning Shift</div>
+          </div>
+          <span class="att-badge badge-on-time">On time</span>
+        </div>
+        <div class="att-row">
+          <div class="att-icon">✓</div>
+          <div class="att-info">
+            <div class="att-name">Radu Popescu</div>
+            <div class="att-sub">Checked in 07:58 · Morning Shift</div>
+          </div>
+          <span class="att-badge badge-on-time">On time</span>
+        </div>
+        <div class="att-row">
+          <div class="att-icon" style="color:#ff9f0a">⚠</div>
+          <div class="att-info">
+            <div class="att-name">Elena Bălan</div>
+            <div class="att-sub">Checked in 08:24 · 24 min late</div>
+          </div>
+          <span class="att-badge badge-late">Late</span>
+        </div>
+        <div class="att-row">
+          <div class="att-icon" style="color:#ff9f0a">⚠</div>
+          <div class="att-info">
+            <div class="att-name">Mihai Voicu</div>
+            <div class="att-sub">Checked in 09:11 · 71 min late</div>
+          </div>
+          <span class="att-badge badge-late">Late</span>
+        </div>
+        <div class="att-row">
+          <div class="att-icon" style="color:#ff453a">✕</div>
+          <div class="att-info">
+            <div class="att-name">George Stoica</div>
+            <div class="att-sub">No check-in · Morning Shift</div>
+          </div>
+          <span class="att-badge badge-absent">Absent</span>
+        </div>
+        <div class="att-row">
+          <div class="att-icon" style="color:#64d2ff">◉</div>
+          <div class="att-info">
+            <div class="att-name">Andreea Tudor</div>
+            <div class="att-sub">Medical leave · Jun 9–14</div>
+          </div>
+          <span class="att-badge badge-leave">Leave</span>
+        </div>
+        <div class="att-row">
+          <div class="att-icon" style="color:#64d2ff">◉</div>
+          <div class="att-info">
+            <div class="att-name">Claudiu Ionescu</div>
+            <div class="att-sub">Annual leave · Jun 8–15</div>
+          </div>
+          <span class="att-badge badge-leave">Leave</span>
+        </div>
+      </div>
+      <div class="sp"></div>
+    </div>
+    <div class="tab-bar">
+      <div class="tab"><div class="ti">⌂</div></div>
+      <div class="tab"><div class="ti">⊞</div></div>
+      <div class="tab"><div class="ti on">◎</div><div class="td"></div></div>
+      <div class="tab"><div class="ti">⟁</div></div>
+      <div class="tab"><div class="ti">✦</div></div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
