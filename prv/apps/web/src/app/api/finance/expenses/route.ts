@@ -159,21 +159,30 @@ export const GET = withGates(
     const { searchParams } = new URL(req.url)
     const filterStatus = searchParams.get("status") as ExpenseStatus | null
     const filterCategory = searchParams.get("category") as ExpenseCategory | null
+    const cursor = searchParams.get("cursor")
+    const limit = Math.min(parseInt(searchParams.get("limit") ?? "50", 10), 200)
 
     const currentYear = new Date().getFullYear()
     const yearStart = `${currentYear}-01-01`
     const yearEnd = `${currentYear + 1}-01-01`
     const prevYearStart = `${currentYear - 1}-01-01`
 
+    const expenseConditions = [
+      eq(expenses.companyId, ctx.session.companyId),
+      isNull(expenses.deletedAt),
+    ]
+    if (cursor) expenseConditions.push(lt(expenses.createdAt, new Date(cursor)))
+
     // Run all queries in parallel
-    const [expenseRows, revenueAgg, cogsAgg, opexAgg, vatAgg, prevRevenueAgg, prevExpAgg] =
+    const [rawExpenseRows, revenueAgg, cogsAgg, opexAgg, vatAgg, prevRevenueAgg, prevExpAgg] =
       await Promise.all([
         // Expenses list
         db
           .select()
           .from(expenses)
-          .where(and(eq(expenses.companyId, ctx.session.companyId), isNull(expenses.deletedAt)))
-          .orderBy(desc(expenses.date)),
+          .where(and(...expenseConditions))
+          .orderBy(desc(expenses.createdAt))
+          .limit(limit + 1),
 
         // Revenue YTD (paid invoices)
         db
@@ -262,6 +271,13 @@ export const GET = withGates(
           ),
       ])
 
+    const hasMore = rawExpenseRows.length > limit
+    const expenseRows = hasMore ? rawExpenseRows.slice(0, limit) : rawExpenseRows
+    const nextCursor =
+      hasMore && expenseRows.length > 0
+        ? expenseRows[expenseRows.length - 1]!.createdAt.toISOString()
+        : null
+
     // ── Map expense rows to UI shape ──────────────────────────────────────────
     let list: Expense[] = []
     for (const r of expenseRows) {
@@ -349,7 +365,7 @@ export const GET = withGates(
           ]
         : []
 
-    return NextResponse.json({ expenses: list, plData, meta })
+    return NextResponse.json({ expenses: list, plData, meta, nextCursor })
   }
 )
 

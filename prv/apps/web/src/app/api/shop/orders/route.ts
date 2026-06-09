@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
 import { db } from "@prv/db"
 import { orders, orderItems } from "@prv/db/schema"
-import { and, desc, eq, inArray, isNull } from "drizzle-orm"
+import { and, desc, eq, inArray, isNull, lt } from "drizzle-orm"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -50,6 +50,13 @@ export const GET = withGates(
     const statusFilter = searchParams.get("status") as OrderStatus | null
     const { companyId } = ctx.session
 
+    const rawLimit = parseInt(searchParams.get("limit") ?? "25", 10)
+    const limit = Math.min(isNaN(rawLimit) || rawLimit < 1 ? 25 : rawLimit, 100)
+    const cursor = searchParams.get("cursor")
+
+    const conditions = [eq(orders.companyId, companyId), isNull(orders.deletedAt)]
+    if (cursor) conditions.push(lt(orders.createdAt, new Date(cursor)))
+
     const rows = await db
       .select({
         id: orders.id,
@@ -63,10 +70,16 @@ export const GET = withGates(
         createdAt: orders.createdAt,
       })
       .from(orders)
-      .where(and(eq(orders.companyId, companyId), isNull(orders.deletedAt)))
+      .where(and(...conditions))
       .orderBy(desc(orders.createdAt))
+      .limit(limit + 1)
 
-    const orderIds = rows.map((r) => r.id)
+    const hasMore = rows.length > limit
+    const items = rows.slice(0, limit)
+    const nextCursor =
+      hasMore && items.length > 0 ? items[items.length - 1]!.createdAt.toISOString() : null
+
+    const orderIds = items.map((r) => r.id)
     const allItems =
       orderIds.length > 0
         ? await db
@@ -88,7 +101,7 @@ export const GET = withGates(
       itemsByOrder[item.orderId]!.push(item)
     }
 
-    let result: Order[] = rows.map((r) => {
+    let result: Order[] = items.map((r) => {
       const addr = (r.shippingAddress ?? {}) as Record<string, unknown>
       const deliveryAddress =
         typeof addr.street === "string" ? [addr.street, addr.city].filter(Boolean).join(", ") : "—"
@@ -137,6 +150,8 @@ export const GET = withGates(
         delivered: delivered.length,
         totalValue,
       },
+      nextCursor,
+      hasMore,
     })
   }
 )

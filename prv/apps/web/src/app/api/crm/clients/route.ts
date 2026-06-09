@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
 import { db } from "@prv/db"
 import { clients, invoices, projects } from "@prv/db/schema"
-import { and, count, desc, eq, inArray, isNotNull, isNull, notInArray, sum } from "drizzle-orm"
+import { and, count, desc, eq, inArray, isNotNull, isNull, lt, notInArray, sum } from "drizzle-orm"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -46,9 +46,18 @@ export const GET = withGates(
   async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
     const { searchParams } = new URL(req.url)
     const statusFilter = searchParams.get("status") as ClientStatus | null
+    const cursor = searchParams.get("cursor")
+    const limit = Math.min(parseInt(searchParams.get("limit") ?? "50", 10), 200)
 
     // 1. Fetch clients for this company (exclude archived)
-    const clientRows = await db
+    const clientConditions = [
+      eq(clients.companyId, ctx.session.companyId),
+      isNull(clients.deletedAt),
+      notInArray(clients.status, ["archived"]),
+    ]
+    if (cursor) clientConditions.push(lt(clients.createdAt, new Date(cursor)))
+
+    const rawClientRows = await db
       .select({
         id: clients.id,
         name: clients.name,
@@ -57,17 +66,19 @@ export const GET = withGates(
         createdAt: clients.createdAt,
       })
       .from(clients)
-      .where(
-        and(
-          eq(clients.companyId, ctx.session.companyId),
-          isNull(clients.deletedAt),
-          notInArray(clients.status, ["archived"])
-        )
-      )
+      .where(and(...clientConditions))
       .orderBy(desc(clients.createdAt))
+      .limit(limit + 1)
+
+    const hasMore = rawClientRows.length > limit
+    const clientRows = hasMore ? rawClientRows.slice(0, limit) : rawClientRows
+    const nextCursor =
+      hasMore && clientRows.length > 0
+        ? clientRows[clientRows.length - 1]!.createdAt.toISOString()
+        : null
 
     if (clientRows.length === 0) {
-      return NextResponse.json({ clients: [], count: 0 })
+      return NextResponse.json({ clients: [], count: 0, nextCursor: null })
     }
 
     const clientIds = clientRows.map((c) => c.id)
@@ -132,6 +143,6 @@ export const GET = withGates(
       })
       .filter((c) => !statusFilter || c.status === statusFilter)
 
-    return NextResponse.json({ clients: result, count: result.length })
+    return NextResponse.json({ clients: result, count: result.length, nextCursor })
   }
 )

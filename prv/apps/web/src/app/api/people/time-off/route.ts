@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
 import { db } from "@prv/db"
 import { leaveRequests, users, stores } from "@prv/db/schema"
-import { and, desc, eq, isNull } from "drizzle-orm"
+import { and, desc, eq, isNull, lt } from "drizzle-orm"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -75,7 +75,17 @@ export const GET = withGates(
 
     const dbStatus = statusFilter === "declined" ? "rejected" : statusFilter
 
-    const rows = await db
+    const cursor = searchParams.get("cursor")
+    const limit = Math.min(parseInt(searchParams.get("limit") ?? "50", 10), 200)
+
+    const leaveConditions = [
+      eq(leaveRequests.companyId, companyId),
+      eq(leaveRequests.status, dbStatus as "pending" | "approved" | "rejected"),
+      isNull(leaveRequests.deletedAt),
+    ]
+    if (cursor) leaveConditions.push(lt(leaveRequests.createdAt, new Date(cursor)))
+
+    const rawRows = await db
       .select({
         id: leaveRequests.id,
         userId: leaveRequests.userId,
@@ -94,14 +104,14 @@ export const GET = withGates(
       .from(leaveRequests)
       .leftJoin(users, eq(leaveRequests.userId, users.id))
       .leftJoin(stores, eq(users.storeId, stores.id))
-      .where(
-        and(
-          eq(leaveRequests.companyId, companyId),
-          eq(leaveRequests.status, dbStatus as "pending" | "approved" | "rejected"),
-          isNull(leaveRequests.deletedAt)
-        )
-      )
+      .where(and(...leaveConditions))
       .orderBy(desc(leaveRequests.createdAt))
+      .limit(limit + 1)
+
+    const hasMore = rawRows.length > limit
+    const rows = hasMore ? rawRows.slice(0, limit) : rawRows
+    const nextCursor =
+      hasMore && rows.length > 0 ? rows[rows.length - 1]!.createdAt.toISOString() : null
 
     const results: TimeOffRequest[] = rows.map((r) => {
       const name = r.firstName ? `${r.firstName} ${r.lastName}` : "—"
@@ -130,6 +140,6 @@ export const GET = withGates(
       }
     })
 
-    return NextResponse.json({ requests: results, count: results.length })
+    return NextResponse.json({ requests: results, count: results.length, nextCursor })
   }
 )

@@ -10,7 +10,7 @@ import {
   users,
   invoices,
 } from "@prv/db/schema"
-import { and, asc, desc, eq, inArray, isNull, isNotNull, sum } from "drizzle-orm"
+import { and, asc, desc, eq, inArray, isNull, isNotNull, lt, sum } from "drizzle-orm"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -89,6 +89,8 @@ export const GET = withGates(
   async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
     const { searchParams } = new URL(req.url)
     const statusFilter = searchParams.get("status")
+    const cursor = searchParams.get("cursor")
+    const limit = Math.min(parseInt(searchParams.get("limit") ?? "50", 10), 200)
 
     // Build optional DB status filter
     const dbStatuses = statusFilter ? (API_STATUS_TO_DB[statusFilter] ?? []) : []
@@ -97,8 +99,15 @@ export const GET = withGates(
         ? inArray(projects.status, dbStatuses as (typeof projects.status._.data)[])
         : undefined
 
+    const projectConditions = [
+      eq(projects.companyId, ctx.session.companyId),
+      isNull(projects.deletedAt),
+    ]
+    if (statusClause) projectConditions.push(statusClause)
+    if (cursor) projectConditions.push(lt(projects.createdAt, new Date(cursor)))
+
     // 1. Fetch projects with client name
-    const projectRows = await db
+    const rawProjectRows = await db
       .select({
         id: projects.id,
         name: projects.name,
@@ -108,16 +117,23 @@ export const GET = withGates(
         startDate: projects.startDate,
         dueDate: projects.dueDate,
         clientName: clients.name,
+        createdAt: projects.createdAt,
       })
       .from(projects)
       .leftJoin(clients, eq(projects.clientId, clients.id))
-      .where(
-        and(eq(projects.companyId, ctx.session.companyId), isNull(projects.deletedAt), statusClause)
-      )
+      .where(and(...projectConditions))
       .orderBy(desc(projects.createdAt))
+      .limit(limit + 1)
+
+    const hasMore = rawProjectRows.length > limit
+    const projectRows = hasMore ? rawProjectRows.slice(0, limit) : rawProjectRows
+    const nextCursor =
+      hasMore && projectRows.length > 0
+        ? projectRows[projectRows.length - 1]!.createdAt.toISOString()
+        : null
 
     if (projectRows.length === 0) {
-      return NextResponse.json({ projects: [], count: 0 })
+      return NextResponse.json({ projects: [], count: 0, nextCursor: null })
     }
 
     const projectIds = projectRows.map((p) => p.id)
@@ -220,6 +236,6 @@ export const GET = withGates(
       }
     })
 
-    return NextResponse.json({ projects: result, count: result.length })
+    return NextResponse.json({ projects: result, count: result.length, nextCursor })
   }
 )

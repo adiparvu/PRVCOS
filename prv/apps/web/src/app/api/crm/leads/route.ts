@@ -5,7 +5,7 @@ import { z } from "zod"
 import type { GateContext } from "@prv/auth"
 import { db } from "@prv/db"
 import { clients, users } from "@prv/db/schema"
-import { and, desc, eq, isNull } from "drizzle-orm"
+import { and, desc, eq, isNull, lt } from "drizzle-orm"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -58,10 +58,20 @@ const createSchema = z.object({
 
 export const GET = withGates(
   { action: "crm.leads.read", endpointClass: "api_read" },
-  async (_req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
+    const { searchParams } = new URL(req.url)
+    const cursor = searchParams.get("cursor")
+    const limit = Math.min(parseInt(searchParams.get("limit") ?? "50", 10), 200)
     const { companyId } = ctx.session
 
-    const rows = await db
+    const conditions = [
+      eq(clients.companyId, companyId),
+      eq(clients.status, "prospect"),
+      isNull(clients.deletedAt),
+    ]
+    if (cursor) conditions.push(lt(clients.createdAt, new Date(cursor)))
+
+    const rawRows = await db
       .select({
         id: clients.id,
         name: clients.name,
@@ -76,14 +86,14 @@ export const GET = withGates(
       })
       .from(clients)
       .leftJoin(users, eq(clients.assignedUserId, users.id))
-      .where(
-        and(
-          eq(clients.companyId, companyId),
-          eq(clients.status, "prospect"),
-          isNull(clients.deletedAt)
-        )
-      )
+      .where(and(...conditions))
       .orderBy(desc(clients.createdAt))
+      .limit(limit + 1)
+
+    const hasMore = rawRows.length > limit
+    const rows = hasMore ? rawRows.slice(0, limit) : rawRows
+    const nextCursor =
+      hasMore && rows.length > 0 ? rows[rows.length - 1]!.createdAt.toISOString() : null
 
     const leads: Lead[] = rows.map((r) => {
       const meta = (r.metadata ?? {}) as Record<string, unknown>
@@ -132,6 +142,7 @@ export const GET = withGates(
     return NextResponse.json({
       leads,
       pipeline,
+      nextCursor,
       meta: {
         total: leads.length,
         active: activeLeads,

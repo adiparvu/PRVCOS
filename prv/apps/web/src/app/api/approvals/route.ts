@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
 import { db } from "@prv/db"
 import { approvalRequests, users } from "@prv/db/schema"
-import { and, count, desc, eq, inArray } from "drizzle-orm"
+import { and, count, desc, eq, inArray, lt } from "drizzle-orm"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -84,13 +84,17 @@ export const GET = withGates(
   { action: "approvals.read", endpointClass: "api_read" },
   async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
     const typeFilter = req.nextUrl.searchParams.get("type") as ApprovalType | null
+    const cursor = req.nextUrl.searchParams.get("cursor")
+    const limit = Math.min(parseInt(req.nextUrl.searchParams.get("limit") ?? "50", 10), 200)
     const { companyId } = ctx.session
 
     // Only show actionable items (not yet resolved)
-    const baseWhere = and(
+    const baseConditions = [
       eq(approvalRequests.companyId, companyId),
-      inArray(approvalRequests.status, ["pending", "urgent", "expired"])
-    )
+      inArray(approvalRequests.status, ["pending", "urgent", "expired"]),
+    ]
+    if (cursor) baseConditions.push(lt(approvalRequests.createdAt, new Date(cursor)))
+    const baseWhere = and(...baseConditions)
     const whereClause = typeFilter
       ? and(baseWhere, eq(approvalRequests.type, typeFilter))
       : baseWhere
@@ -108,11 +112,13 @@ export const GET = withGates(
           status: approvalRequests.status,
           firstName: users.firstName,
           lastName: users.lastName,
+          createdAt: approvalRequests.createdAt,
         })
         .from(approvalRequests)
         .innerJoin(users, eq(approvalRequests.requestedByUserId, users.id))
         .where(whereClause)
-        .orderBy(desc(approvalRequests.deadline)),
+        .orderBy(desc(approvalRequests.createdAt))
+        .limit(limit + 1),
 
       // Count approvals resolved today
       db
@@ -127,7 +133,14 @@ export const GET = withGates(
         ),
     ])
 
-    const result: ApprovalSummary[] = rows.map((r) => ({
+    const hasMore = rows.length > limit
+    const pageRows = hasMore ? rows.slice(0, limit) : rows
+    const nextCursor =
+      hasMore && pageRows.length > 0
+        ? pageRows[pageRows.length - 1]!.createdAt.toISOString()
+        : null
+
+    const result: ApprovalSummary[] = pageRows.map((r) => ({
       id: r.id,
       type: r.type as ApprovalType,
       ref: r.ref,
@@ -147,6 +160,6 @@ export const GET = withGates(
       approvedToday: approvedTodayRow?.cnt ?? 0,
     }
 
-    return NextResponse.json({ approvals: result, count: result.length, meta })
+    return NextResponse.json({ approvals: result, count: result.length, meta, nextCursor })
   }
 )

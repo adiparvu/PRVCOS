@@ -81,6 +81,8 @@ export const GET = withGates(
   { action: "payroll.read", endpointClass: "api_read" },
   async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
     const typeFilter = req.nextUrl.searchParams.get("type") as PayrollRunType | null
+    const cursor = req.nextUrl.searchParams.get("cursor")
+    const limit = Math.min(parseInt(req.nextUrl.searchParams.get("limit") ?? "50", 10), 200)
     const { companyId } = ctx.session
 
     const now = new Date()
@@ -89,12 +91,14 @@ export const GET = withGates(
     const lastMonthStartStr = `${lastMonthDate.getUTCFullYear()}-${String(lastMonthDate.getUTCMonth() + 1).padStart(2, "0")}-01`
     const todayStr = now.toISOString().slice(0, 10)
 
-    const whereClause = typeFilter
-      ? and(eq(payrollRuns.companyId, companyId), eq(payrollRuns.type, typeFilter))
-      : eq(payrollRuns.companyId, companyId)
+    const runConditions = [eq(payrollRuns.companyId, companyId)]
+    if (typeFilter) runConditions.push(eq(payrollRuns.type, typeFilter))
+    if (cursor) runConditions.push(lt(payrollRuns.createdAt, new Date(cursor)))
+    const whereClause = and(...runConditions)
 
-    // 1. Fetch runs + active employee count + month totals in parallel
-    const [rows, [employeeRow], [thisMonthPayRow], [lastMonthPayRow]] = await Promise.all([
+    // 1. Fetch runs + active employee count + month totals + all-runs meta in parallel
+    const [rows, [employeeRow], [thisMonthPayRow], [lastMonthPayRow], allRunsMeta] =
+      await Promise.all([
       db
         .select({
           id: payrollRuns.id,
@@ -107,10 +111,12 @@ export const GET = withGates(
           netPaid: payrollRuns.netPaid,
           status: payrollRuns.status,
           type: payrollRuns.type,
+          createdAt: payrollRuns.createdAt,
         })
         .from(payrollRuns)
         .where(whereClause)
-        .orderBy(desc(payrollRuns.createdAt)),
+        .orderBy(desc(payrollRuns.createdAt))
+        .limit(limit + 1),
 
       db
         .select({ cnt: count() })
@@ -140,9 +146,21 @@ export const GET = withGates(
             lt(payrollRuns.periodEnd, thisMonthStartStr)
           )
         ),
+
+      db
+        .select({ status: payrollRuns.status, totalGross: payrollRuns.totalGross })
+        .from(payrollRuns)
+        .where(eq(payrollRuns.companyId, companyId)),
     ])
 
-    const result: PayrollRun[] = rows.map((r) => ({
+    const hasMore = rows.length > limit
+    const pageRows = hasMore ? rows.slice(0, limit) : rows
+    const nextCursor =
+      hasMore && pageRows.length > 0
+        ? pageRows[pageRows.length - 1]!.createdAt.toISOString()
+        : null
+
+    const result: PayrollRun[] = pageRows.map((r) => ({
       id: r.id,
       ref: r.ref,
       title: r.title,
@@ -159,20 +177,10 @@ export const GET = withGates(
       type: r.type as PayrollRunType,
     }))
 
-    // 2. Compute meta from all runs (unfiltered)
-    const allRows = typeFilter
-      ? await db
-          .select({
-            status: payrollRuns.status,
-            totalGross: payrollRuns.totalGross,
-          })
-          .from(payrollRuns)
-          .where(eq(payrollRuns.companyId, companyId))
-      : rows.map((r) => ({ status: r.status, totalGross: r.totalGross }))
-
-    const processingRun = rows.find((r) => r.status === "processing")
-    const pendingCount = allRows.filter((r) => r.status === "pending").length
-    const ytdCost = allRows.reduce((s, r) => s + Number(r.totalGross), 0)
+    // 2. Compute meta from all runs (unfiltered, unpaginated)
+    const processingRun = pageRows.find((r) => r.status === "processing")
+    const pendingCount = allRunsMeta.filter((r) => r.status === "pending").length
+    const ytdCost = allRunsMeta.reduce((s, r) => s + Number(r.totalGross), 0)
 
     const thisMonthPay = Number(thisMonthPayRow?.total ?? 0)
     const lastMonthPay = Number(lastMonthPayRow?.total ?? 0)
@@ -188,6 +196,6 @@ export const GET = withGates(
       growthPct,
     }
 
-    return NextResponse.json({ runs: result, count: result.length, meta })
+    return NextResponse.json({ runs: result, count: result.length, meta, nextCursor })
   }
 )

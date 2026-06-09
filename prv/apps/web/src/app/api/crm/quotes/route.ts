@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
 import { db } from "@prv/db"
 import { invoices, invoiceItems, clients, projects } from "@prv/db/schema"
-import { and, desc, eq, isNull } from "drizzle-orm"
+import { and, desc, eq, isNull, lt } from "drizzle-orm"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -54,10 +54,14 @@ export const GET = withGates(
     const clientIdFilter = searchParams.get("clientId")
     const { companyId } = ctx.session
 
+    const cursor = searchParams.get("cursor")
+    const limit = Math.min(parseInt(searchParams.get("limit") ?? "50", 10), 200)
+
     const conditions = [eq(invoices.companyId, companyId), isNull(invoices.deletedAt)]
     if (clientIdFilter) conditions.push(eq(invoices.clientId, clientIdFilter))
+    if (cursor) conditions.push(lt(invoices.createdAt, new Date(cursor)))
 
-    const rows = await db
+    const rawRows = await db
       .select({
         id: invoices.id,
         invoiceNumber: invoices.invoiceNumber,
@@ -68,12 +72,19 @@ export const GET = withGates(
         clientId: invoices.clientId,
         clientName: clients.name,
         projectName: projects.name,
+        createdAt: invoices.createdAt,
       })
       .from(invoices)
       .leftJoin(clients, eq(invoices.clientId, clients.id))
       .leftJoin(projects, eq(invoices.projectId, projects.id))
       .where(and(...conditions))
       .orderBy(desc(invoices.createdAt))
+      .limit(limit + 1)
+
+    const hasMore = rawRows.length > limit
+    const rows = hasMore ? rawRows.slice(0, limit) : rawRows
+    const nextCursor =
+      hasMore && rows.length > 0 ? rows[rows.length - 1]!.createdAt.toISOString() : null
 
     let quotes: QuoteSummary[] = rows.map((r) => {
       const clientName = r.clientName ?? "—"
@@ -98,7 +109,7 @@ export const GET = withGates(
       quotes = quotes.filter((q) => q.status === statusFilter)
     }
 
-    return NextResponse.json({ quotes, count: quotes.length })
+    return NextResponse.json({ quotes, count: quotes.length, nextCursor })
   }
 )
 

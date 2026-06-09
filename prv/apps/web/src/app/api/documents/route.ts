@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
 import { db } from "@prv/db"
 import { documents, users, projects } from "@prv/db/schema"
-import { and, desc, eq, isNull } from "drizzle-orm"
+import { and, desc, eq, isNull, lt } from "drizzle-orm"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -108,8 +108,16 @@ export const GET = withGates(
   { action: "documents.read", endpointClass: "api_read" },
   async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
     const category = req.nextUrl.searchParams.get("category")
+    const cursor = req.nextUrl.searchParams.get("cursor")
+    const limit = Math.min(parseInt(req.nextUrl.searchParams.get("limit") ?? "50", 10), 200)
 
-    const rows = await db
+    const docConditions = [
+      eq(documents.companyId, ctx.session.companyId),
+      isNull(documents.deletedAt),
+    ]
+    if (cursor) docConditions.push(lt(documents.createdAt, new Date(cursor)))
+
+    const rawRows = await db
       .select({
         id: documents.id,
         fileName: documents.fileName,
@@ -126,8 +134,14 @@ export const GET = withGates(
       .from(documents)
       .leftJoin(users, eq(documents.uploadedByUserId, users.id))
       .leftJoin(projects, eq(documents.projectId, projects.id))
-      .where(and(eq(documents.companyId, ctx.session.companyId), isNull(documents.deletedAt)))
+      .where(and(...docConditions))
       .orderBy(desc(documents.createdAt))
+      .limit(limit + 1)
+
+    const hasMore = rawRows.length > limit
+    const rows = hasMore ? rawRows.slice(0, limit) : rawRows
+    const nextCursor =
+      hasMore && rows.length > 0 ? rows[rows.length - 1]!.createdAt.toISOString() : null
 
     const all: DocumentRecord[] = rows.map((r) => {
       const { category: cat, categoryLabel } = dbTypeToCategory(r.type)
@@ -160,6 +174,6 @@ export const GET = withGates(
       recentCount: all.filter((d) => d.status === "signed" || d.status === "draft").length,
     }
 
-    return NextResponse.json({ documents: filtered, count: filtered.length, meta })
+    return NextResponse.json({ documents: filtered, count: filtered.length, meta, nextCursor })
   }
 )

@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
 import { db } from "@prv/db"
 import { purchaseOrders, suppliers, projects } from "@prv/db/schema"
-import { and, desc, eq, isNull, sum } from "drizzle-orm"
+import { and, desc, eq, isNull, lt, sum } from "drizzle-orm"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -64,9 +64,17 @@ export const GET = withGates(
   async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
     const { searchParams } = new URL(req.url)
     const statusFilter = searchParams.get("status") as POStatus | null
+    const cursor = searchParams.get("cursor")
+    const limit = Math.min(parseInt(searchParams.get("limit") ?? "50", 10), 200)
     const { companyId } = ctx.session
 
-    const rows = await db
+    const poConditions = [
+      eq(purchaseOrders.companyId, companyId),
+      isNull(purchaseOrders.deletedAt),
+    ]
+    if (cursor) poConditions.push(lt(purchaseOrders.createdAt, new Date(cursor)))
+
+    const rawRows = await db
       .select({
         id: purchaseOrders.id,
         ref: purchaseOrders.ref,
@@ -79,12 +87,19 @@ export const GET = withGates(
         amount: purchaseOrders.amount,
         status: purchaseOrders.status,
         projectName: projects.name,
+        createdAt: purchaseOrders.createdAt,
       })
       .from(purchaseOrders)
       .leftJoin(suppliers, eq(purchaseOrders.supplierId, suppliers.id))
       .leftJoin(projects, eq(purchaseOrders.projectId, projects.id))
-      .where(and(eq(purchaseOrders.companyId, companyId), isNull(purchaseOrders.deletedAt)))
+      .where(and(...poConditions))
       .orderBy(desc(purchaseOrders.createdAt))
+      .limit(limit + 1)
+
+    const hasMore = rawRows.length > limit
+    const rows = hasMore ? rawRows.slice(0, limit) : rawRows
+    const nextCursor =
+      hasMore && rows.length > 0 ? rows[rows.length - 1]!.createdAt.toISOString() : null
 
     const all: POSummary[] = rows.map((r) => ({
       id: r.id,
@@ -111,6 +126,6 @@ export const GET = withGates(
       budgetUsed: totalSpend,
     }
 
-    return NextResponse.json({ orders: filtered, count: filtered.length, meta })
+    return NextResponse.json({ orders: filtered, count: filtered.length, meta, nextCursor })
   }
 )

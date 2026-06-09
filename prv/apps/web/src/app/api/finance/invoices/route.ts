@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
 import { db } from "@prv/db"
 import { invoices, clients, projects } from "@prv/db/schema"
-import { eq, and, isNull, desc } from "drizzle-orm"
+import { eq, and, isNull, desc, lt } from "drizzle-orm"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -56,8 +56,16 @@ export const GET = withGates(
   async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
     const { searchParams } = new URL(req.url)
     const filterStatus = searchParams.get("status") as InvoiceStatus | null
+    const cursor = searchParams.get("cursor")
+    const limit = Math.min(parseInt(searchParams.get("limit") ?? "50", 10), 200)
 
-    const rows = await db
+    const conditions = [
+      eq(invoices.companyId, ctx.session.companyId),
+      isNull(invoices.deletedAt),
+    ]
+    if (cursor) conditions.push(lt(invoices.createdAt, new Date(cursor)))
+
+    const rawRows = await db
       .select({
         id: invoices.id,
         invoiceNumber: invoices.invoiceNumber,
@@ -69,12 +77,19 @@ export const GET = withGates(
         paidAt: invoices.paidAt,
         total: invoices.total,
         projectName: projects.name,
+        createdAt: invoices.createdAt,
       })
       .from(invoices)
       .leftJoin(clients, eq(invoices.clientId, clients.id))
       .leftJoin(projects, eq(invoices.projectId, projects.id))
-      .where(and(eq(invoices.companyId, ctx.session.companyId), isNull(invoices.deletedAt)))
-      .orderBy(desc(invoices.dueDate))
+      .where(and(...conditions))
+      .orderBy(desc(invoices.createdAt))
+      .limit(limit + 1)
+
+    const hasMore = rawRows.length > limit
+    const rows = hasMore ? rawRows.slice(0, limit) : rawRows
+    const nextCursor =
+      hasMore && rows.length > 0 ? rows[rows.length - 1]!.createdAt.toISOString() : null
 
     const list: InvoiceSummary[] = []
     for (const r of rows) {
@@ -97,6 +112,6 @@ export const GET = withGates(
       })
     }
 
-    return NextResponse.json({ invoices: list, count: list.length })
+    return NextResponse.json({ invoices: list, count: list.length, nextCursor })
   }
 )

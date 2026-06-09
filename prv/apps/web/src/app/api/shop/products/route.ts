@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
 import { db } from "@prv/db"
 import { products, productCategories } from "@prv/db/schema"
-import { and, eq, isNull, sql } from "drizzle-orm"
+import { and, desc, eq, isNull, lt, sql } from "drizzle-orm"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -35,6 +35,8 @@ export const GET = withGates(
     const { searchParams } = new URL(req.url)
     const category = searchParams.get("category")
     const search = searchParams.get("q")
+    const cursor = searchParams.get("cursor")
+    const limit = Math.min(parseInt(searchParams.get("limit") ?? "50", 10), 200)
     const companyId = ctx.session.companyId
 
     const conditions = [
@@ -47,8 +49,11 @@ export const GET = withGates(
     if (search) {
       conditions.push(sql`lower(${products.name}) LIKE ${`%${search.toLowerCase()}%`}`)
     }
+    if (cursor) {
+      conditions.push(lt(products.createdAt, new Date(cursor)))
+    }
 
-    let rows = await db
+    const rawRows = await db
       .select({
         id: products.id,
         sku: products.sku,
@@ -58,11 +63,20 @@ export const GET = withGates(
         stockQuantity: products.stockQuantity,
         stockMinimum: products.stockMinimum,
         categorySlug: productCategories.slug,
+        createdAt: products.createdAt,
       })
       .from(products)
       .leftJoin(productCategories, eq(products.categoryId, productCategories.id))
       .where(and(...conditions))
+      .orderBy(desc(products.createdAt))
+      .limit(limit + 1)
 
+    const hasMore = rawRows.length > limit
+    const page = hasMore ? rawRows.slice(0, limit) : rawRows
+    const nextCursor =
+      hasMore && page.length > 0 ? page[page.length - 1]!.createdAt.toISOString() : null
+
+    let rows = page
     if (category) {
       rows = rows.filter((r) => r.categorySlug === category)
     }
@@ -84,6 +98,6 @@ export const GET = withGates(
       }
     })
 
-    return NextResponse.json({ products: mapped, count: mapped.length })
+    return NextResponse.json({ products: mapped, count: mapped.length, nextCursor })
   }
 )
