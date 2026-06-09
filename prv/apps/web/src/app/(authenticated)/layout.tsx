@@ -7,6 +7,7 @@ import { DynamicIslandBar } from "./dynamic-island-bar"
 import { AppearanceButton } from "./appearance-button"
 import { SheetStackClient } from "./sheet-stack-client"
 import { CommandPaletteClient } from "./command-palette-client"
+import { QueryProvider } from "./query-provider"
 
 export const dynamic = "force-dynamic"
 
@@ -44,11 +45,13 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
       <FloatingSearchBar role={session.role} />
 
       {/* Main content — padded top for search bar, bottom for tab bar */}
-      <CommandPaletteClient role={session.role}>
-        <SheetStackClient>
-          <main className="relative z-10 min-h-screen pt-24 pb-32">{children}</main>
-        </SheetStackClient>
-      </CommandPaletteClient>
+      <QueryProvider>
+        <CommandPaletteClient role={session.role}>
+          <SheetStackClient>
+            <main className="relative z-10 min-h-screen pt-24 pb-32">{children}</main>
+          </SheetStackClient>
+        </CommandPaletteClient>
+      </QueryProvider>
 
       {/* Appearance settings toggle — fixed top-right */}
       <AppearanceButton />

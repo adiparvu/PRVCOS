@@ -1,9 +1,10 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState } from "react"
 import Link from "next/link"
 import { useSheetStack } from "@prv/ui"
 import type { ApprovalSummary, ApprovalsMeta, ApprovalType } from "@/app/api/approvals/route"
+import { useApprovals } from "@/lib/api-hooks"
 
 type FilterType = "Toate" | "Achiziții" | "Concedii" | "Cheltuieli" | "Contracte" | "Ore Supl."
 
@@ -371,33 +372,12 @@ function SectionCard({ items }: { items: ApprovalSummary[] }) {
 
 export function ApprovalListClient() {
   const [filter, setFilter] = useState<FilterType>("Toate")
-  const [approvals, setApprovals] = useState<ApprovalSummary[] | null>(null)
-  const [meta, setMeta] = useState<ApprovalsMeta | null>(null)
-  const [error, setError] = useState(false)
   const { openSheet } = useSheetStack()
-
-  const fetchApprovals = useCallback(async (f: FilterType) => {
-    setError(false)
-    const typeParam = FILTER_TO_TYPE[f]
-    const params = typeParam ? `?type=${encodeURIComponent(typeParam)}` : ""
-    try {
-      const res = await fetch(`/api/approvals${params}`)
-      if (!res.ok) throw new Error()
-      const data = (await res.json()) as {
-        approvals: ApprovalSummary[]
-        count: number
-        meta: ApprovalsMeta
-      }
-      setApprovals(data.approvals)
-      setMeta((prev) => prev ?? data.meta)
-    } catch {
-      setError(true)
-    }
-  }, [])
-
-  useEffect(() => {
-    void fetchApprovals(filter)
-  }, [filter, fetchApprovals])
+  const type = FILTER_TO_TYPE[filter]
+  const { data, isError, fetchNextPage, hasNextPage, isFetchingNextPage } = useApprovals(type)
+  const approvals = data?.approvals ?? null
+  const meta = data?.meta ?? null
+  const error = isError
 
   const handleFAB = () => {
     openSheet({
@@ -725,6 +705,27 @@ export function ApprovalListClient() {
             </>
           )}
         </>
+      )}
+
+      {hasNextPage && (
+        <button
+          onClick={() => fetchNextPage()}
+          disabled={isFetchingNextPage}
+          style={{
+            width: "100%",
+            padding: "12px",
+            background: "rgba(255,255,255,0.06)",
+            border: "1px solid rgba(255,255,255,0.12)",
+            borderRadius: 12,
+            color: "rgba(255,255,255,0.65)",
+            fontSize: 13,
+            fontWeight: 500,
+            cursor: isFetchingNextPage ? "default" : "pointer",
+            marginBottom: 12,
+          }}
+        >
+          {isFetchingNextPage ? "Se încarcă..." : "Încarcă mai mult"}
+        </button>
       )}
 
       {/* FAB */}

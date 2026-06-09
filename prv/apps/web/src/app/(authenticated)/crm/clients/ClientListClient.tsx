@@ -1,8 +1,9 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState } from "react"
 import Link from "next/link"
 import type { ClientSummary, ClientStatus } from "@/app/api/crm/clients/route"
+import { useClients } from "@/lib/api-hooks"
 
 // ── Icons (SF Symbol style) ───────────────────────────────────────────────────
 
@@ -281,28 +282,10 @@ function ClientCard({ client }: { client: ClientSummary }) {
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 export function ClientListClient() {
-  const [clients, setClients] = useState<ClientSummary[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const [filter, setFilter] = useState<FilterId>("all")
-
-  const fetchClients = useCallback(async () => {
-    try {
-      setLoading(true)
-      const res = await fetch("/api/crm/clients", { cache: "no-store" })
-      if (!res.ok) throw new Error("Failed to load")
-      const data = await res.json()
-      setClients(data.clients)
-    } catch {
-      setError("Nu s-au putut încărca clienții.")
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    fetchClients()
-  }, [fetchClients])
+  const { data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage } = useClients()
+  const clients = data?.clients ?? []
+  const error = isError ? "Nu s-au putut încărca clienții." : null
 
   const filtered = filter === "all" ? clients : clients.filter((c) => c.status === filter)
 
@@ -399,19 +382,19 @@ export function ClientListClient() {
         }}
       >
         {[
-          { v: loading ? "—" : String(clients.length), l: "Total", c: "rgba(255,255,255,0.90)" },
+          { v: isLoading ? "—" : String(clients.length), l: "Total", c: "rgba(255,255,255,0.90)" },
           {
-            v: loading ? "—" : String(activeVipCount),
+            v: isLoading ? "—" : String(activeVipCount),
             l: "Active",
             c: "#5affa0",
           },
           {
-            v: loading ? "—" : String(leadCount),
+            v: isLoading ? "—" : String(leadCount),
             l: "Leads",
             c: "#7eb8ff",
           },
           {
-            v: loading ? "—" : `€${(totalLTV / 1000).toFixed(0)}K`,
+            v: isLoading ? "—" : `€${(totalLTV / 1000).toFixed(0)}K`,
             l: "LTV",
             c: "#5affa0",
           },
@@ -490,7 +473,7 @@ export function ClientListClient() {
           overflow: "hidden",
         }}
       >
-        {loading ? (
+        {isLoading ? (
           <div style={{ padding: "16px" }}>
             {[1, 2, 3, 4].map((i) => (
               <div
@@ -554,10 +537,29 @@ export function ClientListClient() {
             </div>
           ))
         )}
+        {hasNextPage && (
+          <button
+            onClick={() => fetchNextPage()}
+            disabled={isFetchingNextPage}
+            style={{
+              width: "100%",
+              padding: "12px",
+              background: "transparent",
+              border: "none",
+              borderTop: "1px solid var(--prv-border-subtle)",
+              color: "rgba(255,255,255,0.45)",
+              fontSize: 13,
+              fontWeight: 500,
+              cursor: isFetchingNextPage ? "default" : "pointer",
+            }}
+          >
+            {isFetchingNextPage ? "Se încarcă..." : "Încarcă mai mult"}
+          </button>
+        )}
       </div>
 
       {/* Cold clients note */}
-      {!loading && budgetRisk > 0 && (
+      {!isLoading && budgetRisk > 0 && (
         <p
           style={{
             marginTop: 12,

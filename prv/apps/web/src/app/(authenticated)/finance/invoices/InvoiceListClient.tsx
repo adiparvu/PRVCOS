@@ -1,8 +1,9 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState } from "react"
 import Link from "next/link"
 import type { InvoiceSummary, InvoiceStatus } from "@/app/api/finance/invoices/route"
+import { useInvoices } from "@/lib/api-hooks"
 
 // ── Icons (SF Symbol style) ───────────────────────────────────────────────────
 
@@ -324,26 +325,11 @@ function InvoiceCard({ invoice }: { invoice: InvoiceSummary }) {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function InvoiceListClient() {
-  const [invoices, setInvoices] = useState<InvoiceSummary[]>([])
-  const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<FilterId>("all")
+  const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useInvoices()
+  const invoices = data?.invoices ?? []
 
-  const load = useCallback(async () => {
-    setLoading(true)
-    try {
-      const res = await fetch("/api/finance/invoices")
-      const data = await res.json()
-      setInvoices(data.invoices ?? [])
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    load()
-  }, [load])
-
-  if (loading) return <Skeleton />
+  if (isLoading) return <Skeleton />
 
   const visible = filter === "all" ? invoices : invoices.filter((i) => i.status === filter)
 
@@ -555,6 +541,26 @@ export function InvoiceListClient() {
           </div>
         ) : (
           visible.map((inv) => <InvoiceCard key={inv.id} invoice={inv} />)
+        )}
+        {hasNextPage && (
+          <button
+            onClick={() => fetchNextPage()}
+            disabled={isFetchingNextPage}
+            style={{
+              width: "100%",
+              padding: "12px",
+              background: "rgba(255,255,255,0.06)",
+              border: "1px solid rgba(255,255,255,0.12)",
+              borderRadius: 12,
+              color: "rgba(255,255,255,0.65)",
+              fontSize: 13,
+              fontWeight: 500,
+              cursor: isFetchingNextPage ? "default" : "pointer",
+              marginTop: 8,
+            }}
+          >
+            {isFetchingNextPage ? "Se încarcă..." : "Încarcă mai mult"}
+          </button>
         )}
       </div>
     </div>

@@ -1,9 +1,10 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import Link from "next/link"
 import { useSheetStack } from "@prv/ui"
 import type { PayrollRun, PayrollMeta } from "@/app/api/payroll/route"
+import { usePayrollRuns } from "@/lib/api-hooks"
 
 type FilterType = "Toate" | "Săptămânale" | "Lunare" | "Speciale"
 
@@ -237,20 +238,11 @@ function SectionLabel({ children }: { children: string }) {
 
 export function PayrollListClient() {
   const [filter, setFilter] = useState<FilterType>("Toate")
-  const [runs, setRuns] = useState<PayrollRun[]>([])
-  const [meta, setMeta] = useState<PayrollMeta | null>(null)
   const { openSheet } = useSheetStack()
-
-  useEffect(() => {
-    const typeParam = FILTER_TO_TYPE[filter]
-    const url = typeParam ? `/api/payroll?type=${typeParam}` : "/api/payroll"
-    fetch(url)
-      .then((r) => r.json())
-      .then((data: { runs: PayrollRun[]; meta: PayrollMeta }) => {
-        setRuns(data.runs)
-        if (data.meta) setMeta(data.meta)
-      })
-  }, [filter])
+  const type = FILTER_TO_TYPE[filter]
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = usePayrollRuns(type)
+  const runs = data?.runs ?? []
+  const meta = data?.meta ?? null
 
   const processingRuns = runs.filter((r) => r.status === "processing")
   const doneRuns = runs.filter((r) => r.status === "done")
@@ -638,6 +630,27 @@ export function PayrollListClient() {
         <div style={{ textAlign: "center", padding: "40px 16px", color: t3, fontSize: 14 }}>
           Nicio rulare găsită
         </div>
+      )}
+
+      {hasNextPage && (
+        <button
+          onClick={() => fetchNextPage()}
+          disabled={isFetchingNextPage}
+          style={{
+            width: "100%",
+            padding: "12px",
+            background: "rgba(255,255,255,0.06)",
+            border: "1px solid rgba(255,255,255,0.12)",
+            borderRadius: 12,
+            color: "rgba(255,255,255,0.65)",
+            fontSize: 13,
+            fontWeight: 500,
+            cursor: isFetchingNextPage ? "default" : "pointer",
+            marginBottom: 12,
+          }}
+        >
+          {isFetchingNextPage ? "Se încarcă..." : "Încarcă mai mult"}
+        </button>
       )}
 
       {/* FAB */}

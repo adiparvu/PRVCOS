@@ -1,8 +1,9 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useCallback } from "react"
 import { useSheetStack } from "@prv/ui"
 import type { TimeOffRequest } from "@/app/api/people/time-off/route"
+import { useTimeOffRequests } from "@/lib/api-hooks"
 
 interface TimeOffClientProps {
   role: string
@@ -38,16 +39,11 @@ function getRelativeTime(iso: string): string {
 }
 
 export function TimeOffClient({ role: _role }: TimeOffClientProps) {
-  const [requests, setRequests] = useState<TimeOffRequest[]>([])
-  const [loading, setLoading] = useState(true)
   const { openSheet } = useSheetStack()
-
-  useEffect(() => {
-    fetch("/api/people/time-off?status=pending")
-      .then((r) => r.json())
-      .then((d) => setRequests(d.requests ?? []))
-      .finally(() => setLoading(false))
-  }, [])
+  const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useTimeOffRequests("pending")
+  const apiRequests = data?.requests ?? []
+  const [dismissed, setDismissed] = useState<Set<string>>(new Set())
+  const requests = apiRequests.filter((r) => !dismissed.has(r.id))
 
   const handleAction = useCallback(
     (req: TimeOffRequest, defaultAction: "approve" | "decline") => {
@@ -60,14 +56,18 @@ export function TimeOffClient({ role: _role }: TimeOffClientProps) {
             req={req}
             defaultAction={defaultAction}
             onConfirm={(action, reason) => {
-              setRequests((prev) => prev.filter((r) => r.id !== req.id))
+              setDismissed((prev) => new Set([...prev, req.id]))
               onClose()
               fetch(`/api/people/time-off/${req.id}`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ action, reason }),
               }).catch(() => {
-                setRequests((prev) => [req, ...prev])
+                setDismissed((prev) => {
+                  const next = new Set(prev)
+                  next.delete(req.id)
+                  return next
+                })
               })
             }}
             onClose={onClose}
@@ -78,7 +78,7 @@ export function TimeOffClient({ role: _role }: TimeOffClientProps) {
     [openSheet]
   )
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div style={{ padding: "24px 20px" }}>
         {[1, 2, 3].map((i) => (
@@ -180,6 +180,25 @@ export function TimeOffClient({ role: _role }: TimeOffClientProps) {
               onDecline={() => handleAction(req, "decline")}
             />
           ))}
+          {hasNextPage && (
+            <button
+              onClick={() => fetchNextPage()}
+              disabled={isFetchingNextPage}
+              style={{
+                width: "100%",
+                padding: "12px",
+                background: "rgba(255,255,255,0.06)",
+                border: "1px solid rgba(255,255,255,0.12)",
+                borderRadius: 12,
+                color: "rgba(255,255,255,0.65)",
+                fontSize: 13,
+                fontWeight: 500,
+                cursor: isFetchingNextPage ? "default" : "pointer",
+              }}
+            >
+              {isFetchingNextPage ? "Se încarcă..." : "Load more"}
+            </button>
+          )}
         </div>
       )}
     </div>

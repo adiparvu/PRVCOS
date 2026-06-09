@@ -1,7 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
+import { useLeads } from "@/lib/api-hooks"
 import {
   GlassKanban,
   GlassSegmentedControl,
@@ -455,16 +456,27 @@ function LeadListItem({ lead, onSelect }: { lead: Lead; onSelect: (l: Lead) => v
 
 export function LeadPipelineClient() {
   const [view, setView] = useState("pipeline")
-  const [leads, setLeads] = useState<Lead[]>(LEADS)
+  const [leads, setLeads] = useState<Lead[]>([])
   const [selected, setSelected] = useState<Lead | null>(null)
   const [converted, setConverted] = useState<Set<string>>(new Set())
+  const [synced, setSynced] = useState(false)
+  const { data: leadsData } = useLeads()
+
+  useEffect(() => {
+    if (!synced && leadsData?.leads?.length) {
+      const fetched = leadsData.leads as Lead[]
+      setLeads(fetched)
+      setPipeline(buildPipelineCols(fetched))
+      setSynced(true)
+    }
+  }, [synced, leadsData])
 
   const activeLeads = leads.filter((l) => l.stage !== "won" && l.stage !== "lost")
   const hotLeads = activeLeads.filter((l) => l.score >= 70)
   const pipelineValue = activeLeads.reduce((s, l) => s + l.estimatedValue, 0)
   const proposalLeads = leads.filter((l) => l.stage === "proposal")
 
-  const [pipeline, setPipeline] = useState<KanbanColumn[]>(() => buildPipelineCols(leads))
+  const [pipeline, setPipeline] = useState<KanbanColumn[]>(() => buildPipelineCols([]))
 
   function handleCardMove(cardId: string, fromCol: string, toCol: string) {
     setLeads((prev) => prev.map((l) => (l.id === cardId ? { ...l, stage: toCol as LeadStage } : l)))

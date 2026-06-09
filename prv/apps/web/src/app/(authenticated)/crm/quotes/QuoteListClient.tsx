@@ -1,8 +1,9 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState } from "react"
 import Link from "next/link"
 import type { QuoteSummary, QuoteStatus } from "@/app/api/crm/quotes/route"
+import { useQuotes } from "@/lib/api-hooks"
 
 // ── Icons (SF Symbol style) ───────────────────────────────────────────────────
 
@@ -328,26 +329,11 @@ function QuoteCard({ quote }: { quote: QuoteSummary }) {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function QuoteListClient() {
-  const [quotes, setQuotes] = useState<QuoteSummary[]>([])
-  const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<FilterId>("all")
+  const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useQuotes()
+  const quotes = data?.quotes ?? []
 
-  const load = useCallback(async () => {
-    setLoading(true)
-    try {
-      const res = await fetch("/api/crm/quotes")
-      const data = await res.json()
-      setQuotes(data.quotes ?? [])
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    load()
-  }, [load])
-
-  if (loading) return <Skeleton />
+  if (isLoading) return <Skeleton />
 
   const visible = filter === "all" ? quotes : quotes.filter((q) => q.status === filter)
 
@@ -554,6 +540,26 @@ export function QuoteListClient() {
           </div>
         ) : (
           visible.map((q) => <QuoteCard key={q.id} quote={q} />)
+        )}
+        {hasNextPage && (
+          <button
+            onClick={() => fetchNextPage()}
+            disabled={isFetchingNextPage}
+            style={{
+              width: "100%",
+              padding: "12px",
+              background: "rgba(255,255,255,0.06)",
+              border: "1px solid rgba(255,255,255,0.12)",
+              borderRadius: 12,
+              color: "rgba(255,255,255,0.65)",
+              fontSize: 13,
+              fontWeight: 500,
+              cursor: isFetchingNextPage ? "default" : "pointer",
+              marginTop: 8,
+            }}
+          >
+            {isFetchingNextPage ? "Se încarcă..." : "Încarcă mai mult"}
+          </button>
         )}
       </div>
     </div>

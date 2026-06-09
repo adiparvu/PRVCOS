@@ -1,9 +1,10 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState } from "react"
 import Link from "next/link"
 import { useSheetStack } from "@prv/ui"
 import type { POSummary, ProcurementMeta } from "@/app/api/procurement/route"
+import { usePurchaseOrders } from "@/lib/api-hooks"
 
 type FilterType = "Toți" | "Pending" | "Aprobat" | "În Transit" | "Draft" | "Respins"
 
@@ -214,40 +215,23 @@ function formatDate(iso: string) {
 
 // ── Main component ────────────────────────────────────────────────────────────
 
+const FILTER_TO_STATUS: Record<FilterType, string | null> = {
+  "Toți": null,
+  "Pending": "Pending",
+  "Aprobat": "Approved",
+  "În Transit": "In Transit",
+  "Draft": "Draft",
+  "Respins": "Rejected",
+}
+
 export function PurchaseOrderListClient() {
   const [filter, setFilter] = useState<FilterType>("Toți")
-  const [orders, setOrders] = useState<POSummary[] | null>(null)
-  const [meta, setMeta] = useState<ProcurementMeta | null>(null)
-  const [error, setError] = useState(false)
   const { openSheet } = useSheetStack()
-
-  const fetchOrders = useCallback(async (f: FilterType) => {
-    setError(false)
-    const params = new URLSearchParams()
-    if (f === "Pending") params.set("status", "Pending")
-    else if (f === "Aprobat") params.set("status", "Approved")
-    else if (f === "În Transit") params.set("status", "In Transit")
-    else if (f === "Draft") params.set("status", "Draft")
-    else if (f === "Respins") params.set("status", "Rejected")
-
-    try {
-      const res = await fetch(`/api/procurement?${params.toString()}`)
-      if (!res.ok) throw new Error()
-      const data = (await res.json()) as {
-        orders: POSummary[]
-        count: number
-        meta: ProcurementMeta
-      }
-      setOrders(data.orders)
-      setMeta((prev) => prev ?? data.meta)
-    } catch {
-      setError(true)
-    }
-  }, [])
-
-  useEffect(() => {
-    void fetchOrders(filter)
-  }, [filter, fetchOrders])
+  const status = FILTER_TO_STATUS[filter]
+  const { data, isError, fetchNextPage, hasNextPage, isFetchingNextPage } = usePurchaseOrders(status)
+  const orders = data?.orders ?? null
+  const meta = data?.meta ?? null
+  const error = isError
 
   const handleNewOrder = () => {
     openSheet({
@@ -697,17 +681,29 @@ export function PurchaseOrderListClient() {
               </Link>
             )
           })}
-          <div
-            style={{
-              padding: "12px 16px",
-              textAlign: "center",
-              borderTop: "1px solid var(--prv-border-subtle)",
-            }}
-          >
-            <span style={{ fontSize: 12, color: "var(--prv-text-3)" }}>
-              184 mai multe comenzi ›
-            </span>
-          </div>
+          {hasNextPage && (
+            <div
+              style={{
+                padding: "12px 16px",
+                textAlign: "center",
+                borderTop: "1px solid var(--prv-border-subtle)",
+              }}
+            >
+              <button
+                onClick={() => fetchNextPage()}
+                disabled={isFetchingNextPage}
+                style={{
+                  background: "none",
+                  border: "none",
+                  fontSize: 12,
+                  color: "var(--prv-text-3)",
+                  cursor: isFetchingNextPage ? "default" : "pointer",
+                }}
+              >
+                {isFetchingNextPage ? "Se încarcă..." : "Încarcă mai mult ›"}
+              </button>
+            </div>
+          )}
         </div>
       )}
 

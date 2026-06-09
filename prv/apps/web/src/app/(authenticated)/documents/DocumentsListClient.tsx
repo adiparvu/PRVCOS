@@ -1,9 +1,10 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import Link from "next/link"
 import { useSheetStack } from "@prv/ui"
 import type { DocumentRecord, DocumentsMeta } from "@/app/api/documents/route"
+import { useDocuments } from "@/lib/api-hooks"
 
 type FilterType = "Recente" | "Contracte" | "Facturi" | "Proiecte" | "HR" | "Flotă"
 
@@ -227,20 +228,11 @@ function SectionLabel({ children }: { children: string }) {
 
 export function DocumentsListClient() {
   const [filter, setFilter] = useState<FilterType>("Recente")
-  const [documents, setDocuments] = useState<DocumentRecord[]>([])
-  const [meta, setMeta] = useState<DocumentsMeta | null>(null)
   const { openSheet } = useSheetStack()
-
-  useEffect(() => {
-    const cat = FILTER_TO_CATEGORY[filter]
-    const url = cat ? `/api/documents?category=${cat}` : "/api/documents"
-    fetch(url)
-      .then((r) => r.json())
-      .then((data: { documents: DocumentRecord[]; meta: DocumentsMeta }) => {
-        setDocuments(data.documents)
-        if (data.meta) setMeta(data.meta)
-      })
-  }, [filter])
+  const category = FILTER_TO_CATEGORY[filter]
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useDocuments(category)
+  const documents = data?.documents ?? []
+  const meta = data?.meta ?? null
 
   const pendingDocs = documents.filter((d) => d.status === "pending")
   const recentDocs = documents.filter((d) => d.status === "signed" || d.status === "draft")
@@ -565,6 +557,27 @@ export function DocumentsListClient() {
         <div style={{ textAlign: "center", padding: "40px 16px", color: t3, fontSize: 14 }}>
           Niciun document găsit
         </div>
+      )}
+
+      {hasNextPage && (
+        <button
+          onClick={() => fetchNextPage()}
+          disabled={isFetchingNextPage}
+          style={{
+            width: "100%",
+            padding: "12px",
+            background: "rgba(255,255,255,0.06)",
+            border: "1px solid rgba(255,255,255,0.12)",
+            borderRadius: 12,
+            color: "rgba(255,255,255,0.65)",
+            fontSize: 13,
+            fontWeight: 500,
+            cursor: isFetchingNextPage ? "default" : "pointer",
+            marginBottom: 12,
+          }}
+        >
+          {isFetchingNextPage ? "Se încarcă..." : "Încarcă mai mult"}
+        </button>
       )}
 
       {/* FAB */}

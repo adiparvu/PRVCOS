@@ -1,8 +1,9 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState } from "react"
 import Link from "next/link"
 import type { Expense, ExpenseCategory, ExpenseStatus } from "@/app/api/finance/expenses/route"
+import { useExpenses } from "@/lib/api-hooks"
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
@@ -326,26 +327,11 @@ function ExpenseCard({ expense }: { expense: Expense }) {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function ExpenseListClient() {
-  const [expenses, setExpenses] = useState<Expense[]>([])
-  const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<FilterId>("all")
+  const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useExpenses()
+  const expenses = data?.expenses ?? []
 
-  const load = useCallback(async () => {
-    setLoading(true)
-    try {
-      const res = await fetch("/api/finance/expenses")
-      const data = await res.json()
-      setExpenses(data.expenses ?? [])
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    load()
-  }, [load])
-
-  if (loading) return <Skeleton />
+  if (isLoading) return <Skeleton />
 
   const visible = filter === "all" ? expenses : expenses.filter((e) => e.status === filter)
   const pending = expenses.filter((e) => e.status === "pending")
@@ -544,6 +530,26 @@ export function ExpenseListClient() {
           </div>
         ) : (
           visible.map((e) => <ExpenseCard key={e.id} expense={e} />)
+        )}
+        {hasNextPage && (
+          <button
+            onClick={() => fetchNextPage()}
+            disabled={isFetchingNextPage}
+            style={{
+              width: "100%",
+              padding: "12px",
+              background: "rgba(255,255,255,0.06)",
+              border: "1px solid rgba(255,255,255,0.12)",
+              borderRadius: 12,
+              color: "rgba(255,255,255,0.65)",
+              fontSize: 13,
+              fontWeight: 500,
+              cursor: isFetchingNextPage ? "default" : "pointer",
+              marginTop: 8,
+            }}
+          >
+            {isFetchingNextPage ? "Se încarcă..." : "Încarcă mai mult"}
+          </button>
         )}
       </div>
     </div>
