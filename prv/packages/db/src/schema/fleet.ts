@@ -53,6 +53,7 @@ export const vehicles = pgTable(
     fuelType: varchar("fuel_type", { length: 50 }),
 
     mileageKm: integer("mileage_km").notNull().default(0),
+    fuelLevelPct: integer("fuel_level_pct"),
     nextServiceAtKm: integer("next_service_at_km"),
     insuranceExpiresAt: timestamp("insurance_expires_at", { withTimezone: true }),
     itpExpiresAt: timestamp("itp_expires_at", { withTimezone: true }),

@@ -76,6 +76,7 @@ export const GET = withGates(
         notes: vehicles.notes,
         driverFirstName: users.firstName,
         driverLastName: users.lastName,
+        fuelLevelPct: vehicles.fuelLevelPct,
         storeCity: stores.city,
         storeName: stores.name,
       })
@@ -106,7 +107,7 @@ export const GET = withGates(
         status: apiStatus,
         driver: driverName,
         assignment: r.notes ?? null,
-        fuelPct: 0,
+        fuelPct: r.fuelLevelPct ?? 0,
         kmToday: 0,
       }
     })
@@ -115,12 +116,17 @@ export const GET = withGates(
 
     const activeCount = all.filter((v) => v.status === "Active").length
     const inServiceCount = all.filter((v) => v.status === "Service").length
+    const fuelReadings = all.map((v) => v.fuelPct).filter((p) => p > 0)
+    const avgFuel =
+      fuelReadings.length > 0
+        ? Math.round(fuelReadings.reduce((s, p) => s + p, 0) / fuelReadings.length)
+        : 0
 
     const meta: FleetMeta = {
       total: all.length,
       active: activeCount,
       inService: inServiceCount,
-      avgFuel: 0,
+      avgFuel,
       serviceAlert: inServiceCount > 0,
     }
 

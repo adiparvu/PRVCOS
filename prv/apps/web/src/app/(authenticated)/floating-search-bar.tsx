@@ -202,7 +202,6 @@ export function FloatingSearchBar({ role }: FloatingSearchBarProps) {
               </div>
             )}
 
-            {/* Results placeholder — replaced by Typesense integration in Phase 06 */}
             {query.length > 0 && (
               <div
                 className="mt-[2px] rounded-[12px] overflow-hidden"
@@ -217,7 +216,7 @@ export function FloatingSearchBar({ role }: FloatingSearchBarProps) {
                   className="px-4 py-10 text-center text-sm"
                   style={{ color: "rgba(255,255,255,0.30)" }}
                 >
-                  Search ready — Typesense integration in Phase 06
+                  No results
                 </div>
               </div>
             )}

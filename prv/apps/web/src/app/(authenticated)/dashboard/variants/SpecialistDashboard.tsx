@@ -6,8 +6,6 @@ import { resolveQuickActions } from "@/lib/quick-actions"
 import { GlassCard, SectionLabel, QuickActionsGrid, InlineAlert } from "../_shared"
 import Link from "next/link"
 
-// ── Role-specific placeholder content ─────────────────────────────────────────
-
 const ANALYST_REPORTS = [
   { label: "Revenue by store · Jun 2026", updated: "2m ago", href: "/intelligence" },
   { label: "Margin trend · Q2 2026", updated: "1h ago", href: "/intelligence" },
