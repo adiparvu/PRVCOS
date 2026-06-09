@@ -1,7 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
+import type { FinanceMeta } from "@/app/api/finance/expenses/route"
+import type { InvoiceSummary } from "@/app/api/finance/invoices/route"
 import {
   GlassStatCard,
   GlassAlertBanner,
@@ -24,16 +26,6 @@ interface TxRow {
   date: string
   amount: string
   kind: "credit" | "debit"
-  [key: string]: unknown
-}
-
-interface InvoiceRow {
-  id: string
-  ref: string
-  client: string
-  amount: string
-  due: string
-  status: "paid" | "due" | "overdue"
   [key: string]: unknown
 }
 
@@ -139,46 +131,13 @@ const TRANSACTIONS: TxRow[] = [
   },
 ]
 
-const INVOICES: InvoiceRow[] = [
-  {
-    id: "1",
-    ref: "#INV-208",
-    client: "Andronic Group SRL",
-    amount: "€2,100",
-    due: "May 28",
-    status: "overdue",
-  },
-  {
-    id: "2",
-    ref: "#INV-207",
-    client: "Biroul Construct",
-    amount: "€1,140",
-    due: "May 31",
-    status: "overdue",
-  },
-  {
-    id: "3",
-    ref: "#INV-206",
-    client: "Mihai Popescu",
-    amount: "€540",
-    due: "Jun 10",
-    status: "due",
-  },
-  {
-    id: "4",
-    ref: "#INV-205",
-    client: "Radu Construct SRL",
-    amount: "€3,800",
-    due: "Jun 5",
-    status: "paid",
-  },
-  { id: "5", ref: "#INV-204", client: "Ana Ionescu", amount: "€760", due: "Jun 1", status: "paid" },
-]
-
 const STATUS_STYLE: Record<string, { bg: string; color: string; label: string }> = {
-  paid: { bg: "rgba(48,209,88,0.14)", color: "rgba(48,209,88,0.95)", label: "Paid" },
-  due: { bg: "rgba(255,159,10,0.14)", color: "rgba(255,159,10,0.95)", label: "Due" },
-  overdue: { bg: "rgba(255,69,58,0.14)", color: "rgba(255,69,58,0.95)", label: "Overdue" },
+  paid: { bg: "rgba(48,209,88,0.14)", color: "rgba(48,209,88,0.95)", label: "Plătit" },
+  due: { bg: "rgba(255,159,10,0.14)", color: "rgba(255,159,10,0.95)", label: "Scadent" },
+  overdue: { bg: "rgba(255,69,58,0.14)", color: "rgba(255,69,58,0.95)", label: "Restanță" },
+  partial: { bg: "rgba(10,132,255,0.14)", color: "rgba(10,132,255,0.95)", label: "Parțial" },
+  draft: { bg: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.35)", label: "Ciornă" },
+  void: { bg: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.35)", label: "Anulat" },
 }
 
 const TX_COLUMNS: TableColumn<TxRow>[] = [
@@ -203,34 +162,37 @@ const TX_COLUMNS: TableColumn<TxRow>[] = [
   },
 ]
 
-const INV_COLUMNS: TableColumn<InvoiceRow>[] = [
-  { key: "ref", label: "Ref", sortable: true },
-  { key: "client", label: "Client", sortable: true },
-  { key: "due", label: "Due", sortable: false },
-  { key: "amount", label: "Amount", align: "right", sortable: true },
-  {
-    key: "status",
-    label: "Status",
-    align: "center",
-    render: (row) => {
-      const s = STATUS_STYLE[row.status]!
-      return (
-        <span
-          className="text-[10px] font-semibold px-2 py-0.5 rounded-[6px]"
-          style={{ background: s.bg, color: s.color }}
-        >
-          {s.label}
-        </span>
-      )
-    },
-  },
-]
-
 const MAIN_TABS: TabItem[] = [
   { value: "overview", label: "Overview" },
   { value: "transactions", label: "Transactions" },
   { value: "invoices", label: "Invoices" },
 ]
+
+const MONTHS_SHORT = [
+  "Ian",
+  "Feb",
+  "Mar",
+  "Apr",
+  "Mai",
+  "Iun",
+  "Iul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+]
+
+function fmtDate(iso: string): string {
+  const d = new Date(iso + "T00:00:00")
+  return `${MONTHS_SHORT[d.getMonth()]} ${d.getDate()}`
+}
+
+function trendDir(t: string): "up" | "down" | "flat" {
+  if (t.startsWith("+")) return "up"
+  if (t.startsWith("-")) return "down"
+  return "flat"
+}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -298,8 +260,25 @@ const QA = [
 export function FinanceWorkspace() {
   const [period, setPeriod] = useState("3m")
   const [activeTab, setActiveTab] = useState("overview")
+  const [meta, setMeta] = useState<FinanceMeta | null>(null)
+  const [liveInvoices, setLiveInvoices] = useState<InvoiceSummary[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    Promise.all([
+      fetch("/api/finance/expenses").then((r) => r.json()),
+      fetch("/api/finance/invoices").then((r) => r.json()),
+    ])
+      .then(([expJson, invJson]) => {
+        setMeta((expJson as { meta: FinanceMeta }).meta ?? null)
+        setLiveInvoices((invJson as { invoices: InvoiceSummary[] }).invoices ?? [])
+      })
+      .finally(() => setLoading(false))
+  }, [])
 
   const chart = CHART_DATA[period]!
+  const overdueInvoices = liveInvoices.filter((i) => i.status === "overdue")
+  const overdueTotal = overdueInvoices.reduce((s, i) => s + i.amount, 0)
 
   return (
     <div className="px-4 pt-14 pb-28 max-w-2xl mx-auto">
@@ -323,20 +302,26 @@ export function FinanceWorkspace() {
       <div className="grid grid-cols-2 gap-3 mb-3.5">
         <GlassStatCard
           label="Revenue"
-          value="€482K"
-          trend={{ direction: "up", value: "12.4%" }}
+          value={loading ? "—" : (meta?.totalRevenueLabel ?? "—")}
+          trend={{
+            direction: trendDir(meta?.revenueTrend ?? ""),
+            value: meta?.revenueTrend ?? "—",
+          }}
           sparkline={SPARK.revenue}
         />
         <GlassStatCard
           label="Profit"
-          value="€138K"
-          trend={{ direction: "up", value: "8.1%" }}
+          value={loading ? "—" : (meta?.profitLabel ?? "—")}
+          trend={{ direction: trendDir(meta?.profitTrend ?? ""), value: meta?.profitTrend ?? "—" }}
           sparkline={SPARK.profit}
         />
         <GlassStatCard
           label="Expenses"
-          value="€344K"
-          trend={{ direction: "down", value: "4.2%" }}
+          value={loading ? "—" : (meta?.totalExpensesLabel ?? "—")}
+          trend={{
+            direction: trendDir(meta?.expensesTrend ?? ""),
+            value: meta?.expensesTrend ?? "—",
+          }}
           sparkline={SPARK.expenses}
         />
         <GlassStatCard
@@ -347,19 +332,21 @@ export function FinanceWorkspace() {
         />
       </div>
 
-      {/* Overdue alert — links to invoice list */}
-      <div className="mb-4">
-        <Link
-          href="/finance/invoices?filter=overdue"
-          style={{ textDecoration: "none", display: "block" }}
-        >
-          <GlassAlertBanner
-            type="error"
-            title="3 facturi restante"
-            description="Total restant: €8,340 · Necesită acțiune"
-          />
-        </Link>
-      </div>
+      {/* Overdue alert — only when there are overdue invoices */}
+      {!loading && overdueInvoices.length > 0 && (
+        <div className="mb-4">
+          <Link
+            href="/finance/invoices?filter=overdue"
+            style={{ textDecoration: "none", display: "block" }}
+          >
+            <GlassAlertBanner
+              type="error"
+              title={`${overdueInvoices.length} ${overdueInvoices.length === 1 ? "factură restantă" : "facturi restante"}`}
+              description={`Total restant: €${overdueTotal.toLocaleString()} · Necesită acțiune`}
+            />
+          </Link>
+        </div>
+      )}
 
       {/* Main tabs */}
       <GlassTabs tabs={MAIN_TABS} value={activeTab} onChange={setActiveTab} className="mb-4" />
@@ -486,112 +473,125 @@ export function FinanceWorkspace() {
             </Link>
           </div>
           <div className="flex flex-col gap-2">
-            {INVOICES.map((inv) => {
-              const s = STATUS_STYLE[inv.status]!
-              const isOverdue = inv.status === "overdue"
-              const isDue = inv.status === "due"
-              return (
-                <Link
-                  key={inv.id}
-                  href={`/finance/invoices/${inv.id}`}
-                  style={{
-                    display: "block",
-                    background: "var(--prv-g1)",
-                    border: "1px solid var(--prv-border-subtle)",
-                    borderRadius: 16,
-                    padding: "12px 14px",
-                    position: "relative",
-                    overflow: "hidden",
-                    textDecoration: "none",
-                  }}
-                >
-                  {(isOverdue || isDue) && (
-                    <div
-                      style={{
-                        position: "absolute",
-                        left: 0,
-                        top: 0,
-                        bottom: 0,
-                        width: 3,
-                        background: isOverdue
-                          ? "linear-gradient(180deg,#ff4444,#ff6b6b)"
-                          : "linear-gradient(180deg,#ffaa00,#ffcc44)",
-                        borderRadius: "16px 0 0 16px",
-                      }}
-                    />
-                  )}
+            {loading
+              ? [1, 2, 3].map((n) => (
                   <div
+                    key={n}
                     style={{
-                      paddingLeft: isOverdue || isDue ? 4 : 0,
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "flex-start",
+                      height: 72,
+                      background: "var(--prv-g1)",
+                      border: "1px solid var(--prv-border-subtle)",
+                      borderRadius: 16,
+                      opacity: 0.5,
                     }}
-                  >
-                    <div>
+                  />
+                ))
+              : liveInvoices.slice(0, 5).map((inv) => {
+                  const s = STATUS_STYLE[inv.status] ?? STATUS_STYLE.due!
+                  const isOverdue = inv.status === "overdue"
+                  const isDue = inv.status === "due"
+                  return (
+                    <Link
+                      key={inv.id}
+                      href={`/finance/invoices/${inv.id}`}
+                      style={{
+                        display: "block",
+                        background: "var(--prv-g1)",
+                        border: "1px solid var(--prv-border-subtle)",
+                        borderRadius: 16,
+                        padding: "12px 14px",
+                        position: "relative",
+                        overflow: "hidden",
+                        textDecoration: "none",
+                      }}
+                    >
+                      {(isOverdue || isDue) && (
+                        <div
+                          style={{
+                            position: "absolute",
+                            left: 0,
+                            top: 0,
+                            bottom: 0,
+                            width: 3,
+                            background: isOverdue
+                              ? "linear-gradient(180deg,#ff4444,#ff6b6b)"
+                              : "linear-gradient(180deg,#ffaa00,#ffcc44)",
+                            borderRadius: "16px 0 0 16px",
+                          }}
+                        />
+                      )}
+                      <div
+                        style={{
+                          paddingLeft: isOverdue || isDue ? 4 : 0,
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "flex-start",
+                        }}
+                      >
+                        <div>
+                          <p
+                            style={{
+                              fontSize: 11,
+                              fontWeight: 600,
+                              color: "rgba(255,255,255,0.40)",
+                              letterSpacing: "0.03em",
+                            }}
+                          >
+                            {inv.ref}
+                          </p>
+                          <p
+                            style={{
+                              fontSize: 14,
+                              fontWeight: 600,
+                              color: "rgba(255,255,255,0.92)",
+                              marginTop: 2,
+                            }}
+                          >
+                            {inv.clientName}
+                          </p>
+                        </div>
+                        <div style={{ textAlign: "right" }}>
+                          <p
+                            style={{
+                              fontSize: 15,
+                              fontWeight: 700,
+                              color: isOverdue ? "#ff6b6b" : "rgba(255,255,255,0.92)",
+                              letterSpacing: "-0.3px",
+                            }}
+                          >
+                            €{inv.amount.toLocaleString()}
+                          </p>
+                          <span
+                            style={{
+                              fontSize: 10,
+                              fontWeight: 600,
+                              textTransform: "uppercase",
+                              letterSpacing: "0.04em",
+                              padding: "2px 7px",
+                              borderRadius: 100,
+                              background: s.bg,
+                              color: s.color,
+                              marginTop: 4,
+                              display: "inline-block",
+                            }}
+                          >
+                            {s.label}
+                          </span>
+                        </div>
+                      </div>
                       <p
                         style={{
                           fontSize: 11,
-                          fontWeight: 600,
-                          color: "rgba(255,255,255,0.40)",
-                          letterSpacing: "0.03em",
+                          color: "rgba(255,255,255,0.30)",
+                          marginTop: 6,
+                          paddingLeft: isOverdue || isDue ? 4 : 0,
                         }}
                       >
-                        {inv.ref}
+                        Scad. {fmtDate(inv.dueDate)}
                       </p>
-                      <p
-                        style={{
-                          fontSize: 14,
-                          fontWeight: 600,
-                          color: "rgba(255,255,255,0.92)",
-                          marginTop: 2,
-                        }}
-                      >
-                        {inv.client}
-                      </p>
-                    </div>
-                    <div style={{ textAlign: "right" }}>
-                      <p
-                        style={{
-                          fontSize: 15,
-                          fontWeight: 700,
-                          color: isOverdue ? "#ff6b6b" : "rgba(255,255,255,0.92)",
-                          letterSpacing: "-0.3px",
-                        }}
-                      >
-                        {inv.amount}
-                      </p>
-                      <span
-                        style={{
-                          fontSize: 10,
-                          fontWeight: 600,
-                          textTransform: "uppercase",
-                          letterSpacing: "0.04em",
-                          padding: "2px 7px",
-                          borderRadius: 100,
-                          background: s.bg,
-                          color: s.color,
-                          marginTop: 4,
-                          display: "inline-block",
-                        }}
-                      >
-                        {s.label}
-                      </span>
-                    </div>
-                  </div>
-                  <p
-                    style={{
-                      fontSize: 11,
-                      color: "rgba(255,255,255,0.30)",
-                      marginTop: 6,
-                      paddingLeft: isOverdue || isDue ? 4 : 0,
-                    }}
-                  >
-                    Scad. {inv.due}
-                  </p>
-                </Link>
-              )
-            })}
+                    </Link>
+                  )
+                })}
           </div>
         </>
       )}

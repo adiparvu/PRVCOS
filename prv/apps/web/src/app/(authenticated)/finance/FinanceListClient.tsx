@@ -786,14 +786,14 @@ export function FinanceListClient() {
             label="Venituri"
             value={meta?.totalRevenueLabel ?? "—"}
             trend={meta?.revenueTrend ?? "—"}
-            trendPositive={true}
+            trendPositive={meta?.revenueTrend?.startsWith("+") ?? true}
             accentColor="rgba(48,209,88,.9)"
           />
           <KpiTile
             label="Cheltuieli"
             value={meta?.totalExpensesLabel ?? "—"}
             trend={meta?.expensesTrend ?? "—"}
-            trendPositive={false}
+            trendPositive={meta?.expensesTrend?.startsWith("+") ?? false}
             accentColor="rgba(255,69,58,.9)"
           />
         </div>
@@ -802,7 +802,7 @@ export function FinanceListClient() {
             label="Profit Net"
             value={meta?.profitLabel ?? "—"}
             trend={meta?.profitTrend ?? "—"}
-            trendPositive={true}
+            trendPositive={meta?.profitTrend?.startsWith("+") ?? true}
             accentColor="rgba(10,132,255,.9)"
           />
           <KpiTile
