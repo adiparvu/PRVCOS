@@ -11,6 +11,7 @@
     "clean": "rm -rf .next dist"
   },
   "dependencies": {
+    "@prv/ai-engine": "workspace:*",
     "@prv/auth": "workspace:*",
     "@prv/cache": "workspace:*",
     "@prv/db": "workspace:*",
