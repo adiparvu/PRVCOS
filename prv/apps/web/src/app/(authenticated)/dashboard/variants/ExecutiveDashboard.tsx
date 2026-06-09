@@ -1,5 +1,8 @@
 import { cacheMemo } from "@prv/cache"
 import { queryCompanyKpis } from "@prv/db"
+import { db } from "@prv/db"
+import { invoices, auditLogs } from "@prv/db/schema"
+import { and, desc, eq, gte, isNull, sql, sum } from "drizzle-orm"
 import { GlassAlertBanner } from "@prv/ui"
 import type { PRVSession } from "@prv/auth"
 import type { ActivityEventPayload } from "@prv/cache"
@@ -11,36 +14,90 @@ import { GlassCard, SectionLabel, QuickActionsGrid } from "../_shared"
 import { LiveKpiGrid } from "../islands/LiveKpiGrid"
 import { LiveActivityFeed } from "../islands/LiveActivityFeed"
 
-const REVENUE_SERIES = [320, 348, 360, 402, 438, 482]
-const REVENUE_LABELS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"]
+const MONTH_SHORT = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+] as const
 
 const SPARK = {
   revenue: [30, 34, 32, 40, 44, 48],
 }
 
-const INITIAL_ACTIVITY: ActivityEventPayload[] = [
-  {
-    id: "1",
-    type: "success",
-    title: "Invoice #1042 paid · €298",
-    description: "Finance",
-    timestamp: "2 minutes ago",
-  },
-  {
-    id: "2",
-    type: "info",
-    title: 'New project "Cluj Kitchen" created',
-    description: "Andrei P.",
-    timestamp: "18 minutes ago",
-  },
-  {
-    id: "3",
-    type: "warning",
-    title: "Leave request awaiting approval",
-    description: "Maria I.",
-    timestamp: "1 hour ago",
-  },
-]
+function capitalize(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1)
+}
+
+function fmtElapsed(createdAt: Date): string {
+  const elapsed = Date.now() - createdAt.getTime()
+  const mins = Math.floor(elapsed / 60000)
+  if (mins < 2) return "just now"
+  if (mins < 60) return `${mins} minutes ago`
+  const hours = Math.floor(mins / 60)
+  if (hours < 24) return `${hours} hour${hours > 1 ? "s" : ""} ago`
+  return "yesterday"
+}
+
+function auditActionToActivity(
+  action: string,
+  entityType: string | null,
+  id: string,
+  createdAt: Date,
+  actorId: string | null
+): ActivityEventPayload {
+  const lower = action.toLowerCase()
+  let type: ActivityEventPayload["type"] = "info"
+  if (
+    lower.includes("create") ||
+    lower.includes("pay") ||
+    lower.includes("approve") ||
+    lower.includes("sign")
+  ) {
+    type = "success"
+  } else if (
+    lower.includes("delete") ||
+    lower.includes("fail") ||
+    lower.includes("decline") ||
+    lower.includes("reject")
+  ) {
+    type = "warning"
+  } else if (lower.includes("alert") || lower.includes("error") || lower.includes("critical")) {
+    type = "error"
+  }
+
+  // Format a human-readable title from e.g. "invoices.create" → "Invoice created"
+  const parts = action.split(".")
+  const entity = parts[0] ?? "item"
+  const verb = parts[parts.length - 1] ?? "updated"
+  const verbMap: Record<string, string> = {
+    create: "created",
+    update: "updated",
+    delete: "deleted",
+    read: "viewed",
+    pay: "paid",
+    approve: "approved",
+    sign: "signed",
+  }
+  const title = `${capitalize(entity.replace(/_/g, " "))} ${verbMap[verb] ?? verb}`
+
+  return {
+    id,
+    type,
+    title,
+    description: entityType ?? "System",
+    timestamp: fmtElapsed(createdAt),
+    actorId: actorId ?? undefined,
+  }
+}
 
 interface Props {
   session: PRVSession
@@ -49,13 +106,71 @@ interface Props {
 export async function ExecutiveDashboard({ session }: Props) {
   const periodKey = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`
 
+  // Build 6-month window (first day of 6 months ago → today)
+  const now = new Date()
+  const months = Array.from({ length: 6 }, (_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() - 5 + i, 1)
+    return {
+      key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`,
+      label: MONTH_SHORT[d.getMonth()] as string,
+    }
+  })
+  const firstDay = `${months[0]!.key}-01`
+
   let kpis
+  let REVENUE_SERIES = [0, 0, 0, 0, 0, 0]
+  let REVENUE_LABELS = months.map((m) => m.label)
+  let INITIAL_ACTIVITY: ActivityEventPayload[] = []
+
   try {
-    kpis = await cacheMemo(
-      "dashboard_kpis",
-      `${session.companyId}:${periodKey}`,
-      () => queryCompanyKpis(session.companyId, session.userId),
-      { ttl: 60 }
+    const [kpisResult, revenueRows, activityRows] = await Promise.all([
+      cacheMemo(
+        "dashboard_kpis",
+        `${session.companyId}:${periodKey}`,
+        () => queryCompanyKpis(session.companyId, session.userId),
+        { ttl: 60 }
+      ),
+
+      db
+        .select({
+          monthKey: sql<string>`to_char(${invoices.issueDate}::date, 'YYYY-MM')`,
+          total: sum(invoices.total),
+        })
+        .from(invoices)
+        .where(
+          and(
+            eq(invoices.companyId, session.companyId),
+            eq(invoices.status, "paid"),
+            gte(invoices.issueDate, firstDay),
+            isNull(invoices.deletedAt)
+          )
+        )
+        .groupBy(sql`to_char(${invoices.issueDate}::date, 'YYYY-MM')`),
+
+      db
+        .select({
+          id: auditLogs.id,
+          action: auditLogs.action,
+          entityType: auditLogs.entityType,
+          actorId: auditLogs.actorId,
+          createdAt: auditLogs.createdAt,
+        })
+        .from(auditLogs)
+        .where(and(eq(auditLogs.companyId, session.companyId), eq(auditLogs.gateFailed, 0)))
+        .orderBy(desc(auditLogs.createdAt))
+        .limit(5),
+    ])
+
+    kpis = kpisResult
+
+    const revMap = new Map(
+      revenueRows.map((r) => [r.monthKey, Math.round(Number(r.total ?? 0) / 1000)])
+    )
+    REVENUE_SERIES = months.map((m) => revMap.get(m.key) ?? 0)
+    REVENUE_LABELS = months.map((m) => m.label)
+
+    INITIAL_ACTIVITY = activityRows.map((r) =>
+      auditActionToActivity(r.action, r.entityType ?? null, r.id, r.createdAt, r.actorId ?? null)
     )
   } catch {
     kpis = null
@@ -70,6 +185,8 @@ export async function ExecutiveDashboard({ session }: Props) {
     activeProjects: kpis?.activeProjects ?? 0,
     alerts: alertCount,
   }
+
+  const maxRev = Math.max(...REVENUE_SERIES, 1)
 
   return (
     <div className="px-4 pt-14 pb-28 max-w-2xl mx-auto">
@@ -157,7 +274,7 @@ export async function ExecutiveDashboard({ session }: Props) {
       {/* KPI grid — live client island */}
       <LiveKpiGrid initial={initialKpis} companyId={session.companyId} variant="executive" />
 
-      {/* Revenue chart */}
+      {/* Revenue chart — last 6 months from real DB data */}
       <GlassCard className="mb-3.5">
         <SectionLabel>Revenue · last 6 months</SectionLabel>
         <div className="flex items-end gap-1 h-[88px]" aria-label="Revenue sparkline">
@@ -166,7 +283,7 @@ export async function ExecutiveDashboard({ session }: Props) {
               <div
                 className="w-full rounded-[3px]"
                 style={{
-                  height: `${Math.round((v / Math.max(...REVENUE_SERIES)) * 72)}px`,
+                  height: `${Math.round((v / maxRev) * 72)}px`,
                   background:
                     i === REVENUE_SERIES.length - 1
                       ? "rgba(255,255,255,0.55)"
@@ -192,7 +309,7 @@ export async function ExecutiveDashboard({ session }: Props) {
       {/* Quick Actions */}
       <QuickActionsGrid actions={quickActions} />
 
-      {/* Recent Activity — live client island */}
+      {/* Recent Activity — live client island seeded with real audit log entries */}
       <LiveActivityFeed initialEntries={INITIAL_ACTIVITY} companyId={session.companyId} />
     </div>
   )

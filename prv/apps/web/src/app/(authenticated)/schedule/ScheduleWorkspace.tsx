@@ -1,15 +1,17 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import {
   GlassShiftCard,
   GlassTimeSlotPicker,
   GlassAvailabilityGrid,
-  type SchedulerShift,
   type Availability,
 } from "@prv/ui"
+import { useShifts, useTimeOffRequests } from "@/lib/api-hooks"
+import type { ShiftSummary } from "@/app/api/schedule/route"
+import type { TimeOffRequest } from "@/app/api/people/time-off/route"
 
-// ── Semantic status colors — intentionally hardcoded ──────────────────────────
+// ── Semantic status colors ────────────────────────────────────────────────────
 const BLUE = "rgba(10,132,255,0.9)"
 const GREEN = "rgba(48,209,88,0.95)"
 const PURPLE = "rgba(191,90,242,0.95)"
@@ -25,24 +27,7 @@ const t1 = "var(--prv-text-1)"
 const t2 = "var(--prv-text-2)"
 const t3 = "var(--prv-text-3)"
 
-// ── Data ──────────────────────────────────────────────────────────────────────
-
-const STATS = [
-  { val: "18", label: "Shifts" },
-  { val: "3", label: "Open", color: AMBER },
-  { val: "94%", label: "Coverage" },
-  { val: "142h", label: "This week" },
-]
-
-const WEEK_DAYS = [
-  { label: "MON", date: 9, pips: [BLUE] },
-  { label: "TUE", date: 10, pips: [GREEN, PURPLE] },
-  { label: "WED", date: 11, today: true, pips: [GREEN] },
-  { label: "THU", date: 12, pips: [PURPLE] },
-  { label: "FRI", date: 13, pips: [BLUE, GREEN] },
-  { label: "SAT", date: 14, pips: [AMBER], open: true },
-  { label: "SUN", date: 15, pips: [] },
-]
+// ── Local types ───────────────────────────────────────────────────────────────
 
 interface ShiftData {
   id: string
@@ -59,54 +44,7 @@ interface ShiftData {
   assignees: { initials: string }[]
   openSlots?: number
   suitableFor?: string
-  availableStaff?: string
 }
-
-const SHIFTS: ShiftData[] = [
-  {
-    id: "s1",
-    role: "Morning · Sales Floor",
-    day: "Wed Jun 11",
-    time: "08:00–16:00",
-    duration: "8h",
-    status: "confirmed",
-    color: BLUE,
-    location: "Cluj · Main Store",
-    rate: "Standard",
-    metaLabels: ["📍 Cluj · Main", "☕ 1h break"],
-    assignees: [{ initials: "AP" }, { initials: "MI" }, { initials: "RD" }],
-  },
-  {
-    id: "s2",
-    role: "Afternoon · Warehouse",
-    day: "Thu Jun 12",
-    time: "12:00–20:00",
-    duration: "8h",
-    status: "confirmed",
-    color: GREEN,
-    location: "Bucharest · Warehouse",
-    rate: "Night rate",
-    metaLabels: ["📍 Bucharest", "🌙 Night rate"],
-    assignees: [{ initials: "VG" }, { initials: "CL" }],
-  },
-  {
-    id: "s3",
-    role: "Evening · Stock",
-    day: "Sat Jun 14",
-    time: "16:00–00:00",
-    duration: "8h",
-    status: "open",
-    statusLabel: "2 Open",
-    color: AMBER,
-    location: "Cluj · Main Store",
-    rate: "Weekend rate",
-    metaLabels: ["📍 Cluj · Main", "2 slots open"],
-    assignees: [{ initials: "SI" }, { initials: "" }, { initials: "" }],
-    openSlots: 2,
-    suitableFor: "Stock · Warehouse roles",
-    availableStaff: "Andrei, Elena, Radu",
-  },
-]
 
 interface LeaveRequest {
   id: string
@@ -116,16 +54,58 @@ interface LeaveRequest {
   dates: string
 }
 
-const LEAVE_REQUESTS: LeaveRequest[] = [
-  {
-    id: "l1",
-    initials: "MI",
-    name: "Maria Ionescu",
-    type: "Annual leave",
-    dates: "Jun 18–22 · 5 days",
-  },
-  { id: "l2", initials: "RP", name: "Radu Pop", type: "Medical", dates: "Jun 15 · 1 day" },
-]
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function shiftColor(status: string): string {
+  if (status === "open") return AMBER
+  if (status === "confirmed") return BLUE
+  if (status === "scheduled") return GREEN
+  return PURPLE
+}
+
+function mapStatus(status: string): "confirmed" | "open" | "draft" {
+  if (status === "open") return "open"
+  if (status === "confirmed") return "confirmed"
+  return "draft"
+}
+
+function mapShift(s: ShiftSummary): ShiftData {
+  const color = shiftColor(s.status)
+  const locStr = s.site ? `${s.location} · ${s.site}` : s.location
+  const meta: string[] = [`📍 ${locStr}`]
+  if (s.openSlots > 0) meta.push(`${s.openSlots} slot${s.openSlots > 1 ? "s" : ""} open`)
+
+  return {
+    id: s.id,
+    role: s.roleLabel,
+    day: s.dayLabel,
+    time: `${s.startTime}–${s.endTime}`,
+    duration: `${s.durationHours}h`,
+    status: mapStatus(s.status),
+    statusLabel: s.openSlots > 0 ? `${s.openSlots} Open` : undefined,
+    color,
+    location: locStr,
+    rate: "Standard",
+    metaLabels: meta,
+    assignees: s.assignees.map((a) => ({ initials: a.initials })),
+    openSlots: s.openSlots > 0 ? s.openSlots : undefined,
+    suitableFor: s.openSlots > 0 ? s.roleLabel : undefined,
+  }
+}
+
+function mapLeave(r: TimeOffRequest): LeaveRequest {
+  const end = r.endDate ?? r.startDate
+  const dateStr = r.startDate === end ? r.startDate : `${r.startDate}–${end}`
+  return {
+    id: r.id,
+    initials: r.employeeInitials,
+    name: r.employeeName,
+    type: r.typeLabel,
+    dates: `${dateStr} · ${r.workingDays} day${r.workingDays !== 1 ? "s" : ""}`,
+  }
+}
+
+// ── Static UI-only data ───────────────────────────────────────────────────────
 
 const AVAIL_PEOPLE = ["Andrei", "Maria", "Radu", "Elena"]
 const AVAIL_DAYS = ["M", "T", "W", "T", "F", "S", "S"]
@@ -160,7 +140,6 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 
 function ShiftDetailSheet({ shift, onClose }: { shift: ShiftData | null; onClose: () => void }) {
   if (!shift) return null
-
   const isOpen = shift.status === "open"
 
   return (
@@ -201,7 +180,6 @@ function ShiftDetailSheet({ shift, onClose }: { shift: ShiftData | null; onClose
             boxShadow: "var(--prv-shadow-e4)",
           }}
         >
-          {/* specular */}
           <div
             style={{
               position: "absolute",
@@ -211,13 +189,11 @@ function ShiftDetailSheet({ shift, onClose }: { shift: ShiftData | null; onClose
               background: "var(--prv-g2-spec)",
             }}
           />
-          {/* drag handle */}
           <div
             style={{ width: 36, height: 4, borderRadius: 2, background: bd, margin: "12px auto 0" }}
           />
 
           <div style={{ padding: "16px 20px 28px" }}>
-            {/* header */}
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
               <div
                 style={{
@@ -263,7 +239,6 @@ function ShiftDetailSheet({ shift, onClose }: { shift: ShiftData | null; onClose
               </div>
             </div>
 
-            {/* open warning */}
             {isOpen && (
               <div
                 style={{
@@ -281,7 +256,6 @@ function ShiftDetailSheet({ shift, onClose }: { shift: ShiftData | null; onClose
               </div>
             )}
 
-            {/* assignees */}
             <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
               {shift.assignees.map((a, i) => (
                 <div
@@ -300,19 +274,21 @@ function ShiftDetailSheet({ shift, onClose }: { shift: ShiftData | null; onClose
                     color: a.initials ? t2 : t3,
                   }}
                 >
-                  {a.initials ?? "+"}
+                  {a.initials || "+"}
                 </div>
               ))}
             </div>
 
-            {/* info rows */}
             {[
               ["Location", shift.location],
-              ["Duration", `${shift.duration}${shift.rate ? ` · ${shift.rate}` : ""}`],
+              [
+                "Duration",
+                `${shift.duration}${shift.rate !== "Standard" ? ` · ${shift.rate}` : ""}`,
+              ],
               ...(isOpen
                 ? [
                     ["Suitable for", shift.suitableFor ?? ""],
-                    ["Available staff", shift.availableStaff ?? ""],
+                    ["Open slots", String(shift.openSlots ?? 0)],
                   ]
                 : [
                     ["Role", "Staff"],
@@ -364,7 +340,7 @@ function ShiftDetailSheet({ shift, onClose }: { shift: ShiftData | null; onClose
       </div>
 
       <style>{`
-        @keyframes prvFadeIn { from{opacity:0} to{opacity:1} }
+        @keyframes prvFadeIn  { from{opacity:0}                      to{opacity:1} }
         @keyframes prvSlideUp { from{opacity:0;transform:translateY(32px)} to{opacity:1;transform:translateY(0)} }
       `}</style>
     </div>
@@ -379,7 +355,55 @@ export function ScheduleWorkspace({ storeName }: { storeName: string }) {
   const [selectedShift, setSelected] = useState<ShiftData | null>(null)
   const [dismissed, setDismissed] = useState(new Set<string>())
 
-  const activeLeave = LEAVE_REQUESTS.filter((l) => !dismissed.has(l.id))
+  const { data: shiftData, isLoading: shiftsLoading } = useShifts()
+  const { data: leaveData, isLoading: leaveLoading } = useTimeOffRequests("pending")
+
+  const shifts = useMemo(() => (shiftData?.shifts ?? []).map(mapShift), [shiftData?.shifts])
+  const meta = shiftData?.meta
+  const leaves = useMemo(() => (leaveData?.requests ?? []).map(mapLeave), [leaveData?.requests])
+  const activeLeave = leaves.filter((l) => !dismissed.has(l.id))
+
+  const STATS = [
+    { val: shiftsLoading ? "…" : String(meta?.total ?? 0), label: "Shifts" },
+    { val: shiftsLoading ? "…" : String(meta?.open ?? 0), label: "Open", color: AMBER },
+    { val: shiftsLoading ? "…" : `${meta?.coveragePct ?? 0}%`, label: "Coverage" },
+    { val: shiftsLoading ? "…" : `${meta?.totalHours ?? 0}h`, label: "This week" },
+  ]
+
+  // Compute current-week day strip
+  const weekDays = useMemo(() => {
+    const today = new Date()
+    const dow = today.getDay()
+    const monday = new Date(today)
+    monday.setDate(today.getDate() - (dow === 0 ? 6 : dow - 1))
+    monday.setHours(0, 0, 0, 0)
+    const todayStr = today.toISOString().split("T")[0]!
+    const DAY_LABELS = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"]
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(monday)
+      d.setDate(monday.getDate() + i)
+      const dateStr = d.toISOString().split("T")[0]!
+      const dayShifts = shifts.filter((s) => {
+        // match by day label prefix — dayLabel is like "Lun 9 Iun"
+        // use index date fallback via dayLabel comparison or by index
+        return true // pips will be empty until shifts have their date field parsed
+      })
+      void dayShifts
+      // use shift.day (dayLabel) to match — but we need the raw date from the API
+      // The API ShiftSummary.date is an ISO date string (YYYY-MM-DD)
+      const apiShifts = (shiftData?.shifts ?? []).filter((s) => s.date === dateStr)
+      return {
+        label: DAY_LABELS[i] as string,
+        date: d.getDate(),
+        today: dateStr === todayStr,
+        pips: apiShifts.map((s) => shiftColor(s.status)),
+        open: apiShifts.some((s) => s.status === "open"),
+      }
+    })
+  }, [shifts, shiftData?.shifts])
+
+  const openCount = meta?.open ?? 0
+  const weekLabel = meta?.weekLabel ?? ""
 
   return (
     <div className="px-4">
@@ -413,7 +437,7 @@ export function ScheduleWorkspace({ storeName }: { storeName: string }) {
             </svg>
           </button>
           <span className="text-[13px] font-semibold" style={{ color: t2 }}>
-            Jun 9–15
+            {weekLabel}
           </span>
           <button
             type="button"
@@ -458,27 +482,29 @@ export function ScheduleWorkspace({ storeName }: { storeName: string }) {
       </div>
 
       {/* Open-shift alert */}
-      <div
-        className="flex items-start gap-2.5 rounded-[14px] px-3.5 py-3 mb-3"
-        style={{ background: "rgba(255,159,10,0.10)", border: "1px solid rgba(255,159,10,0.28)" }}
-      >
-        <div className="w-2 h-2 rounded-full mt-1 flex-shrink-0" style={{ background: AMBER }} />
-        <div>
-          <p className="text-[13px] font-semibold" style={{ color: AMBER }}>
-            3 open shifts this week
-          </p>
-          <p className="text-[11px] mt-0.5" style={{ color: t2 }}>
-            Sat Evening · Sun Morning · Mon Warehouse — need assignment
-          </p>
+      {openCount > 0 && (
+        <div
+          className="flex items-start gap-2.5 rounded-[14px] px-3.5 py-3 mb-3"
+          style={{ background: "rgba(255,159,10,0.10)", border: "1px solid rgba(255,159,10,0.28)" }}
+        >
+          <div className="w-2 h-2 rounded-full mt-1 flex-shrink-0" style={{ background: AMBER }} />
+          <div>
+            <p className="text-[13px] font-semibold" style={{ color: AMBER }}>
+              {openCount} open shift{openCount !== 1 ? "s" : ""} this week
+            </p>
+            <p className="text-[11px] mt-0.5" style={{ color: t2 }}>
+              Unassigned slots need coverage — review below
+            </p>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Week strip */}
       <div
         className="flex gap-1 rounded-[18px] px-2 py-3 mb-3 overflow-x-auto"
         style={{ background: g1, border: `1px solid ${bds}` }}
       >
-        {WEEK_DAYS.map(({ label, date, today, pips, open }) => (
+        {weekDays.map(({ label, date, today, pips, open }) => (
           <div key={date} className="flex-1 flex flex-col items-center gap-1.5 min-w-[40px]">
             <span className="text-[10px] font-semibold tracking-wider" style={{ color: t3 }}>
               {label}
@@ -511,25 +537,35 @@ export function ScheduleWorkspace({ storeName }: { storeName: string }) {
 
       {/* Shift cards */}
       <SectionLabel>This week&apos;s shifts</SectionLabel>
-      <div className="flex flex-col gap-2.5">
-        {SHIFTS.map((shift) => (
-          <div key={shift.id} onClick={() => setSelected(shift)} className="cursor-pointer">
-            <GlassShiftCard
-              role={shift.role}
-              time={`${shift.day} · ${shift.time}`}
-              duration={shift.duration}
-              status={shift.status}
-              statusLabel={shift.statusLabel}
-              color={shift.color}
-              meta={shift.metaLabels.map((l) => ({ label: l }))}
-              assignees={shift.assignees}
-            />
-          </div>
-        ))}
-      </div>
+      {shiftsLoading ? (
+        <div className="text-center py-8 text-[13px]" style={{ color: t3 }}>
+          Loading shifts…
+        </div>
+      ) : shifts.length === 0 ? (
+        <div className="text-center py-8 text-[13px]" style={{ color: t3 }}>
+          No shifts this week
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2.5">
+          {shifts.map((shift) => (
+            <div key={shift.id} onClick={() => setSelected(shift)} className="cursor-pointer">
+              <GlassShiftCard
+                role={shift.role}
+                time={`${shift.day} · ${shift.time}`}
+                duration={shift.duration}
+                status={shift.status}
+                statusLabel={shift.statusLabel}
+                color={shift.color}
+                meta={shift.metaLabels.map((l) => ({ label: l }))}
+                assignees={shift.assignees}
+              />
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Time slot picker */}
-      <SectionLabel>Assign a slot · Thu Jun 12</SectionLabel>
+      <SectionLabel>Assign a slot · today</SectionLabel>
       <div className="rounded-[18px] p-4" style={{ background: g1, border: `1px solid ${bds}` }}>
         <GlassTimeSlotPicker
           slots={SLOTS}
@@ -551,7 +587,7 @@ export function ScheduleWorkspace({ storeName }: { storeName: string }) {
       </div>
 
       {/* Pending leave requests */}
-      {activeLeave.length > 0 && (
+      {!leaveLoading && activeLeave.length > 0 && (
         <>
           <SectionLabel>Pending leave requests</SectionLabel>
           <div

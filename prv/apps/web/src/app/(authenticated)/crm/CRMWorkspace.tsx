@@ -1,17 +1,17 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import Link from "next/link"
 import {
   GlassSegmentedControl,
   GlassTabs,
-  GlassTimeline,
   GlassKanban,
   type SegmentItem,
   type TabItem,
-  type TimelineEntry,
   type KanbanColumn,
 } from "@prv/ui"
+import { useClients } from "@/lib/api-hooks"
+import type { ClientSummary } from "@/app/api/crm/clients/route"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -21,21 +21,18 @@ interface Client {
   id: string
   initials: string
   name: string
-  email: string
-  phone: string
   location: string
   sub: string
   value: string
   ltv: number
   status: ClientStatus
   projects: number
-  nps: number
+  nps: number | null
   openQuotes: number
   since: string
-  timeline: TimelineEntry[]
 }
 
-// ── Static data ───────────────────────────────────────────────────────────────
+// ── Static display config ─────────────────────────────────────────────────────
 
 const FILTER_ITEMS: SegmentItem[] = [
   { id: "all", label: "All" },
@@ -46,7 +43,6 @@ const FILTER_ITEMS: SegmentItem[] = [
 
 const DETAIL_TABS: TabItem[] = [
   { value: "overview", label: "Overview" },
-  { value: "activity", label: "Activity" },
   { value: "projects", label: "Projects" },
   { value: "documents", label: "Documents" },
 ]
@@ -57,204 +53,6 @@ const STATUS_STYLE: Record<ClientStatus, { bg: string; color: string; label: str
   lead: { bg: "rgba(10,132,255,0.14)", color: "rgba(10,132,255,0.90)", label: "Lead" },
   cold: { bg: "var(--prv-border-subtle)", color: "var(--prv-text-3)", label: "Cold" },
 }
-
-const CLIENTS: Client[] = [
-  {
-    id: "c1",
-    initials: "MP",
-    name: "Mihai Popescu",
-    email: "mihai.popescu@gmail.com",
-    phone: "0740 123 456",
-    location: "Cluj",
-    sub: "3 projects · Cluj",
-    value: "€42,800",
-    ltv: 42800,
-    status: "vip",
-    projects: 3,
-    nps: 8.9,
-    openQuotes: 1,
-    since: "2024",
-    timeline: [
-      {
-        id: "t1",
-        type: "success",
-        title: "Invoice #1042 paid — €298",
-        description: "Cluj · Main project",
-        timestamp: "2 min ago",
-      },
-      {
-        id: "t2",
-        type: "info",
-        title: "Message from Andrei P.",
-        description: '"Tiles arrive Thursday, on track"',
-        timestamp: "1 hr ago",
-      },
-      {
-        id: "t3",
-        type: "info",
-        title: "Site visit scheduled",
-        description: "Jun 14 · 10:00 · Mănăștur",
-        timestamp: "Yesterday",
-      },
-      {
-        id: "t4",
-        type: "success",
-        title: "Contract signed · €18,400",
-        description: "Renovare Apartament project",
-        timestamp: "May 10",
-      },
-      {
-        id: "t5",
-        type: "warning",
-        title: "New quote sent — €24,400",
-        description: "Kitchen renovation · Pending",
-        timestamp: "Jun 1",
-      },
-    ],
-  },
-  {
-    id: "c2",
-    initials: "AG",
-    name: "Andronic Group SRL",
-    email: "office@andronic.ro",
-    phone: "0264 456 789",
-    location: "București",
-    sub: "1 active project · București",
-    value: "€67,000",
-    ltv: 67000,
-    status: "active",
-    projects: 1,
-    nps: 7.4,
-    openQuotes: 0,
-    since: "2025",
-    timeline: [
-      {
-        id: "t1",
-        type: "info",
-        title: "Progress report sent",
-        description: "Spațiu Comercial · 28% done",
-        timestamp: "Today",
-      },
-      {
-        id: "t2",
-        type: "success",
-        title: "Phase 1 completed",
-        description: "Permits & Planning",
-        timestamp: "May 20",
-      },
-      {
-        id: "t3",
-        type: "success",
-        title: "Contract signed · €67,000",
-        description: "Spațiu Comercial · Brașov",
-        timestamp: "Apr 30",
-      },
-    ],
-  },
-  {
-    id: "c3",
-    initials: "AI",
-    name: "Ana Ionescu",
-    email: "ana.ionescu@yahoo.com",
-    phone: "0722 987 654",
-    location: "Timișoara",
-    sub: "Quote sent · Timișoara",
-    value: "€24,200",
-    ltv: 24200,
-    status: "lead",
-    projects: 0,
-    nps: 0,
-    openQuotes: 1,
-    since: "2026",
-    timeline: [
-      {
-        id: "t1",
-        type: "warning",
-        title: "Quote #Q-042 sent",
-        description: "€24,200 · Kitchen + Living",
-        timestamp: "Jun 1",
-      },
-      {
-        id: "t2",
-        type: "info",
-        title: "Initial consultation",
-        description: "Timișoara office · 1h",
-        timestamp: "May 28",
-      },
-      {
-        id: "t3",
-        type: "info",
-        title: "Lead created via website",
-        description: "Contact form submission",
-        timestamp: "May 24",
-      },
-    ],
-  },
-  {
-    id: "c4",
-    initials: "BC",
-    name: "Biroul Construct SRL",
-    email: "contact@birouconstruct.ro",
-    phone: "0268 321 654",
-    location: "Brașov",
-    sub: "2 projects · Brașov",
-    value: "€31,400",
-    ltv: 31400,
-    status: "active",
-    projects: 2,
-    nps: 8.1,
-    openQuotes: 0,
-    since: "2024",
-    timeline: [
-      {
-        id: "t1",
-        type: "success",
-        title: "Invoice #1038 paid — €4,200",
-        description: "Office renovation · final",
-        timestamp: "Jun 3",
-      },
-      {
-        id: "t2",
-        type: "info",
-        title: "New project started",
-        description: "Warehouse fit-out · €22K",
-        timestamp: "May 15",
-      },
-    ],
-  },
-  {
-    id: "c5",
-    initials: "RN",
-    name: "Radu Niculescu",
-    email: "radu.n@gmail.com",
-    phone: "0755 111 222",
-    location: "Iași",
-    sub: "Last contact: 3 months ago",
-    value: "€8,600",
-    ltv: 8600,
-    status: "cold",
-    projects: 1,
-    nps: 6.5,
-    openQuotes: 0,
-    since: "2024",
-    timeline: [
-      {
-        id: "t1",
-        type: "info",
-        title: "Project completed",
-        description: "Pardoseli · Iași Copou",
-        timestamp: "Mar 3",
-      },
-      {
-        id: "t2",
-        type: "success",
-        title: "Final invoice paid · €9,600",
-        description: "Closed",
-        timestamp: "Mar 5",
-      },
-    ],
-  },
-]
 
 const PIPELINE_COLS: KanbanColumn[] = [
   {
@@ -293,6 +91,33 @@ const PIPELINE_COLS: KanbanColumn[] = [
 ]
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
+
+function fmtLtv(ltv: number): string {
+  if (ltv >= 1_000_000) return `€${(ltv / 1_000_000).toFixed(1)}M`
+  if (ltv >= 1_000) return `€${(ltv / 1_000).toFixed(0)}K`
+  return `€${ltv}`
+}
+
+function mapClient(c: ClientSummary): Client {
+  const sub =
+    c.activeProjects > 0
+      ? `${c.activeProjects} project${c.activeProjects > 1 ? "s" : ""} · ${c.location}`
+      : c.location
+  return {
+    id: c.id,
+    initials: c.initials,
+    name: c.name,
+    location: c.location,
+    sub,
+    value: fmtLtv(c.ltv),
+    ltv: c.ltv,
+    status: c.status,
+    projects: c.activeProjects,
+    nps: c.nps,
+    openQuotes: c.openQuotes,
+    since: c.since,
+  }
+}
 
 function GlassCard({
   children,
@@ -360,9 +185,7 @@ function ClientDetail({ client, onBack }: { client: Client; onBack: () => void }
           </div>
           <div>
             <p className="text-[19px] font-bold text-white/90 leading-tight">{client.name}</p>
-            <p className="text-[12px] text-white/35 mt-1">
-              {client.email} · {client.phone}
-            </p>
+            <p className="text-[12px] text-white/35 mt-1">{client.location}</p>
           </div>
         </div>
         <div className="flex gap-2 flex-wrap mb-4">
@@ -390,7 +213,7 @@ function ClientDetail({ client, onBack }: { client: Client; onBack: () => void }
             { v: String(client.projects), l: "Projects", color: "var(--prv-text-1)" },
             { v: client.value, l: "LTV", color: "rgba(48,209,88,0.95)" },
             {
-              v: client.nps > 0 ? String(client.nps) : "—",
+              v: client.nps !== null && client.nps > 0 ? String(client.nps) : "—",
               l: "NPS",
               color: "rgba(10,132,255,0.9)",
             },
@@ -423,7 +246,7 @@ function ClientDetail({ client, onBack }: { client: Client; onBack: () => void }
             total lifetime value of{" "}
             <span className="text-white/90 font-semibold">{client.value}</span> across{" "}
             {client.projects} project{client.projects !== 1 ? "s" : ""}.
-            {client.nps > 0 && (
+            {client.nps !== null && client.nps > 0 && (
               <>
                 {" "}
                 NPS score: <span className="text-white/90 font-semibold">{client.nps}/10</span>.
@@ -453,14 +276,6 @@ function ClientDetail({ client, onBack }: { client: Client; onBack: () => void }
             >
               Profil complet →
             </Link>
-          </div>
-        </GlassCard>
-      )}
-
-      {tab === "activity" && (
-        <GlassCard>
-          <div className="p-3">
-            <GlassTimeline entries={client.timeline} compact />
           </div>
         </GlassCard>
       )}
@@ -521,7 +336,11 @@ export function CRMWorkspace() {
   const [selected, setSelected] = useState<Client | null>(null)
   const [pipeline, setPipeline] = useState(PIPELINE_COLS)
 
-  const filtered = CLIENTS.filter((c) => {
+  const { data, isLoading } = useClients()
+
+  const clients = useMemo(() => (data?.clients ?? []).map(mapClient), [data?.clients])
+
+  const filtered = clients.filter((c) => {
     if (filter === "all") return true
     if (filter === "vip") return c.status === "vip"
     if (filter === "active") return c.status === "active" || c.status === "vip"
@@ -529,7 +348,9 @@ export function CRMWorkspace() {
     return true
   })
 
-  const totalLTV = CLIENTS.reduce((s, c) => s + c.ltv, 0)
+  const totalLTV = clients.reduce((s, c) => s + c.ltv, 0)
+  const totalLeads = clients.filter((c) => c.status === "lead").length
+  const totalQuotes = clients.reduce((s, c) => s + c.openQuotes, 0)
 
   function handleCardMove(cardId: string, fromCol: string, toCol: string) {
     setPipeline((prev) => {
@@ -594,21 +415,26 @@ export function CRMWorkspace() {
       {/* KPI strip */}
       <div className="grid grid-cols-4 gap-2.5 mb-4">
         {[
-          { v: String(CLIENTS.length), l: "Clients", c: "var(--prv-text-1)", href: "/crm/clients" },
           {
-            v: String(CLIENTS.filter((c) => c.status === "lead").length),
+            v: isLoading ? "…" : String(clients.length),
+            l: "Clients",
+            c: "var(--prv-text-1)",
+            href: "/crm/clients",
+          },
+          {
+            v: isLoading ? "…" : String(totalLeads),
             l: "Leads",
             c: "rgba(10,132,255,0.9)",
             href: "/crm/leads",
           },
           {
-            v: String(CLIENTS.reduce((s, c) => s + c.openQuotes, 0)),
+            v: isLoading ? "…" : String(totalQuotes),
             l: "Oferte",
             c: "rgba(100,160,255,0.95)",
             href: "/crm/quotes",
           },
           {
-            v: `€${(totalLTV / 1000).toFixed(0)}K`,
+            v: isLoading ? "…" : `€${(totalLTV / 1000).toFixed(0)}K`,
             l: "LTV",
             c: "rgba(48,209,88,0.95)",
             href: undefined,
@@ -660,54 +486,60 @@ export function CRMWorkspace() {
 
       {/* Client list */}
       <GlassCard className="mb-4">
-        {filtered.map((client) => {
-          const s = STATUS_STYLE[client.status]
-          return (
-            <button
-              key={client.id}
-              onClick={() => setSelected(client)}
-              className="w-full flex items-center gap-3 px-4 py-3.5 text-left"
-              style={{ borderBottom: "1px solid var(--prv-border-subtle)" }}
-            >
-              <div
-                className="w-10 h-10 rounded-full flex items-center justify-center text-[13px] font-bold text-white/70 shrink-0"
-                style={{ background: "var(--prv-g2)" }}
+        {isLoading ? (
+          <div className="py-8 text-center text-white/30 text-[13px]">Loading clients…</div>
+        ) : filtered.length === 0 ? (
+          <div className="py-8 text-center text-white/30 text-[13px]">No clients found</div>
+        ) : (
+          filtered.map((client) => {
+            const s = STATUS_STYLE[client.status]
+            return (
+              <button
+                key={client.id}
+                onClick={() => setSelected(client)}
+                className="w-full flex items-center gap-3 px-4 py-3.5 text-left"
+                style={{ borderBottom: "1px solid var(--prv-border-subtle)" }}
               >
-                {client.initials}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-[14px] font-bold text-white/90 truncate">{client.name}</p>
-                <p className="text-[12px] text-white/35 mt-0.5 truncate">{client.sub}</p>
-              </div>
-              <div className="text-right shrink-0 flex flex-col items-end gap-1">
-                <p className="text-[14px] font-bold text-white/90">{client.value}</p>
-                <div className="flex items-center gap-1.5">
-                  {client.openQuotes > 0 && (
-                    <Link
-                      href={`/crm/quotes?clientId=${client.id}`}
-                      onClick={(e) => e.stopPropagation()}
-                      className="text-[10px] font-semibold px-2 py-0.5 rounded-[6px]"
-                      style={{
-                        background: "rgba(100,160,255,0.12)",
-                        border: "1px solid rgba(100,160,255,0.22)",
-                        color: "#7eb8ff",
-                        textDecoration: "none",
-                      }}
-                    >
-                      {client.openQuotes} ofert{client.openQuotes > 1 ? "e" : "ă"}
-                    </Link>
-                  )}
-                  <span
-                    className="text-[10px] font-semibold px-2 py-0.5 rounded-[6px]"
-                    style={{ background: s.bg, color: s.color }}
-                  >
-                    {s.label}
-                  </span>
+                <div
+                  className="w-10 h-10 rounded-full flex items-center justify-center text-[13px] font-bold text-white/70 shrink-0"
+                  style={{ background: "var(--prv-g2)" }}
+                >
+                  {client.initials}
                 </div>
-              </div>
-            </button>
-          )
-        })}
+                <div className="flex-1 min-w-0">
+                  <p className="text-[14px] font-bold text-white/90 truncate">{client.name}</p>
+                  <p className="text-[12px] text-white/35 mt-0.5 truncate">{client.sub}</p>
+                </div>
+                <div className="text-right shrink-0 flex flex-col items-end gap-1">
+                  <p className="text-[14px] font-bold text-white/90">{client.value}</p>
+                  <div className="flex items-center gap-1.5">
+                    {client.openQuotes > 0 && (
+                      <Link
+                        href={`/crm/quotes?clientId=${client.id}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-[10px] font-semibold px-2 py-0.5 rounded-[6px]"
+                        style={{
+                          background: "rgba(100,160,255,0.12)",
+                          border: "1px solid rgba(100,160,255,0.22)",
+                          color: "#7eb8ff",
+                          textDecoration: "none",
+                        }}
+                      >
+                        {client.openQuotes} ofert{client.openQuotes > 1 ? "e" : "ă"}
+                      </Link>
+                    )}
+                    <span
+                      className="text-[10px] font-semibold px-2 py-0.5 rounded-[6px]"
+                      style={{ background: s.bg, color: s.color }}
+                    >
+                      {s.label}
+                    </span>
+                  </div>
+                </div>
+              </button>
+            )
+          })
+        )}
       </GlassCard>
 
       {/* Pipeline */}
