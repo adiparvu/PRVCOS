@@ -39,3 +39,5 @@ export * from "./approvals"
 export * from "./knowledge"
 // Sprint 12: Learning — courses, enrollments, achievements
 export * from "./learning"
+// Sprint 12: Intelligence — AI insights, reports, anomalies, forecast series
+export * from "./intelligence"

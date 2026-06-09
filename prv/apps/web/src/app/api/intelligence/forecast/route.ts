@@ -1,49 +1,90 @@
 import { withGates } from "@/lib/with-gates"
 import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
+import { db } from "@prv/db"
+import { revenueForecastSeries, forecastRiskItems, forecastOpportunities } from "@prv/db/schema"
+import { and, asc, eq } from "drizzle-orm"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
 
 export const GET = withGates(
   { action: "intelligence.forecast.read", endpointClass: "api_read" },
-  async (_req: NextRequest, _ctx: GateContext): Promise<NextResponse> => {
+  async (_req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
+    const { companyId } = ctx.session
+    const now = new Date()
+    const currentYear = now.getFullYear()
+    const currentQuarter = Math.ceil((now.getMonth() + 1) / 3)
+
+    const [seriesRows, riskRows, opportunityRows] = await Promise.all([
+      db
+        .select({
+          monthLabel: revenueForecastSeries.monthLabel,
+          actualAmount: revenueForecastSeries.actualAmount,
+          forecastAmount: revenueForecastSeries.forecastAmount,
+          lowerBound: revenueForecastSeries.lowerBound,
+          upperBound: revenueForecastSeries.upperBound,
+          confidencePct: revenueForecastSeries.confidencePct,
+        })
+        .from(revenueForecastSeries)
+        .where(
+          and(
+            eq(revenueForecastSeries.companyId, companyId),
+            eq(revenueForecastSeries.year, currentYear)
+          )
+        )
+        .orderBy(asc(revenueForecastSeries.monthIndex)),
+
+      db
+        .select({ domain: forecastRiskItems.domain, level: forecastRiskItems.level })
+        .from(forecastRiskItems)
+        .where(
+          and(
+            eq(forecastRiskItems.companyId, companyId),
+            eq(forecastRiskItems.year, currentYear),
+            eq(forecastRiskItems.quarter, currentQuarter)
+          )
+        ),
+
+      db
+        .select({
+          title: forecastOpportunities.title,
+          valueLabel: forecastOpportunities.valueLabel,
+          href: forecastOpportunities.href,
+        })
+        .from(forecastOpportunities)
+        .where(
+          and(
+            eq(forecastOpportunities.companyId, companyId),
+            eq(forecastOpportunities.year, currentYear),
+            eq(forecastOpportunities.quarter, currentQuarter)
+          )
+        )
+        .orderBy(asc(forecastOpportunities.sortOrder)),
+    ])
+
+    // Use confidencePct from the first forecast entry that has one
+    const confidence = seriesRows.find((s) => s.confidencePct != null)?.confidencePct ?? 0
+
+    // Build series: amounts stored in full euros, chart expects thousands
+    const series = seriesRows.map((s) => {
+      const entry: Record<string, unknown> = { month: s.monthLabel }
+      if (s.actualAmount != null) entry.actual = Math.round(Number(s.actualAmount) / 1_000)
+      if (s.forecastAmount != null) entry.forecast = Math.round(Number(s.forecastAmount) / 1_000)
+      if (s.lowerBound != null) entry.lower = Math.round(Number(s.lowerBound) / 1_000)
+      if (s.upperBound != null) entry.upper = Math.round(Number(s.upperBound) / 1_000)
+      return entry
+    })
+
     return NextResponse.json({
-      confidence: 87,
-      series: [
-        { month: "Jan", actual: 320 },
-        { month: "Feb", actual: 348 },
-        { month: "Mar", actual: 360 },
-        { month: "Apr", actual: 402 },
-        { month: "May", actual: 438 },
-        { month: "Jun", actual: 482 },
-        { month: "Jul", forecast: 519, lower: 493, upper: 545 },
-        { month: "Aug", forecast: 557, lower: 520, upper: 594 },
-        { month: "Sep", forecast: 591, lower: 548, upper: 634 },
-      ],
-      risks: [
-        { domain: "Cash Flow", level: "low" },
-        { domain: "Procurement", level: "medium" },
-        { domain: "Receivables", level: "high" },
-        { domain: "Workforce", level: "low" },
-      ],
-      opportunities: [
-        {
-          title: "Unbilled materials across 4 active projects",
-          value: "+€12,400 billable now",
-          href: "/projects",
-        },
-        {
-          title: "2 project milestones ready to invoice",
-          value: "+€8,200 ready",
-          href: "/finance/invoices",
-        },
-        {
-          title: "4 prospects ready for quote",
-          value: "Est. €22,000 pipeline",
-          href: "/crm",
-        },
-      ],
+      confidence,
+      series,
+      risks: riskRows.map((r) => ({ domain: r.domain, level: r.level })),
+      opportunities: opportunityRows.map((o) => ({
+        title: o.title,
+        value: o.valueLabel,
+        href: o.href,
+      })),
     })
   }
 )

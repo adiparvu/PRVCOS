@@ -1,6 +1,10 @@
 import { withGates } from "@/lib/with-gates"
 import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
+import { db } from "@prv/db"
+import { aiInsights, generatedReports } from "@prv/db/schema"
+import { orders, stores } from "@prv/db/schema"
+import { and, asc, count, desc, eq, gte, isNull, sql, sum } from "drizzle-orm"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -51,170 +55,180 @@ export interface IntelligenceMeta {
   activeAlerts: number
 }
 
-const MOCK_INSIGHTS: Insight[] = [
-  {
-    id: "ins-001",
-    type: "recommendation",
-    priority: "urgent",
-    status: "new",
-    title: "3 Magazine sub Pragul de Performanță",
-    summary: "Risc de pierderi în Q3 dacă nu se iau măsuri corective în 14 zile.",
-    affectedCount: 3,
-    affectedLabel: "magazine afectate",
-    confidenceLabel: "Conf. 89%",
-    timeAgo: "acum 2h",
-  },
-  {
-    id: "ins-002",
-    type: "alert",
-    priority: "urgent",
-    status: "new",
-    title: "Stoc Critic — 5 SKU-uri sub Prag",
-    summary: "Iași și Brașov vor rămâne fără stoc în 48h dacă nu se reaprovizionează.",
-    affectedCount: 2,
-    affectedLabel: "magazine",
-    confidenceLabel: "Date live",
-    timeAgo: "acum 45 min",
-  },
-  {
-    id: "ins-003",
-    type: "forecast",
-    priority: "medium",
-    status: "reviewed",
-    title: "Prognoză Venituri Q3 2026",
-    summary: "Model AI estimează creștere de 12% față de Q2, cu incertitudine ±5%.",
-    affectedCount: 18,
-    affectedLabel: "magazine incluse",
-    confidenceLabel: "Conf. 87%",
-    timeAgo: "azi",
-  },
-  {
-    id: "ins-004",
-    type: "recommendation",
-    priority: "medium",
-    status: "new",
-    title: "Optimizare Personal — Timișoara",
-    summary: "Raportat cost/vânzare 18% mai mare față de media rețelei.",
-    affectedCount: 1,
-    affectedLabel: "magazin",
-    confidenceLabel: "Conf. 82%",
-    timeAgo: "ieri",
-  },
-  {
-    id: "ins-005",
-    type: "forecast",
-    priority: "low",
-    status: "reviewed",
-    title: "Tendință Marjă — Lunile 6–9",
-    summary: "Reducere treptată a marjei cu 2pp anticipată pe fondul inflației.",
-    affectedCount: 18,
-    affectedLabel: "magazine",
-    confidenceLabel: "Conf. 75%",
-    timeAgo: "acum 3 zile",
-  },
-]
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
-const MOCK_REPORTS: Report[] = [
-  {
-    id: "rep-001",
-    title: "Raport Lunar · Mai 2026",
-    type: "monthly",
-    status: "ready",
-    statusLabel: "Finalizat",
-    pages: 14,
-    generatedDate: "1 Iun 2026",
-  },
-  {
-    id: "rep-002",
-    title: "Raport Stocuri Critice",
-    type: "inventory",
-    status: "ready",
-    statusLabel: "Revizuiește",
-    pages: 6,
-    generatedDate: "7 Iun 2026",
-  },
-  {
-    id: "rep-003",
-    title: "Prognoză Q3 2026",
-    type: "forecast",
-    status: "ready",
-    statusLabel: "AI",
-    pages: 9,
-    generatedDate: "5 Iun 2026",
-  },
-  {
-    id: "rep-004",
-    title: "Raport Performanță Echipe",
-    type: "performance",
-    status: "scheduled",
-    statusLabel: "Programat",
-    pages: 0,
-    generatedDate: "10 Iun 2026",
-  },
-]
+const MONTH_LABELS = [
+  "Ian",
+  "Feb",
+  "Mar",
+  "Apr",
+  "Mai",
+  "Iun",
+  "Iul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+] as const
 
-const MOCK_STORE_KPIS: StoreKpi[] = [
-  {
-    storeId: "cluj-main",
-    storeName: "Cluj · Main",
-    revenueTodayLabel: "€34.2k",
-    revenueBarPct: 88,
-    marginPct: 39,
-  },
-  {
-    storeId: "bucuresti-floreasca",
-    storeName: "București",
-    revenueTodayLabel: "€28.9k",
-    revenueBarPct: 75,
-    marginPct: 34,
-  },
-  {
-    storeId: "timisoara-iulius",
-    storeName: "Timișoara",
-    revenueTodayLabel: "€21.4k",
-    revenueBarPct: 55,
-    marginPct: 31,
-  },
-  {
-    storeId: "brasov-coresi",
-    storeName: "Brașov",
-    revenueTodayLabel: "€18.6k",
-    revenueBarPct: 48,
-    marginPct: 29,
-  },
-  {
-    storeId: "iasi-palas",
-    storeName: "Iași",
-    revenueTodayLabel: "€15.2k",
-    revenueBarPct: 39,
-    marginPct: 27,
-  },
-]
-
-const MOCK_META: IntelligenceMeta = {
-  totalRevenueLabel: "€118k",
-  revenueTrend: "+8%",
-  avgMarginPct: 34,
-  marginTrend: "−1pp",
-  ordersToday: 93,
-  activeAlerts: 2,
+function fmtAmount(n: number): string {
+  if (n >= 1_000_000) return `€${(n / 1_000_000).toFixed(1)}M`
+  if (n >= 1_000) return `€${(n / 1_000).toFixed(1)}K`
+  return `€${Math.round(n)}`
 }
+
+function relativeTime(date: Date): string {
+  const diffMin = Math.floor((Date.now() - date.getTime()) / 60_000)
+  if (diffMin < 1) return "acum"
+  if (diffMin < 60) return `acum ${diffMin} min`
+  const h = Math.floor(diffMin / 60)
+  if (h < 24) return `acum ${h}h`
+  if (h < 48) return "ieri"
+  return `acum ${Math.floor(h / 24)} zile`
+}
+
+function fmtDate(d: Date): string {
+  return `${d.getDate()} ${MONTH_LABELS[d.getMonth()]} ${d.getFullYear()}`
+}
+
+function reportStatusLabel(type: ReportType, status: ReportStatus): string {
+  if (status === "scheduled") return "Programat"
+  if (status === "pending") return "Generare..."
+  if (type === "monthly") return "Finalizat"
+  if (type === "forecast") return "AI"
+  return "Revizuiește"
+}
+
+// ── GET ───────────────────────────────────────────────────────────────────────
 
 export const GET = withGates(
   { action: "intelligence.read", endpointClass: "api_read" },
-  async (req: NextRequest, _ctx: GateContext): Promise<NextResponse> => {
-    const type = req.nextUrl.searchParams.get("type")
-    const priority = req.nextUrl.searchParams.get("priority")
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
+    const { companyId } = ctx.session
+    const typeFilter = req.nextUrl.searchParams.get("type") as InsightType | null
+    const priorityFilter = req.nextUrl.searchParams.get("priority") as InsightPriority | null
 
-    let insights = MOCK_INSIGHTS
-    if (type) insights = insights.filter((i) => i.type === type)
-    if (priority) insights = insights.filter((i) => i.priority === priority)
+    const todayStart = new Date()
+    todayStart.setHours(0, 0, 0, 0)
 
-    return NextResponse.json({
-      insights,
-      reports: MOCK_REPORTS,
-      storeKpis: MOCK_STORE_KPIS,
-      meta: MOCK_META,
+    const [insightRows, reportRows, storeOrderRows, storeRows] = await Promise.all([
+      db
+        .select({
+          id: aiInsights.id,
+          type: aiInsights.type,
+          priority: aiInsights.priority,
+          status: aiInsights.status,
+          title: aiInsights.title,
+          summary: aiInsights.summary,
+          affectedCount: aiInsights.affectedCount,
+          affectedLabel: aiInsights.affectedLabel,
+          confidenceLabel: aiInsights.confidenceLabel,
+          createdAt: aiInsights.createdAt,
+        })
+        .from(aiInsights)
+        .where(and(eq(aiInsights.companyId, companyId), isNull(aiInsights.deletedAt)))
+        .orderBy(
+          sql`CASE ${aiInsights.priority} WHEN 'urgent' THEN 0 WHEN 'medium' THEN 1 ELSE 2 END`,
+          desc(aiInsights.createdAt)
+        ),
+
+      db
+        .select({
+          id: generatedReports.id,
+          title: generatedReports.title,
+          type: generatedReports.type,
+          status: generatedReports.status,
+          pages: generatedReports.pages,
+          generatedAt: generatedReports.generatedAt,
+          createdAt: generatedReports.createdAt,
+        })
+        .from(generatedReports)
+        .where(and(eq(generatedReports.companyId, companyId), isNull(generatedReports.deletedAt)))
+        .orderBy(desc(generatedReports.createdAt)),
+
+      db
+        .select({ storeId: orders.storeId, revenue: sum(orders.total), cnt: count() })
+        .from(orders)
+        .where(
+          and(
+            eq(orders.companyId, companyId),
+            gte(orders.createdAt, todayStart),
+            isNull(orders.deletedAt)
+          )
+        )
+        .groupBy(orders.storeId),
+
+      db
+        .select({ id: stores.id, name: stores.name, city: stores.city })
+        .from(stores)
+        .where(eq(stores.companyId, companyId))
+        .orderBy(asc(stores.name)),
+    ])
+
+    // Apply query filters to insights
+    let insights = insightRows
+    if (typeFilter) insights = insights.filter((i) => i.type === typeFilter)
+    if (priorityFilter) insights = insights.filter((i) => i.priority === priorityFilter)
+
+    const insightList: Insight[] = insights.map((i) => ({
+      id: i.id,
+      type: i.type as InsightType,
+      priority: i.priority as InsightPriority,
+      status: i.status as InsightStatus,
+      title: i.title,
+      summary: i.summary,
+      affectedCount: i.affectedCount,
+      affectedLabel: i.affectedLabel,
+      confidenceLabel: i.confidenceLabel,
+      timeAgo: relativeTime(i.createdAt),
+    }))
+
+    const reportList: Report[] = reportRows.map((r) => {
+      const type = r.type as ReportType
+      const status = r.status as ReportStatus
+      return {
+        id: r.id,
+        title: r.title,
+        type,
+        status,
+        statusLabel: reportStatusLabel(type, status),
+        pages: r.pages,
+        generatedDate: fmtDate(r.generatedAt ?? r.createdAt),
+      }
     })
+
+    // Compute per-store KPIs from today's order aggregates
+    const revenueByStore = new Map<string, number>()
+    for (const row of storeOrderRows) {
+      if (row.storeId) revenueByStore.set(row.storeId, Number(row.revenue ?? 0))
+    }
+    const maxRev = Math.max(...Array.from(revenueByStore.values()), 1)
+
+    const storeKpis: StoreKpi[] = storeRows.map((s) => ({
+      storeId: s.id,
+      storeName: s.city ? `${s.name} · ${s.city}` : s.name,
+      revenueTodayLabel: fmtAmount(revenueByStore.get(s.id) ?? 0),
+      revenueBarPct: Math.round(((revenueByStore.get(s.id) ?? 0) / maxRev) * 100),
+      marginPct: 0,
+    }))
+
+    // Meta aggregates
+    const totalRevToday = Array.from(revenueByStore.values()).reduce((a, b) => a + b, 0)
+    const totalOrdersToday = storeOrderRows.reduce((a, r) => a + r.cnt, 0)
+    const activeAlerts = insightRows.filter(
+      (i) => i.type === "alert" && i.status !== "actioned" && i.status !== "dismissed"
+    ).length
+
+    const meta: IntelligenceMeta = {
+      totalRevenueLabel: fmtAmount(totalRevToday),
+      revenueTrend: "—",
+      avgMarginPct: 0,
+      marginTrend: "—",
+      ordersToday: totalOrdersToday,
+      activeAlerts,
+    }
+
+    return NextResponse.json({ insights: insightList, reports: reportList, storeKpis, meta })
   }
 )
