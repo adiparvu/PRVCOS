@@ -6,6 +6,8 @@ import { z } from "zod"
 import { db } from "@prv/db"
 import { approvalRequests, users } from "@prv/db/schema"
 import { and, count, desc, eq, inArray, lt } from "drizzle-orm"
+import { submitForApproval } from "@prv/approval-engine"
+import { inngest } from "@prv/jobs"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -138,9 +140,7 @@ export const GET = withGates(
     const hasMore = rows.length > limit
     const pageRows = hasMore ? rows.slice(0, limit) : rows
     const nextCursor =
-      hasMore && pageRows.length > 0
-        ? pageRows[pageRows.length - 1]!.createdAt.toISOString()
-        : null
+      hasMore && pageRows.length > 0 ? pageRows[pageRows.length - 1]!.createdAt.toISOString() : null
 
     const result: ApprovalSummary[] = pageRows.map((r) => ({
       id: r.id,
@@ -191,15 +191,22 @@ export const POST = withGates(
 
     const parsed = createApprovalSchema.safeParse(body)
     if (!parsed.success) {
-      return NextResponse.json({ error: "Invalid payload", issues: parsed.error.issues }, { status: 422 })
+      return NextResponse.json(
+        { error: "Invalid payload", issues: parsed.error.issues },
+        { status: 422 }
+      )
     }
 
-    const [record] = await db
-      .insert(approvalRequests)
-      .values({ companyId, requestedByUserId: userId, type: parsed.data.type, title: parsed.data.title, ref: parsed.data.ref, description: parsed.data.description, deadline: new Date(parsed.data.deadline), value: parsed.data.value !== undefined ? String(parsed.data.value) : undefined })
-      .returning({ id: approvalRequests.id })
-
-    if (!record) return NextResponse.json({ error: "Insert failed" }, { status: 500 })
+    const id = await submitForApproval({
+      companyId,
+      requestedByUserId: userId,
+      type: parsed.data.type,
+      title: parsed.data.title,
+      ref: parsed.data.ref,
+      description: parsed.data.description,
+      value: parsed.data.value,
+      deadline: new Date(parsed.data.deadline),
+    })
 
     void writeAuditLog({
       companyId,
@@ -207,7 +214,7 @@ export const POST = withGates(
       sessionId: ctx.session.sessionId,
       action: "approvals.create",
       entityType: "approval",
-      entityId: record.id,
+      entityId: id,
       payload: parsed.data,
       method: "POST",
       path: "/api/approvals",
@@ -215,6 +222,11 @@ export const POST = withGates(
       userAgent: ctx.userAgent,
     })
 
-    return NextResponse.json({ id: record.id }, { status: 201 })
+    void inngest.send({
+      name: "prv/approval.deadline",
+      data: { approvalId: id, companyId, deadline: parsed.data.deadline },
+    })
+
+    return NextResponse.json({ id }, { status: 201 })
   }
 )

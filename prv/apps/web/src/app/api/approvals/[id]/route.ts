@@ -1,11 +1,19 @@
 import { withGates } from "@/lib/with-gates"
 import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
+import { writeAuditLog } from "@prv/auth"
 import { db } from "@prv/db"
 import { approvalRequests, users } from "@prv/db/schema"
 import { alias } from "drizzle-orm/pg-core"
 import { and, eq } from "drizzle-orm"
 import type { ApprovalType, ApprovalStatus, ApprovalSummary } from "../route"
+import {
+  processApproval,
+  escalateApproval,
+  delegateApproval,
+  ApprovalNotFoundError,
+} from "@prv/approval-engine"
+import { z } from "zod"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -180,5 +188,99 @@ export const GET = withGates(
     }
 
     return NextResponse.json({ approval })
+  }
+)
+
+// ── PATCH /api/approvals/[id] — approve / reject / escalate / delegate ────────
+
+const patchSchema = z.discriminatedUnion("action", [
+  z.object({
+    action: z.literal("approve"),
+    comment: z.string().optional(),
+  }),
+  z.object({
+    action: z.literal("reject"),
+    comment: z.string().optional(),
+  }),
+  z.object({
+    action: z.literal("escalate"),
+  }),
+  z.object({
+    action: z.literal("delegate"),
+    delegateToUserId: z.string().uuid(),
+  }),
+])
+
+export const PATCH = withGates(
+  { action: "approvals.update", endpointClass: "api_write" },
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
+    const id = req.nextUrl.pathname.split("/").slice(-2, -1)[0]
+    if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 })
+
+    const { companyId, userId } = ctx.session
+
+    // Verify ownership — only process approvals that belong to this company
+    const existing = await db
+      .select({ id: approvalRequests.id })
+      .from(approvalRequests)
+      .where(and(eq(approvalRequests.id, id), eq(approvalRequests.companyId, companyId)))
+      .limit(1)
+
+    if (existing.length === 0) return NextResponse.json({ error: "Not found" }, { status: 404 })
+
+    let body: unknown
+    try {
+      body = await req.json()
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON" }, { status: 400 })
+    }
+
+    const parsed = patchSchema.safeParse(body)
+    if (!parsed.success)
+      return NextResponse.json(
+        { error: "Invalid payload", issues: parsed.error.issues },
+        { status: 422 }
+      )
+
+    const action = parsed.data
+
+    try {
+      if (action.action === "approve" || action.action === "reject") {
+        await processApproval({
+          approvalId: id,
+          decision: action.action === "approve" ? "approved" : "rejected",
+          comment: action.comment,
+          decidedBy: userId,
+          decidedAt: new Date(),
+        })
+      } else if (action.action === "escalate") {
+        await escalateApproval(id)
+      } else if (action.action === "delegate") {
+        await delegateApproval(id, action.delegateToUserId)
+      }
+    } catch (err) {
+      if (err instanceof ApprovalNotFoundError)
+        return NextResponse.json(
+          { error: "Approval not found or already resolved" },
+          { status: 409 }
+        )
+      throw err
+    }
+
+    void writeAuditLog({
+      companyId,
+      actorId: userId,
+      sessionId: ctx.session.sessionId,
+      action: `approvals.${action.action}`,
+      entityType: "approval",
+      entityId: id,
+      payload: action,
+      method: "PATCH",
+      path: `/api/approvals/${id}`,
+      ipAddress: ctx.ipAddress,
+      userAgent: ctx.userAgent,
+    })
+
+    return NextResponse.json({ ok: true })
   }
 )

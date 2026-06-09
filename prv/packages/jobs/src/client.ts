@@ -38,6 +38,9 @@ export type PRVEvents = {
   "prv/grant.issued": {
     data: { grantId: string; expiresAt: string }
   }
+  "prv/approval.deadline": {
+    data: { approvalId: string; companyId: string; deadline: string }
+  }
 }
 
 export const inngest = new Inngest({

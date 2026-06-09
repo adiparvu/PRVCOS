@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@prv/ai-engine": "workspace:*",
+    "@prv/approval-engine": "workspace:*",
     "@prv/search": "workspace:*",
     "@prv/auth": "workspace:*",
     "@prv/cache": "workspace:*",

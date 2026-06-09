@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "inngest": "^3.30.0",
+    "@prv/approval-engine": "workspace:*",
     "@prv/cache": "workspace:*",
     "@prv/db": "workspace:*",
     "drizzle-orm": "^0.38.4"
