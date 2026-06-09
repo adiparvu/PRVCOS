@@ -21,6 +21,7 @@ import type { SupplierSummary } from "@/app/api/suppliers/route"
 import type { ToolSummary, ToolsMeta } from "@/app/api/tools/route"
 import type { OperationsMeta, Store, Task, Order, Alert } from "@/app/api/operations/route"
 import type { Insight, Report, StoreKpi, IntelligenceMeta } from "@/app/api/intelligence/route"
+import type { FinanceReport } from "@/app/api/finance/reports/route"
 
 
 const LIMIT = 50
@@ -86,6 +87,16 @@ export function useExpenses(status?: string | null, category?: string | null) {
       meta: data.pages[0]?.meta ?? null,
       plData: data.pages[0]?.plData ?? [],
     }),
+  })
+}
+
+// ── Finance Reports ───────────────────────────────────────────────────────────
+
+export function useFinanceReports() {
+  return useQuery({
+    queryKey: ["financeReports"],
+    queryFn: () =>
+      fetch("/api/finance/reports").then((r) => r.json() as Promise<{ reports: FinanceReport[] }>),
   })
 }
 

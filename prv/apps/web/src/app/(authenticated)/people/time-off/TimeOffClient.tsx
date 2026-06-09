@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useCallback } from "react"
+import { useRouter } from "next/navigation"
 import { useSheetStack } from "@prv/ui"
 import type { TimeOffRequest } from "@/app/api/people/time-off/route"
 import { useTimeOffRequests } from "@/lib/api-hooks"
@@ -39,6 +40,7 @@ function getRelativeTime(iso: string): string {
 }
 
 export function TimeOffClient({ role: _role }: TimeOffClientProps) {
+  const router = useRouter()
   const { openSheet } = useSheetStack()
   const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useTimeOffRequests("pending")
   const apiRequests = data?.requests ?? []
@@ -178,6 +180,7 @@ export function TimeOffClient({ role: _role }: TimeOffClientProps) {
               req={req}
               onApprove={() => handleAction(req, "approve")}
               onDecline={() => handleAction(req, "decline")}
+              onViewDetail={() => router.push(`/people/time-off/${req.id}`)}
             />
           ))}
           {hasNextPage && (
@@ -209,10 +212,12 @@ function RequestCard({
   req,
   onApprove,
   onDecline,
+  onViewDetail,
 }: {
   req: TimeOffRequest
   onApprove: () => void
   onDecline: () => void
+  onViewDetail: () => void
 }) {
   const period = req.endDate
     ? `${formatDateShort(req.startDate)} – ${formatDateShort(req.endDate)}`
@@ -252,7 +257,10 @@ function RequestCard({
           </div>
           <div style={{ flex: 1 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <p style={{ fontSize: 15, fontWeight: 600, color: "var(--prv-text-1)", margin: 0 }}>
+              <p
+                onClick={onViewDetail}
+                style={{ fontSize: 15, fontWeight: 600, color: "var(--prv-text-1)", margin: 0, cursor: "pointer" }}
+              >
                 {req.employeeName}
               </p>
               <span style={{ fontSize: 12, color: "var(--prv-text-4)" }}>

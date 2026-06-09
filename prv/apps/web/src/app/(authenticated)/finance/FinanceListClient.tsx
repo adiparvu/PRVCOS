@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import type { Expense, PlRow, FinanceMeta } from "@/app/api/finance/expenses/route"
 import type { InvoiceSummary } from "@/app/api/finance/invoices/route"
-import { useExpenses, useInvoices } from "@/lib/api-hooks"
+import type { FinanceReport } from "@/app/api/finance/reports/route"
+import { useExpenses, useFinanceReports, useInvoices } from "@/lib/api-hooks"
 
 type FilterType = "Toate" | "Venituri" | "Cheltuieli" | "Facturi" | "Rapoarte"
 
@@ -579,34 +580,7 @@ function InvoiceRow({ invoice }: { invoice: InvoiceSummary }) {
 
 // ── Report Card ───────────────────────────────────────────────────────────────
 
-const MOCK_REPORTS = [
-  {
-    id: "r1",
-    title: "Raport Lunar · Mai 2026",
-    pages: 14,
-    dateLabel: "1 Iun 2026",
-    statusLabel: "Finalizat",
-    statusColor: "rgba(48,209,88,.95)",
-  },
-  {
-    id: "r2",
-    title: "Raport Cheltuieli Q2",
-    pages: 8,
-    dateLabel: "5 Iun 2026",
-    statusLabel: "Revizuiește",
-    statusColor: "rgba(255,159,10,.95)",
-  },
-  {
-    id: "r3",
-    title: "Prognoză Cash Flow Q3",
-    pages: 6,
-    dateLabel: "7 Iun 2026",
-    statusLabel: "AI",
-    statusColor: "rgba(191,90,242,.9)",
-  },
-]
-
-function ReportCard({ report }: { report: (typeof MOCK_REPORTS)[0] }) {
+function ReportCard({ report }: { report: FinanceReport }) {
   return (
     <div
       style={{
@@ -641,7 +615,7 @@ function ReportCard({ report }: { report: (typeof MOCK_REPORTS)[0] }) {
           {report.title}
         </div>
         <div style={{ fontSize: 11, color: "rgba(255,255,255,.4)" }}>
-          {report.pages} pagini · {report.dateLabel}
+          {report.transactionCount} tranzacții · {report.dateLabel}
         </div>
       </div>
       <div
@@ -737,6 +711,9 @@ export function FinanceListClient() {
   const expenses = expData?.expenses ?? []
   const invoices: InvoiceSummary[] = invData?.invoices ?? []
   const pendingInvoices = invoices.filter((i) => i.status === "overdue" || i.status === "due")
+
+  const { data: reportsData } = useFinanceReports()
+  const reports = reportsData?.reports ?? []
 
   const filters: FilterType[] = ["Toate", "Venituri", "Cheltuieli", "Facturi", "Rapoarte"]
 
@@ -1036,8 +1013,8 @@ export function FinanceListClient() {
         {/* Reports */}
         {showReports && (
           <div style={{ marginBottom: 28 }}>
-            <SectionHeader title="Rapoarte Financiare" count={MOCK_REPORTS.length} />
-            {MOCK_REPORTS.map((r) => (
+            <SectionHeader title="Rapoarte Financiare" count={reports.length} />
+            {reports.map((r) => (
               <ReportCard key={r.id} report={r} />
             ))}
           </div>
