@@ -1,6 +1,9 @@
 import { withGates } from "@/lib/with-gates"
 import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
+import { db } from "@prv/db"
+import { purchaseOrders, suppliers, projects } from "@prv/db/schema"
+import { and, desc, eq, isNull, sum } from "drizzle-orm"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -35,84 +38,79 @@ export interface ProcurementMeta {
   budgetUsed: number
 }
 
-const MOCK_ORDERS: POSummary[] = [
-  {
-    id: "po-0194",
-    ref: "PO-2026-0194",
-    description: "Ceramic Tiles",
-    supplier: "Suppliers SRL",
-    supplierId: null,
-    date: "2026-06-08",
-    amount: 12400,
-    status: "Pending",
-    project: "Renovare Cluj #14",
-    neededBy: "2026-06-13",
-  },
-  {
-    id: "po-0193",
-    ref: "PO-2026-0193",
-    description: "Electrical Components",
-    supplier: "ElectroMax",
-    supplierId: "s4",
-    date: "2026-06-06",
-    amount: 8750,
-    status: "Approved",
-    project: "Renovare Timișoara #7",
-    neededBy: "2026-06-10",
-  },
-  {
-    id: "po-0192",
-    ref: "PO-2026-0192",
-    description: "Paint & Primers",
-    supplier: "ColorPro",
-    supplierId: null,
-    date: "2026-06-05",
-    amount: 4200,
-    status: "In Transit",
-    project: "Renovare Cluj #12",
-    neededBy: "2026-06-08",
-  },
-  {
-    id: "po-0191",
-    ref: "PO-2026-0191",
-    description: "Plumbing Fixtures",
-    supplier: "AquaFit",
-    supplierId: "s6",
-    date: "2026-06-05",
-    amount: 6100,
-    status: "Draft",
-    project: "Renovare Cluj #15",
-    neededBy: "2026-06-18",
-  },
-  {
-    id: "po-0190",
-    ref: "PO-2026-0190",
-    description: "Safety Equipment",
-    supplier: "SafeWork",
-    supplierId: null,
-    date: "2026-06-04",
-    amount: 2980,
-    status: "Approved",
-    project: "All Sites",
-    neededBy: "2026-06-07",
-  },
-]
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function dbStatusToApi(dbStatus: string): POStatus {
+  switch (dbStatus) {
+    case "pending":
+      return "Pending"
+    case "approved":
+      return "Approved"
+    case "draft":
+      return "Draft"
+    case "rejected":
+      return "Rejected"
+    case "in_transit":
+      return "In Transit"
+    default:
+      return "Draft"
+  }
+}
+
+// ── GET ───────────────────────────────────────────────────────────────────────
 
 export const GET = withGates(
   { action: "procurement.read", endpointClass: "api_read" },
-  async (req: NextRequest, _ctx: GateContext): Promise<NextResponse> => {
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
     const { searchParams } = new URL(req.url)
-    const status = searchParams.get("status") as POStatus | null
-    const results = status ? MOCK_ORDERS.filter((o) => o.status === status) : MOCK_ORDERS
+    const statusFilter = searchParams.get("status") as POStatus | null
+    const { companyId } = ctx.session
+
+    const rows = await db
+      .select({
+        id: purchaseOrders.id,
+        ref: purchaseOrders.ref,
+        description: purchaseOrders.description,
+        supplierId: purchaseOrders.supplierId,
+        supplierName: purchaseOrders.supplierName,
+        supplierDbName: suppliers.name,
+        date: purchaseOrders.date,
+        neededBy: purchaseOrders.neededBy,
+        amount: purchaseOrders.amount,
+        status: purchaseOrders.status,
+        projectName: projects.name,
+      })
+      .from(purchaseOrders)
+      .leftJoin(suppliers, eq(purchaseOrders.supplierId, suppliers.id))
+      .leftJoin(projects, eq(purchaseOrders.projectId, projects.id))
+      .where(and(eq(purchaseOrders.companyId, companyId), isNull(purchaseOrders.deletedAt)))
+      .orderBy(desc(purchaseOrders.createdAt))
+
+    const all: POSummary[] = rows.map((r) => ({
+      id: r.id,
+      ref: r.ref,
+      description: r.description,
+      supplier: r.supplierDbName ?? r.supplierName ?? "—",
+      supplierId: r.supplierId ?? null,
+      date: r.date,
+      amount: Number(r.amount),
+      status: dbStatusToApi(r.status),
+      project: r.projectName ?? null,
+      neededBy: r.neededBy ?? null,
+    }))
+
+    const filtered = statusFilter ? all.filter((o) => o.status === statusFilter) : all
+
+    const totalSpend = all.reduce((s, o) => s + o.amount, 0)
 
     const meta: ProcurementMeta = {
-      pending: MOCK_ORDERS.filter((o) => o.status === "Pending").length,
-      inTransit: MOCK_ORDERS.filter((o) => o.status === "In Transit").length,
-      totalSpend: MOCK_ORDERS.reduce((s, o) => s + o.amount, 0),
-      budget: 90000,
-      budgetUsed: 84200,
+      pending: all.filter((o) => o.status === "Pending").length,
+      inTransit: all.filter((o) => o.status === "In Transit").length,
+      totalSpend,
+      budget: 0,
+      budgetUsed: totalSpend,
     }
 
-    return NextResponse.json({ orders: results, count: results.length, meta })
+    return NextResponse.json({ orders: filtered, count: filtered.length, meta })
   }
 )
