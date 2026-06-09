@@ -277,6 +277,39 @@ export function useDocuments(category?: string | null) {
 
 // ── Time-off ──────────────────────────────────────────────────────────────────
 
+// ── People directory ──────────────────────────────────────────────────────────
+
+interface PeopleMember {
+  id: string
+  fullName: string
+  jobTitle: string | null
+  managerId: string | null
+  presence: { status: string; statusMessage: string | null; lastSeenAt: string | null }
+}
+
+interface PeoplePage {
+  members: PeopleMember[]
+  count: number
+  nextCursor: string | null
+}
+
+export function usePeople(search?: string) {
+  return useInfiniteQuery({
+    queryKey: ["people", search ?? ""],
+    queryFn: async ({ pageParam }) =>
+      fetch(buildUrl("/api/people", { search: search ?? null, cursor: pageParam as string | null, limit: "100" })).then(
+        (r) => r.json() as Promise<PeoplePage>
+      ),
+    initialPageParam: null as string | null,
+    getNextPageParam: (page) => page.nextCursor ?? null,
+    select: (data) => ({
+      pages: data.pages,
+      pageParams: data.pageParams,
+      members: data.pages.flatMap((p) => p.members),
+    }),
+  })
+}
+
 interface TimeOffPage {
   requests: TimeOffRequest[]
   nextCursor: string | null

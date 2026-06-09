@@ -53,6 +53,7 @@ export const GET = withGates(
         role: users.role,
         departmentId: users.departmentId,
         teamId: users.teamId,
+        managerId: users.managerId,
         // Presence (left join — may be null)
         presenceStatus: userPresence.status,
         presenceMessage: userPresence.statusMessage,
@@ -85,6 +86,7 @@ export const GET = withGates(
         jobTitle: m.jobTitle,
         avatarUrl: m.avatarUrl,
         role: m.role,
+        managerId: m.managerId ?? null,
         presence: {
           status: m.presenceStatus ?? "offline",
           statusMessage: m.presenceMessage ?? null,

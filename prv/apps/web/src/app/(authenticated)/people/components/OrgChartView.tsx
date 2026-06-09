@@ -1,79 +1,25 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { GlassTreeView, GlassStatusDot, type TreeNode, type StatusKind } from "@prv/ui"
+import { usePeople } from "@/lib/api-hooks"
 
-// ── Placeholder hierarchy ─────────────────────────────────────────────────────
-// Reporting lines don't exist in the current /api/people payload (flat list, no
-// manager relationships). Until a backend query exposes the org graph, the chart
-// renders from this typed placeholder so the UI can be assembled and reviewed.
-
-interface OrgPerson {
+interface Member {
   id: string
-  name: string
-  role: string
-  initials: string
-  status: StatusKind
-  reports: number
-  children?: OrgPerson[]
+  fullName: string
+  jobTitle: string | null
+  managerId: string | null
+  presence: { status: string }
 }
 
-const ORG: OrgPerson = {
-  id: "ap",
-  name: "Andrei Popescu",
-  role: "Group CEO",
-  initials: "AP",
-  status: "online",
-  reports: 1204,
-  children: [
-    {
-      id: "mi",
-      name: "Maria Ionescu",
-      role: "Regional Manager · West",
-      initials: "MI",
-      status: "busy",
-      reports: 214,
-      children: [
-        {
-          id: "rd",
-          name: "Radu Dumitru",
-          role: "Store Manager · Cluj",
-          initials: "RD",
-          status: "online",
-          reports: 12,
-        },
-        {
-          id: "es",
-          name: "Elena Stan",
-          role: "Store Manager · Iași",
-          initials: "ES",
-          status: "away",
-          reports: 8,
-        },
-      ],
-    },
-    {
-      id: "vg",
-      name: "Victor Georgescu",
-      role: "Project Director",
-      initials: "VG",
-      status: "offline",
-      reports: 96,
-    },
-    {
-      id: "cn",
-      name: "Cristina Neagu",
-      role: "HR & Payroll Director",
-      initials: "CN",
-      status: "online",
-      reports: 42,
-    },
-  ],
+function initials(name: string): string {
+  const parts = name.trim().split(/\s+/)
+  return parts.length >= 2
+    ? `${parts[0]![0]}${parts[parts.length - 1]![0]}`.toUpperCase()
+    : name.slice(0, 2).toUpperCase()
 }
 
-// ── Avatar w/ status badge (used as each tree node's icon) ─────────────────────
-
-function NodeAvatar({ initials, status }: { initials: string; status: StatusKind }) {
+function NodeAvatar({ name, status }: { name: string; status: StatusKind }) {
   return (
     <span style={{ position: "relative", display: "inline-flex" }}>
       <span
@@ -90,14 +36,13 @@ function NodeAvatar({ initials, status }: { initials: string; status: StatusKind
           background: "var(--prv-g3)",
         }}
       >
-        {initials}
+        {initials(name)}
       </span>
       <span
         style={{
           position: "absolute",
           right: -1,
           bottom: -1,
-          // GlassStatusDot draws the colored presence dot with an outline-like ring.
           outline: "2px solid #0b0b0b",
           borderRadius: "50%",
         }}
@@ -108,23 +53,74 @@ function NodeAvatar({ initials, status }: { initials: string; status: StatusKind
   )
 }
 
-// ── Map the placeholder org into GlassTreeView nodes ───────────────────────────
-
-function toTreeNode(person: OrgPerson): TreeNode {
-  return {
-    id: person.id,
-    label: person.name,
-    count: person.reports,
-    icon: <NodeAvatar initials={person.initials} status={person.status} />,
-    children: person.children?.map(toTreeNode),
+function buildTree(members: Member[]): TreeNode[] {
+  const childrenMap = new Map<string | null, Member[]>()
+  for (const m of members) {
+    const key = m.managerId ?? null
+    if (!childrenMap.has(key)) childrenMap.set(key, [])
+    childrenMap.get(key)!.push(m)
   }
+
+  function toNode(m: Member): TreeNode {
+    const kids = childrenMap.get(m.id) ?? []
+    return {
+      id: m.id,
+      label: m.jobTitle ? `${m.fullName} · ${m.jobTitle}` : m.fullName,
+      count: kids.length > 0 ? kids.length : undefined,
+      icon: (
+        <NodeAvatar
+          name={m.fullName}
+          status={(m.presence.status as StatusKind) ?? "offline"}
+        />
+      ),
+      children: kids.length > 0 ? kids.map(toNode) : undefined,
+    }
+  }
+
+  return (childrenMap.get(null) ?? []).map(toNode)
 }
 
-// ── Component ─────────────────────────────────────────────────────────────────
+function SkeletonRow() {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0" }}>
+      <div style={{ width: 26, height: 26, borderRadius: "50%", background: "rgba(255,255,255,0.07)" }} />
+      <div style={{ width: 120, height: 12, borderRadius: 4, background: "rgba(255,255,255,0.07)" }} />
+    </div>
+  )
+}
 
 export function OrgChartView() {
-  const [selectedId, setSelectedId] = useState<string>("ap")
-  const nodes = [toTreeNode(ORG)]
+  const [selectedId, setSelectedId] = useState<string | undefined>(undefined)
+  const { data, isLoading } = usePeople()
+
+  const nodes = useMemo<TreeNode[]>(() => {
+    const members = data?.members ?? []
+    if (members.length === 0) return []
+    return buildTree(members as Member[])
+  }, [data])
+
+  const defaultExpanded = useMemo(
+    () => nodes.flatMap((n) => [n.id, ...(n.children?.map((c) => c.id) ?? [])]),
+    [nodes]
+  )
+
+  if (isLoading) {
+    return (
+      <div className="px-4">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <SkeletonRow key={i} />
+        ))}
+      </div>
+    )
+  }
+
+  if (nodes.length === 0) {
+    return (
+      <p className="px-4 text-[13px] text-white/30 text-center mt-6">
+        No org chart data yet.
+      </p>
+    )
+  }
 
   return (
     <div className="px-4">
@@ -132,7 +128,7 @@ export function OrgChartView() {
         nodes={nodes}
         selectedId={selectedId}
         onSelect={(id) => setSelectedId(id)}
-        defaultExpanded={["ap", "mi"]}
+        defaultExpanded={defaultExpanded}
       />
       <p className="text-[12px] text-white/15 mt-3.5 text-center">
         Tap a person to expand their reports
