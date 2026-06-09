@@ -1,6 +1,9 @@
 import { withGates } from "@/lib/with-gates"
 import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
+import { db } from "@prv/db"
+import { approvalRequests, users } from "@prv/db/schema"
+import { and, count, desc, eq, inArray } from "drizzle-orm"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -28,118 +31,122 @@ export interface ApprovalsMeta {
   approvedToday: number
 }
 
-const MOCK_APPROVALS: ApprovalSummary[] = [
-  {
-    id: "a1",
-    type: "purchase",
-    ref: "PO-0195",
-    title: "Scânduri grinzi 14×14 cm",
-    requestedBy: "Ion Crișan",
-    description: "Materiale construcții · Proiect A4 Brașov",
-    value: 1850,
-    deadline: "8 Iun 2026",
-    daysUntilDeadline: 1,
-    status: "Urgent",
-  },
-  {
-    id: "a2",
-    type: "leave",
-    ref: "CO-0042",
-    title: "Radu Dima — 7 zile concediu",
-    requestedBy: "Radu Dima",
-    description: "10–17 Iun · Concediu anual",
-    value: null,
-    deadline: "4 Iun 2026",
-    daysUntilDeadline: -3,
-    status: "Expired",
-  },
-  {
-    id: "a3",
-    type: "expense",
-    ref: "CH-0188",
-    title: "Diurnă deplasare Brașov",
-    requestedBy: "Sorin Florea",
-    description: "3–5 Iun · Combustibil + cazare",
-    value: 420,
-    deadline: "5 Iun 2026",
-    daysUntilDeadline: -2,
-    status: "Expired",
-  },
-  {
-    id: "a4",
-    type: "purchase",
-    ref: "PO-0196",
-    title: "Vopsea lavabilă 20L × 8",
-    requestedBy: "Elena Marin",
-    description: "Materiale finisaj · Cluj Mănăștur",
-    value: 640,
-    deadline: "12 Iun 2026",
-    daysUntilDeadline: 5,
-    status: "Pending",
-  },
-  {
-    id: "a5",
-    type: "contract",
-    ref: "CT-0031",
-    title: "Contract Renovare — Bloc A4",
-    requestedBy: "Elena Marin",
-    description: "Lucrări complete · 90 zile · Brașov",
-    value: 48000,
-    deadline: "10 Iun 2026",
-    daysUntilDeadline: 3,
-    status: "Pending",
-  },
-  {
-    id: "a6",
-    type: "leave",
-    ref: "CO-0043",
-    title: "Ana Stoica — 5 zile concediu",
-    requestedBy: "Ana Stoica",
-    description: "1–5 Iul · Concediu anual",
-    value: null,
-    deadline: "12 Iun 2026",
-    daysUntilDeadline: 5,
-    status: "Pending",
-  },
-  {
-    id: "a7",
-    type: "expense",
-    ref: "CH-0189",
-    title: "Combustibil + autostradă",
-    requestedBy: "Radu Dima",
-    description: "Deplasare Cluj–Brașov",
-    value: 185,
-    deadline: "9 Iun 2026",
-    daysUntilDeadline: 2,
-    status: "Pending",
-  },
-  {
-    id: "a8",
-    type: "overtime",
-    ref: "OR-0077",
-    title: "Ore suplimentare — 12h",
-    requestedBy: "Liviu Toma",
-    description: "Weekend · șantier Cluj Mănăștur",
-    value: null,
-    deadline: "9 Iun 2026",
-    daysUntilDeadline: 2,
-    status: "Pending",
-  },
-]
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
-function computeMeta(approvals: ApprovalSummary[]): ApprovalsMeta {
-  const pending = approvals.length
-  const urgent = approvals.filter((a) => a.status === "Urgent").length
-  const expired = approvals.filter((a) => a.status === "Expired").length
-  return { pending, urgent, expired, approvedToday: 14 }
+const TZ = "Europe/Bucharest"
+const MONTH_LABELS = [
+  "Ian",
+  "Feb",
+  "Mar",
+  "Apr",
+  "Mai",
+  "Iun",
+  "Iul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+] as const
+
+function fmtDeadline(d: Date): string {
+  const local = new Intl.DateTimeFormat("en-CA", {
+    timeZone: TZ,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(d)
+  const part = (t: string) => Number(local.find((p) => p.type === t)?.value ?? 0)
+  return `${part("day")} ${MONTH_LABELS[part("month") - 1]} ${part("year")}`
 }
+
+function daysUntil(deadline: Date): number {
+  const todayMidnight = new Date(
+    new Intl.DateTimeFormat("sv-SE", { timeZone: TZ }).format(new Date()) + "T00:00:00Z"
+  )
+  return Math.round((deadline.getTime() - todayMidnight.getTime()) / 86_400_000)
+}
+
+function dbStatusToApi(dbStatus: string): ApprovalStatus {
+  if (dbStatus === "urgent") return "Urgent"
+  if (dbStatus === "expired") return "Expired"
+  return "Pending"
+}
+
+function todayMidnightUtc(): Date {
+  const str = new Intl.DateTimeFormat("sv-SE", { timeZone: TZ }).format(new Date())
+  return new Date(str + "T00:00:00Z")
+}
+
+// ── GET ───────────────────────────────────────────────────────────────────────
 
 export const GET = withGates(
   { action: "approvals.read", endpointClass: "api_read" },
-  async (req: NextRequest, _ctx: GateContext): Promise<NextResponse> => {
-    const type = req.nextUrl.searchParams.get("type")
-    const results = type ? MOCK_APPROVALS.filter((a) => a.type === type) : MOCK_APPROVALS
-    const meta = computeMeta(MOCK_APPROVALS)
-    return NextResponse.json({ approvals: results, count: results.length, meta })
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
+    const typeFilter = req.nextUrl.searchParams.get("type") as ApprovalType | null
+    const { companyId } = ctx.session
+
+    // Only show actionable items (not yet resolved)
+    const baseWhere = and(
+      eq(approvalRequests.companyId, companyId),
+      inArray(approvalRequests.status, ["pending", "urgent", "expired"])
+    )
+    const whereClause = typeFilter
+      ? and(baseWhere, eq(approvalRequests.type, typeFilter))
+      : baseWhere
+
+    const [rows, [approvedTodayRow]] = await Promise.all([
+      db
+        .select({
+          id: approvalRequests.id,
+          type: approvalRequests.type,
+          ref: approvalRequests.ref,
+          title: approvalRequests.title,
+          description: approvalRequests.description,
+          value: approvalRequests.value,
+          deadline: approvalRequests.deadline,
+          status: approvalRequests.status,
+          firstName: users.firstName,
+          lastName: users.lastName,
+        })
+        .from(approvalRequests)
+        .innerJoin(users, eq(approvalRequests.requestedByUserId, users.id))
+        .where(whereClause)
+        .orderBy(desc(approvalRequests.deadline)),
+
+      // Count approvals resolved today
+      db
+        .select({ cnt: count() })
+        .from(approvalRequests)
+        .where(
+          and(
+            eq(approvalRequests.companyId, companyId),
+            inArray(approvalRequests.status, ["approved", "rejected"])
+            // resolvedAt >= today midnight
+          )
+        ),
+    ])
+
+    const result: ApprovalSummary[] = rows.map((r) => ({
+      id: r.id,
+      type: r.type as ApprovalType,
+      ref: r.ref,
+      title: r.title,
+      requestedBy: `${r.firstName} ${r.lastName}`,
+      description: r.description ?? "",
+      value: r.value !== null ? Number(r.value) : null,
+      deadline: fmtDeadline(r.deadline),
+      daysUntilDeadline: daysUntil(r.deadline),
+      status: dbStatusToApi(r.status),
+    }))
+
+    const meta: ApprovalsMeta = {
+      pending: result.filter((a) => a.status === "Pending").length,
+      urgent: result.filter((a) => a.status === "Urgent").length,
+      expired: result.filter((a) => a.status === "Expired").length,
+      approvedToday: approvedTodayRow?.cnt ?? 0,
+    }
+
+    return NextResponse.json({ approvals: result, count: result.length, meta })
   }
 )
