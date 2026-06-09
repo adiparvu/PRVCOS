@@ -8,6 +8,8 @@
     "start": "next start",
     "lint": "eslint src scripts --ext .ts,.tsx",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "clean": "rm -rf .next dist"
   },
   "dependencies": {

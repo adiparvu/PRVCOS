@@ -4,6 +4,7 @@ import { useState, useMemo } from "react"
 import Link from "next/link"
 import { useProjects } from "@/lib/api-hooks"
 import type { ProjectSummary } from "@/app/api/projects/route"
+import { fmtEuro, fmtShortDate } from "@/lib/formatters"
 import {
   GlassSegmentedControl,
   GlassProgressBar,
@@ -87,19 +88,6 @@ const DETAIL_TABS: TabItem[] = [
 ]
 
 // ── API mappers ───────────────────────────────────────────────────────────────
-
-function fmtEuro(n: number): string {
-  if (n >= 1_000_000) return `€${(n / 1_000_000).toFixed(1)}M`
-  if (n >= 1_000) return `€${Math.round(n / 1000)}k`
-  return `€${n.toLocaleString()}`
-}
-
-function fmtShortDate(dateStr: string): string {
-  if (!dateStr) return "—"
-  try {
-    return new Date(dateStr).toLocaleDateString("en-US", { month: "short", day: "numeric" })
-  } catch { return dateStr }
-}
 
 function buildFallbackPhases(p: ProjectSummary): Phase[] {
   const phaseName = p.currentPhaseName || "In Progress"

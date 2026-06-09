@@ -5,6 +5,7 @@ import Link from "next/link"
 import type { FinanceMeta } from "@/app/api/finance/expenses/route"
 import type { InvoiceSummary } from "@/app/api/finance/invoices/route"
 import type { Expense } from "@/app/api/finance/expenses/route"
+import { fmtDateRelative } from "@/lib/formatters"
 import {
   GlassStatCard,
   GlassAlertBanner,
@@ -141,22 +142,6 @@ function fmtDue(dateStr: string): string {
   }
 }
 
-function fmtDateRelative(dateStr: string): string {
-  try {
-    const d = new Date(dateStr)
-    const now = new Date()
-    const diffMs = now.getTime() - d.getTime()
-    const diffMins = Math.floor(diffMs / 60000)
-    const diffHours = Math.floor(diffMs / 3600000)
-    const diffDays = Math.floor(diffMs / 86400000)
-    if (diffMins < 60) return `${diffMins} min ago`
-    if (diffHours < 24) return `${diffHours} hr ago`
-    if (diffDays === 1) return "Yesterday"
-    return `${diffDays} days ago`
-  } catch {
-    return dateStr
-  }
-}
 
 function Label({ children }: { children: React.ReactNode }) {
   return (

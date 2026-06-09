@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react"
 import { useAttendanceRecords } from "@/lib/api-hooks"
 import type { AttendanceRecord } from "@/app/api/attendance/route"
+import { fmtMins } from "@/lib/formatters"
 
 type AttendanceStatus = "Present" | "Late" | "Absent" | "On Leave" | "Clocked Out"
 type FilterType = "All" | "Present" | "Late" | "Absent"
@@ -36,12 +37,6 @@ function mapApiStatus(s: AttendanceRecord["status"]): AttendanceStatus {
   return m[s]
 }
 
-function fmtMins(mins: number | null): string | undefined {
-  if (!mins) return undefined
-  const h = Math.floor(mins / 60)
-  const m = mins % 60
-  return h > 0 ? `${h}h ${m}m` : `${m}m`
-}
 
 function mapRecord(r: AttendanceRecord): Employee {
   return {
