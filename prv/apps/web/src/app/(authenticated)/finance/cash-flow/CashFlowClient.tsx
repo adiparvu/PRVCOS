@@ -1,88 +1,15 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { GlassAreaChart, GlassSegmentedControl, type SegmentItem } from "@prv/ui"
-
-// ── Types ─────────────────────────────────────────────────────────────────────
-
-interface CashFlowEntry {
-  date: string
-  inflow: number
-  outflow: number
-  balance: number
-  forecast: boolean
-}
-
-interface CashFlowCategory {
-  label: string
-  amount: number
-  type: "in" | "out"
-}
+import type {
+  CashFlowEntry,
+  CashFlowCategory,
+  CashFlowMeta,
+} from "@/app/api/finance/cash-flow/route"
 
 // ── Static data ───────────────────────────────────────────────────────────────
-
-function generateEntries(): CashFlowEntry[] {
-  const today = new Date("2026-06-07")
-  const entries: CashFlowEntry[] = []
-  let balance = 84200
-
-  for (let i = 89; i >= 0; i--) {
-    const d = new Date(today)
-    d.setDate(d.getDate() - i)
-    const dom = d.getDate()
-    let inflow = 0
-    let outflow = 0
-    if (dom === 1) outflow += 42000
-    if (dom === 15) inflow += 38000
-    if (dom === 28) outflow += 12000
-    inflow += 2000 + (i % 7) * 300
-    outflow += 1500 + (i % 5) * 200
-    balance = balance + inflow - outflow
-    entries.push({
-      date: d.toISOString().slice(0, 10),
-      inflow: Math.round(inflow),
-      outflow: Math.round(outflow),
-      balance: Math.round(balance),
-      forecast: false,
-    })
-  }
-
-  let fb = balance
-  for (let i = 1; i <= 30; i++) {
-    const d = new Date(today)
-    d.setDate(d.getDate() + i)
-    const dom = d.getDate()
-    let inflow = 0
-    let outflow = 0
-    if (dom === 1) outflow += 42000
-    if (dom === 15) inflow += 38000
-    if (dom === 28) outflow += 12000
-    inflow += 2800
-    outflow += 1900
-    fb = fb + inflow - outflow
-    entries.push({
-      date: d.toISOString().slice(0, 10),
-      inflow: Math.round(inflow),
-      outflow: Math.round(outflow),
-      balance: Math.round(fb),
-      forecast: true,
-    })
-  }
-  return entries
-}
-
-const ALL_ENTRIES = generateEntries()
-
-const CATEGORIES: CashFlowCategory[] = [
-  { label: "Client Payments", amount: 148400, type: "in" },
-  { label: "Project Advances", amount: 62000, type: "in" },
-  { label: "Material Sales", amount: 18200, type: "in" },
-  { label: "Payroll", amount: 126000, type: "out" },
-  { label: "Suppliers", amount: 54800, type: "out" },
-  { label: "Operations", amount: 22400, type: "out" },
-  { label: "Tax & Duties", amount: 14600, type: "out" },
-]
 
 const PERIOD_ITEMS: SegmentItem[] = [
   { id: "30", label: "30d" },
@@ -164,53 +91,59 @@ function CategoryBar({ cat, max }: { cat: CashFlowCategory; max: number }) {
 export function CashFlowClient() {
   const [period, setPeriod] = useState("30")
   const [showForecast, setShowForecast] = useState(true)
+  const [periodEntries, setPeriodEntries] = useState<CashFlowEntry[]>([])
+  const [forecastEntries, setForecastEntries] = useState<CashFlowEntry[]>([])
+  const [categories, setCategories] = useState<CashFlowCategory[]>([])
+  const [apiMeta, setApiMeta] = useState<CashFlowMeta | null>(null)
 
-  const periodDays = parseInt(period, 10)
-  const today = "2026-06-07"
-  const periodStart = new Date(today)
-  periodStart.setDate(periodStart.getDate() - periodDays)
-  const startStr = periodStart.toISOString().slice(0, 10)
+  useEffect(() => {
+    fetch(`/api/finance/cash-flow?period=${period}`)
+      .then((r) => r.json())
+      .then(
+        (data: {
+          periodEntries: CashFlowEntry[]
+          forecastEntries: CashFlowEntry[]
+          categories: CashFlowCategory[]
+          meta: CashFlowMeta
+        }) => {
+          setPeriodEntries(data.periodEntries ?? [])
+          setForecastEntries(data.forecastEntries ?? [])
+          setCategories(data.categories ?? [])
+          setApiMeta(data.meta ?? null)
+        }
+      )
+      .catch(() => {})
+  }, [period])
 
-  const historyEntries = ALL_ENTRIES.filter((e) => e.date >= startStr && !e.forecast)
-  const forecastEntries = ALL_ENTRIES.filter((e) => e.forecast)
+  const totalIn = apiMeta?.totalIn ?? 0
+  const totalOut = apiMeta?.totalOut ?? 0
+  const net = apiMeta?.net ?? 0
+  const currentBalance = apiMeta?.currentBalance ?? 0
+  const runwayDays = apiMeta?.runwayDays ?? 0
+  const avgMonthlyBurn = apiMeta?.avgMonthlyBurn ?? 0
+  const forecastBalance30 = apiMeta?.forecastBalance30d ?? 0
 
-  const totalIn = historyEntries.reduce((s, e) => s + e.inflow, 0)
-  const totalOut = historyEntries.reduce((s, e) => s + e.outflow, 0)
-  const net = totalIn - totalOut
-  const currentBalance = historyEntries[historyEntries.length - 1]?.balance ?? 84200
-  const avgDailyBurn = totalOut / periodDays
-  const runwayDays = Math.round(currentBalance / avgDailyBurn)
-  const forecastBalance30 = forecastEntries[29]?.balance ?? currentBalance
+  const histBalances = periodEntries.map((e) => e.balance)
 
-  const allVisible = showForecast ? [...historyEntries, ...forecastEntries] : historyEntries
-  const sampled = sampleEvery(allVisible, 30)
-
-  const histBalances = historyEntries.map((e) => e.balance)
-  const foreBalances = showForecast ? forecastEntries.map((e) => e.balance) : []
-
-  // Build two series for area chart: history + forecast (lighter)
-  const histSampled = sampleEvery(historyEntries, 22)
+  const histSampled = sampleEvery(periodEntries, 22)
   const foreSampled = showForecast ? sampleEvery(forecastEntries, 8) : []
 
-  // Combine for labels & data
   const combined = [...histSampled, ...foreSampled]
   const labels = combined.map((e) =>
     new Date(e.date).toLocaleDateString("ro-RO", { day: "numeric", month: "short" })
   )
   const balanceData = combined.map((e) => e.balance)
 
-  const maxBar = Math.max(...CATEGORIES.map((c) => c.amount))
-  const inCategories = CATEGORIES.filter((c) => c.type === "in")
-  const outCategories = CATEGORIES.filter((c) => c.type === "out")
+  const maxBar = Math.max(...categories.map((c) => c.amount), 1)
+  const inCategories = categories.filter((c) => c.type === "in")
+  const outCategories = categories.filter((c) => c.type === "out")
 
-  // Min/max for mini insight
-  const minBal = Math.min(...histBalances)
-  const maxBal = Math.max(...histBalances)
+  const minBal = histBalances.length > 0 ? Math.min(...histBalances) : 0
+  const maxBal = histBalances.length > 0 ? Math.max(...histBalances) : 0
 
   const isNegativeNet = net < 0
 
-  // Build inflow/outflow series for period comparison
-  const inflowSampled = sampleEvery(historyEntries, 22)
+  const inflowSampled = sampleEvery(periodEntries, 22)
   const inflowData = inflowSampled.map((e) => e.inflow)
   const outflowData = inflowSampled.map((e) => e.outflow)
   const inOutLabels = inflowSampled.map((e) =>
@@ -364,11 +297,7 @@ export function CashFlowClient() {
       <div className="grid grid-cols-2 gap-2.5 mb-4">
         <KpiTile value={fmt(totalIn)} label={`In · ${period}d`} color="rgba(48,209,88,0.95)" />
         <KpiTile value={fmt(totalOut)} label={`Out · ${period}d`} color="rgba(255,69,58,0.9)" />
-        <KpiTile
-          value={fmt(avgDailyBurn * 30)}
-          label="Monthly Burn"
-          color="rgba(255,159,10,0.95)"
-        />
+        <KpiTile value={fmt(avgMonthlyBurn)} label="Monthly Burn" color="rgba(255,159,10,0.95)" />
         <KpiTile
           value={showForecast ? fmt(forecastBalance30) : "—"}
           label="Forecast 30d"

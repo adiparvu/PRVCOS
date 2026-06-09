@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 import type { Expense, PlRow, FinanceMeta } from "@/app/api/finance/expenses/route"
 import type { InvoiceSummary } from "@/app/api/finance/invoices/route"
@@ -710,6 +711,7 @@ function SheetAction({
 // ── Main Component ────────────────────────────────────────────────────────────
 
 export function FinanceListClient() {
+  const router = useRouter()
   const [filter, setFilter] = useState<FilterType>("Toate")
   const [expData, setExpData] = useState<FinanceData | null>(null)
   const [invoices, setInvoices] = useState<InvoiceSummary[]>([])
@@ -1122,19 +1124,28 @@ export function FinanceListClient() {
               label="Înregistrează Cheltuială"
               icon={<IconReceipt />}
               color="rgba(48,209,88,.9)"
-              onClick={() => setFabOpen(false)}
+              onClick={() => {
+                setFabOpen(false)
+                router.push("/finance/expenses/new")
+              }}
             />
             <SheetAction
               label="Crează Factură Nouă"
               icon={<IconFileText />}
               color="rgba(10,132,255,.9)"
-              onClick={() => setFabOpen(false)}
+              onClick={() => {
+                setFabOpen(false)
+                router.push("/finance/invoices/new")
+              }}
             />
             <SheetAction
               label="Prognoză Cash Flow"
               icon={<IconBarChart />}
               color="rgba(255,159,10,.9)"
-              onClick={() => setFabOpen(false)}
+              onClick={() => {
+                setFabOpen(false)
+                router.push("/finance/cash-flow")
+              }}
             />
             <SheetAction
               label="Export Raport Financiar"

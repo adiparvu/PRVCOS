@@ -268,14 +268,34 @@ function PnLItem({
   )
 }
 
+function fmt(n: number): string {
+  const abs = Math.abs(n)
+  if (abs >= 1_000_000) return `€${(n / 1_000_000).toFixed(1)}M`
+  if (abs >= 1_000) return `€${Math.round(n / 1_000)}K`
+  return `€${n}`
+}
+
 const QA = [
   {
     label: "New Invoice",
+    href: "/finance/invoices/new",
     path: "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8ZM14 2v6h6M12 18v-6M9 15h6",
   },
-  { label: "Add Expense", path: "M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20ZM12 8v8M8 12h8" },
-  { label: "Reports", path: "M3 3v18h18M18 9l-6 6-3-3-6 6" },
-  { label: "Payroll", path: "M1 4h22v16H1ZM1 10h22" },
+  {
+    label: "Add Expense",
+    href: "/finance/expenses/new",
+    path: "M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20ZM12 8v8M8 12h8",
+  },
+  {
+    label: "Reports",
+    href: "/finance/expenses",
+    path: "M3 3v18h18M18 9l-6 6-3-3-6 6",
+  },
+  {
+    label: "Payroll",
+    href: "/finance",
+    path: "M1 4h22v16H1ZM1 10h22",
+  },
 ]
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -413,35 +433,43 @@ export function FinanceWorkspace() {
             <div className="flex" style={{ borderBottom: "none" }}>
               <PnLItem
                 label="Gross Margin"
-                value="28.6%"
-                trend="▲ 1.2pp"
-                trendColor="rgba(48,209,88,0.95)"
+                value={meta ? `${meta.grossMarginPct.toFixed(1)}%` : "—"}
+                trend="—"
+                trendColor="var(--prv-text-2)"
               />
               <PnLItem
-                label="EBITDA"
-                value="€112K"
-                trend="▲ 9.4%"
-                trendColor="rgba(48,209,88,0.95)"
+                label="Net Profit"
+                value={meta?.profitLabel ?? "—"}
+                trend={meta?.profitTrend ?? "—"}
+                trendColor={
+                  meta?.profitTrend?.startsWith("+")
+                    ? "rgba(48,209,88,0.95)"
+                    : "rgba(255,69,58,0.9)"
+                }
               />
               <div className="flex-1 px-4 py-3">
                 <p className="text-[10px] font-semibold text-white/35 uppercase tracking-[.07em] mb-1">
-                  Tax Provision
+                  Tax (16%)
                 </p>
-                <p className="text-[16px] font-bold text-white/95 tracking-tight">€26K</p>
-                <p className="text-[11px] font-semibold mt-0.5 text-white/35">→ 16% rate</p>
+                <p className="text-[16px] font-bold text-white/95 tracking-tight">
+                  {meta ? fmt(Math.round(meta.netProfitRaw * 0.16)) : "—"}
+                </p>
+                <p className="text-[11px] font-semibold mt-0.5 text-white/35">→ provision</p>
               </div>
             </div>
           </GlassCard>
 
           {/* Quick actions */}
           <div className="grid grid-cols-4 gap-2.5 mb-3.5">
-            {QA.map(({ label, path }) => (
-              <div
+            {QA.map(({ label, path, href }) => (
+              <Link
                 key={label}
+                href={href}
                 className="flex flex-col items-center gap-1.5 py-4 rounded-[14px]"
                 style={{
                   background: "var(--prv-g1)",
                   border: "1px solid var(--prv-border-subtle)",
+                  textDecoration: "none",
                 }}
               >
                 <svg
@@ -460,7 +488,7 @@ export function FinanceWorkspace() {
                 <span className="text-[11px] font-medium text-white/40 text-center leading-tight px-1">
                   {label}
                 </span>
-              </div>
+              </Link>
             ))}
           </div>
         </>

@@ -48,6 +48,8 @@ export interface FinanceMeta {
   profitLabel: string
   profitTrend: string
   vatLabel: string
+  grossMarginPct: number
+  netProfitRaw: number
 }
 
 // ─── Category / Status Maps ───────────────────────────────────────────────────
@@ -312,6 +314,8 @@ export const GET = withGates(
       profitLabel: fmtKpi(netProfit),
       profitTrend: fmtTrend(netProfit, prevRevenue - prevExp),
       vatLabel: fmtKpi(vat),
+      grossMarginPct: revenue > 0 ? Math.round((grossProfit / revenue) * 1000) / 10 : 0,
+      netProfitRaw: netProfit,
     }
 
     const plData: PlRow[] =
