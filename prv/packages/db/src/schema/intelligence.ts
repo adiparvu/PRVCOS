@@ -8,6 +8,7 @@ import {
   numeric,
   varchar,
   unique,
+  customType,
 } from "drizzle-orm/pg-core"
 
 export const insightTypeEnum = pgEnum("insight_type", [
@@ -160,4 +161,61 @@ export const forecastOpportunities = pgTable("forecast_opportunities", {
   quarter: integer("quarter").notNull(),
   sortOrder: integer("sort_order").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+})
+
+// ── AI Conversation History ────────────────────────────────────────────────────
+
+export const aiMessageRoleEnum = pgEnum("ai_message_role", ["user", "assistant"])
+
+export const aiConversations = pgTable("ai_conversations", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull(),
+  companyId: uuid("company_id").notNull(),
+  title: varchar("title", { length: 200 }).notNull().default("New conversation"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
+})
+
+export const aiMessages = pgTable("ai_messages", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  conversationId: uuid("conversation_id")
+    .notNull()
+    .references(() => aiConversations.id, { onDelete: "cascade" }),
+  role: aiMessageRoleEnum("role").notNull(),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+})
+
+// ── Document Embeddings (pgvector — requires: CREATE EXTENSION IF NOT EXISTS vector) ──
+
+const vectorColumn = customType<{ data: number[]; driverData: string }>({
+  dataType() {
+    return "vector(1536)"
+  },
+  toDriver(value: number[]): string {
+    return `[${value.join(",")}]`
+  },
+  fromDriver(value: string): number[] {
+    return value.slice(1, -1).split(",").map(Number)
+  },
+})
+
+export const embeddingSourceEnum = pgEnum("embedding_source", [
+  "knowledge_article",
+  "project",
+  "document",
+  "insight",
+])
+
+export const documentEmbeddings = pgTable("document_embeddings", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  companyId: uuid("company_id").notNull(),
+  sourceType: embeddingSourceEnum("source_type").notNull(),
+  sourceId: uuid("source_id").notNull(),
+  chunkIndex: integer("chunk_index").notNull().default(0),
+  content: text("content").notNull(),
+  embedding: vectorColumn("embedding"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 })
