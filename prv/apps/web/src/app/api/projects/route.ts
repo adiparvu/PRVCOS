@@ -13,6 +13,7 @@ import {
   invoices,
 } from "@prv/db/schema"
 import { and, asc, desc, eq, inArray, isNull, isNotNull, lt, sum } from "drizzle-orm"
+import { upsertDocument } from "@prv/search"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -268,12 +269,19 @@ export const POST = withGates(
 
     const parsed = createProjectSchema.safeParse(body)
     if (!parsed.success) {
-      return NextResponse.json({ error: "Invalid payload", issues: parsed.error.issues }, { status: 422 })
+      return NextResponse.json(
+        { error: "Invalid payload", issues: parsed.error.issues },
+        { status: 422 }
+      )
     }
 
     const [record] = await db
       .insert(projects)
-      .values({ companyId, ...parsed.data, budget: parsed.data.budget !== undefined ? String(parsed.data.budget) : undefined })
+      .values({
+        companyId,
+        ...parsed.data,
+        budget: parsed.data.budget !== undefined ? String(parsed.data.budget) : undefined,
+      })
       .returning({ id: projects.id, name: projects.name })
 
     if (!record) return NextResponse.json({ error: "Insert failed" }, { status: 500 })
@@ -290,6 +298,14 @@ export const POST = withGates(
       path: "/api/projects",
       ipAddress: ctx.ipAddress,
       userAgent: ctx.userAgent,
+    })
+
+    void upsertDocument("projects", {
+      id: record.id,
+      company_id: companyId,
+      title: record.name,
+      status: parsed.data.status ?? "draft",
+      created_at: Math.floor(Date.now() / 1000),
     })
 
     return NextResponse.json({ id: record.id, name: record.name }, { status: 201 })

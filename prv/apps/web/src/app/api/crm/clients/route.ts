@@ -6,6 +6,7 @@ import { z } from "zod"
 import { db } from "@prv/db"
 import { clients, invoices, projects } from "@prv/db/schema"
 import { and, count, desc, eq, inArray, isNotNull, isNull, lt, notInArray, sum } from "drizzle-orm"
+import { upsertDocument } from "@prv/search"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -196,7 +197,10 @@ export const POST = withGates(
 
     const parsed = createClientSchema.safeParse(body)
     if (!parsed.success) {
-      return NextResponse.json({ error: "Invalid payload", issues: parsed.error.issues }, { status: 422 })
+      return NextResponse.json(
+        { error: "Invalid payload", issues: parsed.error.issues },
+        { status: 422 }
+      )
     }
 
     const [record] = await db
@@ -218,6 +222,16 @@ export const POST = withGates(
       path: "/api/crm/clients",
       ipAddress: ctx.ipAddress,
       userAgent: ctx.userAgent,
+    })
+
+    void upsertDocument("clients", {
+      id: record.id,
+      company_id: companyId,
+      name: record.name,
+      city: parsed.data.city ?? undefined,
+      status: "active",
+      type: parsed.data.type ?? undefined,
+      created_at: Math.floor(Date.now() / 1000),
     })
 
     return NextResponse.json({ id: record.id, name: record.name }, { status: 201 })

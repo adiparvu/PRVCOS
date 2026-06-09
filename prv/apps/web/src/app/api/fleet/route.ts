@@ -4,9 +4,10 @@ import type { GateContext } from "@prv/auth"
 import { writeAuditLog } from "@prv/auth"
 import { z } from "zod"
 import { db } from "@prv/db"
-import { vehicles, stores } from "@prv/db/schema"
+import { vehicles, stores, vehicleDailyLogs } from "@prv/db/schema"
 import { users } from "@prv/db/schema"
-import { and, asc, eq, gt, isNull } from "drizzle-orm"
+import { and, asc, eq, gt, inArray, isNull } from "drizzle-orm"
+import { upsertDocument } from "@prv/search"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -83,13 +84,48 @@ export const GET = withGates(
       .from(vehicles)
       .leftJoin(users, eq(vehicles.assignedUserId, users.id))
       .leftJoin(stores, eq(vehicles.storeId, stores.id))
-      .where(and(eq(vehicles.companyId, ctx.session.companyId), isNull(vehicles.deletedAt), cursor ? gt(vehicles.id, cursor) : undefined))
+      .where(
+        and(
+          eq(vehicles.companyId, ctx.session.companyId),
+          isNull(vehicles.deletedAt),
+          cursor ? gt(vehicles.id, cursor) : undefined
+        )
+      )
       .orderBy(asc(vehicles.licensePlate))
       .limit(LIMIT + 1)
 
     const hasMore = rows.length > LIMIT
     const page = hasMore ? rows.slice(0, LIMIT) : rows
     const nextCursor = hasMore ? (page[page.length - 1]?.id ?? null) : null
+
+    const today = new Date().toISOString().split("T")[0]!
+    const yesterday = new Date(Date.now() - 86_400_000).toISOString().split("T")[0]!
+
+    const vehicleIds = page.map((r) => r.id)
+    const dailyLogRows =
+      vehicleIds.length > 0
+        ? await db
+            .select({
+              vehicleId: vehicleDailyLogs.vehicleId,
+              date: vehicleDailyLogs.date,
+              odometerKm: vehicleDailyLogs.odometerKm,
+            })
+            .from(vehicleDailyLogs)
+            .where(
+              and(
+                inArray(vehicleDailyLogs.vehicleId, vehicleIds),
+                inArray(vehicleDailyLogs.date, [today, yesterday])
+              )
+            )
+        : []
+
+    const odometerMap = new Map<string, { today?: number; yesterday?: number }>()
+    for (const log of dailyLogRows) {
+      if (!odometerMap.has(log.vehicleId)) odometerMap.set(log.vehicleId, {})
+      const entry = odometerMap.get(log.vehicleId)!
+      if (log.date === today) entry.today = log.odometerKm
+      else if (log.date === yesterday) entry.yesterday = log.odometerKm
+    }
 
     const all: VehicleSummary[] = page.map((r) => {
       const driverName =
@@ -108,7 +144,12 @@ export const GET = withGates(
         driver: driverName,
         assignment: r.notes ?? null,
         fuelPct: r.fuelLevelPct ?? 0,
-        kmToday: 0,
+        kmToday: (() => {
+          const entry = odometerMap.get(r.id)
+          if (entry?.today !== undefined && entry?.yesterday !== undefined)
+            return Math.max(0, entry.today - entry.yesterday)
+          return 0
+        })(),
       }
     })
 
@@ -162,7 +203,10 @@ export const POST = withGates(
 
     const parsed = createVehicleSchema.safeParse(body)
     if (!parsed.success) {
-      return NextResponse.json({ error: "Invalid payload", issues: parsed.error.issues }, { status: 422 })
+      return NextResponse.json(
+        { error: "Invalid payload", issues: parsed.error.issues },
+        { status: 422 }
+      )
     }
 
     const [record] = await db
@@ -184,6 +228,16 @@ export const POST = withGates(
       path: "/api/fleet",
       ipAddress: ctx.ipAddress,
       userAgent: ctx.userAgent,
+    })
+
+    void upsertDocument("vehicles", {
+      id: record.id,
+      company_id: companyId,
+      license_plate: record.licensePlate,
+      make: parsed.data.make,
+      model: parsed.data.model,
+      status: "active",
+      created_at: Math.floor(Date.now() / 1000),
     })
 
     return NextResponse.json({ id: record.id, licensePlate: record.licensePlate }, { status: 201 })

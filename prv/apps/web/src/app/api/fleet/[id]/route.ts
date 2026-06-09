@@ -2,8 +2,8 @@ import { withGates } from "@/lib/with-gates"
 import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
 import { db } from "@prv/db"
-import { vehicles, users, stores, auditLogs } from "@prv/db/schema"
-import { and, desc, eq, isNull } from "drizzle-orm"
+import { vehicles, users, stores, auditLogs, vehicleDailyLogs } from "@prv/db/schema"
+import { and, desc, eq, inArray, isNull } from "drizzle-orm"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -83,11 +83,7 @@ function dbStatusToApi(dbStatus: string, hasDriver: boolean): string {
   return "Idle"
 }
 
-function auditToActivityEvent(log: {
-  id: string
-  action: string
-  createdAt: Date
-}): ActivityEvent {
+function auditToActivityEvent(log: { id: string; action: string; createdAt: Date }): ActivityEvent {
   const label = (() => {
     if (log.action === "fleet.create") return "Vehicul adăugat"
     if (log.action === "fleet.update") return "Vehicul actualizat"
@@ -111,7 +107,10 @@ export const GET = withGates(
 
     const { companyId } = ctx.session
 
-    const [rows, activityRows] = await Promise.all([
+    const today = new Date().toISOString().split("T")[0]!
+    const yesterday = new Date(Date.now() - 86_400_000).toISOString().split("T")[0]!
+
+    const [rows, activityRows, dailyLogRows] = await Promise.all([
       db
         .select({
           id: vehicles.id,
@@ -154,6 +153,16 @@ export const GET = withGates(
         )
         .orderBy(desc(auditLogs.createdAt))
         .limit(10),
+
+      db
+        .select({ date: vehicleDailyLogs.date, odometerKm: vehicleDailyLogs.odometerKm })
+        .from(vehicleDailyLogs)
+        .where(
+          and(
+            eq(vehicleDailyLogs.vehicleId, id),
+            inArray(vehicleDailyLogs.date, [today, yesterday])
+          )
+        ),
     ])
 
     const row = rows[0]
@@ -205,7 +214,13 @@ export const GET = withGates(
       driver: driverName,
       assignment: driverName ? `Asignat · ${driverName}` : null,
       fuelPct: row.fuelLevelPct ?? 0,
-      kmToday: 0,
+      kmToday: (() => {
+        const todayLog = dailyLogRows.find((l) => l.date === today)
+        const yesterdayLog = dailyLogRows.find((l) => l.date === yesterday)
+        if (todayLog && yesterdayLog)
+          return Math.max(0, todayLog.odometerKm - yesterdayLog.odometerKm)
+        return 0
+      })(),
       odometer: row.mileageKm ?? 0,
       nextServiceKm: row.nextServiceAtKm ?? 0,
       insurance: row.insuranceExpiresAt

@@ -44,8 +44,8 @@ export const collections = {
       { name: "id", type: "string" as const },
       { name: "title", type: "string" as const },
       { name: "content_excerpt", type: "string" as const, optional: true },
-      { name: "folder_path", type: "string" as const },
-      { name: "mime_type", type: "string" as const, facet: true },
+      { name: "folder_path", type: "string" as const, optional: true },
+      { name: "mime_type", type: "string" as const, facet: true, optional: true },
     ],
     default_sorting_field: "created_at",
     enable_nested_fields: false,
@@ -60,6 +60,71 @@ export const collections = {
       { name: "client_name", type: "string" as const },
       { name: "status", type: "string" as const, facet: true },
       { name: "total_amount", type: "float" as const, sort: true },
+    ],
+    default_sorting_field: "created_at",
+    enable_nested_fields: false,
+  },
+
+  clients: {
+    name: "clients",
+    fields: [
+      ...sharedFields,
+      { name: "id", type: "string" as const },
+      { name: "name", type: "string" as const },
+      { name: "city", type: "string" as const, optional: true },
+      { name: "status", type: "string" as const, facet: true },
+      { name: "type", type: "string" as const, facet: true, optional: true },
+    ],
+    default_sorting_field: "created_at",
+    enable_nested_fields: false,
+  },
+
+  vehicles: {
+    name: "vehicles",
+    fields: [
+      ...sharedFields,
+      { name: "id", type: "string" as const },
+      { name: "license_plate", type: "string" as const },
+      { name: "make", type: "string" as const },
+      { name: "model", type: "string" as const },
+      { name: "status", type: "string" as const, facet: true },
+    ],
+    default_sorting_field: "created_at",
+    enable_nested_fields: false,
+  },
+
+  tools: {
+    name: "tools",
+    fields: [
+      ...sharedFields,
+      { name: "id", type: "string" as const },
+      { name: "name", type: "string" as const },
+      { name: "brand", type: "string" as const, optional: true },
+      { name: "model", type: "string" as const, optional: true },
+      { name: "status", type: "string" as const, facet: true },
+    ],
+    default_sorting_field: "created_at",
+    enable_nested_fields: false,
+  },
+
+  products: {
+    name: "products",
+    fields: [
+      ...sharedFields,
+      { name: "id", type: "string" as const },
+      { name: "name", type: "string" as const },
+      { name: "status", type: "string" as const, facet: true },
+    ],
+    default_sorting_field: "created_at",
+    enable_nested_fields: false,
+  },
+
+  teams: {
+    name: "teams",
+    fields: [
+      ...sharedFields,
+      { name: "id", type: "string" as const },
+      { name: "name", type: "string" as const },
     ],
     default_sorting_field: "created_at",
     enable_nested_fields: false,

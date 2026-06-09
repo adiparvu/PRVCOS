@@ -6,6 +6,7 @@ import { z } from "zod"
 import { db } from "@prv/db"
 import { tools, users, stores } from "@prv/db/schema"
 import { and, asc, eq, gt, isNull } from "drizzle-orm"
+import { upsertDocument } from "@prv/search"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -102,7 +103,13 @@ export const GET = withGates(
       .from(tools)
       .leftJoin(users, eq(tools.assignedUserId, users.id))
       .leftJoin(stores, eq(tools.storeId, stores.id))
-      .where(and(eq(tools.companyId, ctx.session.companyId), isNull(tools.deletedAt), cursor ? gt(tools.id, cursor) : undefined))
+      .where(
+        and(
+          eq(tools.companyId, ctx.session.companyId),
+          isNull(tools.deletedAt),
+          cursor ? gt(tools.id, cursor) : undefined
+        )
+      )
       .orderBy(asc(tools.name))
       .limit(LIMIT + 1)
 
@@ -186,7 +193,10 @@ export const POST = withGates(
 
     const parsed = createToolSchema.safeParse(body)
     if (!parsed.success) {
-      return NextResponse.json({ error: "Invalid payload", issues: parsed.error.issues }, { status: 422 })
+      return NextResponse.json(
+        { error: "Invalid payload", issues: parsed.error.issues },
+        { status: 422 }
+      )
     }
 
     const [record] = await db
@@ -208,6 +218,16 @@ export const POST = withGates(
       path: "/api/tools",
       ipAddress: ctx.ipAddress,
       userAgent: ctx.userAgent,
+    })
+
+    void upsertDocument("tools", {
+      id: record.id,
+      company_id: companyId,
+      name: record.name,
+      brand: parsed.data.brand ?? undefined,
+      model: parsed.data.model ?? undefined,
+      status: "active",
+      created_at: Math.floor(Date.now() / 1000),
     })
 
     return NextResponse.json({ id: record.id, name: record.name }, { status: 201 })

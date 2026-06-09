@@ -15,11 +15,193 @@ import {
 } from "@prv/db/schema"
 import { and, eq, ilike, isNull, or } from "drizzle-orm"
 import type { EntityResult, EntityType, EntityStatus } from "@/components/command-palette/types"
+import { getTypesenseClient, isTypesenseAvailable } from "@prv/search"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
 
 const PER_TYPE_LIMIT = 5
+
+type TSDoc = Record<string, unknown>
+interface TSHit {
+  document: TSDoc
+}
+interface TSResult {
+  hits?: TSHit[]
+}
+
+async function typesenseSearch(
+  q: string,
+  companyId: string,
+  limit: number
+): Promise<EntityResult[]> {
+  const client = getTypesenseClient()
+  const filterBy = `company_id:${companyId}`
+
+  const raw = await (
+    client.multiSearch as unknown as {
+      perform(body: unknown, params: unknown): Promise<{ results: TSResult[] }>
+    }
+  ).perform(
+    {
+      searches: [
+        { collection: "users", q, query_by: "full_name,email", filter_by: filterBy, per_page: 5 },
+        { collection: "projects", q, query_by: "title", filter_by: filterBy, per_page: 5 },
+        { collection: "clients", q, query_by: "name,city", filter_by: filterBy, per_page: 5 },
+        {
+          collection: "invoices",
+          q,
+          query_by: "invoice_number,client_name",
+          filter_by: filterBy,
+          per_page: 5,
+        },
+        {
+          collection: "documents",
+          q,
+          query_by: "title,content_excerpt",
+          filter_by: filterBy,
+          per_page: 5,
+        },
+        {
+          collection: "vehicles",
+          q,
+          query_by: "license_plate,make,model",
+          filter_by: filterBy,
+          per_page: 5,
+        },
+        { collection: "tools", q, query_by: "name,brand,model", filter_by: filterBy, per_page: 5 },
+        { collection: "products", q, query_by: "name", filter_by: filterBy, per_page: 5 },
+        { collection: "teams", q, query_by: "name", filter_by: filterBy, per_page: 5 },
+      ],
+    },
+    {}
+  )
+
+  const [
+    userRes,
+    projectRes,
+    clientRes,
+    invoiceRes,
+    docRes,
+    vehicleRes,
+    toolRes,
+    productRes,
+    teamRes,
+  ] = raw.results
+
+  const results: EntityResult[] = []
+
+  for (const hit of userRes?.hits ?? []) {
+    const d = hit.document
+    results.push({
+      id: String(d["id"]),
+      entityType: "employee" as EntityType,
+      title: String(d["full_name"] ?? ""),
+      subtitle: String(d["role"] ?? "Employee"),
+      status: "active" as EntityStatus,
+      href: `/people/${String(d["id"])}`,
+    })
+  }
+
+  for (const hit of projectRes?.hits ?? []) {
+    const d = hit.document
+    results.push({
+      id: String(d["id"]),
+      entityType: "project" as EntityType,
+      title: String(d["title"] ?? ""),
+      subtitle: `Project · ${String(d["status"] ?? "")}`,
+      status: String(d["status"]) as EntityStatus,
+      href: `/projects/${String(d["id"])}`,
+    })
+  }
+
+  for (const hit of clientRes?.hits ?? []) {
+    const d = hit.document
+    results.push({
+      id: String(d["id"]),
+      entityType: "client" as EntityType,
+      title: String(d["name"] ?? ""),
+      subtitle: d["city"] ? `CRM · ${String(d["city"])}` : "CRM",
+      status: (String(d["status"]) === "active" ? "active" : "inactive") as EntityStatus,
+      href: `/crm/${String(d["id"])}`,
+    })
+  }
+
+  for (const hit of invoiceRes?.hits ?? []) {
+    const d = hit.document
+    results.push({
+      id: String(d["id"]),
+      entityType: "invoice" as EntityType,
+      title: String(d["invoice_number"] ?? ""),
+      subtitle: `€${Number(d["total_amount"] ?? 0).toLocaleString()} · ${String(d["status"] ?? "")}`,
+      status: (String(d["status"]) === "paid" ? "active" : "pending") as EntityStatus,
+      href: `/finance/invoices/${String(d["id"])}`,
+    })
+  }
+
+  for (const hit of docRes?.hits ?? []) {
+    const d = hit.document
+    results.push({
+      id: String(d["id"]),
+      entityType: "document" as EntityType,
+      title: String(d["title"] ?? ""),
+      subtitle: `Documents · ${String(d["mime_type"] ?? "")}`,
+      status: "active" as EntityStatus,
+      href: `/documents/${String(d["id"])}`,
+    })
+  }
+
+  for (const hit of vehicleRes?.hits ?? []) {
+    const d = hit.document
+    results.push({
+      id: String(d["id"]),
+      entityType: "vehicle" as EntityType,
+      title: `${String(d["make"] ?? "")} ${String(d["model"] ?? "")} · ${String(d["license_plate"] ?? "")}`,
+      subtitle: `Fleet · ${String(d["status"] ?? "")}`,
+      status: (String(d["status"]) === "active" ? "active" : "inactive") as EntityStatus,
+      href: `/fleet/${String(d["id"])}`,
+    })
+  }
+
+  for (const hit of toolRes?.hits ?? []) {
+    const d = hit.document
+    const sub = [d["brand"], d["model"]].filter(Boolean).join(" · ") || "Tools"
+    results.push({
+      id: String(d["id"]),
+      entityType: "tool" as EntityType,
+      title: String(d["name"] ?? ""),
+      subtitle: sub,
+      status: "active" as EntityStatus,
+      href: `/tools/${String(d["id"])}`,
+    })
+  }
+
+  for (const hit of productRes?.hits ?? []) {
+    const d = hit.document
+    results.push({
+      id: String(d["id"]),
+      entityType: "product" as EntityType,
+      title: String(d["name"] ?? ""),
+      subtitle: `Shop · ${String(d["status"] ?? "")}`,
+      status: (String(d["status"]) === "active" ? "active" : "inactive") as EntityStatus,
+      href: `/shop/${String(d["id"])}`,
+    })
+  }
+
+  for (const hit of teamRes?.hits ?? []) {
+    const d = hit.document
+    results.push({
+      id: String(d["id"]),
+      entityType: "team" as EntityType,
+      title: String(d["name"] ?? ""),
+      subtitle: "Team",
+      status: "active" as EntityStatus,
+      href: `/people/teams/${String(d["id"])}`,
+    })
+  }
+
+  return results.slice(0, limit)
+}
 
 // ── GET ───────────────────────────────────────────────────────────────────────
 
@@ -33,6 +215,16 @@ export const GET = withGates(
     if (q.length < 2) return NextResponse.json({ results: [] })
 
     const { companyId } = ctx.session
+
+    if (isTypesenseAvailable()) {
+      try {
+        const results = await typesenseSearch(q, companyId, limit)
+        return NextResponse.json({ results })
+      } catch {
+        // Typesense unavailable or index not ready — fall through to DB
+      }
+    }
+
     const pat = `%${q}%`
 
     const [

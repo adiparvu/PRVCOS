@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@prv/ai-engine": "workspace:*",
+    "@prv/search": "workspace:*",
     "@prv/auth": "workspace:*",
     "@prv/cache": "workspace:*",
     "@prv/db": "workspace:*",
