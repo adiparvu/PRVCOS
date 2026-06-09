@@ -1,9 +1,11 @@
 import { withGates } from "@/lib/with-gates"
 import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
+import { writeAuditLog } from "@prv/auth"
 import { db } from "@prv/db"
 import { attendanceRecords, users, stores } from "@prv/db/schema"
 import { and, eq, gte, lte } from "drizzle-orm"
+import { z } from "zod"
 import type { AttendanceStatus } from "../route"
 
 function hhmToMinutes(hhmm: string): number {
@@ -226,5 +228,77 @@ export const GET = withGates(
     }
 
     return NextResponse.json({ record })
+  }
+)
+
+// ─── PATCH /api/attendance/[id] ───────────────────────────────────────────────
+
+const attendancePatchSchema = z
+  .object({
+    status: z.enum(["present", "late", "absent", "leave", "clocked_out"]).optional(),
+    clockIn: z.string().datetime({ offset: true }).nullable().optional(),
+    clockOut: z.string().datetime({ offset: true }).nullable().optional(),
+    lateMinutes: z.number().int().min(0).max(720).nullable().optional(),
+  })
+  .refine((d) => Object.values(d).some((v) => v !== undefined), {
+    message: "At least one field is required",
+  })
+
+export const PATCH = withGates(
+  { action: "attendance.update", endpointClass: "api_write" },
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
+    const { companyId } = ctx.session
+    const id = req.nextUrl.pathname.split("/").pop()
+    if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 })
+
+    const raw = await req.json().catch(() => ({}))
+    const parsed = attendancePatchSchema.safeParse(raw)
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Invalid payload", issues: parsed.error.issues },
+        { status: 422 }
+      )
+    }
+
+    const [existing] = await db
+      .select({
+        id: attendanceRecords.id,
+        userId: attendanceRecords.userId,
+        status: attendanceRecords.status,
+      })
+      .from(attendanceRecords)
+      .where(and(eq(attendanceRecords.id, id), eq(attendanceRecords.companyId, companyId)))
+      .limit(1)
+
+    if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 })
+
+    const { status, clockIn, clockOut, lateMinutes } = parsed.data
+
+    const [updated] = await db
+      .update(attendanceRecords)
+      .set({
+        ...(status !== undefined && { status }),
+        ...(clockIn !== undefined && { clockIn: clockIn ? new Date(clockIn) : null }),
+        ...(clockOut !== undefined && { clockOut: clockOut ? new Date(clockOut) : null }),
+        ...(lateMinutes !== undefined && { lateMinutes }),
+      })
+      .where(and(eq(attendanceRecords.id, id), eq(attendanceRecords.companyId, companyId)))
+      .returning({ id: attendanceRecords.id, status: attendanceRecords.status })
+
+    void writeAuditLog({
+      companyId,
+      actorId: ctx.session.userId,
+      sessionId: ctx.session.sessionId,
+      action: "attendance.update",
+      entityType: "attendance_record",
+      entityId: id,
+      payload: { userId: existing.userId, from: existing.status, changes: parsed.data },
+      method: "PATCH",
+      path: `/api/attendance/${id}`,
+      ipAddress: ctx.ipAddress,
+      userAgent: ctx.userAgent,
+    })
+
+    return NextResponse.json(updated)
   }
 )

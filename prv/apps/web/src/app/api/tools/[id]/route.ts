@@ -1,9 +1,11 @@
 import { withGates } from "@/lib/with-gates"
 import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
+import { writeAuditLog } from "@prv/auth"
 import { db } from "@prv/db"
 import { tools, users, stores, auditLogs } from "@prv/db/schema"
 import { and, count, eq, gte, isNull } from "drizzle-orm"
+import { z } from "zod"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -188,5 +190,74 @@ export const GET = withGates(
     }
 
     return NextResponse.json({ tool })
+  }
+)
+
+// ─── PATCH /api/tools/[id] ────────────────────────────────────────────────────
+
+const toolPatchSchema = z
+  .object({
+    status: z.enum(["available", "in_use", "maintenance", "retired", "lost"]).optional(),
+    assignedUserId: z.string().uuid().nullable().optional(),
+    storeId: z.string().uuid().nullable().optional(),
+    notes: z.string().max(1000).optional(),
+  })
+  .refine((d) => Object.values(d).some((v) => v !== undefined), {
+    message: "At least one field is required",
+  })
+
+export const PATCH = withGates(
+  { action: "tools.update", endpointClass: "api_write" },
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
+    const { companyId } = ctx.session
+    const id = req.nextUrl.pathname.split("/").pop()
+    if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 })
+
+    const raw = await req.json().catch(() => ({}))
+    const parsed = toolPatchSchema.safeParse(raw)
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Invalid payload", issues: parsed.error.issues },
+        { status: 422 }
+      )
+    }
+
+    const [existing] = await db
+      .select({ id: tools.id, name: tools.name, status: tools.status })
+      .from(tools)
+      .where(and(eq(tools.id, id), eq(tools.companyId, companyId), isNull(tools.deletedAt)))
+      .limit(1)
+
+    if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 })
+
+    const { status, assignedUserId, storeId, notes } = parsed.data
+
+    const [updated] = await db
+      .update(tools)
+      .set({
+        ...(status !== undefined && { status }),
+        ...(assignedUserId !== undefined && { assignedUserId }),
+        ...(storeId !== undefined && { storeId }),
+        ...(notes !== undefined && { notes }),
+        updatedAt: new Date(),
+      })
+      .where(and(eq(tools.id, id), eq(tools.companyId, companyId)))
+      .returning({ id: tools.id, status: tools.status })
+
+    void writeAuditLog({
+      companyId,
+      actorId: ctx.session.userId,
+      sessionId: ctx.session.sessionId,
+      action: "tools.update",
+      entityType: "tool",
+      entityId: id,
+      payload: { name: existing.name, from: existing.status, changes: parsed.data },
+      method: "PATCH",
+      path: `/api/tools/${id}`,
+      ipAddress: ctx.ipAddress,
+      userAgent: ctx.userAgent,
+    })
+
+    return NextResponse.json(updated)
   }
 )

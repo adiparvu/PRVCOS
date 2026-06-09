@@ -1,9 +1,11 @@
 import { withGates } from "@/lib/with-gates"
 import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
+import { writeAuditLog } from "@prv/auth"
 import { db } from "@prv/db"
 import { payrollRuns } from "@prv/db/schema"
 import { and, eq } from "drizzle-orm"
+import { z } from "zod"
 import type { PayrollRunStatus, PayrollRunType } from "../route"
 
 export const dynamic = "force-dynamic"
@@ -130,5 +132,91 @@ export const GET = withGates(
         notes: row.notes ?? null,
       },
     })
+  }
+)
+
+// ─── Exported pure helpers ────────────────────────────────────────────────────
+
+export type PayrollAction = "start_processing" | "mark_done"
+
+export const PAYROLL_REQUIRED_STATUS: Record<PayrollAction, string> = {
+  start_processing: "pending",
+  mark_done: "processing",
+}
+
+export const PAYROLL_NEXT_STATUS: Record<PayrollAction, string> = {
+  start_processing: "processing",
+  mark_done: "done",
+}
+
+export function isValidPayrollTransition(action: PayrollAction, currentStatus: string): boolean {
+  return PAYROLL_REQUIRED_STATUS[action] === currentStatus
+}
+
+// ─── PATCH /api/payroll/[id] ──────────────────────────────────────────────────
+
+const patchSchema = z.discriminatedUnion("action", [
+  z.object({ action: z.literal("start_processing"), notes: z.string().max(500).optional() }),
+  z.object({ action: z.literal("mark_done"), notes: z.string().max(500).optional() }),
+])
+
+export const PATCH = withGates(
+  { action: "payroll.approve", endpointClass: "api_write" },
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
+    const { companyId } = ctx.session
+    const id = req.nextUrl.pathname.split("/").pop()
+    if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 })
+
+    const raw = await req.json().catch(() => ({}))
+    const parsed = patchSchema.safeParse(raw)
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Invalid payload", issues: parsed.error.issues },
+        { status: 422 }
+      )
+    }
+
+    const [existing] = await db
+      .select({ id: payrollRuns.id, status: payrollRuns.status, ref: payrollRuns.ref })
+      .from(payrollRuns)
+      .where(and(eq(payrollRuns.id, id), eq(payrollRuns.companyId, companyId)))
+      .limit(1)
+
+    if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 })
+
+    if (!isValidPayrollTransition(parsed.data.action, existing.status)) {
+      return NextResponse.json(
+        { error: `Cannot apply '${parsed.data.action}' — current status is '${existing.status}'` },
+        { status: 409 }
+      )
+    }
+
+    const nextStatus = PAYROLL_NEXT_STATUS[parsed.data.action] as "processing" | "done" | "pending"
+
+    const [updated] = await db
+      .update(payrollRuns)
+      .set({
+        status: nextStatus,
+        ...(parsed.data.notes !== undefined ? { notes: parsed.data.notes } : {}),
+        updatedAt: new Date(),
+      })
+      .where(and(eq(payrollRuns.id, id), eq(payrollRuns.companyId, companyId)))
+      .returning({ id: payrollRuns.id, status: payrollRuns.status })
+
+    void writeAuditLog({
+      companyId,
+      actorId: ctx.session.userId,
+      sessionId: ctx.session.sessionId,
+      action: "payroll.approve",
+      entityType: "payroll_run",
+      entityId: id,
+      payload: { ref: existing.ref, from: existing.status, to: nextStatus, op: parsed.data.action },
+      method: "PATCH",
+      path: `/api/payroll/${id}`,
+      ipAddress: ctx.ipAddress,
+      userAgent: ctx.userAgent,
+    })
+
+    return NextResponse.json(updated)
   }
 )
