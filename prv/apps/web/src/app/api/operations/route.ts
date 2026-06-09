@@ -1,6 +1,9 @@
 import { withGates } from "@/lib/with-gates"
 import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
+import { db } from "@prv/db"
+import { stores, orders, clients } from "@prv/db/schema"
+import { and, asc, count, desc, eq, gte, isNull } from "drizzle-orm"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -57,69 +60,13 @@ export interface OperationsMeta {
   alertCount: number
 }
 
-const MOCK_STORES: Store[] = [
-  {
-    id: "cluj-main",
-    name: "Cluj · Main",
-    city: "Cluj",
-    status: "online",
-    revenueTodayLabel: "€34,200",
-    marginPct: 39,
-    ordersToday: 28,
-    hasAlert: false,
-    alertMessage: null,
-  },
-  {
-    id: "bucuresti-floreasca",
-    name: "București · Floreasca",
-    city: "București",
-    status: "online",
-    revenueTodayLabel: "€28,900",
-    marginPct: 34,
-    ordersToday: 22,
-    hasAlert: false,
-    alertMessage: null,
-  },
-  {
-    id: "timisoara-iulius",
-    name: "Timișoara · Iulius",
-    city: "Timișoara",
-    status: "online",
-    revenueTodayLabel: "€21,400",
-    marginPct: 31,
-    ordersToday: 18,
-    hasAlert: false,
-    alertMessage: null,
-  },
-  {
-    id: "brasov-coresi",
-    name: "Brașov · Coresi",
-    city: "Brașov",
-    status: "away",
-    revenueTodayLabel: "€18,600",
-    marginPct: 29,
-    ordersToday: 14,
-    hasAlert: false,
-    alertMessage: null,
-  },
-  {
-    id: "iasi-palas",
-    name: "Iași · Palas",
-    city: "Iași",
-    status: "busy",
-    revenueTodayLabel: "€15,200",
-    marginPct: 27,
-    ordersToday: 11,
-    hasAlert: true,
-    alertMessage: "Stoc redus · 3 SKU-uri",
-  },
-]
+// ── Static tasks (no DB table yet) ────────────────────────────────────────────
 
 const MOCK_TASKS: Task[] = [
   {
     id: "t1",
     title: "Reaprovizionare rafturi",
-    storeId: "brasov-coresi",
+    storeId: "",
     storeName: "Brașov · Coresi",
     priority: "urgent",
     status: "todo",
@@ -128,7 +75,7 @@ const MOCK_TASKS: Task[] = [
   {
     id: "t2",
     title: "Mentenanță HVAC",
-    storeId: "iasi-palas",
+    storeId: "",
     storeName: "Iași · Palas",
     priority: "medium",
     status: "todo",
@@ -137,7 +84,7 @@ const MOCK_TASKS: Task[] = [
   {
     id: "t3",
     title: "Training personal",
-    storeId: "timisoara-iulius",
+    storeId: "",
     storeName: "Timișoara · Iulius",
     priority: "low",
     status: "todo",
@@ -146,7 +93,7 @@ const MOCK_TASKS: Task[] = [
   {
     id: "t4",
     title: "Audit inventar — în curs",
-    storeId: "cluj-main",
+    storeId: "",
     storeName: "Cluj · Main",
     priority: "urgent",
     status: "in_progress",
@@ -164,7 +111,7 @@ const MOCK_TASKS: Task[] = [
   {
     id: "t6",
     title: "Renovare vitrină",
-    storeId: "bucuresti-floreasca",
+    storeId: "",
     storeName: "București · Floreasca",
     priority: "low",
     status: "done",
@@ -173,7 +120,7 @@ const MOCK_TASKS: Task[] = [
   {
     id: "t7",
     title: "Inspecție ieșiri urgență",
-    storeId: "iasi-palas",
+    storeId: "",
     storeName: "Iași · Palas",
     priority: "urgent",
     status: "done",
@@ -182,7 +129,7 @@ const MOCK_TASKS: Task[] = [
   {
     id: "t8",
     title: "Raport deșeuri lunar",
-    storeId: "cluj-main",
+    storeId: "",
     storeName: "Cluj · Main",
     priority: "low",
     status: "done",
@@ -190,95 +137,147 @@ const MOCK_TASKS: Task[] = [
   },
 ]
 
-const MOCK_ORDERS: Order[] = [
-  {
-    id: "ord-4821",
-    ref: "#ORD-4821",
-    storeId: "cluj-main",
-    storeName: "Cluj",
-    customer: "Mihai Popescu",
-    amountLabel: "€298",
-    status: "paid",
-    timeAgo: "acum 12 min",
-  },
-  {
-    id: "ord-4820",
-    ref: "#ORD-4820",
-    storeId: "bucuresti-floreasca",
-    storeName: "București",
-    customer: "Ana Ionescu",
-    amountLabel: "€540",
-    status: "shipped",
-    timeAgo: "acum 28 min",
-  },
-  {
-    id: "ord-4819",
-    ref: "#ORD-4819",
-    storeId: "timisoara-iulius",
-    storeName: "Timișoara",
-    customer: "Radu Dima",
-    amountLabel: "€120",
-    status: "pending",
-    timeAgo: "acum 44 min",
-  },
-  {
-    id: "ord-4818",
-    ref: "#ORD-4818",
-    storeId: "brasov-coresi",
-    storeName: "Brașov",
-    customer: "Elena Marin",
-    amountLabel: "€76",
-    status: "paid",
-    timeAgo: "acum 1h 10min",
-  },
-  {
-    id: "ord-4817",
-    ref: "#ORD-4817",
-    storeId: "cluj-main",
-    storeName: "Cluj",
-    customer: "Vlad Nicu",
-    amountLabel: "€1,200",
-    status: "shipped",
-    timeAgo: "acum 1h 20min",
-  },
-]
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
-const MOCK_ALERTS: Alert[] = [
-  {
-    id: "a1",
-    storeId: "iasi-palas",
-    storeName: "Iași · Palas",
-    message: "3 SKU-uri sub pragul de reaprovizionare",
-  },
-]
-
-function computeMeta(stores: Store[], tasks: Task[]): OperationsMeta {
-  return {
-    totalStores: 18,
-    activeTaskCount: tasks.filter((t) => t.status === "todo" || t.status === "in_progress").length,
-    ordersToday: 142,
-    alertCount: stores
-      .filter((s) => s.hasAlert)
-      .reduce((acc, s) => acc + (s.alertMessage ? 3 : 0), 0),
-  }
+function fmtAmount(n: number): string {
+  if (n >= 1_000_000) return `€${(n / 1_000_000).toFixed(1)}M`
+  if (n >= 1_000) return `€${(n / 1_000).toFixed(1)}K`
+  return `€${Math.round(n)}`
 }
+
+function dbOrderStatusToApi(dbStatus: string): OrderStatus {
+  if (dbStatus === "delivered") return "paid"
+  if (dbStatus === "shipped") return "shipped"
+  return "pending"
+}
+
+function relativeTime(date: Date): string {
+  const diffMin = Math.floor((Date.now() - date.getTime()) / 60_000)
+  if (diffMin < 1) return "acum"
+  if (diffMin < 60) return `acum ${diffMin} min`
+  const h = Math.floor(diffMin / 60)
+  if (h < 24) return `acum ${h}h`
+  return `acum ${Math.floor(h / 24)}z`
+}
+
+// ── GET ───────────────────────────────────────────────────────────────────────
 
 export const GET = withGates(
   { action: "operations.read", endpointClass: "api_read" },
-  async (req: NextRequest, _ctx: GateContext): Promise<NextResponse> => {
-    const storeStatus = req.nextUrl.searchParams.get("status")
-    const taskStatus = req.nextUrl.searchParams.get("taskStatus")
-    const orderStatus = req.nextUrl.searchParams.get("orderStatus")
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
+    const { searchParams } = req.nextUrl
+    const storeStatusFilter = searchParams.get("status") as StoreStatus | null
+    const taskStatusFilter = searchParams.get("taskStatus") as TaskStatus | null
+    const orderStatusFilter = searchParams.get("orderStatus") as OrderStatus | null
 
-    let stores = MOCK_STORES
+    const todayStart = new Date()
+    todayStart.setHours(0, 0, 0, 0)
+
+    // 1. Fetch stores + today's order aggregates in parallel
+    const [storeRows, orderRows, orderCountRows] = await Promise.all([
+      db
+        .select({ id: stores.id, name: stores.name, city: stores.city, isActive: stores.isActive })
+        .from(stores)
+        .where(eq(stores.companyId, ctx.session.companyId))
+        .orderBy(asc(stores.name)),
+
+      // Recent orders today with client name
+      db
+        .select({
+          id: orders.id,
+          orderNumber: orders.orderNumber,
+          storeId: orders.storeId,
+          status: orders.status,
+          total: orders.total,
+          createdAt: orders.createdAt,
+          clientName: clients.name,
+        })
+        .from(orders)
+        .leftJoin(clients, eq(orders.clientId, clients.id))
+        .where(
+          and(
+            eq(orders.companyId, ctx.session.companyId),
+            gte(orders.createdAt, todayStart),
+            isNull(orders.deletedAt)
+          )
+        )
+        .orderBy(desc(orders.createdAt))
+        .limit(50),
+
+      // Order count per store today (for KPI strip)
+      db
+        .select({ storeId: orders.storeId, cnt: count() })
+        .from(orders)
+        .where(
+          and(
+            eq(orders.companyId, ctx.session.companyId),
+            gte(orders.createdAt, todayStart),
+            isNull(orders.deletedAt)
+          )
+        )
+        .groupBy(orders.storeId),
+    ])
+
+    // 2. Aggregate revenue + order counts per store from today's orders
+    const revenueByStore = new Map<string, number>()
+    const orderCountByStore = new Map<string, number>()
+    for (const row of orderCountRows) {
+      if (row.storeId) orderCountByStore.set(row.storeId, row.cnt)
+    }
+    for (const ord of orderRows) {
+      if (!ord.storeId) continue
+      revenueByStore.set(
+        ord.storeId,
+        (revenueByStore.get(ord.storeId) ?? 0) + Number(ord.total ?? 0)
+      )
+    }
+
+    // 3. Build store name lookup
+    const storeNameById = new Map(storeRows.map((s) => [s.id, s.name]))
+
+    // 4. Assemble stores
+    let storeList: Store[] = storeRows.map((s) => ({
+      id: s.id,
+      name: s.name,
+      city: s.city ?? "",
+      status: (s.isActive ? "online" : "away") as StoreStatus,
+      revenueTodayLabel: fmtAmount(revenueByStore.get(s.id) ?? 0),
+      marginPct: 0,
+      ordersToday: orderCountByStore.get(s.id) ?? 0,
+      hasAlert: false,
+      alertMessage: null,
+    }))
+
+    // 5. Assemble orders
+    let orderList: Order[] = orderRows.map((ord) => ({
+      id: ord.id,
+      ref: `#${ord.orderNumber}`,
+      storeId: ord.storeId ?? "",
+      storeName: storeNameById.get(ord.storeId ?? "") ?? "—",
+      customer: ord.clientName ?? "—",
+      amountLabel: fmtAmount(Number(ord.total ?? 0)),
+      status: dbOrderStatusToApi(ord.status),
+      timeAgo: relativeTime(ord.createdAt),
+    }))
+
+    // 6. Apply filters
+    if (storeStatusFilter) storeList = storeList.filter((s) => s.status === storeStatusFilter)
+    if (orderStatusFilter) orderList = orderList.filter((o) => o.status === orderStatusFilter)
+
     let tasks = MOCK_TASKS
-    let orders = MOCK_ORDERS
+    if (taskStatusFilter) tasks = tasks.filter((t) => t.status === taskStatusFilter)
 
-    if (storeStatus) stores = stores.filter((s) => s.status === storeStatus)
-    if (taskStatus) tasks = tasks.filter((t) => t.status === taskStatus)
-    if (orderStatus) orders = orders.filter((o) => o.status === orderStatus)
+    const activeTasks = MOCK_TASKS.filter(
+      (t) => t.status === "todo" || t.status === "in_progress"
+    ).length
 
-    const meta = computeMeta(MOCK_STORES, MOCK_TASKS)
-    return NextResponse.json({ stores, tasks, orders, meta, alerts: MOCK_ALERTS })
+    const meta: OperationsMeta = {
+      totalStores: storeRows.length,
+      activeTaskCount: activeTasks,
+      ordersToday: orderRows.length,
+      alertCount: 0,
+    }
+
+    return NextResponse.json({ stores: storeList, tasks, orders: orderList, meta, alerts: [] })
   }
 )
