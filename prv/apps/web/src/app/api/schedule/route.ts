@@ -1,6 +1,9 @@
 import { withGates } from "@/lib/with-gates"
 import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
+import { db } from "@prv/db"
+import { shifts, shiftAssignments, users, stores, projects } from "@prv/db/schema"
+import { and, asc, eq, gte, inArray, isNull, lte } from "drizzle-orm"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -40,175 +43,171 @@ export interface ShiftsMeta {
   weekLabel: string
 }
 
-const MOCK_SHIFTS: ShiftSummary[] = [
-  {
-    id: "s1",
-    role: "foreman",
-    roleLabel: "Maistru Construcții",
-    title: "Maistru Construcții",
-    location: "Șantier A4 Brașov",
-    site: "A4 Brașov",
-    date: "9 Iun 2026",
-    dayLabel: "Miercuri 9 Iun",
-    startTime: "07:00",
-    endTime: "16:00",
-    durationHours: 9,
-    status: "confirmed",
-    assignees: [
-      { id: "e1", initials: "IC", name: "Ion Crișan" },
-      { id: "e2", initials: "RD", name: "Radu Dima" },
-      { id: "e3", initials: "SF", name: "Sorin Florea" },
-    ],
-    openSlots: 0,
-    project: "A4 Brașov",
-  },
-  {
-    id: "s2",
-    role: "electrician",
-    roleLabel: "Electrician",
-    title: "Electrician",
-    location: "Cluj Mănăștur",
-    site: "Cluj Mănăștur",
-    date: "9 Iun 2026",
-    dayLabel: "Miercuri 9 Iun",
-    startTime: "08:00",
-    endTime: "17:00",
-    durationHours: 9,
-    status: "confirmed",
-    assignees: [{ id: "e5", initials: "LT", name: "Liviu Toma" }],
-    openSlots: 0,
-    project: "Cluj Mănăștur",
-  },
-  {
-    id: "s3",
-    role: "finisher",
-    roleLabel: "Echipă Finisaj",
-    title: "Echipă Finisaj",
-    location: "Cluj Mănăștur",
-    site: "Cluj Mănăștur",
-    date: "9 Iun 2026",
-    dayLabel: "Miercuri 9 Iun",
-    startTime: "09:00",
-    endTime: "18:00",
-    durationHours: 9,
-    status: "draft",
-    assignees: [
-      { id: "e4", initials: "EM", name: "Elena Marin" },
-      { id: "e6", initials: "AS", name: "Ana Stoica" },
-    ],
-    openSlots: 2,
-    project: "Cluj Mănăștur",
-  },
-  {
-    id: "s4",
-    role: "welder",
-    roleLabel: "Sudor · Structuri Metal",
-    title: "Sudor · Structuri Metal",
-    location: "Șantier A4 Brașov",
-    site: "A4 Brașov",
-    date: "10 Iun 2026",
-    dayLabel: "Joi 10 Iun",
-    startTime: "06:30",
-    endTime: "15:00",
-    durationHours: 8.5,
-    status: "scheduled",
-    assignees: [{ id: "e2", initials: "RD", name: "Radu Dima" }],
-    openSlots: 0,
-    project: "A4 Brașov",
-  },
-  {
-    id: "s5",
-    role: "bricklayer",
-    roleLabel: "Zidar",
-    title: "Zidar",
-    location: "Șantier A4 Brașov",
-    site: "A4 Brașov",
-    date: "12 Iun 2026",
-    dayLabel: "Sâmbătă 12 Iun",
-    startTime: "08:00",
-    endTime: "17:00",
-    durationHours: 9,
-    status: "open",
-    assignees: [],
-    openSlots: 1,
-    project: "A4 Brașov",
-  },
-  {
-    id: "s6",
-    role: "electrician",
-    roleLabel: "Electrician",
-    title: "Electrician",
-    location: "Cluj Mănăștur",
-    site: "Cluj Mănăștur",
-    date: "7 Iun 2026",
-    dayLabel: "Luni 7 Iun",
-    startTime: "07:00",
-    endTime: "15:00",
-    durationHours: 8,
-    status: "open",
-    assignees: [],
-    openSlots: 1,
-    project: "Cluj Mănăștur",
-  },
-  {
-    id: "s7",
-    role: "foreman",
-    roleLabel: "Maistru Construcții",
-    title: "Maistru Construcții",
-    location: "Șantier A4 Brașov",
-    site: "A4 Brașov",
-    date: "11 Iun 2026",
-    dayLabel: "Vineri 11 Iun",
-    startTime: "07:00",
-    endTime: "16:00",
-    durationHours: 9,
-    status: "confirmed",
-    assignees: [
-      { id: "e1", initials: "IC", name: "Ion Crișan" },
-      { id: "e3", initials: "SF", name: "Sorin Florea" },
-    ],
-    openSlots: 0,
-    project: "A4 Brașov",
-  },
-  {
-    id: "s8",
-    role: "general",
-    roleLabel: "Muncitor General",
-    title: "Muncitor General",
-    location: "Depozit Central",
-    site: "Depozit Cluj",
-    date: "10 Iun 2026",
-    dayLabel: "Joi 10 Iun",
-    startTime: "08:00",
-    endTime: "16:00",
-    durationHours: 8,
-    status: "confirmed",
-    assignees: [{ id: "e7", initials: "VB", name: "Vasile Bota" }],
-    openSlots: 0,
-    project: null,
-  },
-]
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
-function computeMeta(shifts: ShiftSummary[]): ShiftsMeta {
-  const open = shifts.filter((s) => s.status === "open").length
-  const covered = shifts.filter((s) => s.openSlots === 0).length
-  const coveragePct = Math.round((covered / shifts.length) * 100)
-  const totalHours = shifts.reduce((sum, s) => sum + s.durationHours * s.assignees.length, 0)
-  return {
-    total: shifts.length,
-    open,
-    coveragePct,
-    totalHours,
-    weekLabel: "7–13 Iun",
-  }
+const TZ = "Europe/Bucharest"
+const DAY_NAMES = ["Dum", "Lun", "Mar", "Mie", "Joi", "Vin", "Sâm"] as const
+const MONTH_LABELS = [
+  "Ian",
+  "Feb",
+  "Mar",
+  "Apr",
+  "Mai",
+  "Iun",
+  "Iul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+] as const
+
+const ROLE_LABELS: Record<ShiftRole, string> = {
+  foreman: "Maistru Construcții",
+  bricklayer: "Zidar",
+  electrician: "Electrician",
+  finisher: "Echipă Finisaj",
+  welder: "Sudor",
+  general: "Muncitor General",
 }
+
+function todayStr(): string {
+  return new Intl.DateTimeFormat("sv-SE", { timeZone: TZ }).format(new Date())
+}
+
+function weekBounds(anchorDate: string): { monday: string; sunday: string; weekLabel: string } {
+  const d = new Date(anchorDate + "T12:00:00Z")
+  const dow = d.getUTCDay()
+  const diffToMonday = (dow + 6) % 7
+  const monday = new Date(d)
+  monday.setUTCDate(d.getUTCDate() - diffToMonday)
+  const sunday = new Date(monday)
+  sunday.setUTCDate(monday.getUTCDate() + 6)
+
+  const fmt = (dt: Date) => `${dt.getUTCDate()} ${MONTH_LABELS[dt.getUTCMonth()]}`
+  const weekLabel = `${fmt(monday)}–${fmt(sunday)}`
+
+  const toStr = (dt: Date) => dt.toISOString().slice(0, 10)
+  return { monday: toStr(monday), sunday: toStr(sunday), weekLabel }
+}
+
+function fmtDayLabel(dateStr: string): string {
+  const d = new Date(dateStr + "T12:00:00Z")
+  return `${DAY_NAMES[d.getUTCDay()]} ${d.getUTCDate()} ${MONTH_LABELS[d.getUTCMonth()]}`
+}
+
+// ── GET ───────────────────────────────────────────────────────────────────────
 
 export const GET = withGates(
   { action: "schedule.read", endpointClass: "api_read" },
-  async (req: NextRequest, _ctx: GateContext): Promise<NextResponse> => {
-    const status = req.nextUrl.searchParams.get("status")
-    const results = status ? MOCK_SHIFTS.filter((s) => s.status === status) : MOCK_SHIFTS
-    const meta = computeMeta(MOCK_SHIFTS)
-    return NextResponse.json({ shifts: results, count: results.length, meta })
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
+    const { searchParams } = req.nextUrl
+    const statusFilter = searchParams.get("status") as ShiftStatus | null
+    const anchor = searchParams.get("week") ?? todayStr()
+    const { monday, sunday, weekLabel } = weekBounds(anchor)
+
+    // 1. Fetch shifts for the week
+    const shiftRows = await db
+      .select({
+        id: shifts.id,
+        role: shifts.role,
+        roleLabel: shifts.roleLabel,
+        title: shifts.title,
+        location: shifts.location,
+        date: shifts.date,
+        startTime: shifts.startTime,
+        endTime: shifts.endTime,
+        durationHours: shifts.durationHours,
+        status: shifts.status,
+        totalSlots: shifts.totalSlots,
+        storeName: stores.name,
+        storeCity: stores.city,
+        projectName: projects.name,
+      })
+      .from(shifts)
+      .leftJoin(stores, eq(shifts.storeId, stores.id))
+      .leftJoin(projects, eq(shifts.projectId, projects.id))
+      .where(
+        and(
+          eq(shifts.companyId, ctx.session.companyId),
+          isNull(shifts.deletedAt),
+          gte(shifts.date, monday),
+          lte(shifts.date, sunday)
+        )
+      )
+      .orderBy(asc(shifts.date), asc(shifts.startTime))
+
+    if (shiftRows.length === 0) {
+      const meta: ShiftsMeta = { total: 0, open: 0, coveragePct: 100, totalHours: 0, weekLabel }
+      return NextResponse.json({ shifts: [], count: 0, meta })
+    }
+
+    const shiftIds = shiftRows.map((s) => s.id)
+
+    // 2. Fetch assignees for all shifts in one query
+    const assigneeRows = await db
+      .select({
+        shiftId: shiftAssignments.shiftId,
+        userId: shiftAssignments.userId,
+        firstName: users.firstName,
+        lastName: users.lastName,
+      })
+      .from(shiftAssignments)
+      .innerJoin(users, eq(shiftAssignments.userId, users.id))
+      .where(inArray(shiftAssignments.shiftId, shiftIds))
+
+    // 3. Index assignees by shiftId
+    const assigneesByShift = new Map<string, ShiftAssignee[]>()
+    for (const a of assigneeRows) {
+      const list = assigneesByShift.get(a.shiftId) ?? []
+      list.push({
+        id: a.userId,
+        initials: ((a.firstName[0] ?? "") + (a.lastName[0] ?? "")).toUpperCase(),
+        name: `${a.firstName} ${a.lastName}`,
+      })
+      assigneesByShift.set(a.shiftId, list)
+    }
+
+    // 4. Assemble shifts
+    const all: ShiftSummary[] = shiftRows.map((s) => {
+      const assignees = assigneesByShift.get(s.id) ?? []
+      const openSlots = Math.max(0, s.totalSlots - assignees.length)
+      const role = s.role as ShiftRole
+      const site = s.storeCity ?? s.storeName ?? s.location ?? "—"
+      return {
+        id: s.id,
+        role,
+        roleLabel: s.roleLabel ?? ROLE_LABELS[role] ?? role,
+        title: s.title,
+        location: s.location ?? site,
+        site,
+        date: s.date,
+        dayLabel: fmtDayLabel(s.date),
+        startTime: s.startTime,
+        endTime: s.endTime,
+        durationHours: Number(s.durationHours),
+        status: s.status as ShiftStatus,
+        assignees,
+        openSlots,
+        project: s.projectName ?? null,
+      }
+    })
+
+    const filtered = statusFilter ? all.filter((s) => s.status === statusFilter) : all
+
+    const openCount = all.filter((s) => s.status === "open").length
+    const coveredCount = all.filter((s) => s.openSlots === 0).length
+    const coveragePct = all.length > 0 ? Math.round((coveredCount / all.length) * 100) : 100
+    const totalHours = all.reduce((sum, s) => sum + s.durationHours * s.assignees.length, 0)
+
+    const meta: ShiftsMeta = {
+      total: all.length,
+      open: openCount,
+      coveragePct,
+      totalHours,
+      weekLabel,
+    }
+
+    return NextResponse.json({ shifts: filtered, count: filtered.length, meta })
   }
 )
