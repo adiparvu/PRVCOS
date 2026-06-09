@@ -21,7 +21,7 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
         {/* Top specular shine */}
         <View style={styles.shine} pointerEvents="none" />
 
-        {state.routes.map((route, index) => {
+        {state.routes.map((route: { key: string; name: string }, index: number) => {
           const isFocused = state.index === index
           const meta = TAB_META[route.name] ?? { icon: "●", label: route.name }
 
@@ -49,7 +49,7 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
               style={styles.tab}
               accessibilityRole="button"
               accessibilityState={isFocused ? { selected: true } : {}}
-              accessibilityLabel={descriptors[route.key].options.tabBarAccessibilityLabel}
+              accessibilityLabel={descriptors[route.key]?.options.tabBarAccessibilityLabel}
             >
               <Text style={[styles.icon, isFocused && styles.iconActive]}>{meta.icon}</Text>
               <Text style={[styles.label, isFocused && styles.labelActive]}>{meta.label}</Text>

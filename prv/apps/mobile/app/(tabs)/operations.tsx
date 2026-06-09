@@ -428,7 +428,7 @@ function ClientsContent() {
 
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
 
-function SkeletonBlock({ w, h, r }: { w?: number | string; h: number; r?: number }) {
+function SkeletonBlock({ w, h, r }: { w?: number | `${number}%`; h: number; r?: number }) {
   return (
     <View
       style={{

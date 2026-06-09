@@ -122,7 +122,7 @@ const INVOICE_BADGE: Record<string, { bg: string; text: string }> = {
 
 function InvoiceRow({ item }: { item: FinanceInvoiceItem }) {
   const router = useRouter()
-  const badge = INVOICE_BADGE[item.status] ?? INVOICE_BADGE.draft
+  const badge = (INVOICE_BADGE[item.status] ?? INVOICE_BADGE.draft)!
   const amountColor =
     item.status === "overdue" ? colors.red : item.status === "paid" ? colors.green : colors.text1
 
