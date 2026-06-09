@@ -29,3 +29,13 @@ export * from "./multi-tenancy"
 export * from "./rbac"
 // Sprint 11: Group Architecture — company groups, memberships, KPI snapshots
 export * from "./groups"
+// Sprint 12: Workforce — attendance, leave, shifts, payroll, tasks
+export * from "./workforce"
+// Sprint 12: Procurement — purchase orders
+export * from "./procurement"
+// Sprint 12: Approvals — cross-module approval requests
+export * from "./approvals"
+// Sprint 12: Knowledge Base — articles, read progress
+export * from "./knowledge"
+// Sprint 12: Learning — courses, enrollments, achievements
+export * from "./learning"
