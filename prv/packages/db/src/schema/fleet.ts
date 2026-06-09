@@ -9,6 +9,8 @@ import {
   integer,
   pgEnum,
   index,
+  date,
+  unique,
 } from "drizzle-orm/pg-core"
 import { relations } from "drizzle-orm"
 import { companies, stores } from "./companies"
@@ -120,12 +122,47 @@ export const tools = pgTable(
   ]
 )
 
+// ─── Vehicle daily logs ───────────────────────────────────────────────────────
+
+export const vehicleDailyLogs = pgTable(
+  "vehicle_daily_logs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id, { onDelete: "cascade" }),
+    vehicleId: uuid("vehicle_id")
+      .notNull()
+      .references(() => vehicles.id, { onDelete: "cascade" }),
+    recordedBy: uuid("recorded_by").references(() => users.id, { onDelete: "set null" }),
+
+    date: date("date").notNull(),
+    odometerKm: integer("odometer_km").notNull(),
+
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    unique("vehicle_daily_logs_vehicle_date_unique").on(table.vehicleId, table.date),
+    index("vehicle_daily_logs_company_id_idx").on(table.companyId),
+    index("vehicle_daily_logs_vehicle_id_idx").on(table.vehicleId),
+    index("vehicle_daily_logs_date_idx").on(table.date),
+  ]
+)
+
 // ─── Relations ───────────────────────────────────────────────────────────────
 
-export const vehiclesRelations = relations(vehicles, ({ one }) => ({
+export const vehiclesRelations = relations(vehicles, ({ one, many }) => ({
   company: one(companies, { fields: [vehicles.companyId], references: [companies.id] }),
   assignedUser: one(users, { fields: [vehicles.assignedUserId], references: [users.id] }),
   store: one(stores, { fields: [vehicles.storeId], references: [stores.id] }),
+  dailyLogs: many(vehicleDailyLogs),
+}))
+
+export const vehicleDailyLogsRelations = relations(vehicleDailyLogs, ({ one }) => ({
+  vehicle: one(vehicles, { fields: [vehicleDailyLogs.vehicleId], references: [vehicles.id] }),
+  company: one(companies, { fields: [vehicleDailyLogs.companyId], references: [companies.id] }),
+  recordedBy: one(users, { fields: [vehicleDailyLogs.recordedBy], references: [users.id] }),
 }))
 
 export const toolsRelations = relations(tools, ({ one }) => ({
