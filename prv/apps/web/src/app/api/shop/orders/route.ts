@@ -2,6 +2,9 @@ import { withGates } from "@/lib/with-gates"
 import { writeAuditLog } from "@prv/auth"
 import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
+import { db } from "@prv/db"
+import { orders, orderItems } from "@prv/db/schema"
+import { and, desc, eq, inArray, isNull } from "drizzle-orm"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -30,108 +33,106 @@ export interface Order {
   notes?: string
 }
 
-const MOCK_ORDERS: Order[] = [
-  {
-    id: "ord-031",
-    ref: "CMD-0031",
-    status: "processing",
-    items: [
-      {
-        productId: "p-004",
-        productName: "Bosch GSB 18V Li-Ion",
-        category: "Scule",
-        qty: 1,
-        unitPrice: 210,
-      },
-      {
-        productId: "p-006",
-        productName: "Cabină duș 90×90 Cersanit",
-        category: "Sanitare",
-        qty: 1,
-        unitPrice: 416,
-      },
-      {
-        productId: "p-002",
-        productName: "Parchet stejar 10mm",
-        category: "Pardoseli",
-        qty: 20,
-        unitPrice: 28,
-      },
-    ],
-    totalNet: 1186,
-    totalVat: 225,
-    totalGross: 1411,
-    deliveryAddress: "Str. Fabricii 12, Cluj-Napoca",
-    estimatedDelivery: "2026-06-13",
-    placedAt: "2026-06-07T10:30:00Z",
-  },
-  {
-    id: "ord-028",
-    ref: "CMD-0028",
-    status: "delivered",
-    items: [
-      {
-        productId: "p-005",
-        productName: "Tablou electric 24 module Hager",
-        category: "Electrice",
-        qty: 1,
-        unitPrice: 94,
-      },
-    ],
-    totalNet: 94,
-    totalVat: 18,
-    totalGross: 112,
-    deliveryAddress: "Str. Fabricii 12, Cluj-Napoca",
-    estimatedDelivery: "2026-06-03",
-    placedAt: "2026-05-30T09:15:00Z",
-  },
-  {
-    id: "ord-025",
-    ref: "CMD-0025",
-    status: "delivered",
-    items: [
-      {
-        productId: "p-003",
-        productName: "Baumit lavabilă interior 15L",
-        category: "Vopsele",
-        qty: 4,
-        unitPrice: 42,
-      },
-      {
-        productId: "p-009",
-        productName: "Grund penetrant Ceresit CT17 25kg",
-        category: "Vopsele",
-        qty: 2,
-        unitPrice: 36,
-      },
-    ],
-    totalNet: 240,
-    totalVat: 46,
-    totalGross: 286,
-    deliveryAddress: "Str. Fabricii 12, Cluj-Napoca",
-    estimatedDelivery: "2026-05-23",
-    placedAt: "2026-05-18T14:00:00Z",
-    notes: "Livrați la recepție",
-  },
-]
+const DB_STATUS_MAP: Record<string, OrderStatus> = {
+  pending: "pending",
+  confirmed: "processing",
+  processing: "processing",
+  shipped: "shipped",
+  delivered: "delivered",
+  cancelled: "cancelled",
+  refunded: "cancelled",
+}
 
 export const GET = withGates(
   { action: "shop.orders.read", endpointClass: "api_read" },
-  async (req: NextRequest, _ctx: GateContext): Promise<NextResponse> => {
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
     const { searchParams } = new URL(req.url)
-    const status = searchParams.get("status") as OrderStatus | null
-    let orders = MOCK_ORDERS
-    if (status) orders = orders.filter((o) => o.status === status)
-    const processing = MOCK_ORDERS.filter(
-      (o) => o.status === "processing" || o.status === "pending"
-    )
-    const delivered = MOCK_ORDERS.filter((o) => o.status === "delivered")
-    const totalValue = MOCK_ORDERS.reduce((s, o) => s + o.totalGross, 0)
+    const statusFilter = searchParams.get("status") as OrderStatus | null
+    const { companyId } = ctx.session
+
+    const rows = await db
+      .select({
+        id: orders.id,
+        orderNumber: orders.orderNumber,
+        status: orders.status,
+        subtotal: orders.subtotal,
+        vatAmount: orders.vatAmount,
+        total: orders.total,
+        shippingAddress: orders.shippingAddress,
+        notes: orders.notes,
+        createdAt: orders.createdAt,
+      })
+      .from(orders)
+      .where(and(eq(orders.companyId, companyId), isNull(orders.deletedAt)))
+      .orderBy(desc(orders.createdAt))
+
+    const orderIds = rows.map((r) => r.id)
+    const allItems =
+      orderIds.length > 0
+        ? await db
+            .select({
+              orderId: orderItems.orderId,
+              productId: orderItems.productId,
+              name: orderItems.name,
+              sku: orderItems.sku,
+              quantity: orderItems.quantity,
+              unitPrice: orderItems.unitPrice,
+            })
+            .from(orderItems)
+            .where(inArray(orderItems.orderId, orderIds))
+        : []
+
+    const itemsByOrder: Record<string, typeof allItems> = {}
+    for (const item of allItems) {
+      if (!itemsByOrder[item.orderId]) itemsByOrder[item.orderId] = []
+      itemsByOrder[item.orderId]!.push(item)
+    }
+
+    let result: Order[] = rows.map((r) => {
+      const addr = (r.shippingAddress ?? {}) as Record<string, unknown>
+      const deliveryAddress =
+        typeof addr.street === "string" ? [addr.street, addr.city].filter(Boolean).join(", ") : "—"
+
+      const delivery = new Date(r.createdAt)
+      delivery.setDate(delivery.getDate() + 5)
+
+      const lineItems: OrderLineItem[] = (itemsByOrder[r.id] ?? []).map((it) => ({
+        productId: it.productId ?? "",
+        productName: it.name,
+        category: it.sku ?? "—",
+        qty: it.quantity,
+        unitPrice: Number(it.unitPrice),
+      }))
+
+      const apiStatus = DB_STATUS_MAP[r.status] ?? "pending"
+      return {
+        id: r.id,
+        ref: r.orderNumber,
+        status: apiStatus,
+        items: lineItems,
+        totalNet: Number(r.subtotal),
+        totalVat: Number(r.vatAmount),
+        totalGross: Number(r.total),
+        deliveryAddress,
+        estimatedDelivery: delivery.toISOString().slice(0, 10),
+        placedAt: r.createdAt.toISOString(),
+        notes: r.notes ?? undefined,
+      }
+    })
+
+    if (statusFilter) {
+      result = result.filter((o) => o.status === statusFilter)
+    }
+
+    const processing = result.filter((o) => o.status === "processing" || o.status === "pending")
+    const delivered = result.filter((o) => o.status === "delivered")
+    const totalValue = result.reduce((s, o) => s + o.totalGross, 0)
+
     return NextResponse.json({
-      orders,
-      count: orders.length,
+      orders: result,
+      count: result.length,
       meta: {
-        total: MOCK_ORDERS.length,
+        total: result.length,
         processing: processing.length,
         delivered: delivered.length,
         totalValue,
@@ -144,49 +145,95 @@ export const POST = withGates(
   { action: "shop.orders.create", endpointClass: "api_write" },
   async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
     const body = await req.json()
-    const { items, deliveryAddress, notes } = body
+    const { items, deliveryAddress, notes, clientId } = body
 
-    const orderId = `ord-${Date.now()}`
-    const ref = `CMD-${Math.floor(Math.random() * 900) + 100}`
-    const today = new Date().toISOString()
+    const { companyId, userId } = ctx.session
+    const ref = `CMD-${Date.now()}`
+
+    const lineItems = (items ?? []) as Array<{
+      productId?: string
+      productName: string
+      qty: number
+      unitPrice: number
+      category?: string
+    }>
+
+    const totalNet = lineItems.reduce((s, i) => s + i.qty * i.unitPrice, 0)
+    const totalVat = Math.round(totalNet * 0.19 * 100) / 100
+    const totalGross = totalNet + totalVat
+
     const delivery = new Date()
     delivery.setDate(delivery.getDate() + 5)
 
-    const totalNet = (items ?? []).reduce(
-      (s: number, i: { qty: number; unitPrice: number }) => s + i.qty * i.unitPrice,
-      0
-    )
-    const totalVat = Math.round(totalNet * 0.19)
-    const totalGross = totalNet + totalVat
+    const shippingAddr =
+      typeof deliveryAddress === "string" ? { street: deliveryAddress } : (deliveryAddress ?? {})
 
-    const newOrder: Order = {
-      id: orderId,
-      ref,
-      status: "pending",
-      items: items ?? [],
-      totalNet: Math.round(totalNet),
-      totalVat,
-      totalGross,
-      deliveryAddress: deliveryAddress ?? "",
-      estimatedDelivery: delivery.toISOString().slice(0, 10),
-      placedAt: today,
-      notes,
+    const [inserted] = await db
+      .insert(orders)
+      .values({
+        companyId,
+        clientId: clientId ?? null,
+        orderNumber: ref,
+        status: "pending",
+        subtotal: String(totalNet),
+        vatAmount: String(totalVat),
+        total: String(totalGross),
+        shippingAddress: shippingAddr,
+        notes: notes ?? null,
+      })
+      .returning()
+
+    if (!inserted) return NextResponse.json({ error: "Database error" }, { status: 500 })
+
+    if (lineItems.length > 0) {
+      await db.insert(orderItems).values(
+        lineItems.map((it) => ({
+          orderId: inserted.id,
+          productId: it.productId ?? null,
+          name: it.productName ?? "Item",
+          sku: it.category ?? null,
+          quantity: it.qty,
+          unitPrice: String(it.unitPrice),
+          vatRate: "19",
+          total: String(it.qty * it.unitPrice),
+        }))
+      )
     }
 
     await writeAuditLog({
-      companyId: ctx.session.companyId,
-      actorId: ctx.session.userId,
+      companyId,
+      actorId: userId,
       sessionId: ctx.session.sessionId,
       action: "shop.orders.create",
       entityType: "order",
-      entityId: orderId,
+      entityId: inserted.id,
       payload: {
         ref,
-        itemCount: (items ?? []).length,
-        totalGross: newOrder.totalGross,
+        itemCount: lineItems.length,
+        totalGross,
         deliveryAddress,
       },
     })
+
+    const newOrder: Order = {
+      id: inserted.id,
+      ref: inserted.orderNumber,
+      status: "pending",
+      items: lineItems.map((it) => ({
+        productId: it.productId ?? "",
+        productName: it.productName ?? "Item",
+        category: it.category ?? "—",
+        qty: it.qty,
+        unitPrice: it.unitPrice,
+      })),
+      totalNet: Math.round(totalNet),
+      totalVat: Math.round(totalVat),
+      totalGross: Math.round(totalGross),
+      deliveryAddress: typeof deliveryAddress === "string" ? deliveryAddress : "",
+      estimatedDelivery: delivery.toISOString().slice(0, 10),
+      placedAt: inserted.createdAt.toISOString(),
+      notes,
+    }
 
     return NextResponse.json({ order: newOrder }, { status: 201 })
   }

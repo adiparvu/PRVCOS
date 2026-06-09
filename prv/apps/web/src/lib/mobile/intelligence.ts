@@ -224,7 +224,6 @@ export async function assembleIntelligence(ctx: MobileContext): Promise<Intellig
           eq(projects.companyId, ctx.companyId),
           eq(projectMilestones.isComplete, false),
           lt(projectMilestones.dueDate, todayStr),
-          isNull(projectMilestones.deletedAt),
           isNull(projects.deletedAt)
         )
       ),
@@ -249,7 +248,7 @@ export async function assembleIntelligence(ctx: MobileContext): Promise<Intellig
 
     // 11. Active pipeline value
     db
-      .select({ total: sql<string>`COALESCE(SUM(${projects.value}), '0')` })
+      .select({ total: sql<string>`COALESCE(SUM(${projects.budget}), '0')` })
       .from(projects)
       .where(
         and(
@@ -321,8 +320,8 @@ export async function assembleIntelligence(ctx: MobileContext): Promise<Intellig
   }
 
   const weekAvg = weekTotals.reduce((s, v) => s + v, 0) / 4
-  const recentAvg = (weekTotals[2] + weekTotals[3]) / 2
-  const olderAvg = (weekTotals[0] + weekTotals[1]) / 2
+  const recentAvg = ((weekTotals[2] ?? 0) + (weekTotals[3] ?? 0)) / 2
+  const olderAvg = ((weekTotals[0] ?? 0) + (weekTotals[1] ?? 0)) / 2
   const rawTrend = olderAvg > 0 ? (recentAvg - olderAvg) / olderAvg : 0
   const trend = Math.max(-0.3, Math.min(0.3, rawTrend))
 

@@ -1,7 +1,10 @@
 import { withGates } from "@/lib/with-gates"
 import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
-import type { Lead } from "../route"
+import { db } from "@prv/db"
+import { clients, users } from "@prv/db/schema"
+import { and, eq, isNull } from "drizzle-orm"
+import type { Lead, LeadStage, LeadSource } from "../route"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -18,145 +21,88 @@ export interface LeadDetail extends Lead {
   activities: LeadActivity[]
 }
 
-const MOCK_LEAD_DETAILS: Record<string, LeadDetail> = {
-  l1: {
-    id: "l1",
-    name: "Familia Dinu",
-    email: "dinu.alex@gmail.com",
-    phone: "0740 111 222",
-    source: "website",
-    stage: "new",
-    score: 42,
-    estimatedValue: 14000,
-    assignedTo: "Andrei P.",
-    lastActivity: "2 ore",
-    createdAt: "2026-06-05",
-    notes: "Interested in full kitchen renovation. Has budget confirmed.",
-    activities: [
-      {
-        id: "a1",
-        type: "created",
-        text: "Lead creat din formular website",
-        actor: "System",
-        timestamp: "2026-06-05T09:00:00Z",
-      },
-    ],
-  },
-  l2: {
-    id: "l2",
-    name: "Cosmin Vlad",
-    email: "cosmin.vlad@yahoo.com",
-    phone: "0755 333 444",
-    source: "referral",
-    stage: "new",
-    score: 31,
-    estimatedValue: 8500,
-    assignedTo: "Maria S.",
-    lastActivity: "1 zi",
-    createdAt: "2026-06-04",
-    notes: "Bathroom renovation. Referred by Mihai Popescu.",
-    activities: [
-      {
-        id: "a1",
-        type: "created",
-        text: "Lead creat prin referral Mihai Popescu",
-        actor: "System",
-        timestamp: "2026-06-04T10:30:00Z",
-      },
-    ],
-  },
-  l3: {
-    id: "l3",
-    name: "Elena Marinescu",
-    email: "elena.m@gmail.com",
-    phone: "0722 555 666",
-    source: "social",
-    stage: "qualified",
-    score: 58,
-    estimatedValue: 21000,
-    assignedTo: "Andrei P.",
-    lastActivity: "3 ore",
-    createdAt: "2026-06-01",
-    notes:
-      "Full apartment renovation. Very responsive on Instagram DMs. Budget confirmed ~€20-25k.",
-    activities: [
-      {
-        id: "a3",
-        type: "call",
-        text: "Apel inițiat — discuție buget confirmată",
-        actor: "Andrei P.",
-        timestamp: "2026-06-07T08:00:00Z",
-      },
-      {
-        id: "a2",
-        type: "message",
-        text: "DM Instagram răspuns — detalii apartament",
-        actor: "Elena Marinescu",
-        timestamp: "2026-06-06T14:22:00Z",
-      },
-      {
-        id: "a1",
-        type: "created",
-        text: "Lead creat din Instagram",
-        actor: "System",
-        timestamp: "2026-06-01T11:00:00Z",
-      },
-    ],
-  },
-  l4: {
-    id: "l4",
-    name: "Corp Business SRL",
-    company: "Corp Business SRL",
-    email: "office@corpbusiness.ro",
-    phone: "0733 777 888",
-    source: "event",
-    stage: "proposal",
-    score: 74,
-    estimatedValue: 85000,
-    assignedTo: "Andrei P.",
-    lastActivity: "5 ore",
-    createdAt: "2026-05-20",
-    notes: "Full commercial space renovation. Met at Construcții Expo 2026.",
-    activities: [
-      {
-        id: "a4",
-        type: "stage_change",
-        text: "Ofertă trimisă — €85,000",
-        actor: "Andrei P.",
-        timestamp: "2026-06-07T07:00:00Z",
-      },
-      {
-        id: "a3",
-        type: "email",
-        text: "Email specificații tehnice trimis",
-        actor: "Andrei P.",
-        timestamp: "2026-06-05T15:00:00Z",
-      },
-      {
-        id: "a2",
-        type: "call",
-        text: "Apel de calificare — buget confirmat",
-        actor: "Andrei P.",
-        timestamp: "2026-05-28T10:00:00Z",
-      },
-      {
-        id: "a1",
-        type: "created",
-        text: "Lead creat după eveniment Expo",
-        actor: "Andrei P.",
-        timestamp: "2026-05-20T18:00:00Z",
-      },
-    ],
-  },
+function timeAgo(d: Date): string {
+  const diffMs = Date.now() - d.getTime()
+  const diffMin = Math.floor(diffMs / 60_000)
+  if (diffMin < 60) return diffMin <= 1 ? "just now" : `${diffMin} min`
+  const diffH = Math.floor(diffMin / 60)
+  if (diffH < 24) return `${diffH}h`
+  const diffD = Math.floor(diffH / 24)
+  return `${diffD} zile`
 }
 
 export const GET = withGates(
   { action: "crm.leads.read", endpointClass: "api_read" },
-  async (req: NextRequest, _ctx: GateContext): Promise<NextResponse> => {
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
     const id = req.nextUrl.pathname.split("/").pop()
     if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 })
-    const lead = MOCK_LEAD_DETAILS[id]
-    if (!lead) return NextResponse.json({ error: "Not found" }, { status: 404 })
+
+    const { companyId } = ctx.session
+
+    const rows = await db
+      .select({
+        id: clients.id,
+        name: clients.name,
+        email: clients.email,
+        phone: clients.phone,
+        notes: clients.notes,
+        metadata: clients.metadata,
+        createdAt: clients.createdAt,
+        updatedAt: clients.updatedAt,
+        assignedFirstName: users.firstName,
+        assignedLastName: users.lastName,
+      })
+      .from(clients)
+      .leftJoin(users, eq(clients.assignedUserId, users.id))
+      .where(
+        and(
+          eq(clients.id, id),
+          eq(clients.companyId, companyId),
+          eq(clients.status, "prospect"),
+          isNull(clients.deletedAt)
+        )
+      )
+      .limit(1)
+
+    const row = rows[0]
+    if (!row) return NextResponse.json({ error: "Not found" }, { status: 404 })
+
+    const meta = (row.metadata ?? {}) as Record<string, unknown>
+    const stage = (meta.stage as LeadStage) ?? "new"
+    const score = typeof meta.score === "number" ? meta.score : 0
+    const source = (meta.source as LeadSource) ?? "website"
+    const estimatedValue = typeof meta.estimatedValue === "number" ? meta.estimatedValue : 0
+    const company = typeof meta.company === "string" ? meta.company : undefined
+
+    const assignedTo = row.assignedFirstName
+      ? `${row.assignedFirstName} ${row.assignedLastName}`
+      : "Unassigned"
+
+    const lead: LeadDetail = {
+      id: row.id,
+      name: row.name,
+      company,
+      email: row.email ?? "",
+      phone: row.phone ?? "",
+      source,
+      stage,
+      score,
+      estimatedValue,
+      assignedTo,
+      lastActivity: timeAgo(row.updatedAt),
+      createdAt: row.createdAt.toISOString().slice(0, 10),
+      notes: row.notes ?? undefined,
+      activities: [
+        {
+          id: "ac-created",
+          type: "created",
+          text: "Lead creat",
+          actor: "System",
+          timestamp: row.createdAt.toISOString(),
+        },
+      ],
+    }
+
     return NextResponse.json({ lead })
   }
 )

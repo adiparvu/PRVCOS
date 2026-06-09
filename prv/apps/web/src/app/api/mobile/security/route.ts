@@ -71,8 +71,8 @@ export const GET = withMobileAuth(async (_req: NextRequest, ctx) => {
     entityId: ctx.userId,
     method: "GET",
     path: "/api/mobile/security",
-    ipAddress: null,
-    userAgent: null,
+    ipAddress: undefined,
+    userAgent: undefined,
   })
 
   return NextResponse.json({

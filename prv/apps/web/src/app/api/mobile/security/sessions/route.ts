@@ -24,8 +24,8 @@ export const DELETE = withMobileAuth(async (_req: NextRequest, ctx) => {
     entityId: ctx.userId,
     method: "DELETE",
     path: "/api/mobile/security/sessions",
-    ipAddress: null,
-    userAgent: null,
+    ipAddress: undefined,
+    userAgent: undefined,
   })
 
   return NextResponse.json({ revokedCount: others.length })

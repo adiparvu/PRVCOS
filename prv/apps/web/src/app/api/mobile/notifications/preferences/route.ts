@@ -50,6 +50,7 @@ export const GET = withMobileAuth(async (_req: NextRequest, ctx) => {
   }
 
   const r = rows[0]
+  if (!r) return NextResponse.json({ error: "Not found" }, { status: 404 })
   return NextResponse.json({
     inApp: r.inApp,
     push: r.push,

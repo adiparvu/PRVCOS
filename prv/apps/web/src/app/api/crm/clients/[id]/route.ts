@@ -1,7 +1,10 @@
 import { withGates } from "@/lib/with-gates"
 import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
-import type { ClientSummary } from "../route"
+import { db } from "@prv/db"
+import { clients, clientContacts, users, projects, invoices } from "@prv/db/schema"
+import { and, desc, eq, inArray, isNull, sum } from "drizzle-orm"
+import type { ClientSummary, ClientStatus } from "../route"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -65,383 +68,191 @@ export interface ClientDetail extends ClientSummary {
   activities: ClientActivity[]
 }
 
-const MOCK_DETAIL: Record<string, ClientDetail> = {
-  c1: {
-    id: "c1",
-    initials: "MP",
-    name: "Mihai Popescu",
-    location: "Cluj-Napoca",
-    status: "vip",
-    ltv: 42800,
-    activeProjects: 2,
-    openQuotes: 1,
-    nps: 8.9,
-    since: "2024",
-    phone: "+40 740 123 456",
-    email: "mihai.popescu@gmail.com",
-    cifVat: "PF",
-    address: "Str. Avram Iancu 10, Cluj-Napoca",
-    contactPerson: "Mihai Popescu",
-    totalInvoiced: 42800,
-    totalPaid: 42800,
-    quotes: [
-      {
-        id: "q-045",
-        ref: "Q-045",
-        projectName: "Renovare bucătărie Cluj",
-        amount: 16800,
-        status: "sent",
-      },
-      {
-        id: "q-039",
-        ref: "Q-039",
-        projectName: "Baie master etaj 2",
-        amount: 12000,
-        status: "accepted",
-      },
-    ],
-    invoices: [
-      {
-        id: "inv-201",
-        ref: "INV-201",
-        projectName: "Renovare Apartament Floreasca",
-        amount: 18400,
-        status: "paid",
-      },
-      {
-        id: "inv-198",
-        ref: "INV-198",
-        projectName: "Baie master etaj 2",
-        amount: 12000,
-        status: "paid",
-      },
-    ],
-    projects: [
-      {
-        id: "p1",
-        name: "Renovare Apartament Floreasca",
-        status: "active",
-        completionPct: 59,
-        currentPhaseName: "Execution",
-        budget: 38000,
-        spent: 22400,
-        daysLeft: 23,
-      },
-      {
-        id: "p-mp2",
-        name: "Baie Modernă Cluj",
-        status: "done",
-        completionPct: 100,
-        currentPhaseName: "Handover",
-        budget: 14000,
-        spent: 13200,
-        daysLeft: 0,
-      },
-    ],
-    activities: [
-      {
-        id: "a5",
-        type: "quote_sent",
-        text: "Ofertă Q-045 trimisă — renovare bucătărie €16,800",
-        timestamp: "2026-06-01T10:00:00Z",
-      },
-      {
-        id: "a4",
-        type: "invoice_paid",
-        text: "Factură INV-201 plătită integral — €18,400",
-        timestamp: "2026-05-20T14:00:00Z",
-      },
-      {
-        id: "a3",
-        type: "quote_accepted",
-        text: "Ofertă Q-039 acceptată — baie master €12,000",
-        timestamp: "2026-04-15T11:30:00Z",
-      },
-      {
-        id: "a2",
-        type: "project_started",
-        text: "Proiect Renovare Apartament Floreasca demarat",
-        timestamp: "2026-05-02T09:00:00Z",
-      },
-      {
-        id: "a1",
-        type: "created",
-        text: "Client Mihai Popescu adăugat în CRM",
-        timestamp: "2024-03-10T08:00:00Z",
-      },
-    ],
-  },
-  c2: {
-    id: "c2",
-    initials: "AG",
-    name: "Andronic Group SRL",
-    location: "București",
-    status: "active",
-    ltv: 67000,
-    activeProjects: 1,
-    openQuotes: 1,
-    nps: 7.4,
-    since: "2025",
-    phone: "+40 264 456 789",
-    email: "office@andronic.ro",
-    cifVat: "RO22345678",
-    address: "Bd. Unirii 14, Sector 3, București",
-    contactPerson: "Ion Andronic",
-    totalInvoiced: 67000,
-    totalPaid: 48800,
-    quotes: [
-      {
-        id: "q-048",
-        ref: "Q-048",
-        projectName: "Renovare birouri București",
-        amount: 24400,
-        status: "sent",
-      },
-    ],
-    invoices: [
-      {
-        id: "inv-208",
-        ref: "INV-208",
-        projectName: "Spațiu Comercial București",
-        amount: 18200,
-        status: "overdue",
-      },
-      {
-        id: "inv-203",
-        ref: "INV-203",
-        projectName: "Spațiu Comercial etaj 1",
-        amount: 30000,
-        status: "paid",
-      },
-    ],
-    projects: [
-      {
-        id: "p-ag1",
-        name: "Spațiu Comercial București",
-        status: "active",
-        completionPct: 28,
-        currentPhaseName: "Execution",
-        budget: 67000,
-        spent: 18800,
-        daysLeft: 21,
-      },
-    ],
-    activities: [
-      {
-        id: "a4",
-        type: "invoice_overdue",
-        text: "Factură INV-208 scadentă neachitată — €18,200",
-        timestamp: "2026-05-25T09:00:00Z",
-      },
-      {
-        id: "a3",
-        type: "quote_sent",
-        text: "Ofertă Q-048 trimisă — renovare birouri v2.1",
-        timestamp: "2026-05-28T14:30:00Z",
-      },
-      {
-        id: "a2",
-        type: "project_started",
-        text: "Proiect Spațiu Comercial demarat",
-        timestamp: "2026-04-30T09:00:00Z",
-      },
-      {
-        id: "a1",
-        type: "created",
-        text: "Client Andronic Group SRL adăugat în CRM",
-        timestamp: "2025-01-15T08:00:00Z",
-      },
-    ],
-  },
-  c3: {
-    id: "c3",
-    initials: "AI",
-    name: "Ana Ionescu",
-    location: "Timișoara",
-    status: "lead",
-    ltv: 0,
-    activeProjects: 0,
-    openQuotes: 1,
-    nps: null,
-    since: "2026",
-    phone: "+40 722 987 654",
-    email: "ana.ionescu@yahoo.com",
-    cifVat: "PF",
-    address: "Str. Republicii 5, Timișoara",
-    contactPerson: "Ana Ionescu",
-    totalInvoiced: 0,
-    totalPaid: 0,
-    quotes: [
-      {
-        id: "q-042",
-        ref: "Q-042",
-        projectName: "Bucătărie + Living Timișoara",
-        amount: 24200,
-        status: "sent",
-      },
-    ],
-    invoices: [],
-    projects: [],
-    activities: [
-      {
-        id: "a3",
-        type: "quote_sent",
-        text: "Ofertă Q-042 trimisă — bucătărie + living €24,200",
-        timestamp: "2026-06-01T09:00:00Z",
-      },
-      {
-        id: "a2",
-        type: "note",
-        text: "Consultație inițială — birou Timișoara, 1h",
-        timestamp: "2026-05-28T11:00:00Z",
-      },
-      {
-        id: "a1",
-        type: "created",
-        text: "Lead Ana Ionescu adăugat via formular website",
-        timestamp: "2026-05-24T14:00:00Z",
-      },
-    ],
-  },
-  c4: {
-    id: "c4",
-    initials: "BC",
-    name: "Biroul Construct SRL",
-    location: "Brașov",
-    status: "active",
-    ltv: 31400,
-    activeProjects: 2,
-    openQuotes: 0,
-    nps: 8.1,
-    since: "2024",
-    phone: "+40 268 321 654",
-    email: "contact@birouconstruct.ro",
-    cifVat: "RO33456789",
-    address: "Str. Mureșenilor 8, Brașov",
-    contactPerson: "Pavel Birău",
-    totalInvoiced: 31400,
-    totalPaid: 31400,
-    quotes: [
-      {
-        id: "q-047",
-        ref: "Q-047",
-        projectName: "Amenajare spații comerciale",
-        amount: 18200,
-        status: "sent",
-      },
-    ],
-    invoices: [
-      {
-        id: "inv-207",
-        ref: "INV-207",
-        projectName: "Renovare birou etaj 1",
-        amount: 9200,
-        status: "paid",
-      },
-      {
-        id: "inv-205",
-        ref: "INV-205",
-        projectName: "Warehouse fit-out",
-        amount: 22200,
-        status: "paid",
-      },
-    ],
-    projects: [
-      {
-        id: "p4",
-        name: "Pardoseli Comerciale Brașov",
-        status: "active",
-        completionPct: 91,
-        currentPhaseName: "Floor Installation",
-        budget: 17000,
-        spent: 19200,
-        daysLeft: 8,
-      },
-      {
-        id: "p2",
-        name: "Baie Modernă Cluj",
-        status: "review",
-        completionPct: 84,
-        currentPhaseName: "Finishing Touches",
-        budget: 14000,
-        spent: 11800,
-        daysLeft: 5,
-      },
-    ],
-    activities: [
-      {
-        id: "a3",
-        type: "invoice_paid",
-        text: "Factură INV-205 plătită — warehouse €22,200",
-        timestamp: "2026-06-03T14:00:00Z",
-      },
-      {
-        id: "a2",
-        type: "project_started",
-        text: "Proiect Pardoseli Comerciale demarat",
-        timestamp: "2026-05-01T09:00:00Z",
-      },
-      {
-        id: "a1",
-        type: "created",
-        text: "Client Biroul Construct SRL adăugat în CRM",
-        timestamp: "2024-02-20T08:00:00Z",
-      },
-    ],
-  },
-  c5: {
-    id: "c5",
-    initials: "RN",
-    name: "Radu Niculescu",
-    location: "Iași",
-    status: "cold",
-    ltv: 8600,
-    activeProjects: 0,
-    openQuotes: 0,
-    nps: 6.5,
-    since: "2024",
-    phone: "+40 755 111 222",
-    email: "radu.n@gmail.com",
-    cifVat: "PF",
-    address: "Str. Păcurari 22, Iași",
-    contactPerson: "Radu Niculescu",
-    totalInvoiced: 8600,
-    totalPaid: 8600,
-    quotes: [],
-    invoices: [
-      {
-        id: "inv-196",
-        ref: "INV-196",
-        projectName: "Pardoseli Iași Copou",
-        amount: 8600,
-        status: "paid",
-      },
-    ],
-    projects: [],
-    activities: [
-      {
-        id: "a2",
-        type: "project_completed",
-        text: "Proiect Pardoseli Iași Copou finalizat",
-        timestamp: "2026-03-03T16:00:00Z",
-      },
-      {
-        id: "a1",
-        type: "invoice_paid",
-        text: "Factură finală plătită — €8,600",
-        timestamp: "2026-03-05T10:00:00Z",
-      },
-    ],
-  },
+const VIP_LTV_THRESHOLD = 30_000
+
+function toApiStatus(dbStatus: string, ltv: number): ClientStatus {
+  if (dbStatus === "archived" || dbStatus === "inactive") return "cold"
+  if (dbStatus === "prospect") return "lead"
+  return ltv >= VIP_LTV_THRESHOLD ? "vip" : "active"
+}
+
+function initials(name: string): string {
+  const parts = name.trim().split(/\s+/)
+  if (parts.length === 1) return (parts[0]?.slice(0, 2) ?? "--").toUpperCase()
+  return ((parts[0]?.[0] ?? "-") + (parts[parts.length - 1]?.[0] ?? "-")).toUpperCase()
+}
+
+function daysLeft(dueDate: string | null): number {
+  if (!dueDate) return 0
+  const due = new Date(dueDate)
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  return Math.round((due.getTime() - today.getTime()) / 86_400_000)
+}
+
+const DB_PROJECT_STATUS_MAP: Record<string, "active" | "planning" | "review" | "done" | "hold"> = {
+  draft: "planning",
+  active: "active",
+  on_hold: "hold",
+  completed: "done",
+  cancelled: "done",
+  archived: "done",
+}
+
+const DB_INVOICE_STATUS_MAP: Record<string, LinkedInvoice["status"]> = {
+  draft: "draft",
+  sent: "due",
+  paid: "paid",
+  overdue: "overdue",
+  cancelled: "void",
+  refunded: "void",
 }
 
 export const GET = withGates(
   { action: "crm.clients.read", endpointClass: "api_read" },
-  async (req: NextRequest, _ctx: GateContext): Promise<NextResponse> => {
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
     const id = req.nextUrl.pathname.split("/").pop()
     if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 })
-    const client = MOCK_DETAIL[id]
-    if (!client) return NextResponse.json({ error: "Not found" }, { status: 404 })
-    return NextResponse.json({ client })
+
+    const { companyId } = ctx.session
+
+    const [clientRows, contactRows, invoiceRows, projectRows] = await Promise.all([
+      db
+        .select({
+          id: clients.id,
+          name: clients.name,
+          email: clients.email,
+          phone: clients.phone,
+          vatNumber: clients.vatNumber,
+          address: clients.address,
+          city: clients.city,
+          status: clients.status,
+          createdAt: clients.createdAt,
+          assignedFirstName: users.firstName,
+          assignedLastName: users.lastName,
+        })
+        .from(clients)
+        .leftJoin(users, eq(clients.assignedUserId, users.id))
+        .where(and(eq(clients.id, id), eq(clients.companyId, companyId), isNull(clients.deletedAt)))
+        .limit(1),
+
+      db
+        .select({
+          firstName: clientContacts.firstName,
+          lastName: clientContacts.lastName,
+          isPrimary: clientContacts.isPrimary,
+        })
+        .from(clientContacts)
+        .where(eq(clientContacts.clientId, id))
+        .orderBy(desc(clientContacts.isPrimary))
+        .limit(5),
+
+      db
+        .select({
+          id: invoices.id,
+          invoiceNumber: invoices.invoiceNumber,
+          total: invoices.total,
+          status: invoices.status,
+          projectId: invoices.projectId,
+        })
+        .from(invoices)
+        .where(
+          and(
+            eq(invoices.clientId, id),
+            eq(invoices.companyId, companyId),
+            isNull(invoices.deletedAt)
+          )
+        )
+        .orderBy(desc(invoices.createdAt))
+        .limit(20),
+
+      db
+        .select({
+          id: projects.id,
+          name: projects.name,
+          status: projects.status,
+          budget: projects.budget,
+          dueDate: projects.dueDate,
+          metadata: projects.metadata,
+        })
+        .from(projects)
+        .where(
+          and(
+            eq(projects.clientId, id),
+            eq(projects.companyId, companyId),
+            isNull(projects.deletedAt)
+          )
+        )
+        .orderBy(desc(projects.createdAt))
+        .limit(20),
+    ])
+
+    const row = clientRows[0]
+    if (!row) return NextResponse.json({ error: "Not found" }, { status: 404 })
+
+    const totalInvoiced = invoiceRows.reduce((s, r) => s + Number(r.total), 0)
+    const totalPaid = invoiceRows
+      .filter((r) => r.status === "paid")
+      .reduce((s, r) => s + Number(r.total), 0)
+
+    const apiStatus = toApiStatus(row.status, totalInvoiced)
+
+    const primaryContact = contactRows[0]
+    const contactPerson = primaryContact
+      ? `${primaryContact.firstName} ${primaryContact.lastName}`
+      : (row.name ?? "—")
+
+    const linkedInvoices: LinkedInvoice[] = invoiceRows.map((r) => ({
+      id: r.id,
+      ref: r.invoiceNumber,
+      projectName: "",
+      amount: Number(r.total),
+      status: DB_INVOICE_STATUS_MAP[r.status] ?? "draft",
+    }))
+
+    const linkedProjects: LinkedProject[] = projectRows.map((r) => {
+      const meta = (r.metadata ?? {}) as Record<string, unknown>
+      const completionPct = typeof meta.completionPct === "number" ? meta.completionPct : 0
+      const currentPhaseName =
+        typeof meta.currentPhaseName === "string"
+          ? meta.currentPhaseName
+          : (DB_PROJECT_STATUS_MAP[r.status] ?? "planning")
+      return {
+        id: r.id,
+        name: r.name,
+        status: DB_PROJECT_STATUS_MAP[r.status] ?? "planning",
+        completionPct,
+        currentPhaseName,
+        budget: Number(r.budget ?? 0),
+        spent: 0,
+        daysLeft: daysLeft(r.dueDate ?? null),
+      }
+    })
+
+    const detail: ClientDetail = {
+      id: row.id,
+      initials: initials(row.name),
+      name: row.name,
+      location: row.city ?? "—",
+      status: apiStatus,
+      ltv: totalInvoiced,
+      activeProjects: linkedProjects.filter((p) => p.status === "active").length,
+      openQuotes: 0,
+      nps: null,
+      since: String(new Date(row.createdAt).getFullYear()),
+      phone: row.phone ?? "—",
+      email: row.email ?? "—",
+      cifVat: row.vatNumber ?? "—",
+      address: row.address ?? "—",
+      contactPerson,
+      totalInvoiced,
+      totalPaid,
+      quotes: [],
+      invoices: linkedInvoices,
+      projects: linkedProjects,
+      activities: [],
+    }
+
+    return NextResponse.json({ client: detail })
   }
 )

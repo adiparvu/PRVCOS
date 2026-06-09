@@ -1,7 +1,10 @@
 import { withGates } from "@/lib/with-gates"
 import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
-import type { AttendanceRecord } from "../route"
+import { db } from "@prv/db"
+import { attendanceRecords, users, stores } from "@prv/db/schema"
+import { and, eq, gte, lte } from "drizzle-orm"
+import type { AttendanceStatus } from "../route"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -22,532 +25,197 @@ export interface WeekDay {
   isToday: boolean
 }
 
-export interface AttendanceDetail extends AttendanceRecord {
-  device: string | null
+export interface AttendanceDetail {
+  id: string
+  employeeId: string
+  initials: string
+  name: string
+  role: string
+  site: string
+  status: AttendanceStatus
+  clockIn: string | null
+  clockOut: string | null
+  activeMinutes: number | null
+  lateMinutes: number | null
+  scheduledStart: string | null
+  scheduledEnd: string | null
+  leaveLabel: null
+  gpsVerified: boolean | null
+  barPct: number
+  device: null
   overtime: number
-  weekDays: WeekDay[]
   weekTotalMinutes: number
+  weekDays: WeekDay[]
   timeline: ClockEvent[]
-  approvedBy: string | null
+  approvedBy: null
 }
 
-const WEEK_DAYS_BASE: Omit<WeekDay, "isToday">[] = [
-  { label: "L", minutes: 486, barPct: 75 },
-  { label: "Ma", minutes: 534, barPct: 88 },
-  { label: "Mi", minutes: 0, barPct: 0 },
-  { label: "J", minutes: 0, barPct: 0 },
-  { label: "V", minutes: 0, barPct: 0 },
-  { label: "S", minutes: 0, barPct: 0 },
-  { label: "D", minutes: 0, barPct: 0 },
-]
-
-const MOCK_DETAIL: Record<string, AttendanceDetail> = {
-  at1: {
-    id: "at1",
-    employeeId: "e1",
-    initials: "IC",
-    name: "Ion Crișan",
-    role: "Maistru Construcții",
-    site: "A4 Brașov",
-    status: "present",
-    clockIn: "06:58",
-    clockOut: null,
-    activeMinutes: 542,
-    lateMinutes: null,
-    scheduledStart: "07:00",
-    scheduledEnd: "16:00",
-    leaveLabel: null,
-    gpsVerified: true,
-    barPct: 72,
-    device: "iPhone 15 Pro",
-    overtime: 2,
-    weekTotalMinutes: 2535,
-    weekDays: WEEK_DAYS_BASE.map((d, i) => ({
-      ...d,
-      minutes: i === 2 ? 542 : d.minutes,
-      barPct: i === 2 ? 72 : d.barPct,
-      isToday: i === 2,
-    })),
-    timeline: [
-      {
-        id: "c1",
-        time: "06:58",
-        label: "Clock In",
-        sub: "Șantier A4 · GPS verificat · iPhone 15 Pro",
-        done: true,
-        color: "rgba(48,209,88,.8)",
-      },
-      {
-        id: "c2",
-        time: "10:30",
-        label: "Pauză Începută",
-        sub: "15 minute",
-        done: true,
-        color: "rgba(255,159,10,.7)",
-      },
-      {
-        id: "c3",
-        time: "10:45",
-        label: "Pauză Terminată",
-        sub: "Revenire la lucru",
-        done: true,
-        color: "rgba(48,209,88,.6)",
-      },
-      {
-        id: "c4",
-        time: "12:00",
-        label: "Pauză de Masă",
-        sub: "57 minute · Depărtat de șantier",
-        done: true,
-        color: "rgba(255,159,10,.7)",
-      },
-      {
-        id: "c5",
-        time: "12:57",
-        label: "Revenire la Lucru",
-        sub: "Înapoi la șantier · GPS confirmat",
-        done: true,
-        color: "rgba(48,209,88,.6)",
-      },
-      {
-        id: "c6",
-        time: "—",
-        label: "Clock Out",
-        sub: "Tură activă",
-        done: false,
-        color: "rgba(255,255,255,.15)",
-      },
-    ],
-    approvedBy: null,
-  },
-  at2: {
-    id: "at2",
-    employeeId: "e3",
-    initials: "SF",
-    name: "Sorin Florea",
-    role: "Maistru Construcții",
-    site: "A4 Brașov",
-    status: "present",
-    clockIn: "07:03",
-    clockOut: null,
-    activeMinutes: 537,
-    lateMinutes: null,
-    scheduledStart: "07:00",
-    scheduledEnd: "16:00",
-    leaveLabel: null,
-    gpsVerified: true,
-    barPct: 69,
-    device: "Samsung Galaxy S24",
-    overtime: 0,
-    weekTotalMinutes: 2460,
-    weekDays: WEEK_DAYS_BASE.map((d, i) => ({
-      ...d,
-      minutes: i === 2 ? 537 : d.minutes,
-      barPct: i === 2 ? 69 : d.barPct,
-      isToday: i === 2,
-    })),
-    timeline: [
-      {
-        id: "c1",
-        time: "07:03",
-        label: "Clock In",
-        sub: "Șantier A4 · GPS verificat",
-        done: true,
-        color: "rgba(48,209,88,.8)",
-      },
-      {
-        id: "c2",
-        time: "12:10",
-        label: "Pauză de Masă",
-        sub: "45 minute",
-        done: true,
-        color: "rgba(255,159,10,.7)",
-      },
-      {
-        id: "c3",
-        time: "12:55",
-        label: "Revenire la Lucru",
-        sub: "GPS confirmat",
-        done: true,
-        color: "rgba(48,209,88,.6)",
-      },
-      {
-        id: "c4",
-        time: "—",
-        label: "Clock Out",
-        sub: "Tură activă",
-        done: false,
-        color: "rgba(255,255,255,.15)",
-      },
-    ],
-    approvedBy: null,
-  },
-  at3: {
-    id: "at3",
-    employeeId: "e4",
-    initials: "EM",
-    name: "Elena Marin",
-    role: "Manager Proiect",
-    site: "A4 Brașov",
-    status: "late",
-    clockIn: "09:24",
-    clockOut: null,
-    activeMinutes: 276,
-    lateMinutes: 84,
-    scheduledStart: "08:00",
-    scheduledEnd: "17:00",
-    leaveLabel: null,
-    gpsVerified: true,
-    barPct: 55,
-    device: "iPhone 14",
-    overtime: 0,
-    weekTotalMinutes: 1890,
-    weekDays: WEEK_DAYS_BASE.map((d, i) => ({
-      ...d,
-      minutes: i === 2 ? 276 : Math.round(d.minutes * 0.9),
-      barPct: i === 2 ? 55 : Math.round(d.barPct * 0.9),
-      isToday: i === 2,
-    })),
-    timeline: [
-      {
-        id: "c1",
-        time: "09:24",
-        label: "Clock In",
-        sub: "Șantier A4 · GPS verificat · +84 min întârziere",
-        done: true,
-        color: "rgba(255,159,10,.8)",
-      },
-      {
-        id: "c2",
-        time: "12:30",
-        label: "Pauză de Masă",
-        sub: "30 minute",
-        done: true,
-        color: "rgba(255,159,10,.7)",
-      },
-      {
-        id: "c3",
-        time: "13:00",
-        label: "Revenire la Lucru",
-        sub: null,
-        done: true,
-        color: "rgba(48,209,88,.6)",
-      },
-      {
-        id: "c4",
-        time: "—",
-        label: "Clock Out",
-        sub: "Tură activă",
-        done: false,
-        color: "rgba(255,255,255,.15)",
-      },
-    ],
-    approvedBy: null,
-  },
-  at4: {
-    id: "at4",
-    employeeId: "e2",
-    initials: "RD",
-    name: "Radu Dima",
-    role: "Zidar Calificat",
-    site: "A4 Brașov",
-    status: "late",
-    clockIn: "08:32",
-    clockOut: null,
-    activeMinutes: 388,
-    lateMinutes: 32,
-    scheduledStart: "08:00",
-    scheduledEnd: "17:00",
-    leaveLabel: null,
-    gpsVerified: false,
-    barPct: 42,
-    device: "Android (necunoscut)",
-    overtime: 0,
-    weekTotalMinutes: 2010,
-    weekDays: WEEK_DAYS_BASE.map((d, i) => ({
-      ...d,
-      minutes: i === 2 ? 388 : d.minutes,
-      barPct: i === 2 ? 42 : d.barPct,
-      isToday: i === 2,
-    })),
-    timeline: [
-      {
-        id: "c1",
-        time: "08:32",
-        label: "Clock In",
-        sub: "GPS neverificat · +32 min întârziere",
-        done: true,
-        color: "rgba(255,159,10,.8)",
-      },
-      {
-        id: "c2",
-        time: "12:00",
-        label: "Pauză de Masă",
-        sub: "60 minute",
-        done: true,
-        color: "rgba(255,159,10,.7)",
-      },
-      {
-        id: "c3",
-        time: "13:00",
-        label: "Revenire la Lucru",
-        sub: null,
-        done: true,
-        color: "rgba(48,209,88,.6)",
-      },
-      {
-        id: "c4",
-        time: "—",
-        label: "Clock Out",
-        sub: "Tură activă",
-        done: false,
-        color: "rgba(255,255,255,.15)",
-      },
-    ],
-    approvedBy: null,
-  },
-  at5: {
-    id: "at5",
-    employeeId: "e5",
-    initials: "LT",
-    name: "Liviu Toma",
-    role: "Electrician",
-    site: "Cluj Mănăștur",
-    status: "absent",
-    clockIn: null,
-    clockOut: null,
-    activeMinutes: null,
-    lateMinutes: null,
-    scheduledStart: "08:00",
-    scheduledEnd: "17:00",
-    leaveLabel: null,
-    gpsVerified: false,
-    barPct: 0,
-    device: null,
-    overtime: 0,
-    weekTotalMinutes: 960,
-    weekDays: WEEK_DAYS_BASE.map((d, i) => ({
-      ...d,
-      minutes: i === 2 ? 0 : Math.round(d.minutes * 0.65),
-      barPct: i === 2 ? 0 : Math.round(d.barPct * 0.65),
-      isToday: i === 2,
-    })),
-    timeline: [
-      {
-        id: "c1",
-        time: "—",
-        label: "Nicio activitate înregistrată",
-        sub: "Absență nemotivată",
-        done: false,
-        color: "rgba(255,69,58,.5)",
-      },
-    ],
-    approvedBy: null,
-  },
-  at6: {
-    id: "at6",
-    employeeId: "e7",
-    initials: "VB",
-    name: "Vasile Bota",
-    role: "Muncitor General",
-    site: "Depozit Cluj",
-    status: "absent",
-    clockIn: null,
-    clockOut: null,
-    activeMinutes: null,
-    lateMinutes: null,
-    scheduledStart: "08:00",
-    scheduledEnd: "16:00",
-    leaveLabel: null,
-    gpsVerified: false,
-    barPct: 0,
-    device: null,
-    overtime: 0,
-    weekTotalMinutes: 810,
-    weekDays: WEEK_DAYS_BASE.map((d, i) => ({
-      ...d,
-      minutes: i === 2 ? 0 : Math.round(d.minutes * 0.55),
-      barPct: i === 2 ? 0 : Math.round(d.barPct * 0.55),
-      isToday: i === 2,
-    })),
-    timeline: [
-      {
-        id: "c1",
-        time: "—",
-        label: "Nicio activitate înregistrată",
-        sub: "Absență nemotivată",
-        done: false,
-        color: "rgba(255,69,58,.5)",
-      },
-    ],
-    approvedBy: null,
-  },
-  at7: {
-    id: "at7",
-    employeeId: "e6",
-    initials: "AS",
-    name: "Ana Stoica",
-    role: "Contabilitate",
-    site: "Birou",
-    status: "leave",
-    clockIn: null,
-    clockOut: null,
-    activeMinutes: null,
-    lateMinutes: null,
-    scheduledStart: "09:00",
-    scheduledEnd: "17:00",
-    leaveLabel: "1–5 Iul · Concediu anual",
-    gpsVerified: false,
-    barPct: 0,
-    device: null,
-    overtime: 0,
-    weekTotalMinutes: 0,
-    weekDays: WEEK_DAYS_BASE.map((d, i) => ({ ...d, minutes: 0, barPct: 0, isToday: i === 2 })),
-    timeline: [
-      {
-        id: "c1",
-        time: "—",
-        label: "În concediu",
-        sub: "1–5 Iul 2026 · Concediu anual aprobat",
-        done: false,
-        color: "rgba(10,132,255,.5)",
-      },
-    ],
-    approvedBy: "Ion Crișan",
-  },
-  at8: {
-    id: "at8",
-    employeeId: "e8",
-    initials: "MP",
-    name: "Mihai Popa",
-    role: "Instalator Sanitar",
-    site: "Cluj Mănăștur",
-    status: "clocked_out",
-    clockIn: "07:45",
-    clockOut: "16:30",
-    activeMinutes: 465,
-    lateMinutes: null,
-    scheduledStart: "08:00",
-    scheduledEnd: "16:30",
-    leaveLabel: null,
-    gpsVerified: true,
-    barPct: 58,
-    device: "iPhone 13",
-    overtime: 0,
-    weekTotalMinutes: 2280,
-    weekDays: WEEK_DAYS_BASE.map((d, i) => ({
-      ...d,
-      minutes: i === 2 ? 465 : d.minutes,
-      barPct: i === 2 ? 58 : d.barPct,
-      isToday: i === 2,
-    })),
-    timeline: [
-      {
-        id: "c1",
-        time: "07:45",
-        label: "Clock In",
-        sub: "Cluj Mănăștur · GPS verificat",
-        done: true,
-        color: "rgba(48,209,88,.8)",
-      },
-      {
-        id: "c2",
-        time: "12:00",
-        label: "Pauză de Masă",
-        sub: "45 minute",
-        done: true,
-        color: "rgba(255,159,10,.7)",
-      },
-      {
-        id: "c3",
-        time: "12:45",
-        label: "Revenire la Lucru",
-        sub: null,
-        done: true,
-        color: "rgba(48,209,88,.6)",
-      },
-      {
-        id: "c4",
-        time: "16:30",
-        label: "Clock Out",
-        sub: "Tură finalizată · 7h 45m total",
-        done: true,
-        color: "rgba(48,209,88,.8)",
-      },
-    ],
-    approvedBy: "Sorin Florea",
-  },
-  at9: {
-    id: "at9",
-    employeeId: "e9",
-    initials: "DN",
-    name: "Dorel Nistor",
-    role: "Zugrav",
-    site: "Cluj Mănăștur",
-    status: "present",
-    clockIn: "08:02",
-    clockOut: null,
-    activeMinutes: 498,
-    lateMinutes: null,
-    scheduledStart: "08:00",
-    scheduledEnd: "16:00",
-    leaveLabel: null,
-    gpsVerified: true,
-    barPct: 62,
-    device: "Xiaomi Redmi Note 12",
-    overtime: 0,
-    weekTotalMinutes: 2310,
-    weekDays: WEEK_DAYS_BASE.map((d, i) => ({
-      ...d,
-      minutes: i === 2 ? 498 : d.minutes,
-      barPct: i === 2 ? 62 : d.barPct,
-      isToday: i === 2,
-    })),
-    timeline: [
-      {
-        id: "c1",
-        time: "08:02",
-        label: "Clock In",
-        sub: "Cluj Mănăștur · GPS verificat",
-        done: true,
-        color: "rgba(48,209,88,.8)",
-      },
-      {
-        id: "c2",
-        time: "12:15",
-        label: "Pauză de Masă",
-        sub: "30 minute",
-        done: true,
-        color: "rgba(255,159,10,.7)",
-      },
-      {
-        id: "c3",
-        time: "12:45",
-        label: "Revenire la Lucru",
-        sub: null,
-        done: true,
-        color: "rgba(48,209,88,.6)",
-      },
-      {
-        id: "c4",
-        time: "—",
-        label: "Clock Out",
-        sub: "Tură activă",
-        done: false,
-        color: "rgba(255,255,255,.15)",
-      },
-    ],
-    approvedBy: null,
-  },
-}
+const DAY_LABELS = ["D", "L", "Ma", "Mi", "J", "V", "S"] as const
 
 export const GET = withGates(
   { action: "attendance.read", endpointClass: "api_read" },
-  async (req: NextRequest, _ctx: GateContext): Promise<NextResponse> => {
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
     const id = req.nextUrl.pathname.split("/").pop()
     if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 })
-    const record = MOCK_DETAIL[id]
-    if (!record) return NextResponse.json({ error: "Not found" }, { status: 404 })
+
+    const { companyId } = ctx.session
+
+    const rows = await db
+      .select({
+        id: attendanceRecords.id,
+        userId: attendanceRecords.userId,
+        date: attendanceRecords.date,
+        status: attendanceRecords.status,
+        clockIn: attendanceRecords.clockIn,
+        clockOut: attendanceRecords.clockOut,
+        lateMinutes: attendanceRecords.lateMinutes,
+        gpsVerified: attendanceRecords.gpsVerified,
+        scheduledStart: attendanceRecords.scheduledStart,
+        scheduledEnd: attendanceRecords.scheduledEnd,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        jobTitle: users.jobTitle,
+        storeName: stores.name,
+      })
+      .from(attendanceRecords)
+      .leftJoin(users, eq(attendanceRecords.userId, users.id))
+      .leftJoin(stores, eq(attendanceRecords.storeId, stores.id))
+      .where(and(eq(attendanceRecords.id, id), eq(attendanceRecords.companyId, companyId)))
+      .limit(1)
+
+    const row = rows[0]
+    if (!row) return NextResponse.json({ error: "Not found" }, { status: 404 })
+
+    const name = row.firstName ? `${row.firstName} ${row.lastName}` : "—"
+    const initials = row.firstName ? `${row.firstName[0]}${row.lastName![0]}` : "?"
+
+    const clockInStr = row.clockIn
+      ? row.clockIn.toLocaleTimeString("ro-RO", { hour: "2-digit", minute: "2-digit" })
+      : null
+    const clockOutStr = row.clockOut
+      ? row.clockOut.toLocaleTimeString("ro-RO", { hour: "2-digit", minute: "2-digit" })
+      : null
+
+    const activeMinutes =
+      row.clockIn && row.clockOut
+        ? Math.round((row.clockOut.getTime() - row.clockIn.getTime()) / 60_000)
+        : row.clockIn
+          ? Math.round((Date.now() - row.clockIn.getTime()) / 60_000)
+          : null
+
+    const maxMinutes = 540
+    const barPct = activeMinutes ? Math.min(100, Math.round((activeMinutes / maxMinutes) * 100)) : 0
+
+    // Fetch this week's attendance for the user
+    const today = new Date()
+    const mon = new Date(today)
+    mon.setDate(today.getDate() - ((today.getDay() + 6) % 7))
+    const monStr = mon.toISOString().slice(0, 10)
+    const sunStr = new Date(mon.getTime() + 6 * 86_400_000).toISOString().slice(0, 10)
+
+    const weekRows = await db
+      .select({
+        date: attendanceRecords.date,
+        clockIn: attendanceRecords.clockIn,
+        clockOut: attendanceRecords.clockOut,
+      })
+      .from(attendanceRecords)
+      .where(
+        and(
+          eq(attendanceRecords.userId, row.userId),
+          eq(attendanceRecords.companyId, companyId),
+          gte(attendanceRecords.date, monStr),
+          lte(attendanceRecords.date, sunStr)
+        )
+      )
+
+    const weekDays: WeekDay[] = ["L", "Ma", "Mi", "J", "V", "S", "D"].map((label, i) => {
+      const dayDate = new Date(mon.getTime() + i * 86_400_000)
+      const dayStr = dayDate.toISOString().slice(0, 10)
+      const dayRow = weekRows.find((r) => r.date === dayStr)
+      let minutes = 0
+      if (dayRow?.clockIn && dayRow?.clockOut) {
+        minutes = Math.round((dayRow.clockOut.getTime() - dayRow.clockIn.getTime()) / 60_000)
+      } else if (dayRow?.clockIn) {
+        minutes = Math.round((Date.now() - dayRow.clockIn.getTime()) / 60_000)
+      }
+      return {
+        label,
+        minutes,
+        barPct: Math.min(100, Math.round((minutes / maxMinutes) * 100)),
+        isToday: dayStr === today.toISOString().slice(0, 10),
+      }
+    })
+
+    const weekTotalMinutes = weekDays.reduce((s, d) => s + d.minutes, 0)
+
+    const timeline: ClockEvent[] = []
+    if (row.clockIn) {
+      timeline.push({
+        id: "c1",
+        time: clockInStr!,
+        label: "Clock In",
+        sub: `${row.storeName ?? "—"} · GPS ${row.gpsVerified ? "verificat" : "neverificat"}${row.lateMinutes ? ` · +${row.lateMinutes} min întârziere` : ""}`,
+        done: true,
+        color: row.lateMinutes ? "rgba(255,159,10,.8)" : "rgba(48,209,88,.8)",
+      })
+    }
+    if (row.clockOut) {
+      timeline.push({
+        id: "c-out",
+        time: clockOutStr!,
+        label: "Clock Out",
+        sub: activeMinutes
+          ? `Tură finalizată · ${Math.floor(activeMinutes / 60)}h ${activeMinutes % 60}m total`
+          : null,
+        done: true,
+        color: "rgba(48,209,88,.8)",
+      })
+    } else if (row.clockIn) {
+      timeline.push({
+        id: "c-pending",
+        time: "—",
+        label: "Clock Out",
+        sub: "Tură activă",
+        done: false,
+        color: "rgba(255,255,255,.15)",
+      })
+    } else {
+      timeline.push({
+        id: "c-absent",
+        time: "—",
+        label: "Nicio activitate înregistrată",
+        sub: row.status === "leave" ? "În concediu" : "Absență nemotivată",
+        done: false,
+        color: row.status === "leave" ? "rgba(10,132,255,.5)" : "rgba(255,69,58,.5)",
+      })
+    }
+
+    const record = {
+      id: row.id,
+      employeeId: row.userId,
+      initials,
+      name,
+      role: row.jobTitle ?? "—",
+      site: row.storeName ?? "—",
+      status: row.status,
+      clockIn: clockInStr,
+      clockOut: clockOutStr,
+      activeMinutes,
+      lateMinutes: row.lateMinutes,
+      scheduledStart: row.scheduledStart,
+      scheduledEnd: row.scheduledEnd,
+      leaveLabel: null,
+      gpsVerified: row.gpsVerified,
+      barPct,
+      device: null,
+      overtime: 0,
+      weekTotalMinutes,
+      weekDays,
+      timeline,
+      approvedBy: null,
+    }
+
     return NextResponse.json({ record })
   }
 )

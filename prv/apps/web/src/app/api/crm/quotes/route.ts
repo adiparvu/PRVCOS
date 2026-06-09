@@ -2,6 +2,9 @@ import { withGates } from "@/lib/with-gates"
 import { writeAuditLog } from "@prv/auth"
 import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
+import { db } from "@prv/db"
+import { invoices, invoiceItems, clients, projects } from "@prv/db/schema"
+import { and, desc, eq, isNull } from "drizzle-orm"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -23,117 +26,79 @@ export interface QuoteSummary {
   version: string
 }
 
-const MOCK_QUOTES: QuoteSummary[] = [
-  {
-    id: "q-048",
-    ref: "Q-048",
-    clientId: "c2",
-    clientName: "Andronic Group SRL",
-    clientInitials: "AG",
-    status: "sent",
-    amount: 24400,
-    issuedDate: "2026-05-28",
-    expiryDate: "2026-06-10",
-    daysUntilExpiry: 3,
-    projectName: "Renovare birouri București",
-    version: "v2.1",
-  },
-  {
-    id: "q-047",
-    ref: "Q-047",
-    clientId: "c4",
-    clientName: "Biroul Construct SRL",
-    clientInitials: "BC",
-    status: "sent",
-    amount: 18200,
-    issuedDate: "2026-05-24",
-    expiryDate: "2026-06-19",
-    daysUntilExpiry: 12,
-    projectName: "Amenajare spații comerciale",
-    version: "v1.0",
-  },
-  {
-    id: "q-046",
-    ref: "Q-046",
-    clientId: "c3",
-    clientName: "Radu Construct SRL",
-    clientInitials: "RC",
-    status: "draft",
-    amount: 31000,
-    issuedDate: "2026-06-05",
-    expiryDate: "2026-06-30",
-    daysUntilExpiry: null,
-    projectName: "Bucătărie industrială Timișoara",
-    version: "v1.2",
-  },
-  {
-    id: "q-045",
-    ref: "Q-045",
-    clientId: "c5",
-    clientName: "Prima Biroul SRL",
-    clientInitials: "PB",
-    status: "sent",
-    amount: 10900,
-    issuedDate: "2026-05-30",
-    expiryDate: "2026-06-15",
-    daysUntilExpiry: 8,
-    projectName: "Renovare apartament Floreasca",
-    version: "v1.0",
-  },
-  {
-    id: "q-044",
-    ref: "Q-044",
-    clientId: "c6",
-    clientName: "Alfa Business SRL",
-    clientInitials: "AB",
-    status: "accepted",
-    amount: 8700,
-    issuedDate: "2026-05-20",
-    expiryDate: "2026-06-14",
-    daysUntilExpiry: null,
-    projectName: "Pardoseli epoxidice hală",
-    version: "v1.0",
-  },
-  {
-    id: "q-043",
-    ref: "Q-043",
-    clientId: "c7",
-    clientName: "SC Modern SRL",
-    clientInitials: "SM",
-    status: "rejected",
-    amount: 38000,
-    issuedDate: "2026-05-10",
-    expiryDate: "2026-06-04",
-    daysUntilExpiry: null,
-    projectName: "Amenajare birou open-space",
-    version: "v2.0",
-  },
-  {
-    id: "q-042",
-    ref: "Q-042",
-    clientId: "c3",
-    clientName: "Ana Ionescu",
-    clientInitials: "AI",
-    status: "sent",
-    amount: 24200,
-    issuedDate: "2026-06-01",
-    expiryDate: "2026-06-22",
-    daysUntilExpiry: 15,
-    projectName: "Bucătărie + Living Timișoara",
-    version: "v1.0",
-  },
-]
+function initials(name: string): string {
+  const parts = name.trim().split(/\s+/)
+  if (parts.length === 1) return (parts[0]?.slice(0, 2) ?? "--").toUpperCase()
+  return ((parts[0]?.[0] ?? "-") + (parts[parts.length - 1]?.[0] ?? "-")).toUpperCase()
+}
+
+function dbStatusToQuote(s: string, dueDate: string): QuoteStatus {
+  if (s === "paid") return "accepted"
+  if (s === "cancelled") return "rejected"
+  if (s === "overdue" || s === "refunded") return "expired"
+  if (s === "sent") return "sent"
+  if (new Date(dueDate) < new Date()) return "expired"
+  return "draft"
+}
+
+function daysUntil(dueDate: string): number | null {
+  const diff = Math.ceil((new Date(dueDate).getTime() - Date.now()) / 86_400_000)
+  return diff >= 0 ? diff : null
+}
 
 export const GET = withGates(
   { action: "crm.quotes.read", endpointClass: "api_read" },
-  async (req: NextRequest, _ctx: GateContext): Promise<NextResponse> => {
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
     const { searchParams } = new URL(req.url)
-    const status = searchParams.get("status")
-    const clientId = searchParams.get("clientId")
-    let results = MOCK_QUOTES
-    if (status) results = results.filter((q) => q.status === status)
-    if (clientId) results = results.filter((q) => q.clientId === clientId)
-    return NextResponse.json({ quotes: results, count: results.length })
+    const statusFilter = searchParams.get("status") as QuoteStatus | null
+    const clientIdFilter = searchParams.get("clientId")
+    const { companyId } = ctx.session
+
+    const conditions = [eq(invoices.companyId, companyId), isNull(invoices.deletedAt)]
+    if (clientIdFilter) conditions.push(eq(invoices.clientId, clientIdFilter))
+
+    const rows = await db
+      .select({
+        id: invoices.id,
+        invoiceNumber: invoices.invoiceNumber,
+        status: invoices.status,
+        issueDate: invoices.issueDate,
+        dueDate: invoices.dueDate,
+        total: invoices.total,
+        clientId: invoices.clientId,
+        clientName: clients.name,
+        projectName: projects.name,
+      })
+      .from(invoices)
+      .leftJoin(clients, eq(invoices.clientId, clients.id))
+      .leftJoin(projects, eq(invoices.projectId, projects.id))
+      .where(and(...conditions))
+      .orderBy(desc(invoices.createdAt))
+
+    let quotes: QuoteSummary[] = rows.map((r) => {
+      const clientName = r.clientName ?? "—"
+      const apiStatus = dbStatusToQuote(r.status, r.dueDate)
+      return {
+        id: r.id,
+        ref: r.invoiceNumber,
+        clientId: r.clientId ?? "",
+        clientName,
+        clientInitials: initials(clientName),
+        status: apiStatus,
+        amount: Number(r.total),
+        issuedDate: r.issueDate,
+        expiryDate: r.dueDate,
+        daysUntilExpiry: daysUntil(r.dueDate),
+        projectName: r.projectName ?? "—",
+        version: "v1.0",
+      }
+    })
+
+    if (statusFilter) {
+      quotes = quotes.filter((q) => q.status === statusFilter)
+    }
+
+    return NextResponse.json({ quotes, count: quotes.length })
   }
 )
 
@@ -141,52 +106,99 @@ export const POST = withGates(
   { action: "crm.quotes.create", endpointClass: "api_write" },
   async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
     const body = await req.json()
-    const { clientId, projectName, items, validityDays, notes, coverText, status } = body
+    const { clientId, projectId, items, validityDays, notes, status } = body
 
-    const quoteId = `q-${Date.now()}`
-    const nextRef = `Q-0${49 + Math.floor(Math.random() * 10)}`
+    const { companyId, userId } = ctx.session
     const today = new Date().toISOString().slice(0, 10)
     const expiry = new Date()
     expiry.setDate(expiry.getDate() + (validityDays ?? 30))
+    const expiryDate = expiry.toISOString().slice(0, 10)
 
-    const totalAmount = (items ?? []).reduce(
-      (sum: number, it: { qty: number; unitPrice: number; discount: number; taxRate: number }) => {
-        const lineNet = it.qty * it.unitPrice * (1 - (it.discount ?? 0) / 100)
-        return sum + lineNet + lineNet * (it.taxRate / 100)
-      },
-      0
-    )
+    const lineItems = (items ?? []) as Array<{
+      description: string
+      quantity: number
+      unit: string
+      unitPrice: number
+      taxRate?: number
+    }>
 
-    const newQuote: QuoteSummary = {
-      id: quoteId,
-      ref: nextRef,
-      clientId: clientId ?? "",
-      clientName: "",
-      clientInitials: "",
-      status: (status as QuoteStatus) ?? "draft",
-      amount: Math.round(totalAmount),
-      issuedDate: today,
-      expiryDate: expiry.toISOString().slice(0, 10),
-      daysUntilExpiry: validityDays ?? 30,
-      projectName: projectName ?? "",
-      version: "v1.0",
+    const subtotalNum = lineItems.reduce((s, it) => s + it.quantity * it.unitPrice, 0)
+    const vatRate = lineItems[0]?.taxRate ?? 19
+    const vatAmount = Math.round(subtotalNum * (vatRate / 100) * 100) / 100
+    const total = subtotalNum + vatAmount
+
+    const ref = `Q-${Date.now()}`
+
+    const [inserted] = await db
+      .insert(invoices)
+      .values({
+        companyId,
+        clientId: clientId ?? null,
+        projectId: projectId ?? null,
+        createdByUserId: userId,
+        invoiceNumber: ref,
+        status: (status ?? "draft") as
+          | "draft"
+          | "sent"
+          | "paid"
+          | "overdue"
+          | "cancelled"
+          | "refunded",
+        issueDate: today,
+        dueDate: expiryDate,
+        subtotal: String(subtotalNum),
+        vatAmount: String(vatAmount),
+        total: String(total),
+        notes: notes ?? null,
+      })
+      .returning()
+
+    if (!inserted) return NextResponse.json({ error: "Database error" }, { status: 500 })
+
+    if (lineItems.length > 0) {
+      await db.insert(invoiceItems).values(
+        lineItems.map((it, i) => ({
+          invoiceId: inserted.id,
+          description: it.description ?? "",
+          quantity: String(it.quantity),
+          unit: it.unit ?? "buc",
+          unitPrice: String(it.unitPrice),
+          vatRate: String(it.taxRate ?? 19),
+          total: String(it.quantity * it.unitPrice),
+          sortOrder: i,
+        }))
+      )
     }
 
     await writeAuditLog({
-      companyId: ctx.session.companyId,
-      actorId: ctx.session.userId,
+      companyId,
+      actorId: userId,
       sessionId: ctx.session.sessionId,
       action: "crm.quotes.create",
       entityType: "quote",
-      entityId: quoteId,
+      entityId: inserted.id,
       payload: {
         clientId,
-        projectName,
-        itemCount: (items ?? []).length,
-        totalAmount: newQuote.amount,
-        status: newQuote.status,
+        itemCount: lineItems.length,
+        totalAmount: total,
+        status: inserted.status,
       },
     })
+
+    const newQuote: QuoteSummary = {
+      id: inserted.id,
+      ref: inserted.invoiceNumber,
+      clientId: inserted.clientId ?? "",
+      clientName: "",
+      clientInitials: "",
+      status: dbStatusToQuote(inserted.status, inserted.dueDate),
+      amount: Number(inserted.total),
+      issuedDate: inserted.issueDate,
+      expiryDate: inserted.dueDate,
+      daysUntilExpiry: validityDays ?? 30,
+      projectName: "",
+      version: "v1.0",
+    }
 
     return NextResponse.json({ quote: newQuote }, { status: 201 })
   }
