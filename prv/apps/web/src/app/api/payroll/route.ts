@@ -1,6 +1,9 @@
 import { withGates } from "@/lib/with-gates"
 import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
+import { db } from "@prv/db"
+import { payrollRuns, users } from "@prv/db/schema"
+import { and, count, desc, eq, sum } from "drizzle-orm"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -30,99 +33,126 @@ export interface PayrollMeta {
   growthPct: number
 }
 
-const MOCK_RUNS: PayrollRun[] = [
-  {
-    id: "pr1",
-    title: "Săptămâna 2 Iun",
-    subtitle: "142 angajați · 9–15 Iun 2026",
-    period: "9–15 Iun 2026",
-    employeeCount: 142,
-    totalGross: 28400,
-    netPaid: 19880,
-    status: "processing",
-    type: "weekly",
-    ref: "PR-0024",
-  },
-  {
-    id: "pr2",
-    title: "Săptămâna 1 Iun",
-    subtitle: "142 angajați · 2–8 Iun 2026",
-    period: "2–8 Iun 2026",
-    employeeCount: 142,
-    totalGross: 27900,
-    netPaid: 19530,
-    status: "done",
-    type: "weekly",
-    ref: "PR-0023",
-  },
-  {
-    id: "pr3",
-    title: "Săptămâna 4 Mai",
-    subtitle: "140 angajați · 26 Mai – 1 Iun",
-    period: "26 Mai – 1 Iun 2026",
-    employeeCount: 140,
-    totalGross: 27400,
-    netPaid: 19180,
-    status: "done",
-    type: "weekly",
-    ref: "PR-0022",
-  },
-  {
-    id: "pr4",
-    title: "Săptămâna 3 Mai",
-    subtitle: "140 angajați · 19–25 Mai 2026",
-    period: "19–25 Mai 2026",
-    employeeCount: 140,
-    totalGross: 26800,
-    netPaid: 18760,
-    status: "done",
-    type: "weekly",
-    ref: "PR-0021",
-  },
-  {
-    id: "pr5",
-    title: "Bonus Lunar Mai",
-    subtitle: "142 angajați · 31 Mai 2026",
-    period: "31 Mai 2026",
-    employeeCount: 142,
-    totalGross: 18600,
-    netPaid: 13020,
-    status: "done",
-    type: "monthly",
-    ref: "PR-0020",
-  },
-  {
-    id: "pr6",
-    title: "Bonus Q1",
-    subtitle: "38 angajați · 15 Apr · Aprobare necesară",
-    period: "15 Apr 2026",
-    employeeCount: 38,
-    totalGross: 14200,
-    netPaid: 9940,
-    status: "pending",
-    type: "special",
-    ref: "PR-0019",
-  },
-]
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
-function computeMeta(records: PayrollRun[]): PayrollMeta {
-  const processing = records.find((r) => r.status === "processing")
-  return {
-    currentRunAmount: processing?.totalGross ?? 28400,
-    totalEmployees: 142,
-    pendingCount: records.filter((r) => r.status === "pending").length,
-    ytdCost: 327000,
-    monthLabel: "Iun 2026",
-    growthPct: 3.2,
-  }
+const MONTH_LABELS = [
+  "Ian",
+  "Feb",
+  "Mar",
+  "Apr",
+  "Mai",
+  "Iun",
+  "Iul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+] as const
+
+function currentMonthLabel(): string {
+  const now = new Date()
+  return `${MONTH_LABELS[now.getMonth()]} ${now.getFullYear()}`
 }
+
+function buildSubtitle(run: {
+  employeeCount: number
+  periodStart: string
+  periodEnd: string
+}): string {
+  const fmt = (d: string) => {
+    const dt = new Date(d + "T12:00:00Z")
+    return `${dt.getUTCDate()} ${MONTH_LABELS[dt.getUTCMonth()]}`
+  }
+  return `${run.employeeCount} angajați · ${fmt(run.periodStart)}–${fmt(run.periodEnd)}`
+}
+
+function buildPeriod(periodStart: string, periodEnd: string): string {
+  const fmt = (d: string) => {
+    const dt = new Date(d + "T12:00:00Z")
+    return `${dt.getUTCDate()} ${MONTH_LABELS[dt.getUTCMonth()]} ${dt.getUTCFullYear()}`
+  }
+  return `${fmt(periodStart)}–${fmt(periodEnd)}`
+}
+
+// ── GET ───────────────────────────────────────────────────────────────────────
 
 export const GET = withGates(
   { action: "payroll.read", endpointClass: "api_read" },
-  async (req: NextRequest, _ctx: GateContext): Promise<NextResponse> => {
-    const type = req.nextUrl.searchParams.get("type")
-    const results = type ? MOCK_RUNS.filter((r) => r.type === type) : MOCK_RUNS
-    const meta = computeMeta(MOCK_RUNS)
-    return NextResponse.json({ runs: results, count: results.length, meta })
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
+    const typeFilter = req.nextUrl.searchParams.get("type") as PayrollRunType | null
+    const { companyId } = ctx.session
+
+    const whereClause = typeFilter
+      ? and(eq(payrollRuns.companyId, companyId), eq(payrollRuns.type, typeFilter))
+      : eq(payrollRuns.companyId, companyId)
+
+    // 1. Fetch runs + active employee count in parallel
+    const [rows, [employeeRow]] = await Promise.all([
+      db
+        .select({
+          id: payrollRuns.id,
+          ref: payrollRuns.ref,
+          title: payrollRuns.title,
+          periodStart: payrollRuns.periodStart,
+          periodEnd: payrollRuns.periodEnd,
+          employeeCount: payrollRuns.employeeCount,
+          totalGross: payrollRuns.totalGross,
+          netPaid: payrollRuns.netPaid,
+          status: payrollRuns.status,
+          type: payrollRuns.type,
+        })
+        .from(payrollRuns)
+        .where(whereClause)
+        .orderBy(desc(payrollRuns.createdAt)),
+
+      db
+        .select({ cnt: count() })
+        .from(users)
+        .where(and(eq(users.companyId, companyId), eq(users.isActive, true))),
+    ])
+
+    const result: PayrollRun[] = rows.map((r) => ({
+      id: r.id,
+      ref: r.ref,
+      title: r.title,
+      subtitle: buildSubtitle({
+        employeeCount: r.employeeCount,
+        periodStart: r.periodStart,
+        periodEnd: r.periodEnd,
+      }),
+      period: buildPeriod(r.periodStart, r.periodEnd),
+      employeeCount: r.employeeCount,
+      totalGross: Number(r.totalGross),
+      netPaid: Number(r.netPaid),
+      status: r.status as PayrollRunStatus,
+      type: r.type as PayrollRunType,
+    }))
+
+    // 2. Compute meta from all runs (unfiltered)
+    const allRows = typeFilter
+      ? await db
+          .select({
+            status: payrollRuns.status,
+            totalGross: payrollRuns.totalGross,
+          })
+          .from(payrollRuns)
+          .where(eq(payrollRuns.companyId, companyId))
+      : rows.map((r) => ({ status: r.status, totalGross: r.totalGross }))
+
+    const processingRun = rows.find((r) => r.status === "processing")
+    const pendingCount = allRows.filter((r) => r.status === "pending").length
+    const ytdCost = allRows.reduce((s, r) => s + Number(r.totalGross), 0)
+
+    const meta: PayrollMeta = {
+      currentRunAmount: processingRun ? Number(processingRun.totalGross) : 0,
+      totalEmployees: employeeRow?.cnt ?? 0,
+      pendingCount,
+      ytdCost,
+      monthLabel: currentMonthLabel(),
+      growthPct: 0,
+    }
+
+    return NextResponse.json({ runs: result, count: result.length, meta })
   }
 )
