@@ -1,6 +1,7 @@
 "use client"
 import React, { useState } from "react"
 import { useRouter } from "next/navigation"
+import { useQueryClient } from "@tanstack/react-query"
 
 const GLASS_CARD: React.CSSProperties = {
   background: "var(--prv-g1, rgba(255,255,255,0.06))",
@@ -54,6 +55,7 @@ type FormState = Record<string, string | boolean>
 
 export function SupplierBuilderClient() {
   const router = useRouter()
+  const queryClient = useQueryClient()
   const [form, setForm] = useState<FormState>({ name: "", category: "", contactName: "", email: "", phone: "", city: "", vatNumber: "", address: "", paymentTermsDays: "30", notes: "" })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -89,6 +91,7 @@ export function SupplierBuilderClient() {
         const data = await res.json().catch(() => ({}))
         throw new Error((data as { error?: string }).error ?? `HTTP ${res.status}`)
       }
+      void queryClient.invalidateQueries({ queryKey: ["suppliers"] })
       setDone(true)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Eroare necunoscută")

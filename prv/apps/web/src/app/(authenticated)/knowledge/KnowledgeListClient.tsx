@@ -1,4 +1,5 @@
 "use client"
+import { useRouter } from "next/navigation"
 
 import { useState } from "react"
 import Link from "next/link"
@@ -337,6 +338,7 @@ function FeaturedCard({ article }: { article: KnowledgeArticle }) {
 }
 
 export function KnowledgeListClient() {
+  const router = useRouter()
   const [filter, setFilter] = useState<FilterType>("Toate")
   const { openSheet } = useSheetStack()
   const type = FILTER_TO_TYPE[filter]
@@ -389,6 +391,7 @@ export function KnowledgeListClient() {
             {
               label: "Articol Nou",
               sub: "Creează un SOP, Politică sau Ghid",
+              onClick: () => { router.push("/knowledge/new") },
               iconBg: "rgba(48,209,88,0.18)",
               rowBg: "rgba(48,209,88,0.10)",
               rowBorder: "rgba(48,209,88,0.2)",
@@ -460,7 +463,7 @@ export function KnowledgeListClient() {
           ].map((btn) => (
             <button
               key={btn.label}
-              onClick={onClose}
+              onClick={() => { onClose(); btn.onClick?.() }}
               style={{
                 display: "flex",
                 alignItems: "center",

@@ -1,4 +1,5 @@
 "use client"
+import { useRouter } from "next/navigation"
 
 import { useState } from "react"
 import Link from "next/link"
@@ -328,6 +329,7 @@ function SpendRow({ label, amount, pct }: { label: string; amount: number; pct: 
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 export function SupplierListClient() {
+  const router = useRouter()
   const [filter, setFilter] = useState<FilterId>("all")
   const { data, isLoading, isError, hasNextPage, fetchNextPage, isFetchingNextPage } = useSuppliers()
   const suppliers: SupplierSummary[] = data?.suppliers ?? []
@@ -376,6 +378,7 @@ export function SupplierListClient() {
           </Link>
         </div>
         <button
+          onClick={() => router.push('/suppliers/new')}
           style={{
             width: 36,
             height: 36,

@@ -1,6 +1,7 @@
 "use client"
 import React, { useState } from "react"
 import { useRouter } from "next/navigation"
+import { useQueryClient } from "@tanstack/react-query"
 
 const GLASS_CARD: React.CSSProperties = {
   background: "var(--prv-g1, rgba(255,255,255,0.06))",
@@ -54,6 +55,7 @@ type FormState = Record<string, string | boolean>
 
 export function ShiftBuilderClient() {
   const router = useRouter()
+  const queryClient = useQueryClient()
   const [form, setForm] = useState<FormState>({ title: "", date: "", startTime: "08:00", endTime: "17:00", role: "general", roleLabel: "", location: "", totalSlots: "1" })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -87,6 +89,7 @@ export function ShiftBuilderClient() {
         const data = await res.json().catch(() => ({}))
         throw new Error((data as { error?: string }).error ?? `HTTP ${res.status}`)
       }
+      void queryClient.invalidateQueries({ queryKey: ["schedule"] })
       setDone(true)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Eroare necunoscută")

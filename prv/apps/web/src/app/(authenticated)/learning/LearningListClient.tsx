@@ -1,4 +1,5 @@
 "use client"
+import { useRouter } from "next/navigation"
 
 import { useState } from "react"
 import Link from "next/link"
@@ -482,6 +483,7 @@ function SkeletonCard() {
 }
 
 export function LearningListClient() {
+  const router = useRouter()
   const [filter, setFilter] = useState<FilterType>("Toate")
   const [fabOpen, setFabOpen] = useState(false)
   const [search, setSearch] = useState("")
@@ -893,6 +895,7 @@ export function LearningListClient() {
                 border: "rgba(48,209,88,0.20)",
                 label: "Curs Nou",
                 color: "rgba(48,209,88,0.9)",
+                onClick: () => { router.push("/learning/new") },
               },
               {
                 icon: (
@@ -940,7 +943,7 @@ export function LearningListClient() {
             ].map((a) => (
               <div
                 key={a.label}
-                onClick={() => setFabOpen(false)}
+                onClick={() => { setFabOpen(false); a.onClick?.() }}
                 style={{
                   display: "flex",
                   alignItems: "center",

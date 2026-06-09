@@ -1,4 +1,5 @@
 "use client"
+import { useRouter } from "next/navigation"
 
 import { useState } from "react"
 import Link from "next/link"
@@ -225,6 +226,7 @@ const FILTER_TO_STATUS: Record<FilterType, string | null> = {
 }
 
 export function PurchaseOrderListClient() {
+  const router = useRouter()
   const [filter, setFilter] = useState<FilterType>("Toți")
   const { openSheet } = useSheetStack()
   const status = FILTER_TO_STATUS[filter]
@@ -263,7 +265,7 @@ export function PurchaseOrderListClient() {
             }
             label="Comandă Nouă"
             sub="Creează un nou purchase order"
-            onClick={onClose}
+            onClick={() => { onClose(); router.push("/procurement/new") }}
           />
           <SheetBtn
             color="white"

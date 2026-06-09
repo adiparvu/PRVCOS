@@ -1,4 +1,5 @@
 "use client"
+import { useRouter } from "next/navigation"
 
 import { useState } from "react"
 import Link from "next/link"
@@ -371,6 +372,7 @@ function SectionCard({ items }: { items: ApprovalSummary[] }) {
 // ── Main component ────────────────────────────────────────────────────────────
 
 export function ApprovalListClient() {
+  const router = useRouter()
   const [filter, setFilter] = useState<FilterType>("Toate")
   const { openSheet } = useSheetStack()
   const type = FILTER_TO_TYPE[filter]
@@ -409,7 +411,7 @@ export function ApprovalListClient() {
             }
             label="Cerere Nouă"
             sub="Creează o cerere de aprobare"
-            onClick={onClose}
+            onClick={() => { onClose(); router.push("/approvals/new") }}
           />
           <SheetBtn
             color="white"

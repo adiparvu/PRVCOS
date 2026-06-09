@@ -1,4 +1,5 @@
 "use client"
+import { useRouter } from "next/navigation"
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
@@ -455,6 +456,7 @@ function LeadListItem({ lead, onSelect }: { lead: Lead; onSelect: (l: Lead) => v
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 export function LeadPipelineClient() {
+  const router = useRouter()
   const [view, setView] = useState("pipeline")
   const [leads, setLeads] = useState<Lead[]>([])
   const [selected, setSelected] = useState<Lead | null>(null)
@@ -528,6 +530,7 @@ export function LeadPipelineClient() {
           </h1>
         </div>
         <button
+          onClick={() => router.push('/crm/leads/new')}
           className="w-9 h-9 rounded-[10px] flex items-center justify-center"
           style={{
             background: "var(--prv-g1)",

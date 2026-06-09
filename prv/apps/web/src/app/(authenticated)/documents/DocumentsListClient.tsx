@@ -1,4 +1,5 @@
 "use client"
+import { useRouter } from "next/navigation"
 
 import { useState } from "react"
 import Link from "next/link"
@@ -227,6 +228,7 @@ function SectionLabel({ children }: { children: string }) {
 }
 
 export function DocumentsListClient() {
+  const router = useRouter()
   const [filter, setFilter] = useState<FilterType>("Recente")
   const { openSheet } = useSheetStack()
   const category = FILTER_TO_CATEGORY[filter]
@@ -275,6 +277,7 @@ export function DocumentsListClient() {
             {
               label: "Document Nou",
               sub: "Creează un document din șablon",
+              onClick: () => { router.push("/documents/new") },
               iconBg: "rgba(10,132,255,0.18)",
               rowBg: "rgba(10,132,255,0.10)",
               rowBorder: "rgba(10,132,255,0.2)",
@@ -324,7 +327,7 @@ export function DocumentsListClient() {
           ].map((btn) => (
             <button
               key={btn.label}
-              onClick={onClose}
+              onClick={() => { onClose(); btn.onClick?.() }}
               style={{
                 display: "flex",
                 alignItems: "center",

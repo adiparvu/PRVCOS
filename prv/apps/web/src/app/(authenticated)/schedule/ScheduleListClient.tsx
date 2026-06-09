@@ -1,4 +1,5 @@
 "use client"
+import { useRouter } from "next/navigation"
 
 import { useState } from "react"
 import Link from "next/link"
@@ -439,6 +440,7 @@ function SheetBtn({
 }
 
 export function ScheduleListClient() {
+  const router = useRouter()
   const [filter, setFilter] = useState<FilterType>("Toate")
   const { openSheet } = useSheetStack()
   const status = FILTER_TO_STATUS[filter]
@@ -480,7 +482,7 @@ export function ScheduleListClient() {
             }
             label="Tură Nouă"
             sub="Adaugă o tură în program"
-            onClick={onClose}
+            onClick={() => { onClose(); router.push("/schedule/new") }}
           />
           <SheetBtn
             color="amber"

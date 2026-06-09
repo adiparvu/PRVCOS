@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 import type { ClientSummary, ClientStatus } from "@/app/api/crm/clients/route"
 import { useClients } from "@/lib/api-hooks"
@@ -282,6 +283,7 @@ function ClientCard({ client }: { client: ClientSummary }) {
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 export function ClientListClient() {
+  const router = useRouter()
   const [filter, setFilter] = useState<FilterId>("all")
   const { data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage } = useClients()
   const clients = data?.clients ?? []
@@ -329,6 +331,7 @@ export function ClientListClient() {
           </Link>
         </div>
         <button
+          onClick={() => router.push('/crm/clients/new')}
           style={{
             width: 36,
             height: 36,

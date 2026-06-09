@@ -1,4 +1,5 @@
 "use client"
+import { useRouter } from "next/navigation"
 
 import { useState } from "react"
 import Link from "next/link"
@@ -214,6 +215,7 @@ function SheetBtn({
 // ── Main component ────────────────────────────────────────────────────────────
 
 export function VehicleListClient() {
+  const router = useRouter()
   const [filter, setFilter] = useState<FilterType>("Toate")
   const { openSheet } = useSheetStack()
 
@@ -262,7 +264,7 @@ export function VehicleListClient() {
             }
             label="Vehicul Nou"
             sub="Adaugă vehicul în flotă"
-            onClick={onClose}
+            onClick={() => { onClose(); router.push("/fleet/new") }}
           />
           <SheetBtn
             color="white"

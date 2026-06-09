@@ -1,4 +1,5 @@
 "use client"
+import { useRouter } from "next/navigation"
 
 import { useState } from "react"
 import Link from "next/link"
@@ -268,6 +269,7 @@ function SheetBtn({
 }
 
 export function AttendanceListClient() {
+  const router = useRouter()
   const [filter, setFilter] = useState<FilterType>("Toți")
   const { openSheet } = useSheetStack()
   const status = FILTER_TO_STATUS[filter]
@@ -288,6 +290,26 @@ export function AttendanceListClient() {
       title: "Acțiuni Prezență",
       render: (onClose) => (
         <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+          <SheetBtn
+            color="white"
+            icon={
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="rgba(255,255,255,.9)"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+            }
+            label="Pontaj Nou"
+            sub="Înregistrează prezență manuală"
+            onClick={() => { onClose(); router.push("/attendance/new") }}
+          />
           <SheetBtn
             color="green"
             icon={

@@ -1,4 +1,5 @@
 "use client"
+import { useRouter } from "next/navigation"
 
 import { useState } from "react"
 import Link from "next/link"
@@ -248,6 +249,7 @@ function SheetBtn({
 // ── Main component ────────────────────────────────────────────────────────────
 
 export function ToolListClient() {
+  const router = useRouter()
   const [filter, setFilter] = useState<FilterType>("Toate")
   const { openSheet } = useSheetStack()
 
@@ -291,7 +293,7 @@ export function ToolListClient() {
             }
             label="Sculă Nouă"
             sub="Adaugă sculă în inventar"
-            onClick={onClose}
+            onClick={() => { onClose(); router.push("/tools/new") }}
           />
           <SheetBtn
             color="white"

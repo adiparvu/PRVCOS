@@ -1,4 +1,5 @@
 "use client"
+import { useRouter } from "next/navigation"
 
 import { useState } from "react"
 import Link from "next/link"
@@ -428,6 +429,7 @@ function ProjectCard({ project }: { project: ProjectSummary }) {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function ProjectListClient() {
+  const router = useRouter()
   const [filter, setFilter] = useState<FilterId>("all")
   const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useProjects()
   const projects = data?.projects ?? []
@@ -468,6 +470,7 @@ export function ProjectListClient() {
           </h1>
         </div>
         <button
+          onClick={() => router.push('/projects/new')}
           style={{
             width: 32,
             height: 32,
