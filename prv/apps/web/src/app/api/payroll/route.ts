@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
 import { db } from "@prv/db"
 import { payrollRuns, users } from "@prv/db/schema"
-import { and, count, desc, eq, sum } from "drizzle-orm"
+import { and, count, desc, eq, gte, lt, lte, sum } from "drizzle-orm"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -83,12 +83,18 @@ export const GET = withGates(
     const typeFilter = req.nextUrl.searchParams.get("type") as PayrollRunType | null
     const { companyId } = ctx.session
 
+    const now = new Date()
+    const thisMonthStartStr = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}-01`
+    const lastMonthDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1))
+    const lastMonthStartStr = `${lastMonthDate.getUTCFullYear()}-${String(lastMonthDate.getUTCMonth() + 1).padStart(2, "0")}-01`
+    const todayStr = now.toISOString().slice(0, 10)
+
     const whereClause = typeFilter
       ? and(eq(payrollRuns.companyId, companyId), eq(payrollRuns.type, typeFilter))
       : eq(payrollRuns.companyId, companyId)
 
-    // 1. Fetch runs + active employee count in parallel
-    const [rows, [employeeRow]] = await Promise.all([
+    // 1. Fetch runs + active employee count + month totals in parallel
+    const [rows, [employeeRow], [thisMonthPayRow], [lastMonthPayRow]] = await Promise.all([
       db
         .select({
           id: payrollRuns.id,
@@ -110,6 +116,30 @@ export const GET = withGates(
         .select({ cnt: count() })
         .from(users)
         .where(and(eq(users.companyId, companyId), eq(users.isActive, true))),
+
+      db
+        .select({ total: sum(payrollRuns.totalGross) })
+        .from(payrollRuns)
+        .where(
+          and(
+            eq(payrollRuns.companyId, companyId),
+            eq(payrollRuns.status, "done"),
+            gte(payrollRuns.periodEnd, thisMonthStartStr),
+            lte(payrollRuns.periodEnd, todayStr)
+          )
+        ),
+
+      db
+        .select({ total: sum(payrollRuns.totalGross) })
+        .from(payrollRuns)
+        .where(
+          and(
+            eq(payrollRuns.companyId, companyId),
+            eq(payrollRuns.status, "done"),
+            gte(payrollRuns.periodEnd, lastMonthStartStr),
+            lt(payrollRuns.periodEnd, thisMonthStartStr)
+          )
+        ),
     ])
 
     const result: PayrollRun[] = rows.map((r) => ({
@@ -144,13 +174,18 @@ export const GET = withGates(
     const pendingCount = allRows.filter((r) => r.status === "pending").length
     const ytdCost = allRows.reduce((s, r) => s + Number(r.totalGross), 0)
 
+    const thisMonthPay = Number(thisMonthPayRow?.total ?? 0)
+    const lastMonthPay = Number(lastMonthPayRow?.total ?? 0)
+    const growthPct =
+      lastMonthPay > 0 ? Math.round(((thisMonthPay - lastMonthPay) / lastMonthPay) * 1000) / 10 : 0
+
     const meta: PayrollMeta = {
       currentRunAmount: processingRun ? Number(processingRun.totalGross) : 0,
       totalEmployees: employeeRow?.cnt ?? 0,
       pendingCount,
       ytdCost,
       monthLabel: currentMonthLabel(),
-      growthPct: 0,
+      growthPct,
     }
 
     return NextResponse.json({ runs: result, count: result.length, meta })

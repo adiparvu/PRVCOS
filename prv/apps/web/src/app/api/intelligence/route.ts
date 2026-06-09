@@ -3,8 +3,8 @@ import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
 import { db } from "@prv/db"
 import { aiInsights, generatedReports } from "@prv/db/schema"
-import { orders, stores } from "@prv/db/schema"
-import { and, asc, count, desc, eq, gte, isNull, sql, sum } from "drizzle-orm"
+import { orders, stores, expenses } from "@prv/db/schema"
+import { and, asc, count, desc, eq, gte, isNull, lt, lte, sql, sum } from "drizzle-orm"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -111,8 +111,24 @@ export const GET = withGates(
 
     const todayStart = new Date()
     todayStart.setHours(0, 0, 0, 0)
+    const yesterdayStart = new Date(todayStart.getTime() - 86_400_000)
+    const thisMonthStart = new Date(todayStart.getFullYear(), todayStart.getMonth(), 1)
+    const lastMonthStart = new Date(todayStart.getFullYear(), todayStart.getMonth() - 1, 1)
+    const thisMonthStartStr = thisMonthStart.toISOString().slice(0, 10)
+    const lastMonthStartStr = lastMonthStart.toISOString().slice(0, 10)
+    const todayStr = todayStart.toISOString().slice(0, 10)
 
-    const [insightRows, reportRows, storeOrderRows, storeRows] = await Promise.all([
+    const [
+      insightRows,
+      reportRows,
+      storeOrderRows,
+      storeRows,
+      [yesterdayRevRow],
+      [thisMonthRevRow],
+      [thisMonthExpRow],
+      [lastMonthRevRow],
+      [lastMonthExpRow],
+    ] = await Promise.all([
       db
         .select({
           id: aiInsights.id,
@@ -164,6 +180,70 @@ export const GET = withGates(
         .from(stores)
         .where(eq(stores.companyId, companyId))
         .orderBy(asc(stores.name)),
+
+      // Yesterday's order revenue (for revenueTrend)
+      db
+        .select({ total: sum(orders.total) })
+        .from(orders)
+        .where(
+          and(
+            eq(orders.companyId, companyId),
+            gte(orders.createdAt, yesterdayStart),
+            lt(orders.createdAt, todayStart),
+            isNull(orders.deletedAt)
+          )
+        ),
+
+      // This month's order revenue (for avgMarginPct)
+      db
+        .select({ total: sum(orders.total) })
+        .from(orders)
+        .where(
+          and(
+            eq(orders.companyId, companyId),
+            gte(orders.createdAt, thisMonthStart),
+            isNull(orders.deletedAt)
+          )
+        ),
+
+      // This month's approved/paid expenses (for avgMarginPct)
+      db
+        .select({ total: sum(expenses.amount) })
+        .from(expenses)
+        .where(
+          and(
+            eq(expenses.companyId, companyId),
+            gte(expenses.date, thisMonthStartStr),
+            lte(expenses.date, todayStr),
+            isNull(expenses.deletedAt)
+          )
+        ),
+
+      // Last month's order revenue (for marginTrend)
+      db
+        .select({ total: sum(orders.total) })
+        .from(orders)
+        .where(
+          and(
+            eq(orders.companyId, companyId),
+            gte(orders.createdAt, lastMonthStart),
+            lt(orders.createdAt, thisMonthStart),
+            isNull(orders.deletedAt)
+          )
+        ),
+
+      // Last month's approved/paid expenses (for marginTrend)
+      db
+        .select({ total: sum(expenses.amount) })
+        .from(expenses)
+        .where(
+          and(
+            eq(expenses.companyId, companyId),
+            gte(expenses.date, lastMonthStartStr),
+            lt(expenses.date, thisMonthStartStr),
+            isNull(expenses.deletedAt)
+          )
+        ),
     ])
 
     // Apply query filters to insights
@@ -220,11 +300,31 @@ export const GET = withGates(
       (i) => i.type === "alert" && i.status !== "actioned" && i.status !== "dismissed"
     ).length
 
+    const prevDayRev = Number(yesterdayRevRow?.total ?? 0)
+    const revenueTrend =
+      prevDayRev > 0
+        ? `${totalRevToday >= prevDayRev ? "+" : ""}${(((totalRevToday - prevDayRev) / prevDayRev) * 100).toFixed(1)}%`
+        : "—"
+
+    const thisMonthRev = Number(thisMonthRevRow?.total ?? 0)
+    const thisMonthExp = Number(thisMonthExpRow?.total ?? 0)
+    const avgMarginPct =
+      thisMonthRev > 0 ? Math.round(((thisMonthRev - thisMonthExp) / thisMonthRev) * 100) : 0
+
+    const lastMonthRev = Number(lastMonthRevRow?.total ?? 0)
+    const lastMonthExp = Number(lastMonthExpRow?.total ?? 0)
+    const lastMonthMargin = lastMonthRev > 0 ? (lastMonthRev - lastMonthExp) / lastMonthRev : null
+    const thisMonthMargin = thisMonthRev > 0 ? (thisMonthRev - thisMonthExp) / thisMonthRev : null
+    const marginTrend =
+      lastMonthMargin !== null && thisMonthMargin !== null
+        ? `${thisMonthMargin >= lastMonthMargin ? "+" : ""}${((thisMonthMargin - lastMonthMargin) * 100).toFixed(1)} pp`
+        : "—"
+
     const meta: IntelligenceMeta = {
       totalRevenueLabel: fmtAmount(totalRevToday),
-      revenueTrend: "—",
-      avgMarginPct: 0,
-      marginTrend: "—",
+      revenueTrend,
+      avgMarginPct,
+      marginTrend,
       ordersToday: totalOrdersToday,
       activeAlerts,
     }

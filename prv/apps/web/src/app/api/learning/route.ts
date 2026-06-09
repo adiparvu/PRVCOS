@@ -137,6 +137,7 @@ export const GET = withGates(
           status: courseEnrollments.status,
           progressPct: courseEnrollments.progressPct,
           currentModule: courseEnrollments.currentModule,
+          updatedAt: courseEnrollments.updatedAt,
         })
         .from(courseEnrollments)
         .where(
@@ -198,11 +199,34 @@ export const GET = withGates(
       colorType: a.colorType as "amber" | "green",
     }))
 
+    const monthStart = new Date()
+    monthStart.setDate(1)
+    monthStart.setHours(0, 0, 0, 0)
+
+    const courseById = new Map(courseRows.map((c) => [c.id, c]))
+
+    const monthlyMinutes = enrollmentRows.reduce((acc, e) => {
+      if (e.updatedAt < monthStart) return acc
+      const course = courseById.get(e.courseId)
+      if (!course) return acc
+      return acc + Math.round((course.durationMinutes * e.progressPct) / 100)
+    }, 0)
+
+    const activeEnrollments = enrollmentRows.filter(
+      (e) => e.status === "in_progress" || e.status === "completed"
+    )
+    const avgScore =
+      activeEnrollments.length > 0
+        ? Math.round(
+            activeEnrollments.reduce((s, e) => s + e.progressPct, 0) / activeEnrollments.length
+          )
+        : 0
+
     const meta: LearningMeta = {
       completedCount: enrollmentRows.filter((e) => e.status === "completed").length,
       inProgressCount: enrollmentRows.filter((e) => e.status === "in_progress").length,
-      monthlyHours: 0,
-      avgScore: 0,
+      monthlyHours: Math.round((monthlyMinutes / 60) * 10) / 10,
+      avgScore,
     }
 
     return NextResponse.json({ courses, count: courses.length, meta, achievements })

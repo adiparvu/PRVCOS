@@ -76,6 +76,9 @@ export const GET = withGates(
   async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
     const statusFilter = req.nextUrl.searchParams.get("status") as ToolStatus | null
 
+    const now = new Date()
+    const SERVICE_THRESHOLD_MS = 180 * 86_400_000
+
     const rows = await db
       .select({
         id: tools.id,
@@ -117,8 +120,14 @@ export const GET = withGates(
         dueBack: null,
         location: !isInUse ? (storeLabel ?? r.notes ?? null) : null,
         lastUsed: r.lastServiceAt ? fmtShortDate(r.lastServiceAt) : null,
-        utilisationPct: 0,
-        serviceOverdueDays: null,
+        utilisationPct: apiStatus === "In Use" ? 100 : 0,
+        serviceOverdueDays: (() => {
+          if (apiStatus === "Maintenance" || !r.lastServiceAt) return null
+          const ms = now.getTime() - r.lastServiceAt.getTime()
+          return ms > SERVICE_THRESHOLD_MS
+            ? Math.floor((ms - SERVICE_THRESHOLD_MS) / 86_400_000)
+            : null
+        })(),
       }
     })
 
