@@ -11,7 +11,7 @@ import type {
 
 // ─── Formatters ───────────────────────────────────────────────────────────────
 
-function formatCurrency(amount: number, currency = "RON"): string {
+export function formatCurrency(amount: number, currency = "RON"): string {
   const eur = currency === "EUR"
   const prefix = eur ? "€" : ""
   const suffix = eur ? "" : " RON"
@@ -20,16 +20,16 @@ function formatCurrency(amount: number, currency = "RON"): string {
   return `${prefix}${Math.round(amount)}${suffix}`
 }
 
-function parseMoney(v: string | null | undefined): number {
+export function parseMoney(v: string | null | undefined): number {
   return parseFloat(v ?? "0") || 0
 }
 
-function daysOverdue(dueDate: string | null): number {
+export function daysOverdue(dueDate: string | null): number {
   if (!dueDate) return 0
   return Math.max(0, Math.floor((Date.now() - new Date(dueDate).getTime()) / 86_400_000))
 }
 
-function relativeTime(date: Date | string | null): string {
+export function relativeTime(date: Date | string | null): string {
   if (!date) return ""
   const d = typeof date === "string" ? new Date(date) : date
   const diff = Date.now() - d.getTime()
@@ -42,7 +42,7 @@ function relativeTime(date: Date | string | null): string {
 
 // ─── AI briefing ─────────────────────────────────────────────────────────────
 
-function buildBriefing(
+export function buildBriefing(
   thisMonth: number,
   lastMonth: number,
   overdueCount: number,

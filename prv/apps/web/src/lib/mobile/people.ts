@@ -23,11 +23,11 @@ const ROLE_DISPLAY: Record<string, string> = {
   data_analyst: "Data Analyst",
 }
 
-function initials(first: string, last: string): string {
+export function initials(first: string, last: string): string {
   return `${first[0] ?? ""}${last[0] ?? ""}`.toUpperCase()
 }
 
-function lastActiveLabel(d: Date | null): string | null {
+export function lastActiveLabel(d: Date | null): string | null {
   if (!d) return null
   const secs = Math.floor((Date.now() - d.getTime()) / 1000)
   if (secs < 120) return "Active now"
