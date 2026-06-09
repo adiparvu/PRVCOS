@@ -1,9 +1,11 @@
 import { withGates } from "@/lib/with-gates"
 import { NextRequest, NextResponse } from "next/server"
-import { eq, and } from "drizzle-orm"
+import { eq, and, isNull } from "drizzle-orm"
 import { db } from "@prv/db"
 import { users, userPresence, socialProfiles } from "@prv/db/schema"
+import { writeAuditLog } from "@prv/auth"
 import type { GateContext } from "@prv/auth"
+import { z } from "zod"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -96,5 +98,122 @@ export const GET = withGates(
           },
       socialProfiles: socialRows.filter((s) => s.isPublic),
     })
+  }
+)
+
+// ─── PATCH /api/people/[id] ───────────────────────────────────────────────────
+
+const patchPersonSchema = z.object({
+  firstName: z.string().min(1).max(100).optional(),
+  lastName: z.string().min(1).max(100).optional(),
+  phone: z.string().max(32).optional(),
+  jobTitle: z.string().max(255).optional(),
+  bio: z.string().optional(),
+  avatarUrl: z.string().url().optional(),
+  storeId: z.string().uuid().nullable().optional(),
+  departmentId: z.string().uuid().nullable().optional(),
+  teamId: z.string().uuid().nullable().optional(),
+  managerId: z.string().uuid().nullable().optional(),
+  locale: z.string().max(10).optional(),
+  timezone: z.string().max(50).optional(),
+  status: z
+    .enum(["active", "inactive", "onboarding", "offboarded", "suspended"])
+    .optional(),
+})
+
+export const PATCH = withGates(
+  { action: "people.update", endpointClass: "api_write" },
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
+    const id = req.nextUrl.pathname.split("/").pop()
+    if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 })
+
+    const companyId = ctx.session.companyId
+
+    const [existing] = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(and(eq(users.id, id), eq(users.companyId, companyId), isNull(users.deletedAt)))
+      .limit(1)
+
+    if (!existing) return NextResponse.json({ error: "Person not found" }, { status: 404 })
+
+    let body: unknown
+    try {
+      body = await req.json()
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON" }, { status: 400 })
+    }
+
+    const parsed = patchPersonSchema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Invalid payload", issues: parsed.error.issues },
+        { status: 422 }
+      )
+    }
+
+    const [updated] = await db
+      .update(users)
+      .set({ ...parsed.data, updatedAt: new Date() })
+      .where(and(eq(users.id, id), eq(users.companyId, companyId), isNull(users.deletedAt)))
+      .returning({ id: users.id })
+
+    void writeAuditLog({
+      companyId,
+      actorId: ctx.session.userId,
+      sessionId: ctx.session.sessionId,
+      action: "people.update",
+      entityType: "user",
+      entityId: id,
+      payload: parsed.data,
+      method: "PATCH",
+      path: `/api/people/${id}`,
+      ipAddress: ctx.ipAddress,
+      userAgent: ctx.userAgent,
+    })
+
+    return NextResponse.json(updated)
+  }
+)
+
+// ─── DELETE /api/people/[id] ──────────────────────────────────────────────────
+// Soft-delete: sets isActive=false, deletedAt=now, status="terminated".
+
+export const DELETE = withGates(
+  { action: "people.deactivate", endpointClass: "api_write" },
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
+    const id = req.nextUrl.pathname.split("/").pop()
+    if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 })
+
+    const companyId = ctx.session.companyId
+
+    const [existing] = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(and(eq(users.id, id), eq(users.companyId, companyId), isNull(users.deletedAt)))
+      .limit(1)
+
+    if (!existing) return NextResponse.json({ error: "Person not found" }, { status: 404 })
+
+    await db
+      .update(users)
+      .set({ isActive: false, deletedAt: new Date(), status: "offboarded" as const, updatedAt: new Date() })
+      .where(and(eq(users.id, id), eq(users.companyId, companyId), isNull(users.deletedAt)))
+
+    void writeAuditLog({
+      companyId,
+      actorId: ctx.session.userId,
+      sessionId: ctx.session.sessionId,
+      action: "people.deactivate",
+      entityType: "user",
+      entityId: id,
+      payload: {},
+      method: "DELETE",
+      path: `/api/people/${id}`,
+      ipAddress: ctx.ipAddress,
+      userAgent: ctx.userAgent,
+    })
+
+    return new NextResponse(null, { status: 204 })
   }
 )

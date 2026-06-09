@@ -1,10 +1,12 @@
 import { withGates } from "@/lib/with-gates"
 import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
+import { writeAuditLog } from "@prv/auth"
 import type { ExpenseCategory, ExpenseStatus } from "../route"
 import { db } from "@prv/db"
 import { expenses } from "@prv/db/schema"
 import { eq, and, isNull } from "drizzle-orm"
+import { z } from "zod"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -206,5 +208,120 @@ export const GET = withGates(
     }
 
     return NextResponse.json(detail)
+  }
+)
+
+// ─── PATCH /api/finance/expenses/[id] ────────────────────────────────────────
+
+const patchExpenseSchema = z.object({
+  title: z.string().min(1).max(255).optional(),
+  category: z
+    .enum(["materials", "labor", "equipment", "transport", "rent", "utilities", "marketing", "salaries", "subscriptions", "other"])
+    .optional(),
+  status: z.enum(["draft", "submitted", "approved", "rejected", "paid"]).optional(),
+  amount: z.number().positive().optional(),
+  currency: z.string().length(3).optional(),
+  notes: z.string().optional(),
+  receiptUrl: z.string().url().nullable().optional(),
+})
+
+export const PATCH = withGates(
+  { action: "finance.expenses.update", endpointClass: "api_write" },
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
+    const id = req.nextUrl.pathname.split("/").pop()
+    if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 })
+
+    const companyId = ctx.session.companyId
+
+    const [existing] = await db
+      .select({ id: expenses.id })
+      .from(expenses)
+      .where(and(eq(expenses.id, id), eq(expenses.companyId, companyId), isNull(expenses.deletedAt)))
+      .limit(1)
+
+    if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 })
+
+    let body: unknown
+    try {
+      body = await req.json()
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON" }, { status: 400 })
+    }
+
+    const parsed = patchExpenseSchema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Invalid payload", issues: parsed.error.issues },
+        { status: 422 }
+      )
+    }
+
+    const { amount, ...expenseFields } = parsed.data
+    const [updated] = await db
+      .update(expenses)
+      .set({
+        ...expenseFields,
+        ...(amount !== undefined ? { amount: String(amount) } : {}),
+        updatedAt: new Date(),
+      })
+      .where(and(eq(expenses.id, id), eq(expenses.companyId, companyId), isNull(expenses.deletedAt)))
+      .returning({ id: expenses.id })
+
+    void writeAuditLog({
+      companyId,
+      actorId: ctx.session.userId,
+      sessionId: ctx.session.sessionId,
+      action: "finance.expenses.update",
+      entityType: "expense",
+      entityId: id,
+      payload: parsed.data,
+      method: "PATCH",
+      path: `/api/finance/expenses/${id}`,
+      ipAddress: ctx.ipAddress,
+      userAgent: ctx.userAgent,
+    })
+
+    return NextResponse.json(updated)
+  }
+)
+
+// ─── DELETE /api/finance/expenses/[id] ───────────────────────────────────────
+
+export const DELETE = withGates(
+  { action: "finance.expenses.delete", endpointClass: "api_write" },
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
+    const id = req.nextUrl.pathname.split("/").pop()
+    if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 })
+
+    const companyId = ctx.session.companyId
+
+    const [existing] = await db
+      .select({ id: expenses.id })
+      .from(expenses)
+      .where(and(eq(expenses.id, id), eq(expenses.companyId, companyId), isNull(expenses.deletedAt)))
+      .limit(1)
+
+    if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 })
+
+    await db
+      .update(expenses)
+      .set({ deletedAt: new Date(), updatedAt: new Date() })
+      .where(and(eq(expenses.id, id), eq(expenses.companyId, companyId), isNull(expenses.deletedAt)))
+
+    void writeAuditLog({
+      companyId,
+      actorId: ctx.session.userId,
+      sessionId: ctx.session.sessionId,
+      action: "finance.expenses.delete",
+      entityType: "expense",
+      entityId: id,
+      payload: {},
+      method: "DELETE",
+      path: `/api/finance/expenses/${id}`,
+      ipAddress: ctx.ipAddress,
+      userAgent: ctx.userAgent,
+    })
+
+    return new NextResponse(null, { status: 204 })
   }
 )

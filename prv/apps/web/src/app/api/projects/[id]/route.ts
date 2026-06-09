@@ -1,9 +1,11 @@
 import { withGates } from "@/lib/with-gates"
 import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
+import { writeAuditLog } from "@prv/auth"
 import { db } from "@prv/db"
 import { projects, projectMembers, projectMilestones, clients, users } from "@prv/db/schema"
 import { and, asc, eq, isNull } from "drizzle-orm"
+import { z } from "zod"
 import type { ProjectSummary, ProjectStatus } from "../route"
 
 export const dynamic = "force-dynamic"
@@ -172,5 +174,125 @@ export const GET = withGates(
     }
 
     return NextResponse.json({ project })
+  }
+)
+
+// ─── PATCH /api/projects/[id] ─────────────────────────────────────────────────
+
+const patchProjectSchema = z.object({
+  name: z.string().min(1).max(255).optional(),
+  description: z.string().optional(),
+  status: z.enum(["draft", "active", "on_hold", "completed", "cancelled", "archived"]).optional(),
+  budget: z.number().nonnegative().optional(),
+  clientId: z.string().uuid().nullable().optional(),
+  storeId: z.string().uuid().nullable().optional(),
+  ownerId: z.string().uuid().nullable().optional(),
+  tags: z.array(z.string()).optional(),
+  metadata: z.record(z.unknown()).optional(),
+})
+
+export const PATCH = withGates(
+  { action: "projects.update", endpointClass: "api_write" },
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
+    const id = req.nextUrl.pathname.split("/").pop()
+    if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 })
+
+    const { companyId } = ctx.session
+
+    const [existing] = await db
+      .select({ id: projects.id, name: projects.name })
+      .from(projects)
+      .where(
+        and(eq(projects.id, id), eq(projects.companyId, companyId), isNull(projects.deletedAt))
+      )
+      .limit(1)
+
+    if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 })
+
+    let body: unknown
+    try {
+      body = await req.json()
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON" }, { status: 400 })
+    }
+
+    const parsed = patchProjectSchema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Invalid payload", issues: parsed.error.issues },
+        { status: 422 }
+      )
+    }
+
+    const { budget, ...projectFields } = parsed.data
+    const [updated] = await db
+      .update(projects)
+      .set({
+        ...projectFields,
+        ...(budget !== undefined ? { budget: String(budget) } : {}),
+        updatedAt: new Date(),
+      })
+      .where(and(eq(projects.id, id), eq(projects.companyId, companyId)))
+      .returning({ id: projects.id, name: projects.name, status: projects.status })
+
+    void writeAuditLog({
+      companyId,
+      actorId: ctx.session.userId,
+      sessionId: ctx.session.sessionId,
+      action: "projects.update",
+      entityType: "project",
+      entityId: id,
+      payload: parsed.data,
+      method: "PATCH",
+      path: `/api/projects/${id}`,
+      ipAddress: ctx.ipAddress,
+      userAgent: ctx.userAgent,
+    })
+
+    return NextResponse.json(updated)
+  }
+)
+
+// ─── DELETE /api/projects/[id] ────────────────────────────────────────────────
+// Soft-delete: sets isActive=false, deletedAt=now, status="cancelled".
+
+export const DELETE = withGates(
+  { action: "projects.delete", endpointClass: "api_write" },
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
+    const id = req.nextUrl.pathname.split("/").pop()
+    if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 })
+
+    const { companyId } = ctx.session
+
+    const [existing] = await db
+      .select({ id: projects.id, name: projects.name })
+      .from(projects)
+      .where(
+        and(eq(projects.id, id), eq(projects.companyId, companyId), isNull(projects.deletedAt))
+      )
+      .limit(1)
+
+    if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 })
+
+    await db
+      .update(projects)
+      .set({ isActive: false, deletedAt: new Date(), status: "cancelled" as const, updatedAt: new Date() })
+      .where(and(eq(projects.id, id), eq(projects.companyId, companyId)))
+
+    void writeAuditLog({
+      companyId,
+      actorId: ctx.session.userId,
+      sessionId: ctx.session.sessionId,
+      action: "projects.delete",
+      entityType: "project",
+      entityId: id,
+      payload: { name: existing.name },
+      method: "DELETE",
+      path: `/api/projects/${id}`,
+      ipAddress: ctx.ipAddress,
+      userAgent: ctx.userAgent,
+    })
+
+    return new NextResponse(null, { status: 204 })
   }
 )

@@ -1,9 +1,11 @@
 import { withGates } from "@/lib/with-gates"
+import { writeAuditLog } from "@prv/auth"
 import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
 import { db } from "@prv/db"
 import { invoices, invoiceItems, clients, projects } from "@prv/db/schema"
 import { and, asc, eq, isNull } from "drizzle-orm"
+import { z } from "zod"
 import type { QuoteSummary, QuoteStatus } from "../route"
 
 export const dynamic = "force-dynamic"
@@ -186,5 +188,104 @@ export const GET = withGates(
     }
 
     return NextResponse.json({ quote })
+  }
+)
+
+const patchQuoteSchema = z.object({
+  status: z.enum(["draft", "sent", "paid", "overdue", "cancelled", "refunded"]).optional(),
+  notes: z.string().optional(),
+  dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  clientId: z.string().uuid().nullable().optional(),
+  projectId: z.string().uuid().nullable().optional(),
+})
+
+export const PATCH = withGates(
+  { action: "crm.quotes.update", endpointClass: "api_write" },
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
+    const id = req.nextUrl.pathname.split("/").pop()
+    if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 })
+
+    const { companyId } = ctx.session
+
+    const [existing] = await db
+      .select({ id: invoices.id })
+      .from(invoices)
+      .where(and(eq(invoices.id, id), eq(invoices.companyId, companyId), isNull(invoices.deletedAt)))
+      .limit(1)
+
+    if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 })
+
+    let body: unknown
+    try {
+      body = await req.json()
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON" }, { status: 400 })
+    }
+
+    const parsed = patchQuoteSchema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Invalid payload", issues: parsed.error.issues }, { status: 422 })
+    }
+
+    const [updated] = await db
+      .update(invoices)
+      .set({ ...parsed.data, updatedAt: new Date() })
+      .where(and(eq(invoices.id, id), eq(invoices.companyId, companyId), isNull(invoices.deletedAt)))
+      .returning({ id: invoices.id })
+
+    void writeAuditLog({
+      companyId,
+      actorId: ctx.session.userId,
+      sessionId: ctx.session.sessionId,
+      action: "crm.quotes.update",
+      entityType: "quote",
+      entityId: id,
+      payload: parsed.data,
+      method: "PATCH",
+      path: `/api/crm/quotes/${id}`,
+      ipAddress: ctx.ipAddress,
+      userAgent: ctx.userAgent,
+    })
+
+    return NextResponse.json(updated)
+  }
+)
+
+export const DELETE = withGates(
+  { action: "crm.quotes.delete", endpointClass: "api_write" },
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
+    const id = req.nextUrl.pathname.split("/").pop()
+    if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 })
+
+    const { companyId } = ctx.session
+
+    const [existing] = await db
+      .select({ id: invoices.id })
+      .from(invoices)
+      .where(and(eq(invoices.id, id), eq(invoices.companyId, companyId), isNull(invoices.deletedAt)))
+      .limit(1)
+
+    if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 })
+
+    await db
+      .update(invoices)
+      .set({ deletedAt: new Date(), updatedAt: new Date() })
+      .where(and(eq(invoices.id, id), eq(invoices.companyId, companyId)))
+
+    void writeAuditLog({
+      companyId,
+      actorId: ctx.session.userId,
+      sessionId: ctx.session.sessionId,
+      action: "crm.quotes.delete",
+      entityType: "quote",
+      entityId: id,
+      payload: {},
+      method: "DELETE",
+      path: `/api/crm/quotes/${id}`,
+      ipAddress: ctx.ipAddress,
+      userAgent: ctx.userAgent,
+    })
+
+    return new NextResponse(null, { status: 204 })
   }
 )

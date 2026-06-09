@@ -1,9 +1,11 @@
 import { withGates } from "@/lib/with-gates"
 import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
+import { writeAuditLog } from "@prv/auth"
 import { db } from "@prv/db"
 import { clients, clientContacts, users, projects, invoices } from "@prv/db/schema"
 import { and, desc, eq, inArray, isNull, sum } from "drizzle-orm"
+import { z } from "zod"
 import type { ClientSummary, ClientStatus } from "../route"
 
 export const dynamic = "force-dynamic"
@@ -254,5 +256,113 @@ export const GET = withGates(
     }
 
     return NextResponse.json({ client: detail })
+  }
+)
+
+const patchClientSchema = z.object({
+  name: z.string().min(1).max(255).optional(),
+  email: z.string().email().max(254).optional(),
+  phone: z.string().max(32).optional(),
+  website: z.string().url().optional(),
+  address: z.string().optional(),
+  city: z.string().max(100).optional(),
+  country: z.string().length(2).optional(),
+  postalCode: z.string().max(20).optional(),
+  vatNumber: z.string().max(50).optional(),
+  registrationNumber: z.string().max(50).optional(),
+  notes: z.string().optional(),
+  tags: z.array(z.string()).optional(),
+  type: z.enum(["individual", "business"]).optional(),
+  assignedUserId: z.string().uuid().nullable().optional(),
+})
+
+export const PATCH = withGates(
+  { action: "crm.clients.update", endpointClass: "api_write" },
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
+    const id = req.nextUrl.pathname.split("/").pop()
+    if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 })
+
+    const { companyId } = ctx.session
+
+    const [existing] = await db
+      .select({ id: clients.id })
+      .from(clients)
+      .where(and(eq(clients.id, id), eq(clients.companyId, companyId), isNull(clients.deletedAt)))
+      .limit(1)
+
+    if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 })
+
+    let body: unknown
+    try {
+      body = await req.json()
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON" }, { status: 400 })
+    }
+
+    const parsed = patchClientSchema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Invalid payload", issues: parsed.error.issues }, { status: 422 })
+    }
+
+    const [updated] = await db
+      .update(clients)
+      .set({ ...parsed.data, updatedAt: new Date() })
+      .where(and(eq(clients.id, id), eq(clients.companyId, companyId), isNull(clients.deletedAt)))
+      .returning({ id: clients.id })
+
+    void writeAuditLog({
+      companyId,
+      actorId: ctx.session.userId,
+      sessionId: ctx.session.sessionId,
+      action: "crm.clients.update",
+      entityType: "client",
+      entityId: id,
+      payload: parsed.data,
+      method: "PATCH",
+      path: `/api/crm/clients/${id}`,
+      ipAddress: ctx.ipAddress,
+      userAgent: ctx.userAgent,
+    })
+
+    return NextResponse.json(updated)
+  }
+)
+
+export const DELETE = withGates(
+  { action: "crm.clients.delete", endpointClass: "api_write" },
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
+    const id = req.nextUrl.pathname.split("/").pop()
+    if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 })
+
+    const { companyId } = ctx.session
+
+    const [existing] = await db
+      .select({ id: clients.id, name: clients.name })
+      .from(clients)
+      .where(and(eq(clients.id, id), eq(clients.companyId, companyId), isNull(clients.deletedAt)))
+      .limit(1)
+
+    if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 })
+
+    await db
+      .update(clients)
+      .set({ isActive: false, deletedAt: new Date(), status: "archived" as const, updatedAt: new Date() })
+      .where(and(eq(clients.id, id), eq(clients.companyId, companyId)))
+
+    void writeAuditLog({
+      companyId,
+      actorId: ctx.session.userId,
+      sessionId: ctx.session.sessionId,
+      action: "crm.clients.delete",
+      entityType: "client",
+      entityId: id,
+      payload: { name: existing.name },
+      method: "DELETE",
+      path: `/api/crm/clients/${id}`,
+      ipAddress: ctx.ipAddress,
+      userAgent: ctx.userAgent,
+    })
+
+    return new NextResponse(null, { status: 204 })
   }
 )
