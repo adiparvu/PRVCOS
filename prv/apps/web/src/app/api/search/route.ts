@@ -1,200 +1,294 @@
 import { withGates } from "@/lib/with-gates"
 import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
-import type { EntityResult } from "@/components/command-palette/types"
+import { db } from "@prv/db"
+import {
+  users,
+  projects,
+  clients,
+  invoices,
+  documents,
+  vehicles,
+  tools,
+  products,
+  teams,
+} from "@prv/db/schema"
+import { and, eq, ilike, isNull, or } from "drizzle-orm"
+import type { EntityResult, EntityType, EntityStatus } from "@/components/command-palette/types"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
 
-const MOCK_ENTITIES: EntityResult[] = [
-  {
-    id: "e1",
-    entityType: "employee",
-    title: "Ion Popa",
-    subtitle: "Store Manager · Cluj",
-    status: "active",
-    href: "/people/e1",
-  },
-  {
-    id: "e2",
-    entityType: "employee",
-    title: "Ana Ionescu",
-    subtitle: "Accountant · București",
-    status: "active",
-    href: "/people/e2",
-  },
-  {
-    id: "e3",
-    entityType: "employee",
-    title: "Mihai Popescu",
-    subtitle: "Field Technician · Timișoara",
-    status: "active",
-    href: "/people/e3",
-  },
-  {
-    id: "p1",
-    entityType: "project",
-    title: "Renovare Apartament Floreasca",
-    subtitle: "PRV Renovations · Active",
-    status: "active",
-    href: "/projects/p1",
-  },
-  {
-    id: "p2",
-    entityType: "project",
-    title: "Baie Modernă Cluj",
-    subtitle: "PRV Renovations · Planning",
-    status: "planning",
-    href: "/projects/p2",
-  },
-  {
-    id: "p3",
-    entityType: "project",
-    title: "Bucătărie Integrată Timișoara",
-    subtitle: "PRV Renovations · Review",
-    status: "review",
-    href: "/projects/p3",
-  },
-  {
-    id: "p4",
-    entityType: "project",
-    title: "Pardoseli Comerciale Brașov",
-    subtitle: "PRV Renovations · Active",
-    status: "active",
-    href: "/projects/p4",
-  },
-  {
-    id: "c1",
-    entityType: "client",
-    title: "Andronic Group SRL",
-    subtitle: "CRM · 3 projects",
-    status: "active",
-    href: "/crm/c1",
-  },
-  {
-    id: "c2",
-    entityType: "client",
-    title: "Biroul Construct SRL",
-    subtitle: "CRM · 1 project",
-    status: "active",
-    href: "/crm/c2",
-  },
-  {
-    id: "c3",
-    entityType: "client",
-    title: "Radu Construct SRL",
-    subtitle: "CRM · 2 projects",
-    status: "inactive",
-    href: "/crm/c3",
-  },
-  {
-    id: "i1",
-    entityType: "invoice",
-    title: "INV-208 — Andronic Group",
-    subtitle: "€2,100 · Overdue",
-    status: "pending",
-    href: "/finance/invoices/i1",
-  },
-  {
-    id: "i2",
-    entityType: "invoice",
-    title: "INV-207 — Biroul Construct",
-    subtitle: "€1,140 · Overdue",
-    status: "pending",
-    href: "/finance/invoices/i2",
-  },
-  {
-    id: "i3",
-    entityType: "invoice",
-    title: "INV-205 — Radu Construct",
-    subtitle: "€3,800 · Paid",
-    status: "active",
-    href: "/finance/invoices/i3",
-  },
-  {
-    id: "t1",
-    entityType: "team",
-    title: "Echipa Instalații Cluj",
-    subtitle: "8 members",
-    status: "active",
-    href: "/people/teams/t1",
-  },
-  {
-    id: "t2",
-    entityType: "team",
-    title: "Echipa Finisaje București",
-    subtitle: "6 members",
-    status: "active",
-    href: "/people/teams/t2",
-  },
-  {
-    id: "v1",
-    entityType: "vehicle",
-    title: "Dacia Dokker · CJ-12-PRV",
-    subtitle: "Fleet · Available",
-    status: "active",
-    href: "/fleet/v1",
-  },
-  {
-    id: "v2",
-    entityType: "vehicle",
-    title: "Ford Transit · B-88-PRV",
-    subtitle: "Fleet · In Use",
-    status: "pending",
-    href: "/fleet/v2",
-  },
-  {
-    id: "d1",
-    entityType: "document",
-    title: "Contract Renovare Floreasca",
-    subtitle: "Documents · Jun 2026",
-    status: "active",
-    href: "/documents/d1",
-  },
-  {
-    id: "tl1",
-    entityType: "tool",
-    title: "Bormasina Makita HR2470",
-    subtitle: "Tools · Cluj Depot",
-    status: "active",
-    href: "/tools/tl1",
-  },
-  {
-    id: "pr1",
-    entityType: "product",
-    title: "Gresie Rectificată 60×60",
-    subtitle: "Shop · In Stock",
-    status: "active",
-    href: "/shop/pr1",
-  },
-]
+const PER_TYPE_LIMIT = 5
 
-function score(entity: EntityResult, q: string): number {
-  const lower = q.toLowerCase()
-  const title = entity.title.toLowerCase()
-  const sub = (entity.subtitle ?? "").toLowerCase()
-  if (title === lower) return 100
-  if (title.startsWith(lower)) return 80
-  if (title.includes(lower)) return 60
-  if (sub.includes(lower)) return 40
-  return 0
-}
+// ── GET ───────────────────────────────────────────────────────────────────────
 
 export const GET = withGates(
   { action: "search.entities", endpointClass: "api_read" },
-  async (req: NextRequest, _ctx: GateContext): Promise<NextResponse> => {
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
     const { searchParams } = new URL(req.url)
     const q = (searchParams.get("q") ?? "").trim()
     const limit = Math.min(parseInt(searchParams.get("limit") ?? "6", 10), 20)
 
     if (q.length < 2) return NextResponse.json({ results: [] })
 
-    const results = MOCK_ENTITIES.map((e) => ({ entity: e, s: score(e, q) }))
-      .filter((x) => x.s > 0)
+    const { companyId } = ctx.session
+    const pat = `%${q}%`
+
+    const [
+      userRows,
+      projectRows,
+      clientRows,
+      invoiceRows,
+      documentRows,
+      vehicleRows,
+      toolRows,
+      productRows,
+      teamRows,
+    ] = await Promise.all([
+      db
+        .select({
+          id: users.id,
+          firstName: users.firstName,
+          lastName: users.lastName,
+          jobTitle: users.jobTitle,
+          status: users.status,
+        })
+        .from(users)
+        .where(
+          and(
+            eq(users.companyId, companyId),
+            isNull(users.deletedAt),
+            or(ilike(users.firstName, pat), ilike(users.lastName, pat), ilike(users.jobTitle, pat))
+          )
+        )
+        .limit(PER_TYPE_LIMIT),
+
+      db
+        .select({ id: projects.id, name: projects.name, status: projects.status })
+        .from(projects)
+        .where(
+          and(
+            eq(projects.companyId, companyId),
+            isNull(projects.deletedAt),
+            ilike(projects.name, pat)
+          )
+        )
+        .limit(PER_TYPE_LIMIT),
+
+      db
+        .select({ id: clients.id, name: clients.name, city: clients.city, status: clients.status })
+        .from(clients)
+        .where(
+          and(eq(clients.companyId, companyId), isNull(clients.deletedAt), ilike(clients.name, pat))
+        )
+        .limit(PER_TYPE_LIMIT),
+
+      db
+        .select({
+          id: invoices.id,
+          invoiceNumber: invoices.invoiceNumber,
+          total: invoices.total,
+          status: invoices.status,
+        })
+        .from(invoices)
+        .where(
+          and(
+            eq(invoices.companyId, companyId),
+            isNull(invoices.deletedAt),
+            ilike(invoices.invoiceNumber, pat)
+          )
+        )
+        .limit(PER_TYPE_LIMIT),
+
+      db
+        .select({
+          id: documents.id,
+          fileName: documents.fileName,
+          title: documents.title,
+          type: documents.type,
+        })
+        .from(documents)
+        .where(
+          and(
+            eq(documents.companyId, companyId),
+            isNull(documents.deletedAt),
+            or(ilike(documents.fileName, pat), ilike(documents.title, pat))
+          )
+        )
+        .limit(PER_TYPE_LIMIT),
+
+      db
+        .select({
+          id: vehicles.id,
+          licensePlate: vehicles.licensePlate,
+          make: vehicles.make,
+          model: vehicles.model,
+          status: vehicles.status,
+        })
+        .from(vehicles)
+        .where(
+          and(
+            eq(vehicles.companyId, companyId),
+            isNull(vehicles.deletedAt),
+            or(
+              ilike(vehicles.licensePlate, pat),
+              ilike(vehicles.make, pat),
+              ilike(vehicles.model, pat)
+            )
+          )
+        )
+        .limit(PER_TYPE_LIMIT),
+
+      db
+        .select({
+          id: tools.id,
+          name: tools.name,
+          brand: tools.brand,
+          model: tools.model,
+          status: tools.status,
+        })
+        .from(tools)
+        .where(
+          and(
+            eq(tools.companyId, companyId),
+            isNull(tools.deletedAt),
+            or(ilike(tools.name, pat), ilike(tools.brand, pat))
+          )
+        )
+        .limit(PER_TYPE_LIMIT),
+
+      db
+        .select({ id: products.id, name: products.name, status: products.status })
+        .from(products)
+        .where(and(eq(products.companyId, companyId), ilike(products.name, pat)))
+        .limit(PER_TYPE_LIMIT),
+
+      db
+        .select({ id: teams.id, name: teams.name })
+        .from(teams)
+        .where(and(eq(teams.companyId, companyId), ilike(teams.name, pat)))
+        .limit(PER_TYPE_LIMIT),
+    ])
+
+    const results: EntityResult[] = []
+
+    for (const u of userRows) {
+      const name = `${u.firstName} ${u.lastName}`
+      results.push({
+        id: u.id,
+        entityType: "employee" as EntityType,
+        title: name,
+        subtitle: u.jobTitle ?? "Employee",
+        status: (u.status === "active" ? "active" : "inactive") as EntityStatus,
+        href: `/people/${u.id}`,
+      })
+    }
+
+    for (const p of projectRows) {
+      results.push({
+        id: p.id,
+        entityType: "project" as EntityType,
+        title: p.name,
+        subtitle: `Project · ${p.status}`,
+        status: p.status as EntityStatus,
+        href: `/projects/${p.id}`,
+      })
+    }
+
+    for (const c of clientRows) {
+      results.push({
+        id: c.id,
+        entityType: "client" as EntityType,
+        title: c.name,
+        subtitle: c.city ? `CRM · ${c.city}` : "CRM",
+        status: (c.status === "active" ? "active" : "inactive") as EntityStatus,
+        href: `/crm/${c.id}`,
+      })
+    }
+
+    for (const inv of invoiceRows) {
+      results.push({
+        id: inv.id,
+        entityType: "invoice" as EntityType,
+        title: inv.invoiceNumber,
+        subtitle: `€${Number(inv.total ?? 0).toLocaleString()} · ${inv.status}`,
+        status: inv.status === "paid" ? "active" : ("pending" as EntityStatus),
+        href: `/finance/invoices/${inv.id}`,
+      })
+    }
+
+    for (const d of documentRows) {
+      results.push({
+        id: d.id,
+        entityType: "document" as EntityType,
+        title: d.title ?? d.fileName,
+        subtitle: `Documents · ${d.type}`,
+        status: "active" as EntityStatus,
+        href: `/documents/${d.id}`,
+      })
+    }
+
+    for (const v of vehicleRows) {
+      results.push({
+        id: v.id,
+        entityType: "vehicle" as EntityType,
+        title: `${v.make} ${v.model} · ${v.licensePlate}`,
+        subtitle: `Fleet · ${v.status}`,
+        status: v.status === "active" ? "active" : ("inactive" as EntityStatus),
+        href: `/fleet/${v.id}`,
+      })
+    }
+
+    for (const t of toolRows) {
+      results.push({
+        id: t.id,
+        entityType: "tool" as EntityType,
+        title: t.name,
+        subtitle: [t.brand, t.model].filter(Boolean).join(" · ") || "Tools",
+        status: "active" as EntityStatus,
+        href: `/tools/${t.id}`,
+      })
+    }
+
+    for (const pr of productRows) {
+      results.push({
+        id: pr.id,
+        entityType: "product" as EntityType,
+        title: pr.name,
+        subtitle: `Shop · ${pr.status}`,
+        status: pr.status === "active" ? "active" : ("inactive" as EntityStatus),
+        href: `/shop/${pr.id}`,
+      })
+    }
+
+    for (const tm of teamRows) {
+      results.push({
+        id: tm.id,
+        entityType: "team" as EntityType,
+        title: tm.name,
+        subtitle: "Team",
+        status: "active" as EntityStatus,
+        href: `/people/teams/${tm.id}`,
+      })
+    }
+
+    // Score and rank
+    const lower = q.toLowerCase()
+    const scored = results
+      .map((e) => {
+        const title = e.title.toLowerCase()
+        let s = 0
+        if (title === lower) s = 100
+        else if (title.startsWith(lower)) s = 80
+        else if (title.includes(lower)) s = 60
+        else s = 40
+        return { e, s }
+      })
       .sort((a, b) => b.s - a.s)
       .slice(0, limit)
-      .map((x) => x.entity)
+      .map((x) => x.e)
 
-    return NextResponse.json({ results })
+    return NextResponse.json({ results: scored })
   }
 )

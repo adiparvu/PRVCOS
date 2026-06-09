@@ -2,7 +2,7 @@ import { withGates } from "@/lib/with-gates"
 import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
 import { db } from "@prv/db"
-import { stores, orders, clients } from "@prv/db/schema"
+import { stores, orders, clients, tasks, users } from "@prv/db/schema"
 import { and, asc, count, desc, eq, gte, isNull } from "drizzle-orm"
 
 export const dynamic = "force-dynamic"
@@ -60,83 +60,6 @@ export interface OperationsMeta {
   alertCount: number
 }
 
-// ── Static tasks (no DB table yet) ────────────────────────────────────────────
-
-const MOCK_TASKS: Task[] = [
-  {
-    id: "t1",
-    title: "Reaprovizionare rafturi",
-    storeId: "",
-    storeName: "Brașov · Coresi",
-    priority: "urgent",
-    status: "todo",
-    assigneeInitials: "AR",
-  },
-  {
-    id: "t2",
-    title: "Mentenanță HVAC",
-    storeId: "",
-    storeName: "Iași · Palas",
-    priority: "medium",
-    status: "todo",
-    assigneeInitials: "MP",
-  },
-  {
-    id: "t3",
-    title: "Training personal",
-    storeId: "",
-    storeName: "Timișoara · Iulius",
-    priority: "low",
-    status: "todo",
-    assigneeInitials: "RC",
-  },
-  {
-    id: "t4",
-    title: "Audit inventar — în curs",
-    storeId: "",
-    storeName: "Cluj · Main",
-    priority: "urgent",
-    status: "in_progress",
-    assigneeInitials: "EP",
-  },
-  {
-    id: "t5",
-    title: "Actualizare POS — toate magazinele",
-    storeId: "all",
-    storeName: "Toate Magazinele",
-    priority: "medium",
-    status: "in_progress",
-    assigneeInitials: "DM",
-  },
-  {
-    id: "t6",
-    title: "Renovare vitrină",
-    storeId: "",
-    storeName: "București · Floreasca",
-    priority: "low",
-    status: "done",
-    assigneeInitials: "LG",
-  },
-  {
-    id: "t7",
-    title: "Inspecție ieșiri urgență",
-    storeId: "",
-    storeName: "Iași · Palas",
-    priority: "urgent",
-    status: "done",
-    assigneeInitials: "TN",
-  },
-  {
-    id: "t8",
-    title: "Raport deșeuri lunar",
-    storeId: "",
-    storeName: "Cluj · Main",
-    priority: "low",
-    status: "done",
-    assigneeInitials: "IA",
-  },
-]
-
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function fmtAmount(n: number): string {
@@ -173,8 +96,8 @@ export const GET = withGates(
     const todayStart = new Date()
     todayStart.setHours(0, 0, 0, 0)
 
-    // 1. Fetch stores + today's order aggregates in parallel
-    const [storeRows, orderRows, orderCountRows] = await Promise.all([
+    // 1. Fetch stores, orders, and tasks in parallel
+    const [storeRows, orderRows, orderCountRows, taskRows] = await Promise.all([
       db
         .select({ id: stores.id, name: stores.name, city: stores.city, isActive: stores.isActive })
         .from(stores)
@@ -216,6 +139,26 @@ export const GET = withGates(
           )
         )
         .groupBy(orders.storeId),
+
+      // Tasks with assignee initials and store name
+      db
+        .select({
+          id: tasks.id,
+          title: tasks.title,
+          storeId: tasks.storeId,
+          isAllStores: tasks.isAllStores,
+          priority: tasks.priority,
+          status: tasks.status,
+          assigneeFirstName: users.firstName,
+          assigneeLastName: users.lastName,
+          storeName: stores.name,
+          storeCity: stores.city,
+        })
+        .from(tasks)
+        .leftJoin(users, eq(tasks.assigneeUserId, users.id))
+        .leftJoin(stores, eq(tasks.storeId, stores.id))
+        .where(and(eq(tasks.companyId, ctx.session.companyId), isNull(tasks.deletedAt)))
+        .orderBy(asc(tasks.status), asc(tasks.priority)),
     ])
 
     // 2. Aggregate revenue + order counts per store from today's orders
@@ -260,14 +203,30 @@ export const GET = withGates(
       timeAgo: relativeTime(ord.createdAt),
     }))
 
-    // 6. Apply filters
+    // 6. Assemble tasks
+    let taskList: Task[] = taskRows.map((t) => {
+      const initials =
+        t.assigneeFirstName && t.assigneeLastName
+          ? ((t.assigneeFirstName[0] ?? "") + (t.assigneeLastName[0] ?? "")).toUpperCase()
+          : "—"
+      const storeName = t.isAllStores ? "Toate Magazinele" : (t.storeCity ?? t.storeName ?? "—")
+      return {
+        id: t.id,
+        title: t.title,
+        storeId: t.isAllStores ? "all" : (t.storeId ?? ""),
+        storeName,
+        priority: t.priority as TaskPriority,
+        status: t.status as TaskStatus,
+        assigneeInitials: initials,
+      }
+    })
+
+    // 7. Apply filters
     if (storeStatusFilter) storeList = storeList.filter((s) => s.status === storeStatusFilter)
     if (orderStatusFilter) orderList = orderList.filter((o) => o.status === orderStatusFilter)
+    if (taskStatusFilter) taskList = taskList.filter((t) => t.status === taskStatusFilter)
 
-    let tasks = MOCK_TASKS
-    if (taskStatusFilter) tasks = tasks.filter((t) => t.status === taskStatusFilter)
-
-    const activeTasks = MOCK_TASKS.filter(
+    const activeTasks = taskRows.filter(
       (t) => t.status === "todo" || t.status === "in_progress"
     ).length
 
@@ -278,6 +237,12 @@ export const GET = withGates(
       alertCount: 0,
     }
 
-    return NextResponse.json({ stores: storeList, tasks, orders: orderList, meta, alerts: [] })
+    return NextResponse.json({
+      stores: storeList,
+      tasks: taskList,
+      orders: orderList,
+      meta,
+      alerts: [],
+    })
   }
 )
