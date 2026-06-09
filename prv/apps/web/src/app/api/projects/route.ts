@@ -1,6 +1,16 @@
 import { withGates } from "@/lib/with-gates"
 import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
+import { db } from "@prv/db"
+import {
+  projects,
+  projectMembers,
+  projectMilestones,
+  clients,
+  users,
+  invoices,
+} from "@prv/db/schema"
+import { and, asc, desc, eq, inArray, isNull, isNotNull, sum } from "drizzle-orm"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -31,95 +41,185 @@ export interface ProjectSummary {
   team: ProjectTeamMember[]
 }
 
-const MOCK_PROJECTS: ProjectSummary[] = [
-  {
-    id: "p1",
-    name: "Renovare Apartament Floreasca",
-    clientId: "c1",
-    clientName: "Andronic Group SRL",
-    clientInitials: "AG",
-    status: "active",
-    currentPhaseName: "Execution",
-    completionPct: 59,
-    budget: 38000,
-    spent: 22400,
-    startDate: "2026-05-02",
-    endDate: "2026-06-27",
-    daysLeft: 23,
-    team: [
-      { id: "e3", initials: "MP", name: "Mihai Popescu", role: "Lead Tech" },
-      { id: "e7", initials: "GS", name: "George Stoica", role: "Electrician" },
-      { id: "e9", initials: "RC", name: "Radu Ciobanu", role: "Tiler" },
-      { id: "e10", initials: "AR", name: "Andrei Roșu", role: "Plumber" },
-      { id: "e11", initials: "LG", name: "Liviu Groza", role: "Painter" },
-    ],
-  },
-  {
-    id: "p2",
-    name: "Baie Modernă Cluj",
-    clientId: "c2",
-    clientName: "Biroul Construct SRL",
-    clientInitials: "BC",
-    status: "review",
-    currentPhaseName: "Review",
-    completionPct: 84,
-    budget: 14000,
-    spent: 11800,
-    startDate: "2026-05-10",
-    endDate: "2026-06-11",
-    daysLeft: 5,
-    team: [
-      { id: "e4", initials: "EP", name: "Elena Popescu", role: "PM" },
-      { id: "e8", initials: "DM", name: "Dan Marin", role: "Tiler" },
-    ],
-  },
-  {
-    id: "p3",
-    name: "Bucătărie Integrată Timișoara",
-    clientId: "c3",
-    clientName: "Radu Construct SRL",
-    clientInitials: "RC",
-    status: "planning",
-    currentPhaseName: "Planning",
-    completionPct: 33,
-    budget: 24500,
-    spent: 8100,
-    startDate: "2026-05-20",
-    endDate: "2026-07-17",
-    daysLeft: 41,
-    team: [
-      { id: "e12", initials: "AR", name: "Anca Rusu", role: "Designer" },
-      { id: "e13", initials: "LG", name: "Lucian Ganea", role: "Carpenter" },
-    ],
-  },
-  {
-    id: "p4",
-    name: "Pardoseli Comerciale Brașov",
-    clientId: "c1",
-    clientName: "Andronic Group SRL",
-    clientInitials: "AG",
-    status: "active",
-    currentPhaseName: "Execution",
-    completionPct: 91,
-    budget: 17000,
-    spent: 19200,
-    startDate: "2026-05-01",
-    endDate: "2026-06-14",
-    daysLeft: 8,
-    team: [
-      { id: "e14", initials: "TN", name: "Tudor Niculescu", role: "Lead Tech" },
-      { id: "e15", initials: "IA", name: "Ion Avram", role: "Flooring Spec." },
-      { id: "e3", initials: "MP", name: "Mihai Popescu", role: "Tech" },
-    ],
-  },
-]
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+const DB_STATUS_TO_API: Record<string, ProjectStatus> = {
+  draft: "planning",
+  active: "active",
+  on_hold: "hold",
+  completed: "done",
+  cancelled: "done",
+  archived: "done",
+}
+
+const API_STATUS_TO_DB: Record<string, string[]> = {
+  active: ["active"],
+  planning: ["draft"],
+  hold: ["on_hold"],
+  done: ["completed", "cancelled", "archived"],
+  review: ["active"],
+}
+
+function toApiStatus(dbStatus: string): ProjectStatus {
+  return DB_STATUS_TO_API[dbStatus] ?? "planning"
+}
+
+function initials(name: string): string {
+  const parts = name.trim().split(/\s+/)
+  if (parts.length === 1) return (parts[0]?.slice(0, 2) ?? "--").toUpperCase()
+  return ((parts[0]?.[0] ?? "-") + (parts[parts.length - 1]?.[0] ?? "-")).toUpperCase()
+}
+
+function daysLeftFromDue(dueDate: string | null): number {
+  if (!dueDate) return 0
+  const due = new Date(dueDate)
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  return Math.round((due.getTime() - today.getTime()) / 86_400_000)
+}
+
+function capitalizeRole(role: string): string {
+  return role.charAt(0).toUpperCase() + role.slice(1)
+}
+
+// ── GET ───────────────────────────────────────────────────────────────────────
 
 export const GET = withGates(
   { action: "projects.read", endpointClass: "api_read" },
-  async (req: NextRequest, _ctx: GateContext): Promise<NextResponse> => {
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
     const { searchParams } = new URL(req.url)
-    const status = searchParams.get("status")
-    const results = status ? MOCK_PROJECTS.filter((p) => p.status === status) : MOCK_PROJECTS
-    return NextResponse.json({ projects: results, count: results.length })
+    const statusFilter = searchParams.get("status")
+
+    // Build optional DB status filter
+    const dbStatuses = statusFilter ? (API_STATUS_TO_DB[statusFilter] ?? []) : []
+    const statusClause =
+      dbStatuses.length > 0
+        ? inArray(projects.status, dbStatuses as (typeof projects.status._.data)[])
+        : undefined
+
+    // 1. Fetch projects with client name
+    const projectRows = await db
+      .select({
+        id: projects.id,
+        name: projects.name,
+        clientId: projects.clientId,
+        status: projects.status,
+        budget: projects.budget,
+        startDate: projects.startDate,
+        dueDate: projects.dueDate,
+        clientName: clients.name,
+      })
+      .from(projects)
+      .leftJoin(clients, eq(projects.clientId, clients.id))
+      .where(
+        and(eq(projects.companyId, ctx.session.companyId), isNull(projects.deletedAt), statusClause)
+      )
+      .orderBy(desc(projects.createdAt))
+
+    if (projectRows.length === 0) {
+      return NextResponse.json({ projects: [], count: 0 })
+    }
+
+    const projectIds = projectRows.map((p) => p.id)
+
+    // 2. Fetch milestones, members, and invoice sums in parallel
+    const [milestoneRows, memberRows, invoiceAgg] = await Promise.all([
+      db
+        .select({
+          projectId: projectMilestones.projectId,
+          title: projectMilestones.title,
+          isComplete: projectMilestones.isComplete,
+          sortOrder: projectMilestones.sortOrder,
+        })
+        .from(projectMilestones)
+        .where(inArray(projectMilestones.projectId, projectIds))
+        .orderBy(asc(projectMilestones.sortOrder)),
+
+      db
+        .select({
+          projectId: projectMembers.projectId,
+          userId: projectMembers.userId,
+          role: projectMembers.role,
+          firstName: users.firstName,
+          lastName: users.lastName,
+        })
+        .from(projectMembers)
+        .innerJoin(users, eq(projectMembers.userId, users.id))
+        .where(inArray(projectMembers.projectId, projectIds)),
+
+      db
+        .select({ projectId: invoices.projectId, total: sum(invoices.total) })
+        .from(invoices)
+        .where(
+          and(
+            eq(invoices.companyId, ctx.session.companyId),
+            eq(invoices.status, "paid"),
+            isNotNull(invoices.projectId),
+            inArray(invoices.projectId, projectIds),
+            isNull(invoices.deletedAt)
+          )
+        )
+        .groupBy(invoices.projectId),
+    ])
+
+    // 3. Index by projectId for O(1) lookup
+    const milestonesByProject = new Map<string, typeof milestoneRows>()
+    for (const m of milestoneRows) {
+      const arr = milestonesByProject.get(m.projectId) ?? []
+      arr.push(m)
+      milestonesByProject.set(m.projectId, arr)
+    }
+
+    const membersByProject = new Map<string, typeof memberRows>()
+    for (const m of memberRows) {
+      const arr = membersByProject.get(m.projectId) ?? []
+      arr.push(m)
+      membersByProject.set(m.projectId, arr)
+    }
+
+    const spentByProject = new Map<string, number>()
+    for (const row of invoiceAgg) {
+      if (row.projectId) spentByProject.set(row.projectId, Number(row.total ?? 0))
+    }
+
+    // 4. Assemble response
+    const result: ProjectSummary[] = projectRows.map((p) => {
+      const milestones = milestonesByProject.get(p.id) ?? []
+      const completed = milestones.filter((m) => m.isComplete)
+      const completionPct =
+        milestones.length > 0 ? Math.round((completed.length / milestones.length) * 100) : 0
+      const nextMilestone = milestones.find((m) => !m.isComplete)
+      const currentPhaseName =
+        milestones.length === 0 ? "—" : nextMilestone ? nextMilestone.title : "Complete"
+
+      const members = membersByProject.get(p.id) ?? []
+      const team: ProjectTeamMember[] = members.map((m) => ({
+        id: m.userId,
+        name: `${m.firstName} ${m.lastName}`,
+        initials: ((m.firstName[0] ?? "") + (m.lastName[0] ?? "")).toUpperCase(),
+        role: capitalizeRole(m.role),
+      }))
+
+      const clientName = p.clientName ?? "—"
+
+      return {
+        id: p.id,
+        name: p.name,
+        clientId: p.clientId ?? "",
+        clientName,
+        clientInitials: initials(clientName),
+        status: toApiStatus(p.status),
+        currentPhaseName,
+        completionPct,
+        budget: Number(p.budget ?? 0),
+        spent: spentByProject.get(p.id) ?? 0,
+        startDate: p.startDate ?? "",
+        endDate: p.dueDate ?? "",
+        daysLeft: daysLeftFromDue(p.dueDate),
+        team,
+      }
+    })
+
+    return NextResponse.json({ projects: result, count: result.length })
   }
 )
