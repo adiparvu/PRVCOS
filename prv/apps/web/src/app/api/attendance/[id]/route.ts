@@ -6,6 +6,11 @@ import { attendanceRecords, users, stores } from "@prv/db/schema"
 import { and, eq, gte, lte } from "drizzle-orm"
 import type { AttendanceStatus } from "../route"
 
+function hhmToMinutes(hhmm: string): number {
+  const [h, m] = hhmm.split(":").map(Number)
+  return (h ?? 0) * 60 + (m ?? 0)
+}
+
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
 
@@ -209,7 +214,11 @@ export const GET = withGates(
       gpsVerified: row.gpsVerified,
       barPct,
       device: null,
-      overtime: 0,
+      overtime: (() => {
+        if (activeMinutes === null) return 0
+        const scheduled = hhmToMinutes(row.scheduledEnd) - hhmToMinutes(row.scheduledStart)
+        return Math.max(0, activeMinutes - scheduled)
+      })(),
       weekTotalMinutes,
       weekDays,
       timeline,

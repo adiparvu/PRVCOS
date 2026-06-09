@@ -482,8 +482,31 @@ function ClientDetail({ client, onBack }: { client: Client; onBack: () => void }
 
       {tab === "documents" && (
         <GlassCard>
-          <div className="py-10 text-center text-white/35 text-[14px]">
-            Documents module coming soon.
+          <div className="py-8 flex flex-col items-center gap-3 text-center">
+            <svg
+              width="28"
+              height="28"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="rgba(255,255,255,0.25)"
+              strokeWidth="1.6"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+            </svg>
+            <p className="text-[13px] text-white/45 leading-snug max-w-[220px]">
+              Documentele clientului sunt gestionate în modulul Documente.
+            </p>
+            <Link
+              href={`/documents?clientId=${client.id}`}
+              className="text-[13px] font-semibold"
+              style={{ color: "rgba(255,255,255,0.75)", textDecoration: "none" }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              Deschide Documente →
+            </Link>
           </div>
         </GlassCard>
       )}

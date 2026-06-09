@@ -2,8 +2,8 @@ import { withGates } from "@/lib/with-gates"
 import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
 import { db } from "@prv/db"
-import { tools, users, stores } from "@prv/db/schema"
-import { and, eq, isNull } from "drizzle-orm"
+import { tools, users, stores, auditLogs } from "@prv/db/schema"
+import { and, count, eq, gte, isNull } from "drizzle-orm"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -84,28 +84,46 @@ export const GET = withGates(
 
     const { companyId } = ctx.session
 
-    const rows = await db
-      .select({
-        id: tools.id,
-        name: tools.name,
-        category: tools.category,
-        brand: tools.brand,
-        model: tools.model,
-        serialNumber: tools.serialNumber,
-        status: tools.status,
-        purchasedAt: tools.purchasedAt,
-        lastServiceAt: tools.lastServiceAt,
-        warrantyExpiresAt: tools.warrantyExpiresAt,
-        notes: tools.notes,
-        assignedFirstName: users.firstName,
-        assignedLastName: users.lastName,
-        storeName: stores.name,
-      })
-      .from(tools)
-      .leftJoin(users, eq(tools.assignedUserId, users.id))
-      .leftJoin(stores, eq(tools.storeId, stores.id))
-      .where(and(eq(tools.id, id), eq(tools.companyId, companyId), isNull(tools.deletedAt)))
-      .limit(1)
+    const monthStart = new Date()
+    monthStart.setDate(1)
+    monthStart.setHours(0, 0, 0, 0)
+
+    const [rows, usageCountRows] = await Promise.all([
+      db
+        .select({
+          id: tools.id,
+          name: tools.name,
+          category: tools.category,
+          brand: tools.brand,
+          model: tools.model,
+          serialNumber: tools.serialNumber,
+          status: tools.status,
+          purchasedAt: tools.purchasedAt,
+          lastServiceAt: tools.lastServiceAt,
+          warrantyExpiresAt: tools.warrantyExpiresAt,
+          notes: tools.notes,
+          assignedFirstName: users.firstName,
+          assignedLastName: users.lastName,
+          storeName: stores.name,
+        })
+        .from(tools)
+        .leftJoin(users, eq(tools.assignedUserId, users.id))
+        .leftJoin(stores, eq(tools.storeId, stores.id))
+        .where(and(eq(tools.id, id), eq(tools.companyId, companyId), isNull(tools.deletedAt)))
+        .limit(1),
+
+      db
+        .select({ cnt: count() })
+        .from(auditLogs)
+        .where(
+          and(
+            eq(auditLogs.companyId, companyId),
+            eq(auditLogs.entityId, id),
+            eq(auditLogs.entityType, "tool"),
+            gte(auditLogs.createdAt, monthStart)
+          )
+        ),
+    ])
 
     const row = rows[0]
     if (!row) return NextResponse.json({ error: "Not found" }, { status: 404 })
@@ -159,10 +177,12 @@ export const GET = withGates(
       utilisationPct,
       serviceOverdueDays,
       ageYears,
-      usesThisMonth: 0,
+      usesThisMonth: usageCountRows[0]?.cnt ?? 0,
       valueEur: 0,
       lastService: row.lastServiceAt ? fmtDate(row.lastServiceAt) : "—",
-      nextService: "—",
+      nextService: row.lastServiceAt
+        ? fmtDate(new Date(row.lastServiceAt.getTime() + 180 * 24 * 60 * 60 * 1000))
+        : "—",
       specs: row.serialNumber ? [{ key: "S/N", val: row.serialNumber }] : [],
       maintenance,
     }
