@@ -1,8 +1,9 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import Link from "next/link"
 import type { Insight, Report, StoreKpi, IntelligenceMeta } from "@/app/api/intelligence/route"
+import { useIntelligence } from "@/lib/api-hooks"
 
 type FilterType = "Toate" | "Analytics" | "AI Insights" | "Rapoarte"
 
@@ -706,16 +707,9 @@ function SkeletonRow() {
 }
 
 export default function IntelligenceListClient() {
-  const [data, setData] = useState<IntelligenceData | null>(null)
   const [filter, setFilter] = useState<FilterType>("Toate")
   const [fabOpen, setFabOpen] = useState(false)
-
-  useEffect(() => {
-    fetch("/api/intelligence")
-      .then((r) => r.json())
-      .then((d) => setData(d as IntelligenceData))
-      .catch(() => {})
-  }, [])
+  const { data } = useIntelligence()
 
   const filters: FilterType[] = ["Toate", "Analytics", "AI Insights", "Rapoarte"]
 

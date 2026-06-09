@@ -3,10 +3,12 @@ import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
 import { db } from "@prv/db"
 import { attendanceRecords, leaveRequests, users, stores } from "@prv/db/schema"
-import { and, eq } from "drizzle-orm"
+import { and, eq, gt } from "drizzle-orm"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
+
+const LIMIT = 50
 
 export type AttendanceStatus = "present" | "late" | "absent" | "leave" | "clocked_out"
 
@@ -102,6 +104,7 @@ export const GET = withGates(
     const { searchParams } = req.nextUrl
     const statusFilter = searchParams.get("status") as AttendanceStatus | null
     const dateParam = searchParams.get("date") ?? todayStr()
+    const cursor = searchParams.get("cursor")
 
     const rows = await db
       .select({
@@ -127,11 +130,17 @@ export const GET = withGates(
       .where(
         and(
           eq(attendanceRecords.companyId, ctx.session.companyId),
-          eq(attendanceRecords.date, dateParam)
+          eq(attendanceRecords.date, dateParam),
+          cursor ? gt(attendanceRecords.id, cursor) : undefined
         )
       )
+      .limit(LIMIT + 1)
 
-    const all: AttendanceRecord[] = rows.map((r) => {
+    const hasMore = rows.length > LIMIT
+    const page = hasMore ? rows.slice(0, LIMIT) : rows
+    const nextCursor = hasMore ? (page[page.length - 1]?.id ?? null) : null
+
+    const all: AttendanceRecord[] = page.map((r) => {
       const activeMinutes = computeActiveMinutes(r.clockIn, r.clockOut)
       return {
         id: r.id,
@@ -163,6 +172,6 @@ export const GET = withGates(
       dateLabel: fmtDateLabel(dateParam),
     }
 
-    return NextResponse.json({ records: filtered, count: filtered.length, meta })
+    return NextResponse.json({ records: filtered, count: filtered.length, meta, nextCursor })
   }
 )

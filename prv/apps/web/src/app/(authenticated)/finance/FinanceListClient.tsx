@@ -1,10 +1,11 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import type { Expense, PlRow, FinanceMeta } from "@/app/api/finance/expenses/route"
 import type { InvoiceSummary } from "@/app/api/finance/invoices/route"
+import { useExpenses, useInvoices } from "@/lib/api-hooks"
 
 type FilterType = "Toate" | "Venituri" | "Cheltuieli" | "Facturi" | "Rapoarte"
 
@@ -713,26 +714,28 @@ function SheetAction({
 export function FinanceListClient() {
   const router = useRouter()
   const [filter, setFilter] = useState<FilterType>("Toate")
-  const [expData, setExpData] = useState<FinanceData | null>(null)
-  const [invoices, setInvoices] = useState<InvoiceSummary[]>([])
-  const [loading, setLoading] = useState(true)
   const [fabOpen, setFabOpen] = useState(false)
 
-  useEffect(() => {
-    Promise.all([
-      fetch("/api/finance/expenses").then((r) => r.json()),
-      fetch("/api/finance/invoices").then((r) => r.json()),
-    ])
-      .then(([expJson, invJson]) => {
-        setExpData(expJson as FinanceData)
-        setInvoices((invJson as { invoices: InvoiceSummary[] }).invoices ?? [])
-      })
-      .finally(() => setLoading(false))
-  }, [])
+  const {
+    data: expData,
+    isLoading: expLoading,
+    hasNextPage: expHasNextPage,
+    fetchNextPage: expFetchNextPage,
+    isFetchingNextPage: expFetchingNextPage,
+  } = useExpenses()
+  const {
+    data: invData,
+    isLoading: invLoading,
+    hasNextPage: invHasNextPage,
+    fetchNextPage: invFetchNextPage,
+    isFetchingNextPage: invFetchingNextPage,
+  } = useInvoices()
 
+  const loading = expLoading || invLoading
   const meta = expData?.meta
   const plData = expData?.plData ?? []
   const expenses = expData?.expenses ?? []
+  const invoices: InvoiceSummary[] = invData?.invoices ?? []
   const pendingInvoices = invoices.filter((i) => i.status === "overdue" || i.status === "due")
 
   const filters: FilterType[] = ["Toate", "Venituri", "Cheltuieli", "Facturi", "Rapoarte"]
@@ -1040,6 +1043,49 @@ export function FinanceListClient() {
           </div>
         )}
       </div>
+
+
+        {expHasNextPage && (
+          <button
+            onClick={() => expFetchNextPage()}
+            disabled={expFetchingNextPage}
+            style={{
+              width: "100%",
+              padding: "12px",
+              background: "rgba(255,255,255,0.06)",
+              border: "1px solid rgba(255,255,255,0.12)",
+              borderRadius: 12,
+              color: "rgba(255,255,255,0.65)",
+              fontSize: 13,
+              fontWeight: 500,
+              cursor: expFetchingNextPage ? "default" : "pointer",
+              marginTop: 8,
+            }}
+          >
+            {expFetchingNextPage ? "Se încarcă..." : "Încarcă mai mult"}
+          </button>
+        )}
+
+        {invHasNextPage && (
+          <button
+            onClick={() => invFetchNextPage()}
+            disabled={invFetchingNextPage}
+            style={{
+              width: "100%",
+              padding: "12px",
+              background: "rgba(255,255,255,0.06)",
+              border: "1px solid rgba(255,255,255,0.12)",
+              borderRadius: 12,
+              color: "rgba(255,255,255,0.65)",
+              fontSize: 13,
+              fontWeight: 500,
+              cursor: invFetchingNextPage ? "default" : "pointer",
+              marginTop: 8,
+            }}
+          >
+            {invFetchingNextPage ? "Se încarcă..." : "Încarcă mai mult"}
+          </button>
+        )}
 
       {/* FAB */}
       <button

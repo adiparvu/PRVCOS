@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
 import Link from "next/link"
+import { useRoles } from "@/lib/api-hooks"
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
@@ -205,27 +205,10 @@ function Section({ label, children }: { label: string; children: React.ReactNode
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function AdminClient() {
-  const [roleCount, setRoleCount] = useState<number | null>(null)
-  const [loading, setLoading] = useState(true)
+  const { data: roles, isLoading } = useRoles()
+  const roleCount: number | null = roles != null ? roles.length : null
 
-  const load = useCallback(async () => {
-    setLoading(true)
-    try {
-      const res = await fetch("/api/roles")
-      if (res.ok) {
-        const data = await res.json()
-        setRoleCount((data.roles as Role[]).length)
-      }
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    load()
-  }, [load])
-
-  if (loading) return <Skeleton />
+  if (isLoading) return <Skeleton />
 
   return (
     <div className="px-4 pt-14 pb-28 max-w-2xl mx-auto">

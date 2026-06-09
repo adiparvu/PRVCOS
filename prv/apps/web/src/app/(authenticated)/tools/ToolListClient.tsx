@@ -1,9 +1,10 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState } from "react"
 import Link from "next/link"
 import { useSheetStack } from "@prv/ui"
 import type { ToolSummary, ToolsMeta } from "@/app/api/tools/route"
+import { useTools } from "@/lib/api-hooks"
 
 type FilterType = "Toate" | "Disponibil" | "Ocupat" | "Service" | "Lipsă"
 
@@ -248,9 +249,6 @@ function SheetBtn({
 
 export function ToolListClient() {
   const [filter, setFilter] = useState<FilterType>("Toate")
-  const [tools, setTools] = useState<ToolSummary[] | null>(null)
-  const [meta, setMeta] = useState<ToolsMeta | null>(null)
-  const [error, setError] = useState(false)
   const { openSheet } = useSheetStack()
 
   const statusParam: Record<FilterType, string | null> = {
@@ -260,29 +258,11 @@ export function ToolListClient() {
     Service: "Maintenance",
     Lipsă: "Missing",
   }
-
-  const fetchTools = useCallback(async (f: FilterType) => {
-    setError(false)
-    const sp = statusParam[f]
-    const params = sp ? `?status=${encodeURIComponent(sp)}` : ""
-    try {
-      const res = await fetch(`/api/tools${params}`)
-      if (!res.ok) throw new Error()
-      const data = (await res.json()) as {
-        tools: ToolSummary[]
-        count: number
-        meta: ToolsMeta
-      }
-      setTools(data.tools)
-      setMeta((prev) => prev ?? data.meta)
-    } catch {
-      setError(true)
-    }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    void fetchTools(filter)
-  }, [filter, fetchTools])
+  const status = statusParam[filter]
+  const { data, isLoading, isError, hasNextPage, fetchNextPage, isFetchingNextPage } = useTools(status)
+  const tools: ToolSummary[] | null = isLoading ? null : (data?.tools ?? [])
+  const meta: ToolsMeta | null = data?.meta ?? null
+  const error = isError
 
   const handleFAB = () => {
     openSheet({
@@ -763,6 +743,28 @@ export function ToolListClient() {
           })}
         </div>
       )}
+
+
+        {hasNextPage && (
+          <button
+            onClick={() => fetchNextPage()}
+            disabled={isFetchingNextPage}
+            style={{
+              width: "100%",
+              padding: "12px",
+              background: "rgba(255,255,255,0.06)",
+              border: "1px solid rgba(255,255,255,0.12)",
+              borderRadius: 12,
+              color: "rgba(255,255,255,0.65)",
+              fontSize: 13,
+              fontWeight: 500,
+              cursor: isFetchingNextPage ? "default" : "pointer",
+              marginTop: 8,
+            }}
+          >
+            {isFetchingNextPage ? "Se încarcă..." : "Încarcă mai mult"}
+          </button>
+        )}
 
       {/* FAB */}
       <button

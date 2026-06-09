@@ -1,8 +1,9 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import Link from "next/link"
 import type { Store, Task, Order, Alert, OperationsMeta } from "@/app/api/operations/route"
+import { useOperationsData } from "@/lib/api-hooks"
 
 type FilterType = "Toate" | "Magazine" | "Sarcini" | "Comenzi"
 
@@ -497,16 +498,9 @@ function SkeletonRow() {
 }
 
 export default function OperationsListClient() {
-  const [data, setData] = useState<OperationsData | null>(null)
   const [filter, setFilter] = useState<FilterType>("Toate")
   const [fabOpen, setFabOpen] = useState(false)
-
-  useEffect(() => {
-    fetch("/api/operations")
-      .then((r) => r.json())
-      .then((d) => setData(d as OperationsData))
-      .catch(() => {})
-  }, [])
+  const { data } = useOperationsData()
 
   const filters: FilterType[] = ["Toate", "Magazine", "Sarcini", "Comenzi"]
 

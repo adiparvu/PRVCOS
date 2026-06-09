@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import Link from "next/link"
 import type {
   Course,
@@ -9,6 +9,7 @@ import type {
   CourseCategory,
   CourseStatus,
 } from "@/app/api/learning/route"
+import { useCourses } from "@/lib/api-hooks"
 
 type FilterType = "Toate" | "În Curs" | "Recomandate" | "Completate" | "Salvate"
 
@@ -482,23 +483,13 @@ function SkeletonCard() {
 
 export function LearningListClient() {
   const [filter, setFilter] = useState<FilterType>("Toate")
-  const [courses, setCourses] = useState<Course[]>([])
-  const [meta, setMeta] = useState<LearningMeta | null>(null)
-  const [achievements, setAchievements] = useState<Achievement[]>([])
-  const [loading, setLoading] = useState(true)
   const [fabOpen, setFabOpen] = useState(false)
   const [search, setSearch] = useState("")
-
-  useEffect(() => {
-    fetch("/api/learning")
-      .then((r) => r.json())
-      .then((data) => {
-        setCourses(data.courses ?? [])
-        setMeta(data.meta ?? null)
-        setAchievements(data.achievements ?? [])
-      })
-      .finally(() => setLoading(false))
-  }, [])
+  const { data, isLoading, hasNextPage, fetchNextPage, isFetchingNextPage } = useCourses()
+  const courses: Course[] = data?.courses ?? []
+  const meta: LearningMeta | null = data?.meta ?? null
+  const achievements: Achievement[] = data?.achievements ?? []
+  const loading = isLoading
 
   const FILTERS: FilterType[] = ["Toate", "În Curs", "Recomandate", "Completate", "Salvate"]
 
@@ -736,6 +727,28 @@ export function LearningListClient() {
             </div>
           )}
         </>
+      )}
+
+
+      {hasNextPage && (
+        <button
+          onClick={() => fetchNextPage()}
+          disabled={isFetchingNextPage}
+          style={{
+            width: "100%",
+            padding: "12px",
+            background: "rgba(255,255,255,0.06)",
+            border: "1px solid rgba(255,255,255,0.12)",
+            borderRadius: 12,
+            color: "rgba(255,255,255,0.65)",
+            fontSize: 13,
+            fontWeight: 500,
+            cursor: isFetchingNextPage ? "default" : "pointer",
+            marginTop: 8,
+          }}
+        >
+          {isFetchingNextPage ? "Se încarcă..." : "Încarcă mai mult"}
+        </button>
       )}
 
       {/* FAB */}

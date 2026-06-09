@@ -329,6 +329,6 @@ export const GET = withGates(
       activeAlerts,
     }
 
-    return NextResponse.json({ insights: insightList, reports: reportList, storeKpis, meta })
+    return NextResponse.json({ insights: insightList, reports: reportList, storeKpis, meta, nextCursor: null })
   }
 )

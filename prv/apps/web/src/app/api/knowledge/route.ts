@@ -3,10 +3,12 @@ import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
 import { db } from "@prv/db"
 import { knowledgeArticles, articleReadProgress, users } from "@prv/db/schema"
-import { and, desc, eq, gte, isNull } from "drizzle-orm"
+import { and, desc, eq, gt, gte, isNull } from "drizzle-orm"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
+
+const LIMIT = 50
 
 export type ArticleType = "sop" | "policy" | "guide" | "faq"
 export type ArticleCategory = "operations" | "hr" | "finance" | "procurement" | "fleet" | "projects"
@@ -78,6 +80,7 @@ export const GET = withGates(
     const { searchParams } = req.nextUrl
     const typeFilter = searchParams.get("type") as ArticleType | null
     const categoryFilter = searchParams.get("category") as ArticleCategory | null
+    const cursor = searchParams.get("cursor")
     const { companyId, userId } = ctx.session
 
     const thirtyDaysAgo = new Date()
@@ -101,8 +104,9 @@ export const GET = withGates(
         })
         .from(knowledgeArticles)
         .leftJoin(users, eq(knowledgeArticles.authorUserId, users.id))
-        .where(and(eq(knowledgeArticles.companyId, companyId), isNull(knowledgeArticles.deletedAt)))
-        .orderBy(desc(knowledgeArticles.isPinned), desc(knowledgeArticles.updatedAt)),
+        .where(and(eq(knowledgeArticles.companyId, companyId), isNull(knowledgeArticles.deletedAt), cursor ? gt(knowledgeArticles.id, cursor) : undefined))
+        .orderBy(desc(knowledgeArticles.isPinned), desc(knowledgeArticles.updatedAt))
+        .limit(LIMIT + 1),
 
       db
         .select({
@@ -115,6 +119,10 @@ export const GET = withGates(
         ),
     ])
 
+    const hasMore = articleRows.length > LIMIT
+    const pageRows = hasMore ? articleRows.slice(0, LIMIT) : articleRows
+    const nextCursor = hasMore ? (pageRows[pageRows.length - 1]?.id ?? null) : null
+
     // 2. Index progress by articleId
     const progressByArticle = new Map<string, number>()
     for (const p of progressRows) {
@@ -122,7 +130,7 @@ export const GET = withGates(
     }
 
     // 3. Assemble + filter
-    let result: KnowledgeArticle[] = articleRows.map((r) => {
+    let result: KnowledgeArticle[] = pageRows.map((r) => {
       const type = r.type as ArticleType
       const category = r.category as ArticleCategory
       return {
@@ -147,11 +155,11 @@ export const GET = withGates(
     if (categoryFilter) result = result.filter((a) => a.category === categoryFilter)
 
     const meta: KnowledgeMeta = {
-      total: articleRows.length,
-      sopCount: articleRows.filter((a) => a.type === "sop").length,
-      recentlyUpdated: articleRows.filter((a) => a.updatedAt >= thirtyDaysAgo).length,
+      total: pageRows.length,
+      sopCount: pageRows.filter((a) => a.type === "sop").length,
+      recentlyUpdated: pageRows.filter((a) => a.updatedAt >= thirtyDaysAgo).length,
     }
 
-    return NextResponse.json({ articles: result, count: result.length, meta })
+    return NextResponse.json({ articles: result, count: result.length, meta, nextCursor })
   }
 )

@@ -3,10 +3,12 @@ import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
 import { db } from "@prv/db"
 import { tools, users, stores } from "@prv/db/schema"
-import { and, asc, eq, isNull } from "drizzle-orm"
+import { and, asc, eq, gt, isNull } from "drizzle-orm"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
+
+const LIMIT = 50
 
 export type ToolStatus = "Available" | "In Use" | "Maintenance" | "Missing"
 
@@ -75,6 +77,7 @@ export const GET = withGates(
   { action: "tools.read", endpointClass: "api_read" },
   async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
     const statusFilter = req.nextUrl.searchParams.get("status") as ToolStatus | null
+    const cursor = req.nextUrl.searchParams.get("cursor")
 
     const now = new Date()
     const SERVICE_THRESHOLD_MS = 180 * 86_400_000
@@ -97,10 +100,15 @@ export const GET = withGates(
       .from(tools)
       .leftJoin(users, eq(tools.assignedUserId, users.id))
       .leftJoin(stores, eq(tools.storeId, stores.id))
-      .where(and(eq(tools.companyId, ctx.session.companyId), isNull(tools.deletedAt)))
+      .where(and(eq(tools.companyId, ctx.session.companyId), isNull(tools.deletedAt), cursor ? gt(tools.id, cursor) : undefined))
       .orderBy(asc(tools.name))
+      .limit(LIMIT + 1)
 
-    const all: ToolSummary[] = rows.map((r) => {
+    const hasMore = rows.length > LIMIT
+    const page = hasMore ? rows.slice(0, LIMIT) : rows
+    const nextCursor = hasMore ? (page[page.length - 1]?.id ?? null) : null
+
+    const all: ToolSummary[] = page.map((r) => {
       const apiStatus = dbStatusToApi(r.status)
       const isInUse = apiStatus === "In Use"
       const assignedTo =
@@ -147,6 +155,6 @@ export const GET = withGates(
       overdueCount,
     }
 
-    return NextResponse.json({ tools: filtered, count: filtered.length, meta })
+    return NextResponse.json({ tools: filtered, count: filtered.length, meta, nextCursor })
   }
 )

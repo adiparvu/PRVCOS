@@ -1,9 +1,10 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState } from "react"
 import Link from "next/link"
 import { useSheetStack } from "@prv/ui"
 import type { AttendanceRecord, AttendanceMeta, AttendanceStatus } from "@/app/api/attendance/route"
+import { useAttendanceRecords } from "@/lib/api-hooks"
 
 type FilterType = "Toți" | "Prezenți" | "Întârzieri" | "Absenți" | "Concediu"
 
@@ -267,38 +268,18 @@ function SheetBtn({
 }
 
 export function AttendanceListClient() {
-  const [records, setRecords] = useState<AttendanceRecord[]>([])
-  const [meta, setMeta] = useState<AttendanceMeta | null>(null)
-  const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<FilterType>("Toți")
   const { openSheet } = useSheetStack()
+  const status = FILTER_TO_STATUS[filter]
+  const { data, isLoading, hasNextPage, fetchNextPage, isFetchingNextPage } = useAttendanceRecords(status)
+  const allRecords: AttendanceRecord[] = data?.records ?? []
+  const meta: AttendanceMeta | null = data?.meta ?? null
+  const loading = isLoading
 
-  const fetchRecords = useCallback(async () => {
-    setLoading(true)
-    try {
-      const status = FILTER_TO_STATUS[filter]
-      const url = status ? `/api/attendance?status=${status}` : "/api/attendance"
-      const res = await fetch(url)
-      const data = await res.json()
-      let list: AttendanceRecord[] = data.records ?? []
-      if (filter === "Prezenți") {
-        list = list.concat(
-          (data.records ?? []).filter((r: AttendanceRecord) => r.status === "clocked_out")
-        )
-        list = list.filter(
-          (r: AttendanceRecord) => r.status === "present" || r.status === "clocked_out"
-        )
-      }
-      setRecords(list)
-      setMeta(data.meta)
-    } finally {
-      setLoading(false)
-    }
-  }, [filter])
-
-  useEffect(() => {
-    fetchRecords()
-  }, [fetchRecords])
+  let records = allRecords
+  if (filter === "Prezenți") {
+    records = allRecords.filter((r) => r.status === "present" || r.status === "clocked_out")
+  }
 
   const handleFAB = () => {
     openSheet({
@@ -602,6 +583,28 @@ export function AttendanceListClient() {
         </>
       ) : (
         records.map((r, i) => <EmployeeRow key={r.id} record={r} index={i} />)
+      )}
+
+
+      {hasNextPage && (
+        <button
+          onClick={() => fetchNextPage()}
+          disabled={isFetchingNextPage}
+          style={{
+            width: "100%",
+            padding: "12px",
+            background: "rgba(255,255,255,0.06)",
+            border: "1px solid rgba(255,255,255,0.12)",
+            borderRadius: 12,
+            color: "rgba(255,255,255,0.65)",
+            fontSize: 13,
+            fontWeight: 500,
+            cursor: isFetchingNextPage ? "default" : "pointer",
+            marginTop: 8,
+          }}
+        >
+          {isFetchingNextPage ? "Se încarcă..." : "Încarcă mai mult"}
+        </button>
       )}
 
       {/* FAB */}

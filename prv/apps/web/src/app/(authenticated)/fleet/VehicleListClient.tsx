@@ -1,9 +1,10 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState } from "react"
 import Link from "next/link"
 import { useSheetStack } from "@prv/ui"
 import type { VehicleSummary, FleetMeta, VehicleStatus } from "@/app/api/fleet/route"
+import { useVehicles } from "@/lib/api-hooks"
 
 type FilterType = "Toate" | "Active" | "Service" | "Idle" | "Indisponibil"
 
@@ -214,37 +215,20 @@ function SheetBtn({
 
 export function VehicleListClient() {
   const [filter, setFilter] = useState<FilterType>("Toate")
-  const [vehicles, setVehicles] = useState<VehicleSummary[] | null>(null)
-  const [meta, setMeta] = useState<FleetMeta | null>(null)
-  const [error, setError] = useState(false)
   const { openSheet } = useSheetStack()
 
-  const fetchVehicles = useCallback(async (f: FilterType) => {
-    setError(false)
-    const params = new URLSearchParams()
-    if (f === "Active") params.set("status", "Active")
-    else if (f === "Service") params.set("status", "Service")
-    else if (f === "Idle") params.set("status", "Idle")
-    else if (f === "Indisponibil") params.set("status", "Unavailable")
-
-    try {
-      const res = await fetch(`/api/fleet?${params.toString()}`)
-      if (!res.ok) throw new Error()
-      const data = (await res.json()) as {
-        vehicles: VehicleSummary[]
-        count: number
-        meta: FleetMeta
-      }
-      setVehicles(data.vehicles)
-      setMeta((prev) => prev ?? data.meta)
-    } catch {
-      setError(true)
-    }
-  }, [])
-
-  useEffect(() => {
-    void fetchVehicles(filter)
-  }, [filter, fetchVehicles])
+  const statusParam: Record<FilterType, string | null> = {
+    Toate: null,
+    Active: "Active",
+    Service: "Service",
+    Idle: "Idle",
+    Indisponibil: "Unavailable",
+  }
+  const status = statusParam[filter]
+  const { data, isLoading, isError, hasNextPage, fetchNextPage, isFetchingNextPage } = useVehicles(status)
+  const vehicles: VehicleSummary[] | null = isLoading ? null : (data?.vehicles ?? [])
+  const meta: FleetMeta | null = data?.meta ?? null
+  const error = isError
 
   const handleFAB = () => {
     openSheet({
@@ -636,6 +620,28 @@ export function VehicleListClient() {
           })}
         </div>
       )}
+
+
+        {hasNextPage && (
+          <button
+            onClick={() => fetchNextPage()}
+            disabled={isFetchingNextPage}
+            style={{
+              width: "100%",
+              padding: "12px",
+              background: "rgba(255,255,255,0.06)",
+              border: "1px solid rgba(255,255,255,0.12)",
+              borderRadius: 12,
+              color: "rgba(255,255,255,0.65)",
+              fontSize: 13,
+              fontWeight: 500,
+              cursor: isFetchingNextPage ? "default" : "pointer",
+              marginTop: 8,
+            }}
+          >
+            {isFetchingNextPage ? "Se încarcă..." : "Încarcă mai mult"}
+          </button>
+        )}
 
       {/* FAB */}
       <button

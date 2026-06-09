@@ -243,6 +243,7 @@ export const GET = withGates(
       orders: orderList,
       meta,
       alerts: [],
+      nextCursor: null,
     })
   }
 )

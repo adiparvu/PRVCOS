@@ -1,9 +1,10 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState } from "react"
 import Link from "next/link"
 import { useSheetStack } from "@prv/ui"
 import type { ShiftSummary, ShiftsMeta, ShiftRole, ShiftStatus } from "@/app/api/schedule/route"
+import { useShifts } from "@/lib/api-hooks"
 
 type FilterType = "Toate" | "Astăzi" | "Confirmat" | "Neacoperit" | "Ciornă"
 
@@ -438,33 +439,16 @@ function SheetBtn({
 }
 
 export function ScheduleListClient() {
-  const [shifts, setShifts] = useState<ShiftSummary[]>([])
-  const [meta, setMeta] = useState<ShiftsMeta | null>(null)
-  const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<FilterType>("Toate")
   const { openSheet } = useSheetStack()
-
-  const fetchShifts = useCallback(async () => {
-    setLoading(true)
-    try {
-      const status = FILTER_TO_STATUS[filter]
-      const url = status ? `/api/schedule?status=${status}` : "/api/schedule"
-      const res = await fetch(url)
-      const data = await res.json()
-      let list: ShiftSummary[] = data.shifts ?? []
-      if (filter === "Astăzi") {
-        list = list.filter((s) => s.dayLabel === TODAY_LABEL)
-      }
-      setShifts(list)
-      setMeta(data.meta)
-    } finally {
-      setLoading(false)
-    }
-  }, [filter])
-
-  useEffect(() => {
-    fetchShifts()
-  }, [fetchShifts])
+  const status = FILTER_TO_STATUS[filter]
+  const { data, isLoading, hasNextPage, fetchNextPage, isFetchingNextPage } = useShifts(status)
+  let shifts: ShiftSummary[] = data?.shifts ?? []
+  if (filter === "Astăzi") {
+    shifts = shifts.filter((s) => s.dayLabel === TODAY_LABEL)
+  }
+  const meta: ShiftsMeta | null = data?.meta ?? null
+  const loading = isLoading
 
   const handleFAB = () => {
     openSheet({
@@ -837,6 +821,28 @@ export function ScheduleListClient() {
             )
           })}
         </>
+      )}
+
+
+      {hasNextPage && (
+        <button
+          onClick={() => fetchNextPage()}
+          disabled={isFetchingNextPage}
+          style={{
+            width: "100%",
+            padding: "12px",
+            background: "rgba(255,255,255,0.06)",
+            border: "1px solid rgba(255,255,255,0.12)",
+            borderRadius: 12,
+            color: "rgba(255,255,255,0.65)",
+            fontSize: 13,
+            fontWeight: 500,
+            cursor: isFetchingNextPage ? "default" : "pointer",
+            marginTop: 8,
+          }}
+        >
+          {isFetchingNextPage ? "Se încarcă..." : "Încarcă mai mult"}
+        </button>
       )}
 
       {/* FAB */}

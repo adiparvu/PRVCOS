@@ -3,10 +3,12 @@ import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
 import { db } from "@prv/db"
 import { shifts, shiftAssignments, users, stores, projects } from "@prv/db/schema"
-import { and, asc, eq, gte, inArray, isNull, lte } from "drizzle-orm"
+import { and, asc, eq, gt, gte, inArray, isNull, lte } from "drizzle-orm"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
+
+const LIMIT = 50
 
 export type ShiftStatus = "confirmed" | "open" | "draft" | "scheduled"
 export type ShiftRole = "foreman" | "bricklayer" | "electrician" | "finisher" | "welder" | "general"
@@ -103,6 +105,7 @@ export const GET = withGates(
   async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
     const { searchParams } = req.nextUrl
     const statusFilter = searchParams.get("status") as ShiftStatus | null
+    const cursor = searchParams.get("cursor")
     const anchor = searchParams.get("week") ?? todayStr()
     const { monday, sunday, weekLabel } = weekBounds(anchor)
 
@@ -132,17 +135,23 @@ export const GET = withGates(
           eq(shifts.companyId, ctx.session.companyId),
           isNull(shifts.deletedAt),
           gte(shifts.date, monday),
-          lte(shifts.date, sunday)
+          lte(shifts.date, sunday),
+          cursor ? gt(shifts.id, cursor) : undefined
         )
       )
       .orderBy(asc(shifts.date), asc(shifts.startTime))
+      .limit(LIMIT + 1)
 
     if (shiftRows.length === 0) {
       const meta: ShiftsMeta = { total: 0, open: 0, coveragePct: 100, totalHours: 0, weekLabel }
       return NextResponse.json({ shifts: [], count: 0, meta })
     }
 
-    const shiftIds = shiftRows.map((s) => s.id)
+    const hasMore = shiftRows.length > LIMIT
+    const pageRows = hasMore ? shiftRows.slice(0, LIMIT) : shiftRows
+    const nextCursor = hasMore ? (pageRows[pageRows.length - 1]?.id ?? null) : null
+
+    const shiftIds = pageRows.map((s) => s.id)
 
     // 2. Fetch assignees for all shifts in one query
     const assigneeRows = await db
@@ -169,7 +178,7 @@ export const GET = withGates(
     }
 
     // 4. Assemble shifts
-    const all: ShiftSummary[] = shiftRows.map((s) => {
+    const all: ShiftSummary[] = pageRows.map((s) => {
       const assignees = assigneesByShift.get(s.id) ?? []
       const openSlots = Math.max(0, s.totalSlots - assignees.length)
       const role = s.role as ShiftRole
@@ -208,6 +217,6 @@ export const GET = withGates(
       weekLabel,
     }
 
-    return NextResponse.json({ shifts: filtered, count: filtered.length, meta })
+    return NextResponse.json({ shifts: filtered, count: filtered.length, meta, nextCursor })
   }
 )

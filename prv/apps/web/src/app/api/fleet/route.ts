@@ -4,10 +4,12 @@ import type { GateContext } from "@prv/auth"
 import { db } from "@prv/db"
 import { vehicles, stores } from "@prv/db/schema"
 import { users } from "@prv/db/schema"
-import { and, asc, eq, isNull } from "drizzle-orm"
+import { and, asc, eq, gt, isNull } from "drizzle-orm"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
+
+const LIMIT = 50
 
 export type VehicleStatus = "Active" | "Idle" | "Service" | "Unavailable"
 
@@ -57,6 +59,7 @@ export const GET = withGates(
   async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
     const { searchParams } = new URL(req.url)
     const statusFilter = searchParams.get("status") as VehicleStatus | null
+    const cursor = searchParams.get("cursor")
 
     const rows = await db
       .select({
@@ -77,10 +80,15 @@ export const GET = withGates(
       .from(vehicles)
       .leftJoin(users, eq(vehicles.assignedUserId, users.id))
       .leftJoin(stores, eq(vehicles.storeId, stores.id))
-      .where(and(eq(vehicles.companyId, ctx.session.companyId), isNull(vehicles.deletedAt)))
+      .where(and(eq(vehicles.companyId, ctx.session.companyId), isNull(vehicles.deletedAt), cursor ? gt(vehicles.id, cursor) : undefined))
       .orderBy(asc(vehicles.licensePlate))
+      .limit(LIMIT + 1)
 
-    const all: VehicleSummary[] = rows.map((r) => {
+    const hasMore = rows.length > LIMIT
+    const page = hasMore ? rows.slice(0, LIMIT) : rows
+    const nextCursor = hasMore ? (page[page.length - 1]?.id ?? null) : null
+
+    const all: VehicleSummary[] = page.map((r) => {
       const driverName =
         r.driverFirstName && r.driverLastName ? `${r.driverFirstName} ${r.driverLastName}` : null
       const apiStatus = dbStatusToApi(r.status, driverName !== null)
@@ -114,6 +122,6 @@ export const GET = withGates(
       serviceAlert: inServiceCount > 0,
     }
 
-    return NextResponse.json({ vehicles: filtered, count: filtered.length, meta })
+    return NextResponse.json({ vehicles: filtered, count: filtered.length, meta, nextCursor })
   }
 )

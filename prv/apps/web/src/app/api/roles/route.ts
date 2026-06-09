@@ -39,7 +39,7 @@ export const GET = withGates(
       )
       .orderBy(roles.type, roles.name)
 
-    return NextResponse.json({ roles: rows })
+    return NextResponse.json({ roles: rows, nextCursor: null })
   }
 )
 

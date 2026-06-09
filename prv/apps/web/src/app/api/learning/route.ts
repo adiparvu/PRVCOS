@@ -3,10 +3,12 @@ import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
 import { db } from "@prv/db"
 import { learningCourses, courseEnrollments, userAchievements, users } from "@prv/db/schema"
-import { and, desc, eq, isNull } from "drizzle-orm"
+import { and, desc, eq, gt, isNull } from "drizzle-orm"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
+
+const LIMIT = 50
 
 export type CourseStatus = "in_progress" | "completed" | "new" | "saved"
 export type CourseCategory =
@@ -100,6 +102,7 @@ export const GET = withGates(
     const { searchParams } = req.nextUrl
     const statusFilter = searchParams.get("status") as CourseStatus | null
     const categoryFilter = searchParams.get("category") as CourseCategory | null
+    const cursor = searchParams.get("cursor")
     const { companyId, userId } = ctx.session
 
     // 1. Fetch courses, user enrollments, and achievements in parallel
@@ -126,10 +129,12 @@ export const GET = withGates(
           and(
             eq(learningCourses.companyId, companyId),
             eq(learningCourses.isActive, true),
-            isNull(learningCourses.deletedAt)
+            isNull(learningCourses.deletedAt),
+            cursor ? gt(learningCourses.id, cursor) : undefined
           )
         )
-        .orderBy(desc(learningCourses.isFeatured), desc(learningCourses.updatedAt)),
+        .orderBy(desc(learningCourses.isFeatured), desc(learningCourses.updatedAt))
+        .limit(LIMIT + 1),
 
       db
         .select({
@@ -157,11 +162,15 @@ export const GET = withGates(
         .orderBy(desc(userAchievements.achievedAt)),
     ])
 
+    const hasMore = courseRows.length > LIMIT
+    const pageRows = hasMore ? courseRows.slice(0, LIMIT) : courseRows
+    const nextCursor = hasMore ? (pageRows[pageRows.length - 1]?.id ?? null) : null
+
     // 2. Index enrollments by courseId
     const enrollmentByCourse = new Map(enrollmentRows.map((e) => [e.courseId, e]))
 
     // 3. Assemble courses
-    let courses: Course[] = courseRows.map((c) => {
+    let courses: Course[] = pageRows.map((c) => {
       const enrollment = enrollmentByCourse.get(c.id)
       const category = c.category as CourseCategory
       return {
@@ -203,7 +212,7 @@ export const GET = withGates(
     monthStart.setDate(1)
     monthStart.setHours(0, 0, 0, 0)
 
-    const courseById = new Map(courseRows.map((c) => [c.id, c]))
+    const courseById = new Map(pageRows.map((c) => [c.id, c]))
 
     const monthlyMinutes = enrollmentRows.reduce((acc, e) => {
       if (e.updatedAt < monthStart) return acc
@@ -229,6 +238,6 @@ export const GET = withGates(
       avgScore,
     }
 
-    return NextResponse.json({ courses, count: courses.length, meta, achievements })
+    return NextResponse.json({ courses, count: courses.length, meta, achievements, nextCursor })
   }
 )

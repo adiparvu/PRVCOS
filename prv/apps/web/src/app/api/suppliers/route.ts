@@ -3,10 +3,12 @@ import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
 import { db } from "@prv/db"
 import { suppliers } from "@prv/db/schema"
-import { eq, and, isNull, desc } from "drizzle-orm"
+import { eq, and, gt, isNull, desc } from "drizzle-orm"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
+
+const LIMIT = 50
 
 export type SupplierStatus = "active" | "pending" | "at_risk" | "inactive"
 
@@ -90,6 +92,7 @@ export const GET = withGates(
   async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
     const { searchParams } = new URL(req.url)
     const statusFilter = searchParams.get("status") as SupplierStatus | null
+    const cursor = searchParams.get("cursor")
 
     const rows = await db
       .select({
@@ -102,16 +105,20 @@ export const GET = withGates(
         createdAt: suppliers.createdAt,
       })
       .from(suppliers)
-      .where(and(eq(suppliers.companyId, ctx.session.companyId), isNull(suppliers.deletedAt)))
+      .where(and(eq(suppliers.companyId, ctx.session.companyId), isNull(suppliers.deletedAt), cursor ? gt(suppliers.id, cursor) : undefined))
       .orderBy(desc(suppliers.createdAt))
-      .limit(200)
+      .limit(LIMIT + 1)
 
-    let results = rows.map(mapRow)
+    const hasMore = rows.length > LIMIT
+    const page = hasMore ? rows.slice(0, LIMIT) : rows
+    const nextCursor = hasMore ? (page[page.length - 1]?.id ?? null) : null
+
+    let results = page.map(mapRow)
 
     if (statusFilter) {
       results = results.filter((s) => s.status === statusFilter)
     }
 
-    return NextResponse.json({ suppliers: results, count: results.length })
+    return NextResponse.json({ suppliers: results, count: results.length, nextCursor })
   }
 )

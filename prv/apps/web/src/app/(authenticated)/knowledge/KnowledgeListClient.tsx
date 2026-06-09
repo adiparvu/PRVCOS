@@ -1,9 +1,10 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import Link from "next/link"
 import { useSheetStack } from "@prv/ui"
 import type { KnowledgeArticle, KnowledgeMeta, ArticleType } from "@/app/api/knowledge/route"
+import { useKnowledgeArticles } from "@/lib/api-hooks"
 
 type FilterType = "Toate" | "SOP" | "Politici" | "Ghiduri" | "FAQ"
 
@@ -337,20 +338,11 @@ function FeaturedCard({ article }: { article: KnowledgeArticle }) {
 
 export function KnowledgeListClient() {
   const [filter, setFilter] = useState<FilterType>("Toate")
-  const [articles, setArticles] = useState<KnowledgeArticle[]>([])
-  const [meta, setMeta] = useState<KnowledgeMeta | null>(null)
   const { openSheet } = useSheetStack()
-
-  useEffect(() => {
-    const type = FILTER_TO_TYPE[filter]
-    const url = type ? `/api/knowledge?type=${type}` : "/api/knowledge"
-    fetch(url)
-      .then((r) => r.json())
-      .then((data: { articles: KnowledgeArticle[]; meta: KnowledgeMeta }) => {
-        setArticles(data.articles)
-        if (data.meta) setMeta(data.meta)
-      })
-  }, [filter])
+  const type = FILTER_TO_TYPE[filter]
+  const { data, hasNextPage, fetchNextPage, isFetchingNextPage } = useKnowledgeArticles(type)
+  const articles: KnowledgeArticle[] = data?.articles ?? []
+  const meta: KnowledgeMeta | null = data?.meta ?? null
 
   const pinned = articles.find((a) => a.isPinned)
   const sops = articles.filter((a) => a.type === "sop" && !a.isPinned)
@@ -681,6 +673,28 @@ export function KnowledgeListClient() {
         <div style={{ textAlign: "center", padding: "40px 16px", color: t3, fontSize: 14 }}>
           Niciun articol găsit
         </div>
+      )}
+
+
+      {hasNextPage && (
+        <button
+          onClick={() => fetchNextPage()}
+          disabled={isFetchingNextPage}
+          style={{
+            width: "100%",
+            padding: "12px",
+            background: "rgba(255,255,255,0.06)",
+            border: "1px solid rgba(255,255,255,0.12)",
+            borderRadius: 12,
+            color: "rgba(255,255,255,0.65)",
+            fontSize: 13,
+            fontWeight: 500,
+            cursor: isFetchingNextPage ? "default" : "pointer",
+            marginTop: 8,
+          }}
+        >
+          {isFetchingNextPage ? "Se încarcă..." : "Încarcă mai mult"}
+        </button>
       )}
 
       {/* FAB */}

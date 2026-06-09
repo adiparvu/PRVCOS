@@ -1,8 +1,9 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState } from "react"
 import Link from "next/link"
 import type { SupplierSummary, SupplierStatus } from "@/app/api/suppliers/route"
+import { useSuppliers } from "@/lib/api-hooks"
 
 // ── Icons (SF Symbol style) ───────────────────────────────────────────────────
 
@@ -327,28 +328,11 @@ function SpendRow({ label, amount, pct }: { label: string; amount: number; pct: 
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 export function SupplierListClient() {
-  const [suppliers, setSuppliers] = useState<SupplierSummary[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const [filter, setFilter] = useState<FilterId>("all")
-
-  const fetchSuppliers = useCallback(async () => {
-    try {
-      setLoading(true)
-      const res = await fetch("/api/suppliers", { cache: "no-store" })
-      if (!res.ok) throw new Error("Failed to load")
-      const data = await res.json()
-      setSuppliers(data.suppliers)
-    } catch {
-      setError("Nu s-au putut încărca furnizorii.")
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    fetchSuppliers()
-  }, [fetchSuppliers])
+  const { data, isLoading, isError, hasNextPage, fetchNextPage, isFetchingNextPage } = useSuppliers()
+  const suppliers: SupplierSummary[] = data?.suppliers ?? []
+  const loading = isLoading
+  const error: string | null = isError ? "Nu s-au putut încărca furnizorii." : null
 
   const filtered = filter === "all" ? suppliers : suppliers.filter((s) => s.status === filter)
   const atRiskCount = suppliers.filter((s) => s.status === "at_risk").length
@@ -664,6 +648,27 @@ export function SupplierListClient() {
             </div>
           </div>
         </>
+      )}
+
+      {hasNextPage && (
+        <button
+          onClick={() => fetchNextPage()}
+          disabled={isFetchingNextPage}
+          style={{
+            width: "100%",
+            padding: "12px",
+            background: "rgba(255,255,255,0.06)",
+            border: "1px solid rgba(255,255,255,0.12)",
+            borderRadius: 12,
+            color: "rgba(255,255,255,0.65)",
+            fontSize: 13,
+            fontWeight: 500,
+            cursor: isFetchingNextPage ? "default" : "pointer",
+            marginTop: 8,
+          }}
+        >
+          {isFetchingNextPage ? "Se încarcă..." : "Încarcă mai mult"}
+        </button>
       )}
     </div>
   )
