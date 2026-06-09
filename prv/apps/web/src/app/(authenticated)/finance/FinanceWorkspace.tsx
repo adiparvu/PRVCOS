@@ -49,32 +49,10 @@ const PERIODS: SegmentItem[] = [
   { id: "1y", label: "1Y" },
 ]
 
-const CHART_DATA: Record<string, { labels: string[]; revenue: number[]; expenses: number[] }> = {
-  "1w": {
-    labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
-    revenue: [14, 18, 16, 21, 19, 24, 22],
-    expenses: [10, 12, 11, 14, 13, 15, 14],
-  },
-  "1m": {
-    labels: ["W1", "W2", "W3", "W4"],
-    revenue: [88, 102, 96, 118],
-    expenses: [64, 72, 70, 82],
-  },
-  "3m": {
-    labels: ["Apr", "May", "Jun"],
-    revenue: [340, 412, 482],
-    expenses: [248, 296, 344],
-  },
-  "6m": {
-    labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
-    revenue: [320, 348, 360, 402, 438, 482],
-    expenses: [234, 252, 258, 288, 316, 344],
-  },
-  "1y": {
-    labels: ["Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar", "Apr", "May", "Jun"],
-    revenue: [290, 305, 318, 330, 298, 310, 320, 348, 360, 402, 438, 482],
-    expenses: [210, 218, 226, 238, 214, 222, 234, 252, 258, 288, 316, 344],
-  },
+interface ChartData {
+  labels: string[]
+  revenue: number[]
+  expenses: number[]
 }
 
 const SPARK = {
@@ -305,6 +283,7 @@ export function FinanceWorkspace() {
   const [activeTab, setActiveTab] = useState("overview")
   const [meta, setMeta] = useState<FinanceMeta | null>(null)
   const [liveInvoices, setLiveInvoices] = useState<InvoiceSummary[]>([])
+  const [chart, setChart] = useState<ChartData | null>(null)
 
   useEffect(() => {
     Promise.all([
@@ -318,7 +297,12 @@ export function FinanceWorkspace() {
       .catch(() => {})
   }, [])
 
-  const chart = CHART_DATA[period]!
+  useEffect(() => {
+    fetch(`/api/finance/chart?period=${period}`)
+      .then((r) => r.json())
+      .then((data: ChartData) => setChart(data))
+      .catch(() => {})
+  }, [period])
 
   const overdueInvoices = liveInvoices.filter((inv) => inv.status === "overdue")
   const overdueCount = overdueInvoices.length
@@ -418,10 +402,10 @@ export function FinanceWorkspace() {
           <GlassCard className="mb-3.5 p-4">
             <GlassBarChart
               series={[
-                { label: "Revenue", data: chart.revenue },
-                { label: "Expenses", data: chart.expenses },
+                { label: "Revenue", data: chart?.revenue ?? [] },
+                { label: "Expenses", data: chart?.expenses ?? [] },
               ]}
-              labels={chart.labels}
+              labels={chart?.labels ?? []}
               height={180}
               legend
               animated
