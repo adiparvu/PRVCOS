@@ -83,8 +83,8 @@ export const GET = withGates(
 
     const clientIds = clientRows.map((c) => c.id)
 
-    // 2. LTV (paid invoices) and active project counts — parallel
-    const [ltvRows, projectRows] = await Promise.all([
+    // 2. LTV (paid invoices), active project counts, and open quote counts — parallel
+    const [ltvRows, projectRows, openQuoteRows] = await Promise.all([
       db
         .select({ clientId: invoices.clientId, total: sum(invoices.total) })
         .from(invoices)
@@ -112,6 +112,20 @@ export const GET = withGates(
           )
         )
         .groupBy(projects.clientId),
+
+      db
+        .select({ clientId: invoices.clientId, cnt: count() })
+        .from(invoices)
+        .where(
+          and(
+            eq(invoices.companyId, ctx.session.companyId),
+            isNotNull(invoices.clientId),
+            inArray(invoices.clientId, clientIds),
+            inArray(invoices.status, ["draft", "sent"]),
+            isNull(invoices.deletedAt)
+          )
+        )
+        .groupBy(invoices.clientId),
     ])
 
     const ltvByClient = new Map<string, number>()
@@ -122,6 +136,11 @@ export const GET = withGates(
     const activeProjectsByClient = new Map<string, number>()
     for (const row of projectRows) {
       if (row.clientId) activeProjectsByClient.set(row.clientId, row.cnt)
+    }
+
+    const openQuotesByClient = new Map<string, number>()
+    for (const row of openQuoteRows) {
+      if (row.clientId) openQuotesByClient.set(row.clientId, row.cnt)
     }
 
     // 3. Assemble and optionally filter by API status
@@ -136,7 +155,7 @@ export const GET = withGates(
           status: toApiStatus(c.status, ltv),
           ltv,
           activeProjects: activeProjectsByClient.get(c.id) ?? 0,
-          openQuotes: 0,
+          openQuotes: openQuotesByClient.get(c.id) ?? 0,
           nps: null,
           since: new Date(c.createdAt).getFullYear().toString(),
         }

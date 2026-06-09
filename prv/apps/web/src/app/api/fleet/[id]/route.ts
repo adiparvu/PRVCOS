@@ -2,8 +2,8 @@ import { withGates } from "@/lib/with-gates"
 import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
 import { db } from "@prv/db"
-import { vehicles, users, stores } from "@prv/db/schema"
-import { and, eq, isNull } from "drizzle-orm"
+import { vehicles, users, stores, auditLogs } from "@prv/db/schema"
+import { and, desc, eq, isNull } from "drizzle-orm"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -83,6 +83,26 @@ function dbStatusToApi(dbStatus: string, hasDriver: boolean): string {
   return "Idle"
 }
 
+function auditToActivityEvent(log: {
+  id: string
+  action: string
+  createdAt: Date
+}): ActivityEvent {
+  const label = (() => {
+    if (log.action === "fleet.create") return "Vehicul adăugat"
+    if (log.action === "fleet.update") return "Vehicul actualizat"
+    if (log.action === "fleet.delete") return "Vehicul retras"
+    if (log.action.includes("assign")) return "Șofer asignat"
+    return log.action
+  })()
+  const color = log.action.includes("delete")
+    ? "#FF453A"
+    : log.action.includes("create")
+      ? "#30D158"
+      : "rgba(255,255,255,0.65)"
+  return { id: log.id, time: fmtDate(log.createdAt), label, sub: "—", color }
+}
+
 export const GET = withGates(
   { action: "fleet.read", endpointClass: "api_read" },
   async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
@@ -91,34 +111,49 @@ export const GET = withGates(
 
     const { companyId } = ctx.session
 
-    const rows = await db
-      .select({
-        id: vehicles.id,
-        make: vehicles.make,
-        model: vehicles.model,
-        year: vehicles.year,
-        licensePlate: vehicles.licensePlate,
-        vin: vehicles.vin,
-        color: vehicles.color,
-        fuelType: vehicles.fuelType,
-        type: vehicles.type,
-        status: vehicles.status,
-        mileageKm: vehicles.mileageKm,
-        nextServiceAtKm: vehicles.nextServiceAtKm,
-        insuranceExpiresAt: vehicles.insuranceExpiresAt,
-        itpExpiresAt: vehicles.itpExpiresAt,
-        notes: vehicles.notes,
-        assignedFirstName: users.firstName,
-        assignedLastName: users.lastName,
-        storeName: stores.name,
-      })
-      .from(vehicles)
-      .leftJoin(users, eq(vehicles.assignedUserId, users.id))
-      .leftJoin(stores, eq(vehicles.storeId, stores.id))
-      .where(
-        and(eq(vehicles.id, id), eq(vehicles.companyId, companyId), isNull(vehicles.deletedAt))
-      )
-      .limit(1)
+    const [rows, activityRows] = await Promise.all([
+      db
+        .select({
+          id: vehicles.id,
+          make: vehicles.make,
+          model: vehicles.model,
+          year: vehicles.year,
+          licensePlate: vehicles.licensePlate,
+          vin: vehicles.vin,
+          color: vehicles.color,
+          fuelType: vehicles.fuelType,
+          type: vehicles.type,
+          status: vehicles.status,
+          mileageKm: vehicles.mileageKm,
+          nextServiceAtKm: vehicles.nextServiceAtKm,
+          insuranceExpiresAt: vehicles.insuranceExpiresAt,
+          itpExpiresAt: vehicles.itpExpiresAt,
+          notes: vehicles.notes,
+          assignedFirstName: users.firstName,
+          assignedLastName: users.lastName,
+          storeName: stores.name,
+        })
+        .from(vehicles)
+        .leftJoin(users, eq(vehicles.assignedUserId, users.id))
+        .leftJoin(stores, eq(vehicles.storeId, stores.id))
+        .where(
+          and(eq(vehicles.id, id), eq(vehicles.companyId, companyId), isNull(vehicles.deletedAt))
+        )
+        .limit(1),
+
+      db
+        .select({ id: auditLogs.id, action: auditLogs.action, createdAt: auditLogs.createdAt })
+        .from(auditLogs)
+        .where(
+          and(
+            eq(auditLogs.companyId, companyId),
+            eq(auditLogs.entityId, id),
+            eq(auditLogs.entityType, "vehicle")
+          )
+        )
+        .orderBy(desc(auditLogs.createdAt))
+        .limit(10),
+    ])
 
     const row = rows[0]
     if (!row) return NextResponse.json({ error: "Not found" }, { status: 404 })
@@ -179,7 +214,7 @@ export const GET = withGates(
         ? `${row.itpExpiresAt < new Date() ? "Expirat" : "Valabil"} · ${fmtDate(row.itpExpiresAt)}`
         : "—",
       maintenance,
-      activity: [] as ActivityEvent[],
+      activity: activityRows.map(auditToActivityEvent),
     }
 
     return NextResponse.json({ vehicle })

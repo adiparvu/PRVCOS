@@ -3,8 +3,8 @@ import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
 import { writeAuditLog } from "@prv/auth"
 import { db } from "@prv/db"
-import { clients, clientContacts, users, projects, invoices } from "@prv/db/schema"
-import { and, desc, eq, inArray, isNull, sum } from "drizzle-orm"
+import { clients, clientContacts, users, projects, invoices, auditLogs } from "@prv/db/schema"
+import { and, count, desc, eq, inArray, isNull, sum } from "drizzle-orm"
 import { z } from "zod"
 import type { ClientSummary, ClientStatus } from "../route"
 
@@ -110,6 +110,29 @@ const DB_INVOICE_STATUS_MAP: Record<string, LinkedInvoice["status"]> = {
   refunded: "void",
 }
 
+function auditToClientActivity(log: {
+  id: string
+  action: string
+  createdAt: Date
+}): ClientActivity {
+  const type: ClientActivityType = (() => {
+    if (log.action === "crm.clients.create") return "created"
+    if (log.action.includes("quote") && log.action.includes("create")) return "quote_sent"
+    if (log.action.includes("projects.create")) return "project_started"
+    if (log.action.includes("invoice")) return "invoice_paid"
+    return "note"
+  })()
+  const text = (() => {
+    if (log.action === "crm.clients.create") return "Client înregistrat"
+    if (log.action === "crm.clients.update") return "Client actualizat"
+    if (log.action.includes("quote")) return "Ofertă înregistrată"
+    if (log.action.includes("invoice")) return "Factură actualizată"
+    if (log.action.includes("project")) return "Proiect modificat"
+    return log.action
+  })()
+  return { id: log.id, type, text, timestamp: log.createdAt.toISOString() }
+}
+
 export const GET = withGates(
   { action: "crm.clients.read", endpointClass: "api_read" },
   async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
@@ -118,7 +141,8 @@ export const GET = withGates(
 
     const { companyId } = ctx.session
 
-    const [clientRows, contactRows, invoiceRows, projectRows] = await Promise.all([
+    const [clientRows, contactRows, invoiceRows, projectRows, openQuotesCountRow, activityRows] =
+      await Promise.all([
       db
         .select({
           id: clients.id,
@@ -187,10 +211,44 @@ export const GET = withGates(
         )
         .orderBy(desc(projects.createdAt))
         .limit(20),
+
+      db
+        .select({ cnt: count() })
+        .from(invoices)
+        .where(
+          and(
+            eq(invoices.clientId, id),
+            eq(invoices.companyId, companyId),
+            inArray(invoices.status, ["draft", "sent"]),
+            isNull(invoices.deletedAt)
+          )
+        ),
+
+      db
+        .select({ id: auditLogs.id, action: auditLogs.action, createdAt: auditLogs.createdAt })
+        .from(auditLogs)
+        .where(
+          and(
+            eq(auditLogs.companyId, companyId),
+            eq(auditLogs.entityId, id),
+            eq(auditLogs.entityType, "client")
+          )
+        )
+        .orderBy(desc(auditLogs.createdAt))
+        .limit(10),
     ])
 
     const row = clientRows[0]
     if (!row) return NextResponse.json({ error: "Not found" }, { status: 404 })
+
+    const spentByProject = new Map<string, number>()
+    for (const inv of invoiceRows) {
+      if (inv.projectId && inv.status !== "cancelled" && inv.status !== "refunded") {
+        spentByProject.set(inv.projectId, (spentByProject.get(inv.projectId) ?? 0) + Number(inv.total))
+      }
+    }
+    const openQuotesCount = openQuotesCountRow[0]?.cnt ?? 0
+    const activities: ClientActivity[] = activityRows.map(auditToClientActivity)
 
     const totalInvoiced = invoiceRows.reduce((s, r) => s + Number(r.total), 0)
     const totalPaid = invoiceRows
@@ -226,7 +284,7 @@ export const GET = withGates(
         completionPct,
         currentPhaseName,
         budget: Number(r.budget ?? 0),
-        spent: 0,
+        spent: spentByProject.get(r.id) ?? 0,
         daysLeft: daysLeft(r.dueDate ?? null),
       }
     })
@@ -239,7 +297,7 @@ export const GET = withGates(
       status: apiStatus,
       ltv: totalInvoiced,
       activeProjects: linkedProjects.filter((p) => p.status === "active").length,
-      openQuotes: 0,
+      openQuotes: openQuotesCount,
       nps: null,
       since: String(new Date(row.createdAt).getFullYear()),
       phone: row.phone ?? "—",
@@ -252,7 +310,7 @@ export const GET = withGates(
       quotes: [],
       invoices: linkedInvoices,
       projects: linkedProjects,
-      activities: [],
+      activities,
     }
 
     return NextResponse.json({ client: detail })

@@ -3,8 +3,8 @@ import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
 import { writeAuditLog } from "@prv/auth"
 import { db } from "@prv/db"
-import { projects, projectMembers, projectMilestones, clients, users } from "@prv/db/schema"
-import { and, asc, eq, isNull } from "drizzle-orm"
+import { projects, projectMembers, projectMilestones, clients, users, invoices, auditLogs } from "@prv/db/schema"
+import { and, asc, desc, eq, isNull, notInArray, sum } from "drizzle-orm"
 import { z } from "zod"
 import type { ProjectSummary, ProjectStatus } from "../route"
 
@@ -69,6 +69,27 @@ function daysLeft(dueDate: string | null): number {
   return Math.round((due.getTime() - today.getTime()) / 86_400_000)
 }
 
+function auditToProjectActivity(log: {
+  id: string
+  action: string
+  createdAt: Date
+}): ProjectActivity {
+  const type: ProjectActivityType = log.action.includes("delete")
+    ? "warning"
+    : log.action.includes("milestone") || log.action.includes("complete")
+      ? "complete"
+      : "note"
+  const text = (() => {
+    if (log.action === "projects.create") return "Proiect creat"
+    if (log.action === "projects.update") return "Proiect actualizat"
+    if (log.action === "projects.delete") return "Proiect șters"
+    if (log.action.includes("milestone")) return "Etapă actualizată"
+    if (log.action.includes("member")) return "Echipă actualizată"
+    return log.action
+  })()
+  return { id: log.id, type, text, timestamp: log.createdAt.toISOString() }
+}
+
 export const GET = withGates(
   { action: "projects.read", endpointClass: "api_read" },
   async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
@@ -77,7 +98,7 @@ export const GET = withGates(
 
     const { companyId } = ctx.session
 
-    const [projectRows, memberRows, milestoneRows] = await Promise.all([
+    const [projectRows, memberRows, milestoneRows, spentRow, activityRows] = await Promise.all([
       db
         .select({
           id: projects.id,
@@ -120,10 +141,38 @@ export const GET = withGates(
         .from(projectMilestones)
         .where(eq(projectMilestones.projectId, id))
         .orderBy(asc(projectMilestones.sortOrder)),
+
+      db
+        .select({ total: sum(invoices.total) })
+        .from(invoices)
+        .where(
+          and(
+            eq(invoices.projectId, id),
+            eq(invoices.companyId, companyId),
+            isNull(invoices.deletedAt),
+            notInArray(invoices.status, ["cancelled", "refunded"])
+          )
+        ),
+
+      db
+        .select({ id: auditLogs.id, action: auditLogs.action, createdAt: auditLogs.createdAt })
+        .from(auditLogs)
+        .where(
+          and(
+            eq(auditLogs.companyId, companyId),
+            eq(auditLogs.entityId, id),
+            eq(auditLogs.entityType, "project")
+          )
+        )
+        .orderBy(desc(auditLogs.createdAt))
+        .limit(10),
     ])
 
     const row = projectRows[0]
     if (!row) return NextResponse.json({ error: "Not found" }, { status: 404 })
+
+    const spent = Number(spentRow[0]?.total ?? 0)
+    const activities: ProjectActivity[] = activityRows.map(auditToProjectActivity)
 
     const meta = (row.metadata ?? {}) as Record<string, unknown>
     const completionPct = typeof meta.completionPct === "number" ? meta.completionPct : 0
@@ -163,14 +212,14 @@ export const GET = withGates(
       currentPhaseName,
       completionPct,
       budget: Number(row.budget ?? 0),
-      spent: 0,
+      spent,
       startDate: row.startDate ?? "",
       endDate: row.dueDate ?? "",
       daysLeft: daysLeft(row.dueDate ?? null),
       team,
       phases: [],
       milestones,
-      activities: [],
+      activities,
     }
 
     return NextResponse.json({ project })
