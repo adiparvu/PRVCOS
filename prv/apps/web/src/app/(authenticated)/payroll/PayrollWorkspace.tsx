@@ -2,129 +2,16 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import { usePayrollRuns } from "@/lib/api-hooks"
+import type { PayrollRun, PayrollRunStatus, PayrollRunType } from "@/app/api/payroll/route"
 
-type RunStatus = "Processing" | "Done" | "Pending"
 type FilterType = "All Runs" | "Weekly" | "Monthly" | "Special"
-
-interface PayrollRun {
-  id: string
-  title: string
-  subtitle: string
-  amount: number
-  status: RunStatus
-  type: "Weekly" | "Monthly" | "Special"
-}
-
-interface Employee {
-  initials: string
-  name: string
-  role: string
-  location: string
-  net: number
-  gross: string
-}
-
-const RUNS: PayrollRun[] = [
-  {
-    id: "jun-w2",
-    title: "June W2 — Processing",
-    subtitle: "142 employees · Jun 9–15",
-    amount: 28400,
-    status: "Processing",
-    type: "Weekly",
-  },
-  {
-    id: "jun-w1",
-    title: "June W1 — Completed",
-    subtitle: "142 employees · Jun 2–8",
-    amount: 27900,
-    status: "Done",
-    type: "Weekly",
-  },
-  {
-    id: "may-w4",
-    title: "May W4 — Completed",
-    subtitle: "140 employees · May 26 – Jun 1",
-    amount: 27400,
-    status: "Done",
-    type: "Weekly",
-  },
-  {
-    id: "may-w3",
-    title: "May W3 — Completed",
-    subtitle: "140 employees · May 19–25",
-    amount: 26800,
-    status: "Done",
-    type: "Weekly",
-  },
-  {
-    id: "may-monthly",
-    title: "May Monthly Bonus",
-    subtitle: "142 employees · May 31",
-    amount: 18600,
-    status: "Done",
-    type: "Monthly",
-  },
-  {
-    id: "bonus-q1",
-    title: "Bonus Run — Q1",
-    subtitle: "38 employees · Apr 15 · Pending approval",
-    amount: 14200,
-    status: "Pending",
-    type: "Special",
-  },
-]
-
-const EMPLOYEES: Employee[] = [
-  {
-    initials: "AP",
-    name: "Andrei Popescu",
-    role: "Project Manager",
-    location: "Cluj",
-    net: 3200,
-    gross: "€4,480",
-  },
-  {
-    initials: "EM",
-    name: "Elena Marin",
-    role: "Project Manager",
-    location: "Timișoara",
-    net: 3200,
-    gross: "€4,480",
-  },
-  {
-    initials: "MI",
-    name: "Maria Ionescu",
-    role: "HR Manager",
-    location: "Cluj",
-    net: 2800,
-    gross: "€3,920",
-  },
-  {
-    initials: "LT",
-    name: "Liviu Toma",
-    role: "Tile Specialist",
-    location: "Cluj",
-    net: 1960,
-    gross: "€2,744 + 12h OT",
-  },
-]
-
-const CHART_MONTHS = [
-  { label: "Jan", height: 52 },
-  { label: "Feb", height: 55 },
-  { label: "Mar", height: 50 },
-  { label: "Apr", height: 58 },
-  { label: "May", height: 60 },
-  { label: "Jun", height: 100 },
-]
 
 const FILTERS: FilterType[] = ["All Runs", "Weekly", "Monthly", "Special"]
 
 const g1 = "var(--prv-g1)"
 const g2 = "var(--prv-g2)"
 const bds = "var(--prv-border-subtle)"
-const bd = "var(--prv-border)"
 const t2 = "var(--prv-text-2)"
 const t3 = "var(--prv-text-3)"
 const green = "rgba(48,209,88,0.95)"
@@ -141,11 +28,25 @@ const card: React.CSSProperties = {
   marginBottom: 12,
 }
 
-function StatusPill({ status }: { status: RunStatus }) {
-  const styles: Record<RunStatus, React.CSSProperties> = {
-    Done: { background: "rgba(48,209,88,0.14)", color: green },
-    Pending: { background: "rgba(255,159,10,0.14)", color: amber },
-    Processing: { background: "rgba(10,132,255,0.14)", color: blue },
+// Map API status (lowercase) to display label
+const STATUS_DISPLAY: Record<PayrollRunStatus, string> = {
+  processing: "Processing",
+  done: "Done",
+  pending: "Pending",
+}
+
+// Map API type (lowercase) to display label
+const TYPE_DISPLAY: Record<PayrollRunType, FilterType> = {
+  weekly: "Weekly",
+  monthly: "Monthly",
+  special: "Special",
+}
+
+function StatusPill({ status }: { status: PayrollRunStatus }) {
+  const styles: Record<PayrollRunStatus, React.CSSProperties> = {
+    done: { background: "rgba(48,209,88,0.14)", color: green },
+    pending: { background: "rgba(255,159,10,0.14)", color: amber },
+    processing: { background: "rgba(10,132,255,0.14)", color: blue },
   }
   return (
     <span
@@ -157,13 +58,13 @@ function StatusPill({ status }: { status: RunStatus }) {
         borderRadius: 6,
       }}
     >
-      {status}
+      {STATUS_DISPLAY[status]}
     </span>
   )
 }
 
-function RunIcon({ status }: { status: RunStatus }) {
-  if (status === "Processing")
+function RunIcon({ status }: { status: PayrollRunStatus }) {
+  if (status === "processing")
     return (
       <div
         style={{
@@ -191,7 +92,7 @@ function RunIcon({ status }: { status: RunStatus }) {
         </svg>
       </div>
     )
-  if (status === "Done")
+  if (status === "done")
     return (
       <div
         style={{
@@ -261,14 +162,53 @@ function TopEdge() {
   )
 }
 
+function fmtAmount(n: number): string {
+  if (n >= 1_000_000) return `€${(n / 1_000_000).toFixed(1)}M`
+  if (n >= 1_000) return `€${Math.round(n / 1_000)}K`
+  return `€${n.toLocaleString()}`
+}
+
 export function PayrollWorkspace() {
   const [filter, setFilter] = useState<FilterType>("All Runs")
   const [selectedRun, setSelectedRun] = useState<PayrollRun | null>(null)
 
-  const now = new Date()
-  const monthLabel = now.toLocaleDateString("en-US", { month: "long", year: "numeric" })
+  const { data, isLoading } = usePayrollRuns()
+  const runs = data?.runs ?? []
+  const meta = data?.meta ?? null
 
-  const filteredRuns = RUNS.filter((r) => filter === "All Runs" || r.type === filter)
+  const now = new Date()
+  const monthLabel =
+    meta?.monthLabel ??
+    now.toLocaleDateString("en-US", { month: "long", year: "numeric" })
+
+  const filteredRuns = runs.filter(
+    (r) => filter === "All Runs" || TYPE_DISPLAY[r.type] === filter
+  )
+
+  // Compute monthly chart bars from runs data: group by month, compute normalized heights
+  const monthTotals: Record<string, number> = {}
+  for (const run of runs) {
+    // Use period string first word as month label approximation, or derive from title
+    const monthKey = run.period.slice(0, 3) // e.g. "Ian", "Feb", etc.
+    monthTotals[monthKey] = (monthTotals[monthKey] ?? 0) + run.totalGross
+  }
+  const monthEntries = Object.entries(monthTotals).slice(-6)
+  const maxTotal = Math.max(...monthEntries.map(([, v]) => v), 1)
+  const chartMonths =
+    monthEntries.length > 0
+      ? monthEntries.map(([label, total]) => ({
+          label,
+          height: Math.round((total / maxTotal) * 100),
+          isMax: total === maxTotal,
+        }))
+      : [
+          { label: "—", height: 50, isMax: false },
+          { label: "—", height: 55, isMax: false },
+          { label: "—", height: 50, isMax: false },
+          { label: "—", height: 58, isMax: false },
+          { label: "—", height: 60, isMax: false },
+          { label: "—", height: 100, isMax: true },
+        ]
 
   if (selectedRun) {
     return (
@@ -329,7 +269,7 @@ export function PayrollWorkspace() {
                 color: "var(--prv-text-1)",
               }}
             >
-              {selectedRun.title.split(" — ")[0]}
+              {selectedRun.title}
             </h1>
             <p style={{ fontSize: 13, color: t2, marginTop: 4 }}>{selectedRun.subtitle}</p>
           </div>
@@ -352,11 +292,11 @@ export function PayrollWorkspace() {
         <div style={card}>
           <TopEdge />
           {[
-            { label: "Gross Payroll", val: "€38,640", valColor: undefined },
-            { label: "Employee Taxes (CAS + CASS)", val: "−€7,920", valColor: red },
-            { label: "Employer Contributions", val: "−€2,820", valColor: red },
-            { label: "Net Paid to Employees", val: "€27,900", valColor: green },
-            { label: "Total Employer Cost", val: "€30,720", valColor: undefined },
+            { label: "Gross Payroll", val: `€${selectedRun.totalGross.toLocaleString()}`, valColor: undefined },
+            { label: "Net Paid to Employees", val: `€${selectedRun.netPaid.toLocaleString()}`, valColor: green },
+            { label: "Period", val: selectedRun.period, valColor: undefined },
+            { label: "Employees", val: String(selectedRun.employeeCount), valColor: undefined },
+            { label: "Ref", val: selectedRun.ref, valColor: undefined },
           ].map((row, i, arr) => (
             <div
               key={row.label}
@@ -382,7 +322,11 @@ export function PayrollWorkspace() {
           ))}
         </div>
 
-        {/* Employee payslips */}
+        {/*
+          NOTE: Individual employee payslips are not yet available via the API.
+          The /api/payroll endpoint returns run-level aggregates only.
+          Employee payslip detail will be available in a future release.
+        */}
         <p
           style={{
             fontSize: 11,
@@ -393,56 +337,19 @@ export function PayrollWorkspace() {
             margin: "18px 2px 10px",
           }}
         >
-          Employee Payslips (142)
+          Employee Payslips ({selectedRun.employeeCount})
         </p>
         <div style={card}>
           <TopEdge />
-          {EMPLOYEES.map((emp, i) => (
-            <div
-              key={emp.name}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 12,
-                padding: "12px 16px",
-                borderBottom: `1px solid ${bds}`,
-              }}
-            >
-              <div
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: "50%",
-                  background: g2,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 11,
-                  fontWeight: 700,
-                  color: t2,
-                  flexShrink: 0,
-                }}
-              >
-                {emp.initials}
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 600, color: "var(--prv-text-1)" }}>
-                  {emp.name}
-                </div>
-                <div style={{ fontSize: 12, color: t3, marginTop: 1 }}>
-                  {emp.role} · {emp.location}
-                </div>
-              </div>
-              <div style={{ textAlign: "right" }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: green }}>
-                  €{emp.net.toLocaleString()}
-                </div>
-                <div style={{ fontSize: 11, color: t3, marginTop: 2 }}>Gross: {emp.gross}</div>
-              </div>
-            </div>
-          ))}
-          <div style={{ padding: "12px 16px", textAlign: "center" }}>
-            <span style={{ fontSize: 12, color: t3 }}>138 more employees ›</span>
+          <div
+            style={{
+              padding: "24px 16px",
+              textAlign: "center",
+              color: t3,
+              fontSize: 13,
+            }}
+          >
+            Employee payslips available in next release
           </div>
         </div>
       </div>
@@ -528,10 +435,26 @@ export function PayrollWorkspace() {
         style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10, marginBottom: 14 }}
       >
         {[
-          { val: "€28.4K", label: "This Run", color: undefined },
-          { val: "142", label: "Employees", color: green },
-          { val: "3", label: "Pending", color: amber },
-          { val: "€312K", label: "YTD Cost", color: undefined },
+          {
+            val: meta ? fmtAmount(meta.currentRunAmount) : isLoading ? "…" : "—",
+            label: "This Run",
+            color: undefined,
+          },
+          {
+            val: meta ? String(meta.totalEmployees) : isLoading ? "…" : "—",
+            label: "Employees",
+            color: green,
+          },
+          {
+            val: meta ? String(meta.pendingCount) : isLoading ? "…" : "—",
+            label: "Pending",
+            color: amber,
+          },
+          {
+            val: meta ? fmtAmount(meta.ytdCost) : isLoading ? "…" : "—",
+            label: "YTD Cost",
+            color: undefined,
+          },
         ].map((k) => (
           <div
             key={k.label}
@@ -580,21 +503,21 @@ export function PayrollWorkspace() {
         <div
           style={{ display: "flex", alignItems: "flex-end", gap: 5, height: 60, marginBottom: 8 }}
         >
-          {CHART_MONTHS.map((m) => (
+          {chartMonths.map((m, idx) => (
             <div
-              key={m.label}
+              key={idx}
               style={{
                 flex: 1,
                 borderRadius: "3px 3px 0 0",
                 height: `${m.height}%`,
-                background: m.height === 100 ? "var(--prv-text-2)" : "var(--prv-text-3)",
+                background: m.isMax ? "var(--prv-text-2)" : "var(--prv-text-3)",
               }}
             />
           ))}
         </div>
         <div style={{ display: "flex", gap: 5 }}>
-          {CHART_MONTHS.map((m) => (
-            <div key={m.label} style={{ flex: 1, fontSize: 9, color: t3, textAlign: "center" }}>
+          {chartMonths.map((m, idx) => (
+            <div key={idx} style={{ flex: 1, fontSize: 9, color: t3, textAlign: "center" }}>
               {m.label}
             </div>
           ))}
@@ -638,7 +561,11 @@ export function PayrollWorkspace() {
       {/* Run list */}
       <div style={card}>
         <TopEdge />
-        {filteredRuns.length === 0 ? (
+        {isLoading ? (
+          <div style={{ padding: "24px 16px", textAlign: "center", color: t3, fontSize: 13 }}>
+            Loading payroll runs…
+          </div>
+        ) : filteredRuns.length === 0 ? (
           <div style={{ padding: "24px 16px", textAlign: "center", color: t3, fontSize: 13 }}>
             No runs found
           </div>
@@ -678,7 +605,7 @@ export function PayrollWorkspace() {
                     marginBottom: 4,
                   }}
                 >
-                  €{run.amount.toLocaleString()}
+                  €{run.totalGross.toLocaleString()}
                 </div>
                 <StatusPill status={run.status} />
               </div>

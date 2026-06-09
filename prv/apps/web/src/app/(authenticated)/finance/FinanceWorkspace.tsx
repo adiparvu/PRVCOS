@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import type { FinanceMeta } from "@/app/api/finance/expenses/route"
 import type { InvoiceSummary } from "@/app/api/finance/invoices/route"
+import type { Expense } from "@/app/api/finance/expenses/route"
 import {
   GlassStatCard,
   GlassAlertBanner,
@@ -61,63 +62,6 @@ const SPARK = {
   expenses: [234, 252, 258, 288, 316, 344],
   cashflow: [78, 84, 88, 90, 92, 94],
 }
-
-const TRANSACTIONS: TxRow[] = [
-  {
-    id: "1",
-    description: "Invoice #1042 — Mihai Popescu",
-    category: "Invoice",
-    store: "Cluj",
-    date: "2 min ago",
-    amount: "+€298",
-    kind: "credit",
-  },
-  {
-    id: "2",
-    description: "Supplier — Romstal SRL",
-    category: "Procurement",
-    store: "Centru",
-    date: "1 hr ago",
-    amount: "−€1,840",
-    kind: "debit",
-  },
-  {
-    id: "3",
-    description: "Payroll run — June W1",
-    category: "Payroll",
-    store: "All",
-    date: "3 hr ago",
-    amount: "−€28,400",
-    kind: "debit",
-  },
-  {
-    id: "4",
-    description: "Invoice #1041 — Renovare Cluj",
-    category: "Invoice",
-    store: "Projects",
-    date: "Yesterday",
-    amount: "+€5,200",
-    kind: "credit",
-  },
-  {
-    id: "5",
-    description: "Rent — Floreasca Office",
-    category: "Fixed Cost",
-    store: "București",
-    date: "Yesterday",
-    amount: "−€3,600",
-    kind: "debit",
-  },
-  {
-    id: "6",
-    description: "Invoice #1040 — Ana Ionescu",
-    category: "Invoice",
-    store: "Timișoara",
-    date: "2 days ago",
-    amount: "+€760",
-    kind: "credit",
-  },
-]
 
 const STATUS_STYLE: Record<string, { bg: string; color: string; label: string }> = {
   paid: { bg: "rgba(48,209,88,0.14)", color: "rgba(48,209,88,0.95)", label: "Plătit" },
@@ -192,6 +136,23 @@ function fmtDue(dateStr: string): string {
   try {
     const d = new Date(dateStr)
     return d.toLocaleDateString("ro-RO", { month: "short", day: "numeric" })
+  } catch {
+    return dateStr
+  }
+}
+
+function fmtDateRelative(dateStr: string): string {
+  try {
+    const d = new Date(dateStr)
+    const now = new Date()
+    const diffMs = now.getTime() - d.getTime()
+    const diffMins = Math.floor(diffMs / 60000)
+    const diffHours = Math.floor(diffMs / 3600000)
+    const diffDays = Math.floor(diffMs / 86400000)
+    if (diffMins < 60) return `${diffMins} min ago`
+    if (diffHours < 24) return `${diffHours} hr ago`
+    if (diffDays === 1) return "Yesterday"
+    return `${diffDays} days ago`
   } catch {
     return dateStr
   }
@@ -276,6 +237,43 @@ const QA = [
   },
 ]
 
+// ── Derive TxRows from invoices + expenses ────────────────────────────────────
+
+function deriveTransactions(
+  invoices: InvoiceSummary[],
+  expenses: Expense[]
+): TxRow[] {
+  // Map invoices to TxRow (credits)
+  const invTx: (TxRow & { _sortDate: string })[] = invoices.map((inv) => ({
+    id: `inv-${inv.id}`,
+    description: `${inv.ref} — ${inv.clientName}`,
+    category: "Invoice",
+    store: inv.projectName ?? "—",
+    date: fmtDateRelative(inv.issuedDate),
+    amount: `+€${inv.amount.toLocaleString()}`,
+    kind: "credit" as const,
+    _sortDate: inv.issuedDate,
+  }))
+
+  // Map expenses to TxRow (debits)
+  const expTx: (TxRow & { _sortDate: string })[] = expenses.map((exp) => ({
+    id: `exp-${exp.id}`,
+    description: exp.title,
+    category: exp.category,
+    store: "—",
+    date: fmtDateRelative(exp.date),
+    amount: `−€${exp.amount.toLocaleString()}`,
+    kind: "debit" as const,
+    _sortDate: exp.date,
+  }))
+
+  // Combine, sort by date descending, take most recent 8
+  return [...invTx, ...expTx]
+    .sort((a, b) => new Date(b._sortDate).getTime() - new Date(a._sortDate).getTime())
+    .slice(0, 8)
+    .map(({ _sortDate: _, ...row }) => row)
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function FinanceWorkspace() {
@@ -283,6 +281,7 @@ export function FinanceWorkspace() {
   const [activeTab, setActiveTab] = useState("overview")
   const [meta, setMeta] = useState<FinanceMeta | null>(null)
   const [liveInvoices, setLiveInvoices] = useState<InvoiceSummary[]>([])
+  const [liveExpenses, setLiveExpenses] = useState<Expense[]>([])
   const [chart, setChart] = useState<ChartData | null>(null)
 
   useEffect(() => {
@@ -293,6 +292,7 @@ export function FinanceWorkspace() {
       .then(([expJson, invJson]) => {
         setMeta((expJson as { meta: FinanceMeta }).meta ?? null)
         setLiveInvoices((invJson as { invoices: InvoiceSummary[] }).invoices ?? [])
+        setLiveExpenses((expJson as { expenses: Expense[] }).expenses ?? [])
       })
       .catch(() => {})
   }, [])
@@ -320,6 +320,9 @@ export function FinanceWorkspace() {
     due: fmtDue(inv.dueDate),
     status: inv.status,
   }))
+
+  // Derive transactions from real invoices + expenses data
+  const transactions = deriveTransactions(liveInvoices, liveExpenses)
 
   return (
     <div className="px-4 pt-14 pb-28 max-w-2xl mx-auto">
@@ -483,7 +486,20 @@ export function FinanceWorkspace() {
         <>
           <Label>Recent Transactions</Label>
           <GlassCard>
-            <GlassTable<TxRow> columns={TX_COLUMNS} data={TRANSACTIONS} keyField="id" />
+            {transactions.length === 0 ? (
+              <p
+                style={{
+                  fontSize: 13,
+                  color: "rgba(255,255,255,0.30)",
+                  textAlign: "center",
+                  padding: "16px 0",
+                }}
+              >
+                No transactions yet
+              </p>
+            ) : (
+              <GlassTable<TxRow> columns={TX_COLUMNS} data={transactions} keyField="id" />
+            )}
           </GlassCard>
         </>
       )}

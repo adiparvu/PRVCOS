@@ -1,6 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
+import { useSuppliers } from "@/lib/api-hooks"
+import type { SupplierSummary, SupplierStatus as APISupplierStatus } from "@/app/api/suppliers/route"
 
 type SupplierStatus = "Active" | "Pending" | "Inactive" | "At Risk"
 type FilterType = "All" | "Active" | "Review" | "At Risk"
@@ -32,28 +34,37 @@ interface SpendCategory {
   pct: number
 }
 
-// ── Data ─────────────────────────────────────────────────────────────────────
+// ── Mapper ────────────────────────────────────────────────────────────────────
 
-const SUPPLIERS: Supplier[] = [
-  { id: "s1", initials: "MG", name: "Materiale Grigore SRL",    category: "Building Materials", subcategory: "Paints",     orders: 38, annualSpend: 84000, rating: 4.2, status: "Active",  trustScore: 88, onTimeDelivery: 94, contractExpiry: "Dec 31, 2026", paymentTerms: "Net 30", lastOrder: "Jun 4, 2026",  lastOrderAmount: 4200, contact: "Grigore Matei",   phone: "0721 000 111" },
-  { id: "s2", initials: "RC", name: "Radu Construct SRL",       category: "Steel & Concrete",                              orders: 24, annualSpend: 62000, rating: 4.8, status: "Active",  trustScore: 96, onTimeDelivery: 98, contractExpiry: "Mar 31, 2027", paymentTerms: "Net 15", lastOrder: "Jun 2, 2026",  lastOrderAmount: 7600, contact: "Radu Ionescu",    phone: "0722 111 222" },
-  { id: "s3", initials: "TC", name: "Tehno Construct SA",       category: "Tools & Equipment",                             orders: 12, annualSpend: 28000, rating: 2.3, status: "At Risk", trustScore: 42, onTimeDelivery: 61, contractExpiry: "Jun 30, 2026", paymentTerms: "Net 45", lastOrder: "May 20, 2026", lastOrderAmount: 1800, contact: "Tudor Marin",     phone: "0723 222 333", riskReason: "3 late deliveries · Contract expires soon" },
-  { id: "s4", initials: "EL", name: "ElectroLux Instalații SRL", category: "Electrical",                                  orders: 0,  annualSpend: 0,     rating: 0,   status: "Pending", trustScore: 0,  onTimeDelivery: 0,  contractExpiry: "—",            paymentTerms: "—",      lastOrder: "—",            lastOrderAmount: 0,    contact: "Elena Lupu",      phone: "0724 333 444" },
-  { id: "s5", initials: "FP", name: "Faianță & Pardoseli SRL", category: "Tiles & Flooring",                              orders: 19, annualSpend: 41000, rating: 4.0, status: "Active",  trustScore: 80, onTimeDelivery: 91, contractExpiry: "Sep 30, 2026", paymentTerms: "Net 30", lastOrder: "May 30, 2026", lastOrderAmount: 3200, contact: "Florin Popa",     phone: "0725 444 555" },
-  { id: "s6", initials: "AS", name: "AquaSan Instalații SRL",  category: "Plumbing",                                      orders: 15, annualSpend: 32000, rating: 4.5, status: "Active",  trustScore: 84, onTimeDelivery: 93, contractExpiry: "Nov 30, 2026", paymentTerms: "Net 30", lastOrder: "Jun 1, 2026",  lastOrderAmount: 2900, contact: "Adrian Stan",     phone: "0726 555 666" },
-  { id: "s7", initials: "VP", name: "Vopsele & Protecție SA",  category: "Paints & Coatings",                             orders: 22, annualSpend: 38000, rating: 4.1, status: "Active",  trustScore: 82, onTimeDelivery: 89, contractExpiry: "Feb 28, 2027", paymentTerms: "Net 30", lastOrder: "Jun 3, 2026",  lastOrderAmount: 5100, contact: "Vasile Pop",      phone: "0727 666 777" },
-]
+function mapAPIStatus(s: APISupplierStatus): SupplierStatus {
+  switch (s) {
+    case "active":   return "Active"
+    case "pending":  return "Pending"
+    case "at_risk":  return "At Risk"
+    case "inactive": return "Inactive"
+  }
+}
 
-const SPEND_CATEGORIES: SpendCategory[] = [
-  { label: "Building Materials", amount: 84000, pct: 72 },
-  { label: "Steel & Concrete",   amount: 62000, pct: 53 },
-  { label: "Tiles & Flooring",   amount: 41000, pct: 35 },
-  { label: "Paints & Coatings",  amount: 38000, pct: 33 },
-  { label: "Plumbing",           amount: 32000, pct: 28 },
-  { label: "Tools & Equipment",  amount: 28000, pct: 24 },
-]
-
-const TOTAL_SPEND = SPEND_CATEGORIES.reduce((s, c) => s + c.amount, 0)
+function mapSupplier(s: SupplierSummary): Supplier {
+  return {
+    id: s.id,
+    initials: s.initials,
+    name: s.name,
+    category: s.category,
+    orders: s.orders,
+    annualSpend: s.annualSpend,
+    rating: s.rating,
+    status: mapAPIStatus(s.status),
+    trustScore: s.trustScore,
+    onTimeDelivery: s.onTimeDelivery,
+    contractExpiry: s.contractExpiry || "—",
+    paymentTerms: s.paymentTerms || "—",
+    lastOrder: s.lastOrder || "—",
+    lastOrderAmount: s.lastOrderAmount,
+    contact: "—",
+    phone: "—",
+  }
+}
 
 // ── Tokens ────────────────────────────────────────────────────────────────────
 
@@ -112,7 +123,7 @@ function StatusPill({ status }: { status: SupplierStatus }) {
 
 function SupplierDetail({ supplier, onClose }: { supplier: Supplier; onClose: () => void }) {
   const rows = [
-    { label: "Contact",          val: `${supplier.contact} · ${supplier.phone}` },
+    { label: "Contact",          val: supplier.contact !== "—" ? `${supplier.contact} · ${supplier.phone}` : "—" },
     { label: "On-time delivery", val: supplier.onTimeDelivery ? `${supplier.onTimeDelivery}%` : "—" },
     { label: "Contract expires", val: supplier.contractExpiry },
     { label: "Payment terms",    val: supplier.paymentTerms },
@@ -209,7 +220,11 @@ export function SuppliersWorkspace() {
 
   const FILTERS: FilterType[] = ["All", "Active", "Review", "At Risk"]
 
-  const filtered = SUPPLIERS.filter(s => {
+  const { data, isLoading } = useSuppliers()
+
+  const suppliers = useMemo(() => (data?.suppliers ?? []).map(mapSupplier), [data?.suppliers])
+
+  const filtered = useMemo(() => suppliers.filter(s => {
     const matchFilter =
       filter === "All" ||
       (filter === "Active"  && s.status === "Active") ||
@@ -217,10 +232,27 @@ export function SuppliersWorkspace() {
       (filter === "At Risk" && s.status === "At Risk")
     const matchSearch = !search || s.name.toLowerCase().includes(search.toLowerCase()) || s.category.toLowerCase().includes(search.toLowerCase())
     return matchFilter && matchSearch
-  })
+  }), [suppliers, filter, search])
 
-  const atRiskCount = SUPPLIERS.filter(s => s.status === "At Risk").length
-  const pendingCount = SUPPLIERS.filter(s => s.status === "Pending").length
+  const atRiskCount  = suppliers.filter(s => s.status === "At Risk").length
+  const pendingCount = suppliers.filter(s => s.status === "Pending").length
+
+  const spendCategories = useMemo<SpendCategory[]>(() => {
+    const totals: Record<string, number> = {}
+    for (const s of suppliers) {
+      if (s.annualSpend > 0) totals[s.category] = (totals[s.category] ?? 0) + s.annualSpend
+    }
+    const maxSpend = Math.max(...Object.values(totals), 1)
+    return Object.entries(totals)
+      .sort(([, a], [, b]) => b - a)
+      .map(([label, amount]) => ({
+        label,
+        amount,
+        pct: Math.round((amount / maxSpend) * 100),
+      }))
+  }, [suppliers])
+
+  const totalSpend = useMemo(() => spendCategories.reduce((s, c) => s + c.amount, 0), [spendCategories])
 
   return (
     <div style={{ paddingBottom: 120 }}>
@@ -238,16 +270,18 @@ export function SuppliersWorkspace() {
             </div>
           </div>
         </div>
-        <p style={{ fontSize: 14, color: t2 }}>{SUPPLIERS.length} suppliers · {pendingCount} under review</p>
+        <p style={{ fontSize: 14, color: t2 }}>
+          {isLoading ? "Loading…" : `${suppliers.length} suppliers · ${pendingCount} under review`}
+        </p>
       </div>
 
       {/* ── Stats ── */}
       <div style={{ display: "flex", gap: 8, padding: "16px 16px 0" }}>
         {[
-          { val: String(SUPPLIERS.length),                                              lbl: "Total"  },
-          { val: String(SUPPLIERS.filter(s => s.status === "Active").length),          lbl: "Active"  },
-          { val: String(pendingCount),                                                  lbl: "Review"  },
-          { val: String(atRiskCount),  color: atRiskCount > 0 ? red : t1,             lbl: "At Risk" },
+          { val: isLoading ? "…" : String(suppliers.length),                                lbl: "Total"   },
+          { val: isLoading ? "…" : String(suppliers.filter(s => s.status === "Active").length), lbl: "Active" },
+          { val: isLoading ? "…" : String(pendingCount),                                    lbl: "Review"  },
+          { val: isLoading ? "…" : String(atRiskCount), color: atRiskCount > 0 ? red : t1, lbl: "At Risk" },
         ].map(s => (
           <div key={s.lbl} style={{ flex: 1, padding: "12px 8px", borderRadius: 14, background: g1, border: `1px solid ${bds}`, textAlign: "center" }}>
             <div style={{ fontSize: 18, fontWeight: 700, color: s.color ?? t1, marginBottom: 2 }}>{s.val}</div>
@@ -288,7 +322,9 @@ export function SuppliersWorkspace() {
         <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase" as const, color: t3, marginBottom: 12 }}>
           {filter === "All" ? "All Suppliers" : filter === "Review" ? "Pending Review" : `${filter} Suppliers`}
         </div>
-        {filtered.length === 0 ? (
+        {isLoading ? (
+          <div style={{ textAlign: "center", padding: "40px 0", color: t3, fontSize: 14 }}>Loading…</div>
+        ) : filtered.length === 0 ? (
           <div style={{ textAlign: "center", padding: "40px 0", color: t3, fontSize: 14 }}>No suppliers found</div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column" as const, gap: 8 }}>
@@ -315,13 +351,13 @@ export function SuppliersWorkspace() {
       </div>
 
       {/* ── Spend by Category ── */}
-      {(filter === "All" && !search) && (
+      {(filter === "All" && !search) && spendCategories.length > 0 && (
         <div style={{ padding: "24px 16px 0" }}>
           <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase" as const, color: t3, marginBottom: 12 }}>Spend by Category</div>
           <div style={{ padding: 16, borderRadius: 18, background: g1, border: `1px solid ${bds}`, position: "relative" }}>
             <Specular />
             <div style={{ display: "flex", flexDirection: "column" as const, gap: 10 }}>
-              {SPEND_CATEGORIES.map(cat => (
+              {spendCategories.map(cat => (
                 <div key={cat.label}>
                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 4 }}>
                     <span style={{ color: t2 }}>{cat.label}</span>
@@ -335,7 +371,7 @@ export function SuppliersWorkspace() {
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", marginTop: 14, paddingTop: 12, borderTop: `1px solid ${bds}` }}>
               <span style={{ fontSize: 13, color: t3 }}>Total Annual Spend</span>
-              <span style={{ fontSize: 14, fontWeight: 700, color: t1 }}>€{Math.round(TOTAL_SPEND / 1000)}k</span>
+              <span style={{ fontSize: 14, fontWeight: 700, color: t1 }}>€{Math.round(totalSpend / 1000)}k</span>
             </div>
           </div>
         </div>

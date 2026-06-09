@@ -1,8 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
+import { useTools } from "@/lib/api-hooks"
+import type { ToolSummary, ToolStatus } from "@/app/api/tools/route"
 
-type ToolStatus = "Available" | "In Use" | "Maintenance" | "Missing"
 type FilterType = "All" | "Available" | "In Use" | "Service"
 
 interface Tool {
@@ -31,27 +32,38 @@ interface CategoryStat {
   detail: string
 }
 
-// ── Data ─────────────────────────────────────────────────────────────────────
+// ── Category detail labels ────────────────────────────────────────────────────
 
-const TOOLS: Tool[] = [
-  { id: "t1",  name: "Rotary Hammer",   model: "Bosch GBH 2-28",   category: "Power Tools",     status: "In Use",      assignedTo: "Ion Crișan",   site: "Cluj Mănăștur",  dueBack: "Jun 9",  lastService: "Apr 2, 2026",  nextService: "Jul 15, 2026", ageYears: 3.2, utilisationPct: 94, usesThisMonth: 12, valueEur: 380 },
-  { id: "t2",  name: "Angle Grinder",   model: "Makita GA9020",    category: "Power Tools",     status: "Maintenance", location: "Warehouse",      lastUsed: "May 30",     lastService: "Jan 8, 2026",  nextService: "May 25, 2026", ageYears: 4.1, utilisationPct: 71, usesThisMonth: 0,  valueEur: 220, serviceOverdueDays: 12 },
-  { id: "t3",  name: "Cordless Drill",  model: "DeWalt DCD796",    category: "Power Tools",     status: "Available",   location: "Warehouse A",    lastUsed: "Jun 3",      lastService: "Mar 14, 2026", nextService: "Aug 15, 2026", ageYears: 2.0, utilisationPct: 68, usesThisMonth: 8,  valueEur: 290 },
-  { id: "t4",  name: "Laser Level",     model: "Leica Lino L2",    category: "Measuring",       status: "Available",   location: "Warehouse B",    lastUsed: "Jun 1",      lastService: "Feb 20, 2026", nextService: "Oct 1, 2026",  ageYears: 1.5, utilisationPct: 55, usesThisMonth: 6,  valueEur: 640 },
-  { id: "t5",  name: "Concrete Mixer",  model: "Altrad M150",      category: "Heavy Equipment", status: "In Use",      assignedTo: "Radu Dima",    site: "Brașov",         dueBack: "Jun 12", lastService: "Apr 18, 2026", nextService: "Sep 1, 2026",  ageYears: 5.8, utilisationPct: 82, usesThisMonth: 9,  valueEur: 1200 },
-  { id: "t6",  name: "Jigsaw",          model: "Festool PS 420",   category: "Power Tools",     status: "Available",   location: "Warehouse A",    lastUsed: "May 28",     lastService: "Mar 30, 2026", nextService: "Jul 20, 2026", ageYears: 2.8, utilisationPct: 48, usesThisMonth: 4,  valueEur: 480 },
-  { id: "t7",  name: "Spirit Level 2m", model: "Stanley FatMax",   category: "Measuring",       status: "Available",   location: "Warehouse A",    lastUsed: "Jun 4",      lastService: "Jan 5, 2026",  nextService: "Jan 5, 2027",  ageYears: 3.0, utilisationPct: 62, usesThisMonth: 14, valueEur: 60 },
-  { id: "t8",  name: "Plate Compactor", model: "Wacker Neuson",    category: "Heavy Equipment", status: "Maintenance", location: "Service Bay",    lastUsed: "May 22",     lastService: "Nov 10, 2025", nextService: "May 10, 2026", ageYears: 6.2, utilisationPct: 77, usesThisMonth: 0,  valueEur: 2400, serviceOverdueDays: 27 },
-  { id: "t9",  name: "Tile Cutter",     model: "Rubi TR 600",      category: "Hand Tools",      status: "In Use",      assignedTo: "Sorin Florea", site: "Timișoara",      dueBack: "Jun 8",  lastService: "Feb 8, 2026",  nextService: "Aug 8, 2026",  ageYears: 2.4, utilisationPct: 73, usesThisMonth: 7,  valueEur: 190 },
-  { id: "t10", name: "Circular Saw",    model: "Makita HS7601",    category: "Power Tools",     status: "Available",   location: "Warehouse B",    lastUsed: "Jun 2",      lastService: "Apr 10, 2026", nextService: "Oct 10, 2026", ageYears: 3.7, utilisationPct: 59, usesThisMonth: 5,  valueEur: 310 },
-]
+const CATEGORY_DETAILS: Record<string, string> = {
+  "Power Tools":     "Drills, grinders, saws",
+  "Measuring":       "Levels, rulers, sensors",
+  "Hand Tools":      "Hammers, chisels, clamps",
+  "Heavy Equipment": "Mixers, compactors, lifts",
+}
 
-const CATEGORIES: CategoryStat[] = [
-  { label: "Power Tools",     count: 38, detail: "Drills, grinders, saws"   },
-  { label: "Measuring",       count: 27, detail: "Levels, rulers, sensors"  },
-  { label: "Hand Tools",      count: 41, detail: "Hammers, chisels, clamps" },
-  { label: "Heavy Equipment", count: 36, detail: "Mixers, compactors, lifts"},
-]
+// ── Mapper ────────────────────────────────────────────────────────────────────
+
+function mapTool(t: ToolSummary): Tool {
+  return {
+    id: t.id,
+    name: t.name,
+    model: t.model,
+    category: t.category,
+    status: t.status,
+    assignedTo: t.assignedTo ?? undefined,
+    site: t.site ?? undefined,
+    dueBack: t.dueBack ?? undefined,
+    location: t.location ?? undefined,
+    lastUsed: t.lastUsed ?? undefined,
+    nextService: "—",
+    lastService: "—",
+    ageYears: 0,
+    utilisationPct: t.utilisationPct,
+    usesThisMonth: 0,
+    valueEur: 0,
+    serviceOverdueDays: t.serviceOverdueDays ?? undefined,
+  }
+}
 
 // ── Tokens ────────────────────────────────────────────────────────────────────
 
@@ -131,7 +143,7 @@ function ToolDetail({ tool, onClose }: { tool: Tool; onClose: () => void }) {
         { label: "Last used",    val: tool.lastUsed ?? "—" },
         { label: "Last service", val: tool.lastService },
         { label: "Next service", val: tool.nextService },
-        { label: "Value",        val: `€${tool.valueEur.toLocaleString()}` },
+        { label: "Value",        val: tool.valueEur > 0 ? `€${tool.valueEur.toLocaleString()}` : "—" },
       ]
 
   return (
@@ -157,7 +169,7 @@ function ToolDetail({ tool, onClose }: { tool: Tool; onClose: () => void }) {
           </div>
 
           {/* Service overdue warning */}
-          {tool.serviceOverdueDays && (
+          {tool.serviceOverdueDays != null && (
             <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 12, background: "rgba(255,159,10,0.07)", border: "1px solid rgba(255,159,10,0.18)", marginBottom: 14 }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={amber} strokeWidth="1.8" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
               <span style={{ fontSize: 12, color: amber }}>Maintenance overdue by {tool.serviceOverdueDays} days</span>
@@ -167,10 +179,10 @@ function ToolDetail({ tool, onClose }: { tool: Tool; onClose: () => void }) {
           {/* Metric cards */}
           <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
             {[
-              { val: `${tool.ageYears}yr`,           lbl: "Age"           },
-              { val: `${tool.utilisationPct}%`,       lbl: "Utilisation"   },
-              { val: String(tool.usesThisMonth),      lbl: "Uses this mo." },
-              { val: `€${Math.round(tool.valueEur / 100) * 100 === tool.valueEur ? tool.valueEur.toLocaleString() : tool.valueEur}`, lbl: "Value" },
+              { val: tool.ageYears > 0 ? `${tool.ageYears}yr` : "—",           lbl: "Age"           },
+              { val: `${tool.utilisationPct}%`,                                  lbl: "Utilisation"   },
+              { val: tool.usesThisMonth > 0 ? String(tool.usesThisMonth) : "—", lbl: "Uses this mo." },
+              { val: tool.valueEur > 0 ? `€${tool.valueEur.toLocaleString()}` : "—", lbl: "Value" },
             ].map(m => (
               <div key={m.lbl} style={{ flex: 1, padding: "10px 6px", borderRadius: 12, background: g1, border: `1px solid ${bds}`, textAlign: "center" }}>
                 <div style={{ fontSize: 14, fontWeight: 700, color: t1, marginBottom: 2 }}>{m.val}</div>
@@ -213,7 +225,12 @@ export function ToolsWorkspace() {
 
   const FILTERS: FilterType[] = ["All", "Available", "In Use", "Service"]
 
-  const filtered = TOOLS.filter(t => {
+  const { data, isLoading } = useTools()
+
+  const tools = useMemo(() => (data?.tools ?? []).map(mapTool), [data?.tools])
+  const meta = data?.meta
+
+  const filtered = useMemo(() => tools.filter(t => {
     const matchFilter =
       filter === "All" ||
       (filter === "Available" && t.status === "Available") ||
@@ -222,15 +239,25 @@ export function ToolsWorkspace() {
     const q = search.toLowerCase()
     const matchSearch = !search || t.name.toLowerCase().includes(q) || t.model.toLowerCase().includes(q) || t.category.toLowerCase().includes(q) || (t.assignedTo ?? "").toLowerCase().includes(q) || (t.site ?? "").toLowerCase().includes(q)
     return matchFilter && matchSearch
-  })
+  }), [tools, filter, search])
 
-  const overdueCount = TOOLS.filter(t => t.serviceOverdueDays).length
-  const overdueTitles = TOOLS.filter(t => t.serviceOverdueDays).map(t => t.name).join(" · ")
+  const overdueCount = meta?.overdueCount ?? tools.filter(t => t.serviceOverdueDays != null).length
+  const overdueTitles = tools.filter(t => t.serviceOverdueDays != null).map(t => t.name).join(" · ")
 
-  const total     = TOOLS.length
-  const available = TOOLS.filter(t => t.status === "Available").length
-  const inUse     = TOOLS.filter(t => t.status === "In Use").length
-  const service   = TOOLS.filter(t => t.status === "Maintenance").length
+  const total     = meta?.total ?? tools.length
+  const available = tools.filter(t => t.status === "Available").length
+  const inUse     = meta?.inUse ?? tools.filter(t => t.status === "In Use").length
+  const service   = meta?.inService ?? tools.filter(t => t.status === "Maintenance").length
+
+  const categories = useMemo<CategoryStat[]>(() => {
+    const counts: Record<string, number> = {}
+    for (const t of tools) counts[t.category] = (counts[t.category] ?? 0) + 1
+    return Object.entries(counts).map(([label, count]) => ({
+      label,
+      count,
+      detail: CATEGORY_DETAILS[label] ?? label,
+    }))
+  }, [tools])
 
   const showCategories = filter === "All" && !search
 
@@ -250,16 +277,18 @@ export function ToolsWorkspace() {
             </div>
           </div>
         </div>
-        <p style={{ fontSize: 14, color: t2 }}>142 tools · {overdueCount} overdue for maintenance</p>
+        <p style={{ fontSize: 14, color: t2 }}>
+          {isLoading ? "Loading…" : `${total} tools · ${overdueCount} overdue for maintenance`}
+        </p>
       </div>
 
       {/* ── Stats ── */}
       <div style={{ display: "flex", gap: 8, padding: "16px 16px 0" }}>
         {[
-          { val: String(total),    lbl: "Total"     },
-          { val: String(available),lbl: "Available" },
-          { val: String(inUse),    lbl: "In Use"    },
-          { val: String(service),  lbl: "Service", color: service > 0 ? amber : t1 },
+          { val: isLoading ? "…" : String(total),     lbl: "Total"     },
+          { val: isLoading ? "…" : String(available),  lbl: "Available" },
+          { val: isLoading ? "…" : String(inUse),      lbl: "In Use"    },
+          { val: isLoading ? "…" : String(service),    lbl: "Service", color: service > 0 ? amber : t1 },
         ].map(s => (
           <div key={s.lbl} style={{ flex: 1, padding: "12px 8px", borderRadius: 14, background: g1, border: `1px solid ${bds}`, textAlign: "center" }}>
             <div style={{ fontSize: 18, fontWeight: 700, color: s.color ?? t1, marginBottom: 2 }}>{s.val}</div>
@@ -300,12 +329,14 @@ export function ToolsWorkspace() {
         <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase" as const, color: t3, marginBottom: 12 }}>
           {filter === "All" ? "All Tools" : filter === "Service" ? "In Service" : `${filter}`}
         </div>
-        {filtered.length === 0 ? (
+        {isLoading ? (
+          <div style={{ textAlign: "center", padding: "40px 0", color: t3, fontSize: 14 }}>Loading…</div>
+        ) : filtered.length === 0 ? (
           <div style={{ textAlign: "center", padding: "40px 0", color: t3, fontSize: 14 }}>No tools found</div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column" as const, gap: 8 }}>
             {filtered.map(t => (
-              <div key={t.id} onClick={() => setSelected(t)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "13px 14px", borderRadius: 16, background: g1, border: `1px solid ${t.serviceOverdueDays ? "rgba(255,159,10,0.22)" : bds}`, cursor: "pointer", position: "relative" }}>
+              <div key={t.id} onClick={() => setSelected(t)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "13px 14px", borderRadius: 16, background: g1, border: `1px solid ${t.serviceOverdueDays != null ? "rgba(255,159,10,0.22)" : bds}`, cursor: "pointer", position: "relative" }}>
                 <Specular />
                 <ToolIcon category={t.category} status={t.status} />
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -313,16 +344,16 @@ export function ToolsWorkspace() {
                   {t.status === "In Use" ? (
                     <>
                       <div style={{ fontSize: 12, color: t3 }}>Assigned: {t.assignedTo} · {t.site}</div>
-                      <div style={{ fontSize: 12, color: t3, marginTop: 1 }}>Due back: {t.dueBack}</div>
+                      <div style={{ fontSize: 12, color: t3, marginTop: 1 }}>Due back: {t.dueBack ?? "—"}</div>
                     </>
-                  ) : t.serviceOverdueDays ? (
+                  ) : t.serviceOverdueDays != null ? (
                     <>
                       <div style={{ fontSize: 12, color: t3 }}>{t.location}</div>
                       <div style={{ fontSize: 11, color: amber, marginTop: 2 }}>⚠ Maintenance overdue by {t.serviceOverdueDays} days</div>
                     </>
                   ) : (
                     <>
-                      <div style={{ fontSize: 12, color: t3 }}>{t.location} · Last used: {t.lastUsed}</div>
+                      <div style={{ fontSize: 12, color: t3 }}>{t.location} · Last used: {t.lastUsed ?? "—"}</div>
                       <div style={{ fontSize: 12, color: t3, marginTop: 1 }}>Next service: {t.nextService}</div>
                     </>
                   )}
@@ -335,11 +366,11 @@ export function ToolsWorkspace() {
       </div>
 
       {/* ── Category breakdown ── */}
-      {showCategories && (
+      {showCategories && categories.length > 0 && (
         <div style={{ padding: "24px 16px 0" }}>
           <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase" as const, color: t3, marginBottom: 12 }}>By Category</div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-            {CATEGORIES.map(cat => (
+            {categories.map(cat => (
               <div key={cat.label} style={{ padding: 14, borderRadius: 16, background: g1, border: `1px solid ${bds}` }}>
                 <div style={{ fontSize: 22, fontWeight: 700, color: t1, marginBottom: 2 }}>{cat.count}</div>
                 <div style={{ fontSize: 12, fontWeight: 600, color: t1, marginBottom: 1 }}>{cat.label}</div>

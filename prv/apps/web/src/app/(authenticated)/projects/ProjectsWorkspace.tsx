@@ -1,7 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import Link from "next/link"
+import { useProjects } from "@/lib/api-hooks"
+import type { ProjectSummary } from "@/app/api/projects/route"
 import {
   GlassSegmentedControl,
   GlassProgressBar,
@@ -83,6 +85,66 @@ const DETAIL_TABS: TabItem[] = [
   { value: "team", label: "Team" },
   { value: "financials", label: "Financials" },
 ]
+
+// ── API mappers ───────────────────────────────────────────────────────────────
+
+function fmtEuro(n: number): string {
+  if (n >= 1_000_000) return `€${(n / 1_000_000).toFixed(1)}M`
+  if (n >= 1_000) return `€${Math.round(n / 1000)}k`
+  return `€${n.toLocaleString()}`
+}
+
+function fmtShortDate(dateStr: string): string {
+  if (!dateStr) return "—"
+  try {
+    return new Date(dateStr).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+  } catch { return dateStr }
+}
+
+function buildFallbackPhases(p: ProjectSummary): Phase[] {
+  const phaseName = p.currentPhaseName || "In Progress"
+  if (p.completionPct === 100) {
+    return [{ num: 1, name: phaseName, dates: `${fmtShortDate(p.startDate)} – ${fmtShortDate(p.endDate)}`, pct: 100, state: "done" }]
+  }
+  if (p.completionPct > 0) {
+    return [
+      { num: 1, name: "Completed work", dates: fmtShortDate(p.startDate), pct: 100, state: "done" },
+      { num: 2, name: phaseName, dates: `${fmtShortDate(p.startDate)} – ${fmtShortDate(p.endDate)}`, pct: p.completionPct, state: "active" },
+      { num: 3, name: "Remaining", dates: fmtShortDate(p.endDate), pct: 0, state: "pending" },
+    ]
+  }
+  return [{ num: 1, name: phaseName, dates: `${fmtShortDate(p.startDate)} – ${fmtShortDate(p.endDate)}`, pct: 0, state: "pending" }]
+}
+
+function mapApiProject(p: ProjectSummary): Project {
+  const pmMember = p.team[0]
+  const pmName = pmMember?.name ?? p.clientName
+  const pmShort = pmName.split(" ").map((w, i) => (i === 0 ? w : (w[0] ?? "") + ".")).join(" ")
+  const teamMapped: TeamMember[] = p.team.map((m, i) => ({
+    initials: m.initials,
+    name: m.name,
+    role: m.role,
+    status: (i === 0 ? "online" : i < 2 ? "online" : "offline") as TeamMember["status"],
+    statusLabel: i === 0 ? "On Site" : "Off Shift",
+  }))
+  return {
+    id: p.id,
+    name: p.name,
+    pm: pmShort,
+    value: fmtEuro(p.budget),
+    due: fmtShortDate(p.endDate),
+    pct: p.completionPct,
+    status: p.status === "planning" ? "hold" : (p.status as ProjectStatus),
+    type: "renovation",
+    location: p.clientName,
+    workers: p.team.length,
+    phases: buildFallbackPhases(p),
+    team: teamMapped,
+    financials: { estimated: p.budget, spent: p.spent, invoiced: p.spent },
+  }
+}
+
+// ── Mock data (unused when API returns data; kept for empty-state type safety) ─
 
 const PROJECTS: Project[] = [
   {
@@ -726,13 +788,26 @@ function ProjectDetail({ project, onBack }: { project: Project; onBack: () => vo
 export function ProjectsWorkspace() {
   const [filter, setFilter] = useState("all")
   const [view, setView] = useState<"list" | "board">("list")
-  const [boardCols, setBoardCols] = useState<KanbanColumn[]>(() => buildBoardColumns(PROJECTS))
 
-  const activeCount = PROJECTS.filter((p) => p.status === "active").length
-  const reviewCount = PROJECTS.filter((p) => p.status === "review").length
-  const doneCount = PROJECTS.filter((p) => p.status === "done").length
+  const { data, isLoading } = useProjects()
+  const projects = useMemo<Project[]>(
+    () => (data?.projects ?? []).map(mapApiProject),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [data?.projects],
+  )
 
-  const filtered = PROJECTS.filter((p) => {
+  const [localBoardCols, setLocalBoardCols] = useState<KanbanColumn[] | null>(null)
+  const boardCols = useMemo(
+    () => localBoardCols ?? buildBoardColumns(projects),
+    [localBoardCols, projects],
+  )
+
+  const activeCount = projects.filter((p) => p.status === "active").length
+  const reviewCount = projects.filter((p) => p.status === "review").length
+  const doneCount = projects.filter((p) => p.status === "done").length
+  const totalBudget = projects.reduce((s, p) => s + p.financials.estimated, 0)
+
+  const filtered = projects.filter((p) => {
     if (filter === "all") return true
     if (filter === "renovation") return p.type === "renovation"
     if (filter === "internal") return p.type === "internal"
@@ -741,13 +816,14 @@ export function ProjectsWorkspace() {
   })
 
   function handleBoardMove(cardId: string, fromCol: string, toCol: string) {
-    setBoardCols((prev) => {
-      const next = prev.map((col) => ({ ...col, cards: [...col.cards] }))
+    setLocalBoardCols((prev) => {
+      const base: KanbanColumn[] = prev ?? buildBoardColumns(projects)
+      const next = base.map((col) => ({ ...col, cards: [...col.cards] }))
       const from = next.find((c) => c.id === fromCol)
       const to = next.find((c) => c.id === toCol)
-      if (!from || !to) return prev
+      if (!from || !to) return base
       const idx = from.cards.findIndex((c) => c.id === cardId)
-      if (idx === -1) return prev
+      if (idx === -1) return base
       const [card] = from.cards.splice(idx, 1)
       to.cards.push(card!)
       return next
@@ -811,10 +887,10 @@ export function ProjectsWorkspace() {
       {/* KPI strip */}
       <div className="grid grid-cols-4 gap-2.5 mb-4">
         {[
-          { v: String(activeCount), l: "Active", color: "rgba(10,132,255,0.9)" },
-          { v: String(reviewCount), l: "Review", color: "rgba(255,159,10,0.95)" },
-          { v: String(doneCount), l: "Done", color: "rgba(48,209,88,0.95)" },
-          { v: "€2.4M", l: "Pipeline", color: "var(--prv-text-1)" },
+          { v: isLoading ? "…" : String(activeCount), l: "Active", color: "rgba(10,132,255,0.9)" },
+          { v: isLoading ? "…" : String(reviewCount), l: "Review", color: "rgba(255,159,10,0.95)" },
+          { v: isLoading ? "…" : String(doneCount), l: "Done", color: "rgba(48,209,88,0.95)" },
+          { v: isLoading ? "…" : fmtEuro(totalBudget), l: "Pipeline", color: "var(--prv-text-1)" },
         ].map(({ v, l, color }) => (
           <div
             key={l}
@@ -848,7 +924,9 @@ export function ProjectsWorkspace() {
           className="rounded-[18px] overflow-hidden relative"
           style={{ background: "var(--prv-g1)", border: "1px solid var(--prv-border-subtle)" }}
         >
-          {filtered.length === 0 ? (
+          {isLoading ? (
+            <div className="py-12 text-center text-white/30 text-[14px]">Loading projects…</div>
+          ) : filtered.length === 0 ? (
             <div className="py-12 text-center text-white/35 text-[14px]">No projects found.</div>
           ) : (
             filtered.map((p) => <ProjectCard key={p.id} project={p} />)

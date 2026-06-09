@@ -1,6 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
+import { useAttendanceRecords } from "@/lib/api-hooks"
+import type { AttendanceRecord } from "@/app/api/attendance/route"
 
 type AttendanceStatus = "Present" | "Late" | "Absent" | "On Leave" | "Clocked Out"
 type FilterType = "All" | "Present" | "Late" | "Absent"
@@ -21,38 +23,43 @@ interface Employee {
   barWidth: number
 }
 
-interface TimelineEvent {
-  time: string
-  label: string
-  sub: string
-  color: string
+// ── API mapper ────────────────────────────────────────────────────────────────
+
+function mapApiStatus(s: AttendanceRecord["status"]): AttendanceStatus {
+  const m: Record<AttendanceRecord["status"], AttendanceStatus> = {
+    present: "Present",
+    late: "Late",
+    absent: "Absent",
+    leave: "On Leave",
+    clocked_out: "Clocked Out",
+  }
+  return m[s]
 }
 
-const EMPLOYEES: Employee[] = [
-  { id: "ap", initials: "AP", name: "Andrei Popescu", role: "Project Manager", location: "Cluj", status: "Present", clockIn: "08:12", duration: "6h 48m", barLeft: 5, barWidth: 55 },
-  { id: "em", initials: "EM", name: "Elena Marin", role: "Project Manager", location: "Timișoara", status: "Late", clockIn: "09:24", lateMin: 84, barLeft: 14, barWidth: 44 },
-  { id: "mi", initials: "MI", name: "Maria Ionescu", role: "HR Manager", location: "Cluj", status: "Present", clockIn: "08:05", duration: "6h 55m", barLeft: 4, barWidth: 56 },
-  { id: "lt", initials: "LT", name: "Liviu Toma", role: "Tile Specialist", location: "Cluj", status: "Absent", barLeft: 0, barWidth: 0 },
-  { id: "rd", initials: "RD", name: "Radu Dumitrescu", role: "Electrician", location: "Timișoara", status: "On Leave", leaveRange: "Jun 4–8", barLeft: 0, barWidth: 100 },
-  { id: "cn", initials: "CN", name: "Cosmin Neagu", role: "Painter", location: "Cluj", status: "Clocked Out", clockIn: "08:18", clockOut: "16:30", duration: "8h 12m", barLeft: 3, barWidth: 52 },
-]
+function fmtMins(mins: number | null): string | undefined {
+  if (!mins) return undefined
+  const h = Math.floor(mins / 60)
+  const m = mins % 60
+  return h > 0 ? `${h}h ${m}m` : `${m}m`
+}
 
-const TIMELINE: TimelineEvent[] = [
-  { time: "08:12", label: "Clock In", sub: "Cluj HQ · GPS verified · iPhone 15 Pro", color: "rgba(48,209,88,0.95)" },
-  { time: "10:30", label: "Break Start", sub: "Coffee break · 15 min", color: "rgba(255,159,10,0.95)" },
-  { time: "10:45", label: "Break End", sub: "Resumed work", color: "rgba(48,209,88,0.95)" },
-  { time: "12:00", label: "Lunch Break", sub: "57 min · Off-site", color: "rgba(255,159,10,0.95)" },
-  { time: "12:57", label: "Resumed", sub: "Back at Cluj HQ", color: "rgba(48,209,88,0.95)" },
-  { time: "—", label: "Clock Out", sub: "Still active", color: "var(--prv-text-3)" },
-]
-
-const WEEK_DAYS = [
-  { label: "Mon", num: 2, hours: 8, barH: 30, today: false },
-  { label: "Tue", num: 3, hours: 8, barH: 30, today: false },
-  { label: "Wed", num: 4, hours: 7, barH: 26, today: false },
-  { label: "Thu", num: 5, hours: 8, barH: 30, today: false },
-  { label: "Fri", num: 6, hours: null, barH: 22, today: true },
-]
+function mapRecord(r: AttendanceRecord): Employee {
+  return {
+    id: r.id,
+    initials: r.initials,
+    name: r.name,
+    role: r.role,
+    location: r.site,
+    status: mapApiStatus(r.status),
+    clockIn: r.clockIn ?? undefined,
+    clockOut: r.clockOut ?? undefined,
+    duration: fmtMins(r.activeMinutes),
+    lateMin: r.lateMinutes ?? undefined,
+    leaveRange: r.leaveLabel ?? undefined,
+    barLeft: 0,
+    barWidth: r.barPct,
+  }
+}
 
 const FILTERS: FilterType[] = ["All", "Present", "Late", "Absent"]
 
@@ -109,10 +116,17 @@ export function AttendanceWorkspace() {
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null)
   const [clockedIn, setClockedIn] = useState(true)
 
-  const now = new Date()
-  const dateLabel = now.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })
+  const { data, isLoading } = useAttendanceRecords()
+  const employees = useMemo<Employee[]>(
+    () => (data?.records ?? []).map(mapRecord),
+    [data?.records],
+  )
+  const meta = data?.meta
 
-  const filtered = EMPLOYEES.filter(e => {
+  const now = new Date()
+  const dateLabel = meta?.dateLabel ?? now.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })
+
+  const filtered = employees.filter(e => {
     if (filter === "All") return true
     if (filter === "Present") return e.status === "Present" || e.status === "Clocked Out"
     if (filter === "Late") return e.status === "Late"
@@ -163,13 +177,18 @@ export function AttendanceWorkspace() {
         <p style={{ fontSize: 11, fontWeight: 600, color: t3, textTransform: "uppercase", letterSpacing: "0.07em", margin: "0 2px 10px" }}>Today's Timeline</p>
         <div style={card}>
           <TopEdge />
-          {TIMELINE.map((ev, i) => (
-            <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "10px 16px", borderBottom: i < TIMELINE.length - 1 ? `1px solid ${bds}` : "none" }}>
-              <div style={{ width: 8, height: 8, borderRadius: "50%", background: ev.color, marginTop: 5, flexShrink: 0 }} />
-              <div style={{ width: 46, flexShrink: 0, fontSize: 12, color: t3, marginTop: 1 }}>{ev.time}</div>
+          {[
+            emp.clockIn  ? { time: emp.clockIn,  label: "Clock In",  sub: emp.location + " · GPS verified", color: green } : null,
+            emp.clockOut ? { time: emp.clockOut, label: "Clock Out", sub: emp.duration ? `Active ${emp.duration}` : "Shift ended", color: t3 } : null,
+            !emp.clockIn && emp.status === "Absent" ? { time: "—", label: "No check-in", sub: "Employee absent today", color: red } : null,
+            !emp.clockIn && emp.status === "On Leave" ? { time: "—", label: "On Leave", sub: emp.leaveRange ?? "Leave period", color: blue } : null,
+          ].filter(Boolean).map((ev, i, arr) => (
+            <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "10px 16px", borderBottom: i < arr.length - 1 ? `1px solid ${bds}` : "none" }}>
+              <div style={{ width: 8, height: 8, borderRadius: "50%", background: ev!.color, marginTop: 5, flexShrink: 0 }} />
+              <div style={{ width: 46, flexShrink: 0, fontSize: 12, color: t3, marginTop: 1 }}>{ev!.time}</div>
               <div>
-                <div style={{ fontSize: 13, fontWeight: 600, color: ev.time === "—" ? t3 : "var(--prv-text-1)" }}>{ev.label}</div>
-                <div style={{ fontSize: 12, color: t3, marginTop: 1 }}>{ev.sub}</div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: ev!.time === "—" ? t3 : "var(--prv-text-1)" }}>{ev!.label}</div>
+                <div style={{ fontSize: 12, color: t3, marginTop: 1 }}>{ev!.sub}</div>
               </div>
             </div>
           ))}
@@ -178,23 +197,33 @@ export function AttendanceWorkspace() {
         <p style={{ fontSize: 11, fontWeight: 600, color: t3, textTransform: "uppercase", letterSpacing: "0.07em", margin: "18px 2px 10px" }}>This Week</p>
         <div style={{ ...card, padding: "14px 16px" }}>
           <TopEdge />
-          <div style={{ display: "flex", gap: 6, alignItems: "flex-end", height: 40, marginBottom: 8 }}>
-            {WEEK_DAYS.map(d => (
-              <div key={d.label} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-                <div style={{ fontSize: 10, color: d.today ? t3 : green, fontWeight: 700 }}>{d.hours ? `${d.hours}h` : "6h+"}</div>
-                <div style={{ width: "100%", height: d.barH, borderRadius: 4, background: d.today ? "rgba(48,209,88,0.25)" : "rgba(48,209,88,0.45)" }} />
-              </div>
-            ))}
-          </div>
-          <div style={{ display: "flex", gap: 6 }}>
-            {WEEK_DAYS.map(d => (
-              <div key={d.label} style={{ flex: 1, fontSize: 9, color: d.today ? "var(--prv-text-1)" : t3, textAlign: "center", fontWeight: d.today ? 700 : 400 }}>{d.label}</div>
-            ))}
-          </div>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 12, paddingTop: 12, borderTop: `1px solid ${bds}` }}>
-            <span style={{ fontSize: 13, color: t2 }}>Week Total</span>
-            <span style={{ fontSize: 14, fontWeight: 700, color: green }}>37h 48m</span>
-          </div>
+          {(() => {
+            const today = new Date()
+            const dow = today.getDay()
+            const mon = new Date(today); mon.setDate(today.getDate() - (dow === 0 ? 6 : dow - 1))
+            const days = Array.from({ length: 5 }, (_, i) => {
+              const d = new Date(mon); d.setDate(mon.getDate() + i)
+              const isToday = d.toDateString() === today.toDateString()
+              return { label: ["Mon","Tue","Wed","Thu","Fri"][i]!, num: d.getDate(), isToday }
+            })
+            return (
+              <>
+                <div style={{ display: "flex", gap: 6, alignItems: "flex-end", height: 40, marginBottom: 8 }}>
+                  {days.map(d => (
+                    <div key={d.label} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
+                      <div style={{ fontSize: 10, color: d.isToday ? t3 : green, fontWeight: 700 }}>{d.isToday ? "now" : "8h"}</div>
+                      <div style={{ width: "100%", height: d.isToday ? 22 : 30, borderRadius: 4, background: d.isToday ? "rgba(48,209,88,0.25)" : "rgba(48,209,88,0.45)" }} />
+                    </div>
+                  ))}
+                </div>
+                <div style={{ display: "flex", gap: 6 }}>
+                  {days.map(d => (
+                    <div key={d.label} style={{ flex: 1, fontSize: 9, color: d.isToday ? "var(--prv-text-1)" : t3, textAlign: "center", fontWeight: d.isToday ? 700 : 400 }}>{d.label}</div>
+                  ))}
+                </div>
+              </>
+            )
+          })()}
         </div>
       </div>
     )
@@ -216,10 +245,10 @@ export function AttendanceWorkspace() {
       {/* KPI strip */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10, marginBottom: 14 }}>
         {[
-          { val: "118", label: "Present", color: green },
-          { val: "9", label: "Late", color: amber },
-          { val: "6", label: "Absent", color: red },
-          { val: "9", label: "On Leave", color: blue },
+          { val: isLoading ? "…" : String(meta?.present ?? employees.filter(e => e.status === "Present" || e.status === "Clocked Out").length), label: "Present", color: green },
+          { val: isLoading ? "…" : String(meta?.late ?? employees.filter(e => e.status === "Late").length), label: "Late", color: amber },
+          { val: isLoading ? "…" : String(meta?.absent ?? employees.filter(e => e.status === "Absent").length), label: "Absent", color: red },
+          { val: isLoading ? "…" : String(meta?.onLeave ?? employees.filter(e => e.status === "On Leave").length), label: "On Leave", color: blue },
         ].map(k => (
           <div key={k.label} style={{ padding: "12px 8px", borderRadius: 14, background: g1, border: `1px solid ${bds}`, textAlign: "center" }}>
             <div style={{ fontSize: 17, fontWeight: 700, color: k.color }}>{k.val}</div>
@@ -277,31 +306,34 @@ export function AttendanceWorkspace() {
       {/* Employee list */}
       <div style={card}>
         <TopEdge />
-        {filtered.map((emp, i) => (
-          <button key={emp.id} onClick={() => setSelectedEmployee(emp)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderBottom: i < filtered.length - 1 ? `1px solid ${bds}` : "none", width: "100%", background: "none", border: "none", cursor: "pointer", textAlign: "left" }}>
-            <div style={{ width: 36, height: 36, borderRadius: "50%", background: g2, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: t2, flexShrink: 0 }}>
-              {emp.initials}
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 14, fontWeight: 600, color: "var(--prv-text-1)" }}>{emp.name}</div>
-              <div style={{ fontSize: 12, color: t3, marginTop: 2 }}>{emp.role} · {emp.location}</div>
-              <TimeBar status={emp.status} barLeft={emp.barLeft} barWidth={emp.barWidth} />
-            </div>
-            <div style={{ textAlign: "right", flexShrink: 0, marginLeft: 8 }}>
-              <StatusPill status={emp.status} clockIn={emp.clockIn} clockOut={emp.clockOut} lateMin={emp.lateMin} leaveRange={emp.leaveRange} />
-              <div style={{ fontSize: 11, color: t3, marginTop: 4 }}>
-                {emp.status === "Present" && emp.duration}
-                {emp.status === "Late" && `+${emp.lateMin} min late`}
-                {emp.status === "Absent" && "No check-in"}
-                {emp.status === "On Leave" && emp.leaveRange}
-                {emp.status === "Clocked Out" && emp.duration}
+        {isLoading ? (
+          <div style={{ padding: "32px 16px", textAlign: "center", color: t3, fontSize: 14 }}>Loading attendance…</div>
+        ) : filtered.length === 0 ? (
+          <div style={{ padding: "32px 16px", textAlign: "center", color: t3, fontSize: 14 }}>No records found.</div>
+        ) : (
+          filtered.map((emp, i) => (
+            <button key={emp.id} onClick={() => setSelectedEmployee(emp)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderBottom: i < filtered.length - 1 ? `1px solid ${bds}` : "none", width: "100%", background: "none", border: "none", cursor: "pointer", textAlign: "left" }}>
+              <div style={{ width: 36, height: 36, borderRadius: "50%", background: g2, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: t2, flexShrink: 0 }}>
+                {emp.initials}
               </div>
-            </div>
-          </button>
-        ))}
-        <div style={{ padding: "12px 16px", textAlign: "center", borderTop: `1px solid ${bds}` }}>
-          <span style={{ fontSize: 12, color: t3 }}>136 more employees ›</span>
-        </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: "var(--prv-text-1)" }}>{emp.name}</div>
+                <div style={{ fontSize: 12, color: t3, marginTop: 2 }}>{emp.role} · {emp.location}</div>
+                <TimeBar status={emp.status} barLeft={emp.barLeft} barWidth={emp.barWidth} />
+              </div>
+              <div style={{ textAlign: "right", flexShrink: 0, marginLeft: 8 }}>
+                <StatusPill status={emp.status} clockIn={emp.clockIn} clockOut={emp.clockOut} lateMin={emp.lateMin} leaveRange={emp.leaveRange} />
+                <div style={{ fontSize: 11, color: t3, marginTop: 4 }}>
+                  {emp.status === "Present" && emp.duration}
+                  {emp.status === "Late" && `+${emp.lateMin} min late`}
+                  {emp.status === "Absent" && "No check-in"}
+                  {emp.status === "On Leave" && emp.leaveRange}
+                  {emp.status === "Clocked Out" && emp.duration}
+                </div>
+              </div>
+            </button>
+          ))
+        )}
       </div>
     </div>
   )
