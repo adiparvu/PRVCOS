@@ -1,6 +1,9 @@
 import { withGates } from "@/lib/with-gates"
 import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
+import { db } from "@prv/db"
+import { learningCourses, courseEnrollments, userAchievements, users } from "@prv/db/schema"
+import { and, desc, eq, isNull } from "drizzle-orm"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -48,193 +51,160 @@ export interface LearningMeta {
   avgScore: number
 }
 
-const MOCK_COURSES: Course[] = [
-  {
-    id: "health-safety",
-    title: "Sănătate & Siguranță pe Șantier",
-    subtitle: "Modulul 3 din 6 · Certificare Siguranță",
-    category: "safety",
-    categoryLabel: "Siguranță",
-    status: "in_progress",
-    progress: 48,
-    currentModule: 3,
-    totalModules: 6,
-    durationLabel: "45 min rămase",
-    hasCert: true,
-    isFeatured: true,
-    instructorName: "Maria Ionescu",
-    updatedDate: "4 Iun 2026",
-    rating: 4.8,
-    reviewCount: 234,
-  },
-  {
-    id: "fire-safety",
-    title: "Siguranță Incendiu & Urgențe",
-    subtitle: "Modulul 2 din 4 · 20 min rămase",
-    category: "safety",
-    categoryLabel: "Siguranță",
-    status: "in_progress",
-    progress: 40,
-    currentModule: 2,
-    totalModules: 4,
-    durationLabel: "20 min",
-    hasCert: false,
-    isFeatured: false,
-    instructorName: "Maria Ionescu",
-    updatedDate: "1 Iun 2026",
-    rating: 4.5,
-    reviewCount: 128,
-  },
-  {
-    id: "gdpr-basics",
-    title: "GDPR & Protecția Datelor",
-    subtitle: "Modulul 4 din 5 · 12 min rămase",
-    category: "compliance",
-    categoryLabel: "Conformitate",
-    status: "in_progress",
-    progress: 72,
-    currentModule: 4,
-    totalModules: 5,
-    durationLabel: "12 min",
-    hasCert: false,
-    isFeatured: false,
-    instructorName: "Elena Marin",
-    updatedDate: "15 Mai 2026",
-    rating: 4.6,
-    reviewCount: 87,
-  },
-  {
-    id: "project-management",
-    title: "Management de Proiect — Fundamente",
-    subtitle: "6 module · 2h 30min · Certificat",
-    category: "leadership",
-    categoryLabel: "Leadership",
-    status: "new",
-    progress: 0,
-    currentModule: 0,
-    totalModules: 6,
-    durationLabel: "2h 30min",
-    hasCert: true,
-    isFeatured: false,
-    instructorName: "Andrei Popescu",
-    updatedDate: "5 Iun 2026",
-    rating: 4.9,
-    reviewCount: 312,
-  },
-  {
-    id: "communication-skills",
-    title: "Comunicare cu Clienții",
-    subtitle: "4 module · 1h 45min",
-    category: "leadership",
-    categoryLabel: "Leadership",
-    status: "new",
-    progress: 0,
-    currentModule: 0,
-    totalModules: 4,
-    durationLabel: "1h 45min",
-    hasCert: false,
-    isFeatured: false,
-    instructorName: "Andrei Popescu",
-    updatedDate: "20 Mai 2026",
-    rating: 4.4,
-    reviewCount: 156,
-  },
-  {
-    id: "excel-advanced",
-    title: "Excel Avansat pentru Operațiuni",
-    subtitle: "8 module · 3h 10min",
-    category: "digital",
-    categoryLabel: "Abilități Digitale",
-    status: "new",
-    progress: 0,
-    currentModule: 0,
-    totalModules: 8,
-    durationLabel: "3h 10min",
-    hasCert: false,
-    isFeatured: false,
-    instructorName: "Ioan Georgescu",
-    updatedDate: "10 Apr 2026",
-    rating: 4.7,
-    reviewCount: 201,
-  },
-  {
-    id: "renovation-safety-2026",
-    title: "Standarde Siguranță Renovare 2026",
-    subtitle: "Finalizat · 4 Iun · Certificat obținut",
-    category: "renovation",
-    categoryLabel: "Renovare",
-    status: "completed",
-    progress: 100,
-    currentModule: 5,
-    totalModules: 5,
-    durationLabel: "2h 00min",
-    hasCert: true,
-    isFeatured: false,
-    instructorName: "Maria Ionescu",
-    updatedDate: "4 Iun 2026",
-    rating: 4.8,
-    reviewCount: 445,
-  },
-  {
-    id: "workplace-ergonomics",
-    title: "Ergonomie la Locul de Muncă",
-    subtitle: "Finalizat · 28 Mai",
-    category: "safety",
-    categoryLabel: "Siguranță",
-    status: "completed",
-    progress: 100,
-    currentModule: 3,
-    totalModules: 3,
-    durationLabel: "1h 20min",
-    hasCert: false,
-    isFeatured: false,
-    instructorName: "Maria Ionescu",
-    updatedDate: "28 Mai 2026",
-    rating: 4.3,
-    reviewCount: 98,
-  },
-]
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
-const MOCK_ACHIEVEMENTS: Achievement[] = [
-  {
-    id: "a1",
-    label: "Safety Champion",
-    detail: "Ai finalizat toate cursurile de siguranță",
-    date: "4 Iun",
-    colorType: "amber",
-  },
-  {
-    id: "a2",
-    label: "10 Cursuri Finalizate",
-    detail: "Jalonul trimestrului curent",
-    date: "28 Mai",
-    colorType: "green",
-  },
-]
-
-function computeMeta(courses: Course[]): LearningMeta {
-  return {
-    completedCount: courses.filter((c) => c.status === "completed").length,
-    inProgressCount: courses.filter((c) => c.status === "in_progress").length,
-    monthlyHours: 14,
-    avgScore: 86,
-  }
+const CATEGORY_LABELS: Record<CourseCategory, string> = {
+  safety: "Siguranță",
+  leadership: "Leadership",
+  digital: "Abilități Digitale",
+  finance: "Finanțe",
+  renovation: "Renovare",
+  compliance: "Conformitate",
 }
+
+const MONTH_LABELS = [
+  "Ian",
+  "Feb",
+  "Mar",
+  "Apr",
+  "Mai",
+  "Iun",
+  "Iul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+] as const
+
+function fmtDuration(minutes: number): string {
+  if (minutes < 60) return `${minutes} min`
+  const h = Math.floor(minutes / 60)
+  const m = minutes % 60
+  return m > 0 ? `${h}h ${m}min` : `${h}h`
+}
+
+function fmtShortDate(d: Date): string {
+  return `${d.getDate()} ${MONTH_LABELS[d.getMonth()]} ${d.getFullYear()}`
+}
+
+function fmtAchievementDate(d: Date): string {
+  return `${d.getDate()} ${MONTH_LABELS[d.getMonth()]}`
+}
+
+// ── GET ───────────────────────────────────────────────────────────────────────
 
 export const GET = withGates(
   { action: "learning.read", endpointClass: "api_read" },
-  async (req: NextRequest, _ctx: GateContext): Promise<NextResponse> => {
-    const status = req.nextUrl.searchParams.get("status")
-    const category = req.nextUrl.searchParams.get("category")
-    let results = MOCK_COURSES
-    if (status) results = results.filter((c) => c.status === status)
-    if (category) results = results.filter((c) => c.category === category)
-    const meta = computeMeta(MOCK_COURSES)
-    return NextResponse.json({
-      courses: results,
-      count: results.length,
-      meta,
-      achievements: MOCK_ACHIEVEMENTS,
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
+    const { searchParams } = req.nextUrl
+    const statusFilter = searchParams.get("status") as CourseStatus | null
+    const categoryFilter = searchParams.get("category") as CourseCategory | null
+    const { companyId, userId } = ctx.session
+
+    // 1. Fetch courses, user enrollments, and achievements in parallel
+    const [courseRows, enrollmentRows, achievementRows] = await Promise.all([
+      db
+        .select({
+          id: learningCourses.id,
+          title: learningCourses.title,
+          subtitle: learningCourses.subtitle,
+          category: learningCourses.category,
+          totalModules: learningCourses.totalModules,
+          durationMinutes: learningCourses.durationMinutes,
+          hasCert: learningCourses.hasCert,
+          isFeatured: learningCourses.isFeatured,
+          rating: learningCourses.rating,
+          reviewCount: learningCourses.reviewCount,
+          updatedAt: learningCourses.updatedAt,
+          instructorFirstName: users.firstName,
+          instructorLastName: users.lastName,
+        })
+        .from(learningCourses)
+        .leftJoin(users, eq(learningCourses.instructorUserId, users.id))
+        .where(
+          and(
+            eq(learningCourses.companyId, companyId),
+            eq(learningCourses.isActive, true),
+            isNull(learningCourses.deletedAt)
+          )
+        )
+        .orderBy(desc(learningCourses.isFeatured), desc(learningCourses.updatedAt)),
+
+      db
+        .select({
+          courseId: courseEnrollments.courseId,
+          status: courseEnrollments.status,
+          progressPct: courseEnrollments.progressPct,
+          currentModule: courseEnrollments.currentModule,
+        })
+        .from(courseEnrollments)
+        .where(
+          and(eq(courseEnrollments.companyId, companyId), eq(courseEnrollments.userId, userId))
+        ),
+
+      db
+        .select({
+          id: userAchievements.id,
+          label: userAchievements.label,
+          detail: userAchievements.detail,
+          colorType: userAchievements.colorType,
+          achievedAt: userAchievements.achievedAt,
+        })
+        .from(userAchievements)
+        .where(and(eq(userAchievements.companyId, companyId), eq(userAchievements.userId, userId)))
+        .orderBy(desc(userAchievements.achievedAt)),
+    ])
+
+    // 2. Index enrollments by courseId
+    const enrollmentByCourse = new Map(enrollmentRows.map((e) => [e.courseId, e]))
+
+    // 3. Assemble courses
+    let courses: Course[] = courseRows.map((c) => {
+      const enrollment = enrollmentByCourse.get(c.id)
+      const category = c.category as CourseCategory
+      return {
+        id: c.id,
+        title: c.title,
+        subtitle: c.subtitle ?? "",
+        category,
+        categoryLabel: CATEGORY_LABELS[category],
+        status: (enrollment?.status ?? "new") as CourseStatus,
+        progress: enrollment?.progressPct ?? 0,
+        currentModule: enrollment?.currentModule ?? 0,
+        totalModules: c.totalModules,
+        durationLabel: fmtDuration(c.durationMinutes),
+        hasCert: c.hasCert,
+        isFeatured: c.isFeatured,
+        instructorName:
+          c.instructorFirstName && c.instructorLastName
+            ? `${c.instructorFirstName} ${c.instructorLastName}`
+            : "—",
+        updatedDate: fmtShortDate(c.updatedAt),
+        rating: c.rating,
+        reviewCount: c.reviewCount,
+      }
     })
+
+    if (statusFilter) courses = courses.filter((c) => c.status === statusFilter)
+    if (categoryFilter) courses = courses.filter((c) => c.category === categoryFilter)
+
+    // 4. Assemble achievements
+    const achievements: Achievement[] = achievementRows.map((a) => ({
+      id: a.id,
+      label: a.label,
+      detail: a.detail ?? "",
+      date: fmtAchievementDate(a.achievedAt),
+      colorType: a.colorType as "amber" | "green",
+    }))
+
+    const meta: LearningMeta = {
+      completedCount: enrollmentRows.filter((e) => e.status === "completed").length,
+      inProgressCount: enrollmentRows.filter((e) => e.status === "in_progress").length,
+      monthlyHours: 0,
+      avgScore: 0,
+    }
+
+    return NextResponse.json({ courses, count: courses.length, meta, achievements })
   }
 )
