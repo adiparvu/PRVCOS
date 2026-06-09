@@ -1,6 +1,8 @@
 import { withGates } from "@/lib/with-gates"
 import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
+import { writeAuditLog } from "@prv/auth"
+import { z } from "zod"
 import { db } from "@prv/db"
 import { suppliers } from "@prv/db/schema"
 import { eq, and, gt, isNull, desc } from "drizzle-orm"
@@ -120,5 +122,62 @@ export const GET = withGates(
     }
 
     return NextResponse.json({ suppliers: results, count: results.length, nextCursor })
+  }
+)
+
+// ─── POST /api/suppliers ──────────────────────────────────────────────────────
+
+const createSupplierSchema = z.object({
+  name: z.string().min(1).max(255),
+  category: z.string().max(100).optional(),
+  contactName: z.string().max(255).optional(),
+  email: z.string().email().optional(),
+  phone: z.string().max(32).optional(),
+  city: z.string().max(100).optional(),
+  address: z.string().optional(),
+  vatNumber: z.string().max(50).optional(),
+  paymentTermsDays: z.number().int().positive().optional(),
+  notes: z.string().optional(),
+})
+
+export const POST = withGates(
+  { action: "suppliers.create", endpointClass: "api_write" },
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
+    const { companyId, userId } = ctx.session
+
+    let body: unknown
+    try {
+      body = await req.json()
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON" }, { status: 400 })
+    }
+
+    const parsed = createSupplierSchema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Invalid payload", issues: parsed.error.issues }, { status: 422 })
+    }
+
+    const [record] = await db
+      .insert(suppliers)
+      .values({ companyId, ...parsed.data })
+      .returning({ id: suppliers.id, name: suppliers.name })
+
+    if (!record) return NextResponse.json({ error: "Insert failed" }, { status: 500 })
+
+    void writeAuditLog({
+      companyId,
+      actorId: userId,
+      sessionId: ctx.session.sessionId,
+      action: "suppliers.create",
+      entityType: "supplier",
+      entityId: record.id,
+      payload: parsed.data,
+      method: "POST",
+      path: "/api/suppliers",
+      ipAddress: ctx.ipAddress,
+      userAgent: ctx.userAgent,
+    })
+
+    return NextResponse.json({ id: record.id, name: record.name }, { status: 201 })
   }
 )

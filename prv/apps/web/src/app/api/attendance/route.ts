@@ -1,6 +1,8 @@
 import { withGates } from "@/lib/with-gates"
 import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
+import { writeAuditLog } from "@prv/auth"
+import { z } from "zod"
 import { db } from "@prv/db"
 import { attendanceRecords, leaveRequests, users, stores } from "@prv/db/schema"
 import { and, eq, gt } from "drizzle-orm"
@@ -173,5 +175,57 @@ export const GET = withGates(
     }
 
     return NextResponse.json({ records: filtered, count: filtered.length, meta, nextCursor })
+  }
+)
+
+// ─── POST /api/attendance ──────────────────────────────────────────────────────
+
+const createAttendanceSchema = z.object({
+  userId: z.string().uuid(),
+  date: z.string().min(1),
+  status: z.enum(["present", "late", "absent", "leave", "clocked_out"]).optional(),
+  scheduledStart: z.string().max(5).optional(),
+  scheduledEnd: z.string().max(5).optional(),
+})
+
+export const POST = withGates(
+  { action: "attendance.create", endpointClass: "api_write" },
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
+    const { companyId, userId } = ctx.session
+
+    let body: unknown
+    try {
+      body = await req.json()
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON" }, { status: 400 })
+    }
+
+    const parsed = createAttendanceSchema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Invalid payload", issues: parsed.error.issues }, { status: 422 })
+    }
+
+    const [record] = await db
+      .insert(attendanceRecords)
+      .values({ companyId, ...parsed.data })
+      .returning({ id: attendanceRecords.id })
+
+    if (!record) return NextResponse.json({ error: "Insert failed" }, { status: 500 })
+
+    void writeAuditLog({
+      companyId,
+      actorId: userId,
+      sessionId: ctx.session.sessionId,
+      action: "attendance.create",
+      entityType: "attendance",
+      entityId: record.id,
+      payload: parsed.data,
+      method: "POST",
+      path: "/api/attendance",
+      ipAddress: ctx.ipAddress,
+      userAgent: ctx.userAgent,
+    })
+
+    return NextResponse.json({ id: record.id }, { status: 201 })
   }
 )

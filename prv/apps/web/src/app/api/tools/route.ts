@@ -1,6 +1,8 @@
 import { withGates } from "@/lib/with-gates"
 import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
+import { writeAuditLog } from "@prv/auth"
+import { z } from "zod"
 import { db } from "@prv/db"
 import { tools, users, stores } from "@prv/db/schema"
 import { and, asc, eq, gt, isNull } from "drizzle-orm"
@@ -156,5 +158,58 @@ export const GET = withGates(
     }
 
     return NextResponse.json({ tools: filtered, count: filtered.length, meta, nextCursor })
+  }
+)
+
+// ─── POST /api/tools ──────────────────────────────────────────────────────
+
+const createToolSchema = z.object({
+  name: z.string().min(1).max(255),
+  category: z.string().max(100).optional(),
+  brand: z.string().max(100).optional(),
+  model: z.string().max(100).optional(),
+  serialNumber: z.string().max(100).optional(),
+  notes: z.string().optional(),
+})
+
+export const POST = withGates(
+  { action: "tools.create", endpointClass: "api_write" },
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
+    const { companyId, userId } = ctx.session
+
+    let body: unknown
+    try {
+      body = await req.json()
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON" }, { status: 400 })
+    }
+
+    const parsed = createToolSchema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Invalid payload", issues: parsed.error.issues }, { status: 422 })
+    }
+
+    const [record] = await db
+      .insert(tools)
+      .values({ companyId, ...parsed.data })
+      .returning({ id: tools.id, name: tools.name })
+
+    if (!record) return NextResponse.json({ error: "Insert failed" }, { status: 500 })
+
+    void writeAuditLog({
+      companyId,
+      actorId: userId,
+      sessionId: ctx.session.sessionId,
+      action: "tools.create",
+      entityType: "tool",
+      entityId: record.id,
+      payload: parsed.data,
+      method: "POST",
+      path: "/api/tools",
+      ipAddress: ctx.ipAddress,
+      userAgent: ctx.userAgent,
+    })
+
+    return NextResponse.json({ id: record.id, name: record.name }, { status: 201 })
   }
 )

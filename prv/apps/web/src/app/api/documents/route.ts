@@ -1,6 +1,8 @@
 import { withGates } from "@/lib/with-gates"
 import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
+import { writeAuditLog } from "@prv/auth"
+import { z } from "zod"
 import { db } from "@prv/db"
 import { documents, users, projects } from "@prv/db/schema"
 import { and, desc, eq, isNull, lt } from "drizzle-orm"
@@ -175,5 +177,62 @@ export const GET = withGates(
     }
 
     return NextResponse.json({ documents: filtered, count: filtered.length, meta, nextCursor })
+  }
+)
+
+// ─── POST /api/documents ──────────────────────────────────────────────────────
+
+const createDocumentSchema = z.object({
+  title: z.string().min(1).max(500),
+  type: z.enum(["contract", "report", "photo", "certificate", "invoice_doc", "permit", "specification", "other"]).optional(),
+  description: z.string().optional(),
+  fileUrl: z.string().min(1),
+  fileName: z.string().min(1).max(500),
+  fileSizeBytes: z.string().optional(),
+  mimeType: z.string().optional(),
+  projectId: z.string().uuid().nullable().optional(),
+  clientId: z.string().uuid().nullable().optional(),
+  isPublic: z.boolean().optional(),
+})
+
+export const POST = withGates(
+  { action: "documents.create", endpointClass: "api_write" },
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
+    const { companyId, userId } = ctx.session
+
+    let body: unknown
+    try {
+      body = await req.json()
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON" }, { status: 400 })
+    }
+
+    const parsed = createDocumentSchema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Invalid payload", issues: parsed.error.issues }, { status: 422 })
+    }
+
+    const [record] = await db
+      .insert(documents)
+      .values({ companyId, ...parsed.data })
+      .returning({ id: documents.id, title: documents.title })
+
+    if (!record) return NextResponse.json({ error: "Insert failed" }, { status: 500 })
+
+    void writeAuditLog({
+      companyId,
+      actorId: userId,
+      sessionId: ctx.session.sessionId,
+      action: "documents.create",
+      entityType: "document",
+      entityId: record.id,
+      payload: parsed.data,
+      method: "POST",
+      path: "/api/documents",
+      ipAddress: ctx.ipAddress,
+      userAgent: ctx.userAgent,
+    })
+
+    return NextResponse.json({ id: record.id, title: record.title }, { status: 201 })
   }
 )

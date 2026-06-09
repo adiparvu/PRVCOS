@@ -1,6 +1,8 @@
 import { withGates } from "@/lib/with-gates"
 import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
+import { writeAuditLog } from "@prv/auth"
+import { z } from "zod"
 import { db } from "@prv/db"
 import { learningCourses, courseEnrollments, userAchievements, users } from "@prv/db/schema"
 import { and, desc, eq, gt, isNull } from "drizzle-orm"
@@ -239,5 +241,58 @@ export const GET = withGates(
     }
 
     return NextResponse.json({ courses, count: courses.length, meta, achievements, nextCursor })
+  }
+)
+
+// ─── POST /api/learning ──────────────────────────────────────────────────────
+
+const createCourseSchema = z.object({
+  title: z.string().min(1).max(500),
+  subtitle: z.string().optional(),
+  category: z.enum(["safety", "leadership", "digital", "finance", "renovation", "compliance"]).optional(),
+  totalModules: z.number().int().min(1).optional(),
+  durationMinutes: z.number().int().nonnegative().optional(),
+  hasCert: z.boolean().optional(),
+})
+
+export const POST = withGates(
+  { action: "learning.create", endpointClass: "api_write" },
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
+    const { companyId, userId } = ctx.session
+
+    let body: unknown
+    try {
+      body = await req.json()
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON" }, { status: 400 })
+    }
+
+    const parsed = createCourseSchema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Invalid payload", issues: parsed.error.issues }, { status: 422 })
+    }
+
+    const [record] = await db
+      .insert(learningCourses)
+      .values({ companyId, instructorUserId: userId, ...parsed.data })
+      .returning({ id: learningCourses.id, title: learningCourses.title })
+
+    if (!record) return NextResponse.json({ error: "Insert failed" }, { status: 500 })
+
+    void writeAuditLog({
+      companyId,
+      actorId: userId,
+      sessionId: ctx.session.sessionId,
+      action: "learning.create",
+      entityType: "course",
+      entityId: record.id,
+      payload: parsed.data,
+      method: "POST",
+      path: "/api/learning",
+      ipAddress: ctx.ipAddress,
+      userAgent: ctx.userAgent,
+    })
+
+    return NextResponse.json({ id: record.id, title: record.title }, { status: 201 })
   }
 )

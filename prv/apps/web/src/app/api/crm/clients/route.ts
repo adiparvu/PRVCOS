@@ -1,6 +1,8 @@
 import { withGates } from "@/lib/with-gates"
 import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
+import { writeAuditLog } from "@prv/auth"
+import { z } from "zod"
 import { db } from "@prv/db"
 import { clients, invoices, projects } from "@prv/db/schema"
 import { and, count, desc, eq, inArray, isNotNull, isNull, lt, notInArray, sum } from "drizzle-orm"
@@ -163,5 +165,61 @@ export const GET = withGates(
       .filter((c) => !statusFilter || c.status === statusFilter)
 
     return NextResponse.json({ clients: result, count: result.length, nextCursor })
+  }
+)
+
+// ─── POST /api/crm/clients ──────────────────────────────────────────────────────
+
+const createClientSchema = z.object({
+  name: z.string().min(1).max(255),
+  type: z.enum(["individual", "business"]).optional(),
+  email: z.string().email().optional(),
+  phone: z.string().max(32).optional(),
+  city: z.string().max(100).optional(),
+  address: z.string().optional(),
+  vatNumber: z.string().max(50).optional(),
+  notes: z.string().optional(),
+  assignedUserId: z.string().uuid().nullable().optional(),
+})
+
+export const POST = withGates(
+  { action: "crm.clients.create", endpointClass: "api_write" },
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
+    const { companyId, userId } = ctx.session
+
+    let body: unknown
+    try {
+      body = await req.json()
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON" }, { status: 400 })
+    }
+
+    const parsed = createClientSchema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Invalid payload", issues: parsed.error.issues }, { status: 422 })
+    }
+
+    const [record] = await db
+      .insert(clients)
+      .values({ companyId, ...parsed.data })
+      .returning({ id: clients.id, name: clients.name })
+
+    if (!record) return NextResponse.json({ error: "Insert failed" }, { status: 500 })
+
+    void writeAuditLog({
+      companyId,
+      actorId: userId,
+      sessionId: ctx.session.sessionId,
+      action: "crm.clients.create",
+      entityType: "client",
+      entityId: record.id,
+      payload: parsed.data,
+      method: "POST",
+      path: "/api/crm/clients",
+      ipAddress: ctx.ipAddress,
+      userAgent: ctx.userAgent,
+    })
+
+    return NextResponse.json({ id: record.id, name: record.name }, { status: 201 })
   }
 )

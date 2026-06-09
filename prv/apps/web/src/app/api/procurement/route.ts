@@ -1,6 +1,8 @@
 import { withGates } from "@/lib/with-gates"
 import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
+import { writeAuditLog } from "@prv/auth"
+import { z } from "zod"
 import { db } from "@prv/db"
 import { purchaseOrders, suppliers, projects } from "@prv/db/schema"
 import { and, desc, eq, isNull, lt, sum } from "drizzle-orm"
@@ -127,5 +129,60 @@ export const GET = withGates(
     }
 
     return NextResponse.json({ orders: filtered, count: filtered.length, meta, nextCursor })
+  }
+)
+
+// ─── POST /api/procurement ──────────────────────────────────────────────────────
+
+const createPurchaseOrderSchema = z.object({
+  ref: z.string().min(1).max(50),
+  description: z.string().min(1).max(500),
+  supplierName: z.string().max(255).optional(),
+  date: z.string().min(1),
+  neededBy: z.string().optional(),
+  amount: z.number().nonnegative(),
+  notes: z.string().optional(),
+  projectId: z.string().uuid().nullable().optional(),
+})
+
+export const POST = withGates(
+  { action: "procurement.create", endpointClass: "api_write" },
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
+    const { companyId, userId } = ctx.session
+
+    let body: unknown
+    try {
+      body = await req.json()
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON" }, { status: 400 })
+    }
+
+    const parsed = createPurchaseOrderSchema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Invalid payload", issues: parsed.error.issues }, { status: 422 })
+    }
+
+    const [record] = await db
+      .insert(purchaseOrders)
+      .values({ companyId, createdByUserId: userId, ...parsed.data, amount: String(parsed.data.amount) })
+      .returning({ id: purchaseOrders.id, ref: purchaseOrders.ref })
+
+    if (!record) return NextResponse.json({ error: "Insert failed" }, { status: 500 })
+
+    void writeAuditLog({
+      companyId,
+      actorId: userId,
+      sessionId: ctx.session.sessionId,
+      action: "procurement.create",
+      entityType: "purchase_order",
+      entityId: record.id,
+      payload: parsed.data,
+      method: "POST",
+      path: "/api/procurement",
+      ipAddress: ctx.ipAddress,
+      userAgent: ctx.userAgent,
+    })
+
+    return NextResponse.json({ id: record.id, ref: record.ref }, { status: 201 })
   }
 )

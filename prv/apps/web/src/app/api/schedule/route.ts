@@ -1,6 +1,8 @@
 import { withGates } from "@/lib/with-gates"
 import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
+import { writeAuditLog } from "@prv/auth"
+import { z } from "zod"
 import { db } from "@prv/db"
 import { shifts, shiftAssignments, users, stores, projects } from "@prv/db/schema"
 import { and, asc, eq, gt, gte, inArray, isNull, lte } from "drizzle-orm"
@@ -218,5 +220,67 @@ export const GET = withGates(
     }
 
     return NextResponse.json({ shifts: filtered, count: filtered.length, meta, nextCursor })
+  }
+)
+
+// ─── POST /api/schedule ──────────────────────────────────────────────────────
+
+const createShiftSchema = z.object({
+  title: z.string().min(1).max(255),
+  date: z.string().min(1),
+  startTime: z.string().min(4).max(5),
+  endTime: z.string().min(4).max(5),
+  role: z.enum(["foreman", "bricklayer", "electrician", "finisher", "welder", "general"]).optional(),
+  roleLabel: z.string().max(100).optional(),
+  location: z.string().max(255).optional(),
+  totalSlots: z.number().int().min(1).optional(),
+  projectId: z.string().uuid().nullable().optional(),
+})
+
+function calcShiftHours(start: string, end: string): number {
+  const [sh = 0, sm = 0] = start.split(":").map(Number)
+  const [eh = 0, em = 0] = end.split(":").map(Number)
+  return Math.round(((eh * 60 + em) - (sh * 60 + sm)) / 60 * 10) / 10
+}
+
+export const POST = withGates(
+  { action: "schedule.create", endpointClass: "api_write" },
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
+    const { companyId, userId } = ctx.session
+
+    let body: unknown
+    try {
+      body = await req.json()
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON" }, { status: 400 })
+    }
+
+    const parsed = createShiftSchema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Invalid payload", issues: parsed.error.issues }, { status: 422 })
+    }
+
+    const [record] = await db
+      .insert(shifts)
+      .values({ companyId, ...parsed.data, durationHours: String(calcShiftHours(parsed.data.startTime, parsed.data.endTime)) })
+      .returning({ id: shifts.id, title: shifts.title })
+
+    if (!record) return NextResponse.json({ error: "Insert failed" }, { status: 500 })
+
+    void writeAuditLog({
+      companyId,
+      actorId: userId,
+      sessionId: ctx.session.sessionId,
+      action: "schedule.create",
+      entityType: "shift",
+      entityId: record.id,
+      payload: parsed.data,
+      method: "POST",
+      path: "/api/schedule",
+      ipAddress: ctx.ipAddress,
+      userAgent: ctx.userAgent,
+    })
+
+    return NextResponse.json({ id: record.id, title: record.title }, { status: 201 })
   }
 )

@@ -1,6 +1,8 @@
 import { withGates } from "@/lib/with-gates"
 import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
+import { writeAuditLog } from "@prv/auth"
+import { z } from "zod"
 import { db } from "@prv/db"
 import { approvalRequests, users } from "@prv/db/schema"
 import { and, count, desc, eq, inArray, lt } from "drizzle-orm"
@@ -161,5 +163,58 @@ export const GET = withGates(
     }
 
     return NextResponse.json({ approvals: result, count: result.length, meta, nextCursor })
+  }
+)
+
+// ─── POST /api/approvals ──────────────────────────────────────────────────────
+
+const createApprovalSchema = z.object({
+  type: z.enum(["purchase", "leave", "expense", "contract", "overtime"]),
+  title: z.string().min(1).max(500),
+  ref: z.string().min(1).max(50),
+  description: z.string().optional(),
+  value: z.number().optional(),
+  deadline: z.string().min(1),
+})
+
+export const POST = withGates(
+  { action: "approvals.create", endpointClass: "api_write" },
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
+    const { companyId, userId } = ctx.session
+
+    let body: unknown
+    try {
+      body = await req.json()
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON" }, { status: 400 })
+    }
+
+    const parsed = createApprovalSchema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Invalid payload", issues: parsed.error.issues }, { status: 422 })
+    }
+
+    const [record] = await db
+      .insert(approvalRequests)
+      .values({ companyId, requestedByUserId: userId, type: parsed.data.type, title: parsed.data.title, ref: parsed.data.ref, description: parsed.data.description, deadline: new Date(parsed.data.deadline), value: parsed.data.value !== undefined ? String(parsed.data.value) : undefined })
+      .returning({ id: approvalRequests.id })
+
+    if (!record) return NextResponse.json({ error: "Insert failed" }, { status: 500 })
+
+    void writeAuditLog({
+      companyId,
+      actorId: userId,
+      sessionId: ctx.session.sessionId,
+      action: "approvals.create",
+      entityType: "approval",
+      entityId: record.id,
+      payload: parsed.data,
+      method: "POST",
+      path: "/api/approvals",
+      ipAddress: ctx.ipAddress,
+      userAgent: ctx.userAgent,
+    })
+
+    return NextResponse.json({ id: record.id }, { status: 201 })
   }
 )

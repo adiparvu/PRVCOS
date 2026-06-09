@@ -1,6 +1,8 @@
 import { withGates } from "@/lib/with-gates"
 import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
+import { writeAuditLog } from "@prv/auth"
+import { z } from "zod"
 import { db } from "@prv/db"
 import { knowledgeArticles, articleReadProgress, users } from "@prv/db/schema"
 import { and, desc, eq, gt, gte, isNull } from "drizzle-orm"
@@ -161,5 +163,58 @@ export const GET = withGates(
     }
 
     return NextResponse.json({ articles: result, count: result.length, meta, nextCursor })
+  }
+)
+
+// ─── POST /api/knowledge ──────────────────────────────────────────────────────
+
+const createArticleSchema = z.object({
+  title: z.string().min(1).max(500),
+  type: z.enum(["sop", "policy", "guide", "faq"]).optional(),
+  category: z.enum(["operations", "hr", "finance", "procurement", "fleet", "projects"]).optional(),
+  content: z.string().optional(),
+  readMinutes: z.number().int().positive().optional(),
+  isPinned: z.boolean().optional(),
+})
+
+export const POST = withGates(
+  { action: "knowledge.create", endpointClass: "api_write" },
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
+    const { companyId, userId } = ctx.session
+
+    let body: unknown
+    try {
+      body = await req.json()
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON" }, { status: 400 })
+    }
+
+    const parsed = createArticleSchema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Invalid payload", issues: parsed.error.issues }, { status: 422 })
+    }
+
+    const [record] = await db
+      .insert(knowledgeArticles)
+      .values({ companyId, authorUserId: userId, ...parsed.data })
+      .returning({ id: knowledgeArticles.id, title: knowledgeArticles.title })
+
+    if (!record) return NextResponse.json({ error: "Insert failed" }, { status: 500 })
+
+    void writeAuditLog({
+      companyId,
+      actorId: userId,
+      sessionId: ctx.session.sessionId,
+      action: "knowledge.create",
+      entityType: "article",
+      entityId: record.id,
+      payload: parsed.data,
+      method: "POST",
+      path: "/api/knowledge",
+      ipAddress: ctx.ipAddress,
+      userAgent: ctx.userAgent,
+    })
+
+    return NextResponse.json({ id: record.id, title: record.title }, { status: 201 })
   }
 )

@@ -1,6 +1,8 @@
 import { withGates } from "@/lib/with-gates"
 import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
+import { writeAuditLog } from "@prv/auth"
+import { z } from "zod"
 import { db } from "@prv/db"
 import { vehicles, stores } from "@prv/db/schema"
 import { users } from "@prv/db/schema"
@@ -123,5 +125,61 @@ export const GET = withGates(
     }
 
     return NextResponse.json({ vehicles: filtered, count: filtered.length, meta, nextCursor })
+  }
+)
+
+// ─── POST /api/fleet ──────────────────────────────────────────────────────
+
+const createVehicleSchema = z.object({
+  make: z.string().min(1).max(100),
+  model: z.string().min(1).max(100),
+  year: z.number().int().optional(),
+  licensePlate: z.string().min(1).max(20),
+  type: z.enum(["car", "van", "truck", "motorcycle", "other"]).optional(),
+  fuelType: z.string().max(50).optional(),
+  color: z.string().max(50).optional(),
+  mileageKm: z.number().int().nonnegative().optional(),
+  notes: z.string().optional(),
+})
+
+export const POST = withGates(
+  { action: "fleet.create", endpointClass: "api_write" },
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
+    const { companyId, userId } = ctx.session
+
+    let body: unknown
+    try {
+      body = await req.json()
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON" }, { status: 400 })
+    }
+
+    const parsed = createVehicleSchema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Invalid payload", issues: parsed.error.issues }, { status: 422 })
+    }
+
+    const [record] = await db
+      .insert(vehicles)
+      .values({ companyId, ...parsed.data })
+      .returning({ id: vehicles.id, licensePlate: vehicles.licensePlate })
+
+    if (!record) return NextResponse.json({ error: "Insert failed" }, { status: 500 })
+
+    void writeAuditLog({
+      companyId,
+      actorId: userId,
+      sessionId: ctx.session.sessionId,
+      action: "fleet.create",
+      entityType: "vehicle",
+      entityId: record.id,
+      payload: parsed.data,
+      method: "POST",
+      path: "/api/fleet",
+      ipAddress: ctx.ipAddress,
+      userAgent: ctx.userAgent,
+    })
+
+    return NextResponse.json({ id: record.id, licensePlate: record.licensePlate }, { status: 201 })
   }
 )
