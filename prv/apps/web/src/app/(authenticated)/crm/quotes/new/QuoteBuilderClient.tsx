@@ -1,8 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import Link from "next/link"
 import { GlassInput, GlassSelect, type SelectItem } from "@prv/ui"
+import { useClients } from "@/lib/api-hooks"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -15,17 +16,6 @@ interface QuoteLineItem {
   discount: number
   taxRate: number
 }
-
-// ── Static mock data ──────────────────────────────────────────────────────────
-
-const CLIENT_OPTIONS: SelectItem[] = [
-  { value: "c2", label: "Andronic Group SRL" },
-  { value: "c4", label: "Biroul Construct SRL" },
-  { value: "c3", label: "Radu Construct SRL" },
-  { value: "c5", label: "Prima Biroul SRL" },
-  { value: "c6", label: "Alfa Business SRL" },
-  { value: "c7", label: "SC Modern SRL" },
-]
 
 const CATEGORY_OPTIONS: SelectItem[] = [
   { value: "manopera", label: "Manoperă" },
@@ -221,6 +211,12 @@ function LineItemRow({
 export function QuoteBuilderClient() {
   const today = "2026-06-07"
 
+  const { data: clientsData } = useClients()
+  const clientOptions = useMemo<SelectItem[]>(
+    () => (clientsData?.clients ?? []).map((c) => ({ value: c.id, label: c.name })),
+    [clientsData]
+  )
+
   const [clientId, setClientId] = useState("")
   const [projectName, setProjectName] = useState("")
   const [coverText, setCoverText] = useState("")
@@ -404,7 +400,7 @@ export function QuoteBuilderClient() {
           </p>
           <GlassSelect
             value={clientId}
-            items={[{ value: "", label: "Selectează client..." }, ...CLIENT_OPTIONS]}
+            items={[{ value: "", label: "Selectează client..." }, ...clientOptions]}
             onChange={setClientId}
           />
         </div>

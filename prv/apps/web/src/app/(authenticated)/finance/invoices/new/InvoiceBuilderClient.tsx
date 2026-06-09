@@ -1,8 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import Link from "next/link"
 import { GlassInput, GlassSelect, GlassButton, type SelectItem } from "@prv/ui"
+import { useClients, useProjects } from "@/lib/api-hooks"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -13,23 +14,6 @@ interface LineItem {
   unitPrice: number
   taxRate: number
 }
-
-// ── Static mock data ──────────────────────────────────────────────────────────
-
-const CLIENT_OPTIONS: SelectItem[] = [
-  { value: "c1", label: "Andronic Group SRL" },
-  { value: "c2", label: "Biroul Construct SRL" },
-  { value: "c3", label: "Ana Ionescu" },
-  { value: "c4", label: "Mihai Popescu" },
-  { value: "c5", label: "SC Modern SRL" },
-]
-
-const PROJECT_OPTIONS: SelectItem[] = [
-  { value: "p1", label: "Renovare Apartament · Cluj Mănăștur" },
-  { value: "p2", label: "Bucătărie Completă · Timișoara" },
-  { value: "p3", label: "Baie Modernă · București Floreasca" },
-  { value: "p4", label: "Spațiu Comercial · Brașov" },
-]
 
 const TAX_OPTIONS: SelectItem[] = [
   { value: "0", label: "0% (Scutit)" },
@@ -161,22 +145,22 @@ function LineItemRow({
 // ── Invoice preview ───────────────────────────────────────────────────────────
 
 function InvoicePreview({
-  clientId,
-  projectId,
+  clientName,
+  projectName,
   issueDate,
   paymentTerms,
   items,
   notes,
 }: {
-  clientId: string
-  projectId: string
+  clientName: string
+  projectName: string
   issueDate: string
   paymentTerms: string
   items: LineItem[]
   notes: string
 }) {
-  const client = CLIENT_OPTIONS.find((c) => c.value === clientId)?.label ?? "—"
-  const project = PROJECT_OPTIONS.find((p) => p.value === projectId)?.label ?? "—"
+  const client = clientName || "—"
+  const project = projectName || "—"
   const dueDate = addDays(issueDate, parseInt(paymentTerms, 10))
   const subtotal = items.reduce((s, it) => s + it.qty * it.unitPrice, 0)
   const tax = items.reduce((s, it) => s + it.qty * it.unitPrice * (it.taxRate / 100), 0)
@@ -311,6 +295,19 @@ function InvoicePreview({
 
 export function InvoiceBuilderClient() {
   const today = "2026-06-07"
+
+  const { data: clientsData } = useClients()
+  const { data: projectsData } = useProjects()
+
+  const clientOptions = useMemo<SelectItem[]>(
+    () => (clientsData?.clients ?? []).map((c) => ({ value: c.id, label: c.name })),
+    [clientsData]
+  )
+  const projectOptions = useMemo<SelectItem[]>(
+    () => (projectsData?.projects ?? []).map((p) => ({ value: p.id, label: p.name })),
+    [projectsData]
+  )
+
   const [clientId, setClientId] = useState("")
   const [projectId, setProjectId] = useState("")
   const [issueDate, setIssueDate] = useState(today)
@@ -465,7 +462,7 @@ export function InvoiceBuilderClient() {
           </p>
           <GlassSelect
             value={clientId}
-            items={[{ value: "", label: "Selectează client..." }, ...CLIENT_OPTIONS]}
+            items={[{ value: "", label: "Selectează client..." }, ...clientOptions]}
             onChange={setClientId}
           />
         </div>
@@ -475,7 +472,7 @@ export function InvoiceBuilderClient() {
           </p>
           <GlassSelect
             value={projectId}
-            items={[{ value: "", label: "Selectează proiect (opțional)..." }, ...PROJECT_OPTIONS]}
+            items={[{ value: "", label: "Selectează proiect (opțional)..." }, ...projectOptions]}
             onChange={setProjectId}
           />
         </div>
@@ -595,8 +592,8 @@ export function InvoiceBuilderClient() {
       {showPreview && (
         <div className="mb-5">
           <InvoicePreview
-            clientId={clientId}
-            projectId={projectId}
+            clientName={clientOptions.find((c) => c.value === clientId)?.label ?? ""}
+            projectName={projectOptions.find((p) => p.value === projectId)?.label ?? ""}
             issueDate={issueDate}
             paymentTerms={paymentTerms}
             items={items}
