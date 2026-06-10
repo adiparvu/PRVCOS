@@ -5,6 +5,7 @@ import { db } from "@prv/db"
 import { notifications } from "@prv/db/schema"
 import { z } from "zod"
 import type { GateContext } from "@prv/auth"
+import { writeAuditLog } from "@prv/auth"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -72,5 +73,57 @@ export const PATCH = withGates(
     if (!row) return NextResponse.json({ error: "Not found" }, { status: 404 })
 
     return NextResponse.json(row)
+  }
+)
+
+// ─── DELETE /api/notifications/[id] ──────────────────────────────────────────
+
+export const DELETE = withGates(
+  { action: "notifications.delete", endpointClass: "api_write" },
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
+    const { userId, companyId } = ctx.session
+    const id = req.nextUrl.pathname.split("/").pop()
+    if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 })
+
+    const [existing] = await db
+      .select({ id: notifications.id })
+      .from(notifications)
+      .where(
+        and(
+          eq(notifications.id, id),
+          eq(notifications.userId, userId),
+          eq(notifications.companyId, companyId)
+        )
+      )
+      .limit(1)
+
+    if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 })
+
+    await db
+      .update(notifications)
+      .set({ deletedAt: new Date() } as Record<string, unknown>)
+      .where(
+        and(
+          eq(notifications.id, id),
+          eq(notifications.userId, userId),
+          eq(notifications.companyId, companyId)
+        )
+      )
+
+    void writeAuditLog({
+      companyId,
+      actorId: userId,
+      sessionId: ctx.session.sessionId,
+      action: "notifications.delete",
+      entityType: "notification",
+      entityId: id,
+      payload: {},
+      method: "DELETE",
+      path: `/api/notifications/${id}`,
+      ipAddress: ctx.ipAddress,
+      userAgent: ctx.userAgent,
+    })
+
+    return new NextResponse(null, { status: 204 })
   }
 )

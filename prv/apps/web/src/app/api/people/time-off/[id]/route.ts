@@ -184,3 +184,55 @@ export const POST = withGates(
     return NextResponse.json({ success: true, id, action })
   }
 )
+
+// ─── DELETE /api/people/time-off/[id] ────────────────────────────────────────
+
+export const DELETE = withGates(
+  { action: "hr.time_off.delete", endpointClass: "api_write" },
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
+    const { companyId, userId } = ctx.session
+    const id = req.nextUrl.pathname.split("/").pop()
+    if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 })
+
+    const [existing] = await db
+      .select({ id: leaveRequests.id, status: leaveRequests.status, userId: leaveRequests.userId })
+      .from(leaveRequests)
+      .where(
+        and(
+          eq(leaveRequests.id, id),
+          eq(leaveRequests.companyId, companyId),
+          isNull(leaveRequests.deletedAt)
+        )
+      )
+      .limit(1)
+
+    if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 })
+
+    if (existing.status !== "pending")
+      return NextResponse.json(
+        { error: `Cannot delete a time-off request with status '${existing.status}'` },
+        { status: 409 }
+      )
+
+    await db
+      .update(leaveRequests)
+      .set({ deletedAt: new Date() })
+      .where(and(eq(leaveRequests.id, id), eq(leaveRequests.companyId, companyId)))
+
+    void writeAuditLog({
+      actorId: userId,
+      companyId,
+      sessionId: ctx.session.sessionId,
+      action: "hr.time_off.delete",
+      entityType: "time_off_request",
+      entityId: id,
+      payload: { requestedBy: existing.userId },
+      method: "DELETE",
+      path: `/api/people/time-off/${id}`,
+      ipAddress: ctx.ipAddress,
+      userAgent: ctx.userAgent,
+    })
+
+    return new NextResponse(null, { status: 204 })
+  }
+)
