@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
+import { NextRequest } from "next/server"
 
 const mockCtx = {
   session: { companyId: "company-1", userId: "user-1", sessionId: "session-1" },
@@ -100,7 +101,11 @@ vi.mock("drizzle-orm", async (importOriginal) => {
   }
 })
 
-function makeReq(path: string, method = "POST", overrides: Partial<Request> = {}): Request {
+function makeReq(
+  path: string,
+  method = "POST",
+  overrides: Record<string, unknown> = {}
+): NextRequest {
   return {
     method,
     nextUrl: { pathname: path },
@@ -108,7 +113,7 @@ function makeReq(path: string, method = "POST", overrides: Partial<Request> = {}
     headers: { get: () => null },
     json: async () => ({}),
     ...overrides,
-  } as unknown as Request
+  } as unknown as NextRequest
 }
 
 function resetMocks() {
@@ -340,7 +345,7 @@ describe("DELETE /api/groups/[groupId]/companies", () => {
         url: "http://localhost/api/groups/group-1/companies?companyId=00000000-0000-0000-0000-000000000001",
         headers: { get: () => null },
         json: async () => ({}),
-      } as unknown as Request,
+      } as unknown as NextRequest,
       mockCtx
     )
     expect(res.status).toBe(200)

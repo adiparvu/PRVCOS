@@ -17,8 +17,10 @@ function unauthorized(message = "Session expired or invalid") {
   return NextResponse.json({ error: message, code: "UNAUTHORIZED" }, { status: 401 })
 }
 
-export function withMobileAuth(handler: MobileHandler) {
-  return async (req: NextRequest): Promise<NextResponse> => {
+export function withMobileAuth(
+  handler: MobileHandler
+): (req: NextRequest | Request, ...args: unknown[]) => Promise<NextResponse> {
+  return async (req: NextRequest | Request): Promise<NextResponse> => {
     const authHeader = req.headers.get("authorization")
     if (!authHeader?.startsWith("Bearer ")) return unauthorized("Missing authorization header")
 
@@ -29,7 +31,7 @@ export function withMobileAuth(handler: MobileHandler) {
       const session = await getSession(sessionId)
       // Refresh TTL on each request (keeps active users logged in)
       void refreshSession(sessionId)
-      return handler(req, {
+      return handler(req as NextRequest, {
         sessionId: session.sessionId,
         userId: session.userId,
         companyId: session.companyId,

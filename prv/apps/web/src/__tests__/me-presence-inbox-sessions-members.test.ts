@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
+import { NextRequest } from "next/server"
 
 vi.mock("@/lib/with-gates", () => ({
   withGates: (_opts: unknown, handler: unknown) => handler,
@@ -73,14 +74,18 @@ const mobileCtx = {
   sessionId: "session-1",
 }
 
-function makeReq(path: string, method = "GET", overrides: Partial<Request> = {}): Request {
+function makeReq(
+  path: string,
+  method = "GET",
+  overrides: Record<string, unknown> = {}
+): NextRequest {
   return {
     method,
     nextUrl: { pathname: path },
     headers: { get: () => null },
     json: async () => ({}),
     ...overrides,
-  } as unknown as Request
+  } as unknown as NextRequest
 }
 
 function resetMocks() {

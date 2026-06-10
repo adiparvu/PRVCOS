@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
+import { NextRequest } from "next/server"
 
 vi.mock("@/lib/mobile/auth", () => ({
   withMobileAuth: (handler: unknown) => handler,
@@ -51,14 +52,18 @@ vi.mock("drizzle-orm", async (importOriginal) => {
   }
 })
 
-function makeReq(path: string, method = "DELETE", overrides: Partial<Request> = {}): Request {
+function makeReq(
+  path: string,
+  method = "DELETE",
+  overrides: Record<string, unknown> = {}
+): NextRequest {
   return {
     method,
     nextUrl: { pathname: path },
     headers: { get: () => null },
     json: async () => ({}),
     ...overrides,
-  } as unknown as Request
+  } as unknown as NextRequest
 }
 
 const mobileCtx = {

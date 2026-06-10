@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
+import { NextRequest } from "next/server"
 
 vi.mock("@/lib/mobile/auth", () => ({
   withMobileAuth: (handler: unknown) => handler,
@@ -173,7 +174,11 @@ const mobileCtx = {
   role: "store_manager",
 }
 
-function makeReq(path: string, method = "POST", overrides: Partial<Request> = {}): Request {
+function makeReq(
+  path: string,
+  method = "POST",
+  overrides: Record<string, unknown> = {}
+): NextRequest {
   return {
     method,
     nextUrl: { pathname: path },
@@ -181,7 +186,7 @@ function makeReq(path: string, method = "POST", overrides: Partial<Request> = {}
     headers: { get: () => null },
     json: async () => ({}),
     ...overrides,
-  } as unknown as Request
+  } as unknown as NextRequest
 }
 
 function resetMocks() {
