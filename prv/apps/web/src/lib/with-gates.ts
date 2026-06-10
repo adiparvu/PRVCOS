@@ -12,11 +12,11 @@ export type { RouteConfig, GateContext }
 export function withGates(
   config: RouteConfig,
   handler: (req: NextRequest, ctx: GateContext) => Promise<NextResponse | Response>
-): (req: NextRequest) => Promise<NextResponse | Response> {
+): (req: NextRequest | Request, ...args: unknown[]) => Promise<NextResponse | Response> {
   return coreWithGates(
     config,
     handler as (req: Request, ctx: GateContext) => Promise<Response>
-  ) as (req: NextRequest) => Promise<NextResponse | Response>
+  ) as (req: NextRequest | Request, ...args: unknown[]) => Promise<NextResponse | Response>
 }
 
 export { runGateChain }

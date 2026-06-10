@@ -8,24 +8,18 @@ export const runtime = "nodejs"
 
 export const GET = withGates(
   { action: "intelligence.read", endpointClass: "api_read" },
-  async (
-    _req: NextRequest,
-    ctx: GateContext,
-    { params }: { params: { id: string } }
-  ): Promise<Response> => {
-    const messages = await getConversationHistory(params.id)
+  async (req: NextRequest, _ctx: GateContext): Promise<Response> => {
+    const id = req.nextUrl.pathname.split("/").pop()!
+    const messages = await getConversationHistory(id)
     return NextResponse.json({ messages })
   }
 )
 
 export const DELETE = withGates(
   { action: "intelligence.chat", endpointClass: "api_write" },
-  async (
-    _req: NextRequest,
-    ctx: GateContext,
-    { params }: { params: { id: string } }
-  ): Promise<Response> => {
-    const deleted = await deleteConversation(params.id, ctx.session.userId)
+  async (req: NextRequest, ctx: GateContext): Promise<Response> => {
+    const id = req.nextUrl.pathname.split("/").pop()!
+    const deleted = await deleteConversation(id, ctx.session.userId)
     if (!deleted) {
       return NextResponse.json({ error: "Not found" }, { status: 404 })
     }

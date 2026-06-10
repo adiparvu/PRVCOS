@@ -164,7 +164,10 @@ export async function getConversationHistory(
     .where(eq(aiMessages.conversationId, conversationId))
     .orderBy(asc(aiMessages.createdAt))
     .limit(limit)
-  return msgs.map((m) => ({ role: m.role, content: m.content }))
+  return msgs.map((m: { role: MessageRole; content: string }) => ({
+    role: m.role,
+    content: m.content,
+  }))
 }
 
 export async function listConversations(
@@ -253,12 +256,14 @@ export async function semanticSearch(
     .orderBy(sql`${documentEmbeddings.embedding} <=> ${vectorLiteral}::vector`)
     .limit(topK)
 
-  return rows.map((r) => ({
-    sourceType: r.sourceType,
-    sourceId: r.sourceId,
-    content: r.content,
-    score: r.score,
-  }))
+  return rows.map(
+    (r: { sourceType: string; sourceId: string; content: string; score: number }) => ({
+      sourceType: r.sourceType,
+      sourceId: r.sourceId,
+      content: r.content,
+      score: r.score,
+    })
+  )
 }
 
 // ── Permission check (role-gate AI tools) ─────────────────────────────────────
