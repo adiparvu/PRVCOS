@@ -1,9 +1,11 @@
 import { withGates } from "@/lib/with-gates"
 import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
+import { writeAuditLog } from "@prv/auth"
 import { db } from "@prv/db"
 import { documents, users, projects, documentSignatures } from "@prv/db/schema"
 import { and, eq, isNull } from "drizzle-orm"
+import { z } from "zod"
 import type { DocStatus, DocCategory, DocExt } from "../route"
 
 export const dynamic = "force-dynamic"
@@ -196,5 +198,127 @@ export const GET = withGates(
     }
 
     return NextResponse.json(detail)
+  }
+)
+
+// ─── PATCH /api/documents/[id] ────────────────────────────────────────────────
+
+const patchSchema = z
+  .object({
+    status: z.enum(["draft", "published", "under_review", "signed", "archived"]).optional(),
+    description: z.string().max(2000).optional(),
+    expiresAt: z.string().datetime().nullable().optional(),
+    projectId: z.string().uuid().nullable().optional(),
+    isPublic: z.boolean().optional(),
+  })
+  .refine(
+    (d) =>
+      d.status !== undefined ||
+      d.description !== undefined ||
+      d.expiresAt !== undefined ||
+      d.projectId !== undefined ||
+      d.isPublic !== undefined,
+    { message: "At least one field required" }
+  )
+
+export const PATCH = withGates(
+  { action: "documents.update", endpointClass: "api_write" },
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
+    const { companyId, userId } = ctx.session
+    const id = req.nextUrl.pathname.split("/").pop()
+    if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 })
+
+    const raw = await req.json().catch(() => ({}))
+    const parsed = patchSchema.safeParse(raw)
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Invalid payload", issues: parsed.error.issues },
+        { status: 422 }
+      )
+    }
+
+    const [existing] = await db
+      .select({ id: documents.id, title: documents.title })
+      .from(documents)
+      .where(
+        and(eq(documents.id, id), eq(documents.companyId, companyId), isNull(documents.deletedAt))
+      )
+      .limit(1)
+
+    if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 })
+
+    const d = parsed.data
+    const [updated] = await db
+      .update(documents)
+      .set({
+        ...(d.status !== undefined && { status: d.status }),
+        ...(d.description !== undefined && { description: d.description }),
+        ...(d.expiresAt !== undefined && {
+          expiresAt: d.expiresAt ? new Date(d.expiresAt) : null,
+        }),
+        ...(d.projectId !== undefined && { projectId: d.projectId }),
+        ...(d.isPublic !== undefined && { isPublic: d.isPublic }),
+        updatedAt: new Date(),
+      })
+      .where(and(eq(documents.id, id), eq(documents.companyId, companyId)))
+      .returning({ id: documents.id, status: documents.status })
+
+    void writeAuditLog({
+      companyId,
+      actorId: userId,
+      sessionId: ctx.session.sessionId,
+      action: "documents.update",
+      entityType: "document",
+      entityId: id,
+      payload: { title: existing.title, changes: d },
+      method: "PATCH",
+      path: `/api/documents/${id}`,
+      ipAddress: ctx.ipAddress,
+      userAgent: ctx.userAgent,
+    })
+
+    return NextResponse.json(updated)
+  }
+)
+
+// ─── DELETE /api/documents/[id] ───────────────────────────────────────────────
+
+export const DELETE = withGates(
+  { action: "documents.delete", endpointClass: "api_write" },
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
+    const { companyId, userId } = ctx.session
+    const id = req.nextUrl.pathname.split("/").pop()
+    if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 })
+
+    const [existing] = await db
+      .select({ id: documents.id, title: documents.title })
+      .from(documents)
+      .where(
+        and(eq(documents.id, id), eq(documents.companyId, companyId), isNull(documents.deletedAt))
+      )
+      .limit(1)
+
+    if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 })
+
+    await db
+      .update(documents)
+      .set({ deletedAt: new Date(), updatedAt: new Date() })
+      .where(and(eq(documents.id, id), eq(documents.companyId, companyId)))
+
+    void writeAuditLog({
+      companyId,
+      actorId: userId,
+      sessionId: ctx.session.sessionId,
+      action: "documents.delete",
+      entityType: "document",
+      entityId: id,
+      payload: { title: existing.title },
+      method: "DELETE",
+      path: `/api/documents/${id}`,
+      ipAddress: ctx.ipAddress,
+      userAgent: ctx.userAgent,
+    })
+
+    return new NextResponse(null, { status: 204 })
   }
 )

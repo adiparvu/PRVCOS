@@ -1,9 +1,11 @@
 import { withGates } from "@/lib/with-gates"
 import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
+import { writeAuditLog } from "@prv/auth"
 import { db } from "@prv/db"
 import { knowledgeArticles, articleReadProgress, users } from "@prv/db/schema"
 import { and, eq, isNull } from "drizzle-orm"
+import { z } from "zod"
 import type { ArticleType, ArticleCategory } from "../route"
 
 export const dynamic = "force-dynamic"
@@ -152,5 +154,135 @@ export const GET = withGates(
     }
 
     return NextResponse.json(detail)
+  }
+)
+
+// ─── PATCH /api/knowledge/[id] ────────────────────────────────────────────────
+
+const patchSchema = z
+  .object({
+    title: z.string().min(1).max(500).optional(),
+    type: z.enum(["sop", "policy", "guide", "faq"]).optional(),
+    category: z
+      .enum(["operations", "hr", "finance", "procurement", "fleet", "projects"])
+      .optional(),
+    isPinned: z.boolean().optional(),
+    readMinutes: z.number().int().min(1).max(300).optional(),
+  })
+  .refine(
+    (d) =>
+      d.title !== undefined ||
+      d.type !== undefined ||
+      d.category !== undefined ||
+      d.isPinned !== undefined ||
+      d.readMinutes !== undefined,
+    { message: "At least one field required" }
+  )
+
+export const PATCH = withGates(
+  { action: "knowledge.update", endpointClass: "api_write" },
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
+    const { companyId, userId } = ctx.session
+    const id = req.nextUrl.pathname.split("/").pop()
+    if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 })
+
+    const raw = await req.json().catch(() => ({}))
+    const parsed = patchSchema.safeParse(raw)
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Invalid payload", issues: parsed.error.issues },
+        { status: 422 }
+      )
+    }
+
+    const [existing] = await db
+      .select({ id: knowledgeArticles.id, title: knowledgeArticles.title })
+      .from(knowledgeArticles)
+      .where(
+        and(
+          eq(knowledgeArticles.id, id),
+          eq(knowledgeArticles.companyId, companyId),
+          isNull(knowledgeArticles.deletedAt)
+        )
+      )
+      .limit(1)
+
+    if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 })
+
+    const d = parsed.data
+    const [updated] = await db
+      .update(knowledgeArticles)
+      .set({
+        ...(d.title !== undefined && { title: d.title }),
+        ...(d.type !== undefined && { type: d.type }),
+        ...(d.category !== undefined && { category: d.category }),
+        ...(d.isPinned !== undefined && { isPinned: d.isPinned }),
+        ...(d.readMinutes !== undefined && { readMinutes: d.readMinutes }),
+        updatedAt: new Date(),
+      })
+      .where(and(eq(knowledgeArticles.id, id), eq(knowledgeArticles.companyId, companyId)))
+      .returning({ id: knowledgeArticles.id, isPinned: knowledgeArticles.isPinned })
+
+    void writeAuditLog({
+      companyId,
+      actorId: userId,
+      sessionId: ctx.session.sessionId,
+      action: "knowledge.update",
+      entityType: "knowledge_article",
+      entityId: id,
+      payload: { title: existing.title, changes: d },
+      method: "PATCH",
+      path: `/api/knowledge/${id}`,
+      ipAddress: ctx.ipAddress,
+      userAgent: ctx.userAgent,
+    })
+
+    return NextResponse.json(updated)
+  }
+)
+
+// ─── DELETE /api/knowledge/[id] ───────────────────────────────────────────────
+
+export const DELETE = withGates(
+  { action: "knowledge.delete", endpointClass: "api_write" },
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
+    const { companyId, userId } = ctx.session
+    const id = req.nextUrl.pathname.split("/").pop()
+    if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 })
+
+    const [existing] = await db
+      .select({ id: knowledgeArticles.id, title: knowledgeArticles.title })
+      .from(knowledgeArticles)
+      .where(
+        and(
+          eq(knowledgeArticles.id, id),
+          eq(knowledgeArticles.companyId, companyId),
+          isNull(knowledgeArticles.deletedAt)
+        )
+      )
+      .limit(1)
+
+    if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 })
+
+    await db
+      .update(knowledgeArticles)
+      .set({ deletedAt: new Date(), updatedAt: new Date() })
+      .where(and(eq(knowledgeArticles.id, id), eq(knowledgeArticles.companyId, companyId)))
+
+    void writeAuditLog({
+      companyId,
+      actorId: userId,
+      sessionId: ctx.session.sessionId,
+      action: "knowledge.delete",
+      entityType: "knowledge_article",
+      entityId: id,
+      payload: { title: existing.title },
+      method: "DELETE",
+      path: `/api/knowledge/${id}`,
+      ipAddress: ctx.ipAddress,
+      userAgent: ctx.userAgent,
+    })
+
+    return new NextResponse(null, { status: 204 })
   }
 )

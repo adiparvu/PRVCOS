@@ -1,9 +1,11 @@
 import { withGates } from "@/lib/with-gates"
 import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
+import { writeAuditLog } from "@prv/auth"
 import { db } from "@prv/db"
 import { learningCourses, courseEnrollments, users } from "@prv/db/schema"
 import { and, eq, isNull } from "drizzle-orm"
+import { z } from "zod"
 import type { CourseStatus, CourseCategory } from "../route"
 
 export const dynamic = "force-dynamic"
@@ -158,5 +160,165 @@ export const GET = withGates(
     }
 
     return NextResponse.json(detail)
+  }
+)
+
+// ─── Enrollment state machine helpers ─────────────────────────────────────────
+
+export type EnrollmentAction = "enroll" | "update_progress" | "complete" | "save"
+
+export const ENROLLMENT_NEXT_STATUS: Record<EnrollmentAction, string> = {
+  enroll: "in_progress",
+  update_progress: "in_progress",
+  complete: "completed",
+  save: "saved",
+}
+
+export function enrollmentNextStatus(action: EnrollmentAction, currentStatus: string): string {
+  if (action === "update_progress" && currentStatus === "completed") return "completed"
+  return ENROLLMENT_NEXT_STATUS[action]
+}
+
+// ─── PATCH /api/learning/[id] — upsert enrollment ────────────────────────────
+
+const patchSchema = z.discriminatedUnion("action", [
+  z.object({ action: z.literal("enroll") }),
+  z.object({
+    action: z.literal("update_progress"),
+    progressPct: z.number().int().min(0).max(100),
+    currentModule: z.number().int().min(0).optional(),
+  }),
+  z.object({ action: z.literal("complete") }),
+  z.object({ action: z.literal("save") }),
+])
+
+export const PATCH = withGates(
+  { action: "learning.update", endpointClass: "api_write" },
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
+    const { companyId, userId } = ctx.session
+    const id = req.nextUrl.pathname.split("/").pop()
+    if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 })
+
+    const raw = await req.json().catch(() => ({}))
+    const parsed = patchSchema.safeParse(raw)
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Invalid payload", issues: parsed.error.issues },
+        { status: 422 }
+      )
+    }
+
+    const [course] = await db
+      .select({ id: learningCourses.id, title: learningCourses.title })
+      .from(learningCourses)
+      .where(
+        and(
+          eq(learningCourses.id, id),
+          eq(learningCourses.companyId, companyId),
+          isNull(learningCourses.deletedAt)
+        )
+      )
+      .limit(1)
+
+    if (!course) return NextResponse.json({ error: "Not found" }, { status: 404 })
+
+    const [existing] = await db
+      .select({ id: courseEnrollments.id, status: courseEnrollments.status })
+      .from(courseEnrollments)
+      .where(and(eq(courseEnrollments.courseId, id), eq(courseEnrollments.userId, userId)))
+      .limit(1)
+
+    const d = parsed.data
+    const nextStatus = enrollmentNextStatus(d.action, existing?.status ?? "new")
+
+    const progressPct =
+      d.action === "update_progress" ? d.progressPct : d.action === "complete" ? 100 : undefined
+    const currentModule =
+      d.action === "update_progress" ? (d.currentModule ?? undefined) : undefined
+
+    if (existing) {
+      await db
+        .update(courseEnrollments)
+        .set({
+          status: nextStatus as "new" | "in_progress" | "completed" | "saved",
+          ...(progressPct !== undefined && { progressPct }),
+          ...(currentModule !== undefined && { currentModule }),
+          ...(d.action === "complete" && { completedAt: new Date() }),
+          updatedAt: new Date(),
+        })
+        .where(and(eq(courseEnrollments.courseId, id), eq(courseEnrollments.userId, userId)))
+    } else {
+      await db.insert(courseEnrollments).values({
+        courseId: id,
+        userId,
+        companyId,
+        status: nextStatus as "new" | "in_progress" | "completed" | "saved",
+        progressPct: progressPct ?? 0,
+        currentModule: currentModule ?? 0,
+        ...(d.action === "complete" && { completedAt: new Date() }),
+      })
+    }
+
+    void writeAuditLog({
+      companyId,
+      actorId: userId,
+      sessionId: ctx.session.sessionId,
+      action: "learning.update",
+      entityType: "course_enrollment",
+      entityId: id,
+      payload: { course: course.title, op: d.action, nextStatus },
+      method: "PATCH",
+      path: `/api/learning/${id}`,
+      ipAddress: ctx.ipAddress,
+      userAgent: ctx.userAgent,
+    })
+
+    return NextResponse.json({ courseId: id, status: nextStatus })
+  }
+)
+
+// ─── DELETE /api/learning/[id] ────────────────────────────────────────────────
+
+export const DELETE = withGates(
+  { action: "learning.delete", endpointClass: "api_write" },
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
+    const { companyId, userId } = ctx.session
+    const id = req.nextUrl.pathname.split("/").pop()
+    if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 })
+
+    const [existing] = await db
+      .select({ id: learningCourses.id, title: learningCourses.title })
+      .from(learningCourses)
+      .where(
+        and(
+          eq(learningCourses.id, id),
+          eq(learningCourses.companyId, companyId),
+          isNull(learningCourses.deletedAt)
+        )
+      )
+      .limit(1)
+
+    if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 })
+
+    await db
+      .update(learningCourses)
+      .set({ deletedAt: new Date(), updatedAt: new Date() })
+      .where(and(eq(learningCourses.id, id), eq(learningCourses.companyId, companyId)))
+
+    void writeAuditLog({
+      companyId,
+      actorId: userId,
+      sessionId: ctx.session.sessionId,
+      action: "learning.delete",
+      entityType: "learning_course",
+      entityId: id,
+      payload: { title: existing.title },
+      method: "DELETE",
+      path: `/api/learning/${id}`,
+      ipAddress: ctx.ipAddress,
+      userAgent: ctx.userAgent,
+    })
+
+    return new NextResponse(null, { status: 204 })
   }
 )
