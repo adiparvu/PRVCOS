@@ -167,3 +167,87 @@ export const GET = withMobileAuth(async (req: NextRequest, ctx) => {
     })),
   })
 })
+
+// ─── PATCH /api/mobile/clients/[id] ──────────────────────────────────────────
+
+const clientPatchSchema = z
+  .object({
+    status: z.enum(["active", "inactive", "prospect", "archived"]).optional(),
+    phone: z.string().max(32).optional(),
+    email: z.string().email().max(254).optional(),
+    address: z.string().max(500).optional(),
+    city: z.string().max(100).optional(),
+    notes: z.string().max(2000).optional(),
+  })
+  .refine(
+    (d) =>
+      d.status !== undefined ||
+      d.phone !== undefined ||
+      d.email !== undefined ||
+      d.address !== undefined ||
+      d.city !== undefined ||
+      d.notes !== undefined,
+    { message: "At least one field required" }
+  )
+
+export const PATCH = withMobileAuth(async (req: NextRequest, ctx) => {
+  const ipAddress =
+    req.headers.get("x-real-ip") ??
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    "unknown"
+
+  const clientId = req.nextUrl.pathname.split("/").pop() ?? ""
+  if (!clientId) return NextResponse.json({ error: "Missing client ID" }, { status: 400 })
+
+  let body: unknown
+  try {
+    body = await req.json()
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 })
+  }
+
+  const parsed = clientPatchSchema.safeParse(body)
+  if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 })
+
+  const [existing] = await db
+    .select({ id: clients.id, name: clients.name })
+    .from(clients)
+    .where(
+      and(eq(clients.id, clientId), eq(clients.companyId, ctx.companyId), isNull(clients.deletedAt))
+    )
+    .limit(1)
+  if (!existing) return NextResponse.json({ error: "Client not found" }, { status: 404 })
+
+  const d = parsed.data
+  const [updated] = await db
+    .update(clients)
+    .set({
+      ...(d.status !== undefined && { status: d.status }),
+      ...(d.phone !== undefined && { phone: d.phone }),
+      ...(d.email !== undefined && { email: d.email }),
+      ...(d.address !== undefined && { address: d.address }),
+      ...(d.city !== undefined && { city: d.city }),
+      ...(d.notes !== undefined && { notes: d.notes }),
+      updatedAt: new Date(),
+    })
+    .where(and(eq(clients.id, clientId), eq(clients.companyId, ctx.companyId)))
+    .returning({ id: clients.id, status: clients.status })
+
+  if (!updated) return NextResponse.json({ error: "Failed to update client" }, { status: 500 })
+
+  void writeAuditLog({
+    companyId: ctx.companyId,
+    actorId: ctx.userId,
+    sessionId: ctx.sessionId,
+    action: "crm.clients.update",
+    entityType: "client",
+    entityId: clientId,
+    payload: { name: existing.name, changes: d },
+    method: "PATCH",
+    path: `/api/mobile/clients/${clientId}`,
+    ipAddress,
+    userAgent: req.headers.get("user-agent") ?? undefined,
+  })
+
+  return NextResponse.json(updated)
+})

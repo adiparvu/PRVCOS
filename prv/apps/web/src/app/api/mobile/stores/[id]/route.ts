@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 import { withMobileAuth } from "@/lib/mobile/auth"
+import { writeAuditLog } from "@prv/auth"
 import { db } from "@prv/db"
 import { stores, orders, products, users, projects, projectMilestones } from "@prv/db/schema"
 import { eq, and, sql, isNull, count, gte, desc, lte } from "drizzle-orm"
+import { z } from "zod"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -249,4 +251,89 @@ export const GET = withMobileAuth(async (req: NextRequest, ctx) => {
       projectName: m.projectName,
     })),
   })
+})
+
+// ─── PATCH /api/mobile/stores/[id] ───────────────────────────────────────────
+
+const storePatchSchema = z
+  .object({
+    name: z.string().min(1).max(255).optional(),
+    phone: z.string().max(32).optional(),
+    email: z.string().email().max(254).optional(),
+    address: z.string().max(500).optional(),
+    city: z.string().max(100).optional(),
+    region: z.string().max(100).optional(),
+    isActive: z.boolean().optional(),
+  })
+  .refine(
+    (d) =>
+      d.name !== undefined ||
+      d.phone !== undefined ||
+      d.email !== undefined ||
+      d.address !== undefined ||
+      d.city !== undefined ||
+      d.region !== undefined ||
+      d.isActive !== undefined,
+    { message: "At least one field required" }
+  )
+
+export const PATCH = withMobileAuth(async (req: NextRequest, ctx) => {
+  const ipAddress =
+    req.headers.get("x-real-ip") ??
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    "unknown"
+
+  const storeId = req.nextUrl.pathname.split("/").pop() ?? ""
+  if (!storeId) return NextResponse.json({ error: "Missing store ID" }, { status: 400 })
+
+  let body: unknown
+  try {
+    body = await req.json()
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 })
+  }
+
+  const parsed = storePatchSchema.safeParse(body)
+  if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 })
+
+  const [existing] = await db
+    .select({ id: stores.id, name: stores.name })
+    .from(stores)
+    .where(and(eq(stores.id, storeId), eq(stores.companyId, ctx.companyId)))
+    .limit(1)
+  if (!existing) return NextResponse.json({ error: "Store not found" }, { status: 404 })
+
+  const d = parsed.data
+  const [updated] = await db
+    .update(stores)
+    .set({
+      ...(d.name !== undefined && { name: d.name }),
+      ...(d.phone !== undefined && { phone: d.phone }),
+      ...(d.email !== undefined && { email: d.email }),
+      ...(d.address !== undefined && { address: d.address }),
+      ...(d.city !== undefined && { city: d.city }),
+      ...(d.region !== undefined && { region: d.region }),
+      ...(d.isActive !== undefined && { isActive: d.isActive }),
+      updatedAt: new Date(),
+    })
+    .where(and(eq(stores.id, storeId), eq(stores.companyId, ctx.companyId)))
+    .returning({ id: stores.id, name: stores.name, isActive: stores.isActive })
+
+  if (!updated) return NextResponse.json({ error: "Failed to update store" }, { status: 500 })
+
+  void writeAuditLog({
+    companyId: ctx.companyId,
+    actorId: ctx.userId,
+    sessionId: ctx.sessionId,
+    action: "operations.stores.update",
+    entityType: "store",
+    entityId: storeId,
+    payload: { name: existing.name, changes: d },
+    method: "PATCH",
+    path: `/api/mobile/stores/${storeId}`,
+    ipAddress,
+    userAgent: req.headers.get("user-agent") ?? undefined,
+  })
+
+  return NextResponse.json(updated)
 })
