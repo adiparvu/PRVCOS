@@ -1,9 +1,11 @@
 import { withGates } from "@/lib/with-gates"
 import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
+import { writeAuditLog } from "@prv/auth"
 import { db } from "@prv/db"
 import { vehicles, users, stores, auditLogs, vehicleDailyLogs } from "@prv/db/schema"
 import { and, desc, eq, inArray, isNull } from "drizzle-orm"
+import { z } from "zod"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -234,5 +236,128 @@ export const GET = withGates(
     }
 
     return NextResponse.json({ vehicle })
+  }
+)
+
+// ─── PATCH /api/fleet/[id] ────────────────────────────────────────────────────
+
+const patchSchema = z
+  .object({
+    status: z.enum(["active", "maintenance", "retired", "sold"]).optional(),
+    assignedUserId: z.string().uuid().nullable().optional(),
+    storeId: z.string().uuid().nullable().optional(),
+    mileageKm: z.number().int().nonnegative().optional(),
+    fuelLevelPct: z.number().int().min(0).max(100).optional(),
+    notes: z.string().max(1000).optional(),
+  })
+  .refine(
+    (d) =>
+      d.status !== undefined ||
+      d.assignedUserId !== undefined ||
+      d.storeId !== undefined ||
+      d.mileageKm !== undefined ||
+      d.fuelLevelPct !== undefined ||
+      d.notes !== undefined,
+    { message: "At least one field required" }
+  )
+
+export const PATCH = withGates(
+  { action: "fleet.update", endpointClass: "api_write" },
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
+    const { companyId, userId } = ctx.session
+    const id = req.nextUrl.pathname.split("/").pop()
+    if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 })
+
+    const raw = await req.json().catch(() => ({}))
+    const parsed = patchSchema.safeParse(raw)
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Invalid payload", issues: parsed.error.issues },
+        { status: 422 }
+      )
+    }
+
+    const [existing] = await db
+      .select({ id: vehicles.id, licensePlate: vehicles.licensePlate })
+      .from(vehicles)
+      .where(
+        and(eq(vehicles.id, id), eq(vehicles.companyId, companyId), isNull(vehicles.deletedAt))
+      )
+      .limit(1)
+
+    if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 })
+
+    const d = parsed.data
+    const [updated] = await db
+      .update(vehicles)
+      .set({
+        ...(d.status !== undefined && { status: d.status }),
+        ...(d.assignedUserId !== undefined && { assignedUserId: d.assignedUserId }),
+        ...(d.storeId !== undefined && { storeId: d.storeId }),
+        ...(d.mileageKm !== undefined && { mileageKm: d.mileageKm }),
+        ...(d.fuelLevelPct !== undefined && { fuelLevelPct: d.fuelLevelPct }),
+        ...(d.notes !== undefined && { notes: d.notes }),
+        updatedAt: new Date(),
+      })
+      .where(and(eq(vehicles.id, id), eq(vehicles.companyId, companyId)))
+      .returning({ id: vehicles.id, status: vehicles.status })
+
+    void writeAuditLog({
+      companyId,
+      actorId: userId,
+      sessionId: ctx.session.sessionId,
+      action: "fleet.update",
+      entityType: "vehicle",
+      entityId: id,
+      payload: { plate: existing.licensePlate, changes: d },
+      method: "PATCH",
+      path: `/api/fleet/${id}`,
+      ipAddress: ctx.ipAddress,
+      userAgent: ctx.userAgent,
+    })
+
+    return NextResponse.json(updated)
+  }
+)
+
+// ─── DELETE /api/fleet/[id] ───────────────────────────────────────────────────
+
+export const DELETE = withGates(
+  { action: "fleet.delete", endpointClass: "api_write" },
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
+    const { companyId, userId } = ctx.session
+    const id = req.nextUrl.pathname.split("/").pop()
+    if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 })
+
+    const [existing] = await db
+      .select({ id: vehicles.id, licensePlate: vehicles.licensePlate })
+      .from(vehicles)
+      .where(
+        and(eq(vehicles.id, id), eq(vehicles.companyId, companyId), isNull(vehicles.deletedAt))
+      )
+      .limit(1)
+
+    if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 })
+
+    await db
+      .update(vehicles)
+      .set({ deletedAt: new Date(), isActive: false, updatedAt: new Date() })
+      .where(and(eq(vehicles.id, id), eq(vehicles.companyId, companyId)))
+
+    void writeAuditLog({
+      companyId,
+      actorId: userId,
+      sessionId: ctx.session.sessionId,
+      action: "fleet.delete",
+      entityType: "vehicle",
+      entityId: id,
+      payload: { plate: existing.licensePlate },
+      method: "DELETE",
+      path: `/api/fleet/${id}`,
+      ipAddress: ctx.ipAddress,
+      userAgent: ctx.userAgent,
+    })
+
+    return new NextResponse(null, { status: 204 })
   }
 )
