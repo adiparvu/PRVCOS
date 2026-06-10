@@ -304,3 +304,52 @@ export const PATCH = withMobileAuth(async (req: NextRequest, ctx) => {
 
   return NextResponse.json(updated)
 })
+
+// ─── DELETE /api/mobile/employees/[id] ───────────────────────────────────────
+
+export const DELETE = withMobileAuth(async (req: NextRequest, ctx) => {
+  const ipAddress =
+    req.headers.get("x-real-ip") ??
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    "unknown"
+
+  const employeeId = req.nextUrl.pathname.split("/").pop() ?? ""
+  if (!employeeId) return NextResponse.json({ error: "Missing employee ID" }, { status: 400 })
+
+  if (employeeId === ctx.userId)
+    return NextResponse.json(
+      { error: "Cannot delete your own account", code: "INVALID_OPERATION" },
+      { status: 409 }
+    )
+
+  const [existing] = await db
+    .select({ id: users.id, firstName: users.firstName, lastName: users.lastName })
+    .from(users)
+    .where(
+      and(eq(users.id, employeeId), eq(users.companyId, ctx.companyId), isNull(users.deletedAt))
+    )
+    .limit(1)
+
+  if (!existing) return NextResponse.json({ error: "Employee not found" }, { status: 404 })
+
+  await db
+    .update(users)
+    .set({ deletedAt: new Date(), isActive: false })
+    .where(and(eq(users.id, employeeId), eq(users.companyId, ctx.companyId)))
+
+  void writeAuditLog({
+    companyId: ctx.companyId,
+    actorId: ctx.userId,
+    sessionId: ctx.sessionId,
+    action: "people.delete",
+    entityType: "user",
+    entityId: employeeId,
+    payload: { name: `${existing.firstName} ${existing.lastName}` },
+    method: "DELETE",
+    path: `/api/mobile/employees/${employeeId}`,
+    ipAddress,
+    userAgent: req.headers.get("user-agent") ?? undefined,
+  })
+
+  return new NextResponse(null, { status: 204 })
+})

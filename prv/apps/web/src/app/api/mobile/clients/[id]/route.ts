@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
+import { z } from "zod"
 import { withMobileAuth } from "@/lib/mobile/auth"
+import { writeAuditLog } from "@prv/auth"
 import { db } from "@prv/db"
 import { clients, projects, invoices, users } from "@prv/db/schema"
 import { eq, and, isNull, notInArray, desc } from "drizzle-orm"
@@ -250,4 +252,47 @@ export const PATCH = withMobileAuth(async (req: NextRequest, ctx) => {
   })
 
   return NextResponse.json(updated)
+})
+
+// ─── DELETE /api/mobile/clients/[id] ─────────────────────────────────────────
+
+export const DELETE = withMobileAuth(async (req: NextRequest, ctx) => {
+  const ipAddress =
+    req.headers.get("x-real-ip") ??
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    "unknown"
+
+  const clientId = req.nextUrl.pathname.split("/").pop() ?? ""
+  if (!clientId) return NextResponse.json({ error: "Missing client ID" }, { status: 400 })
+
+  const [existing] = await db
+    .select({ id: clients.id, name: clients.name })
+    .from(clients)
+    .where(
+      and(eq(clients.id, clientId), eq(clients.companyId, ctx.companyId), isNull(clients.deletedAt))
+    )
+    .limit(1)
+
+  if (!existing) return NextResponse.json({ error: "Client not found" }, { status: 404 })
+
+  await db
+    .update(clients)
+    .set({ deletedAt: new Date(), isActive: false })
+    .where(and(eq(clients.id, clientId), eq(clients.companyId, ctx.companyId)))
+
+  void writeAuditLog({
+    companyId: ctx.companyId,
+    actorId: ctx.userId,
+    sessionId: ctx.sessionId,
+    action: "crm.clients.delete",
+    entityType: "client",
+    entityId: clientId,
+    payload: { name: existing.name },
+    method: "DELETE",
+    path: `/api/mobile/clients/${clientId}`,
+    ipAddress,
+    userAgent: req.headers.get("user-agent") ?? undefined,
+  })
+
+  return new NextResponse(null, { status: 204 })
 })
