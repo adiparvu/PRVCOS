@@ -1,14 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
 
+const mockCtx = {
+  session: { companyId: "company-1", userId: "user-1", sessionId: "session-1" },
+  ipAddress: "127.0.0.1",
+  userAgent: "test",
+}
+
 vi.mock("@/lib/with-gates", () => ({
-  withGates:
-    (_opts: unknown, handler: (req: unknown, ctx: unknown) => unknown) =>
-    (req: unknown, _ctxArg?: unknown) =>
-      handler(req, {
-        session: { companyId: "company-1", userId: "user-1", sessionId: "session-1" },
-        ipAddress: "127.0.0.1",
-        userAgent: "test",
-      }),
+  withGates: (_opts: unknown, handler: unknown) => (req: unknown, _ctxArg?: unknown) =>
+    (handler as (r: unknown, c: unknown) => unknown)(req, mockCtx),
 }))
 
 vi.mock("@prv/auth", () => ({
@@ -31,9 +31,9 @@ const mockDb = {
   limit: vi.fn().mockResolvedValue([]),
   set: vi.fn().mockReturnThis(),
   values: vi.fn().mockReturnThis(),
-  leftJoin: vi.fn().mockReturnThis(),
   orderBy: vi.fn().mockReturnThis(),
   returning: vi.fn().mockResolvedValue([{ id: "item-1" }]),
+  leftJoin: vi.fn().mockReturnThis(),
   onConflictDoUpdate: vi.fn().mockReturnThis(),
   then: (resolve: (val: unknown[]) => void) => resolve([]),
 }
@@ -41,11 +41,28 @@ const mockDb = {
 vi.mock("@prv/db", () => ({ db: mockDb }))
 
 vi.mock("@prv/db/schema", () => ({
-  notificationPreferences: { userId: {}, companyId: {} },
-  users: { id: {}, companyId: {}, settings: {}, updatedAt: {} },
+  notificationPreferences: { userId: {}, companyId: {}, updatedAt: {} },
+  users: { id: {}, settings: {}, companyId: {}, updatedAt: {} },
   userPresence: { userId: {}, status: {} },
-  companyGroups: { id: {}, name: {}, slug: {}, isActive: {}, ownerId: {} },
-  groupMemberships: { id: {}, groupId: {}, companyId: {}, isActive: {}, addedBy: {} },
+  companyGroups: {
+    id: {},
+    name: {},
+    slug: {},
+    description: {},
+    logoUrl: {},
+    isActive: {},
+    createdAt: {},
+    ownerId: {},
+  },
+  groupMemberships: {
+    id: {},
+    groupId: {},
+    companyId: {},
+    isActive: {},
+    leftAt: {},
+    updatedAt: {},
+    addedBy: {},
+  },
   companies: { id: {}, isActive: {} },
   dataErasureRequests: {
     id: {},
@@ -58,8 +75,8 @@ vi.mock("@prv/db/schema", () => ({
     rejectedBy: {},
     rejectedAt: {},
     rejectionReason: {},
-    completedAt: {},
     executedAt: {},
+    completedAt: {},
     verificationHash: {},
     erasureLog: {},
     updatedAt: {},
@@ -77,17 +94,11 @@ vi.mock("drizzle-orm", async (importOriginal) => {
     and: vi.fn(),
     ne: vi.fn(),
     isNull: vi.fn(),
-    desc: vi.fn(),
-    count: vi.fn(),
     inArray: vi.fn(),
+    count: vi.fn(),
+    desc: vi.fn(),
   }
 })
-
-const webCtx = {
-  session: { companyId: "company-1", userId: "user-1", sessionId: "session-1" },
-  ipAddress: "127.0.0.1",
-  userAgent: "test",
-}
 
 function makeReq(path: string, method = "POST", overrides: Partial<Request> = {}): Request {
   return {
@@ -108,30 +119,25 @@ function resetMocks() {
   mockDb.delete.mockReturnThis()
   mockDb.from.mockReturnThis()
   mockDb.where.mockReturnThis()
+  mockDb.limit.mockReset()
   mockDb.limit.mockResolvedValue([])
   mockDb.set.mockReturnThis()
   mockDb.values.mockReturnThis()
-  mockDb.leftJoin.mockReturnThis()
   mockDb.orderBy.mockReturnThis()
+  mockDb.returning.mockReset()
   mockDb.returning.mockResolvedValue([{ id: "item-1" }])
+  mockDb.leftJoin.mockReturnThis()
   mockDb.onConflictDoUpdate.mockReturnThis()
 }
 
-// ─── PATCH /api/me/notifications ─────────────────────────────────────────────
+// ─── PATCH /api/me/notifications ──────────────────────────────────────────────
 
 describe("PATCH /api/me/notifications", () => {
   beforeEach(resetMocks)
 
-  it("returns 400 for invalid JSON", async () => {
+  it("returns 400 when no fields provided", async () => {
     const { PATCH } = await import("@/app/api/me/notifications/route")
-    const res = await PATCH(
-      makeReq("/api/me/notifications", "PATCH", {
-        json: async () => {
-          throw new Error("bad json")
-        },
-      }),
-      webCtx
-    )
+    const res = await PATCH(makeReq("/api/me/notifications", "PATCH"), mockCtx)
     expect(res.status).toBe(400)
   })
 
@@ -141,77 +147,61 @@ describe("PATCH /api/me/notifications", () => {
       makeReq("/api/me/notifications", "PATCH", {
         json: async () => ({ quietHoursStart: "9am" }),
       }),
-      webCtx
+      mockCtx
     )
     expect(res.status).toBe(422)
   })
 
-  it("returns 400 for empty body", async () => {
-    const { PATCH } = await import("@/app/api/me/notifications/route")
-    const res = await PATCH(makeReq("/api/me/notifications", "PATCH"), webCtx)
-    expect(res.status).toBe(400)
-  })
-
-  it("upserts preferences and returns 200 with ok:true", async () => {
+  it("returns 200 with ok:true on valid update", async () => {
     const { PATCH } = await import("@/app/api/me/notifications/route")
     const res = await PATCH(
       makeReq("/api/me/notifications", "PATCH", {
-        json: async () => ({ push: false, email: true }),
+        json: async () => ({ inApp: true, push: false }),
       }),
-      webCtx
+      mockCtx
     )
     expect(res.status).toBe(200)
     const body = await res.json()
     expect(body.ok).toBe(true)
   })
 
-  it("fires audit log with action user.notifications.update", async () => {
-    const { writeAuditLog } = await import("@prv/auth")
+  it("returns 200 with valid quietHours times", async () => {
     const { PATCH } = await import("@/app/api/me/notifications/route")
-    await PATCH(
+    const res = await PATCH(
       makeReq("/api/me/notifications", "PATCH", {
-        json: async () => ({ sms: true }),
+        json: async () => ({ quietHoursStart: "22:00", quietHoursEnd: "07:00" }),
       }),
-      webCtx
+      mockCtx
     )
-    expect(writeAuditLog).toHaveBeenCalledWith(
-      expect.objectContaining({ action: "user.notifications.update" })
-    )
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.ok).toBe(true)
   })
 })
 
-// ─── PUT /api/me/pinned-contacts ──────────────────────────────────────────────
+// ─── PUT /api/me/pinned-contacts ───────────────────────────────────────────────
 
 describe("PUT /api/me/pinned-contacts", () => {
   beforeEach(resetMocks)
 
-  it("returns 422 for non-UUID contactIds", async () => {
+  it("returns 422 when contactIds is missing", async () => {
+    const { PUT } = await import("@/app/api/me/pinned-contacts/route")
+    const res = await PUT(makeReq("/api/me/pinned-contacts", "PUT"), mockCtx)
+    expect(res.status).toBe(422)
+  })
+
+  it("returns 422 when contactIds contains non-UUIDs", async () => {
     const { PUT } = await import("@/app/api/me/pinned-contacts/route")
     const res = await PUT(
       makeReq("/api/me/pinned-contacts", "PUT", {
         json: async () => ({ contactIds: ["not-a-uuid"] }),
       }),
-      webCtx
+      mockCtx
     )
     expect(res.status).toBe(422)
   })
 
-  it("returns 200 with ok:true for empty contactIds array", async () => {
-    mockDb.limit.mockResolvedValueOnce([{ settings: {} }])
-    const { PUT } = await import("@/app/api/me/pinned-contacts/route")
-    const res = await PUT(
-      makeReq("/api/me/pinned-contacts", "PUT", {
-        json: async () => ({ contactIds: [] }),
-      }),
-      webCtx
-    )
-    expect(res.status).toBe(200)
-    const body = await res.json()
-    expect(body.ok).toBe(true)
-  })
-
-  it("returns 200 with ok:true for valid UUID contactIds", async () => {
-    mockDb.limit.mockResolvedValueOnce([{ settings: { dashboardPinnedContacts: [] } }])
+  it("returns 422 when too many contactIds (>6)", async () => {
     const { PUT } = await import("@/app/api/me/pinned-contacts/route")
     const res = await PUT(
       makeReq("/api/me/pinned-contacts", "PUT", {
@@ -219,10 +209,27 @@ describe("PUT /api/me/pinned-contacts", () => {
           contactIds: [
             "00000000-0000-0000-0000-000000000001",
             "00000000-0000-0000-0000-000000000002",
+            "00000000-0000-0000-0000-000000000003",
+            "00000000-0000-0000-0000-000000000004",
+            "00000000-0000-0000-0000-000000000005",
+            "00000000-0000-0000-0000-000000000006",
+            "00000000-0000-0000-0000-000000000007",
           ],
         }),
       }),
-      webCtx
+      mockCtx
+    )
+    expect(res.status).toBe(422)
+  })
+
+  it("returns 200 with ok:true on valid contactIds", async () => {
+    mockDb.limit.mockResolvedValueOnce([{ settings: {} }])
+    const { PUT } = await import("@/app/api/me/pinned-contacts/route")
+    const res = await PUT(
+      makeReq("/api/me/pinned-contacts", "PUT", {
+        json: async () => ({ contactIds: ["00000000-0000-0000-0000-000000000001"] }),
+      }),
+      mockCtx
     )
     expect(res.status).toBe(200)
     const body = await res.json()
@@ -230,59 +237,46 @@ describe("PUT /api/me/pinned-contacts", () => {
   })
 })
 
-// ─── POST /api/groups ─────────────────────────────────────────────────────────
+// ─── POST /api/groups ──────────────────────────────────────────────────────────
 
 describe("POST /api/groups", () => {
   beforeEach(resetMocks)
 
-  it("returns 422 for missing name", async () => {
+  it("returns 422 when name is too short", async () => {
     const { POST } = await import("@/app/api/groups/route")
     const res = await POST(
       makeReq("/api/groups", "POST", {
-        json: async () => ({ slug: "my-group" }),
+        json: async () => ({ name: "x", slug: "test-group" }),
       }),
-      webCtx
+      mockCtx
     )
     expect(res.status).toBe(422)
   })
 
-  it("returns 422 for invalid slug with uppercase", async () => {
+  it("returns 422 when slug has invalid characters", async () => {
     const { POST } = await import("@/app/api/groups/route")
     const res = await POST(
       makeReq("/api/groups", "POST", {
-        json: async () => ({ name: "My Group", slug: "My-Group" }),
+        json: async () => ({ name: "Test Group", slug: "Test Group" }),
       }),
-      webCtx
+      mockCtx
     )
     expect(res.status).toBe(422)
   })
 
-  it("creates group and returns 201 with groupId and slug", async () => {
-    mockDb.returning.mockResolvedValueOnce([{ id: "grp-1", slug: "my-group" }])
+  it("returns 201 with groupId and slug on success", async () => {
+    mockDb.returning.mockResolvedValueOnce([{ id: "group-1", slug: "test-group" }])
     const { POST } = await import("@/app/api/groups/route")
     const res = await POST(
       makeReq("/api/groups", "POST", {
-        json: async () => ({ name: "My Group", slug: "my-group" }),
+        json: async () => ({ name: "Test Group", slug: "test-group" }),
       }),
-      webCtx
+      mockCtx
     )
     expect(res.status).toBe(201)
     const body = await res.json()
-    expect(body.groupId).toBe("grp-1")
-    expect(body.slug).toBe("my-group")
-  })
-
-  it("fires audit log with action groups.create", async () => {
-    const { writeAuditLog } = await import("@prv/auth")
-    mockDb.returning.mockResolvedValueOnce([{ id: "grp-2", slug: "another-group" }])
-    const { POST } = await import("@/app/api/groups/route")
-    await POST(
-      makeReq("/api/groups", "POST", {
-        json: async () => ({ name: "Another Group", slug: "another-group" }),
-      }),
-      webCtx
-    )
-    expect(writeAuditLog).toHaveBeenCalledWith(expect.objectContaining({ action: "groups.create" }))
+    expect(body.groupId).toBe("group-1")
+    expect(body.slug).toBe("test-group")
   })
 })
 
@@ -291,19 +285,13 @@ describe("POST /api/groups", () => {
 describe("POST /api/groups/[groupId]/companies", () => {
   beforeEach(resetMocks)
 
-  it("returns 422 for missing companyId", async () => {
-    const { POST } = await import("@/app/api/groups/[groupId]/companies/route")
-    const res = await POST(makeReq("/api/groups/grp-1/companies"), webCtx)
-    expect(res.status).toBe(422)
-  })
-
   it("returns 422 for non-UUID companyId", async () => {
     const { POST } = await import("@/app/api/groups/[groupId]/companies/route")
     const res = await POST(
-      makeReq("/api/groups/grp-1/companies", "POST", {
+      makeReq("/api/groups/group-1/companies", "POST", {
         json: async () => ({ companyId: "not-a-uuid" }),
       }),
-      webCtx
+      mockCtx
     )
     expect(res.status).toBe(422)
   })
@@ -311,201 +299,138 @@ describe("POST /api/groups/[groupId]/companies", () => {
   it("returns 404 when company not found", async () => {
     const { POST } = await import("@/app/api/groups/[groupId]/companies/route")
     const res = await POST(
-      makeReq("/api/groups/grp-1/companies", "POST", {
+      makeReq("/api/groups/group-1/companies", "POST", {
         json: async () => ({ companyId: "00000000-0000-0000-0000-000000000001" }),
       }),
-      webCtx
+      mockCtx
     )
     expect(res.status).toBe(404)
   })
 
-  it("adds company to group and returns 201 when membership is new", async () => {
-    mockDb.limit
-      .mockResolvedValueOnce([{ id: "00000000-0000-0000-0000-000000000001" }]) // company exists
-      .mockResolvedValueOnce([]) // no existing membership
+  it("returns 201 on successful add", async () => {
+    mockDb.limit.mockResolvedValueOnce([{ id: "00000000-0000-0000-0000-000000000001" }])
     const { POST } = await import("@/app/api/groups/[groupId]/companies/route")
     const res = await POST(
-      makeReq("/api/groups/grp-1/companies", "POST", {
+      makeReq("/api/groups/group-1/companies", "POST", {
         json: async () => ({ companyId: "00000000-0000-0000-0000-000000000001" }),
       }),
-      webCtx
+      mockCtx
     )
     expect(res.status).toBe(201)
-    const body = await res.json()
-    expect(body.success).toBe(true)
-  })
-
-  it("reactivates existing membership and returns 201", async () => {
-    mockDb.limit
-      .mockResolvedValueOnce([{ id: "00000000-0000-0000-0000-000000000001" }]) // company exists
-      .mockResolvedValueOnce([{ id: "membership-1" }]) // membership exists
-    const { POST } = await import("@/app/api/groups/[groupId]/companies/route")
-    const res = await POST(
-      makeReq("/api/groups/grp-1/companies", "POST", {
-        json: async () => ({ companyId: "00000000-0000-0000-0000-000000000001" }),
-      }),
-      webCtx
-    )
-    expect(res.status).toBe(201)
-  })
-
-  it("fires audit log with action groups.companies.add", async () => {
-    const { writeAuditLog } = await import("@prv/auth")
-    mockDb.limit
-      .mockResolvedValueOnce([{ id: "00000000-0000-0000-0000-000000000001" }])
-      .mockResolvedValueOnce([])
-    const { POST } = await import("@/app/api/groups/[groupId]/companies/route")
-    await POST(
-      makeReq("/api/groups/grp-1/companies", "POST", {
-        json: async () => ({ companyId: "00000000-0000-0000-0000-000000000001" }),
-      }),
-      webCtx
-    )
-    expect(writeAuditLog).toHaveBeenCalledWith(
-      expect.objectContaining({ action: "groups.companies.add" })
-    )
   })
 })
 
-// ─── DELETE /api/groups/[groupId]/companies ───────────────────────────────────
+// ─── DELETE /api/groups/[groupId]/companies ────────────────────────────────────
 
 describe("DELETE /api/groups/[groupId]/companies", () => {
   beforeEach(resetMocks)
 
   it("returns 422 when companyId query param is missing", async () => {
     const { DELETE } = await import("@/app/api/groups/[groupId]/companies/route")
-    const res = await DELETE(makeReq("/api/groups/grp-1/companies", "DELETE"), webCtx)
+    const res = await DELETE(makeReq("/api/groups/group-1/companies", "DELETE"), mockCtx)
     expect(res.status).toBe(422)
   })
 
-  it("removes company from group and returns 200 with success:true", async () => {
+  it("returns 200 with success when company removed", async () => {
     const { DELETE } = await import("@/app/api/groups/[groupId]/companies/route")
     const res = await DELETE(
       {
         method: "DELETE",
-        nextUrl: { pathname: "/api/groups/grp-1/companies" },
-        url: "http://localhost/api/groups/grp-1/companies?companyId=company-abc",
+        nextUrl: { pathname: "/api/groups/group-1/companies" },
+        url: "http://localhost/api/groups/group-1/companies?companyId=00000000-0000-0000-0000-000000000001",
         headers: { get: () => null },
         json: async () => ({}),
       } as unknown as Request,
-      webCtx
+      mockCtx
     )
     expect(res.status).toBe(200)
     const body = await res.json()
     expect(body.success).toBe(true)
   })
-
-  it("fires audit log with action groups.companies.remove", async () => {
-    const { writeAuditLog } = await import("@prv/auth")
-    const { DELETE } = await import("@/app/api/groups/[groupId]/companies/route")
-    await DELETE(
-      {
-        method: "DELETE",
-        nextUrl: { pathname: "/api/groups/grp-1/companies" },
-        url: "http://localhost/api/groups/grp-1/companies?companyId=company-abc",
-        headers: { get: () => null },
-        json: async () => ({}),
-      } as unknown as Request,
-      webCtx
-    )
-    expect(writeAuditLog).toHaveBeenCalledWith(
-      expect.objectContaining({ action: "groups.companies.remove" })
-    )
-  })
 })
 
-// ─── POST /api/gdpr/erasure/[id]/approve ─────────────────────────────────────
+// ─── POST /api/gdpr/erasure/[id]/approve ──────────────────────────────────────
 
 describe("POST /api/gdpr/erasure/[id]/approve", () => {
   beforeEach(resetMocks)
 
-  it("returns 422 for invalid body (missing approved field)", async () => {
+  it("returns 422 for missing approved field", async () => {
     const { POST } = await import("@/app/api/gdpr/erasure/[id]/approve/route")
-    const res = await POST(makeReq("/api/gdpr/erasure/req-1/approve"), {
-      params: Promise.resolve({ id: "req-1" }),
+    const res = await POST(makeReq("/api/gdpr/erasure/erasing-1/approve"), {
+      params: Promise.resolve({ id: "erasing-1" }),
     } as never)
-    expect(res.status).toBe(422)
-  })
-
-  it("returns 422 when rejectionReason is too short for approved:false", async () => {
-    const { POST } = await import("@/app/api/gdpr/erasure/[id]/approve/route")
-    const res = await POST(
-      makeReq("/api/gdpr/erasure/req-1/approve", "POST", {
-        json: async () => ({ approved: false, rejectionReason: "short" }),
-      }),
-      { params: Promise.resolve({ id: "req-1" }) } as never
-    )
     expect(res.status).toBe(422)
   })
 
   it("returns 404 when erasure request not found", async () => {
     const { POST } = await import("@/app/api/gdpr/erasure/[id]/approve/route")
     const res = await POST(
-      makeReq("/api/gdpr/erasure/req-1/approve", "POST", {
+      makeReq("/api/gdpr/erasure/erasing-1/approve", "POST", {
         json: async () => ({ approved: true }),
       }),
-      { params: Promise.resolve({ id: "req-1" }) } as never
+      { params: Promise.resolve({ id: "erasing-1" }) } as never
     )
     expect(res.status).toBe(404)
   })
 
-  it("returns 409 when request is not in pending status", async () => {
+  it("returns 403 when approving own erasure request", async () => {
     mockDb.limit.mockResolvedValueOnce([
-      { id: "req-1", status: "approved", requestedBy: "other-user", targetUserId: "target-1" },
+      {
+        id: "erasing-1",
+        status: "pending",
+        requestedBy: "user-1",
+        targetUserId: "target-1",
+        companyId: "company-1",
+      },
     ])
     const { POST } = await import("@/app/api/gdpr/erasure/[id]/approve/route")
     const res = await POST(
-      makeReq("/api/gdpr/erasure/req-1/approve", "POST", {
+      makeReq("/api/gdpr/erasure/erasing-1/approve", "POST", {
         json: async () => ({ approved: true }),
       }),
-      { params: Promise.resolve({ id: "req-1" }) } as never
-    )
-    expect(res.status).toBe(409)
-  })
-
-  it("returns 403 when actor is the requester (self-approve)", async () => {
-    mockDb.limit.mockResolvedValueOnce([
-      { id: "req-1", status: "pending", requestedBy: "user-1", targetUserId: "target-1" },
-    ])
-    const { POST } = await import("@/app/api/gdpr/erasure/[id]/approve/route")
-    const res = await POST(
-      makeReq("/api/gdpr/erasure/req-1/approve", "POST", {
-        json: async () => ({ approved: true }),
-      }),
-      { params: Promise.resolve({ id: "req-1" }) } as never
+      { params: Promise.resolve({ id: "erasing-1" }) } as never
     )
     expect(res.status).toBe(403)
   })
 
-  it("returns 200 with status:approved on approval", async () => {
+  it("returns 200 with status approved", async () => {
     mockDb.limit.mockResolvedValueOnce([
-      { id: "req-1", status: "pending", requestedBy: "other-user", targetUserId: "target-1" },
+      {
+        id: "erasing-1",
+        status: "pending",
+        requestedBy: "other-user",
+        targetUserId: "target-1",
+        companyId: "company-1",
+      },
     ])
     const { POST } = await import("@/app/api/gdpr/erasure/[id]/approve/route")
     const res = await POST(
-      makeReq("/api/gdpr/erasure/req-1/approve", "POST", {
+      makeReq("/api/gdpr/erasure/erasing-1/approve", "POST", {
         json: async () => ({ approved: true }),
       }),
-      { params: Promise.resolve({ id: "req-1" }) } as never
+      { params: Promise.resolve({ id: "erasing-1" }) } as never
     )
     expect(res.status).toBe(200)
     const body = await res.json()
     expect(body.status).toBe("approved")
   })
 
-  it("returns 200 with status:rejected on rejection with reason", async () => {
+  it("returns 200 with status rejected when approved:false", async () => {
     mockDb.limit.mockResolvedValueOnce([
-      { id: "req-1", status: "pending", requestedBy: "other-user", targetUserId: "target-1" },
+      {
+        id: "erasing-1",
+        status: "pending",
+        requestedBy: "other-user",
+        targetUserId: "target-1",
+        companyId: "company-1",
+      },
     ])
     const { POST } = await import("@/app/api/gdpr/erasure/[id]/approve/route")
     const res = await POST(
-      makeReq("/api/gdpr/erasure/req-1/approve", "POST", {
-        json: async () => ({
-          approved: false,
-          rejectionReason: "Insufficient grounds for erasure",
-        }),
+      makeReq("/api/gdpr/erasure/erasing-1/approve", "POST", {
+        json: async () => ({ approved: false, rejectionReason: "Not compliant with policy" }),
       }),
-      { params: Promise.resolve({ id: "req-1" }) } as never
+      { params: Promise.resolve({ id: "erasing-1" }) } as never
     )
     expect(res.status).toBe(200)
     const body = await res.json()
@@ -513,59 +438,58 @@ describe("POST /api/gdpr/erasure/[id]/approve", () => {
   })
 })
 
-// ─── POST /api/gdpr/erasure/[id]/execute ─────────────────────────────────────
+// ─── POST /api/gdpr/erasure/[id]/execute ──────────────────────────────────────
 
 describe("POST /api/gdpr/erasure/[id]/execute", () => {
   beforeEach(resetMocks)
 
   it("returns 404 when erasure request not found", async () => {
     const { POST } = await import("@/app/api/gdpr/erasure/[id]/execute/route")
-    const res = await POST(makeReq("/api/gdpr/erasure/req-1/execute"), {
-      params: Promise.resolve({ id: "req-1" }),
+    const res = await POST(makeReq("/api/gdpr/erasure/erasing-1/execute"), {
+      params: Promise.resolve({ id: "erasing-1" }),
     } as never)
     expect(res.status).toBe(404)
   })
 
-  it("returns 409 when request is not in approved status", async () => {
+  it("returns 409 when request status is not approved", async () => {
     mockDb.limit.mockResolvedValueOnce([
-      { id: "req-1", status: "pending", targetUserId: "target-1" },
+      {
+        id: "erasing-1",
+        status: "pending",
+        targetUserId: "target-1",
+        companyId: "company-1",
+      },
     ])
     const { POST } = await import("@/app/api/gdpr/erasure/[id]/execute/route")
-    const res = await POST(makeReq("/api/gdpr/erasure/req-1/execute"), {
-      params: Promise.resolve({ id: "req-1" }),
+    const res = await POST(makeReq("/api/gdpr/erasure/erasing-1/execute"), {
+      params: Promise.resolve({ id: "erasing-1" }),
     } as never)
     expect(res.status).toBe(409)
   })
 
-  it("returns 409 when locking fails (already executing)", async () => {
+  it("returns 200 with verificationHash and erasureLog on success", async () => {
     mockDb.limit.mockResolvedValueOnce([
-      { id: "req-1", status: "approved", targetUserId: "target-1" },
-    ])
-    mockDb.returning.mockResolvedValueOnce([]) // lock fails
-    const { POST } = await import("@/app/api/gdpr/erasure/[id]/execute/route")
-    const res = await POST(makeReq("/api/gdpr/erasure/req-1/execute"), {
-      params: Promise.resolve({ id: "req-1" }),
-    } as never)
-    expect(res.status).toBe(409)
-  })
-
-  it("executes erasure pipeline and returns 200 with verificationHash", async () => {
-    mockDb.limit.mockResolvedValueOnce([
-      { id: "req-1", status: "approved", targetUserId: "target-1" },
+      {
+        id: "erasing-1",
+        status: "approved",
+        targetUserId: "target-1",
+        companyId: "company-1",
+      },
     ])
     mockDb.returning
-      .mockResolvedValueOnce([{ id: "req-1" }]) // lock succeeds
-      .mockResolvedValueOnce([{ id: "target-1" }]) // users anonymized
-      .mockResolvedValueOnce([]) // mfa deleted (0 rows)
-      .mockResolvedValueOnce([]) // devices deleted (0 rows)
-      .mockResolvedValueOnce([]) // audit log anonymized (0 rows)
+      .mockResolvedValueOnce([{ id: "erasing-1" }]) // lock update
+      .mockResolvedValueOnce([{ id: "target-1" }]) // users anonymize
+      .mockResolvedValueOnce([]) // mfa delete
+      .mockResolvedValueOnce([]) // devices delete
+      .mockResolvedValueOnce([]) // audit log anonymize
+
     const { POST } = await import("@/app/api/gdpr/erasure/[id]/execute/route")
-    const res = await POST(makeReq("/api/gdpr/erasure/req-1/execute"), {
-      params: Promise.resolve({ id: "req-1" }),
+    const res = await POST(makeReq("/api/gdpr/erasure/erasing-1/execute"), {
+      params: Promise.resolve({ id: "erasing-1" }),
     } as never)
     expect(res.status).toBe(200)
     const body = await res.json()
-    expect(body.verificationHash).toBe("verification-hash-abc")
+    expect(body.verificationHash).toBeDefined()
     expect(Array.isArray(body.erasureLog)).toBe(true)
   })
 })

@@ -1,11 +1,11 @@
 import { withGates } from "@/lib/with-gates"
 import { NextRequest, NextResponse } from "next/server"
+import { z } from "zod"
 import type { GateContext } from "@prv/auth"
 import { writeAuditLog } from "@prv/auth"
 import { db } from "@prv/db"
 import { aiInsights, insightAffectedStores, insightRecommendations } from "@prv/db/schema"
 import { and, asc, eq, isNull } from "drizzle-orm"
-import { z } from "zod"
 import type { InsightType, InsightPriority, InsightStatus } from "../route"
 
 export const dynamic = "force-dynamic"
@@ -157,7 +157,7 @@ export const GET = withGates(
   }
 )
 
-// ─── PATCH /api/intelligence/[id] ────────────────────────────────────────────
+// ── PATCH ─────────────────────────────────────────────────────────────────────
 
 const insightPatchSchema = z
   .object({
@@ -165,23 +165,31 @@ const insightPatchSchema = z
     priority: z.enum(["urgent", "medium", "low"]).optional(),
   })
   .refine((d) => d.status !== undefined || d.priority !== undefined, {
-    message: "At least one field required",
+    message: "At least one of status or priority is required",
   })
 
 export const PATCH = withGates(
   { action: "intelligence.update", endpointClass: "api_write" },
   async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
-    const { companyId, userId } = ctx.session
     const id = req.nextUrl.pathname.split("/").pop()
     if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 })
 
-    const raw = await req.json().catch(() => ({}))
-    const parsed = insightPatchSchema.safeParse(raw)
-    if (!parsed.success)
+    let body: unknown
+    try {
+      body = await req.json()
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON" }, { status: 400 })
+    }
+
+    const parsed = insightPatchSchema.safeParse(body)
+    if (!parsed.success) {
       return NextResponse.json(
         { error: "Invalid payload", issues: parsed.error.issues },
         { status: 422 }
       )
+    }
+
+    const { companyId } = ctx.session
 
     const [existing] = await db
       .select({ id: aiInsights.id, status: aiInsights.status })
@@ -197,43 +205,39 @@ export const PATCH = withGates(
 
     if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 })
 
-    const d = parsed.data
     const [updated] = await db
       .update(aiInsights)
-      .set({
-        ...(d.status !== undefined && { status: d.status }),
-        ...(d.priority !== undefined && { priority: d.priority }),
-        updatedAt: new Date(),
-      })
+      .set({ ...parsed.data, updatedAt: new Date() })
       .where(and(eq(aiInsights.id, id), eq(aiInsights.companyId, companyId)))
       .returning({ id: aiInsights.id, status: aiInsights.status })
 
     void writeAuditLog({
       companyId,
-      actorId: userId,
+      actorId: ctx.session.userId,
       sessionId: ctx.session.sessionId,
       action: "intelligence.update",
       entityType: "ai_insight",
       entityId: id,
-      payload: { from: existing.status, changes: d },
+      payload: parsed.data,
       method: "PATCH",
       path: `/api/intelligence/${id}`,
       ipAddress: ctx.ipAddress,
       userAgent: ctx.userAgent,
     })
 
-    return NextResponse.json(updated)
+    return NextResponse.json({ id: updated!.id, status: updated!.status })
   }
 )
 
-// ─── DELETE /api/intelligence/[id] ───────────────────────────────────────────
+// ── DELETE ────────────────────────────────────────────────────────────────────
 
 export const DELETE = withGates(
   { action: "intelligence.delete", endpointClass: "api_write" },
   async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
-    const { companyId, userId } = ctx.session
     const id = req.nextUrl.pathname.split("/").pop()
     if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 })
+
+    const { companyId } = ctx.session
 
     const [existing] = await db
       .select({ id: aiInsights.id })
@@ -256,7 +260,7 @@ export const DELETE = withGates(
 
     void writeAuditLog({
       companyId,
-      actorId: userId,
+      actorId: ctx.session.userId,
       sessionId: ctx.session.sessionId,
       action: "intelligence.delete",
       entityType: "ai_insight",

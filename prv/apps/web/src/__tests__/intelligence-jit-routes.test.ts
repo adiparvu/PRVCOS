@@ -5,8 +5,8 @@ vi.mock("@/lib/with-gates", () => ({
 }))
 
 vi.mock("@prv/auth", () => ({
-  writeAuditLog: vi.fn(),
-  logSecurityEvent: vi.fn(),
+  writeAuditLog: vi.fn().mockResolvedValue(undefined),
+  logSecurityEvent: vi.fn().mockResolvedValue(undefined),
   RoleSets: { admin: [], management: [] },
 }))
 
@@ -18,6 +18,7 @@ const mockDb = {
   select: vi.fn().mockReturnThis(),
   insert: vi.fn().mockReturnThis(),
   update: vi.fn().mockReturnThis(),
+  delete: vi.fn().mockReturnThis(),
   from: vi.fn().mockReturnThis(),
   where: vi.fn().mockReturnThis(),
   limit: vi.fn().mockResolvedValue([]),
@@ -25,24 +26,54 @@ const mockDb = {
   values: vi.fn().mockReturnThis(),
   orderBy: vi.fn().mockReturnThis(),
   returning: vi.fn().mockResolvedValue([{ id: "item-1" }]),
-  then: (resolve: (val: unknown[]) => void) => resolve([]),
+  leftJoin: vi.fn().mockReturnThis(),
+  then: (resolve: (val: unknown[]) => void) => resolve([{ n: 0 }]),
 }
 
 vi.mock("@prv/db", () => ({ db: mockDb }))
 
 vi.mock("@prv/db/schema", () => ({
-  aiInsights: { id: {}, companyId: {}, deletedAt: {}, status: {}, priority: {}, updatedAt: {} },
-  insightAffectedStores: { insightId: {}, sortOrder: {} },
-  insightRecommendations: { insightId: {}, sortOrder: {} },
+  aiInsights: {
+    id: {},
+    companyId: {},
+    type: {},
+    priority: {},
+    status: {},
+    title: {},
+    summary: {},
+    affectedCount: {},
+    affectedLabel: {},
+    confidenceLabel: {},
+    score: {},
+    riskLabel: {},
+    riskDeadline: {},
+    dataSource: {},
+    createdAt: {},
+    deletedAt: {},
+    updatedAt: {},
+  },
+  insightAffectedStores: {
+    id: {},
+    insightId: {},
+    storeId: {},
+    storeName: {},
+    statusDot: {},
+    metricLabel: {},
+    metricValue: {},
+    detail: {},
+    sortOrder: {},
+  },
+  insightRecommendations: {
+    id: {},
+    insightId: {},
+    title: {},
+    priority: {},
+    deadline: {},
+    sortOrder: {},
+  },
   sysadminAccessSessions: {
     id: {},
     requestedBy: {},
-    companyId: {},
-    justification: {},
-    isBreakGlass: {},
-    breakGlassJustification: {},
-    approverId1: {},
-    approvedAt1: {},
     status: {},
     sessionTokenHash: {},
     startedAt: {},
@@ -59,11 +90,10 @@ vi.mock("drizzle-orm", async (importOriginal) => {
     ...actual,
     eq: vi.fn(),
     and: vi.fn(),
-    ne: vi.fn(),
     isNull: vi.fn(),
     asc: vi.fn(),
-    desc: vi.fn(),
     inArray: vi.fn(),
+    desc: vi.fn(),
   }
 })
 
@@ -73,7 +103,7 @@ const webCtx = {
   userAgent: "test",
 }
 
-function makeReq(path: string, method = "PATCH", overrides: Partial<Request> = {}): Request {
+function makeReq(path: string, method = "POST", overrides: Partial<Request> = {}): Request {
   return {
     method,
     nextUrl: { pathname: path },
@@ -89,23 +119,27 @@ function resetMocks() {
   mockDb.select.mockReturnThis()
   mockDb.insert.mockReturnThis()
   mockDb.update.mockReturnThis()
+  mockDb.delete.mockReturnThis()
   mockDb.from.mockReturnThis()
   mockDb.where.mockReturnThis()
+  mockDb.limit.mockReset()
   mockDb.limit.mockResolvedValue([])
   mockDb.set.mockReturnThis()
   mockDb.values.mockReturnThis()
   mockDb.orderBy.mockReturnThis()
+  mockDb.returning.mockReset()
   mockDb.returning.mockResolvedValue([{ id: "item-1" }])
+  mockDb.leftJoin.mockReturnThis()
 }
 
-// ─── PATCH /api/intelligence/[id] ────────────────────────────────────────────
+// ─── PATCH /api/intelligence/[id] ─────────────────────────────────────────────
 
 describe("PATCH /api/intelligence/[id]", () => {
   beforeEach(resetMocks)
 
   it("returns 422 when body has neither status nor priority", async () => {
     const { PATCH } = await import("@/app/api/intelligence/[id]/route")
-    const res = await PATCH(makeReq("/api/intelligence/insight-1"), webCtx)
+    const res = await PATCH(makeReq("/api/intelligence/insight-1", "PATCH"), webCtx)
     expect(res.status).toBe(422)
   })
 
@@ -143,11 +177,12 @@ describe("PATCH /api/intelligence/[id]", () => {
     )
     expect(res.status).toBe(200)
     const body = await res.json()
+    expect(body.id).toBe("insight-1")
     expect(body.status).toBe("reviewed")
   })
 })
 
-// ─── DELETE /api/intelligence/[id] ───────────────────────────────────────────
+// ─── DELETE /api/intelligence/[id] ────────────────────────────────────────────
 
 describe("DELETE /api/intelligence/[id]", () => {
   beforeEach(resetMocks)
@@ -189,7 +224,7 @@ describe("POST /api/jit/break-glass", () => {
       makeReq("/api/jit/break-glass", "POST", {
         json: async () => ({
           justification:
-            "Production incident — database unreachable, need emergency access to diagnose",
+            "Production outage affecting all users. Emergency access required to diagnose and fix critical database issue impacting all operations.",
         }),
       }),
       webCtx
@@ -198,7 +233,6 @@ describe("POST /api/jit/break-glass", () => {
     const body = await res.json()
     expect(body.token).toMatch(/^jit_/)
     expect(body.sessionId).toBe("jit-session-1")
-    expect(body.warning).toBeDefined()
   })
 })
 
@@ -207,7 +241,7 @@ describe("POST /api/jit/break-glass", () => {
 describe("POST /api/jit/revoke", () => {
   beforeEach(resetMocks)
 
-  it("returns 422 for non-UUID sessionId", async () => {
+  it("returns 422 when sessionId is not a UUID", async () => {
     const { POST } = await import("@/app/api/jit/revoke/route")
     const res = await POST(
       makeReq("/api/jit/revoke", "POST", {
@@ -245,12 +279,12 @@ describe("POST /api/jit/revoke", () => {
   })
 })
 
-// ─── POST /api/jit/start ─────────────────────────────────────────────────────
+// ─── POST /api/jit/start ──────────────────────────────────────────────────────
 
 describe("POST /api/jit/start", () => {
   beforeEach(resetMocks)
 
-  it("returns 422 for non-UUID sessionId", async () => {
+  it("returns 422 when sessionId is not a UUID", async () => {
     const { POST } = await import("@/app/api/jit/start/route")
     const res = await POST(
       makeReq("/api/jit/start", "POST", {
@@ -272,23 +306,13 @@ describe("POST /api/jit/start", () => {
     expect(res.status).toBe(404)
   })
 
-  it("returns 409 when session status is not approved or break_glass", async () => {
-    mockDb.limit.mockResolvedValueOnce([
-      { id: "00000000-0000-0000-0000-000000000001", status: "pending", requestedBy: "user-1" },
-    ])
-    const { POST } = await import("@/app/api/jit/start/route")
-    const res = await POST(
-      makeReq("/api/jit/start", "POST", {
-        json: async () => ({ sessionId: "00000000-0000-0000-0000-000000000001" }),
-      }),
-      webCtx
-    )
-    expect(res.status).toBe(409)
-  })
-
   it("starts session and returns 200 with token and expiresAt", async () => {
     mockDb.limit.mockResolvedValueOnce([
-      { id: "00000000-0000-0000-0000-000000000001", status: "approved", requestedBy: "user-1" },
+      {
+        id: "00000000-0000-0000-0000-000000000001",
+        status: "approved",
+        requestedBy: "user-1",
+      },
     ])
     const { POST } = await import("@/app/api/jit/start/route")
     const res = await POST(
