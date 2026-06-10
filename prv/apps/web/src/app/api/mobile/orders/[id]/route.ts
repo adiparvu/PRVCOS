@@ -211,3 +211,52 @@ export const PATCH = withMobileAuth(async (req: NextRequest, ctx) => {
 
   return NextResponse.json({ id: updated.id, status: updated.status })
 })
+
+// ─── DELETE /api/mobile/orders/[id] ──────────────────────────────────────────
+
+export const DELETE = withMobileAuth(async (req: NextRequest, ctx) => {
+  const ipAddress =
+    req.headers.get("x-real-ip") ??
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    "unknown"
+
+  const orderId = req.nextUrl.pathname.split("/").pop() ?? ""
+  if (!orderId) return NextResponse.json({ error: "Missing order ID" }, { status: 400 })
+
+  const [existing] = await db
+    .select({ id: orders.id, status: orders.status })
+    .from(orders)
+    .where(
+      and(eq(orders.id, orderId), eq(orders.companyId, ctx.companyId), isNull(orders.deletedAt))
+    )
+    .limit(1)
+
+  if (!existing) return NextResponse.json({ error: "Order not found" }, { status: 404 })
+
+  if (!["pending", "cancelled"].includes(existing.status))
+    return NextResponse.json(
+      { error: `Cannot delete an order with status '${existing.status}'` },
+      { status: 409 }
+    )
+
+  await db
+    .update(orders)
+    .set({ deletedAt: new Date() })
+    .where(and(eq(orders.id, orderId), eq(orders.companyId, ctx.companyId)))
+
+  void writeAuditLog({
+    companyId: ctx.companyId,
+    actorId: ctx.userId,
+    sessionId: ctx.sessionId,
+    action: "mobile.order.delete",
+    entityType: "order",
+    entityId: orderId,
+    method: "DELETE",
+    path: `/api/mobile/orders/${orderId}`,
+    ipAddress,
+    userAgent: req.headers.get("user-agent") ?? "",
+    payload: {},
+  })
+
+  return new NextResponse(null, { status: 204 })
+})

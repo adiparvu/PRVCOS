@@ -1,9 +1,11 @@
 import { withGates } from "@/lib/with-gates"
 import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
+import { writeAuditLog } from "@prv/auth"
 import { db } from "@prv/db"
 import { aiInsights, insightAffectedStores, insightRecommendations } from "@prv/db/schema"
 import { and, asc, eq, isNull } from "drizzle-orm"
+import { z } from "zod"
 import type { InsightType, InsightPriority, InsightStatus } from "../route"
 
 export const dynamic = "force-dynamic"
@@ -152,5 +154,120 @@ export const GET = withGates(
     }
 
     return NextResponse.json(detail)
+  }
+)
+
+// ─── PATCH /api/intelligence/[id] ────────────────────────────────────────────
+
+const insightPatchSchema = z
+  .object({
+    status: z.enum(["new", "reviewed", "actioned", "dismissed"]).optional(),
+    priority: z.enum(["urgent", "medium", "low"]).optional(),
+  })
+  .refine((d) => d.status !== undefined || d.priority !== undefined, {
+    message: "At least one field required",
+  })
+
+export const PATCH = withGates(
+  { action: "intelligence.update", endpointClass: "api_write" },
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
+    const { companyId, userId } = ctx.session
+    const id = req.nextUrl.pathname.split("/").pop()
+    if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 })
+
+    const raw = await req.json().catch(() => ({}))
+    const parsed = insightPatchSchema.safeParse(raw)
+    if (!parsed.success)
+      return NextResponse.json(
+        { error: "Invalid payload", issues: parsed.error.issues },
+        { status: 422 }
+      )
+
+    const [existing] = await db
+      .select({ id: aiInsights.id, status: aiInsights.status })
+      .from(aiInsights)
+      .where(
+        and(
+          eq(aiInsights.id, id),
+          eq(aiInsights.companyId, companyId),
+          isNull(aiInsights.deletedAt)
+        )
+      )
+      .limit(1)
+
+    if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 })
+
+    const d = parsed.data
+    const [updated] = await db
+      .update(aiInsights)
+      .set({
+        ...(d.status !== undefined && { status: d.status }),
+        ...(d.priority !== undefined && { priority: d.priority }),
+        updatedAt: new Date(),
+      })
+      .where(and(eq(aiInsights.id, id), eq(aiInsights.companyId, companyId)))
+      .returning({ id: aiInsights.id, status: aiInsights.status })
+
+    void writeAuditLog({
+      companyId,
+      actorId: userId,
+      sessionId: ctx.session.sessionId,
+      action: "intelligence.update",
+      entityType: "ai_insight",
+      entityId: id,
+      payload: { from: existing.status, changes: d },
+      method: "PATCH",
+      path: `/api/intelligence/${id}`,
+      ipAddress: ctx.ipAddress,
+      userAgent: ctx.userAgent,
+    })
+
+    return NextResponse.json(updated)
+  }
+)
+
+// ─── DELETE /api/intelligence/[id] ───────────────────────────────────────────
+
+export const DELETE = withGates(
+  { action: "intelligence.delete", endpointClass: "api_write" },
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
+    const { companyId, userId } = ctx.session
+    const id = req.nextUrl.pathname.split("/").pop()
+    if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 })
+
+    const [existing] = await db
+      .select({ id: aiInsights.id })
+      .from(aiInsights)
+      .where(
+        and(
+          eq(aiInsights.id, id),
+          eq(aiInsights.companyId, companyId),
+          isNull(aiInsights.deletedAt)
+        )
+      )
+      .limit(1)
+
+    if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 })
+
+    await db
+      .update(aiInsights)
+      .set({ deletedAt: new Date(), updatedAt: new Date() })
+      .where(and(eq(aiInsights.id, id), eq(aiInsights.companyId, companyId)))
+
+    void writeAuditLog({
+      companyId,
+      actorId: userId,
+      sessionId: ctx.session.sessionId,
+      action: "intelligence.delete",
+      entityType: "ai_insight",
+      entityId: id,
+      payload: {},
+      method: "DELETE",
+      path: `/api/intelligence/${id}`,
+      ipAddress: ctx.ipAddress,
+      userAgent: ctx.userAgent,
+    })
+
+    return new NextResponse(null, { status: 204 })
   }
 )

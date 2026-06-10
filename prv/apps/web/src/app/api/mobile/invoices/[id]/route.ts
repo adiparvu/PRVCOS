@@ -211,3 +211,56 @@ export const PATCH = withMobileAuth(async (req: NextRequest, ctx) => {
 
   return NextResponse.json({ id: updated.id, status: updated.status })
 })
+
+// ─── DELETE /api/mobile/invoices/[id] ────────────────────────────────────────
+
+export const DELETE = withMobileAuth(async (req: NextRequest, ctx) => {
+  const ipAddress =
+    req.headers.get("x-real-ip") ??
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    "unknown"
+
+  const invoiceId = req.nextUrl.pathname.split("/").pop() ?? ""
+  if (!invoiceId) return NextResponse.json({ error: "Missing invoice ID" }, { status: 400 })
+
+  const [existing] = await db
+    .select({ id: invoices.id, status: invoices.status })
+    .from(invoices)
+    .where(
+      and(
+        eq(invoices.id, invoiceId),
+        eq(invoices.companyId, ctx.companyId),
+        isNull(invoices.deletedAt)
+      )
+    )
+    .limit(1)
+
+  if (!existing) return NextResponse.json({ error: "Invoice not found" }, { status: 404 })
+
+  if (!["draft", "cancelled"].includes(existing.status))
+    return NextResponse.json(
+      { error: `Cannot delete an invoice with status '${existing.status}'` },
+      { status: 409 }
+    )
+
+  await db
+    .update(invoices)
+    .set({ deletedAt: new Date() })
+    .where(and(eq(invoices.id, invoiceId), eq(invoices.companyId, ctx.companyId)))
+
+  void writeAuditLog({
+    companyId: ctx.companyId,
+    actorId: ctx.userId,
+    sessionId: ctx.sessionId,
+    action: "mobile.invoice.delete",
+    entityType: "invoice",
+    entityId: invoiceId,
+    method: "DELETE",
+    path: `/api/mobile/invoices/${invoiceId}`,
+    ipAddress,
+    userAgent: req.headers.get("user-agent") ?? "",
+    payload: {},
+  })
+
+  return new NextResponse(null, { status: 204 })
+})
