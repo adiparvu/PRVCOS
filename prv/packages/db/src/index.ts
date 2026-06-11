@@ -10,6 +10,13 @@ export type { GroupKpis } from "./queries/group-kpis"
 export { queryManagerKpis, queryWorkerContext, querySpecialistContext } from "./queries/dashboard"
 export type { ManagerKpis, WorkerContext, SpecialistContext } from "./queries/dashboard"
 export {
+  queryShopOrderSummary,
+  queryTopProducts,
+  queryReviewStats,
+  queryLowStockProducts,
+} from "./queries/shop"
+export type { ShopOrderSummary, TopProduct, ReviewStats, LowStockProduct } from "./queries/shop"
+export {
   queryNotifications,
   queryNotificationCounts,
   markNotificationsRead,

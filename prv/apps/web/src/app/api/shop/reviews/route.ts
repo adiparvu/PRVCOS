@@ -5,6 +5,7 @@ import type { GateContext } from "@prv/auth"
 import { db } from "@prv/db"
 import { productReviews } from "@prv/db/schema"
 import { and, desc, eq, isNull, lt } from "drizzle-orm"
+import { appendRealtimeEvent, realtimeChannel, REALTIME_EVENT } from "@prv/cache"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -149,6 +150,13 @@ export const POST = withGates(
       helpfulCount: inserted.helpfulCount,
       createdAt: inserted.createdAt.toISOString(),
     }
+
+    void appendRealtimeEvent(realtimeChannel.shop(companyId), REALTIME_EVENT.SHOP_UPDATE, {
+      entityType: "review",
+      entityId: inserted.id,
+      action: "created",
+      companyId,
+    }).catch(() => null)
 
     return NextResponse.json({ review }, { status: 201 })
   }
