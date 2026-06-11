@@ -7,6 +7,8 @@ import {
   presenceExpireFunction,
   grantExpireFunction,
   approvalExpireFunction,
+  shopOrderProcessFunction,
+  shopStockAlertFunction,
 } from "@prv/jobs/functions"
 
 // Inngest webhook handler — receives events and dispatches to functions
@@ -20,6 +22,8 @@ export const { GET, POST, PUT } = serve({
     presenceExpireFunction,
     grantExpireFunction,
     approvalExpireFunction,
+    shopOrderProcessFunction,
+    shopStockAlertFunction,
   ],
   signingKey: process.env["INNGEST_SIGNING_KEY"],
 })

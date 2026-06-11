@@ -1,9 +1,12 @@
 import { withGates } from "@/lib/with-gates"
+import { writeAuditLog } from "@prv/auth"
 import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
 import { db } from "@prv/db"
 import { products, productCategories } from "@prv/db/schema"
 import { and, desc, eq, isNull, lt, sql } from "drizzle-orm"
+import { appendRealtimeEvent, realtimeChannel, REALTIME_EVENT } from "@prv/cache"
+import { z } from "zod"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -99,5 +102,94 @@ export const GET = withGates(
     })
 
     return NextResponse.json({ products: mapped, count: mapped.length, nextCursor })
+  }
+)
+
+// ─── POST /api/shop/products ─────────────────────────────────────────────────
+
+const createProductSchema = z.object({
+  name: z.string().min(1).max(255),
+  description: z.string().max(5000).optional(),
+  price: z.number().nonnegative(),
+  unit: z.string().max(32).default("buc"),
+  sku: z.string().max(100).optional(),
+  categoryId: z.string().uuid().optional(),
+  stockQuantity: z.number().int().min(0).default(0),
+  stockMinimum: z.number().int().min(0).default(0),
+  vatRate: z.number().nonnegative().default(19),
+})
+
+export const POST = withGates(
+  { action: "shop.products.create", endpointClass: "api_write" },
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
+    const { companyId, userId } = ctx.session
+
+    const raw = await req.json().catch(() => ({}))
+    const parsed = createProductSchema.safeParse(raw)
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Invalid payload", issues: parsed.error.issues },
+        { status: 422 }
+      )
+    }
+
+    const d = parsed.data
+
+    const [inserted] = await db
+      .insert(products)
+      .values({
+        companyId,
+        name: d.name,
+        description: d.description ?? null,
+        price: String(d.price),
+        unit: d.unit,
+        sku: d.sku ?? null,
+        categoryId: d.categoryId ?? null,
+        stockQuantity: d.stockQuantity,
+        stockMinimum: d.stockMinimum,
+        vatRate: String(d.vatRate),
+        status: "active",
+        isActive: true,
+      })
+      .returning()
+
+    if (!inserted) {
+      return NextResponse.json({ error: "Database error" }, { status: 500 })
+    }
+
+    await writeAuditLog({
+      companyId,
+      actorId: userId,
+      sessionId: ctx.session.sessionId,
+      action: "shop.products.create",
+      entityType: "product",
+      entityId: inserted.id,
+      payload: { name: d.name, price: d.price, sku: d.sku },
+      method: "POST",
+      path: "/api/shop/products",
+      ipAddress: ctx.ipAddress,
+      userAgent: ctx.userAgent,
+    })
+
+    void appendRealtimeEvent(realtimeChannel.shop(companyId), REALTIME_EVENT.SHOP_UPDATE, {
+      entityType: "product",
+      entityId: inserted.id,
+      action: "created",
+      companyId,
+    }).catch(() => null)
+
+    const product: Product = {
+      id: inserted.id,
+      sku: inserted.sku ?? "",
+      name: inserted.name,
+      category: "scule" as ProductCategory,
+      price: Number(inserted.price),
+      unit: inserted.unit,
+      stock: inserted.stockQuantity,
+      badge: inserted.stockQuantity <= inserted.stockMinimum ? "low-stock" : undefined,
+      featured: false,
+    }
+
+    return NextResponse.json({ product }, { status: 201 })
   }
 )
