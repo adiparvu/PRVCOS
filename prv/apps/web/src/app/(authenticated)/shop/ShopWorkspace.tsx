@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import type { Product, ProductCategory } from "@/app/api/shop/products/route"
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
@@ -57,6 +58,23 @@ function IconCartDark() {
       <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
       <line x1="3" y1="6" x2="21" y2="6" />
       <path d="M16 10a4 4 0 01-8 0" />
+    </svg>
+  )
+}
+
+function IconHeart() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="rgba(255,255,255,0.65)"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
     </svg>
   )
 }
@@ -772,9 +790,9 @@ export function ShopWorkspace() {
             <p style={{ fontSize: 13, color: "rgba(255,255,255,0.32)", marginBottom: 2 }}>PRV</p>
             <h1 style={{ fontSize: 26, fontWeight: 700, letterSpacing: "-0.5px" }}>Shop</h1>
           </div>
-          <div style={{ position: "relative", display: "inline-block" }}>
-            <button
-              onClick={() => setCartOpen(true)}
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <Link
+              href="/shop/wishlist"
               style={{
                 width: 36,
                 height: 36,
@@ -784,33 +802,50 @@ export function ShopWorkspace() {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                cursor: "pointer",
               }}
             >
-              <IconCart />
-            </button>
-            {cartCount > 0 && (
-              <div
+              <IconHeart />
+            </Link>
+            <div style={{ position: "relative", display: "inline-block" }}>
+              <button
+                onClick={() => setCartOpen(true)}
                 style={{
-                  position: "absolute",
-                  top: -3,
-                  right: -3,
-                  width: 17,
-                  height: 17,
+                  width: 36,
+                  height: 36,
                   borderRadius: 100,
-                  background: "#ff3b30",
+                  background: "rgba(255,255,255,0.08)",
+                  border: "1px solid rgba(255,255,255,0.11)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  fontSize: 9,
-                  fontWeight: 700,
-                  color: "#fff",
-                  border: "1.5px solid #000",
+                  cursor: "pointer",
                 }}
               >
-                {cartCount}
-              </div>
-            )}
+                <IconCart />
+              </button>
+              {cartCount > 0 && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: -3,
+                    right: -3,
+                    width: 17,
+                    height: 17,
+                    borderRadius: 100,
+                    background: "#ff3b30",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 9,
+                    fontWeight: 700,
+                    color: "#fff",
+                    border: "1.5px solid #000",
+                  }}
+                >
+                  {cartCount}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 

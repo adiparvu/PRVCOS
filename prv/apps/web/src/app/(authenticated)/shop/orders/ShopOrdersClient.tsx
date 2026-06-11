@@ -177,7 +177,8 @@ function OrderCard({ order }: { order: Order }) {
   const itemsSummary = order.items.map((i) => i.productName).join(", ")
 
   return (
-    <div
+    <Link
+      href={`/shop/orders/${order.id}`}
       style={{
         display: "block",
         background: "var(--prv-g1)",
@@ -187,6 +188,7 @@ function OrderCard({ order }: { order: Order }) {
         position: "relative",
         overflow: "hidden",
         marginBottom: 8,
+        textDecoration: "none",
       }}
     >
       {isActive && (
@@ -294,7 +296,7 @@ function OrderCard({ order }: { order: Order }) {
           <IconChevronRight />
         </span>
       </div>
-    </div>
+    </Link>
   )
 }
 
