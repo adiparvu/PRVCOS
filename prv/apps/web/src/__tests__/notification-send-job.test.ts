@@ -136,7 +136,7 @@ describe("notification-send Inngest job", () => {
     const step = makeStep()
     await captureRef.handler!({ event: BASE_EVENT, step })
 
-    const args = mockSendEmail.mock.calls[0][0] as Record<string, unknown>
+    const args = mockSendEmail.mock.calls[0]![0] as Record<string, unknown>
     expect(args.to).toBe("alice@example.com")
     expect(args.subject).toBe("Hello")
   })
