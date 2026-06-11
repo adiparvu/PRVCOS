@@ -17,6 +17,7 @@
     "@prv/approval-engine": "workspace:*",
     "@prv/cache": "workspace:*",
     "@prv/db": "workspace:*",
+    "@prv/email": "workspace:*",
     "drizzle-orm": "^0.38.4"
   },
   "devDependencies": {
