@@ -41,3 +41,5 @@ export * from "./knowledge"
 export * from "./learning"
 // Sprint 12: Intelligence — AI insights, reports, anomalies, forecast series
 export * from "./intelligence"
+// Sprint 13: Shop platform — reviews, wishlist, comparisons
+export * from "./shop"
