@@ -10,7 +10,7 @@ import {
 } from "@prv/ui"
 import type { PublicProduct } from "@/app/api/public/shop/products/route"
 
-// ── Gradient fallback for products without images ─────────────────────────────
+// ── Gradient fallback for products without a photo ────────────────────────────
 
 const GRADIENT_POOL = [
   ["#0A84FF", "#5E5CE6"],
@@ -19,8 +19,6 @@ const GRADIENT_POOL = [
   ["#BF5AF2", "#FF6482"],
   ["#64D2FF", "#0A84FF"],
   ["#5E5CE6", "#BF5AF2"],
-  ["#FF6482", "#FF9F0A"],
-  ["#00C7BE", "#30D158"],
 ]
 
 function gradientImage(idx: number): string {
@@ -29,45 +27,27 @@ function gradientImage(idx: number): string {
   return `data:image/svg+xml,${encodeURIComponent(svg)}`
 }
 
-// ── Local product type (superset of PublicProduct for UI) ─────────────────────
+// ── Local cart product type ───────────────────────────────────────────────────
 
-interface Product {
+interface CartProduct {
   id: string
   name: string
-  category: string
   price: number
-  wasPrice?: number
-  rating: number
-  reviews: number
-  badge?: { label: string; variant?: "sale" | "new" }
-  outOfStock?: boolean
   image: string
-}
-
-function mapToProduct(p: PublicProduct, idx: number): Product {
-  return {
-    id: p.id,
-    name: p.name,
-    category: p.category,
-    price: p.price,
-    rating: p.rating,
-    reviews: p.reviews,
-    outOfStock: p.outOfStock,
-    image: p.imageUrl ?? gradientImage(idx),
-  }
+  category: string
 }
 
 const PRICE_MIN = 0
-const PRICE_MAX = 10_000
+const PRICE_MAX = 2000
 const euro = (v: number) => `€${v}`
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function ShopStorefront() {
-  const [catalog, setCatalog] = useState<Product[]>([])
+  const [catalog, setCatalog] = useState<PublicProduct[]>([])
   const [loading, setLoading] = useState(true)
-  const [category, setCategory] = useState("Toate")
-  const [range, setRange] = useState<RangeValue>([PRICE_MIN, PRICE_MAX])
+  const [category, setCategory] = useState("All")
+  const [range, setRange] = useState<RangeValue>([0, PRICE_MAX])
   const [favorites, setFavorites] = useState<Set<string>>(new Set())
   const [cart, setCart] = useState<Record<string, number>>({})
   const [cartOpen, setCartOpen] = useState(false)
@@ -81,7 +61,7 @@ export function ShopStorefront() {
         if (!res.ok) return
         const data = (await res.json()) as { products: PublicProduct[] }
         if (cancelled) return
-        setCatalog(data.products.map(mapToProduct))
+        setCatalog(data.products)
       } finally {
         if (!cancelled) setLoading(false)
       }
@@ -93,35 +73,47 @@ export function ShopStorefront() {
   }, [])
 
   const categories = useMemo(() => {
-    const unique = Array.from(new Set(catalog.map((p) => p.category)))
-    return ["Toate", ...unique]
+    const cats = Array.from(new Set(catalog.map((p) => p.category)))
+    return ["All", ...cats]
   }, [catalog])
-
-  const maxPrice = useMemo(
-    () => (catalog.length > 0 ? Math.max(...catalog.map((p) => p.price)) : PRICE_MAX),
-    [catalog]
-  )
 
   const filtered = useMemo(
     () =>
       catalog.filter(
         (p) =>
-          (category === "Toate" || p.category === category) &&
+          (category === "All" || p.category === category) &&
           p.price >= range[0] &&
           p.price <= range[1]
       ),
     [catalog, category, range]
   )
 
+  // Build a stable image map: product idx → gradient (for products without a photo)
+  const imageMap = useMemo(() => {
+    const m: Record<string, string> = {}
+    catalog.forEach((p, i) => {
+      m[p.id] = p.imageUrl ?? gradientImage(i)
+    })
+    return m
+  }, [catalog])
+
   const cartItems = useMemo(
     () =>
       Object.entries(cart)
         .map(([id, qty]) => {
           const product = catalog.find((p) => p.id === id)
-          return product ? { product, qty } : null
+          if (!product) return null
+          const cp: CartProduct = {
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            image: imageMap[product.id] ?? gradientImage(0),
+            category: product.category,
+          }
+          return { product: cp, qty }
         })
-        .filter((x): x is { product: Product; qty: number } => x !== null),
-    [cart, catalog]
+        .filter((x): x is { product: CartProduct; qty: number } => x !== null),
+    [cart, catalog, imageMap]
   )
 
   const cartCount = Object.values(cart).reduce((a, b) => a + b, 0)
@@ -213,7 +205,7 @@ export function ShopStorefront() {
         <p className="text-[12px] font-semibold text-white/35 mb-3">Interval de preț</p>
         <GlassRangeSlider
           min={PRICE_MIN}
-          max={maxPrice}
+          max={PRICE_MAX}
           step={5}
           value={range}
           onChange={setRange}
@@ -224,7 +216,7 @@ export function ShopStorefront() {
       {/* Product grid */}
       {loading ? (
         <div className="grid grid-cols-2 gap-3.5">
-          {Array.from({ length: 6 }).map((_, i) => (
+          {Array.from({ length: 4 }).map((_, i) => (
             <div
               key={i}
               className="rounded-[18px] aspect-[3/4]"
@@ -234,7 +226,7 @@ export function ShopStorefront() {
         </div>
       ) : filtered.length === 0 ? (
         <p className="text-white/35 text-[14px] text-center py-12">
-          Niciun produs nu corespunde filtrelor
+          Niciun produs nu corespunde filtrelor selectate
         </p>
       ) : (
         <div className="grid grid-cols-2 gap-3.5">
@@ -242,13 +234,11 @@ export function ShopStorefront() {
             <GlassProductCard
               key={p.id}
               name={p.name}
-              image={p.image}
+              image={imageMap[p.id] ?? gradientImage(0)}
               category={p.category}
               price={p.price}
-              wasPrice={p.wasPrice}
               rating={p.rating}
               reviews={p.reviews}
-              badge={p.badge}
               outOfStock={p.outOfStock}
               favorite={favorites.has(p.id)}
               onToggleFavorite={() => toggleFav(p.id)}
@@ -265,7 +255,7 @@ export function ShopStorefront() {
         title={`Coșul tău · ${cartCount} ${cartCount === 1 ? "produs" : "produse"}`}
       >
         {cartItems.length === 0 ? (
-          <p className="text-white/35 text-[14px] text-center py-10">Coșul tău este gol</p>
+          <p className="text-white/35 text-[14px] text-center py-10">Coșul este gol</p>
         ) : (
           <>
             <div className="flex flex-col">
@@ -274,6 +264,7 @@ export function ShopStorefront() {
                   key={product.id}
                   name={product.name}
                   image={product.image}
+                  variant={product.category}
                   price={`€${product.price * qty}`}
                   quantity={qty}
                   onQuantityChange={(q) => setQty(product.id, q)}
