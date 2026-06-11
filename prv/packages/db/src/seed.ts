@@ -7,6 +7,7 @@ import { migrationHistory } from "./schema/migration-history"
 import { seedRoles } from "./seeds/roles"
 import { seedPermissions } from "./seeds/permissions"
 import { seedRolePermissions } from "./seeds/role-permissions"
+import { seedShop } from "./seeds/shop"
 
 async function seed() {
   if (process.env["NODE_ENV"] === "production") {
@@ -23,6 +24,9 @@ async function seed() {
   const roleIdMap = await seedRoles()
   const permissionIdMap = await seedPermissions()
   await seedRolePermissions(roleIdMap, permissionIdMap)
+
+  // Sprint 13: Shop platform — categories, products, reviews
+  await seedShop()
 
   console.log("✓ Seed complete")
   process.exit(0)
