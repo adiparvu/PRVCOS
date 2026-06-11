@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import {
   GlassProductCard,
   GlassRangeSlider,
@@ -8,15 +8,28 @@ import {
   StandardSheet,
   type RangeValue,
 } from "@prv/ui"
+import type { PublicProduct } from "@/app/api/public/shop/products/route"
 
-// ── Placeholder catalog ───────────────────────────────────────────────────────
-// Static catalog with inline gradient images (CSP-safe data: URIs). Real product
-// data + Supabase Storage photos are a later backend task.
+// ── Gradient fallback for products without images ─────────────────────────────
 
-function gradientImage(from: string, to: string): string {
+const GRADIENT_POOL = [
+  ["#0A84FF", "#5E5CE6"],
+  ["#FF9F0A", "#FF375F"],
+  ["#30D158", "#00C7BE"],
+  ["#BF5AF2", "#FF6482"],
+  ["#64D2FF", "#0A84FF"],
+  ["#5E5CE6", "#BF5AF2"],
+  ["#FF6482", "#FF9F0A"],
+  ["#00C7BE", "#30D158"],
+]
+
+function gradientImage(idx: number): string {
+  const [from, to] = GRADIENT_POOL[idx % GRADIENT_POOL.length]!
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${from}"/><stop offset="1" stop-color="${to}"/></linearGradient></defs><rect width="400" height="400" fill="url(#g)"/></svg>`
   return `data:image/svg+xml,${encodeURIComponent(svg)}`
 }
+
+// ── Local product type (superset of PublicProduct for UI) ─────────────────────
 
 interface Product {
   id: string
@@ -29,108 +42,86 @@ interface Product {
   badge?: { label: string; variant?: "sale" | "new" }
   outOfStock?: boolean
   image: string
-  variant?: string
 }
 
-const CATALOG: Product[] = [
-  {
-    id: "drill",
-    name: "Cordless Drill 18V",
-    category: "Power Tools",
-    price: 149,
-    rating: 4.7,
-    reviews: 212,
-    badge: { label: "New", variant: "new" },
-    image: gradientImage("#0A84FF", "#5E5CE6"),
-    variant: "Blue · 2 batteries",
-  },
-  {
-    id: "laminate",
-    name: "Oak Laminate · m²",
-    category: "Flooring",
-    price: 22,
-    wasPrice: 32,
-    rating: 4.9,
-    reviews: 540,
-    badge: { label: "-31%", variant: "sale" },
-    image: gradientImage("#FF9F0A", "#FF375F"),
-    variant: "Natural",
-  },
-  {
-    id: "paint",
-    name: "Matte White 5L",
-    category: "Paint",
-    price: 39,
-    rating: 4.5,
-    reviews: 98,
-    outOfStock: true,
-    image: gradientImage("#30D158", "#00C7BE"),
-  },
-  {
-    id: "tap",
-    name: "Mixer Tap Chrome",
-    category: "Plumbing",
-    price: 85,
-    rating: 4.6,
-    reviews: 76,
-    image: gradientImage("#BF5AF2", "#FF6482"),
-    variant: "Chrome",
-  },
-  {
-    id: "led",
-    name: "LED Panel 40W",
-    category: "Electrical",
-    price: 28,
-    rating: 4.4,
-    reviews: 134,
-    image: gradientImage("#64D2FF", "#0A84FF"),
-  },
-  {
-    id: "saw",
-    name: "Circular Saw 1200W",
-    category: "Power Tools",
-    price: 210,
-    rating: 4.8,
-    reviews: 309,
-    image: gradientImage("#5E5CE6", "#BF5AF2"),
-  },
-]
+function mapToProduct(p: PublicProduct, idx: number): Product {
+  return {
+    id: p.id,
+    name: p.name,
+    category: p.category,
+    price: p.price,
+    rating: p.rating,
+    reviews: p.reviews,
+    outOfStock: p.outOfStock,
+    image: p.imageUrl ?? gradientImage(idx),
+  }
+}
 
-const CATEGORIES = ["All", "Power Tools", "Flooring", "Paint", "Plumbing", "Electrical"]
 const PRICE_MIN = 0
-const PRICE_MAX = 600
-
+const PRICE_MAX = 10_000
 const euro = (v: number) => `€${v}`
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function ShopStorefront() {
-  const [category, setCategory] = useState("All")
-  const [range, setRange] = useState<RangeValue>([20, 520])
-  const [favorites, setFavorites] = useState<Set<string>>(new Set(["laminate"]))
+  const [catalog, setCatalog] = useState<Product[]>([])
+  const [loading, setLoading] = useState(true)
+  const [category, setCategory] = useState("Toate")
+  const [range, setRange] = useState<RangeValue>([PRICE_MIN, PRICE_MAX])
+  const [favorites, setFavorites] = useState<Set<string>>(new Set())
   const [cart, setCart] = useState<Record<string, number>>({})
   const [cartOpen, setCartOpen] = useState(false)
 
+  useEffect(() => {
+    let cancelled = false
+    async function load() {
+      setLoading(true)
+      try {
+        const res = await fetch("/api/public/shop/products")
+        if (!res.ok) return
+        const data = (await res.json()) as { products: PublicProduct[] }
+        if (cancelled) return
+        setCatalog(data.products.map(mapToProduct))
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+    void load()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const categories = useMemo(() => {
+    const unique = Array.from(new Set(catalog.map((p) => p.category)))
+    return ["Toate", ...unique]
+  }, [catalog])
+
+  const maxPrice = useMemo(
+    () => (catalog.length > 0 ? Math.max(...catalog.map((p) => p.price)) : PRICE_MAX),
+    [catalog]
+  )
+
   const filtered = useMemo(
     () =>
-      CATALOG.filter(
+      catalog.filter(
         (p) =>
-          (category === "All" || p.category === category) &&
+          (category === "Toate" || p.category === category) &&
           p.price >= range[0] &&
           p.price <= range[1]
       ),
-    [category, range]
+    [catalog, category, range]
   )
 
   const cartItems = useMemo(
     () =>
       Object.entries(cart)
         .map(([id, qty]) => {
-          const product = CATALOG.find((p) => p.id === id)
+          const product = catalog.find((p) => p.id === id)
           return product ? { product, qty } : null
         })
         .filter((x): x is { product: Product; qty: number } => x !== null),
-    [cart]
+    [cart, catalog]
   )
 
   const cartCount = Object.values(cart).reduce((a, b) => a + b, 0)
@@ -145,9 +136,7 @@ export function ShopStorefront() {
     })
 
   const addToCart = (id: string) => setCart((prev) => ({ ...prev, [id]: (prev[id] ?? 0) + 1 }))
-
   const setQty = (id: string, qty: number) => setCart((prev) => ({ ...prev, [id]: qty }))
-
   const removeFromCart = (id: string) =>
     setCart((prev) => {
       const next = { ...prev }
@@ -165,7 +154,7 @@ export function ShopStorefront() {
         </div>
         <button
           type="button"
-          aria-label="Open cart"
+          aria-label="Deschide coșul"
           onClick={() => setCartOpen(true)}
           className="relative w-[42px] h-[42px] rounded-[13px] flex items-center justify-center"
           style={{ background: "var(--prv-g2)", border: "1px solid var(--prv-border)" }}
@@ -196,7 +185,7 @@ export function ShopStorefront() {
 
       {/* Category chips */}
       <div className="flex gap-2 overflow-x-auto pb-1 mb-3.5">
-        {CATEGORIES.map((c) => {
+        {categories.map((c) => {
           const on = c === category
           return (
             <button
@@ -221,10 +210,10 @@ export function ShopStorefront() {
         className="rounded-[16px] p-4 mb-[18px] relative"
         style={{ background: "var(--prv-g1)", border: "1px solid var(--prv-border-subtle)" }}
       >
-        <p className="text-[12px] font-semibold text-white/35 mb-3">Price range</p>
+        <p className="text-[12px] font-semibold text-white/35 mb-3">Interval de preț</p>
         <GlassRangeSlider
           min={PRICE_MIN}
-          max={PRICE_MAX}
+          max={maxPrice}
           step={5}
           value={range}
           onChange={setRange}
@@ -233,9 +222,19 @@ export function ShopStorefront() {
       </div>
 
       {/* Product grid */}
-      {filtered.length === 0 ? (
+      {loading ? (
+        <div className="grid grid-cols-2 gap-3.5">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div
+              key={i}
+              className="rounded-[18px] aspect-[3/4]"
+              style={{ background: "var(--prv-g1)", border: "1px solid var(--prv-border-subtle)" }}
+            />
+          ))}
+        </div>
+      ) : filtered.length === 0 ? (
         <p className="text-white/35 text-[14px] text-center py-12">
-          No products match your filters
+          Niciun produs nu corespunde filtrelor
         </p>
       ) : (
         <div className="grid grid-cols-2 gap-3.5">
@@ -263,10 +262,10 @@ export function ShopStorefront() {
       <StandardSheet
         open={cartOpen}
         onClose={() => setCartOpen(false)}
-        title={`Your cart · ${cartCount} item${cartCount === 1 ? "" : "s"}`}
+        title={`Coșul tău · ${cartCount} ${cartCount === 1 ? "produs" : "produse"}`}
       >
         {cartItems.length === 0 ? (
-          <p className="text-white/35 text-[14px] text-center py-10">Your cart is empty</p>
+          <p className="text-white/35 text-[14px] text-center py-10">Coșul tău este gol</p>
         ) : (
           <>
             <div className="flex flex-col">
@@ -275,7 +274,6 @@ export function ShopStorefront() {
                   key={product.id}
                   name={product.name}
                   image={product.image}
-                  variant={product.variant}
                   price={`€${product.price * qty}`}
                   quantity={qty}
                   onQuantityChange={(q) => setQty(product.id, q)}
@@ -297,7 +295,7 @@ export function ShopStorefront() {
               className="w-full mt-4 py-3.5 rounded-[14px] text-black text-[14px] font-bold"
               style={{ background: "var(--prv-text-1)" }}
             >
-              Checkout · €{cartTotal}
+              Finalizează comanda · €{cartTotal}
             </button>
           </>
         )}
