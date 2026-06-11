@@ -46,6 +46,7 @@ export const GET = withGates(
       .where(
         and(eq(productComparisons.userId, userId), eq(productComparisons.companyId, companyId))
       )
+      .limit(MAX_COMPARE)
 
     const items: ComparisonProduct[] = rows.map((r) => ({
       id: r.id,
@@ -81,6 +82,7 @@ export const POST = withGates(
       .where(
         and(eq(productComparisons.userId, userId), eq(productComparisons.companyId, companyId))
       )
+      .limit(MAX_COMPARE + 1)
 
     if (existing.length >= MAX_COMPARE) {
       return NextResponse.json(

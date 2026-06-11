@@ -45,6 +45,7 @@ export const GET = withGates(
         and(eq(productWishlistItems.userId, userId), eq(productWishlistItems.companyId, companyId))
       )
       .orderBy(desc(productWishlistItems.addedAt))
+      .limit(500) // reasonable cap for a personal wishlist
 
     const items: WishlistItem[] = rows.map((r) => ({
       id: r.id,
