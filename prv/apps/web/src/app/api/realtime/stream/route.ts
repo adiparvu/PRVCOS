@@ -15,7 +15,7 @@ export const GET = withGates(
     const { userId, companyId } = ctx.session
 
     const channelsParam = new URL(req.url).searchParams.get("channels") ?? ""
-    const requestedChannels = channelsParam.split(",").filter(Boolean).slice(0, 5)
+    const requestedChannels = channelsParam.split(",").filter(Boolean).slice(0, 8)
 
     const channels =
       requestedChannels.length > 0
@@ -24,6 +24,7 @@ export const GET = withGates(
             realtimeChannel.kpis(companyId),
             realtimeChannel.notifications(userId),
             realtimeChannel.activity(companyId),
+            realtimeChannel.shop(companyId),
           ]
 
     const sinceHeader = req.headers.get("last-event-id")

@@ -9,6 +9,7 @@ export const realtimeChannel = {
   shift: (userId: string) => `shift:${userId}`,
   store: (storeId: string) => `store:${storeId}`,
   presence: (companyId: string) => `presence:${companyId}`,
+  shop: (companyId: string) => `shop:${companyId}`,
 } as const
 
 // ── Event type constants ───────────────────────────────────────────────────────
@@ -19,6 +20,7 @@ export const REALTIME_EVENT = {
   ACTIVITY: "activity.event",
   SHIFT_UPDATE: "shift.update",
   STORE_UPDATE: "store.update",
+  SHOP_UPDATE: "shop.update",
 } as const
 
 export type RealtimeEventType = (typeof REALTIME_EVENT)[keyof typeof REALTIME_EVENT]
@@ -64,12 +66,20 @@ export interface StoreUpdatePayload {
   timestamp: string
 }
 
+export interface ShopUpdatePayload {
+  entityType: "order" | "product" | "review" | "stock"
+  entityId: string
+  action: "created" | "updated" | "deleted"
+  companyId: string
+}
+
 export type RealtimePayloadMap = {
   [REALTIME_EVENT.KPI_UPDATE]: KpiUpdatePayload
   [REALTIME_EVENT.NOTIFICATION_COUNT]: NotificationCountPayload
   [REALTIME_EVENT.ACTIVITY]: ActivityEventPayload
   [REALTIME_EVENT.SHIFT_UPDATE]: ShiftUpdatePayload
   [REALTIME_EVENT.STORE_UPDATE]: StoreUpdatePayload
+  [REALTIME_EVENT.SHOP_UPDATE]: ShopUpdatePayload
 }
 
 // ── Envelope ──────────────────────────────────────────────────────────────────
