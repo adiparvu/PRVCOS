@@ -7,9 +7,9 @@ import { useSheetStack } from "@prv/ui"
 import type { ToolSummary, ToolsMeta } from "@/app/api/tools/route"
 import { useTools } from "@/lib/api-hooks"
 
-type FilterType = "Toate" | "Available" | "Occupied" | "Service" | "Missing"
+type FilterType = "All" | "Available" | "Occupied" | "Service" | "Missing"
 
-const FILTERS: FilterType[] = ["Toate", "Available", "Occupied", "Service", "Missing"]
+const FILTERS: FilterType[] = ["All", "Available", "Occupied", "Service", "Missing"]
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
   Available: { label: "Available", color: "rgba(48,209,88,.95)", bg: "rgba(48,209,88,.13)" },
@@ -254,9 +254,9 @@ export function ToolListClient() {
   const { openSheet } = useSheetStack()
 
   const statusParam: Record<FilterType, string | null> = {
-    Toate: null,
-    Disponibil: "Available",
-    Ocupat: "In Use",
+    All: null,
+    Available: "Available",
+    Occupied: "In Use",
     Service: "Maintenance",
     Missing: "Missing",
   }

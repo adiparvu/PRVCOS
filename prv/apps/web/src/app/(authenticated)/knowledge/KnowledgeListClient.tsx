@@ -7,17 +7,17 @@ import { useSheetStack } from "@prv/ui"
 import type { KnowledgeArticle, KnowledgeMeta, ArticleType } from "@/app/api/knowledge/route"
 import { useKnowledgeArticles } from "@/lib/api-hooks"
 
-type FilterType = "Toate" | "SOP" | "Politici" | "Ghiduri" | "FAQ"
+type FilterType = "All" | "SOP" | "Policies" | "Guides" | "FAQ"
 
 const FILTER_TO_TYPE: Record<FilterType, ArticleType | null> = {
-  Toate: null,
+  All: null,
   SOP: "sop",
-  Politici: "policy",
-  Ghiduri: "guide",
+  Policies: "policy",
+  Guides: "guide",
   FAQ: "faq",
 }
 
-const FILTERS: FilterType[] = ["Toate", "SOP", "Politici", "Ghiduri", "FAQ"]
+const FILTERS: FilterType[] = ["All", "SOP", "Policies", "Guides", "FAQ"]
 
 const g1 = "var(--prv-g1)"
 const bds = "var(--prv-border-subtle)"
@@ -650,7 +650,7 @@ export function KnowledgeListClient() {
           )}
           {policies.length > 0 && (
             <>
-              <SectionLabel>{`Politici · ${policies.length}`}</SectionLabel>
+              <SectionLabel>{`Policies · ${policies.length}`}</SectionLabel>
               {policies.map((a) => (
                 <ArticleRow key={a.id} article={a} />
               ))}
@@ -658,7 +658,7 @@ export function KnowledgeListClient() {
           )}
           {guides.length > 0 && (
             <>
-              <SectionLabel>{`Ghiduri · ${guides.length}`}</SectionLabel>
+              <SectionLabel>{`Guides · ${guides.length}`}</SectionLabel>
               {guides.map((a) => (
                 <ArticleRow key={a.id} article={a} />
               ))}

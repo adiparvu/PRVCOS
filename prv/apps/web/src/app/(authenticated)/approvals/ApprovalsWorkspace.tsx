@@ -363,7 +363,7 @@ export function ApprovalsWorkspace() {
 
   const filterItems: SegmentItem[] = useMemo(
     () => [
-      { id: "all", label: `Toate (${pending.length})` },
+      { id: "all", label: `All (${pending.length})` },
       { id: "urgent", label: `Urgent (${urgentCount})` },
       { id: "leave", label: "Concediu" },
       { id: "finance", label: "Finance" },
@@ -455,8 +455,8 @@ export function ApprovalsWorkspace() {
             c: "rgba(255,69,58,0.95)",
           },
           { v: loading ? "…" : String(urgentCount), l: "Urgent", c: "rgba(255,159,10,0.95)" },
-          { v: loading ? "…" : String(approvedCount), l: "Aprobate", c: "rgba(48,209,88,0.95)" },
-          { v: loading ? "…" : String(rejectedCount), l: "Respinse", c: t1 },
+          { v: loading ? "…" : String(approvedCount), l: "Approved", c: "rgba(48,209,88,0.95)" },
+          { v: loading ? "…" : String(rejectedCount), l: "Rejected", c: t1 },
         ].map(({ v, l, c }) => (
           <div
             key={l}

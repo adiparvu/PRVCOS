@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
 
   // Rate limit: 20 attempts per IP per 5 minutes (token guessing protection)
   try {
-    await enforceRateLimit(`portal_verify:${ipAddress}`, { limit: 20, windowSeconds: 300 })
+    await enforceRateLimit("auth", ipAddress)
   } catch {
     return NextResponse.json(
       { error: "Too many attempts. Please try again later.", code: "RATE_LIMITED" },

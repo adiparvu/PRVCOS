@@ -12,6 +12,8 @@ import { SocialProfilesEditor } from "@/components/social-profiles/SocialProfile
 import { ContactActions } from "../components/ContactActions"
 import { ContactBusinessCard } from "../components/ContactBusinessCard"
 
+// ── Types ─────────────────────────────────────────────────────────────────────
+
 interface PersonData {
   id: string
   firstName: string
@@ -20,6 +22,7 @@ interface PersonData {
   email: string
   phone: string | null
   jobTitle: string | null
+  department?: string | null
   avatarUrl: string | null
   bio: string | null
   role: string
@@ -42,6 +45,367 @@ interface PersonProfileClientProps {
   isOwnProfile: boolean
 }
 
+// ── Sub-components ────────────────────────────────────────────────────────────
+
+function GlassRow({ children, last = false }: { children: React.ReactNode; last?: boolean }) {
+  return (
+    <div
+      className="flex items-center justify-between px-4 py-3"
+      style={{
+        borderBottom: last ? "none" : "1px solid rgba(255,255,255,0.06)",
+      }}
+    >
+      {children}
+    </div>
+  )
+}
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <p
+      className="text-[10px] font-bold uppercase tracking-[.1em] mb-2 mt-5 mx-1"
+      style={{ color: "rgba(255,255,255,0.28)" }}
+    >
+      {children}
+    </p>
+  )
+}
+
+function GlassPanel({
+  children,
+  className = "",
+}: {
+  children: React.ReactNode
+  className?: string
+}) {
+  return (
+    <div
+      className={`rounded-[18px] overflow-hidden relative ${className}`}
+      style={{
+        background: "var(--prv-g1)",
+        border: "1px solid var(--prv-border-subtle)",
+        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.07)",
+      }}
+    >
+      {children}
+    </div>
+  )
+}
+
+// Stats strip
+const MOCK_STATS = [
+  { label: "Attendance", value: "96%", sub: "this month" },
+  { label: "Tasks Done", value: "42", sub: "this month" },
+  { label: "Projects", value: "3", sub: "active" },
+]
+
+function StatsStrip() {
+  return (
+    <div className="grid grid-cols-3 gap-2.5">
+      {MOCK_STATS.map(({ label, value, sub }) => (
+        <div
+          key={label}
+          className="rounded-[16px] text-center py-3 px-2"
+          style={{
+            background: "var(--prv-g1)",
+            border: "1px solid var(--prv-border-subtle)",
+            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.07)",
+          }}
+        >
+          <p
+            className="text-[22px] font-bold tracking-tight leading-none mb-1"
+            style={{ color: "rgba(255,255,255,0.92)" }}
+          >
+            {value}
+          </p>
+          <p
+            className="text-[10px] font-semibold uppercase tracking-wider mb-0.5"
+            style={{ color: "rgba(255,255,255,0.45)" }}
+          >
+            {label}
+          </p>
+          <p className="text-[10px]" style={{ color: "rgba(255,255,255,0.25)" }}>
+            {sub}
+          </p>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// Skills section
+const MOCK_SKILLS = [
+  "Operations",
+  "Inventory",
+  "Team Lead",
+  "Scheduling",
+  "Reporting",
+  "Safety",
+  "Training",
+]
+
+function SkillsSection({ isOwnProfile }: { isOwnProfile: boolean }) {
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-2">
+        <SectionLabel>Skills & Expertise</SectionLabel>
+        {isOwnProfile && (
+          <button className="text-[12px] font-medium" style={{ color: "rgba(255,255,255,0.35)" }}>
+            Edit
+          </button>
+        )}
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {MOCK_SKILLS.map((skill) => (
+          <span
+            key={skill}
+            className="px-3 py-1.5 rounded-[100px] text-[12px] font-medium"
+            style={{
+              background: "rgba(255,255,255,0.07)",
+              border: "1px solid rgba(255,255,255,0.12)",
+              color: "rgba(255,255,255,0.60)",
+            }}
+          >
+            {skill}
+          </span>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// Activity feed
+type ActivityType = "check_in" | "task" | "approval" | "document" | "shift"
+
+interface ActivityEntry {
+  id: string
+  type: ActivityType
+  title: string
+  time: string
+}
+
+const ACTIVITY_ICON: Record<ActivityType, string> = {
+  check_in: "M9 12l2 2 4-4m6 2a9 9 0 1 1-18 0 9 9 0 0 1 18 0z",
+  task: "M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11",
+  approval:
+    "M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 0 0 1.946-.806 3.42 3.42 0 0 1 4.438 0 3.42 3.42 0 0 0 1.946.806 3.42 3.42 0 0 1 3.138 3.138 3.42 3.42 0 0 0 .806 1.946 3.42 3.42 0 0 1 0 4.438 3.42 3.42 0 0 0-.806 1.946 3.42 3.42 0 0 1-3.138 3.138 3.42 3.42 0 0 0-1.946.806 3.42 3.42 0 0 1-4.438 0 3.42 3.42 0 0 0-1.946-.806 3.42 3.42 0 0 1-3.138-3.138 3.42 3.42 0 0 0-.806-1.946 3.42 3.42 0 0 1 0-4.438 3.42 3.42 0 0 0 .806-1.946 3.42 3.42 0 0 1 3.138-3.138z",
+  document:
+    "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M16 13H8M16 17H8M10 9H8",
+  shift: "M12 8v4l3 3m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0z",
+}
+
+const ACTIVITY_COLOR: Record<ActivityType, string> = {
+  check_in: "rgba(48,209,88,0.75)",
+  task: "rgba(255,255,255,0.55)",
+  approval: "rgba(10,132,255,0.75)",
+  document: "rgba(255,255,255,0.40)",
+  shift: "rgba(255,159,10,0.75)",
+}
+
+const MOCK_ACTIVITY: ActivityEntry[] = [
+  { id: "1", type: "check_in", title: "Checked in at Main Store", time: "Today, 08:47" },
+  { id: "2", type: "task", title: "Completed: Inventory count — Aisle 3", time: "Today, 11:20" },
+  { id: "3", type: "approval", title: "Approved overtime request", time: "Yesterday, 16:05" },
+  { id: "4", type: "document", title: "Uploaded safety report Q2", time: "Jun 10, 14:30" },
+  { id: "5", type: "shift", title: "Shift ended — 8h 12m worked", time: "Jun 10, 17:00" },
+]
+
+function ActivityFeed() {
+  return (
+    <GlassPanel>
+      {MOCK_ACTIVITY.map((entry, i) => (
+        <div
+          key={entry.id}
+          className="flex items-start gap-3 px-4 py-3"
+          style={{
+            borderBottom:
+              i < MOCK_ACTIVITY.length - 1 ? "1px solid rgba(255,255,255,0.06)" : "none",
+          }}
+        >
+          {/* Icon */}
+          <div
+            className="w-7 h-7 rounded-[9px] flex items-center justify-center flex-shrink-0 mt-0.5"
+            style={{
+              background: "rgba(255,255,255,0.07)",
+              border: "1px solid rgba(255,255,255,0.10)",
+            }}
+          >
+            <svg
+              width="13"
+              height="13"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke={ACTIVITY_COLOR[entry.type]}
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d={ACTIVITY_ICON[entry.type]} />
+            </svg>
+          </div>
+          {/* Text */}
+          <div className="flex-1 min-w-0">
+            <p
+              className="text-[13px] font-medium leading-snug"
+              style={{ color: "rgba(255,255,255,0.78)" }}
+            >
+              {entry.title}
+            </p>
+            <p className="text-[11px] mt-0.5" style={{ color: "rgba(255,255,255,0.30)" }}>
+              {entry.time}
+            </p>
+          </div>
+        </div>
+      ))}
+    </GlassPanel>
+  )
+}
+
+// Upcoming shifts
+interface ShiftEntry {
+  day: string
+  date: string
+  start: string
+  end: string
+  location: string
+}
+
+const MOCK_SHIFTS: ShiftEntry[] = [
+  { day: "Thu", date: "12", start: "09:00", end: "17:00", location: "Main Store" },
+  { day: "Fri", date: "13", start: "09:00", end: "17:00", location: "Main Store" },
+  { day: "Mon", date: "16", start: "10:00", end: "18:00", location: "Depot B" },
+]
+
+function UpcomingShifts() {
+  return (
+    <GlassPanel>
+      {MOCK_SHIFTS.map((shift, i) => (
+        <div
+          key={`${shift.day}${shift.date}`}
+          className="flex items-center gap-3 px-4 py-3"
+          style={{
+            borderBottom: i < MOCK_SHIFTS.length - 1 ? "1px solid rgba(255,255,255,0.06)" : "none",
+          }}
+        >
+          {/* Date chip */}
+          <div
+            className="w-[44px] flex-shrink-0 rounded-[10px] py-2 text-center"
+            style={{
+              background: i === 0 ? "rgba(10,132,255,0.14)" : "rgba(255,255,255,0.06)",
+              border: `1px solid ${i === 0 ? "rgba(10,132,255,0.25)" : "rgba(255,255,255,0.10)"}`,
+            }}
+          >
+            <p
+              className="text-[10px] font-semibold uppercase"
+              style={{ color: i === 0 ? "rgba(10,132,255,0.90)" : "rgba(255,255,255,0.35)" }}
+            >
+              {shift.day}
+            </p>
+            <p
+              className="text-[18px] font-bold leading-tight"
+              style={{ color: i === 0 ? "rgba(10,132,255,0.95)" : "rgba(255,255,255,0.75)" }}
+            >
+              {shift.date}
+            </p>
+          </div>
+
+          {/* Info */}
+          <div className="flex-1 min-w-0">
+            <p
+              className="text-[13px] font-semibold leading-snug"
+              style={{ color: "rgba(255,255,255,0.82)" }}
+            >
+              {shift.start} – {shift.end}
+            </p>
+            <p className="text-[11px] mt-0.5" style={{ color: "rgba(255,255,255,0.35)" }}>
+              {shift.location}
+            </p>
+          </div>
+
+          {/* Duration pill */}
+          <span
+            className="text-[11px] font-medium px-2 py-0.5 rounded-[100px]"
+            style={{
+              background: "rgba(255,255,255,0.07)",
+              border: "1px solid rgba(255,255,255,0.10)",
+              color: "rgba(255,255,255,0.40)",
+            }}
+          >
+            8h
+          </span>
+        </div>
+      ))}
+    </GlassPanel>
+  )
+}
+
+// Colleagues / team presence
+interface Colleague {
+  initials: string
+  name: string
+  status: "online" | "away" | "offline"
+}
+
+const MOCK_COLLEAGUES: Colleague[] = [
+  { initials: "MB", name: "Maria Badea", status: "online" },
+  { initials: "GS", name: "George Stoica", status: "online" },
+  { initials: "IP", name: "Ion Petrescu", status: "away" },
+  { initials: "AL", name: "Ana Lungu", status: "offline" },
+  { initials: "RC", name: "Radu Constantin", status: "online" },
+]
+
+const STATUS_DOT: Record<Colleague["status"], string> = {
+  online: "rgba(48,209,88,0.9)",
+  away: "rgba(255,159,10,0.9)",
+  offline: "rgba(255,255,255,0.25)",
+}
+
+function TeamSection() {
+  return (
+    <GlassPanel>
+      {MOCK_COLLEAGUES.map((c, i) => (
+        <div
+          key={c.name}
+          className="flex items-center gap-3 px-4 py-2.5"
+          style={{
+            borderBottom:
+              i < MOCK_COLLEAGUES.length - 1 ? "1px solid rgba(255,255,255,0.06)" : "none",
+          }}
+        >
+          {/* Avatar */}
+          <div className="relative flex-shrink-0">
+            <div
+              className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold"
+              style={{
+                background: "rgba(255,255,255,0.10)",
+                border: "1px solid rgba(255,255,255,0.12)",
+                color: "rgba(255,255,255,0.70)",
+              }}
+            >
+              {c.initials}
+            </div>
+            <span
+              className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full"
+              style={{
+                background: STATUS_DOT[c.status],
+                border: "1.5px solid var(--prv-bg)",
+              }}
+            />
+          </div>
+          <p className="flex-1 text-[13px] font-medium" style={{ color: "rgba(255,255,255,0.72)" }}>
+            {c.name}
+          </p>
+          <span className="text-[11px]" style={{ color: "rgba(255,255,255,0.28)" }}>
+            {c.status === "online" ? "Active" : c.status === "away" ? "Away" : "Offline"}
+          </span>
+        </div>
+      ))}
+    </GlassPanel>
+  )
+}
+
+// ── Main component ────────────────────────────────────────────────────────────
+
 export function PersonProfileClient({
   person,
   presence,
@@ -50,6 +414,7 @@ export function PersonProfileClient({
 }: PersonProfileClientProps) {
   const router = useRouter()
   const [showSocialEditor, setShowSocialEditor] = useState(false)
+  const [activeTab, setActiveTab] = useState<"overview" | "activity">("overview")
 
   return (
     <div className="min-h-svh" style={{ background: "var(--prv-bg)" }}>
@@ -62,6 +427,7 @@ export function PersonProfileClient({
             background: "var(--prv-border-subtle)",
             border: "1px solid var(--prv-g2)",
           }}
+          aria-label="Back"
         >
           <svg
             width="16"
@@ -79,9 +445,9 @@ export function PersonProfileClient({
         <p className="text-white/45 text-[14px]">People</p>
       </div>
 
-      <div className="px-4 pb-28 max-w-2xl mx-auto space-y-6">
+      <div className="px-4 pb-28 max-w-2xl mx-auto">
         {/* Hero header */}
-        <div className="flex items-start gap-5 pt-4">
+        <div className="flex items-start gap-5 pt-4 pb-5">
           <PresenceRing
             status={presence.status}
             size={96}
@@ -92,7 +458,12 @@ export function PersonProfileClient({
             <h1 className="text-white/90 text-[22px] font-semibold leading-tight">
               {person.fullName}
             </h1>
-            {person.jobTitle && <p className="text-white/50 text-[15px] mt-1">{person.jobTitle}</p>}
+            {person.jobTitle && (
+              <p className="text-white/50 text-[15px] mt-0.5">{person.jobTitle}</p>
+            )}
+            {person.department && (
+              <p className="text-white/30 text-[13px] mt-0.5">{person.department}</p>
+            )}
             <div className="mt-2">
               <PresenceStatusBadge
                 status={
@@ -107,102 +478,146 @@ export function PersonProfileClient({
         {/* Quick actions */}
         <ContactActions email={person.email} phone={person.phone} />
 
-        {/* Bio */}
-        {person.bio && (
-          <div
-            className="p-4 rounded-[18px]"
-            style={{
-              background: "var(--prv-border-subtle)",
-              border: "1px solid var(--prv-border)",
-            }}
-          >
-            <p className="text-white/55 text-[14px] leading-relaxed">{person.bio}</p>
-          </div>
-        )}
-
-        {/* Contact info */}
-        <div
-          className="rounded-[18px] overflow-hidden"
-          style={{
-            background: "var(--prv-border-subtle)",
-            border: "1px solid var(--prv-border)",
-          }}
-        >
-          {[
-            { label: "Email", value: person.email, href: `mailto:${person.email}` },
-            {
-              label: "Phone",
-              value: person.phone,
-              href: person.phone ? `tel:${person.phone}` : null,
-            },
-            { label: "Role", value: person.role, href: null },
-            {
-              label: "Member since",
-              value: new Date(person.memberSince).toLocaleDateString("en-US", {
-                month: "long",
-                year: "numeric",
-              }),
-              href: null,
-            },
-          ]
-            .filter((r) => r.value)
-            .map((row, i, arr) => (
-              <div
-                key={row.label}
-                className="flex items-center justify-between px-4 py-3"
-                style={{
-                  borderBottom: i < arr.length - 1 ? "1px solid var(--prv-border-subtle)" : "none",
-                }}
-              >
-                <span className="text-white/35 text-[13px]">{row.label}</span>
-                {row.href ? (
-                  <a
-                    href={row.href}
-                    className="text-white/65 text-[13px] font-medium"
-                    style={{ textDecoration: "none" }}
-                  >
-                    {row.value}
-                  </a>
-                ) : (
-                  <span className="text-white/65 text-[13px] font-medium">{row.value}</span>
-                )}
-              </div>
-            ))}
+        {/* Stats strip */}
+        <div className="mt-4">
+          <StatsStrip />
         </div>
 
-        {/* Social profiles */}
-        {(socialProfiles.length > 0 || isOwnProfile) && (
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-[11px] font-medium text-white/30 uppercase tracking-wider">
-                Social Profiles
-              </p>
-              {isOwnProfile && (
-                <button
-                  onClick={() => setShowSocialEditor(true)}
-                  className="text-[12px] text-white/40 font-medium"
-                >
-                  Edit
-                </button>
-              )}
-            </div>
-            {socialProfiles.length > 0 ? (
-              <SocialProfilesRenderer profiles={socialProfiles} mode="chip" />
-            ) : (
-              isOwnProfile && (
-                <button
-                  onClick={() => setShowSocialEditor(true)}
-                  className="text-[13px] text-white/30"
-                >
-                  + Add social profiles
-                </button>
-              )
+        {/* Segment tabs */}
+        <div
+          className="mt-4 p-1 rounded-[14px] flex gap-1"
+          style={{
+            background: "rgba(255,255,255,0.05)",
+            border: "1px solid rgba(255,255,255,0.08)",
+          }}
+        >
+          {(["overview", "activity"] as const).map((tab) => (
+            <button
+              key={tab}
+              type="button"
+              onClick={() => setActiveTab(tab)}
+              className="flex-1 py-2 rounded-[11px] text-[13px] font-semibold capitalize transition-all"
+              style={{
+                background: activeTab === tab ? "rgba(255,255,255,0.12)" : "transparent",
+                color: activeTab === tab ? "rgba(255,255,255,0.92)" : "rgba(255,255,255,0.35)",
+                boxShadow:
+                  activeTab === tab
+                    ? "inset 0 1px 0 rgba(255,255,255,0.12), 0 1px 4px rgba(0,0,0,0.4)"
+                    : "none",
+                transition: "all 250ms cubic-bezier(0.34,1.56,0.64,1)",
+              }}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+
+        {activeTab === "overview" ? (
+          <div className="space-y-1 mt-4">
+            {/* Bio */}
+            {person.bio && (
+              <div
+                className="p-4 rounded-[18px] mb-3"
+                style={{
+                  background: "var(--prv-g1)",
+                  border: "1px solid var(--prv-border-subtle)",
+                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.07)",
+                }}
+              >
+                <p className="text-white/55 text-[14px] leading-relaxed">{person.bio}</p>
+              </div>
             )}
+
+            {/* Contact info */}
+            <SectionLabel>Contact</SectionLabel>
+            <GlassPanel>
+              {[
+                { label: "Email", value: person.email, href: `mailto:${person.email}` },
+                {
+                  label: "Phone",
+                  value: person.phone,
+                  href: person.phone ? `tel:${person.phone}` : null,
+                },
+                { label: "Role", value: person.role.replace(/_/g, " "), href: null },
+                {
+                  label: "Member since",
+                  value: new Date(person.memberSince).toLocaleDateString("en-US", {
+                    month: "long",
+                    year: "numeric",
+                  }),
+                  href: null,
+                },
+              ]
+                .filter((r) => r.value)
+                .map((row, i, arr) => (
+                  <GlassRow key={row.label} last={i === arr.length - 1}>
+                    <span className="text-white/35 text-[13px]">{row.label}</span>
+                    {row.href ? (
+                      <a
+                        href={row.href}
+                        className="text-white/65 text-[13px] font-medium"
+                        style={{ textDecoration: "none" }}
+                      >
+                        {row.value}
+                      </a>
+                    ) : (
+                      <span className="text-white/65 text-[13px] font-medium">{row.value}</span>
+                    )}
+                  </GlassRow>
+                ))}
+            </GlassPanel>
+
+            {/* Skills */}
+            <SkillsSection isOwnProfile={isOwnProfile} />
+
+            {/* Upcoming shifts */}
+            <SectionLabel>Upcoming Shifts</SectionLabel>
+            <UpcomingShifts />
+
+            {/* Team */}
+            <SectionLabel>Team on Shift</SectionLabel>
+            <TeamSection />
+
+            {/* Social profiles */}
+            {(socialProfiles.length > 0 || isOwnProfile) && (
+              <div>
+                <div className="flex items-center justify-between mt-5 mb-2">
+                  <SectionLabel>Social Profiles</SectionLabel>
+                  {isOwnProfile && (
+                    <button
+                      onClick={() => setShowSocialEditor(true)}
+                      className="text-[12px] text-white/40 font-medium"
+                    >
+                      Edit
+                    </button>
+                  )}
+                </div>
+                {socialProfiles.length > 0 ? (
+                  <SocialProfilesRenderer profiles={socialProfiles} mode="chip" />
+                ) : (
+                  isOwnProfile && (
+                    <button
+                      onClick={() => setShowSocialEditor(true)}
+                      className="text-[13px] text-white/30"
+                    >
+                      + Add social profiles
+                    </button>
+                  )
+                )}
+              </div>
+            )}
+
+            {/* Business card */}
+            <div className="mt-3">
+              <ContactBusinessCard userId={person.id} />
+            </div>
+          </div>
+        ) : (
+          <div className="mt-4">
+            <SectionLabel>Recent Activity</SectionLabel>
+            <ActivityFeed />
           </div>
         )}
-
-        {/* Business card */}
-        <ContactBusinessCard userId={person.id} />
       </div>
 
       {showSocialEditor && (

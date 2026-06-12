@@ -7,16 +7,16 @@ import { useSheetStack } from "@prv/ui"
 import type { ApprovalSummary, ApprovalsMeta, ApprovalType } from "@/app/api/approvals/route"
 import { useApprovals } from "@/lib/api-hooks"
 
-type FilterType = "Toate" | "Purchases" | "Leave" | "Expenses" | "Contracts" | "Overtime"
+type FilterType = "All" | "Purchases" | "Leave" | "Expenses" | "Contracts" | "Overtime"
 
-const FILTERS: FilterType[] = ["Toate", "Purchases", "Leave", "Expenses", "Contracts", "Overtime"]
+const FILTERS: FilterType[] = ["All", "Purchases", "Leave", "Expenses", "Contracts", "Overtime"]
 
 const FILTER_TO_TYPE: Record<FilterType, ApprovalType | null> = {
-  Toate: null,
+  All: null,
   Purchases: "purchase",
-  Concedii: "leave",
-  Cheltuieli: "expense",
-  Contracte: "contract",
+  Leave: "leave",
+  Expenses: "expense",
+  Contracts: "contract",
   Overtime: "overtime",
 }
 
@@ -262,7 +262,7 @@ function ApprovalRow({ item, isLast }: { item: ApprovalSummary; isLast: boolean 
       ? "rgba(255,159,10,.95)"
       : tc.color
   const statusBg = isExpired ? "rgba(255,69,58,.12)" : isUrgent ? "rgba(255,159,10,.13)" : tc.bg
-  const statusLabel = isExpired ? "Expirat" : isUrgent ? "Urgent" : "Pending"
+  const statusLabel = isExpired ? "Expired" : isUrgent ? "Urgent" : "Pending"
 
   return (
     <Link
@@ -505,17 +505,17 @@ export function ApprovalListClient() {
               },
               {
                 val: String(meta.urgent),
-                label: "Urgente",
+                label: "Urgent",
                 color: meta.urgent > 0 ? "rgba(255,159,10,.95)" : "var(--prv-text-1)",
               },
               {
                 val: String(meta.expired),
-                label: "Expirate",
+                label: "Expired",
                 color: meta.expired > 0 ? "rgba(255,69,58,.95)" : "var(--prv-text-1)",
               },
               {
                 val: String(meta.approvedToday),
-                label: "Azi",
+                label: "Today",
                 color: "rgba(48,209,88,.95)",
               },
             ].map((k) => (
@@ -677,7 +677,7 @@ export function ApprovalListClient() {
                   margin: "0 2px 10px",
                 }}
               >
-                Urgente · Expirate
+                Urgent · Expired
               </p>
               <div style={{ marginBottom: 14 }}>
                 <SectionCard items={urgentItems} />

@@ -183,23 +183,23 @@ function fmtPrice(p: Product) {
 type CatFilter = "all" | ProductCategory
 
 const CATS: { id: CatFilter; label: string }[] = [
-  { id: "all", label: "Toate" },
+  { id: "all", label: "All" },
   { id: "tamplarie", label: "Carpentry" },
-  { id: "sanitare", label: "Sanitare" },
-  { id: "electrice", label: "Electrice" },
-  { id: "pardoseli", label: "Pardoseli" },
-  { id: "vopsele", label: "Vopsele" },
-  { id: "scule", label: "Scule" },
+  { id: "sanitare", label: "Plumbing" },
+  { id: "electrice", label: "Electrical" },
+  { id: "pardoseli", label: "Flooring" },
+  { id: "vopsele", label: "Paints" },
+  { id: "scule", label: "Tools" },
 ]
 
 const BADGE_CONFIG: Record<
   "sale" | "new" | "low-stock",
   { label: string; color: string; bg: string }
 > = {
-  sale: { label: "Reducere", color: "rgba(255,69,58,0.9)", bg: "rgba(255,69,58,0.15)" },
-  new: { label: "Nou", color: "rgba(48,209,88,0.9)", bg: "rgba(48,209,88,0.14)" },
+  sale: { label: "Sale", color: "rgba(255,69,58,0.9)", bg: "rgba(255,69,58,0.15)" },
+  new: { label: "New", color: "rgba(48,209,88,0.9)", bg: "rgba(48,209,88,0.14)" },
   "low-stock": {
-    label: "Stoc limitat",
+    label: "Low Stock",
     color: "rgba(255,159,10,0.9)",
     bg: "rgba(255,159,10,0.14)",
   },
@@ -1053,8 +1053,8 @@ export function ShopWorkspace() {
             }}
           >
             {category === "all" && !search
-              ? "Toate produsele"
-              : (CATS.find((c) => c.id === category)?.label ?? "Rezultate")}
+              ? "All Products"
+              : (CATS.find((c) => c.id === category)?.label ?? "Results")}
           </h2>
           <span
             style={{

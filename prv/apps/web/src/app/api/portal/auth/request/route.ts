@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
 
   // Rate limit: 5 requests per IP per 10 minutes
   try {
-    await enforceRateLimit(`portal_auth_request:${ipAddress}`, { limit: 5, windowSeconds: 600 })
+    await enforceRateLimit("public", ipAddress)
   } catch {
     return NextResponse.json(
       { error: "Too many requests. Please try again later.", code: "RATE_LIMITED" },
@@ -93,7 +93,7 @@ export async function POST(req: NextRequest) {
 
   // Per-account rate limit: 3 magic links per 10 minutes
   try {
-    await enforceRateLimit(`portal_magic_link:${account.id}`, { limit: 3, windowSeconds: 600 })
+    await enforceRateLimit("auth", account.id)
   } catch {
     return NextResponse.json(
       { error: "Too many requests. Please try again later.", code: "RATE_LIMITED" },

@@ -12,7 +12,7 @@ import type {
 } from "@/app/api/learning/route"
 import { useCourses } from "@/lib/api-hooks"
 
-type FilterType = "Toate" | "In Progress" | "Recommended" | "Completate" | "Saved"
+type FilterType = "All" | "In Progress" | "Recommended" | "Completed" | "Saved"
 
 const g1 = "var(--prv-g1)"
 const g2 = "var(--prv-g2)"
@@ -493,7 +493,7 @@ export function LearningListClient() {
   const achievements: Achievement[] = data?.achievements ?? []
   const loading = isLoading
 
-  const FILTERS: FilterType[] = ["Toate", "In Progress", "Recommended", "Completate", "Saved"]
+  const FILTERS: FilterType[] = ["All", "In Progress", "Recommended", "Completed", "Saved"]
 
   const featured =
     courses.find((c) => c.isFeatured) ?? courses.find((c) => c.status === "in_progress") ?? null
@@ -506,7 +506,7 @@ export function LearningListClient() {
     let base = courses
     if (filter === "In Progress") base = courses.filter((c) => c.status === "in_progress")
     else if (filter === "Recommended") base = courses.filter((c) => c.status === "new")
-    else if (filter === "Completate") base = courses.filter((c) => c.status === "completed")
+    else if (filter === "Completed") base = courses.filter((c) => c.status === "completed")
     else if (filter === "Saved") base = courses.filter((c) => c.status === "saved")
     if (search)
       base = base.filter(
@@ -517,7 +517,7 @@ export function LearningListClient() {
     return base
   })()
 
-  const showAll = filter !== "Toate" || !!search
+  const showAll = filter !== "All" || !!search
 
   return (
     <div style={{ paddingBottom: 120 }}>
@@ -720,7 +720,7 @@ export function LearningListClient() {
           {/* completate */}
           {completedCourses.length > 0 && (
             <div style={{ padding: "18px 16px 0" }}>
-              <SectionHeader label="Completate" action={`Vezi toate ${completedCourses.length}`} />
+              <SectionHeader label="Completed" action={`View all ${completedCourses.length}`} />
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {completedCourses.map((c) => (
                   <CourseRow key={c.id} course={c} showProgress={false} />

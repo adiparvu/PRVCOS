@@ -5,7 +5,7 @@ import Link from "next/link"
 import type { Insight, Report, StoreKpi, IntelligenceMeta } from "@/app/api/intelligence/route"
 import { useIntelligence } from "@/lib/api-hooks"
 
-type FilterType = "Toate" | "Analytics" | "AI Insights" | "Rapoarte"
+type FilterType = "All" | "Analytics" | "AI Insights" | "Reports"
 
 interface IntelligenceData {
   insights: Insight[]
@@ -711,7 +711,7 @@ export default function IntelligenceListClient() {
   const [fabOpen, setFabOpen] = useState(false)
   const { data } = useIntelligence()
 
-  const filters: FilterType[] = ["Toate", "Analytics", "AI Insights", "Rapoarte"]
+  const filters: FilterType[] = ["All", "Analytics", "AI Insights", "Reports"]
 
   const urgentInsight = data?.insights.find((i) => i.priority === "urgent") ?? null
   const allInsights = data?.insights ?? []
@@ -857,7 +857,7 @@ export default function IntelligenceListClient() {
           </div>
         )}
 
-        {/* Revenue Chart (Analytics / Toate) */}
+        {/* Revenue Chart (Analytics / All) */}
         {(filter === "All" || filter === "Analytics") && (
           <div>
             <SectionHeader label="Venit per Magazin — Azi" />
@@ -967,11 +967,11 @@ export default function IntelligenceListClient() {
         )}
 
         {/* Reports */}
-        {(filter === "All" || filter === "Rapoarte") && (
+        {(filter === "All" || filter === "Reports") && (
           <div>
             <SectionHeader
-              label="Rapoarte"
-              count={filter === "Rapoarte" ? allReports.length : undefined}
+              label="Reports"
+              count={filter === "Reports" ? allReports.length : undefined}
             />
             <div
               style={{
@@ -1001,7 +1001,7 @@ export default function IntelligenceListClient() {
                 : [1, 2, 3].map((n) => <SkeletonRow key={n} />)}
               {filter === "All" && data && allReports.length > 3 && (
                 <button
-                  onClick={() => setFilter("Rapoarte")}
+                  onClick={() => setFilter("Reports")}
                   style={{
                     width: "100%",
                     padding: "13px 16px",

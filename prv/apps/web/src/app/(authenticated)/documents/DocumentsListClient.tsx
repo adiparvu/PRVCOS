@@ -10,10 +10,10 @@ import { useDocuments } from "@/lib/api-hooks"
 type FilterType = "Recent" | "Contracts" | "Invoices" | "Projects" | "HR" | "Fleet"
 
 const FILTER_TO_CATEGORY: Record<FilterType, string | null> = {
-  Recente: null,
-  Contracte: "contracts",
-  Facturi: "invoices",
-  Proiecte: "projects",
+  Recent: null,
+  Contracts: "contracts",
+  Invoices: "invoices",
+  Projects: "projects",
   HR: "hr",
   Fleet: "fleet",
 }
@@ -438,8 +438,8 @@ export function DocumentsListClient() {
       >
         {[
           { val: String(meta?.total ?? 47), label: "Total", color: undefined },
-          { val: String(meta?.pendingCount ?? 4), label: "Nesemnate", color: amber },
-          { val: String(meta?.expiredCount ?? 2), label: "Expirate", color: red },
+          { val: String(meta?.pendingCount ?? 4), label: "Unsigned", color: amber },
+          { val: String(meta?.expiredCount ?? 2), label: "Expired", color: red },
           { val: String(meta?.recentCount ?? 8), label: "Recent", color: green },
         ].map((k) => (
           <div
@@ -542,7 +542,7 @@ export function DocumentsListClient() {
           )}
           {recentDocs.length > 0 && (
             <>
-              <SectionLabel>Recente</SectionLabel>
+              <SectionLabel>Recent</SectionLabel>
               {recentDocs.map((d) => (
                 <DocRow key={d.id} doc={d} />
               ))}
@@ -550,7 +550,7 @@ export function DocumentsListClient() {
           )}
           {expiredDocs.length > 0 && (
             <>
-              <SectionLabel>{`Expirate · ${expiredDocs.length}`}</SectionLabel>
+              <SectionLabel>{`Expired · ${expiredDocs.length}`}</SectionLabel>
               {expiredDocs.map((d) => (
                 <DocRow key={d.id} doc={d} />
               ))}

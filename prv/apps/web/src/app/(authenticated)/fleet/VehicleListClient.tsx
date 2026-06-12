@@ -7,15 +7,15 @@ import { useSheetStack } from "@prv/ui"
 import type { VehicleSummary, FleetMeta, VehicleStatus } from "@/app/api/fleet/route"
 import { useVehicles } from "@/lib/api-hooks"
 
-type FilterType = "Toate" | "Active" | "Service" | "Idle" | "Indisponibil"
+type FilterType = "All" | "Active" | "Service" | "Idle" | "Unavailable"
 
-const FILTERS: FilterType[] = ["Toate", "Active", "Service", "Idle", "Indisponibil"]
+const FILTERS: FilterType[] = ["All", "Active", "Service", "Idle", "Unavailable"]
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
   Active: { label: "Active", color: "rgba(48,209,88,.95)", bg: "rgba(48,209,88,.13)" },
   Service: { label: "Service", color: "rgba(255,159,10,.95)", bg: "rgba(255,159,10,.13)" },
   Idle: { label: "Idle", color: "rgba(255,255,255,.55)", bg: "rgba(255,255,255,.08)" },
-  Unavailable: { label: "Indisponibil", color: "rgba(255,69,58,.95)", bg: "rgba(255,69,58,.12)" },
+  Unavailable: { label: "Unavailable", color: "rgba(255,69,58,.95)", bg: "rgba(255,69,58,.12)" },
 }
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
@@ -220,11 +220,11 @@ export function VehicleListClient() {
   const { openSheet } = useSheetStack()
 
   const statusParam: Record<FilterType, string | null> = {
-    Toate: null,
+    All: null,
     Active: "Active",
     Service: "Service",
     Idle: "Idle",
-    Indisponibil: "Unavailable",
+    Unavailable: "Unavailable",
   }
   const status = statusParam[filter]
   const { data, isLoading, isError, hasNextPage, fetchNextPage, isFetchingNextPage } =

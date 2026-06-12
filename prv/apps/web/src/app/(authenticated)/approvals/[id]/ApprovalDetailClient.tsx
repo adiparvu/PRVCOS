@@ -51,7 +51,7 @@ const TYPE_CONFIG: Record<
     iconStroke: "rgba(10,132,255,.85)",
   },
   leave: {
-    label: "Cerere Concediu",
+    label: "Leave Request",
     color: "rgba(255,159,10,.95)",
     bg: "rgba(255,159,10,.13)",
     iconBg: "rgba(255,159,10,.10)",
@@ -72,7 +72,7 @@ const TYPE_CONFIG: Record<
     iconStroke: "rgba(191,90,242,.85)",
   },
   overtime: {
-    label: "Ore Suplimentare",
+    label: "Overtime",
     color: "rgba(255,159,10,.95)",
     bg: "rgba(255,159,10,.13)",
     iconBg: "rgba(255,159,10,.10)",
@@ -96,7 +96,7 @@ const CHAIN_CONFIG: Record<
     dotColor: "rgba(255,159,10,.9)",
     pillBg: "rgba(255,159,10,.13)",
     pillColor: "rgba(255,159,10,.95)",
-    label: "Necesar",
+    label: "Required",
   },
   pending: {
     dotBg: "rgba(255,255,255,.06)",
@@ -432,7 +432,7 @@ export function ApprovalDetailClient({ id }: ApprovalDetailClientProps) {
           href="/approvals"
           style={{ fontSize: 14, color: "#7eb8ff", marginTop: 12, display: "block" }}
         >
-          ← Back la Approveri
+          ← Back to Approvals
         </Link>
       </div>
     )
@@ -458,7 +458,7 @@ export function ApprovalDetailClient({ id }: ApprovalDetailClientProps) {
           }}
         >
           <IconChevronLeft />
-          Approveri
+          Approvals
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <div
@@ -579,7 +579,7 @@ export function ApprovalDetailClient({ id }: ApprovalDetailClientProps) {
         }}
       >
         <IconChevronLeft />
-        Approveri
+        Approvals
       </Link>
 
       {/* Hero card */}
@@ -709,7 +709,7 @@ export function ApprovalDetailClient({ id }: ApprovalDetailClientProps) {
           {
             val:
               approval.itemCount !== null ? String(approval.itemCount) : `${approval.chain.length}`,
-            label: approval.itemCount !== null ? "Articole" : "Aprobatori",
+            label: approval.itemCount !== null ? "Items" : "Approvers",
           },
         ].map((tile) => (
           <div
@@ -749,7 +749,7 @@ export function ApprovalDetailClient({ id }: ApprovalDetailClientProps) {
       </div>
 
       {/* Details */}
-      <SectionLabel>Detalii</SectionLabel>
+      <SectionLabel>Details</SectionLabel>
       <div
         style={{
           background: "var(--prv-g1)",

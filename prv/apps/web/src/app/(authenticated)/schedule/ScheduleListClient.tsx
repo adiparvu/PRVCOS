@@ -7,17 +7,17 @@ import { useSheetStack } from "@prv/ui"
 import type { ShiftSummary, ShiftsMeta, ShiftRole, ShiftStatus } from "@/app/api/schedule/route"
 import { useShifts } from "@/lib/api-hooks"
 
-type FilterType = "Toate" | "Today" | "Confirmed" | "Uncovered" | "Draft"
+type FilterType = "All" | "Today" | "Confirmed" | "Uncovered" | "Draft"
 
 const FILTER_TO_STATUS: Record<FilterType, ShiftStatus | null> = {
-  Toate: null,
+  All: null,
   Today: null,
-  Confirmat: "confirmed",
-  Neacoperit: "open",
+  Confirmed: "confirmed",
+  Uncovered: "open",
   Draft: "draft",
 }
 
-const TODAY_LABEL = "Miercuri 9 Iun"
+const TODAY_LABEL = "Wed Jun 9"
 
 const ROLE_CONFIG: Record<ShiftRole, { iconStroke: string; iconBg: string }> = {
   foreman: { iconStroke: "rgba(10,132,255,.85)", iconBg: "rgba(10,132,255,.1)" },
@@ -549,13 +549,13 @@ export function ScheduleListClient() {
     }, {})
 
   const dayOrder = [
-    "Luni 7 Iun",
-    "Tuesday, Jun 8",
-    "Miercuri 9 Iun",
-    "Joi 10 Iun",
-    "Vineri 11 Iun",
-    "Saturday 12 Jun",
-    "Sunday, Jun 13",
+    "Mon Jun 7",
+    "Tue Jun 8",
+    "Wed Jun 9",
+    "Thu Jun 10",
+    "Fri Jun 11",
+    "Sat Jun 12",
+    "Sun Jun 13",
   ]
   const sortedDays = Object.keys(groupedByDay).sort(
     (a, b) => dayOrder.indexOf(a) - dayOrder.indexOf(b)
@@ -768,7 +768,7 @@ export function ScheduleListClient() {
           scrollbarWidth: "none",
         }}
       >
-        {(["Toate", "Today", "Confirmed", "Uncovered", "Draft"] as FilterType[]).map((f) => (
+        {(["All", "Today", "Confirmed", "Uncovered", "Draft"] as FilterType[]).map((f) => (
           <button
             key={f}
             onClick={() => setFilter(f)}
@@ -804,7 +804,7 @@ export function ScheduleListClient() {
           {/* open slots section */}
           {openShifts.length > 0 && (filter === "All" || filter === "Uncovered") && (
             <>
-              <SectionLabel>{`Ture Neacoperite · ${openShifts.length}`}</SectionLabel>
+              <SectionLabel>{`Uncovered Shifts · ${openShifts.length}`}</SectionLabel>
               {openShifts.map((s) => (
                 <OpenSlotRow key={s.id} shift={s} />
               ))}

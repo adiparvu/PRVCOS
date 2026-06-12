@@ -8,7 +8,7 @@ import type { InvoiceSummary } from "@/app/api/finance/invoices/route"
 import type { FinanceReport } from "@/app/api/finance/reports/route"
 import { useExpenses, useFinanceReports, useInvoices } from "@/lib/api-hooks"
 
-type FilterType = "Toate" | "Venituri" | "Expenses" | "Invoices" | "Rapoarte"
+type FilterType = "All" | "Revenue" | "Expenses" | "Invoices" | "Reports"
 
 interface FinanceData {
   expenses: Expense[]
@@ -715,12 +715,12 @@ export function FinanceListClient() {
   const { data: reportsData } = useFinanceReports()
   const reports = reportsData?.reports ?? []
 
-  const filters: FilterType[] = ["Toate", "Venituri", "Expenses", "Invoices", "Rapoarte"]
+  const filters: FilterType[] = ["All", "Revenue", "Expenses", "Invoices", "Reports"]
 
-  const showPL = filter === "All" || filter === "Venituri"
+  const showPL = filter === "All" || filter === "Revenue"
   const showExpenses = filter === "All" || filter === "Expenses"
   const showInvoices = filter === "All" || filter === "Invoices"
-  const showReports = filter === "Rapoarte"
+  const showReports = filter === "Reports"
 
   return (
     <div
@@ -765,7 +765,7 @@ export function FinanceListClient() {
       <div style={{ padding: "0 20px", marginBottom: 20 }}>
         <div style={{ display: "flex", gap: 10, marginBottom: 10 }}>
           <KpiTile
-            label="Venituri"
+            label="Revenue"
             value={meta?.totalRevenueLabel ?? "—"}
             trend={meta?.revenueTrend ?? "—"}
             trendPositive={meta?.revenueTrend?.startsWith("+") ?? true}
@@ -955,7 +955,7 @@ export function FinanceListClient() {
         {showExpenses && (
           <div style={{ marginBottom: 28 }}>
             <SectionHeader
-              title={filter === "Expenses" ? "Toate Cheltuielile" : "Cheltuieli Recente"}
+              title={filter === "Expenses" ? "All Expenses" : "Recent Expenses"}
               count={filter === "Expenses" ? expenses.length : Math.min(expenses.length, 4)}
             />
             {loading
@@ -987,7 +987,7 @@ export function FinanceListClient() {
         {showInvoices && (
           <div style={{ marginBottom: 28 }}>
             <SectionHeader
-              title={filter === "Invoices" ? "Toate Facturile" : "Facturi Pendinte"}
+              title={filter === "Invoices" ? "All Invoices" : "Pending Invoices"}
               count={filter === "Invoices" ? invoices.length : pendingInvoices.length}
             />
             {loading
@@ -1004,7 +1004,7 @@ export function FinanceListClient() {
                   padding: "16px 0",
                 }}
               >
-                No invoices pendinte
+                No pending invoices
               </div>
             )}
           </div>
@@ -1013,7 +1013,7 @@ export function FinanceListClient() {
         {/* Reports */}
         {showReports && (
           <div style={{ marginBottom: 28 }}>
-            <SectionHeader title="Rapoarte Financiare" count={reports.length} />
+            <SectionHeader title="Financial Reports" count={reports.length} />
             {reports.map((r) => (
               <ReportCard key={r.id} report={r} />
             ))}
