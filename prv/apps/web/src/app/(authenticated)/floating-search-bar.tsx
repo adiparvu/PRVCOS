@@ -73,35 +73,34 @@ export function FloatingSearchBar({ role }: FloatingSearchBarProps) {
 
   return (
     <>
-      {/* Floating pill trigger */}
-      <div
-        className="fixed top-4 left-1/2 -translate-x-1/2 z-40"
-        style={{ width: "min(calc(100vw - 32px), 480px)" }}
-      >
-        <button
-          type="button"
-          onClick={openSearch}
-          className="w-full flex items-center gap-3 px-4 py-[10px] rounded-[100px]"
-          style={{
-            background: "rgba(255,255,255,0.06)",
-            border: "1px solid rgba(255,255,255,0.10)",
-            backdropFilter: "blur(32px) saturate(180%)",
-            WebkitBackdropFilter: "blur(32px) saturate(180%)",
-            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.12), 0 8px 32px rgba(0,0,0,0.4)",
-            cursor: "text",
-          }}
-          aria-label="Open search"
-        >
-          <SearchIcon />
-          <span
-            className="flex-1 text-left text-sm font-normal"
-            style={{ color: "rgba(255,255,255,0.32)" }}
+      {/* Floating pill trigger — centers within content area, offset for sidebar on md+ */}
+      <div className="fixed top-4 z-40 left-0 right-0 md:left-[68px] lg:left-[220px] flex justify-center pointer-events-none">
+        <div style={{ width: "min(calc(100vw - 32px), 480px)", pointerEvents: "all" }}>
+          <button
+            type="button"
+            onClick={openSearch}
+            className="w-full flex items-center gap-3 px-4 py-[10px] rounded-[100px]"
+            style={{
+              background: "rgba(255,255,255,0.06)",
+              border: "1px solid rgba(255,255,255,0.10)",
+              backdropFilter: "blur(32px) saturate(180%)",
+              WebkitBackdropFilter: "blur(32px) saturate(180%)",
+              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.12), 0 8px 32px rgba(0,0,0,0.4)",
+              cursor: "text",
+            }}
+            aria-label="Open search"
           >
-            Search
-            {searchScopes.length > 0 ? ` ${searchScopes[0]}s, ${searchScopes[1] ?? ""}…` : "…"}
-          </span>
-          <KbdIcon />
-        </button>
+            <SearchIcon />
+            <span
+              className="flex-1 text-left text-sm font-normal"
+              style={{ color: "rgba(255,255,255,0.32)" }}
+            >
+              Search
+              {searchScopes.length > 0 ? ` ${searchScopes[0]}s, ${searchScopes[1] ?? ""}…` : "…"}
+            </span>
+            <KbdIcon />
+          </button>
+        </div>
       </div>
 
       {/* Full search overlay */}
@@ -115,111 +114,113 @@ export function FloatingSearchBar({ role }: FloatingSearchBarProps) {
             aria-hidden="true"
           />
 
-          {/* Search panel */}
-          <div
-            className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex flex-col"
-            style={{
-              width: "min(calc(100vw - 32px), 600px)",
-              maxHeight: "80vh",
-            }}
-          >
-            {/* Input */}
+          {/* Search panel — centers within content area, sidebar-aware */}
+          <div className="fixed top-4 left-0 right-0 md:left-[68px] lg:left-[220px] z-50 flex justify-center pointer-events-none">
             <div
-              className="flex items-center gap-3 px-4 py-3 rounded-t-[24px] rounded-b-[12px]"
+              className="flex flex-col pointer-events-auto"
               style={{
-                background: "rgba(28,28,30,0.92)",
-                border: "1px solid rgba(255,255,255,0.14)",
-                backdropFilter: "blur(64px) saturate(220%)",
-                WebkitBackdropFilter: "blur(64px) saturate(220%)",
-                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.18), 0 32px 80px rgba(0,0,0,0.8)",
+                width: "min(calc(100vw - 32px), 600px)",
+                maxHeight: "80vh",
               }}
             >
-              <SearchIcon />
-              <input
-                autoFocus
-                type="search"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search…"
-                className="flex-1 bg-transparent text-sm outline-none placeholder:opacity-30"
-                style={{ color: "rgba(255,255,255,0.95)" }}
-                aria-label="Search query"
-              />
-              {query && (
+              {/* Input */}
+              <div
+                className="flex items-center gap-3 px-4 py-3 rounded-t-[24px] rounded-b-[12px]"
+                style={{
+                  background: "rgba(28,28,30,0.92)",
+                  border: "1px solid rgba(255,255,255,0.14)",
+                  backdropFilter: "blur(64px) saturate(220%)",
+                  WebkitBackdropFilter: "blur(64px) saturate(220%)",
+                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.18), 0 32px 80px rgba(0,0,0,0.8)",
+                }}
+              >
+                <SearchIcon />
+                <input
+                  autoFocus
+                  type="search"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search…"
+                  className="flex-1 bg-transparent text-sm outline-none placeholder:opacity-30"
+                  style={{ color: "rgba(255,255,255,0.95)" }}
+                  aria-label="Search query"
+                />
+                {query && (
+                  <button
+                    type="button"
+                    onClick={() => setQuery("")}
+                    className="flex items-center justify-center w-5 h-5 rounded-full"
+                    style={{
+                      background: "rgba(255,255,255,0.15)",
+                      color: "rgba(255,255,255,0.70)",
+                      fontSize: "11px",
+                      lineHeight: "1",
+                    }}
+                    aria-label="Clear search"
+                  >
+                    ×
+                  </button>
+                )}
                 <button
                   type="button"
-                  onClick={() => setQuery("")}
-                  className="flex items-center justify-center w-5 h-5 rounded-full"
-                  style={{
-                    background: "rgba(255,255,255,0.15)",
-                    color: "rgba(255,255,255,0.70)",
-                    fontSize: "11px",
-                    lineHeight: "1",
-                  }}
-                  aria-label="Clear search"
+                  onClick={closeSearch}
+                  className="text-xs font-medium ml-1"
+                  style={{ color: "rgba(255,255,255,0.45)" }}
                 >
-                  ×
+                  Cancel
                 </button>
-              )}
-              <button
-                type="button"
-                onClick={closeSearch}
-                className="text-xs font-medium ml-1"
-                style={{ color: "rgba(255,255,255,0.45)" }}
-              >
-                Cancel
-              </button>
-            </div>
-
-            {/* Scope pills */}
-            {searchScopes.length > 1 && (
-              <div
-                className="mt-[2px] flex gap-2 overflow-x-auto px-4 py-2 rounded-[12px]"
-                style={{
-                  background: "rgba(20,20,22,0.88)",
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  backdropFilter: "blur(48px)",
-                  WebkitBackdropFilter: "blur(48px)",
-                  scrollbarWidth: "none",
-                }}
-                aria-label="Search scopes"
-              >
-                {searchScopes.map((scope) => (
-                  <button
-                    key={scope}
-                    type="button"
-                    className="flex-shrink-0 px-3 py-1 rounded-[100px] text-[11px] font-medium capitalize"
-                    style={{
-                      background: "rgba(255,255,255,0.08)",
-                      border: "1px solid rgba(255,255,255,0.12)",
-                      color: "rgba(255,255,255,0.60)",
-                      transition: "background 200ms, color 200ms",
-                    }}
-                  >
-                    {scope.replace(/_/g, " ")}
-                  </button>
-                ))}
               </div>
-            )}
 
-            {query.length > 0 && (
-              <div
-                className="mt-[2px] rounded-[12px] overflow-hidden"
-                style={{
-                  background: "rgba(20,20,22,0.88)",
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  backdropFilter: "blur(48px)",
-                  WebkitBackdropFilter: "blur(48px)",
-                }}
-              >
+              {/* Scope pills */}
+              {searchScopes.length > 1 && (
                 <div
-                  className="px-4 py-10 text-center text-sm"
-                  style={{ color: "rgba(255,255,255,0.30)" }}
+                  className="mt-[2px] flex gap-2 overflow-x-auto px-4 py-2 rounded-[12px]"
+                  style={{
+                    background: "rgba(20,20,22,0.88)",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    backdropFilter: "blur(48px)",
+                    WebkitBackdropFilter: "blur(48px)",
+                    scrollbarWidth: "none",
+                  }}
+                  aria-label="Search scopes"
                 >
-                  No results
+                  {searchScopes.map((scope) => (
+                    <button
+                      key={scope}
+                      type="button"
+                      className="flex-shrink-0 px-3 py-1 rounded-[100px] text-[11px] font-medium capitalize"
+                      style={{
+                        background: "rgba(255,255,255,0.08)",
+                        border: "1px solid rgba(255,255,255,0.12)",
+                        color: "rgba(255,255,255,0.60)",
+                        transition: "background 200ms, color 200ms",
+                      }}
+                    >
+                      {scope.replace(/_/g, " ")}
+                    </button>
+                  ))}
                 </div>
-              </div>
-            )}
+              )}
+
+              {query.length > 0 && (
+                <div
+                  className="mt-[2px] rounded-[12px] overflow-hidden"
+                  style={{
+                    background: "rgba(20,20,22,0.88)",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    backdropFilter: "blur(48px)",
+                    WebkitBackdropFilter: "blur(48px)",
+                  }}
+                >
+                  <div
+                    className="px-4 py-10 text-center text-sm"
+                    style={{ color: "rgba(255,255,255,0.30)" }}
+                  >
+                    No results
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </>
       )}
