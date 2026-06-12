@@ -7,24 +7,17 @@ import { useSheetStack } from "@prv/ui"
 import type { ApprovalSummary, ApprovalsMeta, ApprovalType } from "@/app/api/approvals/route"
 import { useApprovals } from "@/lib/api-hooks"
 
-type FilterType = "Toate" | "Achiziții" | "Concedii" | "Cheltuieli" | "Contracte" | "Ore Supl."
+type FilterType = "Toate" | "Purchases" | "Leave" | "Expenses" | "Contracts" | "Overtime"
 
-const FILTERS: FilterType[] = [
-  "Toate",
-  "Achiziții",
-  "Concedii",
-  "Cheltuieli",
-  "Contracte",
-  "Ore Supl.",
-]
+const FILTERS: FilterType[] = ["Toate", "Purchases", "Leave", "Expenses", "Contracts", "Overtime"]
 
 const FILTER_TO_TYPE: Record<FilterType, ApprovalType | null> = {
   Toate: null,
-  Achiziții: "purchase",
+  Purchases: "purchase",
   Concedii: "leave",
   Cheltuieli: "expense",
   Contracte: "contract",
-  "Ore Supl.": "overtime",
+  Overtime: "overtime",
 }
 
 const TYPE_CONFIG: Record<
@@ -32,7 +25,7 @@ const TYPE_CONFIG: Record<
   { label: string; color: string; bg: string; iconBg: string; iconStroke: string }
 > = {
   purchase: {
-    label: "Achiziție",
+    label: "Purchase",
     color: "rgba(10,132,255,.9)",
     bg: "rgba(10,132,255,.13)",
     iconBg: "rgba(10,132,255,.10)",
@@ -46,7 +39,7 @@ const TYPE_CONFIG: Record<
     iconStroke: "rgba(255,159,10,.85)",
   },
   expense: {
-    label: "Cheltuială",
+    label: "Expense",
     color: "rgba(255,69,58,.95)",
     bg: "rgba(255,69,58,.12)",
     iconBg: "rgba(255,69,58,.10)",
@@ -60,7 +53,7 @@ const TYPE_CONFIG: Record<
     iconStroke: "rgba(191,90,242,.85)",
   },
   overtime: {
-    label: "Ore Supl.",
+    label: "Overtime",
     color: "rgba(255,159,10,.95)",
     bg: "rgba(255,159,10,.13)",
     iconBg: "rgba(255,159,10,.10)",
@@ -373,7 +366,7 @@ function SectionCard({ items }: { items: ApprovalSummary[] }) {
 
 export function ApprovalListClient() {
   const router = useRouter()
-  const [filter, setFilter] = useState<FilterType>("Toate")
+  const [filter, setFilter] = useState<FilterType>("All")
   const { openSheet } = useSheetStack()
   const type = FILTER_TO_TYPE[filter]
   const { data, isError, fetchNextPage, hasNextPage, isFetchingNextPage } = useApprovals(type)
@@ -385,7 +378,7 @@ export function ApprovalListClient() {
     openSheet({
       snapPoints: ["mid", "full"],
       defaultSnap: "mid",
-      title: "Aprobări",
+      title: "Approveri",
       render: (onClose) => (
         <div
           style={{ padding: "8px 16px 40px", display: "flex", flexDirection: "column", gap: 10 }}
@@ -409,9 +402,12 @@ export function ApprovalListClient() {
                 <line x1="16" y1="17" x2="8" y2="17" />
               </svg>
             }
-            label="Cerere Nouă"
-            sub="Creează o cerere de aprobare"
-            onClick={() => { onClose(); router.push("/approvals/new") }}
+            label="New Request"
+            sub="Create an approval request"
+            onClick={() => {
+              onClose()
+              router.push("/approvals/new")
+            }}
           />
           <SheetBtn
             color="white"
@@ -432,7 +428,7 @@ export function ApprovalListClient() {
               </svg>
             }
             label="Export Raport"
-            sub="Istoric aprobări și decizii"
+            sub="Approval history and decisions"
             onClick={onClose}
           />
         </div>
@@ -472,7 +468,7 @@ export function ApprovalListClient() {
               color: "var(--prv-text-1)",
             }}
           >
-            Aprobări
+            Approveri
           </h1>
         </div>
         {meta && meta.pending > 0 && (
@@ -588,7 +584,7 @@ export function ApprovalListClient() {
               {expiredCount} cerere{expiredCount > 1 ? "i" : ""} expirate
             </p>
             <p style={{ fontSize: 12, color: "rgba(255,159,10,.6)", margin: "2px 0 0" }}>
-              Necesită acțiune imediată
+              Immediate action required
             </p>
           </div>
         </div>
@@ -632,7 +628,7 @@ export function ApprovalListClient() {
       {/* Lists */}
       {error ? (
         <p style={{ textAlign: "center", color: "var(--prv-text-3)", fontSize: 14, marginTop: 40 }}>
-          Eroare la încărcare. Încearcă din nou.
+          Loading error. Try again.
         </p>
       ) : !approvals ? (
         <div
@@ -665,7 +661,7 @@ export function ApprovalListClient() {
         </div>
       ) : approvals.length === 0 ? (
         <p style={{ textAlign: "center", color: "var(--prv-text-3)", fontSize: 14, marginTop: 40 }}>
-          Nicio cerere găsită.
+          No requests found.
         </p>
       ) : (
         <>
@@ -701,7 +697,7 @@ export function ApprovalListClient() {
                   margin: "0 2px 10px",
                 }}
               >
-                În Așteptare
+                Pending
               </p>
               <SectionCard items={pendingItems} />
             </>
@@ -726,7 +722,7 @@ export function ApprovalListClient() {
             marginBottom: 12,
           }}
         >
-          {isFetchingNextPage ? "Se încarcă..." : "Încarcă mai mult"}
+          {isFetchingNextPage ? "Loading..." : "Load more"}
         </button>
       )}
 

@@ -80,7 +80,7 @@ function IconWarning() {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function fmt(amount: number) {
-  return "€" + amount.toLocaleString("ro-RO")
+  return "€" + amount.toLocaleString("en-US")
 }
 
 function fmtK(amount: number) {
@@ -91,7 +91,7 @@ function fmtK(amount: number) {
 type FilterId = "all" | SupplierStatus
 
 const FILTERS: { id: FilterId; label: string }[] = [
-  { id: "all", label: "Toți" },
+  { id: "all", label: "All" },
   { id: "active", label: "Activi" },
   { id: "pending", label: "Pending" },
   { id: "at_risk", label: "Risc" },
@@ -134,7 +134,7 @@ const STATUS_CONFIG: Record<
     avatarColor: "#ff6b6b",
   },
   inactive: {
-    label: "Inactiv",
+    label: "Inactive",
     color: "rgba(255,255,255,0.35)",
     bg: "rgba(255,255,255,0.07)",
     avatarBg: "rgba(255,255,255,0.06)",
@@ -249,9 +249,7 @@ function SupplierRow({ supplier }: { supplier: SupplierSummary }) {
           </p>
           {supplier.rating > 0 && <Stars rating={supplier.rating} />}
           {supplier.status === "pending" && (
-            <p style={{ fontSize: 11, color: "#ffcc44", margin: "2px 0 0" }}>
-              Onboarding în așteptare
-            </p>
+            <p style={{ fontSize: 11, color: "#ffcc44", margin: "2px 0 0" }}>Onboarding pending</p>
           )}
         </div>
 
@@ -331,10 +329,11 @@ function SpendRow({ label, amount, pct }: { label: string; amount: number; pct: 
 export function SupplierListClient() {
   const router = useRouter()
   const [filter, setFilter] = useState<FilterId>("all")
-  const { data, isLoading, isError, hasNextPage, fetchNextPage, isFetchingNextPage } = useSuppliers()
+  const { data, isLoading, isError, hasNextPage, fetchNextPage, isFetchingNextPage } =
+    useSuppliers()
   const suppliers: SupplierSummary[] = data?.suppliers ?? []
   const loading = isLoading
-  const error: string | null = isError ? "Nu s-au putut încărca furnizorii." : null
+  const error: string | null = isError ? "Could not load furnizorii." : null
 
   const filtered = filter === "all" ? suppliers : suppliers.filter((s) => s.status === filter)
   const atRiskCount = suppliers.filter((s) => s.status === "at_risk").length
@@ -374,11 +373,11 @@ export function SupplierListClient() {
             }}
           >
             <IconChevronLeft />
-            Achiziții
+            Purchases
           </Link>
         </div>
         <button
-          onClick={() => router.push('/suppliers/new')}
+          onClick={() => router.push("/suppliers/new")}
           style={{
             width: 36,
             height: 36,
@@ -407,7 +406,7 @@ export function SupplierListClient() {
             marginBottom: 4,
           }}
         >
-          Achiziții
+          Purchases
         </p>
         <h1
           style={{
@@ -481,10 +480,10 @@ export function SupplierListClient() {
           <IconWarning />
           <div style={{ flex: 1 }}>
             <p style={{ fontSize: 13, fontWeight: 600, color: "#ff6b6b", margin: "0 0 2px" }}>
-              {atRiskCount} furnizor{atRiskCount > 1 ? "i necesită" : " necesită"} atenție
+              {atRiskCount} supplier{atRiskCount > 1 ? "s require" : " requires"} attention
             </p>
             <p style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", margin: 0 }}>
-              Contract expirat · livrări întârziate
+              Expired contract · delayed deliveries
             </p>
           </div>
           <IconChevronRight />
@@ -591,7 +590,7 @@ export function SupplierListClient() {
               fontSize: 14,
             }}
           >
-            Niciun furnizor găsit.
+            No suppliers found.
           </div>
         ) : (
           filtered.map((s, idx) => (
@@ -670,7 +669,7 @@ export function SupplierListClient() {
             marginTop: 8,
           }}
         >
-          {isFetchingNextPage ? "Se încarcă..." : "Încarcă mai mult"}
+          {isFetchingNextPage ? "Loading..." : "Load more"}
         </button>
       )}
     </div>

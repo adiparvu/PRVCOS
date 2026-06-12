@@ -4,7 +4,7 @@ import { getSession } from "@prv/auth"
 import { SettingsClient } from "./SettingsClient"
 
 export const dynamic = "force-dynamic"
-export const metadata = { title: "Setări · PRV" }
+export const metadata = { title: "Settings · PRV" }
 
 export default async function SettingsPage() {
   const cookieStore = await cookies()

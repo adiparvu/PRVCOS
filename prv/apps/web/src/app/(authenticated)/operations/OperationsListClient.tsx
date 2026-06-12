@@ -267,7 +267,7 @@ function TaskRow({ task }: { task: Task }) {
         : "rgba(255,255,255,0.45)"
 
   const statusLabel =
-    task.status === "done" ? "Finalizat" : task.status === "in_progress" ? "În Curs" : "De Făcut"
+    task.status === "done" ? "Completed" : task.status === "in_progress" ? "In Progress" : "To Do"
 
   return (
     <div
@@ -356,10 +356,10 @@ function TaskRow({ task }: { task: Task }) {
 function OrderRow({ order }: { order: Order }) {
   const statusConfig =
     order.status === "paid"
-      ? { color: "rgba(48,209,88,0.9)", label: "Plătit" }
+      ? { color: "rgba(48,209,88,0.9)", label: "Paid" }
       : order.status === "shipped"
         ? { color: "rgba(10,132,255,0.9)", label: "Livrat" }
-        : { color: "rgba(255,159,10,0.9)", label: "Așteptare" }
+        : { color: "rgba(255,159,10,0.9)", label: "Pending" }
 
   return (
     <div
@@ -498,7 +498,7 @@ function SkeletonRow() {
 }
 
 export default function OperationsListClient() {
-  const [filter, setFilter] = useState<FilterType>("Toate")
+  const [filter, setFilter] = useState<FilterType>("All")
   const [fabOpen, setFabOpen] = useState(false)
   const { data } = useOperationsData()
 
@@ -529,7 +529,7 @@ export default function OperationsListClient() {
             letterSpacing: "-0.6px",
           }}
         >
-          Operațiuni
+          Operations
         </h1>
         <p
           style={{
@@ -539,7 +539,7 @@ export default function OperationsListClient() {
             fontWeight: 400,
           }}
         >
-          Monitorizare în timp real
+          Real-time monitoring
         </p>
       </div>
 
@@ -607,11 +607,11 @@ export default function OperationsListClient() {
       {/* Content */}
       <div style={{ marginTop: 6 }}>
         {/* Stores Section */}
-        {(filter === "Toate" || filter === "Magazine") && (
+        {(filter === "All" || filter === "Magazine") && (
           <div>
             <SectionHeader
               label="Magazine"
-              count={filter === "Toate" ? undefined : data?.stores.length}
+              count={filter === "All" ? undefined : data?.stores.length}
             />
             <div
               style={{
@@ -635,11 +635,11 @@ export default function OperationsListClient() {
                 }}
               />
               {data
-                ? (filter === "Toate" ? data.stores.slice(0, 3) : data.stores).map((store) => (
+                ? (filter === "All" ? data.stores.slice(0, 3) : data.stores).map((store) => (
                     <StoreRow key={store.id} store={store} />
                   ))
                 : [1, 2, 3].map((n) => <SkeletonRow key={n} />)}
-              {filter === "Toate" && data && data.stores.length > 3 && (
+              {filter === "All" && data && data.stores.length > 3 && (
                 <button
                   onClick={() => setFilter("Magazine")}
                   style={{
@@ -663,11 +663,11 @@ export default function OperationsListClient() {
         )}
 
         {/* Tasks Section */}
-        {(filter === "Toate" || filter === "Sarcini") && (
+        {(filter === "All" || filter === "Sarcini") && (
           <div>
             <SectionHeader
               label="Sarcini Active"
-              count={filter === "Toate" ? undefined : allTasks.length}
+              count={filter === "All" ? undefined : allTasks.length}
             />
             <div
               style={{
@@ -691,11 +691,11 @@ export default function OperationsListClient() {
                 }}
               />
               {data
-                ? (filter === "Toate" ? activeTasks.slice(0, 4) : allTasks).map((task) => (
+                ? (filter === "All" ? activeTasks.slice(0, 4) : allTasks).map((task) => (
                     <TaskRow key={task.id} task={task} />
                   ))
                 : [1, 2, 3].map((n) => <SkeletonRow key={n} />)}
-              {filter === "Toate" && data && activeTasks.length > 4 && (
+              {filter === "All" && data && activeTasks.length > 4 && (
                 <button
                   onClick={() => setFilter("Sarcini")}
                   style={{
@@ -719,11 +719,11 @@ export default function OperationsListClient() {
         )}
 
         {/* Orders Section */}
-        {(filter === "Toate" || filter === "Comenzi") && (
+        {(filter === "All" || filter === "Comenzi") && (
           <div>
             <SectionHeader
               label="Comenzi Recente"
-              count={filter === "Toate" ? undefined : allOrders.length}
+              count={filter === "All" ? undefined : allOrders.length}
             />
             <div
               style={{
@@ -747,11 +747,11 @@ export default function OperationsListClient() {
                 }}
               />
               {data
-                ? (filter === "Toate" ? allOrders.slice(0, 4) : allOrders).map((order) => (
+                ? (filter === "All" ? allOrders.slice(0, 4) : allOrders).map((order) => (
                     <OrderRow key={order.id} order={order} />
                   ))
                 : [1, 2, 3].map((n) => <SkeletonRow key={n} />)}
-              {filter === "Toate" && data && allOrders.length > 4 && (
+              {filter === "All" && data && allOrders.length > 4 && (
                 <button
                   onClick={() => setFilter("Comenzi")}
                   style={{
@@ -767,7 +767,7 @@ export default function OperationsListClient() {
                     fontFamily: "inherit",
                   }}
                 >
-                  Vezi toate comenzile
+                  Vezi toate comendays
                 </button>
               )}
             </div>
@@ -857,7 +857,7 @@ export default function OperationsListClient() {
                 color: "rgba(48,209,88,0.9)",
               },
               {
-                label: "Sarcină Nouă",
+                label: "New Task",
                 icon: "M9 11l3 3L22 4 M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11",
                 color: "rgba(10,132,255,0.9)",
               },

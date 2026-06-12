@@ -4,7 +4,7 @@ import { getSession } from "@prv/auth"
 import { AttendanceBuilderClient } from "./AttendanceBuilderClient"
 
 export const dynamic = "force-dynamic"
-export const metadata = { title: "Pontaj Nou · Prezență · PRV" }
+export const metadata = { title: "New Record · Attendance · PRV" }
 
 export default async function NewAttendancePage() {
   const cookieStore = await cookies()

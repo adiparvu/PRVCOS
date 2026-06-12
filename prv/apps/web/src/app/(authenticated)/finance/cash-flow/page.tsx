@@ -4,7 +4,7 @@ import { getSession } from "@prv/auth"
 import { CashFlowClient } from "./CashFlowClient"
 
 export const dynamic = "force-dynamic"
-export const metadata = { title: "Cash Flow · Finanțe" }
+export const metadata = { title: "Cash Flow · Finance" }
 
 export default async function CashFlowPage() {
   const cookieStore = await cookies()

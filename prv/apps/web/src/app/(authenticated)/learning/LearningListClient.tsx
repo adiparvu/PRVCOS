@@ -12,7 +12,7 @@ import type {
 } from "@/app/api/learning/route"
 import { useCourses } from "@/lib/api-hooks"
 
-type FilterType = "Toate" | "În Curs" | "Recomandate" | "Completate" | "Salvate"
+type FilterType = "Toate" | "In Progress" | "Recommended" | "Completate" | "Saved"
 
 const g1 = "var(--prv-g1)"
 const g2 = "var(--prv-g2)"
@@ -251,7 +251,7 @@ function FeaturedCard({ course }: { course: Course }) {
                 display: "inline-block",
               }}
             />
-            Continuă Parcursul
+            Continue Learning Path
           </div>
           <div
             style={{ fontSize: 16, fontWeight: 700, color: t1, marginBottom: 4, lineHeight: 1.3 }}
@@ -484,7 +484,7 @@ function SkeletonCard() {
 
 export function LearningListClient() {
   const router = useRouter()
-  const [filter, setFilter] = useState<FilterType>("Toate")
+  const [filter, setFilter] = useState<FilterType>("All")
   const [fabOpen, setFabOpen] = useState(false)
   const [search, setSearch] = useState("")
   const { data, isLoading, hasNextPage, fetchNextPage, isFetchingNextPage } = useCourses()
@@ -493,7 +493,7 @@ export function LearningListClient() {
   const achievements: Achievement[] = data?.achievements ?? []
   const loading = isLoading
 
-  const FILTERS: FilterType[] = ["Toate", "În Curs", "Recomandate", "Completate", "Salvate"]
+  const FILTERS: FilterType[] = ["Toate", "In Progress", "Recommended", "Completate", "Saved"]
 
   const featured =
     courses.find((c) => c.isFeatured) ?? courses.find((c) => c.status === "in_progress") ?? null
@@ -504,10 +504,10 @@ export function LearningListClient() {
 
   const filtered = (() => {
     let base = courses
-    if (filter === "În Curs") base = courses.filter((c) => c.status === "in_progress")
-    else if (filter === "Recomandate") base = courses.filter((c) => c.status === "new")
+    if (filter === "In Progress") base = courses.filter((c) => c.status === "in_progress")
+    else if (filter === "Recommended") base = courses.filter((c) => c.status === "new")
     else if (filter === "Completate") base = courses.filter((c) => c.status === "completed")
-    else if (filter === "Salvate") base = courses.filter((c) => c.status === "saved")
+    else if (filter === "Saved") base = courses.filter((c) => c.status === "saved")
     if (search)
       base = base.filter(
         (c) =>
@@ -532,7 +532,7 @@ export function LearningListClient() {
           }}
         >
           <h1 style={{ fontSize: 26, fontWeight: 700, letterSpacing: "-0.02em", color: t1 }}>
-            Centrul de Învățare
+            Learning Center
           </h1>
           <div
             style={{
@@ -585,7 +585,7 @@ export function LearningListClient() {
           },
           {
             val: meta ? String(meta.inProgressCount) : "—",
-            lbl: "În Curs",
+            lbl: "In Progress",
             color: "rgba(255,159,10,0.95)",
           },
           { val: meta ? `${meta.monthlyHours}h` : "—", lbl: "Luna Asta", color: t1 },
@@ -662,7 +662,7 @@ export function LearningListClient() {
         <div style={{ padding: "20px 16px 0" }}>
           {filtered.length === 0 ? (
             <div style={{ textAlign: "center", padding: "40px 0", color: t3, fontSize: 14 }}>
-              Niciun curs găsit
+              No courses found
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -684,7 +684,7 @@ export function LearningListClient() {
           {/* continuă parcursul */}
           {inProgressOther.length > 0 && (
             <div style={{ padding: "20px 16px 0" }}>
-              <SectionHeader label="Continuă Parcursul" />
+              <SectionHeader label="Continue Learning Path" />
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {inProgressOther.map((c) => (
                   <CourseRow key={c.id} course={c} showProgress={true} />
@@ -696,7 +696,7 @@ export function LearningListClient() {
           {/* realizări */}
           {achievements.length > 0 && (
             <div style={{ padding: "18px 16px 0" }}>
-              <SectionHeader label="Realizări Recente" />
+              <SectionHeader label="Recent Achievements" />
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {achievements.map((a) => (
                   <AchievementRow key={a.id} ach={a} />
@@ -708,7 +708,7 @@ export function LearningListClient() {
           {/* recomandate */}
           {newCourses.length > 0 && (
             <div style={{ padding: "18px 16px 0" }}>
-              <SectionHeader label="Recomandate" action="Vezi toate" />
+              <SectionHeader label="Recommended" action="Vezi toate" />
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {newCourses.map((c) => (
                   <CourseRow key={c.id} course={c} showProgress={false} />
@@ -731,7 +731,6 @@ export function LearningListClient() {
         </>
       )}
 
-
       {hasNextPage && (
         <button
           onClick={() => fetchNextPage()}
@@ -749,7 +748,7 @@ export function LearningListClient() {
             marginTop: 8,
           }}
         >
-          {isFetchingNextPage ? "Se încarcă..." : "Încarcă mai mult"}
+          {isFetchingNextPage ? "Loading..." : "Load more"}
         </button>
       )}
 
@@ -830,7 +829,7 @@ export function LearningListClient() {
                 padding: "4px 0 14px",
               }}
             >
-              Caută & Acțiuni
+              Search & Actions
             </div>
 
             {/* search */}
@@ -862,7 +861,7 @@ export function LearningListClient() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 onFocus={() => setFabOpen(false)}
-                placeholder="Caută în Centrul de Învățare…"
+                placeholder="Search Learning Center…"
                 style={{
                   flex: 1,
                   background: "none",
@@ -895,7 +894,9 @@ export function LearningListClient() {
                 border: "rgba(48,209,88,0.20)",
                 label: "Curs Nou",
                 color: "rgba(48,209,88,0.9)",
-                onClick: () => { router.push("/learning/new") },
+                onClick: () => {
+                  router.push("/learning/new")
+                },
               },
               {
                 icon: (
@@ -943,7 +944,10 @@ export function LearningListClient() {
             ].map((a) => (
               <div
                 key={a.label}
-                onClick={() => { setFabOpen(false); a.onClick?.() }}
+                onClick={() => {
+                  setFabOpen(false)
+                  a.onClick?.()
+                }}
                 style={{
                   display: "flex",
                   alignItems: "center",

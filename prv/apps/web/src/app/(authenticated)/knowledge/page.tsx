@@ -4,7 +4,7 @@ import { getSession } from "@prv/auth"
 import { KnowledgeListClient } from "./KnowledgeListClient"
 
 export const dynamic = "force-dynamic"
-export const metadata = { title: "Cunoștințe · PRV" }
+export const metadata = { title: "Knowledge · PRV" }
 
 export default async function KnowledgePage() {
   const cookieStore = await cookies()

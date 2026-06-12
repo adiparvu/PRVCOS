@@ -4,7 +4,7 @@ import { getSession } from "@prv/auth"
 import { VehicleBuilderClient } from "./VehicleBuilderClient"
 
 export const dynamic = "force-dynamic"
-export const metadata = { title: "Vehicul Nou · Flotă · PRV" }
+export const metadata = { title: "New Vehicle · Fleet · PRV" }
 
 export default async function NewVehiclePage() {
   const cookieStore = await cookies()

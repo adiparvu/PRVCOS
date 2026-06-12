@@ -7,22 +7,26 @@ import { useSheetStack } from "@prv/ui"
 import type { AttendanceRecord, AttendanceMeta, AttendanceStatus } from "@/app/api/attendance/route"
 import { useAttendanceRecords } from "@/lib/api-hooks"
 
-type FilterType = "Toți" | "Prezenți" | "Întârzieri" | "Absenți" | "Concediu"
+type FilterType = "All" | "Present" | "Late" | "Absent" | "On Leave"
 
 const FILTER_TO_STATUS: Record<FilterType, AttendanceStatus | null> = {
-  Toți: null,
-  Prezenți: "present",
-  Întârzieri: "late",
-  Absenți: "absent",
-  Concediu: "leave",
+  All: null,
+  Present: "present",
+  Late: "late",
+  Absent: "absent",
+  "On Leave": "leave",
 }
 
 const STATUS_CONFIG: Record<AttendanceStatus, { bg: string; color: string; label: string }> = {
-  present: { bg: "rgba(48,209,88,.13)", color: "rgba(48,209,88,.95)", label: "Prezent" },
-  late: { bg: "rgba(255,159,10,.13)", color: "rgba(255,159,10,.95)", label: "Întârziere" },
+  present: { bg: "rgba(48,209,88,.13)", color: "rgba(48,209,88,.95)", label: "Present" },
+  late: { bg: "rgba(255,159,10,.13)", color: "rgba(255,159,10,.95)", label: "Late" },
   absent: { bg: "rgba(255,69,58,.12)", color: "rgba(255,69,58,.95)", label: "Absent" },
-  leave: { bg: "rgba(10,132,255,.13)", color: "rgba(10,132,255,.9)", label: "Concediu" },
-  clocked_out: { bg: "rgba(255,255,255,.07)", color: "rgba(255,255,255,.45)", label: "Ieșit" },
+  leave: { bg: "rgba(10,132,255,.13)", color: "rgba(10,132,255,.9)", label: "On Leave" },
+  clocked_out: {
+    bg: "rgba(255,255,255,.07)",
+    color: "rgba(255,255,255,.45)",
+    label: "Clocked Out",
+  },
 }
 
 const AVATAR_COLORS = [
@@ -141,11 +145,11 @@ function EmployeeRow({ record, index }: { record: AttendanceRecord; index: numbe
           <div style={{ marginTop: 7 }}>
             <p style={{ fontSize: 12, color: "rgba(255,255,255,.5)", margin: 0 }}>
               {record.status === "leave"
-                ? (record.leaveLabel ?? "Concediu")
+                ? (record.leaveLabel ?? "On Leave")
                 : record.status === "absent"
-                  ? "Fără pontaj · Neanunțat"
+                  ? "No clock-in · Unannounced"
                   : record.clockIn
-                    ? `Intrare: ${record.clockIn}${record.activeMinutes ? ` · ${fmtMinutes(record.activeMinutes)} activ` : ""}${record.clockOut ? ` · Ieșire: ${record.clockOut}` : ""}`
+                    ? `In: ${record.clockIn}${record.activeMinutes ? ` · ${fmtMinutes(record.activeMinutes)} active` : ""}${record.clockOut ? ` · Out: ${record.clockOut}` : ""}`
                     : ""}
             </p>
           </div>
@@ -270,16 +274,17 @@ function SheetBtn({
 
 export function AttendanceListClient() {
   const router = useRouter()
-  const [filter, setFilter] = useState<FilterType>("Toți")
+  const [filter, setFilter] = useState<FilterType>("All")
   const { openSheet } = useSheetStack()
   const status = FILTER_TO_STATUS[filter]
-  const { data, isLoading, hasNextPage, fetchNextPage, isFetchingNextPage } = useAttendanceRecords(status)
+  const { data, isLoading, hasNextPage, fetchNextPage, isFetchingNextPage } =
+    useAttendanceRecords(status)
   const allRecords: AttendanceRecord[] = data?.records ?? []
   const meta: AttendanceMeta | null = data?.meta ?? null
   const loading = isLoading
 
   let records = allRecords
-  if (filter === "Prezenți") {
+  if (filter === "Present") {
     records = allRecords.filter((r) => r.status === "present" || r.status === "clocked_out")
   }
 
@@ -287,7 +292,7 @@ export function AttendanceListClient() {
     openSheet({
       snapPoints: ["mid", "full"],
       defaultSnap: "mid",
-      title: "Acțiuni Prezență",
+      title: "Attendance Actions",
       render: (onClose) => (
         <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
           <SheetBtn
@@ -306,9 +311,12 @@ export function AttendanceListClient() {
                 <path d="M12 5v14M5 12h14" />
               </svg>
             }
-            label="Pontaj Nou"
-            sub="Înregistrează prezență manuală"
-            onClick={() => { onClose(); router.push("/attendance/new") }}
+            label="New Record"
+            sub="Record attendance manually"
+            onClick={() => {
+              onClose()
+              router.push("/attendance/new")
+            }}
           />
           <SheetBtn
             color="green"
@@ -326,8 +334,8 @@ export function AttendanceListClient() {
                 <polyline points="20 6 9 17 4 12" />
               </svg>
             }
-            label="Aprobă Toate Pontajele"
-            sub="Confirmă prezența echipei azi"
+            label="Approve All Records"
+            sub="Confirm team attendance for today"
             onClick={onClose}
           />
           <SheetBtn
@@ -349,8 +357,8 @@ export function AttendanceListClient() {
                 <line x1="3" y1="10" x2="21" y2="10" />
               </svg>
             }
-            label="Vizualizare Lunară"
-            sub="Raport prezență pe lună"
+            label="Monthly View"
+            sub="Monthly attendance report"
             onClick={onClose}
           />
           <SheetBtn
@@ -371,8 +379,8 @@ export function AttendanceListClient() {
                 <line x1="12" y1="15" x2="12" y2="3" />
               </svg>
             }
-            label="Export Raport Prezență"
-            sub="PDF sau Excel pentru astăzi"
+            label="Export Attendance Report"
+            sub="PDF or Excel for today"
             onClick={onClose}
           />
         </div>
@@ -386,7 +394,7 @@ export function AttendanceListClient() {
   const presentRecords = records.filter((r) => r.status === "present" || r.status === "clocked_out")
   const leaveRecords = records.filter((r) => r.status === "leave")
 
-  const showSections = filter === "Toți"
+  const showSections = filter === "All"
 
   return (
     <div style={{ paddingBottom: 100 }}>
@@ -406,7 +414,7 @@ export function AttendanceListClient() {
           justifyContent: "space-between",
         }}
       >
-        <span style={{ fontSize: 17, fontWeight: 700 }}>Prezență</span>
+        <span style={{ fontSize: 17, fontWeight: 700 }}>Attendance</span>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ fontSize: 13, color: "rgba(255,255,255,.45)" }}>
             {meta?.dateLabel ?? "…"}
@@ -453,18 +461,18 @@ export function AttendanceListClient() {
           }}
         >
           {[
-            { val: String(meta.present), label: "Prezenți", color: "rgba(48,209,88,.9)" },
+            { val: String(meta.present), label: "Present", color: "rgba(48,209,88,.9)" },
             {
               val: String(meta.late),
-              label: "Întârzieri",
+              label: "Late",
               color: meta.late > 0 ? "rgba(255,159,10,.9)" : "var(--prv-text-1)",
             },
             {
               val: String(meta.absent),
-              label: "Absenți",
+              label: "Absent",
               color: meta.absent > 0 ? "rgba(255,69,58,.9)" : "var(--prv-text-1)",
             },
-            { val: String(meta.onLeave), label: "Concediu", color: "var(--prv-text-1)" },
+            { val: String(meta.onLeave), label: "On Leave", color: "var(--prv-text-1)" },
           ].map((k) => (
             <div
               key={k.label}
@@ -522,8 +530,8 @@ export function AttendanceListClient() {
             <line x1="12" y1="8" x2="12" y2="12" />
             <line x1="12" y1="16" x2="12.01" y2="16" />
           </svg>
-          {absentCount} {absentCount === 1 ? "absent nemotivat" : "absenți nemotivați"} — necesită
-          acțiune
+          {absentCount} {absentCount === 1 ? "unexcused absence" : "unexcused absences"} — require
+          action
         </div>
       )}
 
@@ -537,7 +545,7 @@ export function AttendanceListClient() {
           scrollbarWidth: "none",
         }}
       >
-        {(["Toți", "Prezenți", "Întârzieri", "Absenți", "Concediu"] as FilterType[]).map((f) => (
+        {(["All", "Present", "Late", "Absent", "On Leave"] as FilterType[]).map((f) => (
           <button
             key={f}
             onClick={() => setFilter(f)}
@@ -572,7 +580,7 @@ export function AttendanceListClient() {
         <>
           {lateRecords.length > 0 && (
             <>
-              <SectionLabel>{`Întârzieri · ${lateRecords.length}`}</SectionLabel>
+              <SectionLabel>{`Late · ${lateRecords.length}`}</SectionLabel>
               {lateRecords.map((r, i) => (
                 <EmployeeRow key={r.id} record={r} index={i} />
               ))}
@@ -580,7 +588,7 @@ export function AttendanceListClient() {
           )}
           {absentRecords.length > 0 && (
             <>
-              <SectionLabel>{`Absenți · ${absentRecords.length}`}</SectionLabel>
+              <SectionLabel>{`Absent · ${absentRecords.length}`}</SectionLabel>
               {absentRecords.map((r, i) => (
                 <EmployeeRow key={r.id} record={r} index={i} />
               ))}
@@ -588,7 +596,7 @@ export function AttendanceListClient() {
           )}
           {presentRecords.length > 0 && (
             <>
-              <SectionLabel>{`Prezenți · ${presentRecords.length}`}</SectionLabel>
+              <SectionLabel>{`Present · ${presentRecords.length}`}</SectionLabel>
               {presentRecords.map((r, i) => (
                 <EmployeeRow key={r.id} record={r} index={i} />
               ))}
@@ -596,7 +604,7 @@ export function AttendanceListClient() {
           )}
           {leaveRecords.length > 0 && (
             <>
-              <SectionLabel>{`Concediu · ${leaveRecords.length}`}</SectionLabel>
+              <SectionLabel>{`On Leave · ${leaveRecords.length}`}</SectionLabel>
               {leaveRecords.map((r, i) => (
                 <EmployeeRow key={r.id} record={r} index={i} />
               ))}
@@ -606,7 +614,6 @@ export function AttendanceListClient() {
       ) : (
         records.map((r, i) => <EmployeeRow key={r.id} record={r} index={i} />)
       )}
-
 
       {hasNextPage && (
         <button
@@ -625,7 +632,7 @@ export function AttendanceListClient() {
             marginTop: 8,
           }}
         >
-          {isFetchingNextPage ? "Se încarcă..." : "Încarcă mai mult"}
+          {isFetchingNextPage ? "Loading..." : "Load more"}
         </button>
       )}
 

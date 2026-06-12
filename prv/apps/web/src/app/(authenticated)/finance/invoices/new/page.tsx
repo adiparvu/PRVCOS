@@ -4,7 +4,7 @@ import { getSession } from "@prv/auth"
 import { InvoiceBuilderClient } from "./InvoiceBuilderClient"
 
 export const dynamic = "force-dynamic"
-export const metadata = { title: "Factură Nouă · Finanțe" }
+export const metadata = { title: "New Invoice · Finance" }
 
 export default async function NewInvoicePage() {
   const cookieStore = await cookies()

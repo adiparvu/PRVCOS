@@ -11,8 +11,8 @@ const STATUS_COLOR: Record<string, string> = {
   declined: "rgba(255,69,58,.95)",
 }
 const STATUS_LABEL: Record<string, string> = {
-  pending: "În așteptare",
-  approved: "Aprobat",
+  pending: "Pending",
+  approved: "Approved",
   declined: "Refuzat",
 }
 const TYPE_COLOR: Record<string, string> = {
@@ -37,10 +37,10 @@ function fmtTime(iso: string): string {
 }
 
 function auditLabel(action: string): string {
-  if (action.includes("approve")) return "Cerere aprobată"
-  if (action.includes("decline") || action.includes("reject")) return "Cerere refuzată"
-  if (action.includes("create")) return "Cerere înregistrată"
-  if (action.includes("update")) return "Cerere actualizată"
+  if (action.includes("approve")) return "Request approved"
+  if (action.includes("decline") || action.includes("reject")) return "Request declined"
+  if (action.includes("create")) return "Request registered"
+  if (action.includes("update")) return "Request updated"
   return action
 }
 
@@ -74,12 +74,12 @@ export function TimeOffDetailClient({ id }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action }),
       })
-      if (!res.ok) throw new Error("Acțiunea a eșuat")
+      if (!res.ok) throw new Error("Action failed")
       setActionDone(action)
       void queryClient.invalidateQueries({ queryKey: ["timeOffRequests"] })
       void queryClient.invalidateQueries({ queryKey: ["timeOffRequest", id] })
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Eroare necunoscută")
+      setError(e instanceof Error ? e.message : "Unknown error")
     } finally {
       setActionLoading(null)
     }
@@ -135,7 +135,15 @@ export function TimeOffDetailClient({ id }: Props) {
             padding: 0,
           }}
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+          >
             <path d="M19 12H5M12 5l-7 7 7 7" />
           </svg>
           Time-Off
@@ -143,7 +151,6 @@ export function TimeOffDetailClient({ id }: Props) {
       </div>
 
       <div style={{ padding: "0 20px", display: "flex", flexDirection: "column", gap: 12 }}>
-
         {/* Employee card */}
         <div
           style={{
@@ -172,7 +179,9 @@ export function TimeOffDetailClient({ id }: Props) {
               {req.employeeInitials}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ fontSize: 17, fontWeight: 700, color: "rgba(255,255,255,.95)", margin: 0 }}>
+              <p
+                style={{ fontSize: 17, fontWeight: 700, color: "rgba(255,255,255,.95)", margin: 0 }}
+              >
                 {req.employeeName}
               </p>
               <p style={{ fontSize: 12, color: "rgba(255,255,255,.4)", margin: "2px 0 0" }}>
@@ -194,7 +203,7 @@ export function TimeOffDetailClient({ id }: Props) {
                 ? actionDone === "approve"
                   ? STATUS_LABEL.approved
                   : STATUS_LABEL.declined
-                : STATUS_LABEL[req.status] ?? req.status}
+                : (STATUS_LABEL[req.status] ?? req.status)}
             </div>
           </div>
 
@@ -235,7 +244,7 @@ export function TimeOffDetailClient({ id }: Props) {
                 padding: "4px 10px",
               }}
             >
-              {req.workingDays} {req.workingDays === 1 ? "zi lucrătoare" : "zile lucrătoare"}
+              {req.workingDays} {req.workingDays === 1 ? "working day" : "working days"}
             </div>
           </div>
         </div>
@@ -250,7 +259,16 @@ export function TimeOffDetailClient({ id }: Props) {
               padding: "14px 16px",
             }}
           >
-            <p style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,.35)", textTransform: "uppercase", letterSpacing: "0.06em", margin: "0 0 6px" }}>
+            <p
+              style={{
+                fontSize: 11,
+                fontWeight: 600,
+                color: "rgba(255,255,255,.35)",
+                textTransform: "uppercase",
+                letterSpacing: "0.06em",
+                margin: "0 0 6px",
+              }}
+            >
               Motiv
             </p>
             <p style={{ fontSize: 14, color: "rgba(255,255,255,.75)", margin: 0, lineHeight: 1.5 }}>
@@ -272,12 +290,22 @@ export function TimeOffDetailClient({ id }: Props) {
               gap: 10,
             }}
           >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(48,209,88,.7)" strokeWidth="2" strokeLinecap="round">
+            <svg
+              width="15"
+              height="15"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="rgba(48,209,88,.7)"
+              strokeWidth="2"
+              strokeLinecap="round"
+            >
               <polyline points="20 6 9 17 4 12" />
             </svg>
             <p style={{ fontSize: 13, color: "rgba(255,255,255,.65)", margin: 0 }}>
-              {req.status === "approved" ? "Aprobat" : "Acționat"} de{" "}
-              <span style={{ color: "rgba(255,255,255,.9)", fontWeight: 600 }}>{req.approvedByName}</span>
+              {req.status === "approved" ? "Approved" : "Actioned"} by{" "}
+              <span style={{ color: "rgba(255,255,255,.9)", fontWeight: 600 }}>
+                {req.approvedByName}
+              </span>
             </p>
           </div>
         )}
@@ -317,7 +345,7 @@ export function TimeOffDetailClient({ id }: Props) {
                 opacity: actionLoading === "decline" ? 0.5 : 1,
               }}
             >
-              {actionLoading === "decline" ? "Se procesează…" : "Refuză"}
+              {actionLoading === "decline" ? "Processing…" : "Reject"}
             </button>
             <button
               onClick={() => handleAction("approve")}
@@ -335,7 +363,7 @@ export function TimeOffDetailClient({ id }: Props) {
                 opacity: actionLoading === "approve" ? 0.5 : 1,
               }}
             >
-              {actionLoading === "approve" ? "Se procesează…" : "Aprobă"}
+              {actionLoading === "approve" ? "Processing…" : "Approve"}
             </button>
           </div>
         )}
@@ -353,7 +381,7 @@ export function TimeOffDetailClient({ id }: Props) {
               color: actionDone === "approve" ? "rgba(48,209,88,.9)" : "rgba(255,69,58,.9)",
             }}
           >
-            {actionDone === "approve" ? "Cerere aprobată" : "Cerere refuzată"}
+            {actionDone === "approve" ? "Request approved" : "Request declined"}
           </div>
         )}
 
@@ -367,7 +395,16 @@ export function TimeOffDetailClient({ id }: Props) {
               padding: "14px 16px",
             }}
           >
-            <p style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,.35)", textTransform: "uppercase", letterSpacing: "0.06em", margin: "0 0 12px" }}>
+            <p
+              style={{
+                fontSize: 11,
+                fontWeight: 600,
+                color: "rgba(255,255,255,.35)",
+                textTransform: "uppercase",
+                letterSpacing: "0.06em",
+                margin: "0 0 12px",
+              }}
+            >
               Istoric
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -398,8 +435,15 @@ export function TimeOffDetailClient({ id }: Props) {
         )}
 
         {/* Submitted at */}
-        <p style={{ fontSize: 11, color: "rgba(255,255,255,.25)", textAlign: "center", margin: "4px 0 0" }}>
-          Trimisă {fmtDate(req.submittedAt)}
+        <p
+          style={{
+            fontSize: 11,
+            color: "rgba(255,255,255,.25)",
+            textAlign: "center",
+            margin: "4px 0 0",
+          }}
+        >
+          Submitted {fmtDate(req.submittedAt)}
         </p>
       </div>
     </div>

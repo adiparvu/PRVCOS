@@ -185,7 +185,7 @@ export function VehicleDetailClient({ id }: VehicleDetailClientProps) {
     openSheet({
       snapPoints: ["mid", "full"],
       defaultSnap: "mid",
-      title: "Acțiuni Vehicul",
+      title: "Vehicle Actions",
       render: (onClose) => {
         const hasDueSoon = vehicle.maintenance.some(
           (m) => m.status === "Due Soon" || m.status === "Overdue"
@@ -210,8 +210,8 @@ export function VehicleDetailClient({ id }: VehicleDetailClientProps) {
                   <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
                 </svg>
               }
-              label="Planifică Service"
-              sub={hasDueSoon ? "Mentenanță scadentă detectată" : "Programare la service"}
+              label="Schedule Service"
+              sub={hasDueSoon ? "Overdue maintenance detected" : "Schedule service"}
               onClick={onClose}
             />
             <SheetBtn
@@ -233,8 +233,8 @@ export function VehicleDetailClient({ id }: VehicleDetailClientProps) {
                   <line x1="20" y1="14" x2="26" y2="14" />
                 </svg>
               }
-              label="Asignează Șofer"
-              sub={vehicle.driver ? `Șofer curent: ${vehicle.driver}` : "Niciun șofer asignat"}
+              label="Assign Driver"
+              sub={vehicle.driver ? `Current driver: ${vehicle.driver}` : "No driver assigned"}
               onClick={onClose}
             />
             <SheetBtn
@@ -254,8 +254,8 @@ export function VehicleDetailClient({ id }: VehicleDetailClientProps) {
                   <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                 </svg>
               }
-              label="Editează Vehicul"
-              sub="Date, documente, bază"
+              label="Edit Vehicle"
+              sub="Data, documents, base"
               onClick={onClose}
             />
             <SheetBtn
@@ -295,7 +295,7 @@ export function VehicleDetailClient({ id }: VehicleDetailClientProps) {
                   <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
                 </svg>
               }
-              label="Marchează Indisponibil"
+              label="Mark Unavailable"
               sub="Avarie, blocat sau retras"
               onClick={onClose}
             />
@@ -308,12 +308,12 @@ export function VehicleDetailClient({ id }: VehicleDetailClientProps) {
   if (error)
     return (
       <div style={{ padding: "80px 16px", textAlign: "center" }}>
-        <p style={{ color: "var(--prv-text-3)", fontSize: 14 }}>Vehiculul nu a fost găsit.</p>
+        <p style={{ color: "var(--prv-text-3)", fontSize: 14 }}>Vehicle not found.</p>
         <Link
           href="/fleet"
           style={{ fontSize: 14, color: "#7eb8ff", marginTop: 12, display: "block" }}
         >
-          ← Înapoi la Fleet
+          ← Back la Fleet
         </Link>
       </div>
     )
@@ -604,7 +604,7 @@ export function VehicleDetailClient({ id }: VehicleDetailClientProps) {
               margin: "0 0 8px",
             }}
           >
-            Misiune Activă
+            Active Mission
           </p>
           <p
             style={{ fontSize: 14, fontWeight: 700, color: "var(--prv-text-1)", margin: "0 0 3px" }}
@@ -744,7 +744,7 @@ export function VehicleDetailClient({ id }: VehicleDetailClientProps) {
           margin: "0 2px 10px",
         }}
       >
-        Mentenanță
+        Maintenance
       </p>
       <div
         style={{

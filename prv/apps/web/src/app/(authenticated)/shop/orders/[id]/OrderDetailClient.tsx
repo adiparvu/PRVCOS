@@ -21,7 +21,7 @@ const STATUS_CONFIG: Record<
     border: "rgba(255,200,50,0.24)",
   },
   processing: {
-    label: "În procesare",
+    label: "Processing",
     color: "#ffcc44",
     bg: "rgba(255,200,50,0.12)",
     border: "rgba(255,200,50,0.24)",
@@ -39,13 +39,13 @@ const STATUS_CONFIG: Record<
     border: "rgba(80,255,140,0.20)",
   },
   confirmed: {
-    label: "Confirmat",
+    label: "Confirmed",
     color: "#7eb8ff",
     bg: "rgba(100,160,255,0.12)",
     border: "rgba(100,160,255,0.24)",
   },
   cancelled: {
-    label: "Anulat",
+    label: "Cancelled",
     color: "rgba(255,255,255,0.30)",
     bg: "rgba(255,255,255,0.05)",
     border: "rgba(255,255,255,0.10)",
@@ -59,16 +59,16 @@ const STATUS_CONFIG: Record<
 }
 
 const NEXT_STATUS: Partial<Record<OrderStatus, { to: OrderStatus; label: string }>> = {
-  pending: { to: "confirmed", label: "Confirmă Comanda" },
-  confirmed: { to: "processing", label: "Marchează În Procesare" },
-  processing: { to: "shipped", label: "Marchează Expediat" },
-  shipped: { to: "delivered", label: "Marchează Livrat" },
+  pending: { to: "confirmed", label: "Confirm Order" },
+  confirmed: { to: "processing", label: "Mark Processing" },
+  processing: { to: "shipped", label: "Mark Shipped" },
+  shipped: { to: "delivered", label: "Mark Delivered" },
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function fmt(n: number) {
-  return "€" + n.toLocaleString("ro-RO", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  return "€" + n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
 function fmtDate(iso: string) {
@@ -190,7 +190,7 @@ function Skeleton() {
 
 const STEPS: { status: OrderStatus; label: string }[] = [
   { status: "pending", label: "Plasat" },
-  { status: "processing", label: "Procesare" },
+  { status: "processing", label: "Processing" },
   { status: "shipped", label: "Expediat" },
   { status: "delivered", label: "Livrat" },
 ]
@@ -211,7 +211,7 @@ function StatusStepper({ current }: { current: OrderStatus }) {
     >
       {isCancelled ? (
         <p style={{ textAlign: "center", fontSize: 13, color: "rgba(255,255,255,0.35)" }}>
-          Comandă anulată
+          Order cancelled
         </p>
       ) : (
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -352,14 +352,14 @@ export function OrderDetailClient({ id }: { id: string }) {
             fontSize: 14,
           }}
         >
-          Comanda nu a fost găsită.
+          Order not found.
         </p>
         <div style={{ textAlign: "center" }}>
           <Link
             href="/shop/orders"
             style={{ color: "rgba(255,255,255,0.50)", fontSize: 13, textDecoration: "none" }}
           >
-            ← Înapoi la comenzi
+            ← Back la comenzi
           </Link>
         </div>
       </div>
@@ -397,7 +397,7 @@ export function OrderDetailClient({ id }: { id: string }) {
             {order.ref}
           </h1>
           <p style={{ fontSize: 11, color: "rgba(255,255,255,0.30)", marginTop: 2 }}>
-            Plasată {fmtDate(order.placedAt)}
+            Placed {fmtDate(order.placedAt)}
           </p>
         </div>
         <span
@@ -477,7 +477,7 @@ export function OrderDetailClient({ id }: { id: string }) {
                 color: "rgba(255,255,255,0.30)",
               }}
             >
-              Adresă
+              Address
             </p>
           </div>
           <p
@@ -560,7 +560,7 @@ export function OrderDetailClient({ id }: { id: string }) {
         }}
       >
         {[
-          { label: "Subtotal (fără TVA)", value: fmt(order.totalNet) },
+          { label: "Subtotal (excl. VAT)", value: fmt(order.totalNet) },
           { label: "TVA (19%)", value: fmt(order.totalVat) },
         ].map(({ label, value }) => (
           <div
@@ -651,7 +651,7 @@ export function OrderDetailClient({ id }: { id: string }) {
             marginTop: 4,
           }}
         >
-          {advancing ? "Se actualizează..." : next.label}
+          {advancing ? "Updating..." : next.label}
         </button>
       )}
     </div>

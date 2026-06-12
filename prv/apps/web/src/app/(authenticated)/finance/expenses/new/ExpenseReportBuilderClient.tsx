@@ -289,7 +289,7 @@ function LineItemRow({
               letterSpacing: "-0.3px",
             }}
           >
-            €{total.toLocaleString("ro-RO", { maximumFractionDigits: 2 })}
+            €{total.toLocaleString("en-US", { maximumFractionDigits: 2 })}
           </span>
           {canRemove && (
             <button
@@ -610,7 +610,7 @@ export function ExpenseReportBuilderClient() {
           >
             <span style={{ fontSize: 13, color: "rgba(255,255,255,0.50)" }}>{label}</span>
             <span style={{ fontSize: 13, color: "rgba(255,255,255,0.80)", fontWeight: 600 }}>
-              €{value.toLocaleString("ro-RO", { maximumFractionDigits: 2 })}
+              €{value.toLocaleString("en-US", { maximumFractionDigits: 2 })}
             </span>
           </div>
         ))}
@@ -626,7 +626,7 @@ export function ExpenseReportBuilderClient() {
               letterSpacing: "-0.3px",
             }}
           >
-            €{totalGross.toLocaleString("ro-RO", { maximumFractionDigits: 2 })}
+            €{totalGross.toLocaleString("en-US", { maximumFractionDigits: 2 })}
           </span>
         </div>
       </div>

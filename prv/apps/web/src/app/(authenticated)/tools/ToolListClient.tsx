@@ -7,15 +7,15 @@ import { useSheetStack } from "@prv/ui"
 import type { ToolSummary, ToolsMeta } from "@/app/api/tools/route"
 import { useTools } from "@/lib/api-hooks"
 
-type FilterType = "Toate" | "Disponibil" | "Ocupat" | "Service" | "Lipsă"
+type FilterType = "Toate" | "Available" | "Occupied" | "Service" | "Missing"
 
-const FILTERS: FilterType[] = ["Toate", "Disponibil", "Ocupat", "Service", "Lipsă"]
+const FILTERS: FilterType[] = ["Toate", "Available", "Occupied", "Service", "Missing"]
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
-  Available: { label: "Disponibil", color: "rgba(48,209,88,.95)", bg: "rgba(48,209,88,.13)" },
-  "In Use": { label: "Ocupat", color: "rgba(10,132,255,.9)", bg: "rgba(10,132,255,.13)" },
+  Available: { label: "Available", color: "rgba(48,209,88,.95)", bg: "rgba(48,209,88,.13)" },
+  "In Use": { label: "Occupied", color: "rgba(10,132,255,.9)", bg: "rgba(10,132,255,.13)" },
   Maintenance: { label: "Service", color: "rgba(255,159,10,.95)", bg: "rgba(255,159,10,.13)" },
-  Missing: { label: "Lipsă", color: "rgba(255,69,58,.95)", bg: "rgba(255,69,58,.12)" },
+  Missing: { label: "Missing", color: "rgba(255,69,58,.95)", bg: "rgba(255,69,58,.12)" },
 }
 
 const CATEGORY_ORDER = ["Hand Tools", "Power Tools", "Heavy Equipment", "Measuring"]
@@ -250,7 +250,7 @@ function SheetBtn({
 
 export function ToolListClient() {
   const router = useRouter()
-  const [filter, setFilter] = useState<FilterType>("Toate")
+  const [filter, setFilter] = useState<FilterType>("All")
   const { openSheet } = useSheetStack()
 
   const statusParam: Record<FilterType, string | null> = {
@@ -258,10 +258,11 @@ export function ToolListClient() {
     Disponibil: "Available",
     Ocupat: "In Use",
     Service: "Maintenance",
-    Lipsă: "Missing",
+    Missing: "Missing",
   }
   const status = statusParam[filter]
-  const { data, isLoading, isError, hasNextPage, fetchNextPage, isFetchingNextPage } = useTools(status)
+  const { data, isLoading, isError, hasNextPage, fetchNextPage, isFetchingNextPage } =
+    useTools(status)
   const tools: ToolSummary[] | null = isLoading ? null : (data?.tools ?? [])
   const meta: ToolsMeta | null = data?.meta ?? null
   const error = isError
@@ -291,9 +292,12 @@ export function ToolListClient() {
                 <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
               </svg>
             }
-            label="Sculă Nouă"
-            sub="Adaugă sculă în inventar"
-            onClick={() => { onClose(); router.push("/tools/new") }}
+            label="New Tool"
+            sub="Add tool to inventory"
+            onClick={() => {
+              onClose()
+              router.push("/tools/new")
+            }}
           />
           <SheetBtn
             color="white"
@@ -322,7 +326,7 @@ export function ToolListClient() {
     })
   }
 
-  const showCategories = filter === "Toate"
+  const showCategories = filter === "All"
 
   return (
     <div
@@ -380,7 +384,7 @@ export function ToolListClient() {
               { val: String(meta.total), label: "Total", color: undefined },
               {
                 val: String(meta.inUse),
-                label: "În Uz",
+                label: "In Use",
                 color: meta.inUse > 0 ? "rgba(10,132,255,.9)" : "var(--prv-text-1)",
               },
               {
@@ -390,7 +394,7 @@ export function ToolListClient() {
               },
               {
                 val: String(meta.missing),
-                label: "Lipsă",
+                label: "Missing",
                 color: meta.missing > 0 ? "rgba(255,69,58,.95)" : "var(--prv-text-1)",
               },
             ].map((k) => (
@@ -460,11 +464,11 @@ export function ToolListClient() {
           <IconWarning />
           <div>
             <p style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,159,10,.95)", margin: 0 }}>
-              Mentenanță Restantă
+              Maintenance Overdue
             </p>
             <p style={{ fontSize: 12, color: "rgba(255,159,10,.6)", margin: "2px 0 0" }}>
-              {meta.overdueCount} sculă{meta.overdueCount > 1 ? "" : ""} cu service depășit ·
-              necesită atenție
+              {meta.overdueCount} tool{meta.overdueCount > 1 ? "s" : ""} with overdue service ·
+              requires attention
             </p>
           </div>
         </div>
@@ -605,7 +609,7 @@ export function ToolListClient() {
       {/* Tool list */}
       {error ? (
         <p style={{ textAlign: "center", color: "var(--prv-text-3)", fontSize: 14, marginTop: 40 }}>
-          Eroare la încărcare. Încearcă din nou.
+          Loading error. Try again.
         </p>
       ) : !tools ? (
         <div
@@ -639,7 +643,7 @@ export function ToolListClient() {
         </div>
       ) : tools.length === 0 ? (
         <p style={{ textAlign: "center", color: "var(--prv-text-3)", fontSize: 14, marginTop: 40 }}>
-          Nicio sculă găsită.
+          No tools found.
         </p>
       ) : (
         <div
@@ -721,7 +725,7 @@ export function ToolListClient() {
                     {t.status === "In Use"
                       ? `${t.assignedTo ?? "—"} · ${t.site ?? "—"} · Retur ${t.dueBack ?? "—"}`
                       : t.serviceOverdueDays !== null
-                        ? `${t.location ?? "—"} · Restant ${t.serviceOverdueDays} zile`
+                        ? `${t.location ?? "—"} · Restant ${t.serviceOverdueDays} days`
                         : `${t.location ?? "—"} · Ultim uz: ${t.lastUsed ?? "—"}`}
                   </p>
                   <UtilBar pct={t.utilisationPct} />
@@ -746,27 +750,26 @@ export function ToolListClient() {
         </div>
       )}
 
-
-        {hasNextPage && (
-          <button
-            onClick={() => fetchNextPage()}
-            disabled={isFetchingNextPage}
-            style={{
-              width: "100%",
-              padding: "12px",
-              background: "rgba(255,255,255,0.06)",
-              border: "1px solid rgba(255,255,255,0.12)",
-              borderRadius: 12,
-              color: "rgba(255,255,255,0.65)",
-              fontSize: 13,
-              fontWeight: 500,
-              cursor: isFetchingNextPage ? "default" : "pointer",
-              marginTop: 8,
-            }}
-          >
-            {isFetchingNextPage ? "Se încarcă..." : "Încarcă mai mult"}
-          </button>
-        )}
+      {hasNextPage && (
+        <button
+          onClick={() => fetchNextPage()}
+          disabled={isFetchingNextPage}
+          style={{
+            width: "100%",
+            padding: "12px",
+            background: "rgba(255,255,255,0.06)",
+            border: "1px solid rgba(255,255,255,0.12)",
+            borderRadius: 12,
+            color: "rgba(255,255,255,0.65)",
+            fontSize: 13,
+            fontWeight: 500,
+            cursor: isFetchingNextPage ? "default" : "pointer",
+            marginTop: 8,
+          }}
+        >
+          {isFetchingNextPage ? "Loading..." : "Load more"}
+        </button>
+      )}
 
       {/* FAB */}
       <button

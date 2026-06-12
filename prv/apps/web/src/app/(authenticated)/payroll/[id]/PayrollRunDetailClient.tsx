@@ -20,9 +20,9 @@ function StatusConfig(status: PayrollRunDetail["status"]): {
   label: string
 } {
   if (status === "processing")
-    return { bg: "rgba(10,132,255,0.13)", color: blue, label: "Procesare" }
-  if (status === "done") return { bg: "rgba(48,209,88,0.13)", color: green, label: "Finalizat" }
-  return { bg: "rgba(255,159,10,0.13)", color: amber, label: "Așteptare" }
+    return { bg: "rgba(10,132,255,0.13)", color: blue, label: "Processing" }
+  if (status === "done") return { bg: "rgba(48,209,88,0.13)", color: green, label: "Completed" }
+  return { bg: "rgba(255,159,10,0.13)", color: amber, label: "Pending" }
 }
 
 function SectionCard({
@@ -121,7 +121,7 @@ export function PayrollRunDetailClient({ id }: { id: string }) {
     openSheet({
       snapPoints: ["mid", "full"],
       defaultSnap: "mid",
-      title: "Acțiuni Rulare Salarizare",
+      title: "Payroll Run Actions",
       render: (onClose) => (
         <div style={{ padding: "0 16px 24px", display: "flex", flexDirection: "column", gap: 8 }}>
           {isActionable && (
@@ -166,10 +166,10 @@ export function PayrollRunDetailClient({ id }: { id: string }) {
               </div>
               <div>
                 <p style={{ fontSize: 15, fontWeight: 600, color: green, margin: 0 }}>
-                  Aprobă Rularea
+                  Approve Run
                 </p>
                 <p style={{ fontSize: 12, color: t3, margin: "2px 0 0" }}>
-                  Declanșează plata pentru toți angajații
+                  Trigger payment for all employees
                 </p>
               </div>
             </button>
@@ -217,10 +217,10 @@ export function PayrollRunDetailClient({ id }: { id: string }) {
               </div>
               <div>
                 <p style={{ fontSize: 15, fontWeight: 600, color: amber, margin: 0 }}>
-                  Corectează Rularea
+                  Correct Runa
                 </p>
                 <p style={{ fontSize: 12, color: t3, margin: "2px 0 0" }}>
-                  Modifică salarii, bonusuri sau ore
+                  Modify salaries, bonuses, or hours
                 </p>
               </div>
             </button>
@@ -269,11 +269,9 @@ export function PayrollRunDetailClient({ id }: { id: string }) {
               </svg>
             </div>
             <div>
-              <p style={{ fontSize: 15, fontWeight: 600, color: blue, margin: 0 }}>
-                Fluturași de Salariu
-              </p>
+              <p style={{ fontSize: 15, fontWeight: 600, color: blue, margin: 0 }}>Pay Slips</p>
               <p style={{ fontSize: 12, color: t3, margin: "2px 0 0" }}>
-                Generează și trimite fluturași angajaților
+                Generate and send pay slips to employees
               </p>
             </div>
           </button>
@@ -329,9 +327,7 @@ export function PayrollRunDetailClient({ id }: { id: string }) {
               >
                 Export
               </p>
-              <p style={{ fontSize: 12, color: t3, margin: "2px 0 0" }}>
-                Exportă rularea ca CSV sau PDF
-              </p>
+              <p style={{ fontSize: 12, color: t3, margin: "2px 0 0" }}>Export run as CSV or PDF</p>
             </div>
           </button>
           {isActionable && (
@@ -377,11 +373,9 @@ export function PayrollRunDetailClient({ id }: { id: string }) {
                 </svg>
               </div>
               <div>
-                <p style={{ fontSize: 15, fontWeight: 600, color: red, margin: 0 }}>
-                  Anulează Rularea
-                </p>
+                <p style={{ fontSize: 15, fontWeight: 600, color: red, margin: 0 }}>Cancel Run</p>
                 <p style={{ fontSize: 12, color: t3, margin: "2px 0 0" }}>
-                  Anulează și revine la editare
+                  Cancel and return to editing
                 </p>
               </div>
             </button>
@@ -507,7 +501,7 @@ export function PayrollRunDetailClient({ id }: { id: string }) {
                 margin: "0 0 4px",
               }}
             >
-              Rulare Salarizare
+              Run Salarizare
             </p>
             <p
               style={{
@@ -521,7 +515,7 @@ export function PayrollRunDetailClient({ id }: { id: string }) {
               {run.title}
             </p>
             <p style={{ fontSize: 14, color: t2, margin: "4px 0 0" }}>
-              {run.period} · {run.employeeCount} angajați
+              {run.period} · {run.employeeCount} employees
             </p>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 10 }}>
               <span
@@ -554,12 +548,12 @@ export function PayrollRunDetailClient({ id }: { id: string }) {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8 }}>
           {[
             {
-              val: `€${run.totalGross.toLocaleString("ro-RO")}`,
+              val: `€${run.totalGross.toLocaleString("en-US")}`,
               label: "Total Brut",
               color: undefined,
             },
-            { val: `€${run.netPaid.toLocaleString("ro-RO")}`, label: "Net Plătit", color: green },
-            { val: String(run.employeeCount), label: "Angajați", color: amber },
+            { val: `€${run.netPaid.toLocaleString("en-US")}`, label: "Net Plătit", color: green },
+            { val: String(run.employeeCount), label: "Employees", color: amber },
           ].map((t) => (
             <div
               key={t.label}
@@ -603,7 +597,7 @@ export function PayrollRunDetailClient({ id }: { id: string }) {
               border: `1px solid rgba(255,255,255,0.09)`,
             }}
           >
-            Corectează
+            Correct
           </button>
           <button
             style={{
@@ -619,7 +613,7 @@ export function PayrollRunDetailClient({ id }: { id: string }) {
               border: "1px solid rgba(48,209,88,0.25)",
             }}
           >
-            Aprobă Rularea
+            Approve Run
           </button>
         </div>
       )}
@@ -657,8 +651,8 @@ export function PayrollRunDetailClient({ id }: { id: string }) {
                 }}
               >
                 {entry.amount < 0
-                  ? `-€${Math.abs(entry.amount).toLocaleString("ro-RO")}`
-                  : `€${entry.amount.toLocaleString("ro-RO")}`}
+                  ? `-€${Math.abs(entry.amount).toLocaleString("en-US")}`
+                  : `€${entry.amount.toLocaleString("en-US")}`}
               </span>
             </div>
           ))}
@@ -666,7 +660,7 @@ export function PayrollRunDetailClient({ id }: { id: string }) {
 
         {/* Top employees */}
         <SectionCard
-          title="Top Angajați · Salariu Net"
+          title="Top Employees · Net Salary"
           badge={
             <span
               style={{
@@ -718,18 +712,18 @@ export function PayrollRunDetailClient({ id }: { id: string }) {
                 <p style={{ fontSize: 12, color: t3, margin: "1px 0 0" }}>{emp.role}</p>
               </div>
               <span style={{ fontSize: 14, fontWeight: 700, color: emp.hasOT ? amber : green }}>
-                €{emp.net.toLocaleString("ro-RO")}
+                €{emp.net.toLocaleString("en-US")}
               </span>
             </div>
           ))}
         </SectionCard>
 
         {/* Run info */}
-        <SectionCard title="Informații Rulare">
-          <InfoRow label="Perioadă" value={run.period} />
-          <InfoRow label="Inițiat de" value={run.initiatedBy} />
-          <InfoRow label="Data procesării" value={run.processingDate} />
-          <InfoRow label="Plată estimată" value={run.estimatedPayDate} valueColor={green} />
+        <SectionCard title="Run Information">
+          <InfoRow label="Period" value={run.period} />
+          <InfoRow label="Initiated by" value={run.initiatedBy} />
+          <InfoRow label="Processing date" value={run.processingDate} />
+          <InfoRow label="Estimated payment" value={run.estimatedPayDate} valueColor={green} />
           <div
             style={{
               display: "flex",
@@ -738,7 +732,7 @@ export function PayrollRunDetailClient({ id }: { id: string }) {
               padding: "11px 16px",
             }}
           >
-            <span style={{ fontSize: 13, color: t3 }}>Metodă plată</span>
+            <span style={{ fontSize: 13, color: t3 }}>Payment method</span>
             <span style={{ fontSize: 13, fontWeight: 600, color: "var(--prv-text-1)" }}>
               {run.paymentMethod}
             </span>

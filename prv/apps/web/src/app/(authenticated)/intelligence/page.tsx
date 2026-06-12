@@ -4,7 +4,7 @@ import { getSession } from "@prv/auth"
 import IntelligenceListClient from "./IntelligenceListClient"
 
 export const dynamic = "force-dynamic"
-export const metadata = { title: "Inteligență · PRV" }
+export const metadata = { title: "Intelligence · PRV" }
 
 export default async function IntelligencePage() {
   const cookieStore = await cookies()

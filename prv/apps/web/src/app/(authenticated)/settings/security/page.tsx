@@ -4,7 +4,7 @@ import { getSession } from "@prv/auth"
 import { SecurityClient } from "./SecurityClient"
 
 export const dynamic = "force-dynamic"
-export const metadata = { title: "Securitate · Setări · PRV" }
+export const metadata = { title: "Security · Settings · PRV" }
 
 export default async function SecurityPage() {
   const cookieStore = await cookies()

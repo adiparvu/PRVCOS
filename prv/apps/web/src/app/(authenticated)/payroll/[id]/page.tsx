@@ -11,7 +11,7 @@ interface Props {
 
 export async function generateMetadata({ params }: Props) {
   const { id } = await params
-  return { title: `Rulare ${id.toUpperCase()} · PRV` }
+  return { title: `Run ${id.toUpperCase()} · PRV` }
 }
 
 export default async function PayrollRunDetailPage({ params }: Props) {

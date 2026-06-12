@@ -365,7 +365,7 @@ export function SupplierBuilderClient() {
                     value={form.city}
                     onChange={(e) => set("city", e.target.value)}
                     type="text"
-                    placeholder="București"
+                    placeholder="City"
                   />
                 </div>
               </div>

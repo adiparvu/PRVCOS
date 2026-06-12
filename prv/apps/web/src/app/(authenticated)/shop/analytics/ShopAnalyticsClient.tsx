@@ -41,7 +41,7 @@ interface AnalyticsData {
 
 function fmtRevenue(v: string | number) {
   return (
-    "€" + Number(v).toLocaleString("ro-RO", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    "€" + Number(v).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
   )
 }
 
@@ -337,7 +337,7 @@ export function ShopAnalyticsClient() {
           <KpiTile label="Venit" value={fmtRevenue(s.totalRevenue)} color="#5affa0" />
           <KpiTile label="Livrate" value={String(s.deliveredOrders)} color="#5affa0" />
           <KpiTile label="Pending" value={String(s.pendingOrders)} color="#ffcc44" />
-          <KpiTile label="În procesare" value={String(s.processingOrders)} color="#ffcc44" />
+          <KpiTile label="Processing" value={String(s.processingOrders)} color="#ffcc44" />
           <KpiTile
             label="Anulate"
             value={String(s.cancelledOrders)}
@@ -373,14 +373,14 @@ export function ShopAnalyticsClient() {
               }}
             >
               {data!.lowStock.count}{" "}
-              {data!.lowStock.count === 1 ? "produs cu stoc scăzut" : "produse cu stoc scăzut"}
+              {data!.lowStock.count === 1 ? "low stock product" : "low stock products"}
             </p>
             {data!.lowStock.products.slice(0, 3).map((p) => (
               <p
                 key={p.id}
                 style={{ fontSize: 11, color: "rgba(255,255,255,0.50)", marginBottom: 1 }}
               >
-                {p.name} — {p.stockQuantity}/{p.stockMinimum} unități
+                {p.name} — {p.stockQuantity}/{p.stockMinimum} units
               </p>
             ))}
             {data!.lowStock.count > 3 && (
@@ -400,7 +400,7 @@ export function ShopAnalyticsClient() {
               alignSelf: "center",
             }}
           >
-            Gestionează
+            Manage
           </Link>
         </div>
       )}
@@ -417,7 +417,7 @@ export function ShopAnalyticsClient() {
             marginBottom: 10,
           }}
         >
-          Top produse vândute
+          Top produse sold
         </p>
         {tops.length === 0 ? (
           <div
@@ -428,7 +428,7 @@ export function ShopAnalyticsClient() {
               fontSize: 13,
             }}
           >
-            Nicio comandă înregistrată în această perioadă
+            No orders in this period
           </div>
         ) : (
           tops.map((p, i) => {
@@ -490,7 +490,7 @@ export function ShopAnalyticsClient() {
                     {fmtRevenue(p.totalRevenue)}
                   </p>
                   <p style={{ fontSize: 10, color: "rgba(255,255,255,0.35)" }}>
-                    {p.totalSold} vândute
+                    {p.totalSold} sold
                   </p>
                 </div>
               </div>

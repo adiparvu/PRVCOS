@@ -13,9 +13,9 @@ function getRelativeTime(iso: string) {
   const diff = Date.now() - new Date(iso).getTime()
   const hours = Math.floor(diff / 3_600_000)
   if (hours < 2) return "Acum"
-  if (hours < 24) return `${hours}h în urmă`
+  if (hours < 24) return `${hours}h ago`
   const days = Math.floor(hours / 24)
-  if (days < 30) return `${days}z în urmă`
+  if (days < 30) return `${days}d ago`
   return new Date(iso).toLocaleDateString("ro-RO", {
     day: "numeric",
     month: "short",
@@ -87,10 +87,10 @@ const ACTIVITY_DOT: Record<string, string> = {
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
   Pending: { label: "Pending", color: "rgba(255,159,10,.95)", bg: "rgba(255,159,10,.13)" },
-  Approved: { label: "Aprobat", color: "rgba(48,209,88,.95)", bg: "rgba(48,209,88,.13)" },
+  Approved: { label: "Approved", color: "rgba(48,209,88,.95)", bg: "rgba(48,209,88,.13)" },
   Draft: { label: "Draft", color: "rgba(255,255,255,.55)", bg: "rgba(255,255,255,.08)" },
-  Rejected: { label: "Respins", color: "rgba(255,69,58,.95)", bg: "rgba(255,69,58,.12)" },
-  "In Transit": { label: "În Transit", color: "rgba(10,132,255,.9)", bg: "rgba(10,132,255,.12)" },
+  Rejected: { label: "Rejected", color: "rgba(255,69,58,.95)", bg: "rgba(255,69,58,.12)" },
+  "In Transit": { label: "In Transit", color: "rgba(10,132,255,.9)", bg: "rgba(10,132,255,.12)" },
 }
 
 // ── Sheet button helper ───────────────────────────────────────────────────────
@@ -196,7 +196,7 @@ export function PurchaseOrderDetailClient({ id }: PurchaseOrderDetailClientProps
     openSheet({
       snapPoints: ["mid", "full"],
       defaultSnap: "mid",
-      title: "Acțiuni Comandă",
+      title: "Order Actions",
       render: (onClose) => (
         <div
           style={{ padding: "8px 16px 40px", display: "flex", flexDirection: "column", gap: 10 }}
@@ -218,7 +218,7 @@ export function PurchaseOrderDetailClient({ id }: PurchaseOrderDetailClientProps
                   <polyline points="20 6 9 17 4 12" />
                 </svg>
               }
-              label="Aprobă Comanda"
+              label="Approve Comanda"
               sub="Trimite spre procesare"
               onClick={onClose}
             />
@@ -241,8 +241,8 @@ export function PurchaseOrderDetailClient({ id }: PurchaseOrderDetailClientProps
                   <line x1="6" y1="6" x2="18" y2="18" />
                 </svg>
               }
-              label="Respinge"
-              sub="Solicită modificări sau anulează"
+              label="Reject"
+              sub="Request changes or cancel"
               onClick={onClose}
             />
           )}
@@ -265,8 +265,8 @@ export function PurchaseOrderDetailClient({ id }: PurchaseOrderDetailClientProps
                 <line x1="9" y1="15" x2="15" y2="15" />
               </svg>
             }
-            label="Comandă Nouă"
-            sub="Creează un nou purchase order"
+            label="New Order"
+            sub="Create a new purchase order"
             onClick={onClose}
           />
           <SheetBtn
@@ -286,8 +286,8 @@ export function PurchaseOrderDetailClient({ id }: PurchaseOrderDetailClientProps
                 <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
               </svg>
             }
-            label="Duplică PO"
-            sub="Refolosește articolele și furnizorul"
+            label="Duplicate PO"
+            sub="Reuse items and supplier"
             onClick={onClose}
           />
           <SheetBtn
@@ -307,8 +307,8 @@ export function PurchaseOrderDetailClient({ id }: PurchaseOrderDetailClientProps
                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
               </svg>
             }
-            label="Editează"
-            sub="Modifică articole sau detalii"
+            label="Edit"
+            sub="Edit items or details"
             onClick={onClose}
           />
         </div>
@@ -319,12 +319,12 @@ export function PurchaseOrderDetailClient({ id }: PurchaseOrderDetailClientProps
   if (error)
     return (
       <div style={{ padding: "80px 16px", textAlign: "center" }}>
-        <p style={{ color: "var(--prv-text-3)", fontSize: 14 }}>PO-ul nu a fost găsit.</p>
+        <p style={{ color: "var(--prv-text-3)", fontSize: 14 }}>PO not found.</p>
         <Link
           href="/procurement"
           style={{ fontSize: 14, color: "#7eb8ff", marginTop: 12, display: "block" }}
         >
-          ← Înapoi la Procurement
+          ← Back la Procurement
         </Link>
       </div>
     )
@@ -691,11 +691,11 @@ export function PurchaseOrderDetailClient({ id }: PurchaseOrderDetailClientProps
           { label: "Proiect", val: order.project ?? "—" },
           { label: "Livrare la", val: order.delivery ?? "—" },
           {
-            label: "Necesar până",
+            label: "Needed by",
             val: order.neededBy ? formatNeededBy(order.neededBy) : "—",
             urgent: isUrgent,
           },
-          { label: "Termeni plată", val: order.paymentTerms ?? "—" },
+          { label: "Payment terms", val: order.paymentTerms ?? "—" },
         ].map((row, i, arr) => (
           <div
             key={row.label}
@@ -828,7 +828,7 @@ export function PurchaseOrderDetailClient({ id }: PurchaseOrderDetailClientProps
               cursor: "pointer",
             }}
           >
-            Respinge
+            Reject
           </button>
           <button
             style={{
@@ -843,7 +843,7 @@ export function PurchaseOrderDetailClient({ id }: PurchaseOrderDetailClientProps
               cursor: "pointer",
             }}
           >
-            Aprobă Comanda
+            Approve Comanda
           </button>
         </div>
       )}

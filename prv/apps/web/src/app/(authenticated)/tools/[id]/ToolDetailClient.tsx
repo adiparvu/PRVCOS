@@ -63,10 +63,10 @@ const MAINTENANCE_STATUS_CONFIG: Record<
 }
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
-  Available: { label: "Disponibil", color: "rgba(48,209,88,.95)", bg: "rgba(48,209,88,.13)" },
-  "In Use": { label: "Ocupat", color: "rgba(10,132,255,.9)", bg: "rgba(10,132,255,.13)" },
+  Available: { label: "Available", color: "rgba(48,209,88,.95)", bg: "rgba(48,209,88,.13)" },
+  "In Use": { label: "Occupied", color: "rgba(10,132,255,.9)", bg: "rgba(10,132,255,.13)" },
   Maintenance: { label: "Service", color: "rgba(255,159,10,.95)", bg: "rgba(255,159,10,.13)" },
-  Missing: { label: "Lipsă", color: "rgba(255,69,58,.95)", bg: "rgba(255,69,58,.12)" },
+  Missing: { label: "Missing", color: "rgba(255,69,58,.95)", bg: "rgba(255,69,58,.12)" },
 }
 
 // ── Sheet button helper ───────────────────────────────────────────────────────
@@ -245,7 +245,7 @@ export function ToolDetailClient({ id }: ToolDetailClientProps) {
     openSheet({
       snapPoints: ["mid", "full"],
       defaultSnap: "mid",
-      title: "Acțiuni Sculă",
+      title: "Tool Actions",
       render: (onClose) => (
         <div
           style={{ padding: "8px 16px 40px", display: "flex", flexDirection: "column", gap: 10 }}
@@ -269,8 +269,8 @@ export function ToolDetailClient({ id }: ToolDetailClientProps) {
                 <line x1="20" y1="14" x2="26" y2="14" />
               </svg>
             }
-            label="Asignează"
-            sub={isInUse ? `Asignat: ${tool.assignedTo ?? "—"}` : "Asignează la un angajat"}
+            label="Assign"
+            sub={isInUse ? `Assigned: ${tool.assignedTo ?? "—"}` : "Assign to an employee"}
             onClick={onClose}
           />
           <SheetBtn
@@ -290,7 +290,7 @@ export function ToolDetailClient({ id }: ToolDetailClientProps) {
               </svg>
             }
             label="Trimite la Service"
-            sub={hasOverdue ? "Mentenanță restantă detectată" : "Programare service"}
+            sub={hasOverdue ? "Overdue maintenance detected" : "Schedule service"}
             onClick={onClose}
           />
           {isInUse && (
@@ -310,7 +310,7 @@ export function ToolDetailClient({ id }: ToolDetailClientProps) {
                   <polyline points="20 6 9 17 4 12" />
                 </svg>
               }
-              label="Marchează Returnat"
+              label="Mark Returned"
               sub={`Retur de la ${tool.assignedTo ?? "—"}`}
               onClick={onClose}
             />
@@ -332,8 +332,8 @@ export function ToolDetailClient({ id }: ToolDetailClientProps) {
                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
               </svg>
             }
-            label="Editează Sculă"
-            sub="Detalii, specificații, valoare"
+            label="Edit Tool"
+            sub="Details, specifications, value"
             onClick={onClose}
           />
           <SheetBtn
@@ -353,8 +353,8 @@ export function ToolDetailClient({ id }: ToolDetailClientProps) {
                 <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
               </svg>
             }
-            label="Marchează Lipsă"
-            sub="Sculă pierdută sau furată"
+            label="Mark Missing"
+            sub="Lost or stolen tool"
             onClick={onClose}
           />
         </div>
@@ -365,12 +365,12 @@ export function ToolDetailClient({ id }: ToolDetailClientProps) {
   if (error)
     return (
       <div style={{ padding: "80px 16px", textAlign: "center" }}>
-        <p style={{ color: "var(--prv-text-3)", fontSize: 14 }}>Scula nu a fost găsită.</p>
+        <p style={{ color: "var(--prv-text-3)", fontSize: 14 }}>Tool not found.</p>
         <Link
           href="/tools"
           style={{ fontSize: 14, color: "#7eb8ff", marginTop: 12, display: "block" }}
         >
-          ← Înapoi la Scule
+          ← Back la Scule
         </Link>
       </div>
     )
@@ -566,7 +566,7 @@ export function ToolDetailClient({ id }: ToolDetailClientProps) {
                       ? "rgba(48,209,88,.9)"
                       : "var(--prv-text-2)",
               },
-              { val: String(tool.usesThisMonth), label: "Uz Lună", color: undefined },
+              { val: String(tool.usesThisMonth), label: "Monthly Use", color: undefined },
               { val: `€${tool.valueEur.toLocaleString()}`, label: "Valoare", color: undefined },
             ].map((tile) => (
               <div
@@ -684,7 +684,7 @@ export function ToolDetailClient({ id }: ToolDetailClientProps) {
             <line x1="12" y1="17" x2="12.01" y2="17" />
           </svg>
           <p style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,69,58,.95)", margin: 0 }}>
-            Service restant {tool.serviceOverdueDays} zile · Necesită atenție urgentă
+            Service overdue {tool.serviceOverdueDays} days · Requires urgent attention
           </p>
         </div>
       )}
@@ -692,9 +692,9 @@ export function ToolDetailClient({ id }: ToolDetailClientProps) {
       {/* Stats row */}
       <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
         {[
-          { val: `${tool.ageYears}yr`, label: "Vârstă" },
+          { val: `${tool.ageYears}yr`, label: "Age" },
           { val: tool.lastService, label: "Ultim Service" },
-          { val: tool.nextService, label: "Următor Service" },
+          { val: tool.nextService, label: "Next Service" },
         ].map((tile) => (
           <div
             key={tile.label}
@@ -726,7 +726,7 @@ export function ToolDetailClient({ id }: ToolDetailClientProps) {
       </div>
 
       {/* Specifications */}
-      <SectionLabel>Specificații</SectionLabel>
+      <SectionLabel>Specifications</SectionLabel>
       <div
         style={{
           background: "var(--prv-g1)",
@@ -766,7 +766,7 @@ export function ToolDetailClient({ id }: ToolDetailClientProps) {
       </div>
 
       {/* Maintenance */}
-      <SectionLabel>Mentenanță</SectionLabel>
+      <SectionLabel>Maintenance</SectionLabel>
       <div
         style={{
           background: "var(--prv-g1)",

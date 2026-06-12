@@ -7,16 +7,16 @@ import { useSheetStack } from "@prv/ui"
 import type { POSummary, ProcurementMeta } from "@/app/api/procurement/route"
 import { usePurchaseOrders } from "@/lib/api-hooks"
 
-type FilterType = "Toți" | "Pending" | "Aprobat" | "În Transit" | "Draft" | "Respins"
+type FilterType = "All" | "Pending" | "Approved" | "In Transit" | "Draft" | "Rejected"
 
-const FILTERS: FilterType[] = ["Toți", "Pending", "Aprobat", "În Transit", "Draft", "Respins"]
+const FILTERS: FilterType[] = ["All", "Pending", "Approved", "In Transit", "Draft", "Rejected"]
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
   Pending: { label: "Pending", color: "rgba(255,159,10,.95)", bg: "rgba(255,159,10,.13)" },
-  Approved: { label: "Aprobat", color: "rgba(48,209,88,.95)", bg: "rgba(48,209,88,.13)" },
+  Approved: { label: "Approved", color: "rgba(48,209,88,.95)", bg: "rgba(48,209,88,.13)" },
   Draft: { label: "Draft", color: "rgba(255,255,255,.55)", bg: "rgba(255,255,255,.08)" },
-  Rejected: { label: "Respins", color: "rgba(255,69,58,.95)", bg: "rgba(255,69,58,.12)" },
-  "In Transit": { label: "În Transit", color: "rgba(10,132,255,.9)", bg: "rgba(10,132,255,.12)" },
+  Rejected: { label: "Rejected", color: "rgba(255,69,58,.95)", bg: "rgba(255,69,58,.12)" },
+  "In Transit": { label: "In Transit", color: "rgba(10,132,255,.9)", bg: "rgba(10,132,255,.12)" },
 }
 
 // ── Icons ────────────────────────────────────────────────────────────────────
@@ -217,20 +217,21 @@ function formatDate(iso: string) {
 // ── Main component ────────────────────────────────────────────────────────────
 
 const FILTER_TO_STATUS: Record<FilterType, string | null> = {
-  "Toți": null,
-  "Pending": "Pending",
-  "Aprobat": "Approved",
-  "În Transit": "In Transit",
-  "Draft": "Draft",
-  "Respins": "Rejected",
+  All: null,
+  Pending: "Pending",
+  Approved: "Approved",
+  "In Transit": "In Transit",
+  Draft: "Draft",
+  Rejected: "Rejected",
 }
 
 export function PurchaseOrderListClient() {
   const router = useRouter()
-  const [filter, setFilter] = useState<FilterType>("Toți")
+  const [filter, setFilter] = useState<FilterType>("All")
   const { openSheet } = useSheetStack()
   const status = FILTER_TO_STATUS[filter]
-  const { data, isError, fetchNextPage, hasNextPage, isFetchingNextPage } = usePurchaseOrders(status)
+  const { data, isError, fetchNextPage, hasNextPage, isFetchingNextPage } =
+    usePurchaseOrders(status)
   const orders = data?.orders ?? null
   const meta = data?.meta ?? null
   const error = isError
@@ -239,7 +240,7 @@ export function PurchaseOrderListClient() {
     openSheet({
       snapPoints: ["mid", "full"],
       defaultSnap: "mid",
-      title: "Comandă Nouă",
+      title: "New Order",
       render: (onClose) => (
         <div
           style={{ padding: "8px 16px 40px", display: "flex", flexDirection: "column", gap: 10 }}
@@ -263,9 +264,12 @@ export function PurchaseOrderListClient() {
                 <line x1="9" y1="15" x2="15" y2="15" />
               </svg>
             }
-            label="Comandă Nouă"
-            sub="Creează un nou purchase order"
-            onClick={() => { onClose(); router.push("/procurement/new") }}
+            label="New Order"
+            sub="Create a new purchase order"
+            onClick={() => {
+              onClose()
+              router.push("/procurement/new")
+            }}
           />
           <SheetBtn
             color="white"
@@ -360,12 +364,12 @@ export function PurchaseOrderListClient() {
               },
               {
                 val: String(meta.inTransit),
-                label: "În Transit",
+                label: "In Transit",
                 color: meta.inTransit > 0 ? "rgba(10,132,255,.9)" : "var(--prv-text-1)",
               },
               {
                 val: `${100 - budgetPct}%`,
-                label: "Buget Rămas",
+                label: "Remaining Budget",
                 color: budgetAlert ? "rgba(255,159,10,.95)" : "rgba(48,209,88,.95)",
               },
             ].map((k) => (
@@ -489,7 +493,7 @@ export function PurchaseOrderListClient() {
             <span>€0</span>
             {meta && (
               <span style={{ color: budgetAlert ? "rgba(255,159,10,.95)" : "rgba(48,209,88,.75)" }}>
-                €{(meta.budget - meta.budgetUsed).toLocaleString()} rămas
+                €{(meta.budget - meta.budgetUsed).toLocaleString()} remaining
               </span>
             )}
             <span>€{meta ? `${Math.round(meta.budget / 1000)}K` : "—"}</span>
@@ -514,10 +518,10 @@ export function PurchaseOrderListClient() {
           <IconWarning />
           <div>
             <p style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,159,10,.95)", margin: 0 }}>
-              Alertă Buget
+              Budget Alert
             </p>
             <p style={{ fontSize: 12, color: "rgba(255,159,10,.6)", margin: "2px 0 0" }}>
-              {budgetPct}% din buget utilizat · {meta.pending} PO-uri în așteptare
+              {budgetPct}% din buget utilizat · {meta.pending} PO-uri pending
             </p>
           </div>
         </div>
@@ -561,7 +565,7 @@ export function PurchaseOrderListClient() {
       {/* PO list */}
       {error ? (
         <p style={{ textAlign: "center", color: "var(--prv-text-3)", fontSize: 14, marginTop: 40 }}>
-          Eroare la încărcare. Încearcă din nou.
+          Loading error. Try again.
         </p>
       ) : !orders ? (
         <div
@@ -599,7 +603,7 @@ export function PurchaseOrderListClient() {
         </div>
       ) : orders.length === 0 ? (
         <p style={{ textAlign: "center", color: "var(--prv-text-3)", fontSize: 14, marginTop: 40 }}>
-          Nicio comandă găsită.
+          No orders found.
         </p>
       ) : (
         <div
@@ -702,7 +706,7 @@ export function PurchaseOrderListClient() {
                   cursor: isFetchingNextPage ? "default" : "pointer",
                 }}
               >
-                {isFetchingNextPage ? "Se încarcă..." : "Încarcă mai mult ›"}
+                {isFetchingNextPage ? "Loading..." : "Load more ›"}
               </button>
             </div>
           )}

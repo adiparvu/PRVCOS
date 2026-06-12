@@ -184,7 +184,7 @@ type CatFilter = "all" | ProductCategory
 
 const CATS: { id: CatFilter; label: string }[] = [
   { id: "all", label: "Toate" },
-  { id: "tamplarie", label: "Tâmplărie" },
+  { id: "tamplarie", label: "Carpentry" },
   { id: "sanitare", label: "Sanitare" },
   { id: "electrice", label: "Electrice" },
   { id: "pardoseli", label: "Pardoseli" },
@@ -333,15 +333,15 @@ function CartSheet({
           }}
         >
           <p style={{ fontSize: 18, fontWeight: 700, color: "rgba(255,255,255,0.95)" }}>
-            Coș ({items.reduce((s, i) => s + i.qty, 0)})
+            Cart ({items.reduce((s, i) => s + i.qty, 0)})
           </p>
           <p style={{ fontSize: 18, fontWeight: 700, color: "rgba(255,255,255,0.95)" }}>
-            €{total.toLocaleString("ro-RO")}
+            €{total.toLocaleString("en-US")}
           </p>
         </div>
         {items.length === 0 && (
           <p style={{ textAlign: "center", color: "rgba(255,255,255,0.30)", padding: "32px 0" }}>
-            Coșul este gol
+            Cart is empty
           </p>
         )}
         {items.map(({ product, qty }) => (
@@ -434,7 +434,7 @@ function CartSheet({
               opacity: placing ? 0.7 : 1,
             }}
           >
-            {placing ? "Se procesează..." : "Finalizează comanda"}
+            {placing ? "Processing..." : "Complete order"}
           </button>
         )}
       </div>
@@ -566,7 +566,7 @@ function ProductCard({
             gap: 5,
           }}
         >
-          <IconPlus /> Adaugă în coș
+          <IconPlus /> Add to cart
         </button>
       </div>
     </div>
@@ -867,7 +867,7 @@ export function ShopWorkspace() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Caută produse, materiale..."
+            placeholder="Search products, materials..."
             style={{
               flex: 1,
               background: "none",
@@ -943,7 +943,7 @@ export function ShopWorkspace() {
                 marginBottom: 8,
               }}
             >
-              Ofertă Iun 2026
+              Quote Jun 2026
             </span>
             <p
               style={{
@@ -959,7 +959,7 @@ export function ShopWorkspace() {
               <span style={{ color: "rgba(255,69,58,0.9)" }}>−20%</span> reducere
             </p>
             <p style={{ fontSize: 13, color: "rgba(255,255,255,0.45)" }}>
-              Țevi, fitinguri, robineți Grohe
+              Pipes, fittings, Grohe valves
             </p>
             <button
               onClick={() => setCategory("sanitare")}
@@ -1088,7 +1088,7 @@ export function ShopWorkspace() {
                 fontSize: 14,
               }}
             >
-              Niciun produs găsit
+              No products found
             </div>
           )}
         </div>

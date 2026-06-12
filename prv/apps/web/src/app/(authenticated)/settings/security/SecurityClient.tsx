@@ -124,9 +124,9 @@ function relativeTime(ts: number | string | null): string {
   const ms = typeof ts === "number" ? ts * 1000 : new Date(ts).getTime()
   const diff = Date.now() - ms
   if (diff < 60_000) return "Activ acum"
-  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}min în urmă`
-  if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}h în urmă`
-  return `${Math.floor(diff / 86_400_000)}z în urmă`
+  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}min ago`
+  if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}h ago`
+  return `${Math.floor(diff / 86_400_000)}d ago`
 }
 
 function DeviceIcon({ platform }: { platform: string | null }) {
@@ -137,11 +137,11 @@ function DeviceIcon({ platform }: { platform: string | null }) {
 
 function actionLabel(action: string): string {
   const map: Record<string, string> = {
-    "auth.login": "Autentificare reușită",
+    "auth.login": "Authentication successful",
     "auth.logout": "Deconectare",
     "auth.mfa": "2FA verificat",
-    "auth.refresh": "Token reînnoit",
-    "auth.failed": "Autentificare eșuată",
+    "auth.refresh": "Token refreshed",
+    "auth.failed": "Authentication failed",
   }
   return map[action] ?? action
 }
@@ -321,13 +321,13 @@ export function SecurityClient() {
               border: `1px solid ${mfa?.enabled ? "rgba(80,255,140,0.28)" : "rgba(255,159,10,0.28)"}`,
             }}
           >
-            {mfa?.enabled ? "Activ" : "Inactiv"}
+            {mfa?.enabled ? "Active" : "Inactive"}
           </span>
         </div>
         <p style={{ fontSize: 12, color: "rgba(255,255,255,0.40)" }}>
           {mfa?.enabled
-            ? `Coduri de backup rămase: ${mfa.backupCodesRemaining}`
-            : "Activați 2FA pentru securitate sporită a contului."}
+            ? `Coduri de backup remaininge: ${mfa.backupCodesRemaining}`
+            : "Enable 2FA for enhanced account security."}
         </p>
       </div>
 
@@ -367,11 +367,11 @@ export function SecurityClient() {
         {[
           {
             icon: <IconPhone />,
-            label: "Aplicație autentificator",
+            label: "Authenticator app",
             sub: "Google Authenticator / Authy",
             badge: mfa?.enabled
               ? {
-                  text: "Activ",
+                  text: "Active",
                   color: "rgba(80,255,140,0.90)",
                   bg: "rgba(80,255,140,0.15)",
                   border: "rgba(80,255,140,0.28)",
@@ -392,7 +392,7 @@ export function SecurityClient() {
           {
             icon: <IconGlobe />,
             label: "Coduri de backup",
-            sub: mfa ? `${mfa.backupCodesRemaining} coduri rămase` : "—",
+            sub: mfa ? `${mfa.backupCodesRemaining} coduri remaininge` : "—",
             badge: null,
           },
         ].map(({ icon, label, sub, badge }, i) => (
@@ -468,7 +468,7 @@ export function SecurityClient() {
             fontSize: 13,
           }}
         >
-          Nicio sesiune activă detectată
+          No active session detected
         </div>
       ) : (
         <div
@@ -570,7 +570,7 @@ export function SecurityClient() {
                     padding: 0,
                   }}
                 >
-                  {revoking === s.sessionId ? "…" : "Revocă"}
+                  {revoking === s.sessionId ? "…" : "Revoke"}
                 </button>
               )}
             </div>
@@ -597,8 +597,8 @@ export function SecurityClient() {
           }}
         >
           {revokeAllBusy
-            ? "Se procesează..."
-            : `Revocă toate celelalte sesiuni (${otherSessions.length})`}
+            ? "Processing..."
+            : `Revoke toate celelalte sesiuni (${otherSessions.length})`}
         </button>
       )}
 
@@ -615,7 +615,7 @@ export function SecurityClient() {
               marginBottom: 8,
             }}
           >
-            Activitate recentă
+            Recent activity
           </p>
           <div
             style={{

@@ -7,7 +7,7 @@ import { useSheetStack } from "@prv/ui"
 import type { DocumentRecord, DocumentsMeta } from "@/app/api/documents/route"
 import { useDocuments } from "@/lib/api-hooks"
 
-type FilterType = "Recente" | "Contracte" | "Facturi" | "Proiecte" | "HR" | "Flotă"
+type FilterType = "Recent" | "Contracts" | "Invoices" | "Projects" | "HR" | "Fleet"
 
 const FILTER_TO_CATEGORY: Record<FilterType, string | null> = {
   Recente: null,
@@ -15,10 +15,10 @@ const FILTER_TO_CATEGORY: Record<FilterType, string | null> = {
   Facturi: "invoices",
   Proiecte: "projects",
   HR: "hr",
-  Flotă: "fleet",
+  Fleet: "fleet",
 }
 
-const FILTERS: FilterType[] = ["Recente", "Contracte", "Facturi", "Proiecte", "HR", "Flotă"]
+const FILTERS: FilterType[] = ["Recent", "Contracts", "Invoices", "Projects", "HR", "Fleet"]
 
 const bds = "var(--prv-border-subtle)"
 const g1 = "var(--prv-g1)"
@@ -68,7 +68,7 @@ function StatusPill({ status }: { status: DocumentRecord["status"] }) {
   const cfg: Record<DocumentRecord["status"], { bg: string; color: string; label: string }> = {
     signed: { bg: "rgba(48,209,88,0.13)", color: green, label: "Semnat" },
     pending: { bg: "rgba(255,159,10,0.13)", color: amber, label: "Nesemnat" },
-    draft: { bg: "rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.45)", label: "Ciornă" },
+    draft: { bg: "rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.45)", label: "Draft" },
     expired: { bg: "rgba(255,69,58,0.13)", color: red, label: "Expirat" },
   }
   const c = cfg[status]
@@ -195,7 +195,7 @@ function DocRow({ doc }: { doc: DocumentRecord }) {
           </span>
           {isPending && doc.expiresAt && (
             <span style={{ fontSize: 10, color: "rgba(255,159,10,0.75)", fontWeight: 600 }}>
-              Expiră {doc.expiresAt}
+              Expires {doc.expiresAt}
             </span>
           )}
           {isExpired && doc.expiresAt && (
@@ -229,7 +229,7 @@ function SectionLabel({ children }: { children: string }) {
 
 export function DocumentsListClient() {
   const router = useRouter()
-  const [filter, setFilter] = useState<FilterType>("Recente")
+  const [filter, setFilter] = useState<FilterType>("Recent")
   const { openSheet } = useSheetStack()
   const category = FILTER_TO_CATEGORY[filter]
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useDocuments(category)
@@ -239,20 +239,20 @@ export function DocumentsListClient() {
   const pendingDocs = documents.filter((d) => d.status === "pending")
   const recentDocs = documents.filter((d) => d.status === "signed" || d.status === "draft")
   const expiredDocs = documents.filter((d) => d.status === "expired")
-  const showSections = filter === "Recente"
+  const showSections = filter === "Recent"
   const hasExpiring = pendingDocs.some((d) => d.expiresAt)
 
   function openFab() {
     openSheet({
       snapPoints: ["mid", "full"],
       defaultSnap: "mid",
-      title: "Acțiuni Documente",
+      title: "Document Actions",
       render: (onClose) => (
         <div style={{ padding: "0 16px 24px", display: "flex", flexDirection: "column", gap: 8 }}>
           {[
             {
-              label: "Încarcă Document",
-              sub: "Adaugă un fișier PDF, DOC sau XLS",
+              label: "Upload Document",
+              sub: "Add a PDF, DOC or XLS file",
               iconBg: "rgba(48,209,88,0.18)",
               rowBg: "rgba(48,209,88,0.10)",
               rowBorder: "rgba(48,209,88,0.2)",
@@ -276,8 +276,10 @@ export function DocumentsListClient() {
             },
             {
               label: "Document Nou",
-              sub: "Creează un document din șablon",
-              onClick: () => { router.push("/documents/new") },
+              sub: "Create a document from template",
+              onClick: () => {
+                router.push("/documents/new")
+              },
               iconBg: "rgba(10,132,255,0.18)",
               rowBg: "rgba(10,132,255,0.10)",
               rowBorder: "rgba(10,132,255,0.2)",
@@ -301,8 +303,8 @@ export function DocumentsListClient() {
               ),
             },
             {
-              label: "Export Listă",
-              sub: "Exportă inventarul documentelor",
+              label: "Export List",
+              sub: "Export document inventory",
               iconBg: "rgba(255,255,255,0.10)",
               rowBg: "rgba(255,255,255,0.04)",
               rowBorder: "rgba(255,255,255,0.09)",
@@ -327,7 +329,10 @@ export function DocumentsListClient() {
           ].map((btn) => (
             <button
               key={btn.label}
-              onClick={() => { onClose(); btn.onClick?.() }}
+              onClick={() => {
+                onClose()
+                btn.onClick?.()
+              }}
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -385,7 +390,7 @@ export function DocumentsListClient() {
         }}
       >
         <div>
-          <p style={{ fontSize: 13, color: t3, margin: 0 }}>Operațiuni</p>
+          <p style={{ fontSize: 13, color: t3, margin: 0 }}>Operations</p>
           <h1
             style={{
               fontSize: 26,
@@ -435,7 +440,7 @@ export function DocumentsListClient() {
           { val: String(meta?.total ?? 47), label: "Total", color: undefined },
           { val: String(meta?.pendingCount ?? 4), label: "Nesemnate", color: amber },
           { val: String(meta?.expiredCount ?? 2), label: "Expirate", color: red },
-          { val: String(meta?.recentCount ?? 8), label: "Recente", color: green },
+          { val: String(meta?.recentCount ?? 8), label: "Recent", color: green },
         ].map((k) => (
           <div
             key={k.label}
@@ -484,7 +489,7 @@ export function DocumentsListClient() {
             <line x1="12" y1="17" x2="12.01" y2="17" />
           </svg>
           <span style={{ fontSize: 13, color: amber, fontWeight: 500 }}>
-            Contract A4 Brașov expiră în 3 zile
+            Contract A4 Brașov expiră în 3 days
           </span>
         </div>
       )}
@@ -529,7 +534,7 @@ export function DocumentsListClient() {
         <>
           {pendingDocs.length > 0 && (
             <>
-              <SectionLabel>{`Necesită Semnătură · ${pendingDocs.length}`}</SectionLabel>
+              <SectionLabel>{`Requires Signature · ${pendingDocs.length}`}</SectionLabel>
               {pendingDocs.map((d) => (
                 <DocRow key={d.id} doc={d} />
               ))}
@@ -558,7 +563,7 @@ export function DocumentsListClient() {
 
       {documents.length === 0 && (
         <div style={{ textAlign: "center", padding: "40px 16px", color: t3, fontSize: 14 }}>
-          Niciun document găsit
+          No documents found
         </div>
       )}
 
@@ -579,7 +584,7 @@ export function DocumentsListClient() {
             marginBottom: 12,
           }}
         >
-          {isFetchingNextPage ? "Se încarcă..." : "Încarcă mai mult"}
+          {isFetchingNextPage ? "Loading..." : "Load more"}
         </button>
       )}
 

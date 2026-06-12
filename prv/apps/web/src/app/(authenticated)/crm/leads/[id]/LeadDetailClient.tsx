@@ -137,7 +137,7 @@ const STAGES: { id: LeadStage; label: string }[] = [
   { id: "qualified", label: "Calificat" },
   { id: "proposal", label: "Propunere" },
   { id: "negotiation", label: "Negociere" },
-  { id: "won", label: "Câștigat" },
+  { id: "won", label: "Won" },
   { id: "lost", label: "Pierdut" },
 ]
 
@@ -317,7 +317,7 @@ export function LeadDetailClient({ id }: { id: string }) {
         className="px-4 pt-14 max-w-2xl mx-auto"
         style={{ color: "rgba(255,255,255,0.40)", textAlign: "center", paddingTop: 80 }}
       >
-        Lead negăsit
+        Lead not found
       </div>
     )
 
@@ -402,7 +402,7 @@ export function LeadDetailClient({ id }: { id: string }) {
 
       {/* Stage pipeline */}
       <Card>
-        <SectionLabel>Etapă pipeline</SectionLabel>
+        <SectionLabel>Pipeline Stage</SectionLabel>
         <div
           style={{
             display: "flex",
@@ -495,7 +495,7 @@ export function LeadDetailClient({ id }: { id: string }) {
                 marginBottom: 4,
               }}
             >
-              Valoare estimată
+              Estimated value
             </p>
             <p
               style={{
@@ -505,7 +505,7 @@ export function LeadDetailClient({ id }: { id: string }) {
                 letterSpacing: "-0.4px",
               }}
             >
-              €{lead.estimatedValue.toLocaleString("ro-RO")}
+              €{lead.estimatedValue.toLocaleString("en-US")}
             </p>
           </div>
           <div>
@@ -573,7 +573,7 @@ export function LeadDetailClient({ id }: { id: string }) {
           <span style={{ fontSize: 11, color: "rgba(255,255,255,0.35)" }}>
             Ultima activitate{" "}
             <span style={{ color: "rgba(255,255,255,0.55)", fontWeight: 500 }}>
-              {lead.lastActivity} în urmă
+              {lead.lastActivity} ago
             </span>
           </span>
         </div>
@@ -645,7 +645,7 @@ export function LeadDetailClient({ id }: { id: string }) {
       {/* Notes */}
       {lead.notes && (
         <Card>
-          <SectionLabel>Notițe</SectionLabel>
+          <SectionLabel>Notes</SectionLabel>
           <p style={{ fontSize: 13, color: "rgba(255,255,255,0.65)", lineHeight: 1.55 }}>
             {lead.notes}
           </p>
@@ -655,7 +655,7 @@ export function LeadDetailClient({ id }: { id: string }) {
       {/* Activity */}
       {lead.activities.length > 0 && (
         <Card>
-          <SectionLabel>Activitate recentă</SectionLabel>
+          <SectionLabel>Recent activity</SectionLabel>
           {lead.activities.map((act: LeadActivity, i) => {
             const aStyle = activityIcon(act.type)
             return (
@@ -737,7 +737,7 @@ export function LeadDetailClient({ id }: { id: string }) {
           }}
         >
           <IconPhone />
-          <span style={{ fontSize: 11, fontWeight: 600 }}>Sună</span>
+          <span style={{ fontSize: 11, fontWeight: 600 }}>Call</span>
         </a>
         <a
           href={`mailto:${lead.email}`}
@@ -773,7 +773,7 @@ export function LeadDetailClient({ id }: { id: string }) {
           }}
         >
           <IconFile />
-          <span style={{ fontSize: 11, fontWeight: 600 }}>Crează ofertă</span>
+          <span style={{ fontSize: 11, fontWeight: 600 }}>Create quote</span>
         </Link>
         {!isTerminal && (
           <button
@@ -791,7 +791,7 @@ export function LeadDetailClient({ id }: { id: string }) {
             }}
           >
             <IconArrow />
-            <span style={{ fontSize: 11, fontWeight: 700 }}>Avansează etapă</span>
+            <span style={{ fontSize: 11, fontWeight: 700 }}>Advance stage</span>
           </button>
         )}
       </div>

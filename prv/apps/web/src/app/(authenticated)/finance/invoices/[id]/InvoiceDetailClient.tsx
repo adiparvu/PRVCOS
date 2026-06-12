@@ -252,7 +252,7 @@ function IconPlus() {
 // ── Types & helpers ───────────────────────────────────────────────────────────
 
 function fmt(amount: number) {
-  return "€" + amount.toLocaleString("ro-RO")
+  return "€" + amount.toLocaleString("en-US")
 }
 
 function fmtDate(iso: string) {
@@ -268,7 +268,7 @@ function relTime(iso: string) {
   const d = Math.floor(diff / 86400000)
   if (d === 0) return "Azi"
   if (d === 1) return "Ieri"
-  return `${d}z în urmă`
+  return `${d}d ago`
 }
 
 const STATUS_CONFIG: Record<
@@ -276,37 +276,37 @@ const STATUS_CONFIG: Record<
   { label: string; color: string; bg: string; border: string }
 > = {
   overdue: {
-    label: "Restantă",
+    label: "Overdue",
     color: "#ff6b6b",
     bg: "rgba(255,80,80,0.12)",
     border: "rgba(255,80,80,0.22)",
   },
   due: {
-    label: "Scadentă",
+    label: "Due",
     color: "#ffcc44",
     bg: "rgba(255,180,0,0.12)",
     border: "rgba(255,180,0,0.22)",
   },
   partial: {
-    label: "Parțial",
+    label: "Partial",
     color: "#b08fff",
     bg: "rgba(130,100,255,0.14)",
     border: "rgba(130,100,255,0.24)",
   },
   paid: {
-    label: "Plătită",
+    label: "Paid",
     color: "#5affa0",
     bg: "rgba(80,255,140,0.10)",
     border: "rgba(80,255,140,0.20)",
   },
   draft: {
-    label: "Ciornă",
+    label: "Draft",
     color: "rgba(255,255,255,0.45)",
     bg: "rgba(255,255,255,0.07)",
     border: "rgba(255,255,255,0.14)",
   },
   void: {
-    label: "Anulată",
+    label: "Cancelled",
     color: "rgba(255,255,255,0.30)",
     bg: "rgba(255,255,255,0.04)",
     border: "rgba(255,255,255,0.10)",
@@ -455,7 +455,7 @@ function InvoiceActionsSheet({
           <IconCheckCircle />
         </div>
         <p style={{ fontSize: 15, fontWeight: 600, color: "rgba(255,255,255,0.85)" }}>
-          Acțiune înregistrată
+          Action recorded
         </p>
       </div>
     )
@@ -515,7 +515,7 @@ function InvoiceActionsSheet({
               marginBottom: 8,
             }}
           >
-            Metodă de plată
+            Payment method
           </p>
           <div
             style={{
@@ -564,7 +564,7 @@ function InvoiceActionsSheet({
               marginBottom: 14,
             }}
           >
-            <span style={{ fontSize: 12, color: "rgba(255,255,255,0.55)" }}>Data plății</span>
+            <span style={{ fontSize: 12, color: "rgba(255,255,255,0.55)" }}>Payment date</span>
             <span style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.85)" }}>
               {fmtDate(payDate)}
             </span>
@@ -586,7 +586,7 @@ function InvoiceActionsSheet({
               marginBottom: 8,
             }}
           >
-            {submitting ? "Se procesează…" : `Marchează ${fmt(invoice.amount)} ca Plătit`}
+            {submitting ? "Processing…" : `Mark ${fmt(invoice.amount)} as Paid`}
           </button>
           <button
             onClick={() => setView("menu")}
@@ -600,7 +600,7 @@ function InvoiceActionsSheet({
               cursor: "pointer",
             }}
           >
-            Înapoi
+            Back
           </button>
         </>
       )}
@@ -639,7 +639,7 @@ function InvoiceActionsSheet({
               lineHeight: 1.5,
             }}
           >
-            Subiect: Reminder plată {invoice.ref} — {fmt(invoice.amount)}
+            Subject: Payment reminder {invoice.ref} — {fmt(invoice.amount)}
           </div>
           <button
             onClick={sendReminder}
@@ -671,7 +671,7 @@ function InvoiceActionsSheet({
               cursor: "pointer",
             }}
           >
-            Înapoi
+            Back
           </button>
         </>
       )}
@@ -689,7 +689,7 @@ function InvoiceActionsSheet({
             }}
           >
             <p style={{ fontSize: 12, color: "rgba(255,100,100,0.80)", lineHeight: 1.45 }}>
-              Anularea este ireversibilă. Factura va fi marcată ca anulată și va rămâne în evidențe.
+              This action is irreversible. The invoice will be marked as void and remain in records.
             </p>
           </div>
           <textarea
@@ -728,7 +728,7 @@ function InvoiceActionsSheet({
               transition: "all 0.2s",
             }}
           >
-            {submitting ? "Se anulează…" : "Anulează Factura"}
+            {submitting ? "Cancelling…" : "Void Invoice"}
           </button>
           <button
             onClick={() => setView("menu")}
@@ -742,7 +742,7 @@ function InvoiceActionsSheet({
               cursor: "pointer",
             }}
           >
-            Înapoi
+            Back
           </button>
         </>
       )}
@@ -766,7 +766,7 @@ function InvoiceActionsSheet({
                 marginBottom: 12,
               }}
             >
-              Marchează ca Plătit
+              Mark as Paid
             </button>
           )}
 
@@ -781,22 +781,22 @@ function InvoiceActionsSheet({
             {
               id: "download",
               icon: <IconDownload />,
-              label: "Descarcă PDF",
+              label: "Download PDF",
               sub: `${invoice.ref}.pdf`,
               action: () => {},
             },
             {
               id: "edit",
               icon: <IconPencil />,
-              label: "Editează Factura",
-              sub: "Modifică articole sau date",
+              label: "Edit Invoice",
+              sub: "Edit items or dates",
               action: () => {},
             },
             canAct && {
               id: "void",
               icon: <IconTrash />,
-              label: "Anulează Factura",
-              sub: "Ireversibil · necesită motiv",
+              label: "Void Invoice",
+              sub: "Irreversible · requires reason",
               action: () => setView("void"),
               destructive: true,
             },
@@ -888,7 +888,7 @@ export function InvoiceDetailClient({ id }: { id: string }) {
     openSheet({
       snapPoints: ["mid", "full"],
       defaultSnap: "mid",
-      title: `${invoice.ref} · Acțiuni`,
+      title: `${invoice.ref} · Actions`,
       render: (onClose) => <InvoiceActionsSheet invoice={invoice} onClose={onClose} />,
     })
   }
@@ -900,7 +900,7 @@ export function InvoiceDetailClient({ id }: { id: string }) {
         className="px-4 pt-14 pb-28 max-w-2xl mx-auto"
         style={{ textAlign: "center", paddingTop: 80 }}
       >
-        <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 14 }}>Factura nu a fost găsită.</p>
+        <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 14 }}>Invoice not found.</p>
         <Link
           href="/finance/invoices"
           style={{
@@ -910,7 +910,7 @@ export function InvoiceDetailClient({ id }: { id: string }) {
             display: "inline-block",
           }}
         >
-          Înapoi la facturi
+          Back la facturi
         </Link>
       </div>
     )
@@ -1022,8 +1022,8 @@ export function InvoiceDetailClient({ id }: { id: string }) {
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
           {[
-            { label: "Emisă", value: fmtDate(invoice.issuedDate), red: false },
-            { label: "Scadentă", value: fmtDate(invoice.dueDate), red: isAlert },
+            { label: "Issued", value: fmtDate(invoice.issuedDate), red: false },
+            { label: "Due", value: fmtDate(invoice.dueDate), red: isAlert },
             { label: "Proiect", value: invoice.projectName, red: false },
             { label: "Serie", value: invoice.series, red: false },
           ].map(({ label, value, red }) => (

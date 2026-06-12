@@ -60,7 +60,7 @@ function IconClock() {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function fmt(n: number) {
-  return "€" + n.toLocaleString("ro-RO")
+  return "€" + n.toLocaleString("en-US")
 }
 
 function fmtDate(iso: string) {
@@ -76,11 +76,11 @@ type FilterId = "all" | OrderStatus
 const FILTERS: { id: FilterId; label: string }[] = [
   { id: "all", label: "Toate" },
   { id: "pending", label: "Nou" },
-  { id: "confirmed", label: "Confirmat" },
-  { id: "processing", label: "În procesare" },
+  { id: "confirmed", label: "Confirmed" },
+  { id: "processing", label: "Processing" },
   { id: "shipped", label: "Expediat" },
   { id: "delivered", label: "Livrat" },
-  { id: "cancelled", label: "Anulat" },
+  { id: "cancelled", label: "Cancelled" },
 ]
 
 const STATUS_CONFIG: Record<
@@ -94,7 +94,7 @@ const STATUS_CONFIG: Record<
     border: "rgba(255,200,50,0.24)",
   },
   processing: {
-    label: "În procesare",
+    label: "Processing",
     color: "#ffcc44",
     bg: "rgba(255,200,50,0.12)",
     border: "rgba(255,200,50,0.24)",
@@ -112,13 +112,13 @@ const STATUS_CONFIG: Record<
     border: "rgba(80,255,140,0.20)",
   },
   confirmed: {
-    label: "Confirmat",
+    label: "Confirmed",
     color: "#7eb8ff",
     bg: "rgba(100,160,255,0.12)",
     border: "rgba(100,160,255,0.24)",
   },
   cancelled: {
-    label: "Anulat",
+    label: "Cancelled",
     color: "rgba(255,255,255,0.30)",
     bg: "rgba(255,255,255,0.05)",
     border: "rgba(255,255,255,0.10)",
@@ -250,7 +250,7 @@ function OrderCard({ order }: { order: Order }) {
             {itemsSummary.length > 48 ? itemsSummary.slice(0, 48) + "…" : itemsSummary}
           </p>
           <p style={{ fontSize: 11, color: "rgba(255,255,255,0.30)", marginTop: 2 }}>
-            Plasată: {fmtDate(order.placedAt)}
+            Placed: {fmtDate(order.placedAt)}
           </p>
         </div>
         <div style={{ textAlign: "right", flexShrink: 0 }}>
@@ -377,7 +377,7 @@ export function ShopOrdersClient() {
               color: "rgba(255,255,255,0.95)",
             }}
           >
-            Comenzile mele
+            Comendays mele
           </h1>
         </div>
       </div>
@@ -389,7 +389,7 @@ export function ShopOrdersClient() {
         >
           {[
             { label: "Total", value: String(meta.total), color: "rgba(255,255,255,0.95)" },
-            { label: "În curs", value: String(meta.processing), color: "#ffcc44" },
+            { label: "Processing", value: String(meta.processing), color: "#ffcc44" },
             { label: "Valoare", value: fmt(meta.totalValue), color: "#5affa0" },
           ].map(({ label, value, color }) => (
             <div
@@ -495,7 +495,7 @@ export function ShopOrdersClient() {
               fontSize: 14,
             }}
           >
-            Nicio comandă găsită
+            No orders found
           </div>
         ) : (
           visible.map((o) => <OrderCard key={o.id} order={o} />)

@@ -254,9 +254,9 @@ function ClientDetail({ client, onBack }: { client: Client; onBack: () => void }
                   style={{ color: "#7eb8ff", textDecoration: "none" }}
                   onClick={(e) => e.stopPropagation()}
                 >
-                  {client.openQuotes} ofert{client.openQuotes > 1 ? "e" : "ă"} active
+                  {client.openQuotes} quote{client.openQuotes !== 1 ? "s" : ""} active
                 </Link>{" "}
-                în așteptare.
+                pending.
               </>
             )}
           </p>
@@ -305,7 +305,7 @@ function ClientDetail({ client, onBack }: { client: Client; onBack: () => void }
               <polyline points="14 2 14 8 20 8" />
             </svg>
             <p className="text-[13px] text-white/45 leading-snug max-w-[220px]">
-              Documentele clientului sunt gestionate în modulul Documente.
+              Client documents are managed in the Documents module.
             </p>
             <Link
               href={`/documents?clientId=${client.id}`}
@@ -527,7 +527,7 @@ export function CRMWorkspace() {
                           textDecoration: "none",
                         }}
                       >
-                        {client.openQuotes} ofert{client.openQuotes > 1 ? "e" : "ă"}
+                        {client.openQuotes} quote{client.openQuotes !== 1 ? "s" : ""}
                       </Link>
                     )}
                     <span

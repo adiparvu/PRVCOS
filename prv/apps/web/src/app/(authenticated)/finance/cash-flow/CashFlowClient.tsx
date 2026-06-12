@@ -26,7 +26,7 @@ function fmt(n: number): string {
 }
 
 function fmtFull(n: number): string {
-  return `€${n.toLocaleString("ro-RO")}`
+  return `€${n.toLocaleString("en-US")}`
 }
 
 function sampleEvery(arr: CashFlowEntry[], n: number): CashFlowEntry[] {
@@ -171,7 +171,7 @@ export function CashFlowClient() {
             >
               <path d="M19 12H5M12 5l-7 7 7 7" />
             </svg>
-            Finanțe
+            Finance
           </Link>
           <h1 className="text-white/90 text-[26px] font-semibold tracking-tight leading-tight">
             Cash Flow

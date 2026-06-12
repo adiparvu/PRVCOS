@@ -77,7 +77,7 @@ function IconClock() {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function fmt(amount: number) {
-  return "€" + amount.toLocaleString("ro-RO")
+  return "€" + amount.toLocaleString("en-US")
 }
 
 type FilterId = "all" | QuoteStatus
@@ -85,7 +85,7 @@ type FilterId = "all" | QuoteStatus
 const FILTERS: { id: FilterId; label: string }[] = [
   { id: "all", label: "Toate" },
   { id: "sent", label: "Trimise" },
-  { id: "draft", label: "Ciornă" },
+  { id: "draft", label: "Draft" },
   { id: "accepted", label: "Acceptate" },
   { id: "rejected", label: "Respinse" },
   { id: "expired", label: "Expirate" },
@@ -96,31 +96,31 @@ const STATUS_CONFIG: Record<
   { label: string; color: string; bg: string; border: string }
 > = {
   draft: {
-    label: "Ciornă",
+    label: "Draft",
     color: "rgba(255,255,255,0.45)",
     bg: "rgba(255,255,255,0.07)",
     border: "rgba(255,255,255,0.14)",
   },
   sent: {
-    label: "Trimisă",
+    label: "Sent",
     color: "#7eb8ff",
     bg: "rgba(100,160,255,0.12)",
     border: "rgba(100,160,255,0.24)",
   },
   accepted: {
-    label: "Acceptată",
+    label: "Accepted",
     color: "#5affa0",
     bg: "rgba(80,255,140,0.10)",
     border: "rgba(80,255,140,0.20)",
   },
   rejected: {
-    label: "Respinsă",
+    label: "Rejected",
     color: "#ff6b6b",
     bg: "rgba(255,80,80,0.12)",
     border: "rgba(255,80,80,0.22)",
   },
   expired: {
-    label: "Expirată",
+    label: "Expired",
     color: "rgba(255,255,255,0.30)",
     bg: "rgba(255,255,255,0.05)",
     border: "rgba(255,255,255,0.10)",
@@ -305,16 +305,16 @@ function QuoteCard({ quote }: { quote: QuoteSummary }) {
             >
               <IconClock />
               {isUrgent
-                ? `Expiră în ${quote.daysUntilExpiry} zile`
-                : `Valabilă ${quote.daysUntilExpiry} zile`}
+                ? `Expires in ${quote.daysUntilExpiry} days`
+                : `Valid for ${quote.daysUntilExpiry} days`}
             </span>
           ) : quote.status === "draft" ? (
             <span style={{ fontSize: 10, color: "rgba(255,255,255,0.30)" }}>Netrimitere</span>
           ) : quote.status === "accepted" ? (
-            <span style={{ fontSize: 10, color: "rgba(255,255,255,0.30)" }}>Acceptată</span>
+            <span style={{ fontSize: 10, color: "rgba(255,255,255,0.30)" }}>Accepted</span>
           ) : (
             <span style={{ fontSize: 10, color: "rgba(255,255,255,0.30)" }}>
-              {quote.status === "rejected" ? "Respinsă" : "Expirată"}
+              {quote.status === "rejected" ? "Rejected" : "Expired"}
             </span>
           )}
         </div>
@@ -475,7 +475,7 @@ export function QuoteListClient() {
               marginTop: 2,
             }}
           >
-            În așteptare
+            Pending
           </p>
         </div>
       </div>
@@ -536,7 +536,7 @@ export function QuoteListClient() {
               fontSize: 14,
             }}
           >
-            Nicio ofertă găsită
+            No quotes found
           </div>
         ) : (
           visible.map((q) => <QuoteCard key={q.id} quote={q} />)
@@ -558,7 +558,7 @@ export function QuoteListClient() {
               marginTop: 8,
             }}
           >
-            {isFetchingNextPage ? "Se încarcă..." : "Încarcă mai mult"}
+            {isFetchingNextPage ? "Loading..." : "Load more"}
           </button>
         )}
       </div>

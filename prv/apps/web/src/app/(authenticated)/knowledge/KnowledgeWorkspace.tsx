@@ -73,21 +73,15 @@ const API_CATEGORY_MAP: Record<ApiArticleCategory, ArticleCategory> = {
 
 const DEFAULT_TOC: Record<ArticleType, string[]> = {
   SOP: [
-    "Scop și domeniu",
+    "Scope & Domain",
     "Resurse necesare",
     "Proceduri detaliate",
-    "Măsuri de siguranță",
-    "Raportare și înregistrare",
+    "Safety measures",
+    "Reporting & Records",
   ],
-  Policy: [
-    "Introducere",
-    "Politică generală",
-    "Reguli și excepții",
-    "Responsabilități",
-    "Revizuiri",
-  ],
-  Guide: ["Prezentare generală", "Pași de urmat", "Exemple practice", "Întrebări frecvente"],
-  FAQ: ["Întrebări comune", "Răspunsuri detaliate", "Resurse suplimentare"],
+  Policy: ["Introducere", "General policy", "Rules & Exceptions", "Responsibilities", "Revizuiri"],
+  Guide: ["Overview", "Steps to follow", "Practical examples", "Frequently asked questions"],
+  FAQ: ["Common questions", "Detailed answers", "Additional resources"],
 }
 
 function mapToArticle(a: ApiArticle): Article {
@@ -338,7 +332,7 @@ export function KnowledgeWorkspace() {
           >
             <path d="M19 12H5M12 5l-7 7 7 7" />
           </svg>
-          Baza de cunoștințe
+          Knowledge Base
         </button>
 
         <div style={{ marginBottom: 16 }}>
@@ -517,8 +511,8 @@ export function KnowledgeWorkspace() {
           <span style={{ fontSize: 13, color: t2 }}>
             {feedback
               ? feedback === "yes"
-                ? "Mulțumim pentru feedback!"
-                : "Vom îmbunătăți articolul."
+                ? "Thank you for your feedback!"
+                : "We will improve this article."
               : "A fost util?"}
           </span>
           {!feedback && (
@@ -586,7 +580,7 @@ export function KnowledgeWorkspace() {
               color: "var(--prv-text-1)",
             }}
           >
-            Cunoștințe
+            Knowledge
           </h1>
         </div>
         <div
@@ -632,7 +626,7 @@ export function KnowledgeWorkspace() {
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Caută proceduri, ghiduri, SOPs…"
+          placeholder="Search procedures, guides, SOPs…"
           style={{
             flex: 1,
             background: "none",
@@ -802,7 +796,7 @@ export function KnowledgeWorkspace() {
                   <div style={{ fontSize: 11, color: t3 }}>
                     {cat.count}{" "}
                     {cat.label === "FAQs"
-                      ? "răspunsuri"
+                      ? "responses"
                       : cat.label === "Ghiduri"
                         ? "ghiduri"
                         : "documente"}
@@ -924,9 +918,7 @@ export function KnowledgeWorkspace() {
                       </div>
                       <div style={{ fontSize: 11, color: t3, marginTop: 2 }}>
                         {art.category} ·{" "}
-                        <span style={{ color: green }}>
-                          {art.views?.toLocaleString()} vizualizări
-                        </span>
+                        <span style={{ color: green }}>{art.views?.toLocaleString()} views</span>
                       </div>
                     </div>
                     <TypePill type={art.type} />

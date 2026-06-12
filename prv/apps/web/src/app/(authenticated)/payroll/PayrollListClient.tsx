@@ -38,7 +38,7 @@ const red = "rgba(255,69,58,0.95)"
 
 function fmtAmount(n: number): string {
   if (n >= 1000) return `€${(n / 1000).toFixed(n % 1000 === 0 ? 0 : 1)}k`
-  return `€${n.toLocaleString("ro-RO")}`
+  return `€${n.toLocaleString("en-US")}`
 }
 
 function StatusConfig(status: PayrollRun["status"]): { bg: string; color: string; label: string } {
@@ -211,7 +211,7 @@ function RunRow({ run }: { run: PayrollRun }) {
             margin: "6px 0 0",
           }}
         >
-          €{run.totalGross.toLocaleString("ro-RO")}
+          €{run.totalGross.toLocaleString("en-US")}
         </p>
       </div>
     </Link>
@@ -601,7 +601,7 @@ export function PayrollListClient() {
       {/* Sections */}
       {processingRuns.length > 0 && (
         <>
-          <SectionLabel>{`În Curs · ${processingRuns.length}`}</SectionLabel>
+          <SectionLabel>{`In Progress · ${processingRuns.length}`}</SectionLabel>
           {processingRuns.map((r) => (
             <RunRow key={r.id} run={r} />
           ))}

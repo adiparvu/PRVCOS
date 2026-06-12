@@ -65,12 +65,12 @@ const SPARK = {
 }
 
 const STATUS_STYLE: Record<string, { bg: string; color: string; label: string }> = {
-  paid: { bg: "rgba(48,209,88,0.14)", color: "rgba(48,209,88,0.95)", label: "Plătit" },
+  paid: { bg: "rgba(48,209,88,0.14)", color: "rgba(48,209,88,0.95)", label: "Paid" },
   due: { bg: "rgba(255,159,10,0.14)", color: "rgba(255,159,10,0.95)", label: "Scadent" },
-  overdue: { bg: "rgba(255,69,58,0.14)", color: "rgba(255,69,58,0.95)", label: "Restanță" },
-  partial: { bg: "rgba(10,132,255,0.14)", color: "rgba(10,132,255,0.95)", label: "Parțial" },
-  void: { bg: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.35)", label: "Anulat" },
-  draft: { bg: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.35)", label: "Ciornă" },
+  overdue: { bg: "rgba(255,69,58,0.14)", color: "rgba(255,69,58,0.95)", label: "Overdue" },
+  partial: { bg: "rgba(10,132,255,0.14)", color: "rgba(10,132,255,0.95)", label: "Partial" },
+  void: { bg: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.35)", label: "Cancelled" },
+  draft: { bg: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.35)", label: "Draft" },
 }
 
 const TX_COLUMNS: TableColumn<TxRow>[] = [
@@ -141,7 +141,6 @@ function fmtDue(dateStr: string): string {
     return dateStr
   }
 }
-
 
 function Label({ children }: { children: React.ReactNode }) {
   return (
@@ -224,10 +223,7 @@ const QA = [
 
 // ── Derive TxRows from invoices + expenses ────────────────────────────────────
 
-function deriveTransactions(
-  invoices: InvoiceSummary[],
-  expenses: Expense[]
-): TxRow[] {
+function deriveTransactions(invoices: InvoiceSummary[], expenses: Expense[]): TxRow[] {
   // Map invoices to TxRow (credits)
   const invTx: (TxRow & { _sortDate: string })[] = invoices.map((inv) => ({
     id: `inv-${inv.id}`,
@@ -364,8 +360,8 @@ export function FinanceWorkspace() {
           >
             <GlassAlertBanner
               type="error"
-              title={`${overdueCount} ${overdueCount === 1 ? "factură restantă" : "facturi restante"}`}
-              description={`Total restant: ${overdueTotalLabel} · Necesită acțiune`}
+              title={`${overdueCount} ${overdueCount === 1 ? "overdue invoice" : "overdue invoices"}`}
+              description={`Outstanding total: ${overdueTotalLabel} · Action required`}
             />
           </Link>
         </div>
@@ -526,7 +522,7 @@ export function FinanceWorkspace() {
                   padding: "16px 0",
                 }}
               >
-                Nicio factură
+                No invoices
               </p>
             ) : (
               displayInvoices.map((inv) => {

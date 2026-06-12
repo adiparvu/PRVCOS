@@ -4,7 +4,7 @@ import { getSession } from "@prv/auth"
 import { OrderDetailClient } from "./OrderDetailClient"
 
 export const dynamic = "force-dynamic"
-export const metadata = { title: "Detalii Comandă · PRV" }
+export const metadata = { title: "Order Details · PRV" }
 
 export default async function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params

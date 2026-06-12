@@ -173,7 +173,7 @@ function StatusPill({ status, isVip }: { status: UiStatus; isVip?: boolean }) {
         flexShrink: 0,
       }}
     >
-      {status === "Completed" ? "Inactiv" : status === "Pending" ? "Lead" : "Activ"}
+      {status === "Completed" ? "Inactive" : status === "Pending" ? "Lead" : "Active"}
     </span>
   )
 }
@@ -269,7 +269,7 @@ function ClientDetailSheet({ clientId, onClose }: { clientId: string; onClose: (
 
         {loading || !detail ? (
           <div style={{ padding: "40px 20px", textAlign: "center", color: t3, fontSize: 14 }}>
-            {loading ? "Se încarcă…" : "Clientul nu a fost găsit."}
+            {loading ? "Loading…" : "Client not found."}
           </div>
         ) : (
           <div style={{ padding: "0 20px" }}>
@@ -398,7 +398,7 @@ function ClientDetailSheet({ clientId, onClose }: { clientId: string; onClose: (
                   </span>
                   {activeProject.daysLeft > 0 && (
                     <span style={{ fontSize: 11, color: t3 }}>
-                      {activeProject.daysLeft} zile rămase
+                      {activeProject.daysLeft} days remaining
                     </span>
                   )}
                 </div>
@@ -410,8 +410,8 @@ function ClientDetailSheet({ clientId, onClose }: { clientId: string; onClose: (
               <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
                 {[
                   { val: fmtCurrency(detail.totalInvoiced), lbl: "Facturat" },
-                  { val: fmtCurrency(detail.totalPaid), lbl: "Încasat" },
-                  { val: fmtCurrency(remaining), lbl: "Rămas" },
+                  { val: fmtCurrency(detail.totalPaid), lbl: "Collected" },
+                  { val: fmtCurrency(remaining), lbl: "Remaining" },
                 ].map((m) => (
                   <div
                     key={m.lbl}
@@ -446,8 +446,8 @@ function ClientDetailSheet({ clientId, onClose }: { clientId: string; onClose: (
               {[
                 { label: "Telefon", val: detail.phone },
                 { label: "Email", val: detail.email },
-                { label: "Adresă", val: detail.address !== "—" ? detail.address : "—" },
-                { label: "Persoană de contact", val: detail.contactPerson },
+                { label: "Address", val: detail.address !== "—" ? detail.address : "—" },
+                { label: "Contact person", val: detail.contactPerson },
                 { label: "CIF / VAT", val: detail.cifVat },
                 { label: "Client din", val: detail.since },
               ]
@@ -587,7 +587,7 @@ function ClientDetailSheet({ clientId, onClose }: { clientId: string; onClose: (
                   cursor: "pointer",
                 }}
               >
-                {detail.status === "lead" ? "Trimite ofertă" : "Trimite actualizare"}
+                {detail.status === "lead" ? "Trimite quote" : "Send update"}
               </button>
             </div>
           </div>
@@ -664,7 +664,7 @@ export function ClientsWorkspace() {
           }}
         >
           <h1 style={{ fontSize: 26, fontWeight: 700, letterSpacing: "-0.02em", color: t1 }}>
-            Portal Clienți
+            Client Portal
           </h1>
           <div
             style={{
@@ -694,14 +694,14 @@ export function ClientsWorkspace() {
           </div>
         </div>
         <p style={{ fontSize: 14, color: t2 }}>
-          {loading ? "…" : `${clients.length} clienți · ${activeCount} proiecte active`}
+          {loading ? "…" : `${clients.length} clients · ${activeCount} active projects`}
         </p>
       </div>
 
       {/* ── Stats ── */}
       <div style={{ display: "flex", gap: 8, padding: "16px 16px 0" }}>
         {[
-          { val: loading ? "…" : String(clients.length), lbl: "Clienți" },
+          { val: loading ? "…" : String(clients.length), lbl: "Clients" },
           { val: loading ? "…" : String(activeCount), lbl: "Activi" },
           {
             val: loading ? "…" : String(pendingCount),
@@ -757,7 +757,7 @@ export function ClientsWorkspace() {
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Caută clienți, orașe…"
+          placeholder="Search clients, cities…"
           style={{
             flex: 1,
             background: "none",
@@ -813,7 +813,7 @@ export function ClientsWorkspace() {
             }}
           >
             {f === "All"
-              ? "Toți"
+              ? "All"
               : f === "Active"
                 ? "Activi"
                 : f === "Pending"
@@ -836,12 +836,12 @@ export function ClientsWorkspace() {
           }}
         >
           {filter === "All"
-            ? "Toți clienții"
+            ? "All clients"
             : filter === "Active"
-              ? "Clienți activi"
+              ? "Active clients"
               : filter === "Pending"
                 ? "Lead-uri"
-                : "Clienți inactivi"}
+                : "Inactive clients"}
         </div>
 
         {loading ? (
@@ -855,7 +855,7 @@ export function ClientsWorkspace() {
           </div>
         ) : filtered.length === 0 ? (
           <div style={{ textAlign: "center", padding: "40px 0", color: t3, fontSize: 14 }}>
-            Niciun client găsit
+            No clients found
           </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column" as const, gap: 8 }}>
@@ -927,7 +927,7 @@ export function ClientsWorkspace() {
                     </div>
                     {c.openQuotes > 0 && (
                       <div style={{ fontSize: 11, color: amber, marginTop: 2 }}>
-                        {c.openQuotes} ofertă deschisă
+                        {c.openQuotes} open quote
                       </div>
                     )}
                   </div>

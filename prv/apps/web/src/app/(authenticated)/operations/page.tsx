@@ -4,7 +4,7 @@ import { getSession } from "@prv/auth"
 import OperationsListClient from "./OperationsListClient"
 
 export const dynamic = "force-dynamic"
-export const metadata = { title: "Operațiuni · PRV" }
+export const metadata = { title: "Operations · PRV" }
 
 export default async function OperationsPage() {
   const cookieStore = await cookies()

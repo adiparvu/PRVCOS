@@ -21,9 +21,9 @@ function getRelativeTime(iso: string) {
   const diff = Date.now() - new Date(iso).getTime()
   const hours = Math.floor(diff / 3_600_000)
   if (hours < 2) return "Acum"
-  if (hours < 24) return `${hours}h în urmă`
+  if (hours < 24) return `${hours}h ago`
   const days = Math.floor(hours / 24)
-  if (days < 30) return `${days}z în urmă`
+  if (days < 30) return `${days}d ago`
   return formatDate(iso)
 }
 
@@ -263,26 +263,26 @@ const ACTIVITY_DOT: Record<ClientActivityType, string> = {
 // ── Quote/Invoice status config ───────────────────────────────────────────────
 
 const QUOTE_STATUS: Record<string, { label: string; color: string; bg: string }> = {
-  draft: { label: "Ciornă", color: "rgba(255,255,255,0.35)", bg: "rgba(255,255,255,0.07)" },
-  sent: { label: "Trimisă", color: "#7eb8ff", bg: "rgba(126,184,255,0.13)" },
-  accepted: { label: "Acceptată", color: "#5affa0", bg: "rgba(90,255,160,0.12)" },
-  rejected: { label: "Respinsă", color: "#ff6b6b", bg: "rgba(255,107,107,0.12)" },
-  expired: { label: "Expirată", color: "rgba(255,255,255,0.35)", bg: "rgba(255,255,255,0.07)" },
+  draft: { label: "Draft", color: "rgba(255,255,255,0.35)", bg: "rgba(255,255,255,0.07)" },
+  sent: { label: "Sent", color: "#7eb8ff", bg: "rgba(126,184,255,0.13)" },
+  accepted: { label: "Accepted", color: "#5affa0", bg: "rgba(90,255,160,0.12)" },
+  rejected: { label: "Rejected", color: "#ff6b6b", bg: "rgba(255,107,107,0.12)" },
+  expired: { label: "Expired", color: "rgba(255,255,255,0.35)", bg: "rgba(255,255,255,0.07)" },
 }
 
 const INVOICE_STATUS: Record<string, { label: string; color: string; bg: string }> = {
-  draft: { label: "Ciornă", color: "rgba(255,255,255,0.35)", bg: "rgba(255,255,255,0.07)" },
-  due: { label: "Scadentă", color: "#ffcc44", bg: "rgba(255,204,68,0.12)" },
-  partial: { label: "Parțial", color: "#ffcc44", bg: "rgba(255,204,68,0.12)" },
-  paid: { label: "Plătită", color: "#5affa0", bg: "rgba(90,255,160,0.12)" },
-  overdue: { label: "Restantă", color: "#ff6b6b", bg: "rgba(255,107,107,0.12)" },
-  void: { label: "Anulată", color: "rgba(255,255,255,0.35)", bg: "rgba(255,255,255,0.07)" },
+  draft: { label: "Draft", color: "rgba(255,255,255,0.35)", bg: "rgba(255,255,255,0.07)" },
+  due: { label: "Due", color: "#ffcc44", bg: "rgba(255,204,68,0.12)" },
+  partial: { label: "Partial", color: "#ffcc44", bg: "rgba(255,204,68,0.12)" },
+  paid: { label: "Paid", color: "#5affa0", bg: "rgba(90,255,160,0.12)" },
+  overdue: { label: "Overdue", color: "#ff6b6b", bg: "rgba(255,107,107,0.12)" },
+  void: { label: "Cancelled", color: "rgba(255,255,255,0.35)", bg: "rgba(255,255,255,0.07)" },
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function fmt(amount: number) {
-  return "€" + amount.toLocaleString("ro-RO")
+  return "€" + amount.toLocaleString("en-US")
 }
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
@@ -367,7 +367,7 @@ export function ClientDetailClient({ id }: ClientDetailClientProps) {
       const data = await res.json()
       setClient(data.client)
     } catch {
-      setError("Clientul nu a putut fi încărcat.")
+      setError("Failed to load client.")
     } finally {
       setLoading(false)
     }
@@ -417,7 +417,7 @@ export function ClientDetailClient({ id }: ClientDetailClientProps) {
               }}
             >
               <IconPhone />
-              Sună
+              Call
             </a>
             <a
               href={`mailto:${client.email}`}
@@ -472,7 +472,7 @@ export function ClientDetailClient({ id }: ClientDetailClientProps) {
             >
               <IconFileText />
             </div>
-            Ofertă Nouă
+            New Quote
           </button>
           {/* New invoice */}
           <button
@@ -505,7 +505,7 @@ export function ClientDetailClient({ id }: ClientDetailClientProps) {
             >
               <IconFileText />
             </div>
-            Factură Nouă
+            New Invoice
           </button>
           {/* Edit */}
           <button
@@ -538,7 +538,7 @@ export function ClientDetailClient({ id }: ClientDetailClientProps) {
             >
               <IconPencil />
             </div>
-            Editează Client
+            Edit Client
           </button>
           {/* All quotes */}
           <Link
@@ -605,7 +605,7 @@ export function ClientDetailClient({ id }: ClientDetailClientProps) {
             }}
           >
             <IconChevronLeft />
-            Clienți
+            Clients
           </Link>
         </div>
         <LoadingSkeleton />
@@ -630,7 +630,7 @@ export function ClientDetailClient({ id }: ClientDetailClientProps) {
           }}
         >
           <IconChevronLeft />
-          Clienți
+          Clients
         </Link>
         <div
           style={{
@@ -640,7 +640,7 @@ export function ClientDetailClient({ id }: ClientDetailClientProps) {
             paddingTop: 60,
           }}
         >
-          {error ?? "Client negăsit."}
+          {error ?? "Client not found."}
         </div>
       </div>
     )
@@ -677,7 +677,7 @@ export function ClientDetailClient({ id }: ClientDetailClientProps) {
         }}
       >
         <IconChevronLeft />
-        Clienți
+        Clients
       </Link>
 
       {/* Hero card */}
@@ -774,7 +774,7 @@ export function ClientDetailClient({ id }: ClientDetailClientProps) {
             }}
           >
             <IconPhone />
-            Sună
+            Call
           </a>
           <a
             href={`mailto:${client.email}`}
@@ -960,7 +960,7 @@ export function ClientDetailClient({ id }: ClientDetailClientProps) {
                 padding: "4px 4px",
               }}
             >
-              Toate ofertele →
+              Toate quotesle →
             </Link>
           </div>
         </>
@@ -1164,7 +1164,7 @@ export function ClientDetailClient({ id }: ClientDetailClientProps) {
                       }}
                     >
                       {p.currentPhaseName}
-                      {p.daysLeft > 0 ? ` · ${p.daysLeft}z rămase` : ""}
+                      {p.daysLeft > 0 ? ` · ${p.daysLeft}d left` : ""}
                     </p>
                     <p
                       style={{

@@ -11,7 +11,7 @@ interface Props {
 
 export async function generateMetadata({ params }: Props) {
   const { id } = await params
-  return { title: `${id} · Inteligență · PRV` }
+  return { title: `${id} · Intelligence · PRV` }
 }
 
 export default async function InsightDetailPage({ params }: Props) {

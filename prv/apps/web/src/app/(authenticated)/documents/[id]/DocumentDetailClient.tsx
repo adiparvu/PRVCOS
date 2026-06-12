@@ -32,7 +32,7 @@ function StatusConfig(status: DocumentDetail["status"]): {
   if (status === "signed") return { bg: "rgba(48,209,88,0.13)", color: green, label: "Semnat" }
   if (status === "pending") return { bg: "rgba(255,159,10,0.13)", color: amber, label: "Nesemnat" }
   if (status === "draft")
-    return { bg: "rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.45)", label: "Ciornă" }
+    return { bg: "rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.45)", label: "Draft" }
   return { bg: "rgba(255,69,58,0.13)", color: red, label: "Expirat" }
 }
 
@@ -132,7 +132,7 @@ export function DocumentDetailClient({ id }: { id: string }) {
     openSheet({
       snapPoints: ["mid", "full"],
       defaultSnap: "mid",
-      title: "Acțiuni Document",
+      title: "Document Actions",
       render: (onClose) => (
         <div style={{ padding: "0 16px 24px", display: "flex", flexDirection: "column", gap: 8 }}>
           {isSigable && (
@@ -177,10 +177,10 @@ export function DocumentDetailClient({ id }: { id: string }) {
               </div>
               <div>
                 <p style={{ fontSize: 15, fontWeight: 600, color: green, margin: 0 }}>
-                  Semnează Document
+                  Sign Document
                 </p>
                 <p style={{ fontSize: 12, color: t3, margin: "2px 0 0" }}>
-                  Semnătură electronică cu Face ID
+                  Electronic signature with Face ID
                 </p>
               </div>
             </button>
@@ -229,7 +229,7 @@ export function DocumentDetailClient({ id }: { id: string }) {
               </svg>
             </div>
             <div>
-              <p style={{ fontSize: 15, fontWeight: 600, color: blue, margin: 0 }}>Partajează</p>
+              <p style={{ fontSize: 15, fontWeight: 600, color: blue, margin: 0 }}>Share</p>
               <p style={{ fontSize: 12, color: t3, margin: "2px 0 0" }}>
                 Trimite unui coleg sau client
               </p>
@@ -285,9 +285,9 @@ export function DocumentDetailClient({ id }: { id: string }) {
                   margin: 0,
                 }}
               >
-                Descarcă
+                Download
               </p>
-              <p style={{ fontSize: 12, color: t3, margin: "2px 0 0" }}>Salvează local ca PDF</p>
+              <p style={{ fontSize: 12, color: t3, margin: "2px 0 0" }}>Save locally as PDF</p>
             </div>
           </button>
           <button
@@ -332,9 +332,9 @@ export function DocumentDetailClient({ id }: { id: string }) {
               </svg>
             </div>
             <div>
-              <p style={{ fontSize: 15, fontWeight: 600, color: amber, margin: 0 }}>Arhivează</p>
+              <p style={{ fontSize: 15, fontWeight: 600, color: amber, margin: 0 }}>Archive</p>
               <p style={{ fontSize: 12, color: t3, margin: "2px 0 0" }}>
-                Mută în arhivă, fără ștergere
+                Move to archive, no deletion
               </p>
             </div>
           </button>
@@ -382,9 +382,9 @@ export function DocumentDetailClient({ id }: { id: string }) {
               </svg>
             </div>
             <div>
-              <p style={{ fontSize: 15, fontWeight: 600, color: red, margin: 0 }}>Șterge</p>
+              <p style={{ fontSize: 15, fontWeight: 600, color: red, margin: 0 }}>Delete</p>
               <p style={{ fontSize: 12, color: t3, margin: "2px 0 0" }}>
-                Elimină definitiv documentul
+                Permanently delete document
               </p>
             </div>
           </button>
@@ -598,7 +598,7 @@ export function DocumentDetailClient({ id }: { id: string }) {
         {/* Stat tiles */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8 }}>
           {[
-            { val: doc.sizeLabel, label: "Mărime", color: undefined },
+            { val: doc.sizeLabel, label: "Size", color: undefined },
             { val: doc.pages ? String(doc.pages) : "—", label: "Pagini", color: undefined },
             { val: doc.version ?? "—", label: "Versiune", color: isPending ? amber : undefined },
           ].map((t) => (
@@ -644,7 +644,7 @@ export function DocumentDetailClient({ id }: { id: string }) {
               border: `1px solid rgba(255,255,255,0.09)`,
             }}
           >
-            Descarcă
+            Download
           </button>
           <button
             style={{
@@ -660,7 +660,7 @@ export function DocumentDetailClient({ id }: { id: string }) {
               border: "1px solid rgba(48,209,88,0.25)",
             }}
           >
-            Semnează
+            Sign
           </button>
         </div>
       )}
@@ -696,7 +696,7 @@ export function DocumentDetailClient({ id }: { id: string }) {
           <span style={{ fontSize: 13, color: red, fontWeight: 500 }}>
             {isExpired
               ? `Document expirat pe ${doc.expiresAt}`
-              : `Document expiră pe ${doc.expiresAt}`}
+              : `Document expires on ${doc.expiresAt}`}
           </span>
         </div>
       )}
@@ -706,10 +706,10 @@ export function DocumentDetailClient({ id }: { id: string }) {
         <SectionCard title="Detalii Document">
           {doc.project && <InfoRow label="Proiect" value={doc.project} />}
           <InfoRow label="Creat de" value={doc.author} />
-          <InfoRow label="Dată creare" value={doc.date} />
+          <InfoRow label="Created on" value={doc.date} />
           {doc.expiresAt && (
             <InfoRow
-              label="Valabil până"
+              label="Valid until"
               value={doc.expiresAt}
               valueColor={isExpired ? red : isPending ? amber : green}
             />

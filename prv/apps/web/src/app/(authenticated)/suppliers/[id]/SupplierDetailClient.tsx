@@ -17,9 +17,9 @@ function getRelativeTime(iso: string) {
   const diff = Date.now() - new Date(iso).getTime()
   const hours = Math.floor(diff / 3_600_000)
   if (hours < 2) return "Acum"
-  if (hours < 24) return `${hours}h în urmă`
+  if (hours < 24) return `${hours}h ago`
   const days = Math.floor(hours / 24)
-  if (days < 30) return `${days}z în urmă`
+  if (days < 30) return `${days}d ago`
   return new Date(iso).toLocaleDateString("ro-RO", {
     day: "numeric",
     month: "short",
@@ -240,7 +240,7 @@ const STATUS_CONFIG = {
     avatarColor: "#ff6b6b",
   },
   inactive: {
-    label: "Inactiv",
+    label: "Inactive",
     color: "rgba(255,255,255,0.35)",
     bg: "rgba(255,255,255,0.07)",
     avatarBg: "rgba(255,255,255,0.06)",
@@ -250,10 +250,10 @@ const STATUS_CONFIG = {
 }
 
 const ORDER_STATUS: Record<OrderStatus, { label: string; color: string; bg: string }> = {
-  ordered: { label: "Plasată", color: "#7eb8ff", bg: "rgba(126,184,255,0.13)" },
+  ordered: { label: "Placed", color: "#7eb8ff", bg: "rgba(126,184,255,0.13)" },
   delivered: { label: "Livrat", color: "#5affa0", bg: "rgba(90,255,160,0.12)" },
-  partial: { label: "Parțial", color: "#ffcc44", bg: "rgba(255,204,68,0.12)" },
-  cancelled: { label: "Anulată", color: "rgba(255,255,255,0.35)", bg: "rgba(255,255,255,0.07)" },
+  partial: { label: "Partial", color: "#ffcc44", bg: "rgba(255,204,68,0.12)" },
+  cancelled: { label: "Cancelled", color: "rgba(255,255,255,0.35)", bg: "rgba(255,255,255,0.07)" },
   pending: { label: "Pending", color: "#ffcc44", bg: "rgba(255,204,68,0.12)" },
 }
 
@@ -271,7 +271,7 @@ const ACTIVITY_DOT: Record<SupplierActivityType, string> = {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function fmt(amount: number) {
-  return "€" + amount.toLocaleString("ro-RO")
+  return "€" + amount.toLocaleString("en-US")
 }
 function fmtK(amount: number) {
   return `€${Math.round(amount / 1000)}k`
@@ -413,7 +413,7 @@ export function SupplierDetailClient({ id }: SupplierDetailClientProps) {
       const data = await res.json()
       setSupplier(data.supplier)
     } catch {
-      setError("Furnizorul nu a putut fi încărcat.")
+      setError("Failed to load supplier.")
     } finally {
       setLoading(false)
     }
@@ -481,7 +481,7 @@ export function SupplierDetailClient({ id }: SupplierDetailClientProps) {
               }}
             >
               <IconPhone />
-              Sună
+              Call
             </a>
             <a
               href={`mailto:${supplier.email}`}
@@ -536,7 +536,7 @@ export function SupplierDetailClient({ id }: SupplierDetailClientProps) {
             >
               <IconTruck />
             </div>
-            Comandă Nouă
+            New Order
           </button>
           {/* Contract renewal */}
           <button
@@ -569,7 +569,7 @@ export function SupplierDetailClient({ id }: SupplierDetailClientProps) {
             >
               <IconCalendar />
             </div>
-            Reînnoire Contract
+            Contract Renewal
           </button>
           {/* Edit */}
           <button
@@ -602,7 +602,7 @@ export function SupplierDetailClient({ id }: SupplierDetailClientProps) {
             >
               <IconPencil />
             </div>
-            Editează Furnizor
+            Edit Supplier
           </button>
           {/* All orders */}
           <button
@@ -635,7 +635,7 @@ export function SupplierDetailClient({ id }: SupplierDetailClientProps) {
             >
               <IconList />
             </div>
-            Toate Comenzile
+            Toate Comendays
           </button>
         </div>
       ),
@@ -682,7 +682,7 @@ export function SupplierDetailClient({ id }: SupplierDetailClientProps) {
             paddingTop: 60,
           }}
         >
-          {error ?? "Furnizor negăsit."}
+          {error ?? "Supplier not found."}
         </div>
       </div>
     )
@@ -792,7 +792,7 @@ export function SupplierDetailClient({ id }: SupplierDetailClientProps) {
             }}
           >
             <IconPhone />
-            Sună
+            Call
           </a>
           <a
             href={`mailto:${supplier.email}`}
@@ -1019,7 +1019,7 @@ export function SupplierDetailClient({ id }: SupplierDetailClientProps) {
                 cursor: "pointer",
               }}
             >
-              Toate comenzile →
+              Toate comendays →
             </span>
           </div>
         </>
@@ -1028,7 +1028,7 @@ export function SupplierDetailClient({ id }: SupplierDetailClientProps) {
       {/* Delivery Performance */}
       {supplier.status !== "pending" && (
         <>
-          <SectionLabel>Performanță livrări</SectionLabel>
+          <SectionLabel>Delivery Performance</SectionLabel>
           <div
             style={{
               background: "var(--prv-g1)",
@@ -1039,7 +1039,7 @@ export function SupplierDetailClient({ id }: SupplierDetailClientProps) {
           >
             <PerfBar label="La timp" value={supplier.onTimeDelivery} />
             <PerfBar label="Calitate" value={supplier.qualityScore} />
-            <PerfBar label="Documentație" value={supplier.documentationScore} />
+            <PerfBar label="Documentation" value={supplier.documentationScore} />
             <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0" }}>
               <p
                 style={{

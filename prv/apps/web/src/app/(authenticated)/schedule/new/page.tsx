@@ -4,7 +4,7 @@ import { getSession } from "@prv/auth"
 import { ShiftBuilderClient } from "./ShiftBuilderClient"
 
 export const dynamic = "force-dynamic"
-export const metadata = { title: "Tură Nouă · Program · PRV" }
+export const metadata = { title: "New Shift · Schedule · PRV" }
 
 export default async function NewShiftPage() {
   const cookieStore = await cookies()

@@ -27,7 +27,7 @@ interface CreateSheetState {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 const CAT_LABELS: Record<ProductCategory, string> = {
-  tamplarie: "Tâmplărie",
+  tamplarie: "Carpentry",
   sanitare: "Sanitare",
   electrice: "Electrice",
   pardoseli: "Pardoseli",
@@ -43,8 +43,8 @@ function stockColor(stock: number, min: number): string {
 
 function stockLabel(stock: number, min: number): string {
   if (stock === 0) return "Epuizat"
-  if (stock <= min) return "Stoc scăzut"
-  return "În stoc"
+  if (stock <= min) return "Low Stock"
+  return "In Stock"
 }
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
@@ -417,7 +417,7 @@ function StockSheet({
         <input
           value={reason}
           onChange={(e) => onReasonChange(e.target.value)}
-          placeholder="Motiv ajustare (opțional)"
+          placeholder="Adjustment reason (optional)"
           style={{
             width: "100%",
             height: 42,
@@ -450,7 +450,7 @@ function StockSheet({
             opacity: saving ? 0.7 : 1,
           }}
         >
-          {saving ? "Se salvează..." : "Salvează ajustarea"}
+          {saving ? "Saving..." : "Save adjustment"}
         </button>
       </div>
     </div>
@@ -461,7 +461,7 @@ function StockSheet({
 
 const UNITS = ["buc", "m²", "ml", "kg", "l", "sac", "set", "m"]
 const CATS: { id: ProductCategory; label: string }[] = [
-  { id: "tamplarie", label: "Tâmplărie" },
+  { id: "tamplarie", label: "Carpentry" },
   { id: "sanitare", label: "Sanitare" },
   { id: "electrice", label: "Electrice" },
   { id: "pardoseli", label: "Pardoseli" },
@@ -607,7 +607,7 @@ function CreateSheet({
 
         {field("Denumire *", "name", "ex. Robinet Grohe Essence")}
         {field("SKU", "sku", "ex. ROB-GRO-001")}
-        {field("Preț (€) *", "price", "0.00", "number")}
+        {field("Price (€) *", "price", "0.00", "number")}
 
         <div style={{ marginBottom: 12 }}>
           <p
@@ -620,7 +620,7 @@ function CreateSheet({
               marginBottom: 5,
             }}
           >
-            Unitate de măsură
+            Unit of measure
           </p>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
             {UNITS.map((u) => (
@@ -656,7 +656,7 @@ function CreateSheet({
                 marginBottom: 5,
               }}
             >
-              Stoc inițial
+              Initial stock
             </p>
             <input
               type="number"
@@ -727,7 +727,7 @@ function CreateSheet({
             opacity: saving ? 0.7 : 1,
           }}
         >
-          {saving ? "Se creează..." : "Creează produs"}
+          {saving ? "Creating..." : "Create product"}
         </button>
       </div>
     </div>
@@ -856,7 +856,7 @@ export function ShopManageClient() {
       setStockSheet(null)
       showToast("Stoc actualizat", "success")
     } catch {
-      showToast("Eroare de rețea", "error")
+      showToast("Network error", "error")
       setStockSheet((s) => s && { ...s, saving: false })
     }
   }, [stockSheet, showToast])
@@ -887,7 +887,7 @@ export function ShopManageClient() {
       setCreateSheet(EMPTY_CREATE)
       showToast("Produs creat", "success")
     } catch {
-      showToast("Eroare de rețea", "error")
+      showToast("Network error", "error")
       setCreateSheet((s) => ({ ...s, saving: false }))
     }
   }, [createSheet, showToast])
@@ -964,7 +964,7 @@ export function ShopManageClient() {
               color: "rgba(255,255,255,0.95)",
             },
             {
-              label: "Stoc scăzut",
+              label: "Low Stock",
               value: String(lowStockCount),
               color: lowStockCount > 0 ? "rgba(255,159,10,0.9)" : "rgba(255,255,255,0.40)",
             },
@@ -1041,7 +1041,7 @@ export function ShopManageClient() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Caută produs sau SKU..."
+            placeholder="Search product or SKU..."
             style={{
               flex: 1,
               background: "none",
@@ -1100,7 +1100,7 @@ export function ShopManageClient() {
               fontSize: 13,
             }}
           >
-            {search ? "Niciun produs găsit" : "Niciun produs înregistrat"}
+            {search ? "No products found" : "No products registered"}
           </div>
         ) : (
           visible.map((p) => {

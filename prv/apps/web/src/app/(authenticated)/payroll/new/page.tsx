@@ -4,7 +4,7 @@ import { getSession } from "@prv/auth"
 import { PayrollRunBuilderClient } from "./PayrollRunBuilderClient"
 
 export const dynamic = "force-dynamic"
-export const metadata = { title: "Rulare Nouă · Payroll" }
+export const metadata = { title: "New Run · Payroll" }
 
 export default async function NewPayrollRunPage() {
   const cookieStore = await cookies()

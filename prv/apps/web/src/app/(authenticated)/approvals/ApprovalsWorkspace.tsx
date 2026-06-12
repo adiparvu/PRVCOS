@@ -104,7 +104,7 @@ function mapToItem(a: ApiApprovalSummary): ApprovalItem {
 const TYPE_LABEL_MAP: Record<ApprovalType, string> = {
   expense: "Decontare cheltuieli",
   leave: "Cerere concediu",
-  invoice: "Aprobare factură",
+  invoice: "Invoice approval",
   overtime: "Ore suplimentare",
   onboarding: "Angajare",
 }
@@ -112,10 +112,10 @@ const TYPE_LABEL_MAP: Record<ApprovalType, string> = {
 function buildDetail(item: ApprovalItem): ApprovalDetail {
   const fields: { label: string; value: string }[] = [
     { label: "Solicitant", value: item.requestedBy },
-    { label: "Referință", value: item.ref },
-    { label: "Termen limită", value: item.deadline },
+    { label: "Reference", value: item.ref },
+    { label: "Deadline", value: item.deadline },
     ...(item.daysUntilDeadline !== null
-      ? [{ label: "Zile rămase", value: `${item.daysUntilDeadline} zile` }]
+      ? [{ label: "Zile remaininge", value: `${item.daysUntilDeadline} days` }]
       : []),
     ...(item.value !== null
       ? [{ label: "Valoare", value: `€${item.value.toLocaleString()}` }]
@@ -125,7 +125,7 @@ function buildDetail(item: ApprovalItem): ApprovalDetail {
     type: TYPE_LABEL_MAP[item.type],
     title: item.title,
     fields,
-    reason: item.description || "Nicio descriere furnizată.",
+    reason: item.description || "No description provided.",
   }
 }
 
@@ -175,8 +175,8 @@ const DECISION_STYLE: Record<
   "approved" | "rejected",
   { bg: string; color: string; label: string }
 > = {
-  approved: { bg: "rgba(48,209,88,0.14)", color: "rgba(48,209,88,0.95)", label: "Aprobat" },
-  rejected: { bg: "rgba(255,69,58,0.14)", color: "rgba(255,69,58,0.95)", label: "Respins" },
+  approved: { bg: "rgba(48,209,88,0.14)", color: "rgba(48,209,88,0.95)", label: "Approved" },
+  rejected: { bg: "rgba(255,69,58,0.14)", color: "rgba(255,69,58,0.95)", label: "Rejected" },
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -239,7 +239,7 @@ function ApprovalDetailView({
         >
           <path d="M19 12H5M12 5l-7 7 7 7" />
         </svg>
-        Aprobări
+        Approveri
       </button>
 
       <GlassCard className="p-4 mb-4">
@@ -304,7 +304,7 @@ function ApprovalDetailView({
             border: "1px solid rgba(48,209,88,0.30)",
           }}
         >
-          ✓ Aprobă
+          ✓ Approve
         </button>
         <button
           onClick={() => onDecide(item.id, "rejected")}
@@ -315,7 +315,7 @@ function ApprovalDetailView({
             border: "1px solid rgba(255,69,58,0.25)",
           }}
         >
-          ✕ Respinge
+          ✕ Reject
         </button>
       </div>
     </div>
@@ -366,7 +366,7 @@ export function ApprovalsWorkspace() {
       { id: "all", label: `Toate (${pending.length})` },
       { id: "urgent", label: `Urgent (${urgentCount})` },
       { id: "leave", label: "Concediu" },
-      { id: "finance", label: "Finanțe" },
+      { id: "finance", label: "Finance" },
     ],
     [pending.length, urgentCount]
   )
@@ -392,7 +392,7 @@ export function ApprovalsWorkspace() {
       {
         id,
         title: item?.title ?? id,
-        sub: `${decision === "approved" ? "Aprobat" : "Respins"} de tine · acum`,
+        sub: `${decision === "approved" ? "Approved" : "Rejected"} de tine · acum`,
         status: decision,
       },
       ...prev,
@@ -433,7 +433,7 @@ export function ApprovalsWorkspace() {
         <div>
           <p className="text-white/35 text-[13px] font-medium mb-0.5">Command</p>
           <h1 className="text-white/90 text-[26px] font-semibold tracking-tight leading-tight">
-            Aprobări
+            Approveri
           </h1>
         </div>
         {pending.length > 0 && (
@@ -451,7 +451,7 @@ export function ApprovalsWorkspace() {
         {[
           {
             v: loading ? "…" : String(pending.length),
-            l: "În așteptare",
+            l: "Pending",
             c: "rgba(255,69,58,0.95)",
           },
           { v: loading ? "…" : String(urgentCount), l: "Urgent", c: "rgba(255,159,10,0.95)" },
@@ -485,14 +485,12 @@ export function ApprovalsWorkspace() {
       {/* Approval queue */}
       {loading ? (
         <GlassCard className="py-12 text-center">
-          <p className="text-[14px] text-white/35">Se încarcă…</p>
+          <p className="text-[14px] text-white/35">Loading…</p>
         </GlassCard>
       ) : filtered.length === 0 ? (
         <GlassCard className="py-12 text-center">
-          <p className="text-[15px] font-semibold text-white/90 mb-1">Totul e în regulă</p>
-          <p className="text-[13px] text-white/35">
-            Nicio aprobare în așteptare în această categorie.
-          </p>
+          <p className="text-[15px] font-semibold text-white/90 mb-1">All clear</p>
+          <p className="text-[13px] text-white/35">No pending approvals in this category.</p>
         </GlassCard>
       ) : (
         <GlassCard>
@@ -554,7 +552,7 @@ export function ApprovalsWorkspace() {
                               }
                         }
                       >
-                        {isApprove ? "Aprobă" : "Respinge"}
+                        {isApprove ? "Approve" : "Reject"}
                       </button>
                     )
                   })}

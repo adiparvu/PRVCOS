@@ -45,7 +45,7 @@ function typeConfig(type: ArticleType): {
     return {
       bg: "rgba(191,90,242,0.10)",
       stroke: "rgba(191,90,242,0.85)",
-      label: "Politică",
+      label: "Policy",
       pillBg: "rgba(191,90,242,0.13)",
       pillColor: "rgba(191,90,242,0.9)",
     }
@@ -301,7 +301,7 @@ function FeaturedCard({ article }: { article: KnowledgeArticle }) {
       </p>
       <p style={{ fontSize: 12, color: "rgba(255,255,255,0.45)", margin: 0 }}>
         {article.version} · {article.author} · {article.readMinutes} min citire · {article.views}{" "}
-        vizualizări
+        views
       </p>
       {article.readProgress > 0 && (
         <>
@@ -339,7 +339,7 @@ function FeaturedCard({ article }: { article: KnowledgeArticle }) {
 
 export function KnowledgeListClient() {
   const router = useRouter()
-  const [filter, setFilter] = useState<FilterType>("Toate")
+  const [filter, setFilter] = useState<FilterType>("All")
   const { openSheet } = useSheetStack()
   const type = FILTER_TO_TYPE[filter]
   const { data, hasNextPage, fetchNextPage, isFetchingNextPage } = useKnowledgeArticles(type)
@@ -351,13 +351,13 @@ export function KnowledgeListClient() {
   const policies = articles.filter((a) => a.type === "policy")
   const guides = articles.filter((a) => a.type === "guide")
   const faqs = articles.filter((a) => a.type === "faq")
-  const showSections = filter === "Toate"
+  const showSections = filter === "All"
 
   function openFab() {
     openSheet({
       snapPoints: ["mid", "full"],
       defaultSnap: "mid",
-      title: "Caută în Cunoștințe",
+      title: "Search Knowledge",
       render: (onClose) => (
         <div style={{ padding: "0 16px 24px", display: "flex", flexDirection: "column", gap: 8 }}>
           <div
@@ -385,13 +385,15 @@ export function KnowledgeListClient() {
               <circle cx="11" cy="11" r="8" />
               <line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
-            <span style={{ fontSize: 15, color: "rgba(255,255,255,0.35)" }}>Caută un articol…</span>
+            <span style={{ fontSize: 15, color: "rgba(255,255,255,0.35)" }}>Search an item…</span>
           </div>
           {[
             {
               label: "Articol Nou",
-              sub: "Creează un SOP, Politică sau Ghid",
-              onClick: () => { router.push("/knowledge/new") },
+              sub: "Create an SOP, Policy or Guide",
+              onClick: () => {
+                router.push("/knowledge/new")
+              },
               iconBg: "rgba(48,209,88,0.18)",
               rowBg: "rgba(48,209,88,0.10)",
               rowBorder: "rgba(48,209,88,0.2)",
@@ -438,7 +440,7 @@ export function KnowledgeListClient() {
             },
             {
               label: "Export",
-              sub: "Exportă baza de cunoștințe ca PDF",
+              sub: "Export knowledge base as PDF",
               iconBg: "rgba(255,255,255,0.10)",
               rowBg: "rgba(255,255,255,0.04)",
               rowBorder: "rgba(255,255,255,0.09)",
@@ -463,7 +465,10 @@ export function KnowledgeListClient() {
           ].map((btn) => (
             <button
               key={btn.label}
-              onClick={() => { onClose(); btn.onClick?.() }}
+              onClick={() => {
+                onClose()
+                btn.onClick?.()
+              }}
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -531,7 +536,7 @@ export function KnowledgeListClient() {
               margin: "2px 0 0",
             }}
           >
-            Cunoștințe
+            Knowledge
           </h1>
         </div>
         <button
@@ -674,10 +679,9 @@ export function KnowledgeListClient() {
 
       {articles.length === 0 && (
         <div style={{ textAlign: "center", padding: "40px 16px", color: t3, fontSize: 14 }}>
-          Niciun articol găsit
+          No articles found
         </div>
       )}
-
 
       {hasNextPage && (
         <button
@@ -696,7 +700,7 @@ export function KnowledgeListClient() {
             marginTop: 8,
           }}
         >
-          {isFetchingNextPage ? "Se încarcă..." : "Încarcă mai mult"}
+          {isFetchingNextPage ? "Loading..." : "Load more"}
         </button>
       )}
 

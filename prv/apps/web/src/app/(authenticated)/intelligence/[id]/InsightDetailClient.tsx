@@ -205,10 +205,10 @@ function RecommendationRow({ rec }: { rec: Recommendation }) {
         </div>
         <div style={{ fontSize: 11, color: priorityColor, fontWeight: 600, marginTop: 4 }}>
           {rec.priority === "urgent"
-            ? "Prioritate Urgentă"
+            ? "Prioritate Urgent"
             : rec.priority === "medium"
               ? "Prioritate Medie"
-              : "Prioritate Scăzută"}{" "}
+              : "Low Priority"}{" "}
           · {rec.deadline}
         </div>
       </div>
@@ -303,9 +303,9 @@ export default function InsightDetailClient({ id }: { id: string }) {
     insight?.type === "recommendation"
       ? "Recomandare AI"
       : insight?.type === "alert"
-        ? "Alertă · Urgentă"
+        ? "Alert · Urgent"
         : insight?.type === "forecast"
-          ? "Prognoză AI"
+          ? "AI Forecast"
           : "Raport"
 
   return (
@@ -345,7 +345,7 @@ export default function InsightDetailClient({ id }: { id: string }) {
           >
             <polyline points="15 18 9 12 15 6" />
           </svg>
-          Inteligență
+          Intelligence
         </Link>
 
         <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
@@ -437,7 +437,7 @@ export default function InsightDetailClient({ id }: { id: string }) {
                 padding: "3px 8px",
               }}
             >
-              Urgentă
+              Urgent
             </span>
           )}
           <span
@@ -543,8 +543,8 @@ export default function InsightDetailClient({ id }: { id: string }) {
 
       {/* Recommendations */}
       <SectionCard
-        title="Recomandări"
-        badge={insight ? `${insight.recommendations.length} acțiuni` : undefined}
+        title="Recommendations"
+        badge={insight ? `${insight.recommendations.length} actions` : undefined}
       >
         {insight
           ? insight.recommendations.map((r) => <RecommendationRow key={r.id} rec={r} />)
@@ -669,7 +669,7 @@ export default function InsightDetailClient({ id }: { id: string }) {
             />
             {[
               {
-                label: "Acționează",
+                label: "Act",
                 icon: "M9 11l3 3L22 4 M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11",
                 color: "rgba(48,209,88,0.9)",
               },
@@ -679,12 +679,12 @@ export default function InsightDetailClient({ id }: { id: string }) {
                 color: "rgba(10,132,255,0.9)",
               },
               {
-                label: "Arhivează",
+                label: "Archive",
                 icon: "M21 8v13H3V8 M23 2H1v6h22z M10 12h4",
                 color: "rgba(255,255,255,0.70)",
               },
               {
-                label: "Ignoră",
+                label: "Ignhour",
                 icon: "M18.36 6.64A9 9 0 015.64 19.36 M9.9 4.24A9.12 9.12 0 0112 4a9 9 0 019 9 M12 20v2 M12 2v2",
                 color: "rgba(255,69,58,0.9)",
               },

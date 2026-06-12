@@ -246,7 +246,7 @@ function IconClock() {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function fmt(amount: number) {
-  return "€" + amount.toLocaleString("ro-RO")
+  return "€" + amount.toLocaleString("en-US")
 }
 
 function fmtDate(iso: string) {
@@ -262,7 +262,7 @@ function relTime(iso: string) {
   const d = Math.floor(diff / 86400000)
   if (d === 0) return "Azi"
   if (d === 1) return "Ieri"
-  return `${d}z în urmă`
+  return `${d}d ago`
 }
 
 const STATUS_CONFIG: Record<
@@ -270,31 +270,31 @@ const STATUS_CONFIG: Record<
   { label: string; color: string; bg: string; border: string }
 > = {
   draft: {
-    label: "Ciornă",
+    label: "Draft",
     color: "rgba(255,255,255,0.45)",
     bg: "rgba(255,255,255,0.07)",
     border: "rgba(255,255,255,0.14)",
   },
   sent: {
-    label: "Trimisă",
+    label: "Sent",
     color: "#7eb8ff",
     bg: "rgba(100,160,255,0.12)",
     border: "rgba(100,160,255,0.24)",
   },
   accepted: {
-    label: "Acceptată",
+    label: "Accepted",
     color: "#5affa0",
     bg: "rgba(80,255,140,0.10)",
     border: "rgba(80,255,140,0.20)",
   },
   rejected: {
-    label: "Respinsă",
+    label: "Rejected",
     color: "#ff6b6b",
     bg: "rgba(255,80,80,0.12)",
     border: "rgba(255,80,80,0.22)",
   },
   expired: {
-    label: "Expirată",
+    label: "Expired",
     color: "rgba(255,255,255,0.30)",
     bg: "rgba(255,255,255,0.05)",
     border: "rgba(255,255,255,0.10)",
@@ -313,10 +313,10 @@ const APPROVAL_DOT: Record<ApprovalStepStatus, { bg: string; border: string; col
 }
 
 const APPROVAL_STATUS_LABEL: Record<ApprovalStepStatus, string> = {
-  approved: "Aprobat",
-  pending: "În așteptare",
+  approved: "Approved",
+  pending: "Pending",
   waiting: "Blocat",
-  rejected: "Respins",
+  rejected: "Rejected",
 }
 
 const APPROVAL_STATUS_COLOR: Record<ApprovalStepStatus, string> = {
@@ -428,7 +428,7 @@ function QuoteActionsSheet({ quote, onClose }: { quote: QuoteDetail; onClose: ()
           <IconCheckCircle />
         </div>
         <p style={{ fontSize: 15, fontWeight: 600, color: "rgba(255,255,255,0.85)" }}>
-          Acțiune înregistrată
+          Action recorded
         </p>
       </div>
     )
@@ -518,7 +518,7 @@ function QuoteActionsSheet({ quote, onClose }: { quote: QuoteDetail; onClose: ()
               lineHeight: 1.5,
             }}
           >
-            Subiect: Ofertă {quote.ref} — {fmt(quote.amount)} · {quote.projectName}
+            Subject: Quote {quote.ref} — {fmt(quote.amount)} · {quote.projectName}
           </div>
           <button
             onClick={() => post("send", { channel: "email" })}
@@ -550,7 +550,7 @@ function QuoteActionsSheet({ quote, onClose }: { quote: QuoteDetail; onClose: ()
               cursor: "pointer",
             }}
           >
-            Înapoi
+            Back
           </button>
         </>
       )}
@@ -568,7 +568,7 @@ function QuoteActionsSheet({ quote, onClose }: { quote: QuoteDetail; onClose: ()
             }}
           >
             <p style={{ fontSize: 12, color: "rgba(140,255,180,0.80)", lineHeight: 1.45 }}>
-              Oferta va fi marcată ca acceptată. Ulterior poți converti în proiect.
+              The quote will be marked as accepted. You can then convert it to a project.
             </p>
           </div>
           <button
@@ -587,7 +587,7 @@ function QuoteActionsSheet({ quote, onClose }: { quote: QuoteDetail; onClose: ()
               marginBottom: 8,
             }}
           >
-            {submitting ? "Se procesează…" : `Confirmă Acceptarea — ${fmt(quote.amount)}`}
+            {submitting ? "Processing…" : `Confirm Acceptance — ${fmt(quote.amount)}`}
           </button>
           <button
             onClick={() => setView("menu")}
@@ -601,7 +601,7 @@ function QuoteActionsSheet({ quote, onClose }: { quote: QuoteDetail; onClose: ()
               cursor: "pointer",
             }}
           >
-            Înapoi
+            Back
           </button>
         </>
       )}
@@ -619,14 +619,13 @@ function QuoteActionsSheet({ quote, onClose }: { quote: QuoteDetail; onClose: ()
             }}
           >
             <p style={{ fontSize: 12, color: "rgba(255,100,100,0.80)", lineHeight: 1.45 }}>
-              Oferta va fi marcată ca respinsă. Specifică motivul pentru a îmbunătăți viitoarele
-              oferte.
+              The quote will be marked as rejected. Specify the reason to improve future quotes.
             </p>
           </div>
           <textarea
             value={rejectNote}
             onChange={(e) => setRejectNote(e.target.value)}
-            placeholder="Motiv respingere (opțional)…"
+            placeholder="Rejection reason (optional)…"
             maxLength={500}
             style={{
               width: "100%",
@@ -658,7 +657,7 @@ function QuoteActionsSheet({ quote, onClose }: { quote: QuoteDetail; onClose: ()
               marginBottom: 8,
             }}
           >
-            {submitting ? "Se procesează…" : "Marchează Respinsă"}
+            {submitting ? "Processing…" : "Mark Rejected"}
           </button>
           <button
             onClick={() => setView("menu")}
@@ -672,7 +671,7 @@ function QuoteActionsSheet({ quote, onClose }: { quote: QuoteDetail; onClose: ()
               cursor: "pointer",
             }}
           >
-            Înapoi
+            Back
           </button>
         </>
       )}
@@ -738,7 +737,7 @@ function QuoteActionsSheet({ quote, onClose }: { quote: QuoteDetail; onClose: ()
               marginBottom: 8,
             }}
           >
-            {submitting ? "Se creează…" : "Creează Proiect"}
+            {submitting ? "Creating…" : "Create Project"}
           </button>
           <button
             onClick={() => setView("menu")}
@@ -752,7 +751,7 @@ function QuoteActionsSheet({ quote, onClose }: { quote: QuoteDetail; onClose: ()
               cursor: "pointer",
             }}
           >
-            Înapoi
+            Back
           </button>
         </>
       )}
@@ -806,7 +805,7 @@ function QuoteActionsSheet({ quote, onClose }: { quote: QuoteDetail; onClose: ()
               }}
             >
               <IconApproval />
-              Solicită Aprobare
+              Request Approval
             </button>
           )}
           {quote.status === "accepted" && (
@@ -830,7 +829,7 @@ function QuoteActionsSheet({ quote, onClose }: { quote: QuoteDetail; onClose: ()
               }}
             >
               <IconConvert />
-              Convertește în Proiect
+              Convert to Project
             </button>
           )}
 
@@ -848,7 +847,7 @@ function QuoteActionsSheet({ quote, onClose }: { quote: QuoteDetail; onClose: ()
               id: "accept",
               icon: <IconCheck />,
               iconStyle: "green",
-              label: "Marchează Acceptată",
+              label: "Mark Accepted",
               sub: "Confirmat de client",
               action: () => setView("accept"),
             },
@@ -856,7 +855,7 @@ function QuoteActionsSheet({ quote, onClose }: { quote: QuoteDetail; onClose: ()
               id: "download",
               icon: <IconDownload />,
               iconStyle: "neutral",
-              label: "Descarcă PDF",
+              label: "Download PDF",
               sub: `${quote.ref}-${quote.version}.pdf`,
               action: () => {},
             },
@@ -864,16 +863,16 @@ function QuoteActionsSheet({ quote, onClose }: { quote: QuoteDetail; onClose: ()
               id: "reject",
               icon: <IconXCircle />,
               iconStyle: "red",
-              label: "Marchează Respinsă",
-              sub: "Necesită motiv",
+              label: "Mark Rejected",
+              sub: "Requires reason",
               action: () => setView("reject"),
             },
             quote.status === "accepted" && {
               id: "convert",
               icon: <IconConvert />,
               iconStyle: "neutral",
-              label: "Convertește în Proiect",
-              sub: "Creează proiect din ofertă",
+              label: "Convert to Project",
+              sub: "Create project from quote",
               action: () => setView("convert"),
             },
           ]
@@ -981,7 +980,7 @@ export function QuoteDetailClient({ id }: { id: string }) {
     openSheet({
       snapPoints: ["mid", "full"],
       defaultSnap: "mid",
-      title: `${quote.ref} · Acțiuni`,
+      title: `${quote.ref} · Actions`,
       render: (onClose) => <QuoteActionsSheet quote={quote} onClose={onClose} />,
     })
   }
@@ -993,7 +992,7 @@ export function QuoteDetailClient({ id }: { id: string }) {
         className="px-4 pt-14 pb-28 max-w-2xl mx-auto"
         style={{ textAlign: "center", paddingTop: 80 }}
       >
-        <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 14 }}>Oferta nu a fost găsită.</p>
+        <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 14 }}>Quote not found.</p>
         <Link
           href="/crm/quotes"
           style={{
@@ -1003,7 +1002,7 @@ export function QuoteDetailClient({ id }: { id: string }) {
             display: "inline-block",
           }}
         >
-          Înapoi la oferte
+          Back la quotes
         </Link>
       </div>
     )
@@ -1109,9 +1108,9 @@ export function QuoteDetailClient({ id }: { id: string }) {
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
           {[
-            { label: "Emisă", value: fmtDate(quote.issuedDate), red: false },
+            { label: "Issued", value: fmtDate(quote.issuedDate), red: false },
             {
-              label: "Expiră",
+              label: "Expires",
               value:
                 quote.daysUntilExpiry !== null
                   ? `${fmtDate(quote.expiryDate)} · ${quote.daysUntilExpiry}z`
@@ -1259,7 +1258,7 @@ export function QuoteDetailClient({ id }: { id: string }) {
           marginBottom: 6,
         }}
       >
-        Articole ofertă
+        Articole quote
       </p>
       <div
         style={{
@@ -1327,7 +1326,7 @@ export function QuoteDetailClient({ id }: { id: string }) {
         {[
           { label: "Subtotal", value: fmt(quote.subtotal), bold: false },
           { label: `TVA ${quote.vatRate}%`, value: fmt(quote.vatAmount), bold: false },
-          { label: "Total ofertă", value: fmt(quote.amount), bold: true },
+          { label: "Total quote", value: fmt(quote.amount), bold: true },
         ].map(({ label, value, bold }) => (
           <div
             key={label}
@@ -1336,7 +1335,7 @@ export function QuoteDetailClient({ id }: { id: string }) {
               justifyContent: "space-between",
               alignItems: "center",
               padding: "9px 13px",
-              borderBottom: label !== "Total ofertă" ? "1px solid rgba(255,255,255,0.06)" : "none",
+              borderBottom: label !== "Total quote" ? "1px solid rgba(255,255,255,0.06)" : "none",
               background: bold ? "rgba(255,255,255,0.03)" : "transparent",
             }}
           >
@@ -1374,7 +1373,7 @@ export function QuoteDetailClient({ id }: { id: string }) {
           marginBottom: 6,
         }}
       >
-        Lanț de aprobare
+        Approval chain
       </p>
       <div
         style={{

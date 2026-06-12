@@ -4,7 +4,7 @@ import { getSession } from "@prv/auth"
 import { KnowledgeArticleBuilderClient } from "./KnowledgeArticleBuilderClient"
 
 export const dynamic = "force-dynamic"
-export const metadata = { title: "Articol Nou · Bază de cunoștințe · PRV" }
+export const metadata = { title: "New Article · Knowledge Base · PRV" }
 
 export default async function NewKnowledgeArticlePage() {
   const cookieStore = await cookies()

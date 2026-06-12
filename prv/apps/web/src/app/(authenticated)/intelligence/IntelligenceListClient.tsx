@@ -95,9 +95,9 @@ function InsightRow({ insight }: { insight: Insight }) {
     insight.type === "recommendation"
       ? "Recomandare"
       : insight.type === "alert"
-        ? "Alertă"
+        ? "Alert"
         : insight.type === "forecast"
-          ? "Prognoză"
+          ? "Forecast"
           : "Raport"
 
   const borderColor =
@@ -320,7 +320,7 @@ function FeaturedInsight({ insight }: { insight: Insight }) {
                 marginBottom: 4,
               }}
             >
-              AI Insight · Urgentă
+              AI Insight · Urgent
             </div>
             <div
               style={{
@@ -371,7 +371,7 @@ function FeaturedInsight({ insight }: { insight: Insight }) {
               fontWeight: 600,
             }}
           >
-            Analizează detalii
+            Analyze details
             <svg
               width="13"
               height="13"
@@ -707,7 +707,7 @@ function SkeletonRow() {
 }
 
 export default function IntelligenceListClient() {
-  const [filter, setFilter] = useState<FilterType>("Toate")
+  const [filter, setFilter] = useState<FilterType>("All")
   const [fabOpen, setFabOpen] = useState(false)
   const { data } = useIntelligence()
 
@@ -738,7 +738,7 @@ export default function IntelligenceListClient() {
             letterSpacing: "-0.6px",
           }}
         >
-          Inteligență
+          Intelligence
         </h1>
         <p
           style={{
@@ -748,7 +748,7 @@ export default function IntelligenceListClient() {
             fontWeight: 400,
           }}
         >
-          Analiză · AI · Rapoarte
+          Analysis · AI · Reports
         </p>
       </div>
 
@@ -761,7 +761,7 @@ export default function IntelligenceListClient() {
           color="rgba(48,209,88,0.95)"
         />
         <KpiTile
-          label="Marjă Medie"
+          label="Avg Margin"
           value={data ? `${data.meta.avgMarginPct}%` : "—"}
           trend={data?.meta.marginTrend ?? "—"}
           color="rgba(255,159,10,0.95)"
@@ -819,7 +819,7 @@ export default function IntelligenceListClient() {
       {/* Content */}
       <div style={{ marginTop: 6 }}>
         {/* Featured AI Insight */}
-        {(filter === "Toate" || filter === "AI Insights") && urgentInsight && (
+        {(filter === "All" || filter === "AI Insights") && urgentInsight && (
           <div>
             <SectionHeader label="AI Insights" />
             <FeaturedInsight insight={urgentInsight} />
@@ -858,7 +858,7 @@ export default function IntelligenceListClient() {
         )}
 
         {/* Revenue Chart (Analytics / Toate) */}
-        {(filter === "Toate" || filter === "Analytics") && (
+        {(filter === "All" || filter === "Analytics") && (
           <div>
             <SectionHeader label="Venit per Magazin — Azi" />
             {data ? (
@@ -916,7 +916,7 @@ export default function IntelligenceListClient() {
         )}
 
         {/* Recent Insights (Toate — limited) */}
-        {filter === "Toate" && (
+        {filter === "All" && (
           <div>
             <SectionHeader label="Insights Recente" />
             <div
@@ -967,7 +967,7 @@ export default function IntelligenceListClient() {
         )}
 
         {/* Reports */}
-        {(filter === "Toate" || filter === "Rapoarte") && (
+        {(filter === "All" || filter === "Rapoarte") && (
           <div>
             <SectionHeader
               label="Rapoarte"
@@ -995,11 +995,11 @@ export default function IntelligenceListClient() {
                 }}
               />
               {data
-                ? (filter === "Toate" ? allReports.slice(0, 3) : allReports).map((rep) => (
+                ? (filter === "All" ? allReports.slice(0, 3) : allReports).map((rep) => (
                     <ReportRow key={rep.id} report={rep} />
                   ))
                 : [1, 2, 3].map((n) => <SkeletonRow key={n} />)}
-              {filter === "Toate" && data && allReports.length > 3 && (
+              {filter === "All" && data && allReports.length > 3 && (
                 <button
                   onClick={() => setFilter("Rapoarte")}
                   style={{
@@ -1100,17 +1100,17 @@ export default function IntelligenceListClient() {
             />
             {[
               {
-                label: "Generează Raport Nou",
+                label: "Generate New Report",
                 icon: "M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z M14 2v6h6 M16 13H8 M16 17H8",
                 color: "rgba(10,132,255,0.9)",
               },
               {
-                label: "Exportă Date CSV",
+                label: "Export Data CSV",
                 icon: "M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4 M7 10l5 5 5-5 M12 15V3",
                 color: "rgba(48,209,88,0.9)",
               },
               {
-                label: "Programează Raport",
+                label: "Schedule Report",
                 icon: "M8 6h13 M8 12h13 M8 18h13 M3 6h.01 M3 12h.01 M3 18h.01",
                 color: "rgba(255,255,255,0.75)",
               },

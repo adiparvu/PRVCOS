@@ -4,7 +4,7 @@ import { getSession } from "@prv/auth"
 import { WishlistClient } from "./WishlistClient"
 
 export const dynamic = "force-dynamic"
-export const metadata = { title: "Lista de dorințe · PRV" }
+export const metadata = { title: "Wishlist · PRV" }
 
 export default async function WishlistPage() {
   const cookieStore = await cookies()

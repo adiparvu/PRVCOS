@@ -86,7 +86,7 @@ function calcNet(gross: number): number {
 }
 
 function fmt(n: number): string {
-  return `€${n.toLocaleString("ro-RO")}`
+  return `€${n.toLocaleString("en-US")}`
 }
 
 // ── CSS tokens ────────────────────────────────────────────────────────────────

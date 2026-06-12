@@ -8,7 +8,7 @@ import type { InvoiceSummary } from "@/app/api/finance/invoices/route"
 import type { FinanceReport } from "@/app/api/finance/reports/route"
 import { useExpenses, useFinanceReports, useInvoices } from "@/lib/api-hooks"
 
-type FilterType = "Toate" | "Venituri" | "Cheltuieli" | "Facturi" | "Rapoarte"
+type FilterType = "Toate" | "Venituri" | "Expenses" | "Invoices" | "Rapoarte"
 
 interface FinanceData {
   expenses: Expense[]
@@ -219,10 +219,10 @@ const EXPENSE_STATUS_COLORS: Record<string, string> = {
 }
 
 const EXPENSE_STATUS_LABELS: Record<string, string> = {
-  pending: "Așteptare",
-  approved: "Aprobat",
-  rejected: "Respins",
-  draft: "Ciornă",
+  pending: "Pending",
+  approved: "Approved",
+  rejected: "Rejected",
+  draft: "Draft",
 }
 
 const INVOICE_STATUS_COLORS: Record<string, string> = {
@@ -235,12 +235,12 @@ const INVOICE_STATUS_COLORS: Record<string, string> = {
 }
 
 const INVOICE_STATUS_LABELS: Record<string, string> = {
-  overdue: "Restanță",
+  overdue: "Overdue",
   due: "Scadent",
-  partial: "Parțial",
-  paid: "Plătit",
-  draft: "Ciornă",
-  void: "Anulat",
+  partial: "Partial",
+  paid: "Paid",
+  draft: "Draft",
+  void: "Cancelled",
 }
 
 // ── KPI Tile ──────────────────────────────────────────────────────────────────
@@ -615,7 +615,7 @@ function ReportCard({ report }: { report: FinanceReport }) {
           {report.title}
         </div>
         <div style={{ fontSize: 11, color: "rgba(255,255,255,.4)" }}>
-          {report.transactionCount} tranzacții · {report.dateLabel}
+          {report.transactionCount} transactions · {report.dateLabel}
         </div>
       </div>
       <div
@@ -687,7 +687,7 @@ function SheetAction({
 
 export function FinanceListClient() {
   const router = useRouter()
-  const [filter, setFilter] = useState<FilterType>("Toate")
+  const [filter, setFilter] = useState<FilterType>("All")
   const [fabOpen, setFabOpen] = useState(false)
 
   const {
@@ -715,11 +715,11 @@ export function FinanceListClient() {
   const { data: reportsData } = useFinanceReports()
   const reports = reportsData?.reports ?? []
 
-  const filters: FilterType[] = ["Toate", "Venituri", "Cheltuieli", "Facturi", "Rapoarte"]
+  const filters: FilterType[] = ["Toate", "Venituri", "Expenses", "Invoices", "Rapoarte"]
 
-  const showPL = filter === "Toate" || filter === "Venituri"
-  const showExpenses = filter === "Toate" || filter === "Cheltuieli"
-  const showInvoices = filter === "Toate" || filter === "Facturi"
+  const showPL = filter === "All" || filter === "Venituri"
+  const showExpenses = filter === "All" || filter === "Expenses"
+  const showInvoices = filter === "All" || filter === "Invoices"
   const showReports = filter === "Rapoarte"
 
   return (
@@ -754,7 +754,7 @@ export function FinanceListClient() {
             color: "rgba(255,255,255,.95)",
           }}
         >
-          Finanțe
+          Finance
         </div>
         <div style={{ fontSize: 13, color: "rgba(255,255,255,.4)", marginTop: 2 }}>
           Iunie 2026 · PRV Group
@@ -772,7 +772,7 @@ export function FinanceListClient() {
             accentColor="rgba(48,209,88,.9)"
           />
           <KpiTile
-            label="Cheltuieli"
+            label="Expenses"
             value={meta?.totalExpensesLabel ?? "—"}
             trend={meta?.expensesTrend ?? "—"}
             trendPositive={meta?.expensesTrend?.startsWith("+") ?? false}
@@ -849,7 +849,7 @@ export function FinanceListClient() {
                 Cash Flow
               </p>
               <p style={{ fontSize: 12, color: "rgba(255,255,255,0.40)", margin: "2px 0 0" }}>
-                Balanță · Prognoză 30/60/90d · Breakdown
+                Balance · 30/60/90d Forecast · Breakdown
               </p>
             </div>
           </div>
@@ -955,17 +955,17 @@ export function FinanceListClient() {
         {showExpenses && (
           <div style={{ marginBottom: 28 }}>
             <SectionHeader
-              title={filter === "Cheltuieli" ? "Toate Cheltuielile" : "Cheltuieli Recente"}
-              count={filter === "Cheltuieli" ? expenses.length : Math.min(expenses.length, 4)}
+              title={filter === "Expenses" ? "Toate Cheltuielile" : "Cheltuieli Recente"}
+              count={filter === "Expenses" ? expenses.length : Math.min(expenses.length, 4)}
             />
             {loading
               ? [1, 2, 3].map((n) => <SkeletonRow key={n} />)
-              : (filter === "Cheltuieli" ? expenses : expenses.slice(0, 4)).map((exp) => (
+              : (filter === "Expenses" ? expenses : expenses.slice(0, 4)).map((exp) => (
                   <ExpenseRow key={exp.id} expense={exp} />
                 ))}
-            {!loading && filter === "Toate" && expenses.length > 4 && (
+            {!loading && filter === "All" && expenses.length > 4 && (
               <button
-                onClick={() => setFilter("Cheltuieli")}
+                onClick={() => setFilter("Expenses")}
                 style={{
                   width: "100%",
                   padding: "10px",
@@ -987,15 +987,15 @@ export function FinanceListClient() {
         {showInvoices && (
           <div style={{ marginBottom: 28 }}>
             <SectionHeader
-              title={filter === "Facturi" ? "Toate Facturile" : "Facturi Pendinte"}
-              count={filter === "Facturi" ? invoices.length : pendingInvoices.length}
+              title={filter === "Invoices" ? "Toate Facturile" : "Facturi Pendinte"}
+              count={filter === "Invoices" ? invoices.length : pendingInvoices.length}
             />
             {loading
               ? [1, 2].map((n) => <SkeletonRow key={n} />)
-              : (filter === "Facturi" ? invoices : pendingInvoices).map((inv) => (
+              : (filter === "Invoices" ? invoices : pendingInvoices).map((inv) => (
                   <InvoiceRow key={inv.id} invoice={inv} />
                 ))}
-            {!loading && filter === "Toate" && pendingInvoices.length === 0 && (
+            {!loading && filter === "All" && pendingInvoices.length === 0 && (
               <div
                 style={{
                   fontSize: 13,
@@ -1004,7 +1004,7 @@ export function FinanceListClient() {
                   padding: "16px 0",
                 }}
               >
-                Nicio factură pendinte
+                No invoices pendinte
               </div>
             )}
           </div>
@@ -1021,48 +1021,47 @@ export function FinanceListClient() {
         )}
       </div>
 
+      {expHasNextPage && (
+        <button
+          onClick={() => expFetchNextPage()}
+          disabled={expFetchingNextPage}
+          style={{
+            width: "100%",
+            padding: "12px",
+            background: "rgba(255,255,255,0.06)",
+            border: "1px solid rgba(255,255,255,0.12)",
+            borderRadius: 12,
+            color: "rgba(255,255,255,0.65)",
+            fontSize: 13,
+            fontWeight: 500,
+            cursor: expFetchingNextPage ? "default" : "pointer",
+            marginTop: 8,
+          }}
+        >
+          {expFetchingNextPage ? "Loading..." : "Load more"}
+        </button>
+      )}
 
-        {expHasNextPage && (
-          <button
-            onClick={() => expFetchNextPage()}
-            disabled={expFetchingNextPage}
-            style={{
-              width: "100%",
-              padding: "12px",
-              background: "rgba(255,255,255,0.06)",
-              border: "1px solid rgba(255,255,255,0.12)",
-              borderRadius: 12,
-              color: "rgba(255,255,255,0.65)",
-              fontSize: 13,
-              fontWeight: 500,
-              cursor: expFetchingNextPage ? "default" : "pointer",
-              marginTop: 8,
-            }}
-          >
-            {expFetchingNextPage ? "Se încarcă..." : "Încarcă mai mult"}
-          </button>
-        )}
-
-        {invHasNextPage && (
-          <button
-            onClick={() => invFetchNextPage()}
-            disabled={invFetchingNextPage}
-            style={{
-              width: "100%",
-              padding: "12px",
-              background: "rgba(255,255,255,0.06)",
-              border: "1px solid rgba(255,255,255,0.12)",
-              borderRadius: 12,
-              color: "rgba(255,255,255,0.65)",
-              fontSize: 13,
-              fontWeight: 500,
-              cursor: invFetchingNextPage ? "default" : "pointer",
-              marginTop: 8,
-            }}
-          >
-            {invFetchingNextPage ? "Se încarcă..." : "Încarcă mai mult"}
-          </button>
-        )}
+      {invHasNextPage && (
+        <button
+          onClick={() => invFetchNextPage()}
+          disabled={invFetchingNextPage}
+          style={{
+            width: "100%",
+            padding: "12px",
+            background: "rgba(255,255,255,0.06)",
+            border: "1px solid rgba(255,255,255,0.12)",
+            borderRadius: 12,
+            color: "rgba(255,255,255,0.65)",
+            fontSize: 13,
+            fontWeight: 500,
+            cursor: invFetchingNextPage ? "default" : "pointer",
+            marginTop: 8,
+          }}
+        >
+          {invFetchingNextPage ? "Loading..." : "Load more"}
+        </button>
+      )}
 
       {/* FAB */}
       <button
@@ -1141,10 +1140,10 @@ export function FinanceListClient() {
                 textTransform: "uppercase",
               }}
             >
-              Acțiuni Finanțe
+              Finance Actions
             </div>
             <SheetAction
-              label="Înregistrează Cheltuială"
+              label="Record Expense"
               icon={<IconReceipt />}
               color="rgba(48,209,88,.9)"
               onClick={() => {
@@ -1153,7 +1152,7 @@ export function FinanceListClient() {
               }}
             />
             <SheetAction
-              label="Crează Factură Nouă"
+              label="New Invoice"
               icon={<IconFileText />}
               color="rgba(10,132,255,.9)"
               onClick={() => {
@@ -1162,7 +1161,7 @@ export function FinanceListClient() {
               }}
             />
             <SheetAction
-              label="Prognoză Cash Flow"
+              label="Cash Flow Forecast"
               icon={<IconBarChart />}
               color="rgba(255,159,10,.9)"
               onClick={() => {

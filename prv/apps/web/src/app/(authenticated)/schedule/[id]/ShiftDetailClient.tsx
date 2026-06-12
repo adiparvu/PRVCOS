@@ -61,9 +61,9 @@ const ROLE_CONFIG: Record<
 }
 
 const STATUS_CONFIG: Record<ShiftStatus, { bg: string; color: string; label: string }> = {
-  confirmed: { bg: "rgba(48,209,88,.13)", color: "rgba(48,209,88,.95)", label: "Confirmat" },
-  open: { bg: "rgba(255,159,10,.13)", color: "rgba(255,159,10,.95)", label: "Neacoperit" },
-  draft: { bg: "rgba(255,255,255,.07)", color: "rgba(255,255,255,.45)", label: "Ciornă" },
+  confirmed: { bg: "rgba(48,209,88,.13)", color: "rgba(48,209,88,.95)", label: "Confirmed" },
+  open: { bg: "rgba(255,159,10,.13)", color: "rgba(255,159,10,.95)", label: "Uncovered" },
+  draft: { bg: "rgba(255,255,255,.07)", color: "rgba(255,255,255,.45)", label: "Draft" },
   scheduled: { bg: "rgba(10,132,255,.13)", color: "rgba(10,132,255,.9)", label: "Programat" },
 }
 
@@ -326,7 +326,7 @@ export function ShiftDetailClient({ id }: ShiftDetailClientProps) {
     openSheet({
       snapPoints: ["mid", "full"],
       defaultSnap: "mid",
-      title: "Acțiuni Tură",
+      title: "Shift Actions",
       render: (onClose) => (
         <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
           <SheetBtn
@@ -345,8 +345,8 @@ export function ShiftDetailClient({ id }: ShiftDetailClientProps) {
                 <polyline points="20 6 9 17 4 12" />
               </svg>
             }
-            label="Marchează Prezent"
-            sub="Confirmă prezența echipei"
+            label="Mark Present"
+            sub="Confirm team attendance"
             onClick={onClose}
           />
           {isOpen && (
@@ -369,8 +369,8 @@ export function ShiftDetailClient({ id }: ShiftDetailClientProps) {
                   <line x1="22" y1="11" x2="16" y2="11" />
                 </svg>
               }
-              label="Asignează Angajat"
-              sub="Adaugă o persoană la tură"
+              label="Assign Employee"
+              sub="Add a person to shift"
               onClick={onClose}
             />
           )}
@@ -391,8 +391,8 @@ export function ShiftDetailClient({ id }: ShiftDetailClientProps) {
                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
               </svg>
             }
-            label="Modifică Tura"
-            sub="Editează interval, locație, echipă"
+            label="Edit Shift"
+            sub="Edit interval, location, team"
             onClick={onClose}
           />
           <SheetBtn
@@ -413,8 +413,8 @@ export function ShiftDetailClient({ id }: ShiftDetailClientProps) {
                 <line x1="12" y1="15" x2="12" y2="3" />
               </svg>
             }
-            label="Export Raport Tură"
-            sub="PDF cu detalii și pontaj"
+            label="Export Shift Report"
+            sub="PDF with details and time records"
             onClick={onClose}
           />
           <SheetBtn
@@ -435,8 +435,8 @@ export function ShiftDetailClient({ id }: ShiftDetailClientProps) {
                 <line x1="9" y1="9" x2="15" y2="15" />
               </svg>
             }
-            label="Anulează Tura"
-            sub="Notifică angajații automat"
+            label="Cancel Shift"
+            sub="Notify employees automatically"
             onClick={onClose}
           />
         </div>
@@ -504,7 +504,7 @@ export function ShiftDetailClient({ id }: ShiftDetailClientProps) {
   if (!shift) {
     return (
       <div style={{ padding: "80px 16px", textAlign: "center", color: "rgba(255,255,255,.35)" }}>
-        Tura nu a fost găsită.
+        Shift not found.
       </div>
     )
   }
@@ -561,7 +561,7 @@ export function ShiftDetailClient({ id }: ShiftDetailClientProps) {
           </svg>
           Program
         </Link>
-        <span style={{ fontSize: 17, fontWeight: 700 }}>Tură</span>
+        <span style={{ fontSize: 17, fontWeight: 700 }}>Shift</span>
         <div style={{ width: 60 }} />
       </div>
 
@@ -585,7 +585,7 @@ export function ShiftDetailClient({ id }: ShiftDetailClientProps) {
                 margin: "0 0 4px",
               }}
             >
-              Tură · {shift.dayLabel}
+              Shift · {shift.dayLabel}
             </p>
             <p style={{ fontSize: 22, fontWeight: 700, lineHeight: 1.15, margin: 0 }}>
               {shift.title}
@@ -639,10 +639,10 @@ export function ShiftDetailClient({ id }: ShiftDetailClientProps) {
         {/* stat tiles */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8 }}>
           {[
-            { val: `${shift.durationHours}h`, label: "Durată", color: "var(--prv-text-1)" },
+            { val: `${shift.durationHours}h`, label: "Duration", color: "var(--prv-text-1)" },
             {
               val: String(shift.assignees.length + shift.openSlots),
-              label: "Asignați",
+              label: "Assigned",
               color: isOpen ? "rgba(255,159,10,.9)" : "var(--prv-text-1)",
             },
             {
@@ -700,8 +700,7 @@ export function ShiftDetailClient({ id }: ShiftDetailClientProps) {
             <line x1="12" y1="9" x2="12" y2="13" />
             <line x1="12" y1="17" x2="12.01" y2="17" />
           </svg>
-          {shift.openSlots} {shift.openSlots === 1 ? "loc liber" : "locuri libere"} — necesită
-          asignare
+          {shift.openSlots} {shift.openSlots === 1 ? "open slot" : "open slots"} — requires asignare
         </div>
       )}
 
@@ -721,7 +720,7 @@ export function ShiftDetailClient({ id }: ShiftDetailClientProps) {
             border: "1px solid rgba(255,69,58,.2)",
           }}
         >
-          Anulează
+          Cancel
         </button>
         <button
           style={{
@@ -737,21 +736,21 @@ export function ShiftDetailClient({ id }: ShiftDetailClientProps) {
             border: isOpen ? "1px solid rgba(10,132,255,.25)" : "1px solid rgba(48,209,88,.25)",
           }}
         >
-          {isOpen ? "Asignează Angajat" : "Modifică Tura"}
+          {isOpen ? "Assign Employee" : "Edit Shift"}
         </button>
       </div>
 
       {/* Details */}
       <div style={{ padding: "12px 16px 0" }}>
-        <SectionLabel>Detalii Tură</SectionLabel>
-        <SectionCard title="Informații">
-          <InfoRow label="Locație" value={shift.location} />
+        <SectionLabel>Shift Details</SectionLabel>
+        <SectionCard title="Information">
+          <InfoRow label="Location" value={shift.location} />
           <InfoRow
             label="Interval"
             value={`${shift.startTime} – ${shift.endTime} · ${shift.durationHours}h`}
           />
           <InfoRow
-            label="Pauză"
+            label="Break"
             value={
               shift.breakTime
                 ? `${shift.breakMinutes} min (${shift.breakTime})`
@@ -770,9 +769,9 @@ export function ShiftDetailClient({ id }: ShiftDetailClientProps) {
 
       {/* Assignees */}
       <div style={{ padding: "12px 16px 0" }}>
-        <SectionLabel>Angajați Asignați</SectionLabel>
+        <SectionLabel>Assigned Employees</SectionLabel>
         <SectionCard
-          title="Echipă"
+          title="Team"
           badge={
             <span
               style={{
@@ -888,7 +887,7 @@ export function ShiftDetailClient({ id }: ShiftDetailClientProps) {
 
       {/* Timeline */}
       <div style={{ padding: "12px 16px 0" }}>
-        <SectionLabel>Cronologie Tură</SectionLabel>
+        <SectionLabel>Shift Timeline</SectionLabel>
         <SectionCard title="Program Orar">
           {shift.timeline.map((entry, i) => {
             const isLast = i === shift.timeline.length - 1
@@ -975,7 +974,7 @@ export function ShiftDetailClient({ id }: ShiftDetailClientProps) {
       {shift.notes && (
         <div style={{ padding: "12px 16px 0" }}>
           <SectionLabel>Note</SectionLabel>
-          <SectionCard title="Instrucțiuni">
+          <SectionCard title="Instructions">
             <div style={{ padding: "12px 16px" }}>
               <p
                 style={{

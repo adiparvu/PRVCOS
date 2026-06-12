@@ -468,7 +468,7 @@ function ApprovalStepRow({
               }}
             >
               <IconCheck />
-              Aprobă
+              Approve
             </button>
             <button
               onClick={onReject}
@@ -489,7 +489,7 @@ function ApprovalStepRow({
               }}
             >
               <IconX />
-              Respinge
+              Reject
             </button>
           </div>
         )}
@@ -672,9 +672,7 @@ export function ExpenseDetailClient({ id }: { id: string }) {
           justifyContent: "center",
         }}
       >
-        <div style={{ fontSize: 15, color: "rgba(255,255,255,.4)" }}>
-          Cheltuiala nu a fost găsită.
-        </div>
+        <div style={{ fontSize: 15, color: "rgba(255,255,255,.4)" }}>Expense not found.</div>
       </div>
     )
   }
@@ -718,7 +716,7 @@ export function ExpenseDetailClient({ id }: { id: string }) {
           }}
         >
           <IconChevronLeft />
-          Finanțe
+          Finance
         </Link>
       </div>
 
@@ -758,7 +756,7 @@ export function ExpenseDetailClient({ id }: { id: string }) {
 
       <div style={{ padding: "0 20px" }}>
         {/* Amount Card */}
-        <SectionCard title="Valoare Cheltuială">
+        <SectionCard title="Expense Value">
           <div
             style={{
               padding: "20px",
@@ -787,7 +785,7 @@ export function ExpenseDetailClient({ id }: { id: string }) {
             >
               <div>
                 <div style={{ fontSize: 11, color: "rgba(255,255,255,.35)", marginBottom: 2 }}>
-                  Bază impozabilă
+                  Tax base
                 </div>
                 <div style={{ fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,.8)" }}>
                   {detail.baseAmountLabel}
@@ -867,7 +865,7 @@ export function ExpenseDetailClient({ id }: { id: string }) {
 
         {/* Line Items */}
         {detail.lineItems.length > 0 && (
-          <SectionCard title="Detalii Comandă">
+          <SectionCard title="Order Details">
             {detail.lineItems.map((item, idx) => (
               <div
                 key={item.id}
@@ -912,7 +910,7 @@ export function ExpenseDetailClient({ id }: { id: string }) {
         )}
 
         {/* Approval Workflow */}
-        <SectionCard title="Flux Aprobare">
+        <SectionCard title="Flux Approval">
           <div style={{ padding: "18px 18px 10px" }}>
             {detail.approvalSteps.map((step, idx) => (
               <ApprovalStepRow
@@ -1008,28 +1006,28 @@ export function ExpenseDetailClient({ id }: { id: string }) {
                 textTransform: "uppercase",
               }}
             >
-              Acțiuni Cheltuială
+              Expense Actions
             </div>
             <SheetAction
-              label="Aprobă Cheltuiala"
+              label="Approve Cheltuiala"
               icon={<IconCheck />}
               color="rgba(48,209,88,.9)"
               onClick={() => setFabOpen(false)}
             />
             <SheetAction
-              label="Respinge"
+              label="Reject"
               icon={<IconX />}
               color="rgba(255,69,58,.9)"
               onClick={() => setFabOpen(false)}
             />
             <SheetAction
-              label="Redirecționează"
+              label="Redirect"
               icon={<IconForward />}
               color="rgba(10,132,255,.9)"
               onClick={() => setFabOpen(false)}
             />
             <SheetAction
-              label="Arhivează"
+              label="Archive"
               icon={<IconArchive />}
               color="rgba(255,255,255,.55)"
               onClick={() => setFabOpen(false)}

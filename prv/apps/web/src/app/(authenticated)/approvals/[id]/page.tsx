@@ -11,7 +11,7 @@ interface Props {
 
 export async function generateMetadata({ params }: Props) {
   const { id } = await params
-  return { title: `${id.toUpperCase()} · Aprobări · PRV` }
+  return { title: `${id.toUpperCase()} · Approvals · PRV` }
 }
 
 export default async function ApprovalDetailPage({ params }: Props) {

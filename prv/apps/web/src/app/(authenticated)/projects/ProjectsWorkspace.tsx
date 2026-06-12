@@ -92,22 +92,47 @@ const DETAIL_TABS: TabItem[] = [
 function buildFallbackPhases(p: ProjectSummary): Phase[] {
   const phaseName = p.currentPhaseName || "In Progress"
   if (p.completionPct === 100) {
-    return [{ num: 1, name: phaseName, dates: `${fmtShortDate(p.startDate)} – ${fmtShortDate(p.endDate)}`, pct: 100, state: "done" }]
+    return [
+      {
+        num: 1,
+        name: phaseName,
+        dates: `${fmtShortDate(p.startDate)} – ${fmtShortDate(p.endDate)}`,
+        pct: 100,
+        state: "done",
+      },
+    ]
   }
   if (p.completionPct > 0) {
     return [
       { num: 1, name: "Completed work", dates: fmtShortDate(p.startDate), pct: 100, state: "done" },
-      { num: 2, name: phaseName, dates: `${fmtShortDate(p.startDate)} – ${fmtShortDate(p.endDate)}`, pct: p.completionPct, state: "active" },
+      {
+        num: 2,
+        name: phaseName,
+        dates: `${fmtShortDate(p.startDate)} – ${fmtShortDate(p.endDate)}`,
+        pct: p.completionPct,
+        state: "active",
+      },
       { num: 3, name: "Remaining", dates: fmtShortDate(p.endDate), pct: 0, state: "pending" },
     ]
   }
-  return [{ num: 1, name: phaseName, dates: `${fmtShortDate(p.startDate)} – ${fmtShortDate(p.endDate)}`, pct: 0, state: "pending" }]
+  return [
+    {
+      num: 1,
+      name: phaseName,
+      dates: `${fmtShortDate(p.startDate)} – ${fmtShortDate(p.endDate)}`,
+      pct: 0,
+      state: "pending",
+    },
+  ]
 }
 
 function mapApiProject(p: ProjectSummary): Project {
   const pmMember = p.team[0]
   const pmName = pmMember?.name ?? p.clientName
-  const pmShort = pmName.split(" ").map((w, i) => (i === 0 ? w : (w[0] ?? "") + ".")).join(" ")
+  const pmShort = pmName
+    .split(" ")
+    .map((w, i) => (i === 0 ? w : (w[0] ?? "") + "."))
+    .join(" ")
   const teamMapped: TeamMember[] = p.team.map((m, i) => ({
     initials: m.initials,
     name: m.name,
@@ -761,7 +786,7 @@ function ProjectDetail({ project, onBack }: { project: Project; onBack: () => vo
                 <GlassProgressBar value={pct} size="sm" color={color} animated />
               </div>
               <p className="text-[14px] font-bold text-white/90 w-20 text-right shrink-0">
-                €{value.toLocaleString("ro-RO")}
+                €{value.toLocaleString("en-US")}
               </p>
             </div>
           ))}
@@ -781,13 +806,13 @@ export function ProjectsWorkspace() {
   const projects = useMemo<Project[]>(
     () => (data?.projects ?? []).map(mapApiProject),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [data?.projects],
+    [data?.projects]
   )
 
   const [localBoardCols, setLocalBoardCols] = useState<KanbanColumn[] | null>(null)
   const boardCols = useMemo(
     () => localBoardCols ?? buildBoardColumns(projects),
-    [localBoardCols, projects],
+    [localBoardCols, projects]
   )
 
   const activeCount = projects.filter((p) => p.status === "active").length

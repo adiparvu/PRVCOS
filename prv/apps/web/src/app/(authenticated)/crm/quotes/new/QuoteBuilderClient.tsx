@@ -48,7 +48,7 @@ function newId() {
 }
 
 function fmtMoney(n: number) {
-  return `€${n.toLocaleString("ro-RO", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+  return `€${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 
 function addDays(dateStr: string, days: number): string {

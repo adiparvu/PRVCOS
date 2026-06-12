@@ -101,22 +101,22 @@ function statusConfig(status: CourseStatus) {
       bg: "rgba(255,159,10,0.15)",
       color: "rgba(255,159,10,0.95)",
       dot: true,
-      label: "În Curs",
+      label: "In Progress",
     }
   if (status === "completed")
     return {
       bg: "rgba(48,209,88,0.12)",
       color: "rgba(48,209,88,0.9)",
       dot: true,
-      label: "Finalizat",
+      label: "Completed",
     }
   return { bg: g2, color: t2, dot: false, label: "Nou" }
 }
 
 function ctaLabel(status: CourseStatus, currentModule: number): string {
-  if (status === "in_progress") return `Continuă Modulul ${currentModule}`
-  if (status === "completed") return "Revizuiește Cursul"
-  return "Începe Cursul"
+  if (status === "in_progress") return `Continue Module ${currentModule}`
+  if (status === "completed") return "Review Course"
+  return "Start Course"
 }
 
 function ModuleItem({ mod }: { mod: CourseModule }) {
@@ -197,7 +197,7 @@ function ModuleItem({ mod }: { mod: CourseModule }) {
         </div>
         {isActive && (
           <div style={{ fontSize: 10, color: "rgba(10,132,255,0.8)", marginTop: 2 }}>
-            În curs · {mod.durationLabel} rămase
+            In progress · {mod.durationLabel} remaininge
           </div>
         )}
       </div>
@@ -340,7 +340,7 @@ export function CourseDetailClient({ id }: { id: string }) {
         >
           <polyline points="15 18 9 12 15 6" />
         </svg>
-        <span style={{ fontSize: 14, color: t2 }}>Centrul de Învățare</span>
+        <span style={{ fontSize: 14, color: t2 }}>Learning Center</span>
       </Link>
 
       {loading || !course ? (
@@ -640,8 +640,8 @@ export function CourseDetailClient({ id }: { id: string }) {
                 </div>
                 <div style={{ fontSize: 11, color: "rgba(48,209,88,0.7)" }}>
                   {course.status === "completed"
-                    ? "Certificat obținut · " + course.updatedDate
-                    : "Disponibil după completarea tuturor modulelor"}
+                    ? "Certificate earned · " + course.updatedDate
+                    : "Available after completing all modules"}
                 </div>
               </div>
             </div>
@@ -775,7 +775,7 @@ export function CourseDetailClient({ id }: { id: string }) {
                 padding: "4px 0 16px",
               }}
             >
-              Acțiuni Curs
+              Course Actions
             </div>
 
             {[
@@ -796,7 +796,7 @@ export function CourseDetailClient({ id }: { id: string }) {
                 ),
                 bg: "rgba(255,255,255,0.08)",
                 border: "rgba(255,255,255,0.12)",
-                label: "Salvează la Favorite",
+                label: "Save to Favorites",
                 color: t1,
                 show: true,
               },
@@ -821,7 +821,7 @@ export function CourseDetailClient({ id }: { id: string }) {
                 ),
                 bg: "rgba(10,132,255,0.12)",
                 border: "rgba(10,132,255,0.2)",
-                label: "Partajează Curs",
+                label: "Share Course",
                 color: "rgba(10,132,255,0.9)",
                 show: true,
               },
@@ -844,7 +844,7 @@ export function CourseDetailClient({ id }: { id: string }) {
                 ),
                 bg: "rgba(255,159,10,0.12)",
                 border: "rgba(255,159,10,0.2)",
-                label: "Descarcă pentru Offline",
+                label: "Download pentru Offline",
                 color: "rgba(255,159,10,0.9)",
                 show: true,
               },
@@ -866,10 +866,10 @@ export function CourseDetailClient({ id }: { id: string }) {
                 ),
                 bg: g2,
                 border: bds,
-                label: "Vizualizează Certificat",
+                label: "View Certificate",
                 color: course?.status === "completed" ? t1 : t3,
                 show: course?.hasCert ?? false,
-                note: course?.status !== "completed" ? "după finalizare" : undefined,
+                note: course?.status !== "completed" ? "after completion" : undefined,
               },
               {
                 icon: (
@@ -892,7 +892,7 @@ export function CourseDetailClient({ id }: { id: string }) {
                 ),
                 bg: "rgba(255,69,58,0.10)",
                 border: "rgba(255,69,58,0.18)",
-                label: "Arhivează",
+                label: "Archive",
                 color: "rgba(255,69,58,0.9)",
                 show: true,
               },

@@ -33,7 +33,7 @@ function typeConfig(type: ArticleType): {
     return {
       pillBg: "rgba(191,90,242,0.13)",
       pillColor: "rgba(191,90,242,0.9)",
-      label: "Politică",
+      label: "Policy",
       iconBg: "rgba(191,90,242,0.10)",
       iconStroke: "rgba(191,90,242,0.85)",
     }
@@ -193,13 +193,13 @@ export function KnowledgeArticleClient({ id }: { id: string }) {
     openSheet({
       snapPoints: ["mid", "full"],
       defaultSnap: "mid",
-      title: "Acțiuni Articol",
+      title: "Article Actions",
       render: (onClose) => (
         <div style={{ padding: "0 16px 24px", display: "flex", flexDirection: "column", gap: 8 }}>
           {[
             {
-              label: "Salvează la Favorite",
-              sub: "Acces rapid din profilul tău",
+              label: "Save to Favorites",
+              sub: "Quick access from your profile",
               iconBg: "rgba(255,255,255,0.10)",
               rowBg: "rgba(255,255,255,0.05)",
               rowBorder: "rgba(255,255,255,0.09)",
@@ -220,7 +220,7 @@ export function KnowledgeArticleClient({ id }: { id: string }) {
               ),
             },
             {
-              label: "Partajează",
+              label: "Share",
               sub: "Trimite unui coleg un link direct",
               iconBg: "rgba(10,132,255,0.18)",
               rowBg: "rgba(10,132,255,0.10)",
@@ -246,8 +246,8 @@ export function KnowledgeArticleClient({ id }: { id: string }) {
               ),
             },
             {
-              label: "Editează",
-              sub: "Modifică conținut sau versiune",
+              label: "Edit",
+              sub: "Edit content or version",
               iconBg: "rgba(255,159,10,0.18)",
               rowBg: "rgba(255,159,10,0.10)",
               rowBorder: "rgba(255,159,10,0.2)",
@@ -270,7 +270,7 @@ export function KnowledgeArticleClient({ id }: { id: string }) {
             },
             {
               label: "Export PDF",
-              sub: "Descarcă articolul pentru uz offline",
+              sub: "Download articolul pentru uz offline",
               iconBg: "rgba(255,255,255,0.10)",
               rowBg: "rgba(255,255,255,0.04)",
               rowBorder: "rgba(255,255,255,0.09)",
@@ -293,8 +293,8 @@ export function KnowledgeArticleClient({ id }: { id: string }) {
               ),
             },
             {
-              label: "Arhivează",
-              sub: "Retrage articolul din circulație",
+              label: "Archive",
+              sub: "Withdraw article from circulation",
               iconBg: "rgba(255,69,58,0.13)",
               rowBg: "rgba(255,69,58,0.07)",
               rowBorder: "rgba(255,69,58,0.15)",
@@ -431,7 +431,7 @@ export function KnowledgeArticleClient({ id }: { id: string }) {
           >
             <path d="M15 18l-6-6 6-6" />
           </svg>
-          Cunoștințe
+          Knowledge
         </button>
       </div>
 
@@ -681,7 +681,7 @@ export function KnowledgeArticleClient({ id }: { id: string }) {
             title="Cuprins"
             badge={
               <span style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.35)" }}>
-                {article.toc.length} secțiuni
+                {article.toc.length} sections
               </span>
             }
           >
@@ -731,7 +731,7 @@ export function KnowledgeArticleClient({ id }: { id: string }) {
 
         {/* Related */}
         {article.related.length > 0 && (
-          <SectionCard title="Articole Corelate">
+          <SectionCard title="Related Articles">
             {article.related.map((rel, i) => (
               <Link
                 key={rel.id}

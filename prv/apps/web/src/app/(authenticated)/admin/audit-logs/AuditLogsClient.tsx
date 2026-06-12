@@ -148,7 +148,7 @@ function EntryDetail({ entry, onClose }: { entry: AuditEntry; onClose: () => voi
           </span>
         </div>
         <p style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", marginBottom: 16 }}>
-          {new Date(entry.createdAt).toLocaleString("ro-RO")}
+          {new Date(entry.createdAt).toLocaleString("en-US")}
         </p>
 
         {/* Fields */}
@@ -162,7 +162,7 @@ function EntryDetail({ entry, onClose }: { entry: AuditEntry; onClose: () => voi
                 : (entry.entityType ?? "—"),
           },
           { label: "IP", value: entry.ipAddress ?? "—" },
-          { label: "Metodă", value: entry.method ?? "—" },
+          { label: "Method", value: entry.method ?? "—" },
           { label: "Path", value: entry.path ?? "—" },
         ].map(({ label, value }, i, arr) => (
           <div key={label}>
@@ -255,7 +255,7 @@ function EntryDetail({ entry, onClose }: { entry: AuditEntry; onClose: () => voi
             <polyline points="20 6 9 17 4 12" />
           </svg>
           <span style={{ fontSize: 11, color: "rgba(80,255,140,0.75)", fontFamily: "monospace" }}>
-            {entry.id.slice(0, 8)}…{entry.id.slice(-6)} · Lanț intact
+            {entry.id.slice(0, 8)}…{entry.id.slice(-6)} · Chain intact
           </span>
         </div>
       </div>
@@ -497,7 +497,7 @@ export function AuditLogsClient() {
               fontSize: 14,
             }}
           >
-            Nicio înregistrare
+            No records
           </div>
         ) : (
           visible.map((entry) => (

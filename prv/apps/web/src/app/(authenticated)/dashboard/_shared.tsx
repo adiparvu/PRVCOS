@@ -40,7 +40,7 @@ export function formatCurrency(raw: string | number): string {
   if (isNaN(n)) return "0 RON"
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M RON`
   if (n >= 1_000) return `${(n / 1_000).toFixed(0)}K RON`
-  return `${n.toLocaleString("ro-RO")} RON`
+  return `${n.toLocaleString("en-US")} RON`
 }
 
 // ── Quick actions grid ────────────────────────────────────────────────────────

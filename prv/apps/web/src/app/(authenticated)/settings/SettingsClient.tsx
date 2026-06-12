@@ -181,7 +181,7 @@ const TIMEZONES = [
 ]
 
 const LOCALES: { value: string; label: string }[] = [
-  { value: "ro-RO", label: "Română" },
+  { value: "ro-RO", label: "Romanian" },
   { value: "en-US", label: "English (US)" },
   { value: "en-GB", label: "English (UK)" },
   { value: "fr-FR", label: "Français" },
@@ -189,7 +189,7 @@ const LOCALES: { value: string; label: string }[] = [
 ]
 
 function fmtLocale(locale: string | null) {
-  return LOCALES.find((l) => l.value === locale)?.label ?? locale ?? "Română"
+  return LOCALES.find((l) => l.value === locale)?.label ?? locale ?? "Romanian"
 }
 
 // ── Skeleton ──────────────────────────────────────────────────────────────────
@@ -418,7 +418,7 @@ function EditProfileSheet({
 
   const save = async () => {
     if (!firstName.trim() || !lastName.trim()) {
-      setError("Prenumele și numele sunt obligatorii.")
+      setError("First and last name are required.")
       return
     }
     setSaving(true)
@@ -537,7 +537,7 @@ function EditProfileSheet({
           }}
         >
           <p style={{ fontSize: 18, fontWeight: 700, color: "rgba(255,255,255,0.95)" }}>
-            Editează profilul
+            Edit profile
           </p>
           <button
             onClick={onClose}
@@ -600,7 +600,7 @@ function EditProfileSheet({
               value={bio}
               onChange={(e) => setBio(e.target.value)}
               style={{ ...inputStyle, resize: "none", height: 80, lineHeight: 1.5 }}
-              placeholder="Descriere scurtă..."
+              placeholder="Short description..."
             />
           </div>
 
@@ -620,7 +620,7 @@ function EditProfileSheet({
               </select>
             </div>
             <div>
-              <label style={labelStyle}>Limbă</label>
+              <label style={labelStyle}>Language</label>
               <select
                 value={locale}
                 onChange={(e) => setLocale(e.target.value)}
@@ -676,9 +676,9 @@ function EditProfileSheet({
                 <IconCheck /> Salvat
               </>
             ) : saving ? (
-              "Se salvează..."
+              "Saving..."
             ) : (
-              "Salvează modificările"
+              "Save changes"
             )}
           </button>
         </div>
@@ -880,7 +880,7 @@ export function SettingsClient() {
           marginBottom: 16,
         }}
       >
-        Setări
+        Settings
       </h1>
 
       {/* Avatar card */}
@@ -950,7 +950,7 @@ export function SettingsClient() {
               padding: "4px 12px",
             }}
           >
-            Editează profilul
+            Edit profile
           </span>
         </div>
         <IconChevronRight />
@@ -962,7 +962,7 @@ export function SettingsClient() {
         <Row
           icon={<IconPhone />}
           label="Telefon"
-          value={profile?.phone ?? "Neadăugat"}
+          value={profile?.phone ?? "Not added"}
           onClick={() => setEditOpen(true)}
         />
         <Row icon={<IconMail />} label="Email" value={profile?.email ?? "—"} />
@@ -970,17 +970,17 @@ export function SettingsClient() {
 
       {/* Security */}
       <Section label="Securitate">
-        <Row icon={<IconLock />} label="Parolă" href="/settings/security" />
+        <Row icon={<IconLock />} label="Password" href="/settings/security" />
         <Row
           icon={<IconShield />}
           label="Autentificare 2FA"
-          value={profile?.mfaEnabled ? "Activat" : "Inactiv"}
+          value={profile?.mfaEnabled ? "Activat" : "Inactive"}
           href="/settings/security"
         />
         <Row
           icon={<IconShield />}
           label="Sesiuni active"
-          value="Gestionează"
+          value="Manage"
           href="/settings/security"
         />
       </Section>
@@ -1018,18 +1018,18 @@ export function SettingsClient() {
             background: "linear-gradient(90deg,transparent,rgba(255,255,255,0.18),transparent)",
           }}
         />
-        <AppearanceRow icon={<IconGlobe />} label="Temă">
+        <AppearanceRow icon={<IconGlobe />} label="Theme">
           <PillGroup<"light" | "dark" | "system">
             options={[
               { value: "light", label: "Luminos" },
-              { value: "dark", label: "Întunecat" },
+              { value: "dark", label: "Dark" },
               { value: "system", label: "Auto" },
             ]}
             value={appPrefs.theme}
             onChange={(v) => updateAppPrefs({ theme: v })}
           />
         </AppearanceRow>
-        <AppearanceRow icon={<IconShield />} label="Stil sticlă">
+        <AppearanceRow icon={<IconShield />} label="Glass style">
           <PillGroup<"translucid" | "tinted" | "adaptive">
             options={[
               { value: "translucid", label: "Clar" },
@@ -1073,38 +1073,38 @@ export function SettingsClient() {
       </div>
 
       {/* Notifications */}
-      <Section label="Notificări">
+      <Section label="Notifications">
         <Row
           icon={<IconBell />}
-          label="Notificări în aplicație"
+          label="In-App Notifications"
           toggle={notifPrefs.inApp}
           onToggle={() => updateNotif({ inApp: !notifPrefs.inApp })}
         />
         <Row
           icon={<IconBell />}
-          label="Notificări push"
+          label="Push Notifications"
           toggle={notifPrefs.push}
           onToggle={() => updateNotif({ push: !notifPrefs.push })}
         />
         <Row
           icon={<IconMail />}
-          label="Notificări email"
+          label="Email Notifications"
           toggle={notifPrefs.email}
           onToggle={() => updateNotif({ email: !notifPrefs.email })}
         />
         <Row
           icon={<IconPhone />}
-          label="Notificări SMS"
+          label="SMS Notifications"
           toggle={notifPrefs.sms}
           onToggle={() => updateNotif({ sms: !notifPrefs.sms })}
         />
       </Section>
 
       {/* Preferences */}
-      <Section label="Preferințe">
+      <Section label="Preferences">
         <Row
           icon={<IconGlobe />}
-          label="Limbă"
+          label="Language"
           value={fmtLocale(profile?.locale ?? null)}
           onClick={() => setEditOpen(true)}
         />

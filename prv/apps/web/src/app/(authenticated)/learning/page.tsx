@@ -4,7 +4,7 @@ import { getSession } from "@prv/auth"
 import { LearningListClient } from "./LearningListClient"
 
 export const dynamic = "force-dynamic"
-export const metadata = { title: "Centrul de Învățare · PRV" }
+export const metadata = { title: "Learning Center · PRV" }
 
 export default async function LearningPage() {
   const cookieStore = await cookies()

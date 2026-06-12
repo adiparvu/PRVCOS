@@ -12,7 +12,7 @@ interface Props {
 
 export async function generateMetadata({ params }: Props) {
   const { id } = await params
-  return { title: `${id.toUpperCase()} · Prezență · PRV` }
+  return { title: `${id.toUpperCase()} · Attendance · PRV` }
 }
 
 export default async function AttendanceDetailPage({ params }: Props) {

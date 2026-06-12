@@ -4,7 +4,7 @@ import { getSession } from "@prv/auth"
 import { QuoteBuilderClient } from "./QuoteBuilderClient"
 
 export const dynamic = "force-dynamic"
-export const metadata = { title: "Ofertă Nouă · CRM" }
+export const metadata = { title: "New Quote · CRM" }
 
 export default async function NewQuotePage() {
   const cookieStore = await cookies()

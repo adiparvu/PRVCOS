@@ -77,15 +77,15 @@ function IconClock() {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function fmt(n: number) {
-  return "€" + n.toLocaleString("ro-RO")
+  return "€" + n.toLocaleString("en-US")
 }
 
 type FilterId = "all" | ExpenseStatus
 
 const FILTERS: { id: FilterId; label: string }[] = [
   { id: "all", label: "Toate" },
-  { id: "pending", label: "În așteptare" },
-  { id: "draft", label: "Ciornă" },
+  { id: "pending", label: "Pending" },
+  { id: "draft", label: "Draft" },
   { id: "approved", label: "Aprobate" },
   { id: "rejected", label: "Respinse" },
 ]
@@ -95,25 +95,25 @@ const STATUS_CONFIG: Record<
   { label: string; color: string; bg: string; border: string }
 > = {
   draft: {
-    label: "Ciornă",
+    label: "Draft",
     color: "rgba(255,255,255,0.45)",
     bg: "rgba(255,255,255,0.07)",
     border: "rgba(255,255,255,0.14)",
   },
   pending: {
-    label: "În așteptare",
+    label: "Pending",
     color: "#ffcc44",
     bg: "rgba(255,200,50,0.12)",
     border: "rgba(255,200,50,0.24)",
   },
   approved: {
-    label: "Aprobată",
+    label: "Approved",
     color: "#5affa0",
     bg: "rgba(80,255,140,0.10)",
     border: "rgba(80,255,140,0.20)",
   },
   rejected: {
-    label: "Respinsă",
+    label: "Rejected",
     color: "#ff6b6b",
     bg: "rgba(255,80,80,0.12)",
     border: "rgba(255,80,80,0.22)",
@@ -123,8 +123,8 @@ const STATUS_CONFIG: Record<
 const CATEGORY_LABEL: Record<ExpenseCategory, string> = {
   materiale: "Materiale",
   personal: "Personal",
-  logistica: "Logistică",
-  utilitati: "Utilități",
+  logistica: "Logistics",
+  utilitati: "Utilities",
   marketing: "Marketing",
   altele: "Altele",
 }
@@ -410,7 +410,7 @@ export function ExpenseListClient() {
               marginTop: 2,
             }}
           >
-            Așteptare
+            Waiting
           </p>
         </div>
         <div
@@ -526,7 +526,7 @@ export function ExpenseListClient() {
               fontSize: 14,
             }}
           >
-            Nicio cheltuială găsită
+            No expenses found
           </div>
         ) : (
           visible.map((e) => <ExpenseCard key={e.id} expense={e} />)
@@ -548,7 +548,7 @@ export function ExpenseListClient() {
               marginTop: 8,
             }}
           >
-            {isFetchingNextPage ? "Se încarcă..." : "Încarcă mai mult"}
+            {isFetchingNextPage ? "Loading..." : "Load more"}
           </button>
         )}
       </div>

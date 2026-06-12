@@ -174,7 +174,7 @@ function TaskItem({ task }: { task: StoreTask }) {
               display: "block",
             }}
           >
-            În desfășurare
+            In progress
           </span>
         )}
       </div>
@@ -215,10 +215,10 @@ function TaskItem({ task }: { task: StoreTask }) {
 function OrderItem({ order }: { order: StoreOrder }) {
   const statusConfig =
     order.status === "paid"
-      ? { color: "rgba(48,209,88,0.9)", label: "Plătit" }
+      ? { color: "rgba(48,209,88,0.9)", label: "Paid" }
       : order.status === "shipped"
         ? { color: "rgba(10,132,255,0.9)", label: "Livrat" }
-        : { color: "rgba(255,159,10,0.9)", label: "Așteptare" }
+        : { color: "rgba(255,159,10,0.9)", label: "Pending" }
 
   return (
     <div
@@ -409,7 +409,7 @@ export default function StoreDetailClient({ id }: { id: string }) {
           >
             <polyline points="15 18 9 12 15 6" />
           </svg>
-          Operațiuni
+          Operations
         </Link>
 
         <div
@@ -546,14 +546,14 @@ export default function StoreDetailClient({ id }: { id: string }) {
           color="rgba(48,209,88,0.95)"
         />
         <StatTile
-          label="Marjă"
+          label="Margin"
           value={store ? `${store.marginPct}%` : "—"}
           sub={store?.marginTrend}
         />
         <StatTile
           label="Comenzi Azi"
           value={store?.ordersToday ?? "—"}
-          sub={store ? `${store.pendingOrders} în așteptare` : undefined}
+          sub={store ? `${store.pendingOrders} pending` : undefined}
           color="rgba(10,132,255,0.9)"
         />
         <StatTile label="Personal" value={store?.staffCount ?? "—"} sub={store?.shift} />
@@ -709,22 +709,22 @@ export default function StoreDetailClient({ id }: { id: string }) {
             />
             {[
               {
-                label: "Generează Raport",
+                label: "Generate Report",
                 icon: "M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z M14 2v6h6 M16 13H8 M16 17H8 M10 9H8",
                 color: "rgba(255,255,255,0.75)",
               },
               {
-                label: "Contactează Manager",
+                label: "Contact Manager",
                 icon: "M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.01 1.18 2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 7.91a16 16 0 006.29 6.29l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z",
                 color: "rgba(10,132,255,0.9)",
               },
               {
-                label: "Setează Alertă",
+                label: "Set Alert",
                 icon: "M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9 M13.73 21a2 2 0 01-3.46 0",
                 color: "rgba(255,159,10,0.9)",
               },
               {
-                label: "Dezactivează Magazin",
+                label: "Disable Store",
                 icon: "M18.36 6.64A9 9 0 015.64 19.36 M9.9 4.24A9.12 9.12 0 0112 4a9 9 0 019 9 M12 20v2 M12 2v2 M4.22 4.22l1.42 1.42 M18.36 18.36l1.42 1.42",
                 color: "rgba(255,69,58,0.9)",
               },

@@ -175,7 +175,7 @@ function IconMessage() {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function fmt(n: number) {
-  return "€" + n.toLocaleString("ro-RO")
+  return "€" + n.toLocaleString("en-US")
 }
 
 const STATUS_CONFIG: Record<
@@ -189,7 +189,7 @@ const STATUS_CONFIG: Record<
     border: "rgba(255,215,0,0.28)",
   },
   active: {
-    label: "Activ",
+    label: "Active",
     color: "rgba(48,209,88,0.90)",
     bg: "rgba(48,209,88,0.12)",
     border: "rgba(48,209,88,0.24)",
@@ -201,7 +201,7 @@ const STATUS_CONFIG: Record<
     border: "rgba(100,160,255,0.24)",
   },
   cold: {
-    label: "Inactiv",
+    label: "Inactive",
     color: "rgba(255,255,255,0.40)",
     bg: "rgba(255,255,255,0.07)",
     border: "rgba(255,255,255,0.14)",
@@ -210,31 +210,31 @@ const STATUS_CONFIG: Record<
 
 const QUOTE_STATUS_CONFIG = {
   draft: {
-    label: "Ciornă",
+    label: "Draft",
     color: "rgba(255,255,255,0.45)",
     bg: "rgba(255,255,255,0.07)",
     border: "rgba(255,255,255,0.14)",
   },
   sent: {
-    label: "Trimisă",
+    label: "Sent",
     color: "#7eb8ff",
     bg: "rgba(100,160,255,0.12)",
     border: "rgba(100,160,255,0.24)",
   },
   accepted: {
-    label: "Acceptată",
+    label: "Accepted",
     color: "#5affa0",
     bg: "rgba(80,255,140,0.10)",
     border: "rgba(80,255,140,0.20)",
   },
   rejected: {
-    label: "Respinsă",
+    label: "Rejected",
     color: "#ff6b6b",
     bg: "rgba(255,80,80,0.12)",
     border: "rgba(255,80,80,0.22)",
   },
   expired: {
-    label: "Expirată",
+    label: "Expired",
     color: "rgba(255,255,255,0.30)",
     bg: "rgba(255,255,255,0.05)",
     border: "rgba(255,255,255,0.10)",
@@ -243,37 +243,37 @@ const QUOTE_STATUS_CONFIG = {
 
 const INVOICE_STATUS_CONFIG = {
   paid: {
-    label: "Plătită",
+    label: "Paid",
     color: "#5affa0",
     bg: "rgba(80,255,140,0.10)",
     border: "rgba(80,255,140,0.20)",
   },
   due: {
-    label: "Scadentă",
+    label: "Due",
     color: "#ffcc44",
     bg: "rgba(255,200,50,0.12)",
     border: "rgba(255,200,50,0.24)",
   },
   overdue: {
-    label: "Restantă",
+    label: "Overdue",
     color: "#ff6b6b",
     bg: "rgba(255,80,80,0.12)",
     border: "rgba(255,80,80,0.22)",
   },
   partial: {
-    label: "Parțial",
+    label: "Partial",
     color: "#7eb8ff",
     bg: "rgba(100,160,255,0.12)",
     border: "rgba(100,160,255,0.24)",
   },
   draft: {
-    label: "Ciornă",
+    label: "Draft",
     color: "rgba(255,255,255,0.45)",
     bg: "rgba(255,255,255,0.07)",
     border: "rgba(255,255,255,0.14)",
   },
   void: {
-    label: "Anulată",
+    label: "Cancelled",
     color: "rgba(255,255,255,0.30)",
     bg: "rgba(255,255,255,0.05)",
     border: "rgba(255,255,255,0.10)",
@@ -435,7 +435,7 @@ export function ClientDetailClient({ id }: { id: string }) {
         className="px-4 pt-14 max-w-2xl mx-auto"
         style={{ color: "rgba(255,255,255,0.40)", textAlign: "center", paddingTop: 80 }}
       >
-        Client negăsit
+        Client not found
       </div>
     )
 
@@ -457,7 +457,7 @@ export function ClientDetailClient({ id }: { id: string }) {
         >
           <IconChevronLeft />
         </Link>
-        <span style={{ fontSize: 13, color: "rgba(255,255,255,0.40)" }}>Clienți</span>
+        <span style={{ fontSize: 13, color: "rgba(255,255,255,0.40)" }}>Clients</span>
       </div>
 
       {/* Hero */}
@@ -556,7 +556,7 @@ export function ClientDetailClient({ id }: { id: string }) {
       >
         {[
           { label: "LTV", value: fmt(client.ltv), color: "rgba(255,255,255,0.95)" },
-          { label: "Încasat", value: fmt(client.totalPaid), color: "#5affa0" },
+          { label: "Collected", value: fmt(client.totalPaid), color: "#5affa0" },
           {
             label: "Restant",
             value: outstanding > 0 ? fmt(outstanding) : "—",
@@ -613,7 +613,7 @@ export function ClientDetailClient({ id }: { id: string }) {
             </IconBox>
             <div>
               <p style={{ fontSize: 10, color: "rgba(255,255,255,0.30)", marginBottom: 1 }}>
-                Adresă
+                Address
               </p>
               <p style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.85)" }}>
                 {client.address}
@@ -868,7 +868,7 @@ export function ClientDetailClient({ id }: { id: string }) {
           }}
         >
           <IconPhone />
-          <span style={{ fontSize: 11, fontWeight: 600 }}>Sună</span>
+          <span style={{ fontSize: 11, fontWeight: 600 }}>Call</span>
         </a>
         <a
           href={`mailto:${client.email}`}
@@ -923,7 +923,7 @@ export function ClientDetailClient({ id }: { id: string }) {
           }}
         >
           <IconFile />
-          <span style={{ fontSize: 11, fontWeight: 700 }}>Ofertă nouă</span>
+          <span style={{ fontSize: 11, fontWeight: 700 }}>New quote</span>
         </Link>
       </div>
     </div>

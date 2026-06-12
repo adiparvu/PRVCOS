@@ -4,7 +4,7 @@ import { getSession } from "@prv/auth"
 import { ToolBuilderClient } from "./ToolBuilderClient"
 
 export const dynamic = "force-dynamic"
-export const metadata = { title: "Unealtă Nouă · Unelte · PRV" }
+export const metadata = { title: "New Tool · Tools · PRV" }
 
 export default async function NewToolPage() {
   const cookieStore = await cookies()

@@ -216,7 +216,7 @@ function SheetBtn({
 
 export function VehicleListClient() {
   const router = useRouter()
-  const [filter, setFilter] = useState<FilterType>("Toate")
+  const [filter, setFilter] = useState<FilterType>("All")
   const { openSheet } = useSheetStack()
 
   const statusParam: Record<FilterType, string | null> = {
@@ -227,7 +227,8 @@ export function VehicleListClient() {
     Indisponibil: "Unavailable",
   }
   const status = statusParam[filter]
-  const { data, isLoading, isError, hasNextPage, fetchNextPage, isFetchingNextPage } = useVehicles(status)
+  const { data, isLoading, isError, hasNextPage, fetchNextPage, isFetchingNextPage } =
+    useVehicles(status)
   const vehicles: VehicleSummary[] | null = isLoading ? null : (data?.vehicles ?? [])
   const meta: FleetMeta | null = data?.meta ?? null
   const error = isError
@@ -263,8 +264,11 @@ export function VehicleListClient() {
               </svg>
             }
             label="Vehicul Nou"
-            sub="Adaugă vehicul în flotă"
-            onClick={() => { onClose(); router.push("/fleet/new") }}
+            sub="Add vehicle to fleet"
+            onClick={() => {
+              onClose()
+              router.push("/fleet/new")
+            }}
           />
           <SheetBtn
             color="white"
@@ -284,7 +288,7 @@ export function VehicleListClient() {
                 <line x1="12" y1="3" x2="12" y2="15" />
               </svg>
             }
-            label="Export Flotă"
+            label="Export Fleet"
             sub="Raport km, consum, costuri"
             onClick={onClose}
           />
@@ -436,8 +440,8 @@ export function VehicleListClient() {
               Service Necesar
             </p>
             <p style={{ fontSize: 12, color: "rgba(255,159,10,.6)", margin: "2px 0 0" }}>
-              {meta.inService} vehicul{meta.inService > 1 ? "e" : ""} în service · verifică
-              mentenanța scadentă
+              {meta.inService} vehicle{meta.inService > 1 ? "s" : ""} in service · check maintenance
+              overdue
             </p>
           </div>
         </div>
@@ -481,7 +485,7 @@ export function VehicleListClient() {
       {/* Vehicle list */}
       {error ? (
         <p style={{ textAlign: "center", color: "var(--prv-text-3)", fontSize: 14, marginTop: 40 }}>
-          Eroare la încărcare. Încearcă din nou.
+          Loading error. Try again.
         </p>
       ) : !vehicles ? (
         <div
@@ -515,7 +519,7 @@ export function VehicleListClient() {
         </div>
       ) : vehicles.length === 0 ? (
         <p style={{ textAlign: "center", color: "var(--prv-text-3)", fontSize: 14, marginTop: 40 }}>
-          Niciun vehicul găsit.
+          No vehicles found.
         </p>
       ) : (
         <div
@@ -623,27 +627,26 @@ export function VehicleListClient() {
         </div>
       )}
 
-
-        {hasNextPage && (
-          <button
-            onClick={() => fetchNextPage()}
-            disabled={isFetchingNextPage}
-            style={{
-              width: "100%",
-              padding: "12px",
-              background: "rgba(255,255,255,0.06)",
-              border: "1px solid rgba(255,255,255,0.12)",
-              borderRadius: 12,
-              color: "rgba(255,255,255,0.65)",
-              fontSize: 13,
-              fontWeight: 500,
-              cursor: isFetchingNextPage ? "default" : "pointer",
-              marginTop: 8,
-            }}
-          >
-            {isFetchingNextPage ? "Se încarcă..." : "Încarcă mai mult"}
-          </button>
-        )}
+      {hasNextPage && (
+        <button
+          onClick={() => fetchNextPage()}
+          disabled={isFetchingNextPage}
+          style={{
+            width: "100%",
+            padding: "12px",
+            background: "rgba(255,255,255,0.06)",
+            border: "1px solid rgba(255,255,255,0.12)",
+            borderRadius: 12,
+            color: "rgba(255,255,255,0.65)",
+            fontSize: 13,
+            fontWeight: 500,
+            cursor: isFetchingNextPage ? "default" : "pointer",
+            marginTop: 8,
+          }}
+        >
+          {isFetchingNextPage ? "Loading..." : "Load more"}
+        </button>
+      )}
 
       {/* FAB */}
       <button

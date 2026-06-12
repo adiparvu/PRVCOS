@@ -7,14 +7,14 @@ import { useSheetStack } from "@prv/ui"
 import type { ShiftSummary, ShiftsMeta, ShiftRole, ShiftStatus } from "@/app/api/schedule/route"
 import { useShifts } from "@/lib/api-hooks"
 
-type FilterType = "Toate" | "Astăzi" | "Confirmat" | "Neacoperit" | "Ciornă"
+type FilterType = "Toate" | "Today" | "Confirmed" | "Uncovered" | "Draft"
 
 const FILTER_TO_STATUS: Record<FilterType, ShiftStatus | null> = {
   Toate: null,
-  Astăzi: null,
+  Today: null,
   Confirmat: "confirmed",
   Neacoperit: "open",
-  Ciornă: "draft",
+  Draft: "draft",
 }
 
 const TODAY_LABEL = "Miercuri 9 Iun"
@@ -29,9 +29,9 @@ const ROLE_CONFIG: Record<ShiftRole, { iconStroke: string; iconBg: string }> = {
 }
 
 const STATUS_PILL: Record<ShiftStatus, { bg: string; color: string; label: string }> = {
-  confirmed: { bg: "rgba(48,209,88,.13)", color: "rgba(48,209,88,.95)", label: "Confirmat" },
-  open: { bg: "rgba(255,159,10,.13)", color: "rgba(255,159,10,.95)", label: "Neacoperit" },
-  draft: { bg: "rgba(255,255,255,.07)", color: "rgba(255,255,255,.45)", label: "Ciornă" },
+  confirmed: { bg: "rgba(48,209,88,.13)", color: "rgba(48,209,88,.95)", label: "Confirmed" },
+  open: { bg: "rgba(255,159,10,.13)", color: "rgba(255,159,10,.95)", label: "Uncovered" },
+  draft: { bg: "rgba(255,255,255,.07)", color: "rgba(255,255,255,.45)", label: "Draft" },
   scheduled: { bg: "rgba(10,132,255,.13)", color: "rgba(10,132,255,.9)", label: "Programat" },
 }
 
@@ -47,7 +47,7 @@ const WEEK_DAYS = [
   },
   { label: "JOI", date: 10, pips: ["rgba(191,90,242,.8)", "rgba(255,255,255,.4)"], open: false },
   { label: "VIN", date: 11, pips: ["rgba(10,132,255,.8)", "rgba(48,209,88,.8)"], open: false },
-  { label: "SÂM", date: 12, pips: ["rgba(255,159,10,.8)"], open: true },
+  { label: "SAT", date: 12, pips: ["rgba(255,159,10,.8)"], open: true },
   { label: "DUM", date: 13, pips: [], open: false },
 ]
 
@@ -268,7 +268,7 @@ function ShiftRow({ shift }: { shift: ShiftSummary }) {
                 )}
               </div>
             ) : (
-              <span style={{ fontSize: 11, color: "rgba(255,159,10,.7)" }}>Fără asignați</span>
+              <span style={{ fontSize: 11, color: "rgba(255,159,10,.7)" }}>Unassigned</span>
             )}
           </div>
         </div>
@@ -340,7 +340,7 @@ function OpenSlotRow({ shift }: { shift: ShiftSummary }) {
           whiteSpace: "nowrap",
         }}
       >
-        +Asignează
+        +Assign
       </span>
     </Link>
   )
@@ -441,12 +441,12 @@ function SheetBtn({
 
 export function ScheduleListClient() {
   const router = useRouter()
-  const [filter, setFilter] = useState<FilterType>("Toate")
+  const [filter, setFilter] = useState<FilterType>("All")
   const { openSheet } = useSheetStack()
   const status = FILTER_TO_STATUS[filter]
   const { data, isLoading, hasNextPage, fetchNextPage, isFetchingNextPage } = useShifts(status)
   let shifts: ShiftSummary[] = data?.shifts ?? []
-  if (filter === "Astăzi") {
+  if (filter === "Today") {
     shifts = shifts.filter((s) => s.dayLabel === TODAY_LABEL)
   }
   const meta: ShiftsMeta | null = data?.meta ?? null
@@ -456,7 +456,7 @@ export function ScheduleListClient() {
     openSheet({
       snapPoints: ["mid", "full"],
       defaultSnap: "mid",
-      title: "Acțiuni Program",
+      title: "Schedule Actions",
       render: (onClose) => (
         <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
           <SheetBtn
@@ -480,9 +480,12 @@ export function ScheduleListClient() {
                 <line x1="10" y1="16" x2="14" y2="16" />
               </svg>
             }
-            label="Tură Nouă"
-            sub="Adaugă o tură în program"
-            onClick={() => { onClose(); router.push("/schedule/new") }}
+            label="New Shift"
+            sub="Add a shift to schedule"
+            onClick={() => {
+              onClose()
+              router.push("/schedule/new")
+            }}
           />
           <SheetBtn
             color="amber"
@@ -502,8 +505,8 @@ export function ScheduleListClient() {
                 <path d="M2 12l10 5 10-5" />
               </svg>
             }
-            label="Generare Automată"
-            sub="AI completează turele neacoperite"
+            label="Auto Generate"
+            sub="AI fills uncovered shifts"
             onClick={onClose}
           />
           <SheetBtn
@@ -525,7 +528,7 @@ export function ScheduleListClient() {
               </svg>
             }
             label="Export Program"
-            sub="PDF sau Excel pentru săptămână"
+            sub="PDF or Excel for week"
             onClick={onClose}
           />
         </div>
@@ -547,12 +550,12 @@ export function ScheduleListClient() {
 
   const dayOrder = [
     "Luni 7 Iun",
-    "Marți 8 Iun",
+    "Tuesday, Jun 8",
     "Miercuri 9 Iun",
     "Joi 10 Iun",
     "Vineri 11 Iun",
-    "Sâmbătă 12 Iun",
-    "Duminică 13 Iun",
+    "Saturday 12 Jun",
+    "Sunday, Jun 13",
   ]
   const sortedDays = Object.keys(groupedByDay).sort(
     (a, b) => dayOrder.indexOf(a) - dayOrder.indexOf(b)
@@ -689,7 +692,7 @@ export function ScheduleListClient() {
             { val: String(meta.total), label: "Ture", color: "var(--prv-text-1)" },
             {
               val: String(meta.open),
-              label: "Neacoperit",
+              label: "Uncovered",
               color: meta.open > 0 ? "rgba(255,159,10,.9)" : "var(--prv-text-1)",
             },
             { val: `${meta.coveragePct}%`, label: "Acoperire", color: "rgba(48,209,88,.9)" },
@@ -751,7 +754,7 @@ export function ScheduleListClient() {
             <line x1="12" y1="9" x2="12" y2="13" />
             <line x1="12" y1="17" x2="12.01" y2="17" />
           </svg>
-          {meta.open} {meta.open === 1 ? "tură neacoperită" : "ture neacoperite"} săptămâna aceasta
+          {meta.open} {meta.open === 1 ? "uncovered shift" : "uncovered shifts"} this week
         </div>
       )}
 
@@ -765,7 +768,7 @@ export function ScheduleListClient() {
           scrollbarWidth: "none",
         }}
       >
-        {(["Toate", "Astăzi", "Confirmat", "Neacoperit", "Ciornă"] as FilterType[]).map((f) => (
+        {(["Toate", "Today", "Confirmed", "Uncovered", "Draft"] as FilterType[]).map((f) => (
           <button
             key={f}
             onClick={() => setFilter(f)}
@@ -799,7 +802,7 @@ export function ScheduleListClient() {
       ) : (
         <>
           {/* open slots section */}
-          {openShifts.length > 0 && (filter === "Toate" || filter === "Neacoperit") && (
+          {openShifts.length > 0 && (filter === "All" || filter === "Uncovered") && (
             <>
               <SectionLabel>{`Ture Neacoperite · ${openShifts.length}`}</SectionLabel>
               {openShifts.map((s) => (
@@ -815,7 +818,7 @@ export function ScheduleListClient() {
             const isToday = day === TODAY_LABEL
             return (
               <div key={day}>
-                <SectionLabel>{isToday ? `Astăzi · ${day}` : day}</SectionLabel>
+                <SectionLabel>{isToday ? `Today · ${day}` : day}</SectionLabel>
                 {dayShifts.map((s) => (
                   <ShiftRow key={s.id} shift={s} />
                 ))}
@@ -824,7 +827,6 @@ export function ScheduleListClient() {
           })}
         </>
       )}
-
 
       {hasNextPage && (
         <button
@@ -843,7 +845,7 @@ export function ScheduleListClient() {
             marginTop: 8,
           }}
         >
-          {isFetchingNextPage ? "Se încarcă..." : "Încarcă mai mult"}
+          {isFetchingNextPage ? "Loading..." : "Load more"}
         </button>
       )}
 

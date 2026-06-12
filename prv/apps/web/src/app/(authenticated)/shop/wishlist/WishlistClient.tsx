@@ -8,7 +8,7 @@ import type { WishlistItem } from "@/app/api/shop/wishlist/route"
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 const CAT_LABELS: Record<string, string> = {
-  tamplarie: "Tâmplărie",
+  tamplarie: "Carpentry",
   sanitare: "Sanitare",
   electrice: "Electrice",
   pardoseli: "Pardoseli",
@@ -17,7 +17,7 @@ const CAT_LABELS: Record<string, string> = {
 }
 
 function fmtPrice(price: number, unit: string) {
-  const p = `€${price.toLocaleString("ro-RO")}`
+  const p = `€${price.toLocaleString("en-US")}`
   if (unit === "m²" || unit === "sac") return `${p}/${unit}`
   return p
 }
@@ -249,7 +249,7 @@ function WishlistCard({
         </p>
         <p style={{ fontSize: 10, color: "rgba(255,255,255,0.32)" }}>
           {item.productSku ? `${item.productSku} · ` : ""}
-          {CAT_LABELS[item.category ?? ""] ?? item.category} · Adăugat {fmtDate(item.addedAt)}
+          {CAT_LABELS[item.category ?? ""] ?? item.category} · Added {fmtDate(item.addedAt)}
         </p>
         {item.notes && (
           <p
@@ -391,7 +391,7 @@ export function WishlistClient() {
             flex: 1,
           }}
         >
-          Lista de dorințe
+          Wishlist
         </h1>
         {items.length > 0 && (
           <button
@@ -412,7 +412,7 @@ export function WishlistClient() {
               cursor: "pointer",
             }}
           >
-            <IconCart /> {cartFlash ? "Adăugat!" : "Adaugă tot"}
+            <IconCart /> {cartFlash ? "Added!" : "Add all"}
           </button>
         )}
       </div>
@@ -484,7 +484,7 @@ export function WishlistClient() {
               }}
             />
             <p style={{ fontSize: 18, fontWeight: 700, color: "#5affa0", letterSpacing: "-0.4px" }}>
-              €{totalValue.toLocaleString("ro-RO")}
+              €{totalValue.toLocaleString("en-US")}
             </p>
             <p
               style={{
@@ -496,7 +496,7 @@ export function WishlistClient() {
                 marginTop: 2,
               }}
             >
-              valoare estimată
+              estimated value
             </p>
           </div>
         </div>
@@ -516,10 +516,10 @@ export function WishlistClient() {
               marginBottom: 8,
             }}
           >
-            Lista de dorințe este goală
+            Wishlist is empty
           </p>
           <p style={{ fontSize: 13, color: "rgba(255,255,255,0.22)", marginBottom: 24 }}>
-            Salvează produsele care îți plac pentru mai târziu.
+            Save products you like for later.
           </p>
           <Link
             href="/shop"
@@ -535,7 +535,7 @@ export function WishlistClient() {
               textDecoration: "none",
             }}
           >
-            Explorează produse
+            Browse products
           </Link>
         </div>
       ) : (

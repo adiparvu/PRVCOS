@@ -159,7 +159,7 @@ const BADGE_CONFIG: Record<
 }
 
 const CAT_LABELS: Record<string, string> = {
-  tamplarie: "Tâmplărie",
+  tamplarie: "Carpentry",
   sanitare: "Sanitare",
   electrice: "Electrice",
   pardoseli: "Pardoseli",
@@ -168,7 +168,7 @@ const CAT_LABELS: Record<string, string> = {
 }
 
 function fmtPrice(price: number, unit: string) {
-  const p = `€${price.toLocaleString("ro-RO")}`
+  const p = `€${price.toLocaleString("en-US")}`
   if (unit === "m²" || unit === "sac") return `${p}/${unit}`
   return p
 }
@@ -351,7 +351,7 @@ export function ProductDetailClient({ id }: { id: string }) {
   const badge = product.badge ? BADGE_CONFIG[product.badge] : null
   const stockLabel =
     product.stock > 20
-      ? { text: "În stoc", color: "rgba(48,209,88,0.9)", bg: "rgba(48,209,88,0.13)" }
+      ? { text: "In Stock", color: "rgba(48,209,88,0.9)", bg: "rgba(48,209,88,0.13)" }
       : product.stock > 0
         ? {
             text: `${product.stock} buc disponibile`,
@@ -651,7 +651,7 @@ export function ProductDetailClient({ id }: { id: string }) {
                   color: "rgba(255,255,255,0.30)",
                 }}
               >
-                Specificații tehnice
+                Technical specifications
               </p>
             </div>
             {product.specs.map((spec, i) => (
@@ -852,14 +852,14 @@ export function ProductDetailClient({ id }: { id: string }) {
             {added ? (
               <>
                 <IconCheck />
-                Adăugat în coș
+                Added to cart
               </>
             ) : (
               <>
                 <IconCart />
                 {product.stock === 0
                   ? "Indisponibil"
-                  : `Adaugă ${qty > 1 ? `× ${qty}` : ""} — ${fmtPrice(product.price * qty, product.unit)}`}
+                  : `Add ${qty > 1 ? `× ${qty}` : ""} — ${fmtPrice(product.price * qty, product.unit)}`}
               </>
             )}
           </button>
@@ -874,7 +874,7 @@ export function ProductDetailClient({ id }: { id: string }) {
               marginTop: 8,
             }}
           >
-            Comandă minimă: {product.minOrderQty} {product.unit}
+            Min order: {product.minOrderQty} {product.unit}
           </p>
         )}
       </div>

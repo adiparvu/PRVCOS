@@ -42,7 +42,8 @@ function getRelativeTime(iso: string): string {
 export function TimeOffClient({ role: _role }: TimeOffClientProps) {
   const router = useRouter()
   const { openSheet } = useSheetStack()
-  const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useTimeOffRequests("pending")
+  const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } =
+    useTimeOffRequests("pending")
   const apiRequests = data?.requests ?? []
   const [dismissed, setDismissed] = useState<Set<string>>(new Set())
   const requests = apiRequests.filter((r) => !dismissed.has(r.id))
@@ -199,7 +200,7 @@ export function TimeOffClient({ role: _role }: TimeOffClientProps) {
                 cursor: isFetchingNextPage ? "default" : "pointer",
               }}
             >
-              {isFetchingNextPage ? "Se încarcă..." : "Load more"}
+              {isFetchingNextPage ? "Loading..." : "Load more"}
             </button>
           )}
         </div>
@@ -259,7 +260,13 @@ function RequestCard({
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <p
                 onClick={onViewDetail}
-                style={{ fontSize: 15, fontWeight: 600, color: "var(--prv-text-1)", margin: 0, cursor: "pointer" }}
+                style={{
+                  fontSize: 15,
+                  fontWeight: 600,
+                  color: "var(--prv-text-1)",
+                  margin: 0,
+                  cursor: "pointer",
+                }}
               >
                 {req.employeeName}
               </p>

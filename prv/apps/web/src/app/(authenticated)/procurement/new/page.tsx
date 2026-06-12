@@ -4,7 +4,7 @@ import { getSession } from "@prv/auth"
 import { PurchaseOrderBuilderClient } from "./PurchaseOrderBuilderClient"
 
 export const dynamic = "force-dynamic"
-export const metadata = { title: "Comandă de Achiziție · Procurement · PRV" }
+export const metadata = { title: "New Purchase Order · Procurement · PRV" }
 
 export default async function NewPurchaseOrderPage() {
   const cookieStore = await cookies()

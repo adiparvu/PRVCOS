@@ -350,8 +350,8 @@ export function AdminClient() {
               <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
             </svg>
           }
-          label="Membri echipă"
-          sub="Invită, editează și dezactivează"
+          label="Team Members"
+          sub="Invite, edit and deactivate"
           href="/people"
           badge="12 activi"
         />
@@ -370,7 +370,7 @@ export function AdminClient() {
             </svg>
           }
           label="Roluri &amp; Permisiuni"
-          sub="Configurează acces pe module"
+          sub="Configure module access"
           href="/admin/roles"
           badge={roleCount !== null ? `${roleCount} roluri` : undefined}
         />
@@ -394,7 +394,7 @@ export function AdminClient() {
             </svg>
           }
           label="Jurnal de audit"
-          sub="Activitate completă SHA-256"
+          sub="Full SHA-256 audit trail"
           href="/admin/audit-logs"
         />
         <NavRow
@@ -412,7 +412,7 @@ export function AdminClient() {
             </svg>
           }
           label="Chei API"
-          sub="Gestionează tokenuri de integrare"
+          sub="Manage integration tokens"
           href="/admin/api-keys"
           badge="3 active"
           badgeVariant="green"

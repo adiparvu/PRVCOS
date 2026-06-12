@@ -4,7 +4,7 @@ import { getSession } from "@prv/auth"
 import { ApprovalBuilderClient } from "./ApprovalBuilderClient"
 
 export const dynamic = "force-dynamic"
-export const metadata = { title: "Aprobare Nouă · Aprobări · PRV" }
+export const metadata = { title: "New Approval · Approvals · PRV" }
 
 export default async function NewApprovalPage() {
   const cookieStore = await cookies()

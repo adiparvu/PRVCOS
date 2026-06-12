@@ -20,10 +20,14 @@ function Skeleton({ w, h, radius = 6 }: { w: number | string; h: number; radius?
 
 const STATUS_CONFIG: Record<AttendanceStatus, { bg: string; color: string; label: string }> = {
   present: { bg: "rgba(48,209,88,.13)", color: "rgba(48,209,88,.95)", label: "Prezent" },
-  late: { bg: "rgba(255,159,10,.13)", color: "rgba(255,159,10,.95)", label: "Întârziere" },
+  late: { bg: "rgba(255,159,10,.13)", color: "rgba(255,159,10,.95)", label: "Late" },
   absent: { bg: "rgba(255,69,58,.12)", color: "rgba(255,69,58,.95)", label: "Absent" },
   leave: { bg: "rgba(10,132,255,.13)", color: "rgba(10,132,255,.9)", label: "Concediu" },
-  clocked_out: { bg: "rgba(255,255,255,.07)", color: "rgba(255,255,255,.45)", label: "Ieșit" },
+  clocked_out: {
+    bg: "rgba(255,255,255,.07)",
+    color: "rgba(255,255,255,.45)",
+    label: "Clocked Out",
+  },
 }
 
 const AVATAR_COLORS: Record<string, { bg: string; color: string }> = {
@@ -234,7 +238,7 @@ export function AttendanceDetailClient({ id }: AttendanceDetailClientProps) {
     openSheet({
       snapPoints: ["mid", "full"],
       defaultSnap: "mid",
-      title: "Acțiuni Pontaj",
+      title: "Attendance Actions",
       render: (onClose) => (
         <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
           {isActionable && (
@@ -254,8 +258,8 @@ export function AttendanceDetailClient({ id }: AttendanceDetailClientProps) {
                   <polyline points="20 6 9 17 4 12" />
                 </svg>
               }
-              label="Aprobă Pontaj"
-              sub="Confirmat și trimis la salarizare"
+              label="Approve Pontaj"
+              sub="Confirmed and sent to payroll"
               onClick={onClose}
             />
           )}
@@ -277,8 +281,8 @@ export function AttendanceDetailClient({ id }: AttendanceDetailClientProps) {
                   <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                 </svg>
               }
-              label="Corectează Pontaj"
-              sub="Modifică ore, pauze, locație"
+              label="Correct Pontaj"
+              sub="Edit hours, breaks, location"
               onClick={onClose}
             />
           )}
@@ -301,8 +305,8 @@ export function AttendanceDetailClient({ id }: AttendanceDetailClientProps) {
                 <line x1="3" y1="10" x2="21" y2="10" />
               </svg>
             }
-            label="Istoric Prezență"
-            sub="Pontaj complet angajat"
+            label="Attendance History"
+            sub="Pontaj complet employee"
             onClick={onClose}
           />
           <SheetBtn
@@ -324,7 +328,7 @@ export function AttendanceDetailClient({ id }: AttendanceDetailClientProps) {
               </svg>
             }
             label="Export Raport"
-            sub="PDF sau Excel pentru perioadă"
+            sub="PDF or Excel for period"
             onClick={onClose}
           />
           {record.status === "absent" && (
@@ -346,8 +350,8 @@ export function AttendanceDetailClient({ id }: AttendanceDetailClientProps) {
                   <line x1="9" y1="9" x2="15" y2="15" />
                 </svg>
               }
-              label="Marchează Absent"
-              sub="Înregistrare absență nemotivată"
+              label="Mark Absent"
+              sub="Record unexcused absence"
               onClick={onClose}
             />
           )}
@@ -397,7 +401,7 @@ export function AttendanceDetailClient({ id }: AttendanceDetailClientProps) {
             >
               <path d="M15 18l-6-6 6-6" />
             </svg>
-            Prezență
+            Attendance
           </Link>
           <Skeleton w={80} h={18} />
           <div style={{ width: 60 }} />
@@ -415,7 +419,7 @@ export function AttendanceDetailClient({ id }: AttendanceDetailClientProps) {
   if (!record) {
     return (
       <div style={{ padding: "80px 16px", textAlign: "center", color: "rgba(255,255,255,.35)" }}>
-        Înregistrarea nu a fost găsită.
+        Record not found.
       </div>
     )
   }
@@ -471,7 +475,7 @@ export function AttendanceDetailClient({ id }: AttendanceDetailClientProps) {
           >
             <path d="M15 18l-6-6 6-6" />
           </svg>
-          Prezență
+          Attendance
         </Link>
         <span style={{ fontSize: 17, fontWeight: 700 }}>Pontaj</span>
         <div style={{ width: 60 }} />
@@ -509,7 +513,7 @@ export function AttendanceDetailClient({ id }: AttendanceDetailClientProps) {
                 margin: "0 0 4px",
               }}
             >
-              Prezență · Mie 9 Iun 2026
+              Attendance · Wed 9 Jun 2026
             </p>
             <p style={{ fontSize: 22, fontWeight: 700, lineHeight: 1.15, margin: 0 }}>
               {record.name}
@@ -603,7 +607,9 @@ export function AttendanceDetailClient({ id }: AttendanceDetailClientProps) {
             >
               {record.clockOut ?? "—"}
             </p>
-            <p style={{ fontSize: 11, color: "rgba(255,255,255,.4)", margin: "2px 0 0" }}>Ieșire</p>
+            <p style={{ fontSize: 11, color: "rgba(255,255,255,.4)", margin: "2px 0 0" }}>
+              Clock Out
+            </p>
           </div>
         </div>
       </div>
@@ -640,8 +646,8 @@ export function AttendanceDetailClient({ id }: AttendanceDetailClientProps) {
             <line x1="12" y1="17" x2="12.01" y2="17" />
           </svg>
           {isAbsent
-            ? "Absență nemotivată — necesită înregistrare"
-            : `Întârziere de ${record.lateMinutes} minute față de ora planificată`}
+            ? "Unexcused absence — requires recording"
+            : `${record.lateMinutes} minutes late vs scheduled time`}
         </div>
       )}
 
@@ -662,7 +668,7 @@ export function AttendanceDetailClient({ id }: AttendanceDetailClientProps) {
               border: "1px solid rgba(255,255,255,.09)",
             }}
           >
-            Corectează
+            Correct
           </button>
           <button
             style={{
@@ -678,14 +684,14 @@ export function AttendanceDetailClient({ id }: AttendanceDetailClientProps) {
               border: "1px solid rgba(48,209,88,.25)",
             }}
           >
-            Aprobă Pontaj
+            Approve Pontaj
           </button>
         </div>
       )}
 
       {/* weekly bar chart */}
       <div style={{ padding: "12px 16px 0" }}>
-        <SectionLabel>Săptămâna Curentă</SectionLabel>
+        <SectionLabel>Current Week</SectionLabel>
         <SectionCard
           title="Ore Lucrate"
           badge={
@@ -764,16 +770,16 @@ export function AttendanceDetailClient({ id }: AttendanceDetailClientProps) {
       {/* details */}
       <div style={{ padding: "12px 16px 0" }}>
         <SectionLabel>Detalii Pontaj</SectionLabel>
-        <SectionCard title="Informații">
-          <InfoRow label="Locație" value={record.site} />
+        <SectionCard title="Information">
+          <InfoRow label="Location" value={record.site} />
           <InfoRow
             label="Verificare GPS"
-            value={record.gpsVerified ? "Confirmat" : "Neverificat"}
+            value={record.gpsVerified ? "Confirmed" : "Neverificat"}
             valueColor={record.gpsVerified ? "rgba(48,209,88,.9)" : "rgba(255,69,58,.9)"}
           />
           {record.device && <InfoRow label="Dispozitiv" value={record.device} />}
           <InfoRow
-            label="Tură planificată"
+            label="Planned Shift"
             value={`${record.scheduledStart} – ${record.scheduledEnd}`}
           />
           {record.overtime > 0 && (

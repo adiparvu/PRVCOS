@@ -81,7 +81,7 @@ function IconWarning() {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function fmt(amount: number) {
-  return "€" + amount.toLocaleString("ro-RO")
+  return "€" + amount.toLocaleString("en-US")
 }
 
 function budgetBorder(project: ProjectSummary): string | undefined {
@@ -364,7 +364,7 @@ function ProjectCard({ project }: { project: ProjectSummary }) {
               {fmt(project.spent)} / {fmt(project.budget)}
             </span>
             <span style={{ fontSize: 10, color: "rgba(255,255,255,0.25)" }}>
-              {project.daysLeft > 0 ? `${project.daysLeft}z` : "Încheiat"}
+              {project.daysLeft > 0 ? `${project.daysLeft}d` : "Completed"}
             </span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>

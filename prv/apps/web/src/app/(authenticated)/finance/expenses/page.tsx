@@ -4,7 +4,7 @@ import { getSession } from "@prv/auth"
 import { ExpenseListClient } from "./ExpenseListClient"
 
 export const dynamic = "force-dynamic"
-export const metadata = { title: "Cheltuieli · Finanțe · PRV" }
+export const metadata = { title: "Cheltuieli · Finance · PRV" }
 
 export default async function ExpenseListPage() {
   const cookieStore = await cookies()

@@ -44,7 +44,7 @@ const TYPE_CONFIG: Record<
   { label: string; color: string; bg: string; iconBg: string; iconStroke: string }
 > = {
   purchase: {
-    label: "Comandă Achiziție",
+    label: "Purchase Order",
     color: "rgba(10,132,255,.9)",
     bg: "rgba(10,132,255,.13)",
     iconBg: "rgba(10,132,255,.10)",
@@ -58,7 +58,7 @@ const TYPE_CONFIG: Record<
     iconStroke: "rgba(255,159,10,.85)",
   },
   expense: {
-    label: "Cerere Cheltuială",
+    label: "Expense Request",
     color: "rgba(255,69,58,.95)",
     bg: "rgba(255,69,58,.12)",
     iconBg: "rgba(255,69,58,.10)",
@@ -89,7 +89,7 @@ const CHAIN_CONFIG: Record<
     dotColor: "rgba(48,209,88,.9)",
     pillBg: "rgba(48,209,88,.13)",
     pillColor: "rgba(48,209,88,.95)",
-    label: "Aprobat",
+    label: "Approved",
   },
   current: {
     dotBg: "rgba(255,159,10,.15)",
@@ -103,7 +103,7 @@ const CHAIN_CONFIG: Record<
     dotColor: "rgba(255,255,255,.35)",
     pillBg: "rgba(255,255,255,.07)",
     pillColor: "rgba(255,255,255,.35)",
-    label: "Urmează",
+    label: "Upcoming",
   },
 }
 
@@ -304,7 +304,7 @@ export function ApprovalDetailClient({ id }: ApprovalDetailClientProps) {
     openSheet({
       snapPoints: ["mid", "full"],
       defaultSnap: "mid",
-      title: "Acțiuni Aprobare",
+      title: "Approval Actions",
       render: (onClose) => (
         <div
           style={{ padding: "8px 16px 40px", display: "flex", flexDirection: "column", gap: 10 }}
@@ -326,8 +326,8 @@ export function ApprovalDetailClient({ id }: ApprovalDetailClientProps) {
                   <polyline points="20 6 9 17 4 12" />
                 </svg>
               }
-              label="Aprobă"
-              sub="Trimite la nivelul următor"
+              label="Approve"
+              sub="Send to next level"
               onClick={onClose}
             />
           )}
@@ -348,8 +348,8 @@ export function ApprovalDetailClient({ id }: ApprovalDetailClientProps) {
                   <line x1="6" y1="6" x2="18" y2="18" />
                 </svg>
               }
-              label="Respinge"
-              sub="Returnează cu motiv"
+              label="Reject"
+              sub="Return with reason"
               onClick={onClose}
             />
           )}
@@ -372,8 +372,8 @@ export function ApprovalDetailClient({ id }: ApprovalDetailClientProps) {
                 <path d="M16 3.13a4 4 0 0 1 0 7.75" />
               </svg>
             }
-            label="Deleghează"
-            sub="Transferă la alt aprobator"
+            label="Delegate"
+            sub="Transfer to another approver"
             onClick={onClose}
           />
           <SheetBtn
@@ -394,8 +394,8 @@ export function ApprovalDetailClient({ id }: ApprovalDetailClientProps) {
                 <line x1="12" y1="16" x2="12.01" y2="16" />
               </svg>
             }
-            label="Solicită Informații"
-            sub="Trimite întrebare solicitantului"
+            label="Request Info"
+            sub="Send question to requester"
             onClick={onClose}
           />
           <SheetBtn
@@ -415,8 +415,8 @@ export function ApprovalDetailClient({ id }: ApprovalDetailClientProps) {
                 <polyline points="12 6 12 12 16 14" />
               </svg>
             }
-            label="Amânare"
-            sub="Reprogramează termenul"
+            label="Postpone"
+            sub="Reschedule deadline"
             onClick={onClose}
           />
         </div>
@@ -427,12 +427,12 @@ export function ApprovalDetailClient({ id }: ApprovalDetailClientProps) {
   if (error)
     return (
       <div style={{ padding: "80px 16px", textAlign: "center" }}>
-        <p style={{ color: "var(--prv-text-3)", fontSize: 14 }}>Cererea nu a fost găsită.</p>
+        <p style={{ color: "var(--prv-text-3)", fontSize: 14 }}>Request not found.</p>
         <Link
           href="/approvals"
           style={{ fontSize: 14, color: "#7eb8ff", marginTop: 12, display: "block" }}
         >
-          ← Înapoi la Aprobări
+          ← Back la Approveri
         </Link>
       </div>
     )
@@ -458,7 +458,7 @@ export function ApprovalDetailClient({ id }: ApprovalDetailClientProps) {
           }}
         >
           <IconChevronLeft />
-          Aprobări
+          Approveri
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <div
@@ -549,12 +549,12 @@ export function ApprovalDetailClient({ id }: ApprovalDetailClientProps) {
   if (approval.supplier) infoRows.push({ key: "Furnizor", val: approval.supplier })
   if (approval.neededBy)
     infoRows.push({
-      key: approval.type === "leave" ? "Dată start" : "Necesar până",
+      key: approval.type === "leave" ? "Start date" : "Needed by",
       val: approval.neededBy,
       valColor: isUrgent || isExpired ? "rgba(255,159,10,.9)" : undefined,
     })
   if (approval.delivery) infoRows.push({ key: "Livrare", val: approval.delivery })
-  if (approval.paymentTerms) infoRows.push({ key: "Plată", val: approval.paymentTerms })
+  if (approval.paymentTerms) infoRows.push({ key: "Payment", val: approval.paymentTerms })
 
   return (
     <div
@@ -579,7 +579,7 @@ export function ApprovalDetailClient({ id }: ApprovalDetailClientProps) {
         }}
       >
         <IconChevronLeft />
-        Aprobări
+        Approveri
       </Link>
 
       {/* Hero card */}
@@ -697,7 +697,7 @@ export function ApprovalDetailClient({ id }: ApprovalDetailClientProps) {
                   ? `${Math.abs(approval.daysUntilDeadline)}z exp.`
                   : approval.daysUntilDeadline === 0
                     ? "Azi"
-                    : `${approval.daysUntilDeadline} zile`,
+                    : `${approval.daysUntilDeadline} days`,
             label: "La Termen",
             color:
               approval.daysUntilDeadline !== null && approval.daysUntilDeadline <= 0
@@ -795,7 +795,7 @@ export function ApprovalDetailClient({ id }: ApprovalDetailClientProps) {
       </div>
 
       {/* Approval chain */}
-      <SectionLabel>Lanț de Aprobare</SectionLabel>
+      <SectionLabel>Approval Chain</SectionLabel>
       <div
         style={{
           background: "var(--prv-g1)",
@@ -928,7 +928,7 @@ export function ApprovalDetailClient({ id }: ApprovalDetailClientProps) {
               cursor: "pointer",
             }}
           >
-            Respinge
+            Reject
           </button>
           <button
             style={{
@@ -943,7 +943,7 @@ export function ApprovalDetailClient({ id }: ApprovalDetailClientProps) {
               cursor: "pointer",
             }}
           >
-            Aprobă
+            Approve
           </button>
         </div>
       )}

@@ -35,7 +35,7 @@ interface Role {
 // Scope label mapping
 const SCOPE_LABELS: Record<string, string> = {
   SCOPE_RECORD: "Record",
-  SCOPE_TEAM: "Echipă",
+  SCOPE_TEAM: "Team",
   SCOPE_DEPARTMENT: "Departament",
   SCOPE_STORE: "Magazin",
   SCOPE_REGION: "Regiune",
@@ -334,7 +334,7 @@ export function RolesClient() {
             fontSize: 14,
           }}
         >
-          Nu există roluri configurate
+          No roles configured
         </div>
       )}
 
