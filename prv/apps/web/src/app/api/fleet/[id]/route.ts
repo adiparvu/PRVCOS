@@ -87,10 +87,10 @@ function dbStatusToApi(dbStatus: string, hasDriver: boolean): string {
 
 function auditToActivityEvent(log: { id: string; action: string; createdAt: Date }): ActivityEvent {
   const label = (() => {
-    if (log.action === "fleet.create") return "Vehicul adăugat"
-    if (log.action === "fleet.update") return "Vehicul actualizat"
-    if (log.action === "fleet.delete") return "Vehicul retras"
-    if (log.action.includes("assign")) return "Șofer asignat"
+    if (log.action === "fleet.create") return "Vehicle added"
+    if (log.action === "fleet.update") return "Vehicle updated"
+    if (log.action === "fleet.delete") return "Vehicle removed"
+    if (log.action.includes("assign")) return "Driver assigned"
     return log.action
   })()
   const color = log.action.includes("delete")
@@ -180,8 +180,8 @@ export const GET = withGates(
       const expired = row.insuranceExpiresAt < new Date()
       maintenance.push({
         id: "m-ins",
-        label: "Asigurare RCA",
-        detail: `${expired ? "Expirată" : "Valabilă"} · ${fmtDate(row.insuranceExpiresAt)}`,
+        label: "RCA Insurance",
+        detail: `${expired ? "Expired" : "Valid"} · ${fmtDate(row.insuranceExpiresAt)}`,
         status: expired ? "Overdue" : "Due Soon",
       })
     }
@@ -190,7 +190,7 @@ export const GET = withGates(
       maintenance.push({
         id: "m-itp",
         label: "ITP",
-        detail: `${expired ? "Expirat" : "Valabil"} · ${fmtDate(row.itpExpiresAt)}`,
+        detail: `${expired ? "Expired" : "Valid"} · ${fmtDate(row.itpExpiresAt)}`,
         status: expired ? "Overdue" : "Due Soon",
       })
     }
@@ -198,8 +198,8 @@ export const GET = withGates(
       const kmLeft = row.nextServiceAtKm - row.mileageKm
       maintenance.push({
         id: "m-srv",
-        label: "Revizie tehnică",
-        detail: `La ${row.nextServiceAtKm.toLocaleString()} km · ${kmLeft > 0 ? `~${kmLeft.toLocaleString()} km distanță` : "Restantă"}`,
+        label: "Technical service",
+        detail: `At ${row.nextServiceAtKm.toLocaleString()} km · ${kmLeft > 0 ? `~${kmLeft.toLocaleString()} km remaining` : "Overdue"}`,
         status: kmLeft <= 0 ? "Overdue" : kmLeft <= 1000 ? "Due Soon" : "Done",
       })
     }
@@ -214,7 +214,7 @@ export const GET = withGates(
       base: row.storeName ?? "—",
       status: apiStatus,
       driver: driverName,
-      assignment: driverName ? `Asignat · ${driverName}` : null,
+      assignment: driverName ? `Assigned · ${driverName}` : null,
       fuelPct: row.fuelLevelPct ?? 0,
       kmToday: (() => {
         const todayLog = dailyLogRows.find((l) => l.date === today)
@@ -226,10 +226,10 @@ export const GET = withGates(
       odometer: row.mileageKm ?? 0,
       nextServiceKm: row.nextServiceAtKm ?? 0,
       insurance: row.insuranceExpiresAt
-        ? `${row.insuranceExpiresAt < new Date() ? "Expirată" : "Valabilă"} · ${fmtDate(row.insuranceExpiresAt)}`
+        ? `${row.insuranceExpiresAt < new Date() ? "Expired" : "Valid"} · ${fmtDate(row.insuranceExpiresAt)}`
         : "—",
       itp: row.itpExpiresAt
-        ? `${row.itpExpiresAt < new Date() ? "Expirat" : "Valabil"} · ${fmtDate(row.itpExpiresAt)}`
+        ? `${row.itpExpiresAt < new Date() ? "Expired" : "Valid"} · ${fmtDate(row.itpExpiresAt)}`
         : "—",
       maintenance,
       activity: activityRows.map(auditToActivityEvent),

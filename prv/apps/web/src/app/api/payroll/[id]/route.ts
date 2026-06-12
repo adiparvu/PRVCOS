@@ -74,7 +74,7 @@ function buildSubtitle(run: {
     const dt = new Date(d + "T12:00:00Z")
     return `${dt.getUTCDate()} ${MONTH_LABELS[dt.getUTCMonth()]}`
   }
-  return `${run.employeeCount} angajați · ${fmt(run.periodStart)}–${fmt(run.periodEnd)}`
+  return `${run.employeeCount} employees · ${fmt(run.periodStart)}–${fmt(run.periodEnd)}`
 }
 
 function buildPeriod(periodStart: string, periodEnd: string): string {

@@ -54,18 +54,18 @@ export interface KnowledgeArticleDetail {
 
 const TYPE_LABELS: Record<ArticleType, string> = {
   sop: "SOP",
-  policy: "Politică",
-  guide: "Ghid",
+  policy: "Policy",
+  guide: "Guide",
   faq: "FAQ",
 }
 
 const CATEGORY_LABELS: Record<ArticleCategory, string> = {
-  operations: "Operațiuni",
+  operations: "Operations",
   hr: "HR",
-  finance: "Finanțe",
-  procurement: "Procurare",
-  fleet: "Flotă",
-  projects: "Proiecte",
+  finance: "Finance",
+  procurement: "Procurement",
+  fleet: "Fleet",
+  projects: "Projects",
 }
 
 const MONTH_LABELS = [

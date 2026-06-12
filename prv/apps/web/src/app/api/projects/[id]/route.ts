@@ -3,7 +3,15 @@ import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
 import { writeAuditLog } from "@prv/auth"
 import { db } from "@prv/db"
-import { projects, projectMembers, projectMilestones, clients, users, invoices, auditLogs } from "@prv/db/schema"
+import {
+  projects,
+  projectMembers,
+  projectMilestones,
+  clients,
+  users,
+  invoices,
+  auditLogs,
+} from "@prv/db/schema"
 import { and, asc, desc, eq, isNull, notInArray, sum } from "drizzle-orm"
 import { z } from "zod"
 import type { ProjectSummary, ProjectStatus } from "../route"
@@ -80,11 +88,11 @@ function auditToProjectActivity(log: {
       ? "complete"
       : "note"
   const text = (() => {
-    if (log.action === "projects.create") return "Proiect creat"
-    if (log.action === "projects.update") return "Proiect actualizat"
-    if (log.action === "projects.delete") return "Proiect șters"
-    if (log.action.includes("milestone")) return "Etapă actualizată"
-    if (log.action.includes("member")) return "Echipă actualizată"
+    if (log.action === "projects.create") return "Project created"
+    if (log.action === "projects.update") return "Project updated"
+    if (log.action === "projects.delete") return "Project deleted"
+    if (log.action.includes("milestone")) return "Milestone updated"
+    if (log.action.includes("member")) return "Team updated"
     return log.action
   })()
   return { id: log.id, type, text, timestamp: log.createdAt.toISOString() }
@@ -325,7 +333,12 @@ export const DELETE = withGates(
 
     await db
       .update(projects)
-      .set({ isActive: false, deletedAt: new Date(), status: "cancelled" as const, updatedAt: new Date() })
+      .set({
+        isActive: false,
+        deletedAt: new Date(),
+        status: "cancelled" as const,
+        updatedAt: new Date(),
+      })
       .where(and(eq(projects.id, id), eq(projects.companyId, companyId)))
 
     void writeAuditLog({

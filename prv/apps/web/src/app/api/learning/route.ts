@@ -58,12 +58,12 @@ export interface LearningMeta {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 const CATEGORY_LABELS: Record<CourseCategory, string> = {
-  safety: "Siguranță",
+  safety: "Safety",
   leadership: "Leadership",
-  digital: "Abilități Digitale",
-  finance: "Finanțe",
-  renovation: "Renovare",
-  compliance: "Conformitate",
+  digital: "Digital Skills",
+  finance: "Finance",
+  renovation: "Renovation",
+  compliance: "Compliance",
 }
 
 const MONTH_LABELS = [
@@ -249,7 +249,9 @@ export const GET = withGates(
 const createCourseSchema = z.object({
   title: z.string().min(1).max(500),
   subtitle: z.string().optional(),
-  category: z.enum(["safety", "leadership", "digital", "finance", "renovation", "compliance"]).optional(),
+  category: z
+    .enum(["safety", "leadership", "digital", "finance", "renovation", "compliance"])
+    .optional(),
   totalModules: z.number().int().min(1).optional(),
   durationMinutes: z.number().int().nonnegative().optional(),
   hasCert: z.boolean().optional(),
@@ -269,7 +271,10 @@ export const POST = withGates(
 
     const parsed = createCourseSchema.safeParse(body)
     if (!parsed.success) {
-      return NextResponse.json({ error: "Invalid payload", issues: parsed.error.issues }, { status: 422 })
+      return NextResponse.json(
+        { error: "Invalid payload", issues: parsed.error.issues },
+        { status: 422 }
+      )
     }
 
     const [record] = await db

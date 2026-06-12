@@ -95,7 +95,7 @@ export const GET = withGates(
       {
         id: "a-created",
         type: "created",
-        text: `Comandă ${row.ref} creată${requestedBy ? ` de ${requestedBy}` : ""}`,
+        text: `Order ${row.ref} created${requestedBy ? ` by ${requestedBy}` : ""}`,
         timestamp: row.createdAt.toISOString(),
       },
     ]
@@ -103,7 +103,7 @@ export const GET = withGates(
       activities.push({
         id: "a-submitted",
         type: "submitted",
-        text: `PO trimis spre aprobare`,
+        text: `PO submitted for approval`,
         timestamp: row.createdAt.toISOString(),
       })
     }
@@ -111,7 +111,7 @@ export const GET = withGates(
       activities.push({
         id: "a-approved",
         type: "approved",
-        text: "Comandă aprobată",
+        text: "Order approved",
         timestamp: row.createdAt.toISOString(),
       })
     }

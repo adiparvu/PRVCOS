@@ -9,8 +9,18 @@ export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
 
 const MONTH_LABELS_RO = [
-  "Ian", "Feb", "Mar", "Apr", "Mai", "Iun",
-  "Iul", "Aug", "Sep", "Oct", "Nov", "Dec",
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
 ] as const
 
 export interface FinanceReport {
@@ -82,18 +92,18 @@ export const GET = withGates(
 
       const genDate = new Date(year, month + 1, 1)
       const dateLabel = isCurrent
-        ? "În curs"
+        ? "In Progress"
         : `${genDate.getDate()} ${MONTH_LABELS_RO[genDate.getMonth()]} ${genDate.getFullYear()}`
 
       reports.push({
         id: `report-${monthStr}`,
-        title: `Raport Lunar · ${MONTH_LABELS_RO[month]} ${year}`,
+        title: `Monthly Report · ${MONTH_LABELS_RO[month]} ${year}`,
         revenue,
         expensesTotal,
         profit: revenue - expensesTotal,
         transactionCount: monthInv.length + monthExp.length,
         dateLabel,
-        statusLabel: isCurrent ? "În curs" : "Finalizat",
+        statusLabel: isCurrent ? "In Progress" : "Completed",
         statusColor: isCurrent ? "rgba(255,159,10,.95)" : "rgba(48,209,88,.95)",
       })
     }

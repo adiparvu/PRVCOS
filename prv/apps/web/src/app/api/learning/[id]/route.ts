@@ -43,12 +43,12 @@ export interface CourseDetail {
 }
 
 const CATEGORY_LABELS: Record<CourseCategory, string> = {
-  safety: "Siguranță",
+  safety: "Safety",
   leadership: "Leadership",
-  digital: "Abilități Digitale",
-  finance: "Finanțe",
-  renovation: "Renovare",
-  compliance: "Conformitate",
+  digital: "Digital Skills",
+  finance: "Finance",
+  renovation: "Renovation",
+  compliance: "Compliance",
 }
 
 const MONTH_LABELS = [

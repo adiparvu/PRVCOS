@@ -119,7 +119,7 @@ export const GET = withGates(
     const createdActivity: SupplierActivity = {
       id: "created",
       type: "created",
-      text: `Furnizor ${row.name} adăugat`,
+      text: `Supplier ${row.name} added`,
       timestamp: row.createdAt.toISOString(),
     }
 

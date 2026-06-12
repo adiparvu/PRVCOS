@@ -50,15 +50,15 @@ export interface ShiftsMeta {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 const TZ = "Europe/Bucharest"
-const DAY_NAMES = ["Dum", "Lun", "Mar", "Mie", "Joi", "Vin", "Sâm"] as const
+const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const
 const MONTH_LABELS = [
-  "Ian",
+  "Jan",
   "Feb",
   "Mar",
   "Apr",
-  "Mai",
-  "Iun",
-  "Iul",
+  "May",
+  "Jun",
+  "Jul",
   "Aug",
   "Sep",
   "Oct",
@@ -67,12 +67,12 @@ const MONTH_LABELS = [
 ] as const
 
 const ROLE_LABELS: Record<ShiftRole, string> = {
-  foreman: "Maistru Construcții",
-  bricklayer: "Zidar",
+  foreman: "Construction Foreman",
+  bricklayer: "Bricklayer",
   electrician: "Electrician",
-  finisher: "Echipă Finisaj",
-  welder: "Sudor",
-  general: "Muncitor General",
+  finisher: "Finishing Crew",
+  welder: "Welder",
+  general: "General Worker",
 }
 
 function todayStr(): string {
@@ -230,7 +230,9 @@ const createShiftSchema = z.object({
   date: z.string().min(1),
   startTime: z.string().min(4).max(5),
   endTime: z.string().min(4).max(5),
-  role: z.enum(["foreman", "bricklayer", "electrician", "finisher", "welder", "general"]).optional(),
+  role: z
+    .enum(["foreman", "bricklayer", "electrician", "finisher", "welder", "general"])
+    .optional(),
   roleLabel: z.string().max(100).optional(),
   location: z.string().max(255).optional(),
   totalSlots: z.number().int().min(1).optional(),
@@ -240,7 +242,7 @@ const createShiftSchema = z.object({
 function calcShiftHours(start: string, end: string): number {
   const [sh = 0, sm = 0] = start.split(":").map(Number)
   const [eh = 0, em = 0] = end.split(":").map(Number)
-  return Math.round(((eh * 60 + em) - (sh * 60 + sm)) / 60 * 10) / 10
+  return Math.round(((eh * 60 + em - (sh * 60 + sm)) / 60) * 10) / 10
 }
 
 export const POST = withGates(
@@ -257,12 +259,19 @@ export const POST = withGates(
 
     const parsed = createShiftSchema.safeParse(body)
     if (!parsed.success) {
-      return NextResponse.json({ error: "Invalid payload", issues: parsed.error.issues }, { status: 422 })
+      return NextResponse.json(
+        { error: "Invalid payload", issues: parsed.error.issues },
+        { status: 422 }
+      )
     }
 
     const [record] = await db
       .insert(shifts)
-      .values({ companyId, ...parsed.data, durationHours: String(calcShiftHours(parsed.data.startTime, parsed.data.endTime)) })
+      .values({
+        companyId,
+        ...parsed.data,
+        durationHours: String(calcShiftHours(parsed.data.startTime, parsed.data.endTime)),
+      })
       .returning({ id: shifts.id, title: shifts.title })
 
     if (!record) return NextResponse.json({ error: "Insert failed" }, { status: 500 })

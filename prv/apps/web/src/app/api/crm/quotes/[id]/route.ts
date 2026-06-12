@@ -149,7 +149,7 @@ export const GET = withGates(
       {
         id: "ac-created",
         type: "created",
-        text: `Ofertă ${row.invoiceNumber} creată`,
+        text: `Quote ${row.invoiceNumber} created`,
         timestamp: row.createdAt.toISOString(),
       },
     ]
@@ -157,7 +157,7 @@ export const GET = withGates(
       activities.push({
         id: "ac-sent",
         type: "sent",
-        text: "Ofertă trimisă clientului",
+        text: "Quote sent to client",
         timestamp: row.createdAt.toISOString(),
       })
     }
@@ -194,7 +194,10 @@ export const GET = withGates(
 const patchQuoteSchema = z.object({
   status: z.enum(["draft", "sent", "paid", "overdue", "cancelled", "refunded"]).optional(),
   notes: z.string().optional(),
-  dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  dueDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
   clientId: z.string().uuid().nullable().optional(),
   projectId: z.string().uuid().nullable().optional(),
 })
@@ -210,7 +213,9 @@ export const PATCH = withGates(
     const [existing] = await db
       .select({ id: invoices.id })
       .from(invoices)
-      .where(and(eq(invoices.id, id), eq(invoices.companyId, companyId), isNull(invoices.deletedAt)))
+      .where(
+        and(eq(invoices.id, id), eq(invoices.companyId, companyId), isNull(invoices.deletedAt))
+      )
       .limit(1)
 
     if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 })
@@ -224,13 +229,18 @@ export const PATCH = withGates(
 
     const parsed = patchQuoteSchema.safeParse(body)
     if (!parsed.success) {
-      return NextResponse.json({ error: "Invalid payload", issues: parsed.error.issues }, { status: 422 })
+      return NextResponse.json(
+        { error: "Invalid payload", issues: parsed.error.issues },
+        { status: 422 }
+      )
     }
 
     const [updated] = await db
       .update(invoices)
       .set({ ...parsed.data, updatedAt: new Date() })
-      .where(and(eq(invoices.id, id), eq(invoices.companyId, companyId), isNull(invoices.deletedAt)))
+      .where(
+        and(eq(invoices.id, id), eq(invoices.companyId, companyId), isNull(invoices.deletedAt))
+      )
       .returning({ id: invoices.id })
 
     void writeAuditLog({
@@ -262,7 +272,9 @@ export const DELETE = withGates(
     const [existing] = await db
       .select({ id: invoices.id })
       .from(invoices)
-      .where(and(eq(invoices.id, id), eq(invoices.companyId, companyId), isNull(invoices.deletedAt)))
+      .where(
+        and(eq(invoices.id, id), eq(invoices.companyId, companyId), isNull(invoices.deletedAt))
+      )
       .limit(1)
 
     if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 })

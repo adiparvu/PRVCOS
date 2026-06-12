@@ -412,7 +412,7 @@ export const POST = withGates(
       .values({
         companyId: ctx.session.companyId,
         submittedById: ctx.session.userId,
-        title: title ?? "Cheltuială nouă",
+        title: title ?? "New Expense",
         category: dbCategory as (typeof expenses.$inferInsert)["category"],
         status: dbStatus as (typeof expenses.$inferInsert)["status"],
         amount: String(Math.round(totalGross * 100) / 100),
@@ -461,7 +461,7 @@ export const POST = withGates(
       id: created.id,
       category: uiCategory,
       status: uiStatus,
-      title: title ?? "Cheltuială nouă",
+      title: title ?? "New Expense",
       amount: gross,
       amountLabel: fmtLabel(gross),
       vatAmount: vatAmt,

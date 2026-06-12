@@ -80,12 +80,12 @@ function fmtAmount(n: number): string {
 
 function relativeTime(date: Date): string {
   const diffMin = Math.floor((Date.now() - date.getTime()) / 60_000)
-  if (diffMin < 1) return "acum"
-  if (diffMin < 60) return `acum ${diffMin} min`
+  if (diffMin < 1) return "just now"
+  if (diffMin < 60) return `${diffMin} min ago`
   const h = Math.floor(diffMin / 60)
-  if (h < 24) return `acum ${h}h`
-  if (h < 48) return "ieri"
-  return `acum ${Math.floor(h / 24)} zile`
+  if (h < 24) return `${h}h ago`
+  if (h < 48) return "yesterday"
+  return `${Math.floor(h / 24)} days ago`
 }
 
 function fmtDate(d: Date): string {
@@ -93,11 +93,11 @@ function fmtDate(d: Date): string {
 }
 
 function reportStatusLabel(type: ReportType, status: ReportStatus): string {
-  if (status === "scheduled") return "Programat"
-  if (status === "pending") return "Generare..."
-  if (type === "monthly") return "Finalizat"
+  if (status === "scheduled") return "Scheduled"
+  if (status === "pending") return "Generating..."
+  if (type === "monthly") return "Completed"
   if (type === "forecast") return "AI"
-  return "Revizuiește"
+  return "Review"
 }
 
 // ── GET ───────────────────────────────────────────────────────────────────────
@@ -329,6 +329,12 @@ export const GET = withGates(
       activeAlerts,
     }
 
-    return NextResponse.json({ insights: insightList, reports: reportList, storeKpis, meta, nextCursor: null })
+    return NextResponse.json({
+      insights: insightList,
+      reports: reportList,
+      storeKpis,
+      meta,
+      nextCursor: null,
+    })
   }
 )

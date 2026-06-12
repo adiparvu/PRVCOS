@@ -81,12 +81,12 @@ export const GET = withGates(
     const durationHours = Number(row.durationHours)
 
     const timeline: TimelineEntry[] = [
-      { id: "t1", time: row.startTime ?? "", label: "Început Tură", sub: null, done: false },
+      { id: "t1", time: row.startTime ?? "", label: "Shift Start", sub: null, done: false },
       {
         id: "t2",
         time: row.endTime ?? "",
-        label: "Sfârșit Tură",
-        sub: "Semnare pontaj necesară",
+        label: "Shift End",
+        sub: "Timesheet signature required",
         done: false,
       },
     ]

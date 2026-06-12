@@ -123,11 +123,11 @@ function auditToClientActivity(log: {
     return "note"
   })()
   const text = (() => {
-    if (log.action === "crm.clients.create") return "Client înregistrat"
-    if (log.action === "crm.clients.update") return "Client actualizat"
-    if (log.action.includes("quote")) return "Ofertă înregistrată"
-    if (log.action.includes("invoice")) return "Factură actualizată"
-    if (log.action.includes("project")) return "Proiect modificat"
+    if (log.action === "crm.clients.create") return "Client registered"
+    if (log.action === "crm.clients.update") return "Client updated"
+    if (log.action.includes("quote")) return "Quote registered"
+    if (log.action.includes("invoice")) return "Invoice updated"
+    if (log.action.includes("project")) return "Project modified"
     return log.action
   })()
   return { id: log.id, type, text, timestamp: log.createdAt.toISOString() }
@@ -143,100 +143,102 @@ export const GET = withGates(
 
     const [clientRows, contactRows, invoiceRows, projectRows, openQuotesCountRow, activityRows] =
       await Promise.all([
-      db
-        .select({
-          id: clients.id,
-          name: clients.name,
-          email: clients.email,
-          phone: clients.phone,
-          vatNumber: clients.vatNumber,
-          address: clients.address,
-          city: clients.city,
-          status: clients.status,
-          createdAt: clients.createdAt,
-          assignedFirstName: users.firstName,
-          assignedLastName: users.lastName,
-        })
-        .from(clients)
-        .leftJoin(users, eq(clients.assignedUserId, users.id))
-        .where(and(eq(clients.id, id), eq(clients.companyId, companyId), isNull(clients.deletedAt)))
-        .limit(1),
-
-      db
-        .select({
-          firstName: clientContacts.firstName,
-          lastName: clientContacts.lastName,
-          isPrimary: clientContacts.isPrimary,
-        })
-        .from(clientContacts)
-        .where(eq(clientContacts.clientId, id))
-        .orderBy(desc(clientContacts.isPrimary))
-        .limit(5),
-
-      db
-        .select({
-          id: invoices.id,
-          invoiceNumber: invoices.invoiceNumber,
-          total: invoices.total,
-          status: invoices.status,
-          projectId: invoices.projectId,
-        })
-        .from(invoices)
-        .where(
-          and(
-            eq(invoices.clientId, id),
-            eq(invoices.companyId, companyId),
-            isNull(invoices.deletedAt)
+        db
+          .select({
+            id: clients.id,
+            name: clients.name,
+            email: clients.email,
+            phone: clients.phone,
+            vatNumber: clients.vatNumber,
+            address: clients.address,
+            city: clients.city,
+            status: clients.status,
+            createdAt: clients.createdAt,
+            assignedFirstName: users.firstName,
+            assignedLastName: users.lastName,
+          })
+          .from(clients)
+          .leftJoin(users, eq(clients.assignedUserId, users.id))
+          .where(
+            and(eq(clients.id, id), eq(clients.companyId, companyId), isNull(clients.deletedAt))
           )
-        )
-        .orderBy(desc(invoices.createdAt))
-        .limit(20),
+          .limit(1),
 
-      db
-        .select({
-          id: projects.id,
-          name: projects.name,
-          status: projects.status,
-          budget: projects.budget,
-          dueDate: projects.dueDate,
-          metadata: projects.metadata,
-        })
-        .from(projects)
-        .where(
-          and(
-            eq(projects.clientId, id),
-            eq(projects.companyId, companyId),
-            isNull(projects.deletedAt)
-          )
-        )
-        .orderBy(desc(projects.createdAt))
-        .limit(20),
+        db
+          .select({
+            firstName: clientContacts.firstName,
+            lastName: clientContacts.lastName,
+            isPrimary: clientContacts.isPrimary,
+          })
+          .from(clientContacts)
+          .where(eq(clientContacts.clientId, id))
+          .orderBy(desc(clientContacts.isPrimary))
+          .limit(5),
 
-      db
-        .select({ cnt: count() })
-        .from(invoices)
-        .where(
-          and(
-            eq(invoices.clientId, id),
-            eq(invoices.companyId, companyId),
-            inArray(invoices.status, ["draft", "sent"]),
-            isNull(invoices.deletedAt)
+        db
+          .select({
+            id: invoices.id,
+            invoiceNumber: invoices.invoiceNumber,
+            total: invoices.total,
+            status: invoices.status,
+            projectId: invoices.projectId,
+          })
+          .from(invoices)
+          .where(
+            and(
+              eq(invoices.clientId, id),
+              eq(invoices.companyId, companyId),
+              isNull(invoices.deletedAt)
+            )
           )
-        ),
+          .orderBy(desc(invoices.createdAt))
+          .limit(20),
 
-      db
-        .select({ id: auditLogs.id, action: auditLogs.action, createdAt: auditLogs.createdAt })
-        .from(auditLogs)
-        .where(
-          and(
-            eq(auditLogs.companyId, companyId),
-            eq(auditLogs.entityId, id),
-            eq(auditLogs.entityType, "client")
+        db
+          .select({
+            id: projects.id,
+            name: projects.name,
+            status: projects.status,
+            budget: projects.budget,
+            dueDate: projects.dueDate,
+            metadata: projects.metadata,
+          })
+          .from(projects)
+          .where(
+            and(
+              eq(projects.clientId, id),
+              eq(projects.companyId, companyId),
+              isNull(projects.deletedAt)
+            )
           )
-        )
-        .orderBy(desc(auditLogs.createdAt))
-        .limit(10),
-    ])
+          .orderBy(desc(projects.createdAt))
+          .limit(20),
+
+        db
+          .select({ cnt: count() })
+          .from(invoices)
+          .where(
+            and(
+              eq(invoices.clientId, id),
+              eq(invoices.companyId, companyId),
+              inArray(invoices.status, ["draft", "sent"]),
+              isNull(invoices.deletedAt)
+            )
+          ),
+
+        db
+          .select({ id: auditLogs.id, action: auditLogs.action, createdAt: auditLogs.createdAt })
+          .from(auditLogs)
+          .where(
+            and(
+              eq(auditLogs.companyId, companyId),
+              eq(auditLogs.entityId, id),
+              eq(auditLogs.entityType, "client")
+            )
+          )
+          .orderBy(desc(auditLogs.createdAt))
+          .limit(10),
+      ])
 
     const row = clientRows[0]
     if (!row) return NextResponse.json({ error: "Not found" }, { status: 404 })
@@ -244,7 +246,10 @@ export const GET = withGates(
     const spentByProject = new Map<string, number>()
     for (const inv of invoiceRows) {
       if (inv.projectId && inv.status !== "cancelled" && inv.status !== "refunded") {
-        spentByProject.set(inv.projectId, (spentByProject.get(inv.projectId) ?? 0) + Number(inv.total))
+        spentByProject.set(
+          inv.projectId,
+          (spentByProject.get(inv.projectId) ?? 0) + Number(inv.total)
+        )
       }
     }
     const openQuotesCount = openQuotesCountRow[0]?.cnt ?? 0
@@ -359,7 +364,10 @@ export const PATCH = withGates(
 
     const parsed = patchClientSchema.safeParse(body)
     if (!parsed.success) {
-      return NextResponse.json({ error: "Invalid payload", issues: parsed.error.issues }, { status: 422 })
+      return NextResponse.json(
+        { error: "Invalid payload", issues: parsed.error.issues },
+        { status: 422 }
+      )
     }
 
     const [updated] = await db
@@ -404,7 +412,12 @@ export const DELETE = withGates(
 
     await db
       .update(clients)
-      .set({ isActive: false, deletedAt: new Date(), status: "archived" as const, updatedAt: new Date() })
+      .set({
+        isActive: false,
+        deletedAt: new Date(),
+        status: "archived" as const,
+        updatedAt: new Date(),
+      })
       .where(and(eq(clients.id, id), eq(clients.companyId, companyId)))
 
     void writeAuditLog({

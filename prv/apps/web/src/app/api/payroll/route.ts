@@ -64,7 +64,7 @@ function buildSubtitle(run: {
     const dt = new Date(d + "T12:00:00Z")
     return `${dt.getUTCDate()} ${MONTH_LABELS[dt.getUTCMonth()]}`
   }
-  return `${run.employeeCount} angajați · ${fmt(run.periodStart)}–${fmt(run.periodEnd)}`
+  return `${run.employeeCount} employees · ${fmt(run.periodStart)}–${fmt(run.periodEnd)}`
 }
 
 function buildPeriod(periodStart: string, periodEnd: string): string {
@@ -99,66 +99,64 @@ export const GET = withGates(
     // 1. Fetch runs + active employee count + month totals + all-runs meta in parallel
     const [rows, [employeeRow], [thisMonthPayRow], [lastMonthPayRow], allRunsMeta] =
       await Promise.all([
-      db
-        .select({
-          id: payrollRuns.id,
-          ref: payrollRuns.ref,
-          title: payrollRuns.title,
-          periodStart: payrollRuns.periodStart,
-          periodEnd: payrollRuns.periodEnd,
-          employeeCount: payrollRuns.employeeCount,
-          totalGross: payrollRuns.totalGross,
-          netPaid: payrollRuns.netPaid,
-          status: payrollRuns.status,
-          type: payrollRuns.type,
-          createdAt: payrollRuns.createdAt,
-        })
-        .from(payrollRuns)
-        .where(whereClause)
-        .orderBy(desc(payrollRuns.createdAt))
-        .limit(limit + 1),
+        db
+          .select({
+            id: payrollRuns.id,
+            ref: payrollRuns.ref,
+            title: payrollRuns.title,
+            periodStart: payrollRuns.periodStart,
+            periodEnd: payrollRuns.periodEnd,
+            employeeCount: payrollRuns.employeeCount,
+            totalGross: payrollRuns.totalGross,
+            netPaid: payrollRuns.netPaid,
+            status: payrollRuns.status,
+            type: payrollRuns.type,
+            createdAt: payrollRuns.createdAt,
+          })
+          .from(payrollRuns)
+          .where(whereClause)
+          .orderBy(desc(payrollRuns.createdAt))
+          .limit(limit + 1),
 
-      db
-        .select({ cnt: count() })
-        .from(users)
-        .where(and(eq(users.companyId, companyId), eq(users.isActive, true))),
+        db
+          .select({ cnt: count() })
+          .from(users)
+          .where(and(eq(users.companyId, companyId), eq(users.isActive, true))),
 
-      db
-        .select({ total: sum(payrollRuns.totalGross) })
-        .from(payrollRuns)
-        .where(
-          and(
-            eq(payrollRuns.companyId, companyId),
-            eq(payrollRuns.status, "done"),
-            gte(payrollRuns.periodEnd, thisMonthStartStr),
-            lte(payrollRuns.periodEnd, todayStr)
-          )
-        ),
+        db
+          .select({ total: sum(payrollRuns.totalGross) })
+          .from(payrollRuns)
+          .where(
+            and(
+              eq(payrollRuns.companyId, companyId),
+              eq(payrollRuns.status, "done"),
+              gte(payrollRuns.periodEnd, thisMonthStartStr),
+              lte(payrollRuns.periodEnd, todayStr)
+            )
+          ),
 
-      db
-        .select({ total: sum(payrollRuns.totalGross) })
-        .from(payrollRuns)
-        .where(
-          and(
-            eq(payrollRuns.companyId, companyId),
-            eq(payrollRuns.status, "done"),
-            gte(payrollRuns.periodEnd, lastMonthStartStr),
-            lt(payrollRuns.periodEnd, thisMonthStartStr)
-          )
-        ),
+        db
+          .select({ total: sum(payrollRuns.totalGross) })
+          .from(payrollRuns)
+          .where(
+            and(
+              eq(payrollRuns.companyId, companyId),
+              eq(payrollRuns.status, "done"),
+              gte(payrollRuns.periodEnd, lastMonthStartStr),
+              lt(payrollRuns.periodEnd, thisMonthStartStr)
+            )
+          ),
 
-      db
-        .select({ status: payrollRuns.status, totalGross: payrollRuns.totalGross })
-        .from(payrollRuns)
-        .where(eq(payrollRuns.companyId, companyId)),
-    ])
+        db
+          .select({ status: payrollRuns.status, totalGross: payrollRuns.totalGross })
+          .from(payrollRuns)
+          .where(eq(payrollRuns.companyId, companyId)),
+      ])
 
     const hasMore = rows.length > limit
     const pageRows = hasMore ? rows.slice(0, limit) : rows
     const nextCursor =
-      hasMore && pageRows.length > 0
-        ? pageRows[pageRows.length - 1]!.createdAt.toISOString()
-        : null
+      hasMore && pageRows.length > 0 ? pageRows[pageRows.length - 1]!.createdAt.toISOString() : null
 
     const result: PayrollRun[] = pageRows.map((r) => ({
       id: r.id,

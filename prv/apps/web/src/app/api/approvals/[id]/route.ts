@@ -132,7 +132,7 @@ export const GET = withGates(
       {
         id: "c1",
         name: requestedBy,
-        role: `Solicitant · Creat ${fmtShort(row.createdAt)}`,
+        role: `Requester · Created ${fmtShort(row.createdAt)}`,
         status: "done",
         timestamp: fmtShort(row.createdAt),
       },
@@ -141,7 +141,7 @@ export const GET = withGates(
         name: row.approverFirstName
           ? `${row.approverFirstName} ${row.approverLastName}`
           : "Manager",
-        role: `Nivel 1 · Termen: ${fmtDate(row.deadline)}`,
+        role: `Level 1 · Deadline: ${fmtDate(row.deadline)}`,
         status: row.resolvedAt ? "done" : "current",
         timestamp: row.resolvedAt ? fmtShort(row.resolvedAt) : null,
       },
@@ -152,16 +152,16 @@ export const GET = withGates(
         id: "ac1",
         authorInitials: initials,
         authorName: requestedBy,
-        text: row.description ?? "Cerere înaintată spre aprobare.",
-        timestamp: `${fmtShort(row.createdAt)} · ${row.createdAt.toLocaleTimeString("ro-RO", { hour: "2-digit", minute: "2-digit" })}`,
+        text: row.description ?? "Request submitted for approval.",
+        timestamp: `${fmtShort(row.createdAt)} · ${row.createdAt.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}`,
         isSystem: false,
       },
       {
         id: "ac2",
         authorInitials: "SY",
         authorName: "System",
-        text: "Cerere trimisă spre aprobare",
-        timestamp: `${fmtShort(row.createdAt)} · ${row.createdAt.toLocaleTimeString("ro-RO", { hour: "2-digit", minute: "2-digit" })}`,
+        text: "Request sent for approval",
+        timestamp: `${fmtShort(row.createdAt)} · ${row.createdAt.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}`,
         isSystem: true,
       },
     ]

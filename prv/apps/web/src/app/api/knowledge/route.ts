@@ -41,18 +41,18 @@ export interface KnowledgeMeta {
 
 const TYPE_LABELS: Record<ArticleType, string> = {
   sop: "SOP",
-  policy: "Politică",
-  guide: "Ghid",
+  policy: "Policy",
+  guide: "Guide",
   faq: "FAQ",
 }
 
 const CATEGORY_LABELS: Record<ArticleCategory, string> = {
-  operations: "Operațiuni",
+  operations: "Operations",
   hr: "HR",
-  finance: "Finanțe",
-  procurement: "Procurare",
-  fleet: "Flotă",
-  projects: "Proiecte",
+  finance: "Finance",
+  procurement: "Procurement",
+  fleet: "Fleet",
+  projects: "Projects",
 }
 
 const MONTH_LABELS = [
@@ -106,7 +106,13 @@ export const GET = withGates(
         })
         .from(knowledgeArticles)
         .leftJoin(users, eq(knowledgeArticles.authorUserId, users.id))
-        .where(and(eq(knowledgeArticles.companyId, companyId), isNull(knowledgeArticles.deletedAt), cursor ? gt(knowledgeArticles.id, cursor) : undefined))
+        .where(
+          and(
+            eq(knowledgeArticles.companyId, companyId),
+            isNull(knowledgeArticles.deletedAt),
+            cursor ? gt(knowledgeArticles.id, cursor) : undefined
+          )
+        )
         .orderBy(desc(knowledgeArticles.isPinned), desc(knowledgeArticles.updatedAt))
         .limit(LIMIT + 1),
 
@@ -191,7 +197,10 @@ export const POST = withGates(
 
     const parsed = createArticleSchema.safeParse(body)
     if (!parsed.success) {
-      return NextResponse.json({ error: "Invalid payload", issues: parsed.error.issues }, { status: 422 })
+      return NextResponse.json(
+        { error: "Invalid payload", issues: parsed.error.issues },
+        { status: 422 }
+      )
     }
 
     const [record] = await db

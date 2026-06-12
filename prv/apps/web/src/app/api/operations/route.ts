@@ -76,11 +76,11 @@ function dbOrderStatusToApi(dbStatus: string): OrderStatus {
 
 function relativeTime(date: Date): string {
   const diffMin = Math.floor((Date.now() - date.getTime()) / 60_000)
-  if (diffMin < 1) return "acum"
-  if (diffMin < 60) return `acum ${diffMin} min`
+  if (diffMin < 1) return "just now"
+  if (diffMin < 60) return `${diffMin} min ago`
   const h = Math.floor(diffMin / 60)
-  if (h < 24) return `acum ${h}h`
-  return `acum ${Math.floor(h / 24)}z`
+  if (h < 24) return `${h}h ago`
+  return `${Math.floor(h / 24)}d`
 }
 
 // ── GET ───────────────────────────────────────────────────────────────────────

@@ -150,7 +150,7 @@ export const GET = withGates(
     if (row.lastServiceAt) {
       maintenance.push({
         id: "m1",
-        label: "Ultima revizie",
+        label: "Last service",
         detail: fmtDate(row.lastServiceAt),
         status: "Done",
       })
@@ -159,8 +159,8 @@ export const GET = withGates(
       const expired = row.warrantyExpiresAt < new Date()
       maintenance.push({
         id: "m2",
-        label: "Garanție",
-        detail: `${expired ? "Expirată" : "Valabilă"} · ${fmtDate(row.warrantyExpiresAt)}`,
+        label: "Warranty",
+        detail: `${expired ? "Expired" : "Valid"} · ${fmtDate(row.warrantyExpiresAt)}`,
         status: expired ? "Overdue" : "Due Soon",
       })
     }
