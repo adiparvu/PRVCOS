@@ -14,6 +14,42 @@ import { relations } from "drizzle-orm"
 import { companies } from "./companies"
 import { users } from "./users"
 
+// ─── Push Tokens ─────────────────────────────────────────────────────────────
+// Stores Expo push tokens per user/device. One user may have multiple devices.
+
+export const pushTokens = pgTable(
+  "push_tokens",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id, { onDelete: "cascade" }),
+
+    // Expo push token — format: ExponentPushToken[xxxxxx]
+    token: varchar("token", { length: 200 }).notNull(),
+
+    // Device identifier for deduplication (Expo device ID)
+    deviceId: varchar("device_id", { length: 200 }).notNull(),
+
+    // Platform for analytics/debugging
+    platform: varchar("platform", { length: 10 }).notNull().default("unknown"),
+
+    isActive: boolean("is_active").notNull().default(true),
+    lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    // One active token per device
+    unique("push_tokens_device_unique").on(table.deviceId),
+    index("push_tokens_user_id_idx").on(table.userId),
+    index("push_tokens_company_id_idx").on(table.companyId),
+    index("push_tokens_is_active_idx").on(table.isActive),
+  ]
+)
+
 export const notificationTypeEnum = pgEnum("notification_type", [
   "info",
   "warning",
@@ -118,4 +154,9 @@ export const notificationPreferencesRelations = relations(notificationPreference
     fields: [notificationPreferences.companyId],
     references: [companies.id],
   }),
+}))
+
+export const pushTokensRelations = relations(pushTokens, ({ one }) => ({
+  user: one(users, { fields: [pushTokens.userId], references: [users.id] }),
+  company: one(companies, { fields: [pushTokens.companyId], references: [companies.id] }),
 }))

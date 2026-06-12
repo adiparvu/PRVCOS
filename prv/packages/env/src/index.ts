@@ -42,6 +42,9 @@ export const serverEnvSchema = sharedSchema.extend({
   // AI
   ANTHROPIC_API_KEY: z.string().startsWith("sk-ant-"),
 
+  // Push Notifications (Expo Enhanced Push — optional)
+  EXPO_ACCESS_TOKEN: z.string().optional(),
+
   // Monitoring
   SENTRY_DSN: z.string().url().optional(),
   SENTRY_AUTH_TOKEN: z.string().optional(),

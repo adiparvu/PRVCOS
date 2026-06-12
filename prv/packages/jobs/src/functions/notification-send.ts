@@ -1,4 +1,5 @@
 import { inngest } from "../client"
+import { sendExpoPushNotifications, isExpoToken } from "../lib/expo-push"
 
 export const notificationSendFunction = inngest.createFunction(
   {
@@ -39,10 +40,10 @@ export const notificationSendFunction = inngest.createFunction(
       return { notificationId: row!.id }
     })
 
-    // Step 2: load user prefs + email address in one step
+    // Step 2: load user prefs + email address + active push tokens
     const prefs = await step.run("resolve-preferences", async () => {
       const { db } = await import("@prv/db")
-      const { notificationPreferences, users } = await import("@prv/db/schema")
+      const { notificationPreferences, users, pushTokens } = await import("@prv/db/schema")
       const { eq, and } = await import("drizzle-orm")
 
       const [pref] = await db
@@ -62,11 +63,17 @@ export const notificationSendFunction = inngest.createFunction(
         .where(eq(users.id, userId))
         .limit(1)
 
+      const tokens = await db
+        .select({ token: pushTokens.token })
+        .from(pushTokens)
+        .where(and(eq(pushTokens.userId, userId), eq(pushTokens.isActive, true)))
+
       return {
         email: pref?.email ?? true,
         push: pref?.push ?? true,
         userEmail: user?.email,
         firstName: user?.firstName,
+        pushTokenList: tokens.map((t) => t.token).filter(isExpoToken),
       }
     })
 
@@ -98,11 +105,65 @@ export const notificationSendFunction = inngest.createFunction(
       })
     }
 
-    // Step 4: push channel (provider not yet configured — stub)
-    if (prefs.push) {
-      await step.run("send-push", async () => {
-        return { skipped: true, reason: "no push provider configured" }
+    // Step 4: push channel via Expo Push API
+    let pushSent = false
+    let pushDeregisteredCount = 0
+
+    if (prefs.push && prefs.pushTokenList.length > 0) {
+      const pushResult = await step.run("send-push", async () => {
+        const accessToken = process.env["EXPO_ACCESS_TOKEN"]
+        const title = (variables["title"] as string | undefined) ?? templateId
+        const body = variables["body"] as string | undefined
+
+        const tickets = await sendExpoPushNotifications(
+          prefs.pushTokenList.map((token) => ({
+            to: token,
+            title,
+            body,
+            sound: "default" as const,
+            priority: "high" as const,
+            data: {
+              type,
+              entityType: variables["entityType"],
+              entityId: variables["entityId"],
+              actionUrl: variables["actionUrl"],
+              notificationId: inserted.notificationId,
+            },
+          })),
+          accessToken
+        )
+
+        const staleTokens: string[] = []
+        tickets.forEach((ticket, idx) => {
+          if (ticket.status === "error" && ticket.details?.error === "DeviceNotRegistered") {
+            const token = prefs.pushTokenList[idx]
+            if (token) staleTokens.push(token)
+          }
+        })
+
+        return {
+          sent: tickets.some((t) => t.status === "ok"),
+          staleTokens,
+        }
       })
+
+      pushSent = pushResult.sent
+
+      if (pushResult.staleTokens.length > 0) {
+        await step.run("deactivate-stale-tokens", async () => {
+          const { db } = await import("@prv/db")
+          const { pushTokens } = await import("@prv/db/schema")
+          const { inArray } = await import("drizzle-orm")
+
+          await db
+            .update(pushTokens)
+            .set({ isActive: false })
+            .where(inArray(pushTokens.token, pushResult.staleTokens))
+
+          return { deactivated: pushResult.staleTokens.length }
+        })
+        pushDeregisteredCount = pushResult.staleTokens.length
+      }
     }
 
     return {
@@ -112,7 +173,9 @@ export const notificationSendFunction = inngest.createFunction(
       channels: {
         inApp: true,
         email: !!(prefs.email && prefs.userEmail),
-        push: false, // always false until push provider is wired
+        push: pushSent,
+        pushTokenCount: prefs.pushTokenList.length,
+        pushDeregistered: pushDeregisteredCount,
       },
     }
   }
