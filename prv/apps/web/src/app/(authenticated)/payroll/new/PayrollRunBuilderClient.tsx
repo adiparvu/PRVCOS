@@ -71,8 +71,8 @@ const EMPLOYEES: PayrollEmployee[] = [
 ]
 
 const RUN_TYPES: { value: RunType; label: string }[] = [
-  { value: "weekly", label: "Săptămânal" },
-  { value: "monthly", label: "Lunar" },
+  { value: "weekly", label: "Weekly" },
+  { value: "monthly", label: "Monthly" },
   { value: "special", label: "Special" },
 ]
 
@@ -161,12 +161,12 @@ export function PayrollRunBuilderClient() {
           </svg>
         </div>
         <p className="text-[20px] font-bold text-white/90 mb-1">
-          {saved === "draft" ? "Rulare salvată ca ciornă" : "Rulare lansată cu succes"}
+          {saved === "draft" ? "Payroll run saved as draft" : "Payroll run launched"}
         </p>
         <p className="text-[13px] text-white/40 mb-6">
           {saved === "draft"
-            ? "O poți lansa oricând din lista de rulări."
-            : "142 angajați vor fi procesați."}
+            ? "You can launch it anytime from payroll runs."
+            : "142 employees will be processed."}
         </p>
         <div className="flex gap-3">
           <Link
@@ -179,7 +179,7 @@ export function PayrollRunBuilderClient() {
               textDecoration: "none",
             }}
           >
-            Înapoi la Payroll
+            View payroll
           </Link>
           <button
             onClick={() => setSaved(null)}
@@ -190,7 +190,7 @@ export function PayrollRunBuilderClient() {
               color: green,
             }}
           >
-            Rulare nouă
+            + New run
           </button>
         </div>
       </div>
@@ -221,20 +221,20 @@ export function PayrollRunBuilderClient() {
             Payroll
           </Link>
           <h1 className="text-white/90 text-[26px] font-semibold tracking-tight leading-tight">
-            Rulare Nouă
+            New Payroll Run
           </h1>
         </div>
         <div
           className="px-3 py-1.5 rounded-[10px] text-[12px] font-semibold text-white/45"
           style={{ background: g1, border: `1px solid ${bds}` }}
         >
-          142 angajați
+          142 employees
         </div>
       </div>
 
       {/* Run type segmented control */}
       <p className="text-[11px] font-semibold text-white/35 uppercase tracking-widest mx-1 mb-2.5">
-        Tip Rulare
+        Run Type
       </p>
       <div
         className="flex gap-1 p-1 rounded-[14px] mb-4"
@@ -258,7 +258,7 @@ export function PayrollRunBuilderClient() {
 
       {/* Period */}
       <p className="text-[11px] font-semibold text-white/35 uppercase tracking-widest mx-1 mb-2.5">
-        Perioadă
+        Period
       </p>
       <div
         className="rounded-[18px] p-4 mb-4 grid grid-cols-2 gap-3"
@@ -266,7 +266,7 @@ export function PayrollRunBuilderClient() {
       >
         <div>
           <p className="text-[11px] text-white/35 font-semibold uppercase tracking-wider mb-1.5">
-            De la
+            From
           </p>
           <GlassInput
             type="date"
@@ -276,7 +276,7 @@ export function PayrollRunBuilderClient() {
         </div>
         <div>
           <p className="text-[11px] text-white/35 font-semibold uppercase tracking-wider mb-1.5">
-            Până la
+            Until
           </p>
           <GlassInput type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
         </div>
@@ -284,7 +284,7 @@ export function PayrollRunBuilderClient() {
 
       {/* Employee preview */}
       <p className="text-[11px] font-semibold text-white/35 uppercase tracking-widest mx-1 mb-2.5">
-        Angajați (142)
+        Employees (142)
       </p>
       <div
         className="rounded-[18px] overflow-hidden mb-4"
@@ -314,19 +314,19 @@ export function PayrollRunBuilderClient() {
                 <p className="text-[13px] font-bold" style={{ color: green }}>
                   {fmt(net)}
                 </p>
-                <p className="text-[11px] text-white/35">Brut {fmt(emp.weeklyGross)}</p>
+                <p className="text-[11px] text-white/35">Gross {fmt(emp.weeklyGross)}</p>
               </div>
             </div>
           )
         })}
         <div className="px-4 py-3 text-center">
-          <span className="text-[12px] text-white/30">+136 angajați</span>
+          <span className="text-[12px] text-white/30">+136 employees</span>
         </div>
       </div>
 
       {/* Financial summary */}
       <p className="text-[11px] font-semibold text-white/35 uppercase tracking-widest mx-1 mb-2.5">
-        Rezumat Financiar
+        Financial Summary
       </p>
       <div
         className="rounded-[18px] overflow-hidden mb-4"
@@ -334,22 +334,27 @@ export function PayrollRunBuilderClient() {
       >
         {[
           {
-            label: "Salariu brut total",
+            label: "Total gross salary",
             value: fmt(totalGross),
-            sub: "142 angajați",
+            sub: "142 employees",
             color: "var(--prv-text-1)",
           },
-          { label: "CAS angajați (25%)", value: `−${fmt(totalCAS)}`, sub: "Pensie", color: red },
           {
-            label: "CASS angajați (10%)",
-            value: `−${fmt(totalCASS)}`,
-            sub: "Sănătate",
+            label: "Employee pension (25%)",
+            value: `−${fmt(totalCAS)}`,
+            sub: "Pension",
             color: red,
           },
           {
-            label: "Impozit venit (10%)",
+            label: "Employee health (10%)",
+            value: `−${fmt(totalCASS)}`,
+            sub: "Health",
+            color: red,
+          },
+          {
+            label: "Income tax (10%)",
             value: `−${fmt(totalTax)}`,
-            sub: "Reținut la sursă",
+            sub: "Withheld at source",
             color: red,
           },
         ].map((row) => (
@@ -374,8 +379,8 @@ export function PayrollRunBuilderClient() {
           style={{ borderBottom: `1px solid ${bds}`, background: "rgba(48,209,88,0.04)" }}
         >
           <div>
-            <p className="text-[14px] font-bold text-white/90">Net angajați</p>
-            <p className="text-[11px] text-white/35">Plată netă totală</p>
+            <p className="text-[14px] font-bold text-white/90">Net to employees</p>
+            <p className="text-[11px] text-white/35">Total net pay</p>
           </div>
           <span className="text-[17px] font-bold" style={{ color: green }}>
             {fmt(totalNet)}
@@ -388,8 +393,8 @@ export function PayrollRunBuilderClient() {
           style={{ borderBottom: `1px solid ${bds}` }}
         >
           <div>
-            <p className="text-[13px] text-white/65">Contribuție angajator (CAM 2.25%)</p>
-            <p className="text-[11px] text-white/30">Asigurare accidente muncă</p>
+            <p className="text-[13px] text-white/65">Employer contribution (CAM 2.25%)</p>
+            <p className="text-[11px] text-white/30">Work accident insurance</p>
           </div>
           <span className="text-[14px] font-bold" style={{ color: red }}>
             +{fmt(totalCAM)}
@@ -399,8 +404,8 @@ export function PayrollRunBuilderClient() {
         {/* Total employer cost */}
         <div className="flex items-center justify-between px-4 py-4">
           <div>
-            <p className="text-[14px] font-bold text-white/90">Cost total angajator</p>
-            <p className="text-[11px] text-white/35">Inclusiv contribuții</p>
+            <p className="text-[14px] font-bold text-white/90">Total employer cost</p>
+            <p className="text-[11px] text-white/35">Including contributions</p>
           </div>
           <span className="text-[18px] font-bold text-white/90">{fmt(totalEmployerCost)}</span>
         </div>
@@ -408,13 +413,13 @@ export function PayrollRunBuilderClient() {
 
       {/* Notes */}
       <p className="text-[11px] font-semibold text-white/35 uppercase tracking-widest mx-1 mb-2.5">
-        Notă
+        Notes
       </p>
       <div className="mb-5">
         <GlassInput
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          placeholder="Notă internă pentru această rulare (opțional)..."
+          placeholder="Internal note for this run (optional)..."
           className="w-full"
         />
       </div>
@@ -427,7 +432,7 @@ export function PayrollRunBuilderClient() {
           className="flex-1 py-3.5 rounded-[14px] text-[14px] font-semibold"
           style={{ background: g2, border: `1px solid ${bds}`, color: t2 }}
         >
-          Salvează ciornă
+          Save draft
         </button>
         <button
           onClick={() => handleSubmit("launched")}
@@ -435,7 +440,7 @@ export function PayrollRunBuilderClient() {
           className="flex-1 py-3.5 rounded-[14px] text-[14px] font-bold"
           style={{ background: "rgba(255,255,255,0.92)", color: "#000" }}
         >
-          {isSubmitting ? "Se procesează..." : "Lansează rulare"}
+          {isSubmitting ? "Processing..." : "Launch run"}
         </button>
       </div>
     </div>
