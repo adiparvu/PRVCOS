@@ -59,6 +59,21 @@ export const shopOrderProcessFunction = inngest.createFunction(
 
     if (!orderData.found) return { skipped: true, reason: "order not found" }
 
+    // After the guard above, orderData has the full shape — cast through unknown to concrete type
+    const od = orderData as unknown as {
+      found: true
+      order: {
+        id: string
+        orderNumber: string
+        status: string
+        total: string
+        clientId: string | null
+      }
+      items: { name: string; quantity: number; unitPrice: string }[]
+      clientEmail: string | null
+      clientName: string | null
+    }
+
     // Step 2: deduct stock when order is confirmed
     if (toStatus === "confirmed") {
       await step.run("deduct-stock", async () => {
@@ -96,7 +111,7 @@ export const shopOrderProcessFunction = inngest.createFunction(
 
     // Step 3: send customer notification for key transitions
     const notifyOn = ["confirmed", "shipped", "delivered", "cancelled"]
-    if (notifyOn.includes(toStatus) && orderData.clientEmail) {
+    if (notifyOn.includes(toStatus) && od.clientEmail) {
       await step.run("notify-customer", async () => {
         const { sendEmail, EmailFrom } = await import("@prv/email")
 
@@ -114,17 +129,17 @@ export const shopOrderProcessFunction = inngest.createFunction(
         }
 
         await sendEmail({
-          to: orderData.clientEmail!,
+          to: od.clientEmail!,
           from: EmailFrom.NOTIFICATIONS,
           subject: subjectMap[toStatus] ?? `Order ${orderNumber} update`,
-          html: `<p>Hi ${orderData.clientName ?? "there"},</p><p>${bodyMap[toStatus] ?? ""}</p>`,
+          html: `<p>Hi ${od.clientName ?? "there"},</p><p>${bodyMap[toStatus] ?? ""}</p>`,
           tags: [
             { name: "type", value: "order_status" },
             { name: "status", value: toStatus },
           ],
         })
 
-        return { sent: true, to: orderData.clientEmail }
+        return { sent: true, to: od.clientEmail }
       })
     }
 
@@ -134,7 +149,7 @@ export const shopOrderProcessFunction = inngest.createFunction(
       fromStatus,
       toStatus,
       stockDeducted: toStatus === "confirmed",
-      customerNotified: notifyOn.includes(toStatus) && !!orderData.clientEmail,
+      customerNotified: notifyOn.includes(toStatus) && !!od.clientEmail,
     }
   }
 )

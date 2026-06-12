@@ -75,6 +75,8 @@ type FilterId = "all" | OrderStatus
 
 const FILTERS: { id: FilterId; label: string }[] = [
   { id: "all", label: "Toate" },
+  { id: "pending", label: "Nou" },
+  { id: "confirmed", label: "Confirmat" },
   { id: "processing", label: "În procesare" },
   { id: "shipped", label: "Expediat" },
   { id: "delivered", label: "Livrat" },
@@ -109,11 +111,23 @@ const STATUS_CONFIG: Record<
     bg: "rgba(80,255,140,0.10)",
     border: "rgba(80,255,140,0.20)",
   },
+  confirmed: {
+    label: "Confirmat",
+    color: "#7eb8ff",
+    bg: "rgba(100,160,255,0.12)",
+    border: "rgba(100,160,255,0.24)",
+  },
   cancelled: {
     label: "Anulat",
     color: "rgba(255,255,255,0.30)",
     bg: "rgba(255,255,255,0.05)",
     border: "rgba(255,255,255,0.10)",
+  },
+  refunded: {
+    label: "Rambursat",
+    color: "rgba(255,255,255,0.45)",
+    bg: "rgba(255,255,255,0.06)",
+    border: "rgba(255,255,255,0.12)",
   },
 }
 

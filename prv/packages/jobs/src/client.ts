@@ -41,6 +41,24 @@ export type PRVEvents = {
   "prv/approval.deadline": {
     data: { approvalId: string; companyId: string; deadline: string }
   }
+  "prv/shop.order.status_changed": {
+    data: {
+      orderId: string
+      companyId: string
+      orderNumber: string
+      fromStatus: string
+      toStatus: string
+    }
+  }
+  "prv/shop.stock.low": {
+    data: {
+      companyId: string
+      productId: string
+      productName: string
+      stockQuantity: number
+      stockMinimum: number
+    }
+  }
 }
 
 export const inngest = new Inngest({

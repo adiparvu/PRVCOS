@@ -10,7 +10,14 @@ import { appendRealtimeEvent, realtimeChannel, REALTIME_EVENT } from "@prv/cache
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
 
-export type OrderStatus = "pending" | "processing" | "shipped" | "delivered" | "cancelled"
+export type OrderStatus =
+  | "pending"
+  | "confirmed"
+  | "processing"
+  | "shipped"
+  | "delivered"
+  | "cancelled"
+  | "refunded"
 
 export interface OrderLineItem {
   productId: string
@@ -36,12 +43,12 @@ export interface Order {
 
 const DB_STATUS_MAP: Record<string, OrderStatus> = {
   pending: "pending",
-  confirmed: "processing",
+  confirmed: "confirmed",
   processing: "processing",
   shipped: "shipped",
   delivered: "delivered",
   cancelled: "cancelled",
-  refunded: "cancelled",
+  refunded: "refunded",
 }
 
 export const GET = withGates(

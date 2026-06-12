@@ -38,16 +38,29 @@ const STATUS_CONFIG: Record<
     bg: "rgba(80,255,140,0.10)",
     border: "rgba(80,255,140,0.20)",
   },
+  confirmed: {
+    label: "Confirmat",
+    color: "#7eb8ff",
+    bg: "rgba(100,160,255,0.12)",
+    border: "rgba(100,160,255,0.24)",
+  },
   cancelled: {
     label: "Anulat",
     color: "rgba(255,255,255,0.30)",
     bg: "rgba(255,255,255,0.05)",
     border: "rgba(255,255,255,0.10)",
   },
+  refunded: {
+    label: "Rambursat",
+    color: "rgba(255,255,255,0.45)",
+    bg: "rgba(255,255,255,0.06)",
+    border: "rgba(255,255,255,0.12)",
+  },
 }
 
 const NEXT_STATUS: Partial<Record<OrderStatus, { to: OrderStatus; label: string }>> = {
-  pending: { to: "processing", label: "Marchează În Procesare" },
+  pending: { to: "confirmed", label: "Confirmă Comanda" },
+  confirmed: { to: "processing", label: "Marchează În Procesare" },
   processing: { to: "shipped", label: "Marchează Expediat" },
   shipped: { to: "delivered", label: "Marchează Livrat" },
 }

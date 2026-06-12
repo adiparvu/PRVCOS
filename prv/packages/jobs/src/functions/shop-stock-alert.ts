@@ -24,7 +24,7 @@ export const shopStockAlertFunction = inngest.createFunction(
           and(
             eq(companyMemberships.companyId, companyId),
             eq(companyMemberships.status, "ACTIVE"),
-            inArray(companyMemberships.role, ["owner", "admin", "manager"])
+            inArray(companyMemberships.primaryRole, ["owner", "admin", "manager"])
           )
         )
         .limit(20)
