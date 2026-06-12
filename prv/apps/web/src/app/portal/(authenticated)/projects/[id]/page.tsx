@@ -1,7 +1,7 @@
 import { getPortalSession } from "@/lib/portal-auth"
 import { db } from "@prv/db"
-import { projects, invoices } from "@prv/db/schema"
-import { and, desc, eq, isNull } from "drizzle-orm"
+import { projects, invoices, projectMilestones } from "@prv/db/schema"
+import { and, asc, desc, eq, isNull } from "drizzle-orm"
 import { notFound, redirect } from "next/navigation"
 import Link from "next/link"
 import type { Metadata } from "next"
@@ -36,9 +36,21 @@ function statusLabel(s: string) {
 
 function invoiceStatusColor(s: string): string {
   if (s === "paid") return "rgba(140,255,140,0.75)"
-  if (s === "overdue") return "rgba(255,120,120,0.85)"
+  if (s === "overdue") return "rgba(255,100,100,0.90)"
   if (s === "sent") return "rgba(255,220,100,0.85)"
   return "rgba(255,255,255,0.35)"
+}
+
+function invoiceStatusLabel(s: string) {
+  const m: Record<string, string> = {
+    draft: "Draft",
+    sent: "Awaiting",
+    paid: "Paid",
+    overdue: "Overdue",
+    cancelled: "Cancelled",
+    refunded: "Refunded",
+  }
+  return m[s] ?? s
 }
 
 export default async function PortalProjectDetailPage({
@@ -74,39 +86,58 @@ export default async function PortalProjectDetailPage({
     )
     .limit(1)
 
-  // Guard: project must belong to this client
   if (!project || project.clientId !== session.clientId) notFound()
 
-  const projectInvoices = await db
-    .select({
-      id: invoices.id,
-      invoiceNumber: invoices.invoiceNumber,
-      status: invoices.status,
-      total: invoices.total,
-      currency: invoices.currency,
-      dueDate: invoices.dueDate,
-      issueDate: invoices.issueDate,
-    })
-    .from(invoices)
-    .where(
-      and(
-        eq(invoices.projectId, project.id),
-        eq(invoices.companyId, session.companyId),
-        isNull(invoices.deletedAt)
+  const [projectInvoices, milestones] = await Promise.all([
+    db
+      .select({
+        id: invoices.id,
+        invoiceNumber: invoices.invoiceNumber,
+        status: invoices.status,
+        total: invoices.total,
+        currency: invoices.currency,
+        dueDate: invoices.dueDate,
+        issueDate: invoices.issueDate,
+      })
+      .from(invoices)
+      .where(
+        and(
+          eq(invoices.projectId, project.id),
+          eq(invoices.companyId, session.companyId),
+          isNull(invoices.deletedAt)
+        )
       )
-    )
-    .orderBy(desc(invoices.issueDate))
+      .orderBy(desc(invoices.issueDate)),
 
+    db
+      .select({
+        id: projectMilestones.id,
+        title: projectMilestones.title,
+        description: projectMilestones.description,
+        dueDate: projectMilestones.dueDate,
+        completedAt: projectMilestones.completedAt,
+        isComplete: projectMilestones.isComplete,
+        sortOrder: projectMilestones.sortOrder,
+      })
+      .from(projectMilestones)
+      .where(eq(projectMilestones.projectId, project.id))
+      .orderBy(asc(projectMilestones.sortOrder)),
+  ])
+
+  // Compute progress from milestones when available, else fall back to status
+  const completedCount = milestones.filter((m) => m.isComplete).length
   const progress =
-    project.status === "completed"
-      ? 100
-      : project.status === "active"
-        ? 65
-        : project.status === "on_hold"
-          ? 40
-          : project.status === "draft"
-            ? 10
-            : 0
+    milestones.length > 0
+      ? Math.round((completedCount / milestones.length) * 100)
+      : project.status === "completed"
+        ? 100
+        : project.status === "active"
+          ? 65
+          : project.status === "on_hold"
+            ? 40
+            : project.status === "draft"
+              ? 10
+              : 0
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -150,7 +181,6 @@ export default async function PortalProjectDetailPage({
             {statusLabel(project.status)}
           </span>
         </div>
-
         {project.description && (
           <p className="mt-3 text-sm leading-relaxed text-white/50">{project.description}</p>
         )}
@@ -159,9 +189,13 @@ export default async function PortalProjectDetailPage({
       {/* Progress bar */}
       {project.status !== "cancelled" && project.status !== "archived" && (
         <GlassCard className="mb-4">
-          <div className="flex items-center justify-between mb-3">
+          <div className="mb-3 flex items-center justify-between">
             <span className="text-xs font-medium text-white/50">Progress</span>
-            <span className="text-sm font-semibold text-white/90">{progress}%</span>
+            <span className="text-sm font-semibold text-white/90">
+              {milestones.length > 0
+                ? `${completedCount} / ${milestones.length} milestones`
+                : `${progress}%`}
+            </span>
           </div>
           <div
             className="h-1.5 w-full overflow-hidden rounded-full"
@@ -200,10 +234,89 @@ export default async function PortalProjectDetailPage({
         )}
       </div>
 
+      {/* Milestones */}
+      {milestones.length > 0 && (
+        <div className="mt-6">
+          <p className="mb-2 px-1 text-[11px] font-medium uppercase tracking-wider text-white/35">
+            Milestones
+          </p>
+          <div
+            className="overflow-hidden rounded-[20px]"
+            style={{
+              background: "rgba(255,255,255,0.04)",
+              border: "1px solid rgba(255,255,255,0.10)",
+              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.06)",
+            }}
+          >
+            {milestones.map((m, i) => (
+              <div
+                key={m.id}
+                className="flex items-start gap-4 px-5 py-4"
+                style={{
+                  borderTop: i > 0 ? "1px solid rgba(255,255,255,0.07)" : undefined,
+                }}
+              >
+                {/* Check circle */}
+                <div className="mt-0.5 shrink-0">
+                  {m.isComplete ? (
+                    <div
+                      className="flex h-5 w-5 items-center justify-center rounded-full"
+                      style={{
+                        background: "rgba(140,255,140,0.15)",
+                        border: "1.5px solid rgba(140,255,140,0.60)",
+                      }}
+                    >
+                      <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
+                        <path
+                          d="M2 6l3 3 5-5"
+                          stroke="rgba(140,255,140,0.90)"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </div>
+                  ) : (
+                    <div
+                      className="h-5 w-5 rounded-full"
+                      style={{ border: "1.5px solid rgba(255,255,255,0.20)" }}
+                    />
+                  )}
+                </div>
+                <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                  <span
+                    className="text-sm font-medium"
+                    style={{
+                      color: m.isComplete ? "rgba(255,255,255,0.50)" : "rgba(255,255,255,0.90)",
+                      textDecoration: m.isComplete ? "line-through" : "none",
+                    }}
+                  >
+                    {m.title}
+                  </span>
+                  {m.description && (
+                    <span className="text-xs leading-relaxed text-white/35">{m.description}</span>
+                  )}
+                  {m.dueDate && !m.isComplete && (
+                    <span className="text-xs text-white/30">
+                      Due {new Date(m.dueDate).toLocaleDateString("ro-RO")}
+                    </span>
+                  )}
+                  {m.completedAt && (
+                    <span className="text-xs text-white/25">
+                      Completed {new Date(m.completedAt).toLocaleDateString("ro-RO")}
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Invoices */}
       {projectInvoices.length > 0 && (
         <div className="mt-6">
-          <p className="mb-2 px-1 text-xs font-medium uppercase tracking-wider text-white/35">
+          <p className="mb-2 px-1 text-[11px] font-medium uppercase tracking-wider text-white/35">
             Invoices
           </p>
           <div
@@ -211,12 +324,14 @@ export default async function PortalProjectDetailPage({
             style={{
               background: "rgba(255,255,255,0.04)",
               border: "1px solid rgba(255,255,255,0.10)",
+              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.06)",
             }}
           >
             {projectInvoices.map((inv, i) => (
-              <div
+              <Link
                 key={inv.id}
-                className="flex items-center justify-between px-5 py-4"
+                href={`/portal/invoices/${inv.id}`}
+                className="flex items-center justify-between px-5 py-4 transition-all hover:bg-white/[0.03]"
                 style={{
                   borderTop: i > 0 ? "1px solid rgba(255,255,255,0.07)" : undefined,
                 }}
@@ -233,10 +348,10 @@ export default async function PortalProjectDetailPage({
                     {inv.currency}
                   </span>
                   <span className="text-[11px]" style={{ color: invoiceStatusColor(inv.status) }}>
-                    {inv.status.charAt(0).toUpperCase() + inv.status.slice(1)}
+                    {invoiceStatusLabel(inv.status)}
                   </span>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         </div>

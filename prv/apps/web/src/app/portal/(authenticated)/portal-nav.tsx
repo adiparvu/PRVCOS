@@ -13,6 +13,7 @@ const NAV_ITEMS = [
   { href: "/portal/projects", label: "Projects", icon: FolderIcon },
   { href: "/portal/invoices", label: "Invoices", icon: InvoiceIcon },
   { href: "/portal/documents", label: "Documents", icon: DocIcon },
+  { href: "/portal/profile", label: "Profile", icon: ProfileIcon },
 ]
 
 export function PortalNav({ session }: PortalNavProps) {
@@ -46,8 +47,9 @@ export function PortalNav({ session }: PortalNavProps) {
         </div>
 
         <div className="flex items-center gap-3">
-          <div
-            className="flex items-center gap-2 rounded-full px-3 py-1.5"
+          <Link
+            href="/portal/profile"
+            className="flex items-center gap-2 rounded-full px-3 py-1.5 transition-all hover:bg-white/[0.09]"
             style={{
               background: "rgba(255,255,255,0.06)",
               border: "1px solid rgba(255,255,255,0.10)",
@@ -60,7 +62,7 @@ export function PortalNav({ session }: PortalNavProps) {
               {session.name.slice(0, 1).toUpperCase()}
             </div>
             <span className="hidden text-xs text-white/60 sm:block">{session.name}</span>
-          </div>
+          </Link>
 
           <button
             onClick={handleLogout}
@@ -201,6 +203,29 @@ function DocIcon({ size = 20 }: { size?: number }) {
       />
       <polyline
         points="13 2 13 9 20 9"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+function ProfileIcon({ size = 20 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path
+        d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle
+        cx="12"
+        cy="7"
+        r="4"
         stroke="currentColor"
         strokeWidth="1.5"
         strokeLinecap="round"

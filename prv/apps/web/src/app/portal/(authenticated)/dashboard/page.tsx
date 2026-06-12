@@ -162,9 +162,10 @@ export default async function PortalDashboardPage() {
       {recentInvoices.length > 0 && (
         <Section title="Recent invoices" href="/portal/invoices" className="mt-4">
           {recentInvoices.map((inv) => (
-            <div
+            <Link
               key={inv.id}
-              className="flex items-center justify-between rounded-[16px] px-4 py-3.5"
+              href={`/portal/invoices/${inv.id}`}
+              className="flex items-center justify-between rounded-[16px] px-4 py-3.5 transition-all hover:bg-white/[0.04]"
               style={{ border: "1px solid rgba(255,255,255,0.07)" }}
             >
               <div className="flex min-w-0 flex-col gap-0.5">
@@ -182,7 +183,7 @@ export default async function PortalDashboardPage() {
                   {invoiceStatusLabel(inv.status)}
                 </span>
               </div>
-            </div>
+            </Link>
           ))}
         </Section>
       )}
