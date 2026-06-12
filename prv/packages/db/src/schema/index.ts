@@ -43,3 +43,5 @@ export * from "./learning"
 export * from "./intelligence"
 // Sprint 13: Shop platform — reviews, wishlist, comparisons
 export * from "./shop"
+// Sprint 33: Portal Platform — external portal accounts, magic tokens, sessions
+export * from "./portal"
