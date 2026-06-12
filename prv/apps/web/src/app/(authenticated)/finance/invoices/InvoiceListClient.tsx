@@ -74,12 +74,12 @@ function fmtDate(iso: string) {
 type FilterId = "all" | InvoiceStatus
 
 const FILTERS: { id: FilterId; label: string }[] = [
-  { id: "all", label: "Toate" },
-  { id: "overdue", label: "Restante" },
-  { id: "due", label: "Scadente" },
-  { id: "partial", label: "Parțial" },
-  { id: "paid", label: "Plătite" },
-  { id: "draft", label: "Ciornă" },
+  { id: "all", label: "All" },
+  { id: "overdue", label: "Overdue" },
+  { id: "due", label: "Due" },
+  { id: "partial", label: "Partial" },
+  { id: "paid", label: "Paid" },
+  { id: "draft", label: "Draft" },
 ]
 
 const STATUS_CONFIG: Record<
@@ -87,37 +87,37 @@ const STATUS_CONFIG: Record<
   { label: string; color: string; bg: string; border: string }
 > = {
   overdue: {
-    label: "Restantă",
+    label: "Overdue",
     color: "#ff6b6b",
     bg: "rgba(255,80,80,0.12)",
     border: "rgba(255,80,80,0.22)",
   },
   due: {
-    label: "Scadentă",
+    label: "Due",
     color: "#ffcc44",
     bg: "rgba(255,180,0,0.12)",
     border: "rgba(255,180,0,0.22)",
   },
   partial: {
-    label: "Parțial",
+    label: "Partial",
     color: "#b08fff",
     bg: "rgba(130,100,255,0.14)",
     border: "rgba(130,100,255,0.24)",
   },
   paid: {
-    label: "Plătită",
+    label: "Paid",
     color: "#5affa0",
     bg: "rgba(80,255,140,0.10)",
     border: "rgba(80,255,140,0.20)",
   },
   draft: {
-    label: "Ciornă",
+    label: "Draft",
     color: "rgba(255,255,255,0.45)",
     bg: "rgba(255,255,255,0.07)",
     border: "rgba(255,255,255,0.14)",
   },
   void: {
-    label: "Anulată",
+    label: "Void",
     color: "rgba(255,255,255,0.30)",
     bg: "rgba(255,255,255,0.04)",
     border: "rgba(255,255,255,0.10)",
@@ -310,7 +310,7 @@ function InvoiceCard({ invoice }: { invoice: InvoiceSummary }) {
           )}
           {invoice.status === "partial" && (
             <span style={{ fontSize: 11, color: "rgba(255,255,255,0.40)" }}>
-              Plătit {fmt(invoice.amountPaid)}
+              Paid {fmt(invoice.amountPaid)}
             </span>
           )}
         </div>
@@ -452,7 +452,7 @@ export function InvoiceListClient() {
               marginTop: 2,
             }}
           >
-            Neîncasat
+            Uncollected
           </p>
         </div>
         <div
@@ -537,7 +537,7 @@ export function InvoiceListClient() {
               fontSize: 14,
             }}
           >
-            Nicio factură găsită
+            No invoices found
           </div>
         ) : (
           visible.map((inv) => <InvoiceCard key={inv.id} invoice={inv} />)
@@ -559,7 +559,7 @@ export function InvoiceListClient() {
               marginTop: 8,
             }}
           >
-            {isFetchingNextPage ? "Se încarcă..." : "Încarcă mai mult"}
+            {isFetchingNextPage ? "Loading..." : "Load more"}
           </button>
         )}
       </div>

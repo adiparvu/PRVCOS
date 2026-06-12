@@ -89,7 +89,7 @@ function vipBorder(): string {
 type FilterId = "all" | ClientStatus
 
 const FILTERS: { id: FilterId; label: string }[] = [
-  { id: "all", label: "Toți" },
+  { id: "all", label: "All" },
   { id: "vip", label: "VIP" },
   { id: "active", label: "Active" },
   { id: "lead", label: "Leads" },
@@ -253,7 +253,7 @@ function ClientCard({ client }: { client: ClientSummary }) {
                   color: "#7eb8ff",
                 }}
               >
-                {client.openQuotes} ofert{client.openQuotes > 1 ? "e" : "ă"}
+                {client.openQuotes} {client.openQuotes > 1 ? "quotes" : "quote"}
               </span>
             )}
             <span
@@ -287,7 +287,7 @@ export function ClientListClient() {
   const [filter, setFilter] = useState<FilterId>("all")
   const { data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage } = useClients()
   const clients = data?.clients ?? []
-  const error = isError ? "Nu s-au putut încărca clienții." : null
+  const error = isError ? "Could not load clients." : null
 
   const filtered = filter === "all" ? clients : clients.filter((c) => c.status === filter)
 
@@ -331,7 +331,7 @@ export function ClientListClient() {
           </Link>
         </div>
         <button
-          onClick={() => router.push('/crm/clients/new')}
+          onClick={() => router.push("/crm/clients/new")}
           style={{
             width: 36,
             height: 36,
@@ -371,7 +371,7 @@ export function ClientListClient() {
             margin: 0,
           }}
         >
-          Clienți
+          Clients
         </h1>
       </div>
 
@@ -528,7 +528,7 @@ export function ClientListClient() {
               fontSize: 14,
             }}
           >
-            Niciun client găsit.
+            No clients found.
           </div>
         ) : (
           filtered.map((client, idx) => (
@@ -556,7 +556,7 @@ export function ClientListClient() {
               cursor: isFetchingNextPage ? "default" : "pointer",
             }}
           >
-            {isFetchingNextPage ? "Se încarcă..." : "Încarcă mai mult"}
+            {isFetchingNextPage ? "Loading..." : "Load more"}
           </button>
         )}
       </div>

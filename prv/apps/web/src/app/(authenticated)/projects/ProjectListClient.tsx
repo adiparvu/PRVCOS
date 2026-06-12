@@ -94,12 +94,12 @@ function budgetBorder(project: ProjectSummary): string | undefined {
 type FilterId = "all" | ProjectStatus
 
 const FILTERS: { id: FilterId; label: string }[] = [
-  { id: "all", label: "Toate" },
+  { id: "all", label: "All" },
   { id: "active", label: "Active" },
-  { id: "planning", label: "Planificare" },
+  { id: "planning", label: "Planning" },
   { id: "review", label: "Review" },
-  { id: "done", label: "Finalizate" },
-  { id: "hold", label: "Pauză" },
+  { id: "done", label: "Completed" },
+  { id: "hold", label: "On Hold" },
 ]
 
 const STATUS_CONFIG: Record<
@@ -107,13 +107,13 @@ const STATUS_CONFIG: Record<
   { label: string; color: string; bg: string; border: string }
 > = {
   active: {
-    label: "Activ",
+    label: "Active",
     color: "rgba(255,255,255,0.90)",
     bg: "rgba(255,255,255,0.12)",
     border: "rgba(255,255,255,0.20)",
   },
   planning: {
-    label: "Planificare",
+    label: "Planning",
     color: "rgba(255,255,255,0.45)",
     bg: "rgba(255,255,255,0.07)",
     border: "rgba(255,255,255,0.12)",
@@ -125,13 +125,13 @@ const STATUS_CONFIG: Record<
     border: "rgba(255,204,68,0.24)",
   },
   done: {
-    label: "Finalizat",
+    label: "Completed",
     color: "#5affa0",
     bg: "rgba(80,255,140,0.10)",
     border: "rgba(80,255,140,0.20)",
   },
   hold: {
-    label: "Pauză",
+    label: "On Hold",
     color: "rgba(255,255,255,0.30)",
     bg: "rgba(255,255,255,0.05)",
     border: "rgba(255,255,255,0.10)",
@@ -470,7 +470,7 @@ export function ProjectListClient() {
           </h1>
         </div>
         <button
-          onClick={() => router.push('/projects/new')}
+          onClick={() => router.push("/projects/new")}
           style={{
             width: 32,
             height: 32,
@@ -637,7 +637,7 @@ export function ProjectListClient() {
               fontSize: 14,
             }}
           >
-            Niciun proiect găsit
+            No projects found
           </div>
         ) : (
           visible.map((p) => <ProjectCard key={p.id} project={p} />)
@@ -659,7 +659,7 @@ export function ProjectListClient() {
               marginTop: 8,
             }}
           >
-            {isFetchingNextPage ? "Se încarcă..." : "Încarcă mai mult"}
+            {isFetchingNextPage ? "Loading..." : "Load more"}
           </button>
         )}
       </div>

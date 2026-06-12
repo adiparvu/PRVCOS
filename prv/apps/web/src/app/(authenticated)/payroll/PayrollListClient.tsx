@@ -6,24 +6,24 @@ import { useSheetStack } from "@prv/ui"
 import type { PayrollRun, PayrollMeta } from "@/app/api/payroll/route"
 import { usePayrollRuns } from "@/lib/api-hooks"
 
-type FilterType = "Toate" | "Săptămânale" | "Lunare" | "Speciale"
+type FilterType = "All" | "Weekly" | "Monthly" | "Special"
 
 const FILTER_TO_TYPE: Record<FilterType, string | null> = {
-  Toate: null,
-  Săptămânale: "weekly",
-  Lunare: "monthly",
-  Speciale: "special",
+  All: null,
+  Weekly: "weekly",
+  Monthly: "monthly",
+  Special: "special",
 }
 
-const FILTERS: FilterType[] = ["Toate", "Săptămânale", "Lunare", "Speciale"]
+const FILTERS: FilterType[] = ["All", "Weekly", "Monthly", "Special"]
 
 const CHART_MONTHS = [
-  { label: "Ian", height: 28 },
+  { label: "Jan", height: 28 },
   { label: "Feb", height: 30 },
   { label: "Mar", height: 27 },
   { label: "Apr", height: 32 },
-  { label: "Mai", height: 35 },
-  { label: "Iun", height: 52, isCurrent: true },
+  { label: "May", height: 35 },
+  { label: "Jun", height: 52, isCurrent: true },
 ]
 
 const g1 = "var(--prv-g1)"
@@ -43,9 +43,9 @@ function fmtAmount(n: number): string {
 
 function StatusConfig(status: PayrollRun["status"]): { bg: string; color: string; label: string } {
   if (status === "processing")
-    return { bg: "rgba(10,132,255,0.13)", color: blue, label: "Procesare" }
-  if (status === "done") return { bg: "rgba(48,209,88,0.13)", color: green, label: "Finalizat" }
-  return { bg: "rgba(255,159,10,0.13)", color: amber, label: "Așteptare" }
+    return { bg: "rgba(10,132,255,0.13)", color: blue, label: "Processing" }
+  if (status === "done") return { bg: "rgba(48,209,88,0.13)", color: green, label: "Completed" }
+  return { bg: "rgba(255,159,10,0.13)", color: amber, label: "Pending" }
 }
 
 function RunIcon({ status }: { status: PayrollRun["status"] }) {
@@ -237,7 +237,7 @@ function SectionLabel({ children }: { children: string }) {
 }
 
 export function PayrollListClient() {
-  const [filter, setFilter] = useState<FilterType>("Toate")
+  const [filter, setFilter] = useState<FilterType>("All")
   const { openSheet } = useSheetStack()
   const type = FILTER_TO_TYPE[filter]
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = usePayrollRuns(type)
@@ -253,13 +253,13 @@ export function PayrollListClient() {
     openSheet({
       snapPoints: ["mid", "full"],
       defaultSnap: "mid",
-      title: "Acțiuni Salarizare",
+      title: "Payroll Actions",
       render: (onClose) => (
         <div style={{ padding: "0 16px 24px", display: "flex", flexDirection: "column", gap: 8 }}>
           {[
             {
-              label: "Aprobă Rularea",
-              sub: "Declanșează plata pentru toți angajații",
+              label: "Approve Run",
+              sub: "Trigger payment for all employees",
               iconBg: "rgba(48,209,88,0.18)",
               rowBg: "rgba(48,209,88,0.10)",
               rowBorder: "rgba(48,209,88,0.2)",
@@ -280,8 +280,8 @@ export function PayrollListClient() {
               ),
             },
             {
-              label: "Corectează Rularea",
-              sub: "Modifică salarii, bonusuri sau ore",
+              label: "Correct Run",
+              sub: "Modify salaries, bonuses, or hours",
               iconBg: "rgba(255,159,10,0.18)",
               rowBg: "rgba(255,159,10,0.10)",
               rowBorder: "rgba(255,159,10,0.2)",
@@ -303,8 +303,8 @@ export function PayrollListClient() {
               ),
             },
             {
-              label: "Fluturași de Salariu",
-              sub: "Generează și trimite fluturași angajaților",
+              label: "Pay Slips",
+              sub: "Generate and send pay slips to employees",
               iconBg: "rgba(10,132,255,0.18)",
               rowBg: "rgba(10,132,255,0.10)",
               rowBorder: "rgba(10,132,255,0.2)",
@@ -330,7 +330,7 @@ export function PayrollListClient() {
             },
             {
               label: "Export",
-              sub: "Exportă rulările ca CSV sau PDF",
+              sub: "Export runs as CSV or PDF",
               iconBg: "rgba(255,255,255,0.10)",
               rowBg: "rgba(255,255,255,0.04)",
               rowBorder: "rgba(255,255,255,0.09)",
@@ -451,8 +451,8 @@ export function PayrollListClient() {
             label: "Curent",
             color: undefined,
           },
-          { val: String(meta?.totalEmployees ?? 142), label: "Angajați", color: green },
-          { val: String(meta?.pendingCount ?? 1), label: "Așteptare", color: amber },
+          { val: String(meta?.totalEmployees ?? 142), label: "Employees", color: green },
+          { val: String(meta?.pendingCount ?? 1), label: "Pending", color: amber },
           { val: meta ? fmtAmount(meta.ytdCost) : "€327k", label: "YTD", color: undefined },
         ].map((k) => (
           <div
@@ -558,7 +558,7 @@ export function PayrollListClient() {
             <line x1="12" y1="17" x2="12.01" y2="17" />
           </svg>
           <span style={{ fontSize: 13, color: amber, fontWeight: 500 }}>
-            Bonus Q1 — necesită aprobare Director
+            Bonus Q1 — requires Director approval
           </span>
         </div>
       )}
@@ -619,7 +619,7 @@ export function PayrollListClient() {
 
       {pendingRuns.length > 0 && (
         <>
-          <SectionLabel>{`În Așteptare · ${pendingRuns.length}`}</SectionLabel>
+          <SectionLabel>{`Pending · ${pendingRuns.length}`}</SectionLabel>
           {pendingRuns.map((r) => (
             <RunRow key={r.id} run={r} />
           ))}
@@ -628,7 +628,7 @@ export function PayrollListClient() {
 
       {runs.length === 0 && (
         <div style={{ textAlign: "center", padding: "40px 16px", color: t3, fontSize: 14 }}>
-          Nicio rulare găsită
+          No runs found
         </div>
       )}
 
@@ -649,7 +649,7 @@ export function PayrollListClient() {
             marginBottom: 12,
           }}
         >
-          {isFetchingNextPage ? "Se încarcă..." : "Încarcă mai mult"}
+          {isFetchingNextPage ? "Loading..." : "Load more"}
         </button>
       )}
 
