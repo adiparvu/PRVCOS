@@ -35,7 +35,7 @@ function ChevronLeft() {
 
 const LOCALES = [
   { value: "en", label: "English" },
-  { value: "ro", label: "Română" },
+  { value: "ro", label: "Romanian" },
   { value: "de", label: "Deutsch" },
   { value: "fr", label: "Français" },
 ]

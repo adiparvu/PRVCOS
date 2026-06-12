@@ -20,38 +20,38 @@ interface ShopSeedResult {
 const CATEGORIES = [
   {
     slug: "tamplarie",
-    name: "Tâmplărie",
-    description: "Uși, ferestre, profile PVC/aluminiu",
+    name: "Carpentry",
+    description: "Doors, windows, PVC/aluminum profiles",
     sortOrder: 1,
   },
   {
     slug: "sanitare",
-    name: "Sanitare",
-    description: "Obiecte sanitare, robinete, instalații",
+    name: "Plumbing",
+    description: "Sanitary fixtures, faucets, installations",
     sortOrder: 2,
   },
   {
     slug: "electrice",
-    name: "Electrice",
-    description: "Cabluri, prize, întrerupătoare, tablouri",
+    name: "Electrical",
+    description: "Cables, outlets, switches, panels",
     sortOrder: 3,
   },
   {
     slug: "pardoseli",
-    name: "Pardoseli",
-    description: "Gresie, parchet, covor, linoleum",
+    name: "Flooring",
+    description: "Tiles, parquet, carpet, linoleum",
     sortOrder: 4,
   },
   {
     slug: "vopsele",
-    name: "Vopsele & Grunduri",
-    description: "Vopsele lavabile, grunduri, lacuri, tencuieli",
+    name: "Paints & Primers",
+    description: "Washable paints, primers, lacquers, plaster",
     sortOrder: 5,
   },
   {
     slug: "scule",
-    name: "Scule & Accesorii",
-    description: "Scule electrice, accesorii, consumabile",
+    name: "Tools & Accessories",
+    description: "Power tools, accessories, consumables",
     sortOrder: 6,
   },
 ] as const
@@ -68,12 +68,12 @@ const PRODUCTS: Array<{
   stock: number
   tags: string[]
 }> = [
-  // Tâmplărie
+  // Carpentry
   {
     categorySlug: "tamplarie",
     sku: "TAM-001",
-    name: "Ușă interior stejar 200x80",
-    description: "Ușă de interior din stejar masiv, finisaj natural, balamale incluse",
+    name: "Interior Oak Door 200x80",
+    description: "Solid oak interior door, natural finish, hinges included",
     price: "850.00",
     unit: "buc",
     stock: 12,
@@ -82,8 +82,8 @@ const PRODUCTS: Array<{
   {
     categorySlug: "tamplarie",
     sku: "TAM-002",
-    name: "Fereastră PVC 100x120 dublu vitraj",
-    description: "Fereastră PVC profil 5 camere, geam termoizolant Low-E, mânere incluse",
+    name: "PVC Window 100x120 Double Glazed",
+    description: "PVC window 5-chamber profile, Low-E thermal glass, handles included",
     price: "1250.00",
     unit: "buc",
     stock: 8,
@@ -93,8 +93,8 @@ const PRODUCTS: Array<{
   {
     categorySlug: "sanitare",
     sku: "SAN-001",
-    name: "Cadă baie acril 170x70",
-    description: "Cadă dreptunghiulară din acril ranforsat, piciorușe reglabile incluse",
+    name: "Acrylic Bathtub 170x70",
+    description: "Rectangular reinforced acrylic bathtub, adjustable feet included",
     price: "950.00",
     unit: "buc",
     stock: 6,
@@ -103,8 +103,9 @@ const PRODUCTS: Array<{
   {
     categorySlug: "sanitare",
     sku: "SAN-002",
-    name: "Set baterie termostatică duș crom",
-    description: "Baterie termostatică cu duș mobil și duș fix ploaie 30cm, crom lucios",
+    name: "Thermostatic Shower Set Chrome",
+    description:
+      "Thermostatic faucet with handheld shower and 30cm rain shower head, polished chrome",
     price: "680.00",
     unit: "set",
     stock: 15,
@@ -125,7 +126,7 @@ const PRODUCTS: Array<{
     categorySlug: "electrice",
     sku: "ELC-002",
     name: "Tablou electric 24 module IP65",
-    description: "Tablou electric de distribuție 24 module, protecție IP65, montaj aparent",
+    description: "24-module electrical distribution panel, IP65 protection, surface mount",
     price: "185.00",
     unit: "buc",
     stock: 18,
@@ -135,8 +136,8 @@ const PRODUCTS: Array<{
   {
     categorySlug: "pardoseli",
     sku: "PAR-001",
-    name: "Gresie porțelanată 60x60 gri antracit",
-    description: "Gresie rectificată 60x60cm, culoare gri antracit mat, cls uzură PEI 4",
+    name: "Anthracite Porcelain Tile 60x60",
+    description: "Rectified tile 60x60cm, matte anthracite grey, PEI 4 wear class",
     price: "65.00",
     unit: "mp",
     stock: 200,
@@ -146,7 +147,8 @@ const PRODUCTS: Array<{
     categorySlug: "pardoseli",
     sku: "PAR-002",
     name: "Parchet laminat stejar deschis AC5 8mm",
-    description: "Parchet laminat 8mm, clasă AC5, model stejar deschis, click, antizgârieturi",
+    description:
+      "Laminate flooring 8mm, AC5 class, light oak pattern, click system, scratch-resistant",
     price: "45.00",
     unit: "mp",
     stock: 350,
@@ -156,8 +158,8 @@ const PRODUCTS: Array<{
   {
     categorySlug: "vopsele",
     sku: "VOP-001",
-    name: "Vopsea lavabilă albă premium 15L",
-    description: "Vopsea lavabilă interior superioară, mat alb, acoperire excelentă, 1L/6mp",
+    name: "Premium White Washable Paint 15L",
+    description: "Superior interior washable paint, matte white, excellent coverage, 1L/6m²",
     price: "185.00",
     unit: "galeata",
     stock: 40,
@@ -167,7 +169,7 @@ const PRODUCTS: Array<{
     categorySlug: "vopsele",
     sku: "VOP-002",
     name: "Grund universal interior/exterior 5L",
-    description: "Grund penetrant universal, fixează suprafețe poroase, interior și exterior",
+    description: "Universal penetrating primer, seals porous surfaces, interior and exterior",
     price: "85.00",
     unit: "galeata",
     stock: 55,
@@ -178,8 +180,7 @@ const PRODUCTS: Array<{
     categorySlug: "scule",
     sku: "SCU-001",
     name: "Polizor unghiular 125mm 1200W",
-    description:
-      "Polizor unghiular profesional 125mm, 1200W, turație 11000rpm, mâner anti-vibrații",
+    description: "Professional angle grinder 125mm, 1200W, 11000rpm, anti-vibration handle",
     price: "420.00",
     unit: "buc",
     stock: 10,
@@ -189,7 +190,7 @@ const PRODUCTS: Array<{
     categorySlug: "scule",
     sku: "SCU-002",
     name: "Set burghie SDS-Plus 10 piese 4-16mm",
-    description: "Set burghie pentru beton și zidărie SDS-Plus, 10 piese 4-16mm, vârf carbid",
+    description: "SDS-Plus concrete & masonry drill set, 10 pieces 4-16mm, carbide tip",
     price: "95.00",
     unit: "set",
     stock: 30,
@@ -207,43 +208,43 @@ const SAMPLE_REVIEWS: Array<{
   {
     productSku: "PAR-001",
     rating: 5,
-    title: "Calitate excelentă!",
-    body: "Gresie superbă, rectificată perfect. Montajul a fost o plăcere cu rost de 2mm.",
+    title: "Excellent quality!",
+    body: "Superb tile, perfectly rectified. Installation was a pleasure with 2mm joints.",
     authorName: "Andrei M.",
   },
   {
     productSku: "PAR-001",
     rating: 4,
-    title: "Bun raport calitate-preț",
-    body: "Material bun, câteva plăci ușor defecte la colțuri dar în rest ok.",
+    title: "Good value for money",
+    body: "Good material, a few tiles slightly damaged at corners but otherwise ok.",
     authorName: "Maria P.",
   },
   {
     productSku: "VOP-001",
     rating: 5,
-    title: "Acoperire perfectă",
-    body: "Cea mai bună vopsea pe care am folosit-o. O mână acoperă complet.",
+    title: "Perfect coverage",
+    body: "Best paint I have ever used. One coat covers completely.",
     authorName: "Dan R.",
   },
   {
     productSku: "TAM-001",
     rating: 4,
-    title: "Ușă solidă",
-    body: "Ușă frumoasă și solidă, livrare OK. Balamale de calitate.",
+    title: "Solid door",
+    body: "Beautiful and solid door, delivery OK. Quality hinges.",
     authorName: "Elena S.",
   },
   {
     productSku: "SCU-001",
     rating: 5,
     title: "Polizor profesional",
-    body: "Putere mare, vibrații minime. Îl folosesc zilnic pe șantier.",
+    body: "High power, minimal vibrations. I use it daily on site.",
     authorName: "Mihai C.",
   },
   {
     productSku: "SAN-002",
     rating: 5,
-    title: "Montaj simplu, funcționează perfect",
-    body: "Bateria termostatică menține temperatura constantă. Foarte mulțumit!",
+    title: "Easy installation, works perfectly",
+    body: "The thermostatic faucet maintains constant temperature. Very satisfied!",
     authorName: "Ioana D.",
   },
 ]
@@ -292,7 +293,7 @@ export async function seedShop(): Promise<ShopSeedResult> {
         status: "active",
         email: "shop@prv.ro",
         country: "RO",
-        city: "București",
+        city: "Bucharest",
       })
       .returning({ id: companies.id })
     companyId = co!.id

@@ -47,7 +47,7 @@ export const WeekScheduler: Story = {
 const ASSIGNEES_A: ShiftAssignee[] = [{ initials: "IP" }, { initials: "BC" }]
 const ASSIGNEES_B: ShiftAssignee[] = [{ initials: "LM" }]
 const META_A: ShiftMeta[] = [{ label: "Store #1" }, { label: "Field Ops A" }]
-const META_B: ShiftMeta[] = [{ label: "Store #4 — Piața Unirii" }]
+const META_B: ShiftMeta[] = [{ label: "Store #4 — Piata Unirii" }]
 
 export const ShiftCards: Story = {
   name: "Shift Cards",

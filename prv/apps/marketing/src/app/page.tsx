@@ -229,7 +229,7 @@ export default function LandingPage() {
             rating={5}
             quote="PRV replaced six separate tools. Our CEO sees revenue, projects and workforce in one glance."
             author="Andrei Popescu"
-            role="COO · Renovații SRL"
+            role="COO · Renovations SRL"
             avatar="AP"
           />
           <GlassTestimonial

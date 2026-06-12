@@ -30,7 +30,7 @@ export const GeofenceCard: Story = {
     <div style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: 340 }}>
       <GlassGeofenceCard
         name="PRV Renovations HQ"
-        address="Str. Victoriei 14, București"
+        address="Str. Victoriei 14, Bucharest"
         status="inside"
         statusLabel="Inside zone"
         rows={[
@@ -41,8 +41,8 @@ export const GeofenceCard: Story = {
         onClick={() => console.log("view geofence")}
       />
       <GlassGeofenceCard
-        name="Store #4 — Piața Unirii"
-        address="B-dul Unirii 6, București"
+        name="Store #4 — Piata Unirii"
+        address="B-dul Unirii 6, Bucharest"
         status="outside"
         statusLabel="Outside zone"
         rows={[
