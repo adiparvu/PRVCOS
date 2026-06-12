@@ -10,7 +10,7 @@ import {
   type TabItem,
   type KanbanColumn,
 } from "@prv/ui"
-import { useClients } from "@/lib/api-hooks"
+import { useClients, useLeads } from "@/lib/api-hooks"
 import type { ClientSummary } from "@/app/api/crm/clients/route"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -54,41 +54,34 @@ const STATUS_STYLE: Record<ClientStatus, { bg: string; color: string; label: str
   cold: { bg: "var(--prv-border-subtle)", color: "var(--prv-text-3)", label: "Cold" },
 }
 
-const PIPELINE_COLS: KanbanColumn[] = [
-  {
-    id: "lead",
-    title: "Lead",
-    color: "var(--prv-text-2)",
-    cards: [
-      { id: "k1", title: "Familia Dinu", data: { value: "€14,000", sub: "Kitchen" } },
-      { id: "k2", title: "Cosmin Vlad", data: { value: "€8,500", sub: "Bathroom" } },
-    ],
-  },
-  {
-    id: "proposal",
-    title: "Proposal",
-    color: "rgba(10,132,255,0.9)",
-    cards: [
-      { id: "k3", title: "Ana Ionescu", data: { value: "€24,200", sub: "Full Reno" } },
-      { id: "k4", title: "SC Modern SRL", data: { value: "€38,000", sub: "Office" } },
-    ],
-  },
-  {
-    id: "negotiation",
-    title: "Negotiation",
-    color: "rgba(255,159,10,0.95)",
-    cards: [{ id: "k5", title: "Horia Munteanu", data: { value: "€19,500", sub: "Apartment" } }],
-  },
-  {
-    id: "won",
-    title: "Won",
-    color: "rgba(48,209,88,0.95)",
-    cards: [
-      { id: "k6", title: "Mihai Popescu", data: { value: "€18,400", sub: "Active" } },
-      { id: "k7", title: "Andronic Group", data: { value: "€67,000", sub: "Active" } },
-    ],
-  },
+const PIPELINE_STAGE_CONFIG: Array<{ id: string; title: string; color: string }> = [
+  { id: "new", title: "New Lead", color: "var(--prv-text-2)" },
+  { id: "contacted", title: "Contacted", color: "rgba(10,132,255,0.9)" },
+  { id: "qualified", title: "Qualified", color: "rgba(100,160,255,0.95)" },
+  { id: "proposal", title: "Proposal", color: "rgba(255,159,10,0.95)" },
+  { id: "negotiation", title: "Negotiation", color: "rgba(255,214,10,0.95)" },
 ]
+
+function buildCols(
+  pipelineData: Record<
+    string,
+    Array<{ id: string; name: string; estimatedValue: number; notes?: string }>
+  >
+): KanbanColumn[] {
+  return PIPELINE_STAGE_CONFIG.map((s) => ({
+    id: s.id,
+    title: s.title,
+    color: s.color,
+    cards: (pipelineData[s.id] ?? []).map((l) => ({
+      id: l.id,
+      title: l.name,
+      data: {
+        value: `€${(l.estimatedValue / 1000).toFixed(0)}K`,
+        sub: l.notes?.slice(0, 30) ?? s.title,
+      },
+    })),
+  }))
+}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -334,9 +327,18 @@ function ClientDetail({ client, onBack }: { client: Client; onBack: () => void }
 export function CRMWorkspace() {
   const [filter, setFilter] = useState("all")
   const [selected, setSelected] = useState<Client | null>(null)
-  const [pipeline, setPipeline] = useState(PIPELINE_COLS)
 
   const { data, isLoading } = useClients()
+  const { data: leadsData } = useLeads()
+
+  const [pipeline, setPipeline] = useState<KanbanColumn[]>(() => buildCols({}))
+
+  // Sync pipeline from real data once loaded
+  const [pipelineSynced, setPipelineSynced] = useState(false)
+  if (!pipelineSynced && leadsData?.pages?.[0]?.pipeline) {
+    setPipeline(buildCols(leadsData.pages[0].pipeline))
+    setPipelineSynced(true)
+  }
 
   const clients = useMemo(() => (data?.clients ?? []).map(mapClient), [data?.clients])
 
