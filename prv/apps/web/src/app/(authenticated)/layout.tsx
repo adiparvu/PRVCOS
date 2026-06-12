@@ -8,6 +8,7 @@ import { AppearanceButton } from "./appearance-button"
 import { SheetStackClient } from "./sheet-stack-client"
 import { CommandPaletteClient } from "./command-palette-client"
 import { QueryProvider } from "./query-provider"
+import { SidebarNav } from "./sidebar-nav"
 
 export const dynamic = "force-dynamic"
 
@@ -38,17 +39,22 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
         }}
       />
 
+      {/* Sidebar nav — iPad / Mac / Desktop (hidden on mobile) */}
+      <SidebarNav role={session.role} />
+
       {/* Dynamic Island — fixed top, role-aware live context */}
       <DynamicIslandBar role={session.role} userId={session.userId} companyId={session.companyId} />
 
       {/* Floating Search Bar — fixed below DI, pill-shaped glass */}
       <FloatingSearchBar role={session.role} />
 
-      {/* Main content — padded top for search bar, bottom for tab bar */}
+      {/* Main content — shifts right on md+ to accommodate sidebar */}
       <QueryProvider>
         <CommandPaletteClient role={session.role}>
           <SheetStackClient>
-            <main className="relative z-10 min-h-screen pt-24 pb-32">{children}</main>
+            <main className="relative z-10 min-h-screen pt-24 pb-32 md:pl-[68px] lg:pl-[220px] transition-[padding] duration-300">
+              {children}
+            </main>
           </SheetStackClient>
         </CommandPaletteClient>
       </QueryProvider>
@@ -56,7 +62,7 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
       {/* Appearance settings toggle — fixed top-right */}
       <AppearanceButton />
 
-      {/* Floating Tab Bar — fixed at bottom */}
+      {/* Floating Tab Bar — mobile only (hidden md+) */}
       <FloatingTabBar role={session.role} userId={session.userId} companyId={session.companyId} />
     </div>
   )

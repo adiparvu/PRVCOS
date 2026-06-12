@@ -25,7 +25,7 @@ export function FloatingTabBar({
 
   return (
     <div
-      className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50"
+      className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-50"
       style={{ width: "min(calc(100vw - 32px), 480px)" }}
     >
       <nav
