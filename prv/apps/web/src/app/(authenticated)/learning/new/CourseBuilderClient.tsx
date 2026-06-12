@@ -1,4 +1,5 @@
 "use client"
+
 import React, { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useQueryClient } from "@tanstack/react-query"
@@ -8,61 +9,83 @@ const GLASS_CARD: React.CSSProperties = {
   backdropFilter: "blur(32px)",
   WebkitBackdropFilter: "blur(32px)",
   border: "1px solid rgba(255,255,255,0.12)",
-  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.12), 0 24px 64px rgba(0,0,0,0.7)",
+  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.12), 0 24px 64px rgba(0,0,0,0.6)",
   borderRadius: 20,
+  padding: 24,
 }
+
 const FIELD: React.CSSProperties = {
   width: "100%",
   background: "rgba(255,255,255,0.06)",
   border: "1px solid rgba(255,255,255,0.12)",
   borderRadius: 10,
-  color: "rgba(255,255,255,0.95)",
-  padding: "10px 14px",
+  color: "rgba(255,255,255,0.92)",
+  padding: "11px 14px",
   fontSize: 14,
   outline: "none",
   boxSizing: "border-box",
-}
-const SELECT: React.CSSProperties = { ...FIELD, appearance: "none" } as React.CSSProperties
-const LABEL: React.CSSProperties = {
-  display: "block",
-  fontSize: 12,
-  color: "rgba(255,255,255,0.55)",
-  marginBottom: 6,
-  letterSpacing: "0.04em",
-  textTransform: "uppercase",
-}
-const BTN_PRIMARY: React.CSSProperties = {
-  background: "rgba(255,255,255,0.92)",
-  color: "#000",
-  border: "none",
-  borderRadius: 12,
-  padding: "12px 28px",
-  fontSize: 15,
-  fontWeight: 600,
-  cursor: "pointer",
-}
-const BTN_GHOST: React.CSSProperties = {
-  background: "rgba(255,255,255,0.08)",
-  color: "rgba(255,255,255,0.85)",
-  border: "1px solid rgba(255,255,255,0.12)",
-  borderRadius: 12,
-  padding: "12px 24px",
-  fontSize: 15,
-  cursor: "pointer",
+  transition: "border-color 0.15s",
 }
 
-type FormState = Record<string, string | boolean>
+const SELECT: React.CSSProperties = {
+  ...FIELD,
+  appearance: "none",
+  WebkitAppearance: "none",
+} as React.CSSProperties
+
+const LABEL: React.CSSProperties = {
+  display: "block",
+  fontSize: 11,
+  fontWeight: 600,
+  color: "rgba(255,255,255,0.45)",
+  marginBottom: 7,
+  letterSpacing: "0.07em",
+  textTransform: "uppercase",
+}
+
+const ROW_2: React.CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "1fr 1fr",
+  gap: 14,
+}
+
+const SECTION_LABEL: React.CSSProperties = {
+  fontSize: 11,
+  fontWeight: 600,
+  color: "rgba(255,255,255,0.30)",
+  letterSpacing: "0.07em",
+  textTransform: "uppercase",
+  marginBottom: 18,
+}
+
+interface FormState {
+  title: string
+  subtitle: string
+  category: string
+  totalModules: string
+  durationMinutes: string
+  hasCert: boolean
+}
+
+const EMPTY_FORM: FormState = {
+  title: "",
+  subtitle: "",
+  category: "safety",
+  totalModules: "1",
+  durationMinutes: "",
+  hasCert: false,
+}
 
 export function CourseBuilderClient() {
   const router = useRouter()
   const queryClient = useQueryClient()
-  const [form, setForm] = useState<FormState>({ title: "", subtitle: "", category: "safety", totalModules: "1", durationMinutes: "", hasCert: false })
+  const [form, setForm] = useState<FormState>(EMPTY_FORM)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState(false)
 
-  function set(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>, key: string) {
-    setForm(p => ({ ...p, [key]: e.target.value }))
+  function set(key: keyof FormState, value: string) {
+    setForm((p) => ({ ...p, [key]: value }))
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -71,13 +94,13 @@ export function CourseBuilderClient() {
     setError(null)
     try {
       const body: Record<string, unknown> = {
-      title: form.title,
-      subtitle: form.subtitle || undefined,
-      category: form.category || undefined,
-      totalModules: form.totalModules ? Number(form.totalModules) : undefined,
-      durationMinutes: form.durationMinutes ? Number(form.durationMinutes) : undefined,
-      hasCert: form.hasCert || undefined,
-    }
+        title: form.title,
+        subtitle: form.subtitle || undefined,
+        category: form.category || undefined,
+        totalModules: form.totalModules ? Number(form.totalModules) : undefined,
+        durationMinutes: form.durationMinutes ? Number(form.durationMinutes) : undefined,
+        hasCert: form.hasCert || undefined,
+      }
       const res = await fetch("/api/learning", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -90,7 +113,7 @@ export function CourseBuilderClient() {
       void queryClient.invalidateQueries({ queryKey: ["learning"] })
       setDone(true)
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Eroare necunoscută")
+      setError(err instanceof Error ? err.message : "Unknown error")
     } finally {
       setLoading(false)
     }
@@ -98,14 +121,89 @@ export function CourseBuilderClient() {
 
   if (done) {
     return (
-      <div style={{ minHeight: "100vh", background: "#000", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
-        <div style={{ ...GLASS_CARD, padding: 40, textAlign: "center", maxWidth: 400 }}>
-          <div style={{ fontSize: 48, marginBottom: 16 }}>✓</div>
-          <h2 style={{ color: "rgba(255,255,255,0.95)", marginBottom: 8 }}>Creat cu succes!</h2>
-          <p style={{ color: "rgba(255,255,255,0.55)", marginBottom: 24 }}>Înregistrarea a fost salvată.</p>
-          <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
-            <button style={BTN_PRIMARY} onClick={() => router.push("/learning")}>← Înapoi la listă</button>
-            <button style={BTN_GHOST} onClick={() => { setDone(false); setForm({ title: "", subtitle: "", category: "safety", totalModules: "1", durationMinutes: "", hasCert: false }) }}>+ Creează altul</button>
+      <div
+        style={{
+          minHeight: "100vh",
+          background: "#000",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: 24,
+        }}
+      >
+        <div style={{ ...GLASS_CARD, textAlign: "center", maxWidth: 420 }}>
+          <div
+            style={{
+              width: 56,
+              height: 56,
+              borderRadius: "50%",
+              background: "rgba(48,209,88,0.14)",
+              border: "1px solid rgba(48,209,88,0.30)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              margin: "0 auto 20px",
+            }}
+          >
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="rgba(48,209,88,0.95)"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+            >
+              <path d="M20 6L9 17l-5-5" />
+            </svg>
+          </div>
+          <h2
+            style={{
+              color: "rgba(255,255,255,0.95)",
+              fontSize: 20,
+              fontWeight: 700,
+              marginBottom: 8,
+              letterSpacing: "-0.4px",
+            }}
+          >
+            Course created
+          </h2>
+          <p style={{ color: "rgba(255,255,255,0.45)", marginBottom: 28, fontSize: 14 }}>
+            The course has been added to the learning catalog.
+          </p>
+          <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+            <button
+              style={{
+                background: "rgba(255,255,255,0.92)",
+                color: "#000",
+                border: "none",
+                borderRadius: 12,
+                padding: "11px 24px",
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+              onClick={() => router.push("/learning")}
+            >
+              View courses
+            </button>
+            <button
+              style={{
+                background: "rgba(255,255,255,0.08)",
+                color: "rgba(255,255,255,0.80)",
+                border: "1px solid rgba(255,255,255,0.14)",
+                borderRadius: 12,
+                padding: "11px 24px",
+                fontSize: 14,
+                cursor: "pointer",
+              }}
+              onClick={() => {
+                setDone(false)
+                setForm(EMPTY_FORM)
+              }}
+            >
+              + New course
+            </button>
           </div>
         </div>
       </div>
@@ -113,61 +211,198 @@ export function CourseBuilderClient() {
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: "#000", padding: "24px 16px 120px" }}>
+    <div style={{ minHeight: "100vh", background: "#000", padding: "72px 16px 120px" }}>
       <div style={{ maxWidth: 600, margin: "0 auto" }}>
-        <button style={{ ...BTN_GHOST, marginBottom: 24 }} onClick={() => router.back()}>← Înapoi</button>
-        <h1 style={{ color: "rgba(255,255,255,0.95)", fontSize: 28, fontWeight: 700, marginBottom: 32 }}>Curs Nou</h1>
+        <button
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            background: "none",
+            border: "none",
+            color: "rgba(255,255,255,0.40)",
+            fontSize: 13,
+            cursor: "pointer",
+            marginBottom: 28,
+            padding: 0,
+          }}
+          onClick={() => router.back()}
+        >
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+          >
+            <path d="M19 12H5M12 5l-7 7 7 7" />
+          </svg>
+          Learning
+        </button>
+
+        <div style={{ marginBottom: 28 }}>
+          <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 13, marginBottom: 4 }}>Learning</p>
+          <h1
+            style={{
+              color: "rgba(255,255,255,0.95)",
+              fontSize: 28,
+              fontWeight: 700,
+              letterSpacing: "-0.5px",
+            }}
+          >
+            New Course
+          </h1>
+        </div>
 
         {error && (
-          <div style={{ background: "rgba(255,69,58,0.15)", border: "1px solid rgba(255,69,58,0.4)", borderRadius: 12, padding: "12px 16px", marginBottom: 20 }}>
-            <span style={{ color: "#FF453A", fontSize: 14 }}>{error}</span>
+          <div
+            style={{
+              background: "rgba(255,69,58,0.12)",
+              border: "1px solid rgba(255,69,58,0.30)",
+              borderRadius: 12,
+              padding: "12px 16px",
+              marginBottom: 20,
+              color: "rgba(255,100,90,0.95)",
+              fontSize: 13,
+            }}
+          >
+            {error}
           </div>
         )}
 
         <form onSubmit={handleSubmit}>
-          <div style={{ ...GLASS_CARD, padding: 24, display: "flex", flexDirection: "column", gap: 20 }}>
-          <div>
-            <label style={LABEL}>Titlu curs *</label>
-            <input style={FIELD} value={form.title as string} onChange={e => set(e, "title")} type="text" required />
-          </div>
-          <div>
-            <label style={LABEL}>Subtitlu</label>
-            <input style={FIELD} value={form.subtitle as string} onChange={e => set(e, "subtitle")} type="text" />
-          </div>
-          <div>
-            <label style={LABEL}>Categorie</label>
-            <select style={SELECT} value={form.category as string} onChange={e => set(e, "category")}>
-              <option value="">— Selectează —</option>
-              <option value="safety">Securitate</option>
-              <option value="leadership">Leadership</option>
-              <option value="digital">Digital</option>
-              <option value="finance">Finanțe</option>
-              <option value="renovation">Renovare</option>
-              <option value="compliance">Conformitate</option>
-            </select>
-          </div>
-          <div>
-            <label style={LABEL}>Nr. module</label>
-            <input style={FIELD} value={form.totalModules as string} onChange={e => set(e, "totalModules")} type="number" step="1" defaultValue="1" />
-          </div>
-          <div>
-            <label style={LABEL}>Durată (minute)</label>
-            <input style={FIELD} value={form.durationMinutes as string} onChange={e => set(e, "durationMinutes")} type="number" step="1" />
-          </div>
-          <div>
-            <label style={LABEL}>Certificat</label>
-            <label style={{display: "flex", alignItems: "center", gap: 10, cursor: "pointer"}}>
-              <input type="checkbox" checked={!!form.hasCert} onChange={e => setForm(p => ({...p, hasCert: e.target.checked}))} style={{accentColor: "#fff"}} />
-              <span style={{color: "rgba(255,255,255,0.75)", fontSize: 14}}>Include certificat de absolvire</span>
-            </label>
-          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {/* Section: Course */}
+            <div style={GLASS_CARD}>
+              <p style={SECTION_LABEL}>Course</p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <div>
+                  <label style={LABEL}>Course title *</label>
+                  <input
+                    style={FIELD}
+                    value={form.title}
+                    onChange={(e) => set("title", e.target.value)}
+                    type="text"
+                    placeholder="e.g. Working at Heights — Safety Certification"
+                    required
+                  />
+                </div>
+                <div>
+                  <label style={LABEL}>Subtitle</label>
+                  <input
+                    style={FIELD}
+                    value={form.subtitle}
+                    onChange={(e) => set("subtitle", e.target.value)}
+                    type="text"
+                    placeholder="Short description shown under the title"
+                  />
+                </div>
+                <div>
+                  <label style={LABEL}>Category</label>
+                  <select
+                    style={SELECT}
+                    value={form.category}
+                    onChange={(e) => set("category", e.target.value)}
+                  >
+                    <option value="">— Select —</option>
+                    <option value="safety">Safety</option>
+                    <option value="leadership">Leadership</option>
+                    <option value="digital">Digital</option>
+                    <option value="finance">Finance</option>
+                    <option value="renovation">Renovation</option>
+                    <option value="compliance">Compliance</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Section: Settings */}
+            <div style={GLASS_CARD}>
+              <p style={SECTION_LABEL}>Settings</p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <div style={ROW_2}>
+                  <div>
+                    <label style={LABEL}>Modules</label>
+                    <input
+                      style={FIELD}
+                      value={form.totalModules}
+                      onChange={(e) => set("totalModules", e.target.value)}
+                      type="number"
+                      min="1"
+                      step="1"
+                      placeholder="1"
+                    />
+                  </div>
+                  <div>
+                    <label style={LABEL}>Duration (min)</label>
+                    <input
+                      style={FIELD}
+                      value={form.durationMinutes}
+                      onChange={(e) => set("durationMinutes", e.target.value)}
+                      type="number"
+                      min="1"
+                      step="1"
+                      placeholder="60"
+                    />
+                  </div>
+                </div>
+                <label
+                  style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={form.hasCert}
+                    onChange={(e) => setForm((p) => ({ ...p, hasCert: e.target.checked }))}
+                    style={{ accentColor: "#fff", width: 16, height: 16 }}
+                  />
+                  <span
+                    style={{ fontSize: 13, color: "rgba(255,255,255,0.75)", userSelect: "none" }}
+                  >
+                    Award completion certificate
+                  </span>
+                </label>
+              </div>
+            </div>
           </div>
 
-          <div style={{ display: "flex", gap: 12, marginTop: 24 }}>
-            <button type="submit" style={{ ...BTN_PRIMARY, opacity: loading ? 0.7 : 1 }} disabled={loading}>
-              {loading ? "Se salvează..." : "Salvează"}
+          <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
+            <button
+              type="submit"
+              disabled={loading || !form.title.trim()}
+              style={{
+                background:
+                  loading || !form.title.trim()
+                    ? "rgba(255,255,255,0.30)"
+                    : "rgba(255,255,255,0.92)",
+                color: "#000",
+                border: "none",
+                borderRadius: 12,
+                padding: "13px 28px",
+                fontSize: 14,
+                fontWeight: 700,
+                cursor: loading || !form.title.trim() ? "not-allowed" : "pointer",
+                transition: "opacity 0.15s",
+              }}
+            >
+              {loading ? "Saving…" : "Create Course"}
             </button>
-            <button type="button" style={BTN_GHOST} onClick={() => router.back()}>Anulează</button>
+            <button
+              type="button"
+              style={{
+                background: "rgba(255,255,255,0.07)",
+                color: "rgba(255,255,255,0.75)",
+                border: "1px solid rgba(255,255,255,0.12)",
+                borderRadius: 12,
+                padding: "13px 24px",
+                fontSize: 14,
+                cursor: "pointer",
+              }}
+              onClick={() => router.back()}
+            >
+              Cancel
+            </button>
           </div>
         </form>
       </div>

@@ -1,4 +1,5 @@
 "use client"
+
 import React, { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useQueryClient } from "@tanstack/react-query"
@@ -8,61 +9,85 @@ const GLASS_CARD: React.CSSProperties = {
   backdropFilter: "blur(32px)",
   WebkitBackdropFilter: "blur(32px)",
   border: "1px solid rgba(255,255,255,0.12)",
-  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.12), 0 24px 64px rgba(0,0,0,0.7)",
+  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.12), 0 24px 64px rgba(0,0,0,0.6)",
   borderRadius: 20,
+  padding: 24,
 }
+
 const FIELD: React.CSSProperties = {
   width: "100%",
   background: "rgba(255,255,255,0.06)",
   border: "1px solid rgba(255,255,255,0.12)",
   borderRadius: 10,
-  color: "rgba(255,255,255,0.95)",
-  padding: "10px 14px",
+  color: "rgba(255,255,255,0.92)",
+  padding: "11px 14px",
   fontSize: 14,
   outline: "none",
   boxSizing: "border-box",
-}
-const SELECT: React.CSSProperties = { ...FIELD, appearance: "none" } as React.CSSProperties
-const LABEL: React.CSSProperties = {
-  display: "block",
-  fontSize: 12,
-  color: "rgba(255,255,255,0.55)",
-  marginBottom: 6,
-  letterSpacing: "0.04em",
-  textTransform: "uppercase",
-}
-const BTN_PRIMARY: React.CSSProperties = {
-  background: "rgba(255,255,255,0.92)",
-  color: "#000",
-  border: "none",
-  borderRadius: 12,
-  padding: "12px 28px",
-  fontSize: 15,
-  fontWeight: 600,
-  cursor: "pointer",
-}
-const BTN_GHOST: React.CSSProperties = {
-  background: "rgba(255,255,255,0.08)",
-  color: "rgba(255,255,255,0.85)",
-  border: "1px solid rgba(255,255,255,0.12)",
-  borderRadius: 12,
-  padding: "12px 24px",
-  fontSize: 15,
-  cursor: "pointer",
+  transition: "border-color 0.15s",
 }
 
-type FormState = Record<string, string | boolean>
+const LABEL: React.CSSProperties = {
+  display: "block",
+  fontSize: 11,
+  fontWeight: 600,
+  color: "rgba(255,255,255,0.45)",
+  marginBottom: 7,
+  letterSpacing: "0.07em",
+  textTransform: "uppercase",
+}
+
+const ROW_2: React.CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "1fr 1fr",
+  gap: 14,
+}
+
+const SECTION_LABEL: React.CSSProperties = {
+  fontSize: 11,
+  fontWeight: 600,
+  color: "rgba(255,255,255,0.30)",
+  letterSpacing: "0.07em",
+  textTransform: "uppercase",
+  marginBottom: 18,
+}
+
+interface FormState {
+  name: string
+  category: string
+  vatNumber: string
+  contactName: string
+  email: string
+  phone: string
+  city: string
+  address: string
+  paymentTermsDays: string
+  notes: string
+}
+
+const EMPTY_FORM: FormState = {
+  name: "",
+  category: "",
+  vatNumber: "",
+  contactName: "",
+  email: "",
+  phone: "",
+  city: "",
+  address: "",
+  paymentTermsDays: "30",
+  notes: "",
+}
 
 export function SupplierBuilderClient() {
   const router = useRouter()
   const queryClient = useQueryClient()
-  const [form, setForm] = useState<FormState>({ name: "", category: "", contactName: "", email: "", phone: "", city: "", vatNumber: "", address: "", paymentTermsDays: "30", notes: "" })
+  const [form, setForm] = useState<FormState>(EMPTY_FORM)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState(false)
 
-  function set(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>, key: string) {
-    setForm(p => ({ ...p, [key]: e.target.value }))
+  function set(key: keyof FormState, value: string) {
+    setForm((p) => ({ ...p, [key]: value }))
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -71,17 +96,17 @@ export function SupplierBuilderClient() {
     setError(null)
     try {
       const body: Record<string, unknown> = {
-      name: form.name,
-      category: form.category || undefined,
-      contactName: form.contactName || undefined,
-      email: form.email || undefined,
-      phone: form.phone || undefined,
-      city: form.city || undefined,
-      address: form.address || undefined,
-      vatNumber: form.vatNumber || undefined,
-      paymentTermsDays: form.paymentTermsDays ? Number(form.paymentTermsDays) : undefined,
-      notes: form.notes || undefined,
-    }
+        name: form.name,
+        category: form.category || undefined,
+        contactName: form.contactName || undefined,
+        email: form.email || undefined,
+        phone: form.phone || undefined,
+        city: form.city || undefined,
+        address: form.address || undefined,
+        vatNumber: form.vatNumber || undefined,
+        paymentTermsDays: form.paymentTermsDays ? Number(form.paymentTermsDays) : undefined,
+        notes: form.notes || undefined,
+      }
       const res = await fetch("/api/suppliers", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -94,7 +119,7 @@ export function SupplierBuilderClient() {
       void queryClient.invalidateQueries({ queryKey: ["suppliers"] })
       setDone(true)
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Eroare necunoscută")
+      setError(err instanceof Error ? err.message : "Unknown error")
     } finally {
       setLoading(false)
     }
@@ -102,14 +127,89 @@ export function SupplierBuilderClient() {
 
   if (done) {
     return (
-      <div style={{ minHeight: "100vh", background: "#000", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
-        <div style={{ ...GLASS_CARD, padding: 40, textAlign: "center", maxWidth: 400 }}>
-          <div style={{ fontSize: 48, marginBottom: 16 }}>✓</div>
-          <h2 style={{ color: "rgba(255,255,255,0.95)", marginBottom: 8 }}>Creat cu succes!</h2>
-          <p style={{ color: "rgba(255,255,255,0.55)", marginBottom: 24 }}>Înregistrarea a fost salvată.</p>
-          <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
-            <button style={BTN_PRIMARY} onClick={() => router.push("/suppliers")}>← Înapoi la listă</button>
-            <button style={BTN_GHOST} onClick={() => { setDone(false); setForm({ name: "", category: "", contactName: "", email: "", phone: "", city: "", vatNumber: "", address: "", paymentTermsDays: "30", notes: "" }) }}>+ Creează altul</button>
+      <div
+        style={{
+          minHeight: "100vh",
+          background: "#000",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: 24,
+        }}
+      >
+        <div style={{ ...GLASS_CARD, textAlign: "center", maxWidth: 420 }}>
+          <div
+            style={{
+              width: 56,
+              height: 56,
+              borderRadius: "50%",
+              background: "rgba(48,209,88,0.14)",
+              border: "1px solid rgba(48,209,88,0.30)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              margin: "0 auto 20px",
+            }}
+          >
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="rgba(48,209,88,0.95)"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+            >
+              <path d="M20 6L9 17l-5-5" />
+            </svg>
+          </div>
+          <h2
+            style={{
+              color: "rgba(255,255,255,0.95)",
+              fontSize: 20,
+              fontWeight: 700,
+              marginBottom: 8,
+              letterSpacing: "-0.4px",
+            }}
+          >
+            Supplier added
+          </h2>
+          <p style={{ color: "rgba(255,255,255,0.45)", marginBottom: 28, fontSize: 14 }}>
+            The supplier has been saved to your directory.
+          </p>
+          <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+            <button
+              style={{
+                background: "rgba(255,255,255,0.92)",
+                color: "#000",
+                border: "none",
+                borderRadius: 12,
+                padding: "11px 24px",
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+              onClick={() => router.push("/suppliers")}
+            >
+              View suppliers
+            </button>
+            <button
+              style={{
+                background: "rgba(255,255,255,0.08)",
+                color: "rgba(255,255,255,0.80)",
+                border: "1px solid rgba(255,255,255,0.14)",
+                borderRadius: 12,
+                padding: "11px 24px",
+                fontSize: 14,
+                cursor: "pointer",
+              }}
+              onClick={() => {
+                setDone(false)
+                setForm(EMPTY_FORM)
+              }}
+            >
+              + New supplier
+            </button>
           </div>
         </div>
       </div>
@@ -117,66 +217,234 @@ export function SupplierBuilderClient() {
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: "#000", padding: "24px 16px 120px" }}>
+    <div style={{ minHeight: "100vh", background: "#000", padding: "72px 16px 120px" }}>
       <div style={{ maxWidth: 600, margin: "0 auto" }}>
-        <button style={{ ...BTN_GHOST, marginBottom: 24 }} onClick={() => router.back()}>← Înapoi</button>
-        <h1 style={{ color: "rgba(255,255,255,0.95)", fontSize: 28, fontWeight: 700, marginBottom: 32 }}>Furnizor Nou</h1>
+        <button
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            background: "none",
+            border: "none",
+            color: "rgba(255,255,255,0.40)",
+            fontSize: 13,
+            cursor: "pointer",
+            marginBottom: 28,
+            padding: 0,
+          }}
+          onClick={() => router.back()}
+        >
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+          >
+            <path d="M19 12H5M12 5l-7 7 7 7" />
+          </svg>
+          Suppliers
+        </button>
+
+        <div style={{ marginBottom: 28 }}>
+          <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 13, marginBottom: 4 }}>
+            Procurement
+          </p>
+          <h1
+            style={{
+              color: "rgba(255,255,255,0.95)",
+              fontSize: 28,
+              fontWeight: 700,
+              letterSpacing: "-0.5px",
+            }}
+          >
+            New Supplier
+          </h1>
+        </div>
 
         {error && (
-          <div style={{ background: "rgba(255,69,58,0.15)", border: "1px solid rgba(255,69,58,0.4)", borderRadius: 12, padding: "12px 16px", marginBottom: 20 }}>
-            <span style={{ color: "#FF453A", fontSize: 14 }}>{error}</span>
+          <div
+            style={{
+              background: "rgba(255,69,58,0.12)",
+              border: "1px solid rgba(255,69,58,0.30)",
+              borderRadius: 12,
+              padding: "12px 16px",
+              marginBottom: 20,
+              color: "rgba(255,100,90,0.95)",
+              fontSize: 13,
+            }}
+          >
+            {error}
           </div>
         )}
 
         <form onSubmit={handleSubmit}>
-          <div style={{ ...GLASS_CARD, padding: 24, display: "flex", flexDirection: "column", gap: 20 }}>
-          <div>
-            <label style={LABEL}>Denumire furnizor *</label>
-            <input style={FIELD} value={form.name as string} onChange={e => set(e, "name")} type="text" required />
-          </div>
-          <div>
-            <label style={LABEL}>Categorie</label>
-            <input style={FIELD} value={form.category as string} onChange={e => set(e, "category")} type="text" placeholder="ex. Materiale, Servicii" />
-          </div>
-          <div>
-            <label style={LABEL}>Persoană contact</label>
-            <input style={FIELD} value={form.contactName as string} onChange={e => set(e, "contactName")} type="text" />
-          </div>
-          <div>
-            <label style={LABEL}>Email</label>
-            <input style={FIELD} value={form.email as string} onChange={e => set(e, "email")} type="email" />
-          </div>
-          <div>
-            <label style={LABEL}>Telefon</label>
-            <input style={FIELD} value={form.phone as string} onChange={e => set(e, "phone")} type="text" />
-          </div>
-          <div>
-            <label style={LABEL}>Oraș</label>
-            <input style={FIELD} value={form.city as string} onChange={e => set(e, "city")} type="text" />
-          </div>
-          <div>
-            <label style={LABEL}>CIF/CUI</label>
-            <input style={FIELD} value={form.vatNumber as string} onChange={e => set(e, "vatNumber")} type="text" />
-          </div>
-          <div>
-            <label style={LABEL}>Adresă</label>
-            <textarea style={{...FIELD, minHeight: 80}} value={form.address as string} onChange={e => set(e, "address")} />
-          </div>
-          <div>
-            <label style={LABEL}>Termen plată (zile)</label>
-            <input style={FIELD} value={form.paymentTermsDays as string} onChange={e => set(e, "paymentTermsDays")} type="number" step="1" defaultValue="30" />
-          </div>
-          <div>
-            <label style={LABEL}>Note</label>
-            <textarea style={{...FIELD, minHeight: 80}} value={form.notes as string} onChange={e => set(e, "notes")} />
-          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {/* Section: Identity */}
+            <div style={GLASS_CARD}>
+              <p style={SECTION_LABEL}>Identity</p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <div>
+                  <label style={LABEL}>Supplier name *</label>
+                  <input
+                    style={FIELD}
+                    value={form.name}
+                    onChange={(e) => set("name", e.target.value)}
+                    type="text"
+                    placeholder="e.g. Materiale Pro SRL"
+                    required
+                  />
+                </div>
+                <div style={ROW_2}>
+                  <div>
+                    <label style={LABEL}>Category</label>
+                    <input
+                      style={FIELD}
+                      value={form.category}
+                      onChange={(e) => set("category", e.target.value)}
+                      type="text"
+                      placeholder="Materials, Services…"
+                    />
+                  </div>
+                  <div>
+                    <label style={LABEL}>VAT / CIF</label>
+                    <input
+                      style={FIELD}
+                      value={form.vatNumber}
+                      onChange={(e) => set("vatNumber", e.target.value)}
+                      type="text"
+                      placeholder="RO12345678"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Section: Contact */}
+            <div style={GLASS_CARD}>
+              <p style={SECTION_LABEL}>Contact</p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <div>
+                  <label style={LABEL}>Contact person</label>
+                  <input
+                    style={FIELD}
+                    value={form.contactName}
+                    onChange={(e) => set("contactName", e.target.value)}
+                    type="text"
+                    placeholder="Full name"
+                  />
+                </div>
+                <div style={ROW_2}>
+                  <div>
+                    <label style={LABEL}>Email</label>
+                    <input
+                      style={FIELD}
+                      value={form.email}
+                      onChange={(e) => set("email", e.target.value)}
+                      type="email"
+                      placeholder="contact@supplier.ro"
+                    />
+                  </div>
+                  <div>
+                    <label style={LABEL}>Phone</label>
+                    <input
+                      style={FIELD}
+                      value={form.phone}
+                      onChange={(e) => set("phone", e.target.value)}
+                      type="text"
+                      placeholder="+40 7xx xxx xxx"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label style={LABEL}>City</label>
+                  <input
+                    style={FIELD}
+                    value={form.city}
+                    onChange={(e) => set("city", e.target.value)}
+                    type="text"
+                    placeholder="București"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Section: Terms */}
+            <div style={GLASS_CARD}>
+              <p style={SECTION_LABEL}>Terms & Notes</p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <div>
+                  <label style={LABEL}>Address</label>
+                  <textarea
+                    style={{ ...FIELD, minHeight: 72, resize: "vertical" }}
+                    value={form.address}
+                    onChange={(e) => set("address", e.target.value)}
+                    placeholder="Street, number, city…"
+                  />
+                </div>
+                <div>
+                  <label style={LABEL}>Payment terms (days)</label>
+                  <input
+                    style={FIELD}
+                    value={form.paymentTermsDays}
+                    onChange={(e) => set("paymentTermsDays", e.target.value)}
+                    type="number"
+                    min="0"
+                    step="1"
+                    placeholder="30"
+                  />
+                </div>
+                <div>
+                  <label style={LABEL}>Notes</label>
+                  <textarea
+                    style={{ ...FIELD, minHeight: 80, resize: "vertical" }}
+                    value={form.notes}
+                    onChange={(e) => set("notes", e.target.value)}
+                    placeholder="Delivery conditions, special agreements…"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div style={{ display: "flex", gap: 12, marginTop: 24 }}>
-            <button type="submit" style={{ ...BTN_PRIMARY, opacity: loading ? 0.7 : 1 }} disabled={loading}>
-              {loading ? "Se salvează..." : "Salvează"}
+          <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
+            <button
+              type="submit"
+              disabled={loading || !form.name.trim()}
+              style={{
+                background:
+                  loading || !form.name.trim()
+                    ? "rgba(255,255,255,0.30)"
+                    : "rgba(255,255,255,0.92)",
+                color: "#000",
+                border: "none",
+                borderRadius: 12,
+                padding: "13px 28px",
+                fontSize: 14,
+                fontWeight: 700,
+                cursor: loading || !form.name.trim() ? "not-allowed" : "pointer",
+                transition: "opacity 0.15s",
+              }}
+            >
+              {loading ? "Saving…" : "Add Supplier"}
             </button>
-            <button type="button" style={BTN_GHOST} onClick={() => router.back()}>Anulează</button>
+            <button
+              type="button"
+              style={{
+                background: "rgba(255,255,255,0.07)",
+                color: "rgba(255,255,255,0.75)",
+                border: "1px solid rgba(255,255,255,0.12)",
+                borderRadius: 12,
+                padding: "13px 24px",
+                fontSize: 14,
+                cursor: "pointer",
+              }}
+              onClick={() => router.back()}
+            >
+              Cancel
+            </button>
           </div>
         </form>
       </div>
