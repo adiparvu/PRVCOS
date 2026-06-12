@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import type { SystemRole } from "@prv/auth"
 import { resolveShell } from "@/lib/shell-config"
 
@@ -15,6 +15,16 @@ export function SidebarNav({ role, companyName = "PRV" }: SidebarNavProps) {
   const pathname = usePathname()
   const { tabs, diLabel } = resolveShell(role)
   const [collapsed, setCollapsed] = useState(false)
+
+  useEffect(() => {
+    const w = collapsed ? "68px" : "220px"
+    document.documentElement.style.setProperty("--prv-sidebar-w", w)
+  }, [collapsed])
+
+  // Set initial value on mount (SSR default is 220px via CSS)
+  useEffect(() => {
+    document.documentElement.style.setProperty("--prv-sidebar-w", "220px")
+  }, [])
 
   return (
     <aside

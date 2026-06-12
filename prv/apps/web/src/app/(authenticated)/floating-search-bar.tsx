@@ -74,7 +74,13 @@ export function FloatingSearchBar({ role }: FloatingSearchBarProps) {
   return (
     <>
       {/* Floating pill trigger — centers within content area, offset for sidebar on md+ */}
-      <div className="fixed top-4 z-40 left-0 right-0 md:left-[68px] lg:left-[220px] flex justify-center pointer-events-none">
+      <div
+        className="fixed top-4 z-40 left-0 right-0 flex justify-center pointer-events-none"
+        style={{
+          paddingLeft: "var(--prv-sidebar-w, 0px)",
+          transition: "padding-left 300ms cubic-bezier(0.34,1.56,0.64,1)",
+        }}
+      >
         <div style={{ width: "min(calc(100vw - 32px), 480px)", pointerEvents: "all" }}>
           <button
             type="button"
@@ -115,7 +121,13 @@ export function FloatingSearchBar({ role }: FloatingSearchBarProps) {
           />
 
           {/* Search panel — centers within content area, sidebar-aware */}
-          <div className="fixed top-4 left-0 right-0 md:left-[68px] lg:left-[220px] z-50 flex justify-center pointer-events-none">
+          <div
+            className="fixed top-4 left-0 right-0 z-50 flex justify-center pointer-events-none"
+            style={{
+              paddingLeft: "var(--prv-sidebar-w, 0px)",
+              transition: "padding-left 300ms cubic-bezier(0.34,1.56,0.64,1)",
+            }}
+          >
             <div
               className="flex flex-col pointer-events-auto"
               style={{

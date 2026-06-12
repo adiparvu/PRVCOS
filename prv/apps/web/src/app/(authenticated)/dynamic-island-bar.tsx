@@ -46,8 +46,12 @@ export function DynamicIslandBar({ role, userId, companyId }: DynamicIslandBarPr
 
   return (
     <div
-      className="fixed top-0 left-0 right-0 md:left-[68px] lg:left-[220px] z-50 flex justify-center pointer-events-none"
-      style={{ paddingTop: "env(safe-area-inset-top, 12px)" }}
+      className="fixed top-0 left-0 right-0 z-50 flex justify-center pointer-events-none"
+      style={{
+        paddingTop: "env(safe-area-inset-top, 12px)",
+        paddingLeft: "var(--prv-sidebar-w, 0px)",
+        transition: "padding-left 300ms cubic-bezier(0.34,1.56,0.64,1)",
+      }}
       aria-live="polite"
       aria-atomic="true"
     >

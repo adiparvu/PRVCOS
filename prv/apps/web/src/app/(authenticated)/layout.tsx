@@ -52,7 +52,10 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
       <QueryProvider>
         <CommandPaletteClient role={session.role}>
           <SheetStackClient>
-            <main className="relative z-10 min-h-screen pt-24 pb-32 md:pl-[68px] lg:pl-[220px] transition-[padding] duration-300">
+            <main
+              className="relative z-10 min-h-screen pt-24 pb-32 transition-[padding] duration-300"
+              style={{ paddingLeft: "max(0px, var(--prv-sidebar-w, 0px))" }}
+            >
               {children}
             </main>
           </SheetStackClient>
