@@ -22,4 +22,6 @@ export const api = {
   patch: <T>(path: string, body: unknown) =>
     apiFetch<T>(path, { method: "PATCH", body: JSON.stringify(body) }),
   del: <T>(path: string) => apiFetch<T>(path, { method: "DELETE" }),
+  delWithBody: <T>(path: string, body: unknown) =>
+    apiFetch<T>(path, { method: "DELETE", body: JSON.stringify(body) }),
 }

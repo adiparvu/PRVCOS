@@ -3,6 +3,7 @@ import { Stack, useRouter, useSegments } from "expo-router"
 import { StatusBar } from "expo-status-bar"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { useAuthStore } from "@/store/auth"
+import { usePushNotifications } from "@/hooks/usePushNotifications"
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -17,6 +18,8 @@ export default function RootLayout() {
   const { session, isHydrated, hydrate } = useAuthStore()
   const router = useRouter()
   const segments = useSegments()
+
+  usePushNotifications()
 
   useEffect(() => {
     hydrate()
