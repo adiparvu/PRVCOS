@@ -18,26 +18,26 @@ interface QuoteLineItem {
 }
 
 const CATEGORY_OPTIONS: SelectItem[] = [
-  { value: "manopera", label: "Manoperă" },
-  { value: "materiale", label: "Materiale" },
+  { value: "labor", label: "Labor" },
+  { value: "materials", label: "Materials" },
   { value: "transport", label: "Transport" },
-  { value: "proiectare", label: "Proiectare" },
-  { value: "consultanta", label: "Consultanță" },
-  { value: "utilaje", label: "Utilaje" },
+  { value: "design", label: "Design" },
+  { value: "consulting", label: "Consulting" },
+  { value: "equipment", label: "Equipment" },
 ]
 
 const TAX_OPTIONS: SelectItem[] = [
-  { value: "0", label: "0% (Scutit)" },
+  { value: "0", label: "0% (Exempt)" },
   { value: "5", label: "5%" },
   { value: "9", label: "9%" },
-  { value: "19", label: "19% TVA" },
+  { value: "19", label: "19% VAT" },
 ]
 
 const VALIDITY_OPTIONS: SelectItem[] = [
-  { value: "15", label: "15 zile" },
-  { value: "30", label: "30 zile" },
-  { value: "45", label: "45 zile" },
-  { value: "60", label: "60 zile" },
+  { value: "15", label: "15 days" },
+  { value: "30", label: "30 days" },
+  { value: "45", label: "45 days" },
+  { value: "60", label: "60 days" },
 ]
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -100,7 +100,7 @@ function LineItemRow({
         <GlassInput
           value={item.description}
           onChange={(e) => onChange({ ...item, description: e.target.value })}
-          placeholder="Descriere serviciu / lucrare"
+          placeholder="Service / work description"
           className="flex-1 text-[13px]"
         />
         {canRemove && (
@@ -128,7 +128,7 @@ function LineItemRow({
       {/* Category */}
       <div className="mb-2">
         <p className="text-[10px] text-white/35 mb-1 font-semibold uppercase tracking-wider">
-          Categorie
+          Category
         </p>
         <GlassSelect
           value={item.category}
@@ -141,7 +141,7 @@ function LineItemRow({
       <div className="grid grid-cols-4 gap-2">
         <div>
           <p className="text-[10px] text-white/35 mb-1 font-semibold uppercase tracking-wider">
-            Cant.
+            Qty.
           </p>
           <GlassInput
             type="number"
@@ -152,7 +152,7 @@ function LineItemRow({
         </div>
         <div>
           <p className="text-[10px] text-white/35 mb-1 font-semibold uppercase tracking-wider">
-            Preț (€)
+            Price (€)
           </p>
           <GlassInput
             type="number"
@@ -198,7 +198,7 @@ function LineItemRow({
               −{item.discount}%
             </span>
           )}{" "}
-          + TVA {fmtMoney(tax)}
+          + VAT {fmtMoney(tax)}
         </span>
         <span className="text-[13px] font-bold text-white/90">{fmtMoney(total)}</span>
       </div>
@@ -209,7 +209,7 @@ function LineItemRow({
 // ── Main component ────────────────────────────────────────────────────────────
 
 export function QuoteBuilderClient() {
-  const today = "2026-06-07"
+  const today = new Date().toISOString().slice(0, 10)
 
   const { data: clientsData } = useClients()
   const clientOptions = useMemo<SelectItem[]>(
@@ -230,7 +230,7 @@ export function QuoteBuilderClient() {
     {
       id: newId(),
       description: "",
-      category: "manopera",
+      category: "labor",
       qty: 1,
       unitPrice: 0,
       discount: 0,
@@ -252,7 +252,7 @@ export function QuoteBuilderClient() {
       {
         id: newId(),
         description: "",
-        category: "manopera",
+        category: "labor",
         qty: 1,
         unitPrice: 0,
         discount: 0,
@@ -315,12 +315,12 @@ export function QuoteBuilderClient() {
           </svg>
         </div>
         <p className="text-[20px] font-bold text-white/90 mb-1">
-          {saved === "draft" ? "Ofertă salvată ca ciornă" : "Ofertă trimisă clientului"}
+          {saved === "draft" ? "Quote saved as draft" : "Quote sent to client"}
         </p>
         <p className="text-[13px] text-white/40 mb-6">
           {saved === "draft"
-            ? "O poți trimite oricând din lista de oferte."
-            : `Valabilă până la ${expiryDate}.`}
+            ? "You can send it anytime from quotes."
+            : `Valid until ${expiryDate}.`}
         </p>
         <div className="flex gap-3">
           <Link
@@ -333,7 +333,7 @@ export function QuoteBuilderClient() {
               textDecoration: "none",
             }}
           >
-            Vezi toate ofertele
+            View quotes
           </Link>
           <button
             onClick={() => setSaved(null)}
@@ -344,7 +344,7 @@ export function QuoteBuilderClient() {
               color: "rgba(48,209,88,0.95)",
             }}
           >
-            Ofertă nouă
+            + New quote
           </button>
         </div>
       </div>
@@ -372,10 +372,10 @@ export function QuoteBuilderClient() {
             >
               <path d="M19 12H5M12 5l-7 7 7 7" />
             </svg>
-            Oferte
+            Quotes
           </Link>
           <h1 className="text-white/90 text-[26px] font-semibold tracking-tight leading-tight">
-            Ofertă Nouă
+            New Quote
           </h1>
         </div>
         <div
@@ -388,7 +388,7 @@ export function QuoteBuilderClient() {
 
       {/* Client + Project */}
       <p className="text-[11px] font-semibold text-white/35 uppercase tracking-widest mx-1 mb-2.5">
-        Client & Proiect
+        Client & Project
       </p>
       <div
         className="rounded-[18px] p-4 mb-4"
@@ -400,38 +400,38 @@ export function QuoteBuilderClient() {
           </p>
           <GlassSelect
             value={clientId}
-            items={[{ value: "", label: "Selectează client..." }, ...clientOptions]}
+            items={[{ value: "", label: "Select client..." }, ...clientOptions]}
             onChange={setClientId}
           />
         </div>
         <div>
           <p className="text-[11px] text-white/35 font-semibold uppercase tracking-wider mb-1.5">
-            Denumire proiect / lucrare
+            Project / work name
           </p>
           <GlassInput
             value={projectName}
             onChange={(e) => setProjectName(e.target.value)}
-            placeholder="ex. Renovare apartament 3 camere"
+            placeholder="e.g. Office renovation, 3 rooms"
           />
         </div>
       </div>
 
       {/* Cover letter */}
       <p className="text-[11px] font-semibold text-white/35 uppercase tracking-widest mx-1 mb-2.5">
-        Scrisoare de intenție
+        Cover Letter
       </p>
       <div className="mb-4">
         <GlassInput
           value={coverText}
           onChange={(e) => setCoverText(e.target.value)}
-          placeholder="Introduceți contextul ofertei pentru client (opțional)..."
+          placeholder="Quote context for the client (optional)..."
           className="w-full"
         />
       </div>
 
       {/* Dates */}
       <p className="text-[11px] font-semibold text-white/35 uppercase tracking-widest mx-1 mb-2.5">
-        Date & Valabilitate
+        Dates & Validity
       </p>
       <div
         className="rounded-[18px] p-4 mb-4 grid grid-cols-2 gap-3"
@@ -439,7 +439,7 @@ export function QuoteBuilderClient() {
       >
         <div>
           <p className="text-[11px] text-white/35 font-semibold uppercase tracking-wider mb-1.5">
-            Data emiterii
+            Issue date
           </p>
           <GlassInput
             type="date"
@@ -449,13 +449,13 @@ export function QuoteBuilderClient() {
         </div>
         <div>
           <p className="text-[11px] text-white/35 font-semibold uppercase tracking-wider mb-1.5">
-            Valabilitate
+            Validity
           </p>
           <GlassSelect value={validityDays} items={VALIDITY_OPTIONS} onChange={setValidityDays} />
         </div>
         <div className="col-span-2">
           <p className="text-[11px] text-white/35 mt-1">
-            Expiră: <span className="font-semibold text-white/65">{expiryDate}</span>
+            Expires: <span className="font-semibold text-white/65">{expiryDate}</span>
           </p>
         </div>
       </div>
@@ -463,7 +463,7 @@ export function QuoteBuilderClient() {
       {/* Line items */}
       <div className="flex items-center justify-between mx-1 mb-2.5">
         <p className="text-[11px] font-semibold text-white/35 uppercase tracking-widest">
-          Articole ({items.length})
+          Line Items ({items.length})
         </p>
         <button
           onClick={addItem}
@@ -482,7 +482,7 @@ export function QuoteBuilderClient() {
             <line x1="12" y1="5" x2="12" y2="19" />
             <line x1="5" y1="12" x2="19" y2="12" />
           </svg>
-          Adaugă
+          Add item
         </button>
       </div>
 
@@ -504,19 +504,19 @@ export function QuoteBuilderClient() {
         style={{ background: g1, border: `1px solid ${bds}` }}
       >
         {[
-          { label: "Subtotal brut", value: fmtMoney(subtotal + totalDiscount), muted: true },
+          { label: "Gross subtotal", value: fmtMoney(subtotal + totalDiscount), muted: true },
           ...(totalDiscount > 0
             ? [
                 {
-                  label: "Discount total",
+                  label: "Total discount",
                   value: `−${fmtMoney(totalDiscount)}`,
                   muted: true,
                   discount: true,
                 },
               ]
             : []),
-          { label: "Subtotal net", value: fmtMoney(subtotal), muted: true },
-          { label: "TVA", value: fmtMoney(totalTax), muted: true },
+          { label: "Net subtotal", value: fmtMoney(subtotal), muted: true },
+          { label: "VAT", value: fmtMoney(totalTax), muted: true },
         ].map(({ label, value, discount: isDiscount }) => (
           <div
             key={label}
@@ -533,7 +533,7 @@ export function QuoteBuilderClient() {
           </div>
         ))}
         <div className="flex justify-between px-4 py-3.5">
-          <span className="text-[15px] font-bold text-white/90">Total ofertă</span>
+          <span className="text-[15px] font-bold text-white/90">Quote total</span>
           <span className="text-[18px] font-bold" style={{ color: "rgba(48,209,88,0.95)" }}>
             {fmtMoney(total)}
           </span>
@@ -542,13 +542,13 @@ export function QuoteBuilderClient() {
 
       {/* Internal notes */}
       <p className="text-[11px] font-semibold text-white/35 uppercase tracking-widest mx-1 mb-2.5">
-        Notă internă
+        Internal Note
       </p>
       <div className="mb-5">
         <GlassInput
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          placeholder="Observații interne (nu sunt vizibile pentru client)..."
+          placeholder="Internal notes (not visible to client)..."
           className="w-full"
         />
       </div>
@@ -561,7 +561,7 @@ export function QuoteBuilderClient() {
           className="flex-1 py-3.5 rounded-[14px] text-[14px] font-semibold"
           style={{ background: g2, border: `1px solid ${bds}`, color: "var(--prv-text-2)" }}
         >
-          Salvează ciornă
+          Save draft
         </button>
         <button
           onClick={() => handleSubmit("sent")}
@@ -572,7 +572,7 @@ export function QuoteBuilderClient() {
             color: clientId && total > 0 ? "#000" : "rgba(255,255,255,0.25)",
           }}
         >
-          {isSubmitting ? "Se trimite..." : "Trimite ofertă"}
+          {isSubmitting ? "Sending..." : "Send quote"}
         </button>
       </div>
     </div>

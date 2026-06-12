@@ -16,17 +16,17 @@ interface LineItem {
 }
 
 const TAX_OPTIONS: SelectItem[] = [
-  { value: "0", label: "0% (Scutit)" },
+  { value: "0", label: "0% (Exempt)" },
   { value: "5", label: "5%" },
   { value: "9", label: "9%" },
-  { value: "19", label: "19% TVA" },
+  { value: "19", label: "19% VAT" },
 ]
 
 const PAYMENT_TERMS: SelectItem[] = [
-  { value: "7", label: "7 zile" },
-  { value: "14", label: "14 zile" },
-  { value: "30", label: "30 zile" },
-  { value: "60", label: "60 zile" },
+  { value: "7", label: "7 days" },
+  { value: "14", label: "14 days" },
+  { value: "30", label: "30 days" },
+  { value: "60", label: "60 days" },
 ]
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -71,7 +71,7 @@ function LineItemRow({
         <GlassInput
           value={item.description}
           onChange={(e) => onChange({ ...item, description: e.target.value })}
-          placeholder="Descriere serviciu / material"
+          placeholder="Service / material description"
           className="flex-1 text-[13px]"
         />
         {canRemove && (
@@ -98,7 +98,7 @@ function LineItemRow({
       <div className="grid grid-cols-3 gap-2">
         <div>
           <p className="text-[10px] text-white/35 mb-1 font-semibold uppercase tracking-wider">
-            Cantitate
+            Quantity
           </p>
           <GlassInput
             type="number"
@@ -109,7 +109,7 @@ function LineItemRow({
         </div>
         <div>
           <p className="text-[10px] text-white/35 mb-1 font-semibold uppercase tracking-wider">
-            Preț unit (€)
+            Unit price (€)
           </p>
           <GlassInput
             type="number"
@@ -134,7 +134,7 @@ function LineItemRow({
         style={{ borderTop: "1px solid var(--prv-border-subtle)" }}
       >
         <span className="text-[11px] text-white/35">
-          Subtotal: {fmtMoney(lineTotal)} + TVA {fmtMoney(lineTax)}
+          Net: {fmtMoney(lineTotal)} + VAT {fmtMoney(lineTax)}
         </span>
         <span className="text-[13px] font-bold text-white/90">{fmtMoney(lineTotal + lineTax)}</span>
       </div>
@@ -190,7 +190,7 @@ function InvoicePreview({
           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
           <polyline points="14 2 14 8 20 8" />
         </svg>
-        <span className="text-[12px] text-white/45 font-semibold">Previzualizare factură</span>
+        <span className="text-[12px] text-white/45 font-semibold">Invoice preview</span>
       </div>
 
       <div className="p-4">
@@ -198,20 +198,20 @@ function InvoicePreview({
         <div className="flex items-start justify-between mb-4">
           <div>
             <p className="text-[18px] font-bold text-white/90">PRV Renovations</p>
-            <p className="text-[11px] text-white/35 mt-0.5">CUI: RO44123456</p>
-            <p className="text-[11px] text-white/35">Cluj-Napoca, România</p>
+            <p className="text-[11px] text-white/35 mt-0.5">VAT ID: RO44123456</p>
+            <p className="text-[11px] text-white/35">Cluj-Napoca, Romania</p>
           </div>
           <div className="text-right">
             <p className="text-[16px] font-bold text-white/90">{refNum}</p>
-            <p className="text-[11px] text-white/35 mt-0.5">Emisă: {issueDate}</p>
-            <p className="text-[11px] text-white/35">Scadentă: {dueDate}</p>
+            <p className="text-[11px] text-white/35 mt-0.5">Issued: {issueDate}</p>
+            <p className="text-[11px] text-white/35">Due: {dueDate}</p>
           </div>
         </div>
 
         {/* Client */}
         <div className="p-3 rounded-[12px] mb-4" style={{ background: "var(--prv-g2)" }}>
           <p className="text-[10px] text-white/35 font-semibold uppercase tracking-wider mb-1">
-            Către
+            Bill to
           </p>
           <p className="text-[14px] font-semibold text-white/90">{client}</p>
           {project !== "—" && <p className="text-[12px] text-white/45 mt-0.5">{project}</p>}
@@ -221,7 +221,7 @@ function InvoicePreview({
         <table className="w-full mb-4" style={{ borderCollapse: "collapse" }}>
           <thead>
             <tr style={{ borderBottom: "1px solid var(--prv-border-subtle)" }}>
-              {["Descriere", "Cant.", "Preț", "TVA", "Total"].map((h) => (
+              {["Description", "Qty.", "Price", "VAT", "Total"].map((h) => (
                 <th
                   key={h}
                   className={`text-[10px] font-semibold text-white/35 uppercase tracking-wider pb-2 ${h === "Descriere" ? "text-left" : "text-right"}`}
@@ -256,7 +256,7 @@ function InvoicePreview({
         <div className="space-y-1.5 mb-4">
           {[
             { label: "Subtotal", value: fmtMoney(subtotal), muted: true },
-            { label: "TVA", value: fmtMoney(tax), muted: true },
+            { label: "VAT", value: fmtMoney(tax), muted: true },
           ].map(({ label, value, muted }) => (
             <div key={label} className="flex justify-between">
               <span className="text-[12px] text-white/45">{label}</span>
@@ -281,7 +281,7 @@ function InvoicePreview({
         {notes && (
           <div className="p-3 rounded-[10px]" style={{ background: "var(--prv-g2)" }}>
             <p className="text-[10px] text-white/35 font-semibold uppercase tracking-wider mb-1">
-              Notă
+              Note
             </p>
             <p className="text-[12px] text-white/55 leading-relaxed">{notes}</p>
           </div>
@@ -294,7 +294,7 @@ function InvoicePreview({
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 export function InvoiceBuilderClient() {
-  const today = "2026-06-07"
+  const today = new Date().toISOString().slice(0, 10)
 
   const { data: clientsData } = useClients()
   const { data: projectsData } = useProjects()
@@ -362,10 +362,10 @@ export function InvoiceBuilderClient() {
           </svg>
         </div>
         <p className="text-[20px] font-bold text-white/90 mb-1">
-          {saved === "draft" ? "Factură salvată ca ciornă" : "Factură finalizată"}
+          {saved === "draft" ? "Invoice saved as draft" : "Invoice finalized"}
         </p>
         <p className="text-[13px] text-white/40 mb-6">
-          {saved === "draft" ? "O poți finaliza oricând." : "A fost adăugată în sistem."}
+          {saved === "draft" ? "You can finalize it anytime." : "Added to the system."}
         </p>
         <div className="flex gap-3">
           <Link
@@ -378,7 +378,7 @@ export function InvoiceBuilderClient() {
               textDecoration: "none",
             }}
           >
-            Vezi toate facturile
+            View invoices
           </Link>
           <button
             onClick={() => setSaved(null)}
@@ -389,7 +389,7 @@ export function InvoiceBuilderClient() {
               color: "rgba(48,209,88,0.95)",
             }}
           >
-            Factură nouă
+            + New invoice
           </button>
         </div>
       </div>
@@ -417,10 +417,10 @@ export function InvoiceBuilderClient() {
             >
               <path d="M19 12H5M12 5l-7 7 7 7" />
             </svg>
-            Facturi
+            Invoices
           </Link>
           <h1 className="text-white/90 text-[26px] font-semibold tracking-tight leading-tight">
-            Factură Nouă
+            New Invoice
           </h1>
         </div>
         <button
@@ -450,7 +450,7 @@ export function InvoiceBuilderClient() {
 
       {/* Section: Client + Project */}
       <p className="text-[11px] font-semibold text-white/35 uppercase tracking-widest mx-1 mb-2.5">
-        Client & Proiect
+        Client & Project
       </p>
       <div
         className="rounded-[18px] p-4 mb-4"
@@ -462,17 +462,17 @@ export function InvoiceBuilderClient() {
           </p>
           <GlassSelect
             value={clientId}
-            items={[{ value: "", label: "Selectează client..." }, ...clientOptions]}
+            items={[{ value: "", label: "Select client..." }, ...clientOptions]}
             onChange={setClientId}
           />
         </div>
         <div>
           <p className="text-[11px] text-white/35 font-semibold uppercase tracking-wider mb-1.5">
-            Proiect asociat
+            Associated project
           </p>
           <GlassSelect
             value={projectId}
-            items={[{ value: "", label: "Selectează proiect (opțional)..." }, ...projectOptions]}
+            items={[{ value: "", label: "Select project (optional)..." }, ...projectOptions]}
             onChange={setProjectId}
           />
         </div>
@@ -480,7 +480,7 @@ export function InvoiceBuilderClient() {
 
       {/* Section: Dates */}
       <p className="text-[11px] font-semibold text-white/35 uppercase tracking-widest mx-1 mb-2.5">
-        Date & Termene
+        Dates & Terms
       </p>
       <div
         className="rounded-[18px] p-4 mb-4 grid grid-cols-2 gap-3"
@@ -488,7 +488,7 @@ export function InvoiceBuilderClient() {
       >
         <div>
           <p className="text-[11px] text-white/35 font-semibold uppercase tracking-wider mb-1.5">
-            Data emiterii
+            Issue date
           </p>
           <GlassInput
             type="date"
@@ -498,13 +498,13 @@ export function InvoiceBuilderClient() {
         </div>
         <div>
           <p className="text-[11px] text-white/35 font-semibold uppercase tracking-wider mb-1.5">
-            Termen plată
+            Payment terms
           </p>
           <GlassSelect value={paymentTerms} items={PAYMENT_TERMS} onChange={setPaymentTerms} />
         </div>
         <div className="col-span-2">
           <p className="text-[11px] text-white/35 mt-1">
-            Scadentă:{" "}
+            Due:{" "}
             <span className="font-semibold text-white/65">
               {addDays(issueDate, parseInt(paymentTerms, 10))}
             </span>
@@ -515,7 +515,7 @@ export function InvoiceBuilderClient() {
       {/* Section: Line Items */}
       <div className="flex items-center justify-between mx-1 mb-2.5">
         <p className="text-[11px] font-semibold text-white/35 uppercase tracking-widest">
-          Articole ({items.length})
+          Line Items ({items.length})
         </p>
         <button
           onClick={addItem}
@@ -534,7 +534,7 @@ export function InvoiceBuilderClient() {
             <line x1="12" y1="5" x2="12" y2="19" />
             <line x1="5" y1="12" x2="19" y2="12" />
           </svg>
-          Adaugă
+          Add item
         </button>
       </div>
 
@@ -557,7 +557,7 @@ export function InvoiceBuilderClient() {
       >
         {[
           { l: "Subtotal", v: fmtMoney(subtotal), bold: false },
-          { l: "TVA total", v: fmtMoney(tax), bold: false },
+          { l: "Total VAT", v: fmtMoney(tax), bold: false },
         ].map(({ l, v }) => (
           <div key={l} className="flex justify-between mb-2">
             <span className="text-[13px] text-white/45">{l}</span>
@@ -568,7 +568,7 @@ export function InvoiceBuilderClient() {
           className="flex justify-between pt-2.5"
           style={{ borderTop: "1px solid var(--prv-border-subtle)" }}
         >
-          <span className="text-[15px] font-bold text-white/90">Total factură</span>
+          <span className="text-[15px] font-bold text-white/90">Invoice total</span>
           <span className="text-[18px] font-bold" style={{ color: "rgba(48,209,88,0.95)" }}>
             {fmtMoney(total)}
           </span>
@@ -577,13 +577,13 @@ export function InvoiceBuilderClient() {
 
       {/* Notes */}
       <p className="text-[11px] font-semibold text-white/35 uppercase tracking-widest mx-1 mb-2.5">
-        Notă / Condiții
+        Notes
       </p>
       <div className="mb-5">
         <GlassInput
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          placeholder="Condiții de plată, notă pentru client..."
+          placeholder="Payment terms, note for client..."
           className="w-full"
         />
       </div>
@@ -613,7 +613,7 @@ export function InvoiceBuilderClient() {
             color: "var(--prv-text-2)",
           }}
         >
-          Salvează ciornă
+          Save draft
         </button>
         <button
           onClick={() => setSaved("final")}
@@ -624,7 +624,7 @@ export function InvoiceBuilderClient() {
             color: clientId && total > 0 ? "#000" : "rgba(255,255,255,0.25)",
           }}
         >
-          Emite factură
+          Issue invoice
         </button>
       </div>
     </div>

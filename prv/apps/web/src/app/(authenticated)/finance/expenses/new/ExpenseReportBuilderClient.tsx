@@ -92,12 +92,12 @@ interface ExpenseLineItem {
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const CATEGORIES: { value: ExpenseCategory; label: string }[] = [
-  { value: "materiale", label: "Materiale" },
-  { value: "personal", label: "Personal" },
-  { value: "logistica", label: "Logistică" },
-  { value: "utilitati", label: "Utilități" },
+  { value: "materiale", label: "Materials" },
+  { value: "personal", label: "Personnel" },
+  { value: "logistica", label: "Logistics" },
+  { value: "utilitati", label: "Utilities" },
   { value: "marketing", label: "Marketing" },
-  { value: "altele", label: "Altele" },
+  { value: "altele", label: "Other" },
 ]
 
 const VAT_OPTIONS = [
@@ -278,7 +278,7 @@ function LineItemRow({
             letterSpacing: "0.05em",
           }}
         >
-          Linie {index + 1}
+          Item {index + 1}
         </p>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <span
@@ -314,48 +314,48 @@ function LineItemRow({
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
         <div style={{ gridColumn: "1 / -1" }}>
           <InputField
-            label="Descriere"
+            label="Description"
             value={item.description}
             onChange={(v) => onChange(item.id, "description", v)}
-            placeholder="Ex. Combustibil, materiale..."
+            placeholder="e.g. Fuel, materials..."
           />
         </div>
         <SelectField
-          label="Categorie"
+          label="Category"
           value={item.category}
           onChange={(v) => onChange(item.id, "category", v)}
           options={CATEGORIES}
         />
         <InputField
-          label="Furnizor"
+          label="Vendor"
           value={item.vendorName}
           onChange={(v) => onChange(item.id, "vendorName", v)}
-          placeholder="Nume furnizor"
+          placeholder="Vendor name"
         />
         <InputField
-          label="Sumă (fără TVA) €"
+          label="Amount (excl. VAT) €"
           value={item.amount || ""}
           type="number"
           onChange={(v) => onChange(item.id, "amount", parseFloat(v) || 0)}
           placeholder="0.00"
         />
         <SelectField
-          label="Cotă TVA"
+          label="VAT rate"
           value={item.vatRate}
           onChange={(v) => onChange(item.id, "vatRate", parseInt(v))}
           options={VAT_OPTIONS}
         />
         <InputField
-          label="Data"
+          label="Date"
           value={item.date}
           type="date"
           onChange={(v) => onChange(item.id, "date", v)}
         />
         <InputField
-          label="Nr. chitanță / factură"
+          label="Receipt / invoice no."
           value={item.receiptRef}
           onChange={(v) => onChange(item.id, "receiptRef", v)}
-          placeholder="Ex. F-1234"
+          placeholder="e.g. INV-1234"
         />
       </div>
     </div>
@@ -390,7 +390,7 @@ export function ExpenseReportBuilderClient() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          title: title || "Raport cheltuieli",
+          title: title || "Expense report",
           period,
           projectRef,
           notes,
@@ -441,10 +441,10 @@ export function ExpenseReportBuilderClient() {
               marginBottom: 6,
             }}
           >
-            Cheltuială salvată
+            Expense saved
           </p>
           <p style={{ fontSize: 13, color: "rgba(255,255,255,0.40)", marginBottom: 28 }}>
-            Raportul a fost trimis spre aprobare
+            Report submitted for approval
           </p>
           <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
             <Link
@@ -459,7 +459,7 @@ export function ExpenseReportBuilderClient() {
                 textDecoration: "none",
               }}
             >
-              Înapoi la cheltuieli
+              View expenses
             </Link>
             <button
               onClick={() => {
@@ -479,7 +479,7 @@ export function ExpenseReportBuilderClient() {
                 cursor: "pointer",
               }}
             >
-              Cheltuială nouă
+              + New expense
             </button>
           </div>
         </div>
@@ -510,7 +510,7 @@ export function ExpenseReportBuilderClient() {
             color: "rgba(255,255,255,0.95)",
           }}
         >
-          Cheltuială Nouă
+          New Expense Report
         </h1>
       </div>
 
@@ -524,20 +524,20 @@ export function ExpenseReportBuilderClient() {
           marginBottom: 16,
         }}
       >
-        <SectionLabel>Detalii raport</SectionLabel>
+        <SectionLabel>Report Details</SectionLabel>
         <InputField
-          label="Titlu raport"
+          label="Report title"
           value={title}
           onChange={setTitle}
-          placeholder="Ex. Cheltuieli materiale lot 4 mai 2026"
+          placeholder="e.g. Q2 materials, project lot 4"
         />
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-          <InputField label="Perioadă" value={period} type="month" onChange={setPeriod} />
+          <InputField label="Period" value={period} type="month" onChange={setPeriod} />
           <InputField
-            label="Ref. proiect (opțional)"
+            label="Project ref. (optional)"
             value={projectRef}
             onChange={setProjectRef}
-            placeholder="Ex. PRJ-042"
+            placeholder="e.g. PRJ-042"
           />
         </div>
       </div>
@@ -552,7 +552,7 @@ export function ExpenseReportBuilderClient() {
             marginBottom: 10,
           }}
         >
-          <SectionLabel>Linii cheltuieli</SectionLabel>
+          <SectionLabel>Expense Lines</SectionLabel>
           <button
             onClick={addLine}
             style={{
@@ -569,7 +569,7 @@ export function ExpenseReportBuilderClient() {
               cursor: "pointer",
             }}
           >
-            <IconPlus /> Adaugă linie
+            <IconPlus /> Add line
           </button>
         </div>
         {lines.map((line, i) => (
@@ -594,10 +594,10 @@ export function ExpenseReportBuilderClient() {
           marginBottom: 16,
         }}
       >
-        <SectionLabel>Rezumat financiar</SectionLabel>
+        <SectionLabel>Financial Summary</SectionLabel>
         {[
-          { label: "Subtotal net", value: subtotalNet },
-          { label: "Total TVA", value: totalVat },
+          { label: "Net subtotal", value: subtotalNet },
+          { label: "Total VAT", value: totalVat },
         ].map(({ label, value }) => (
           <div
             key={label}
@@ -641,11 +641,11 @@ export function ExpenseReportBuilderClient() {
           marginBottom: 24,
         }}
       >
-        <SectionLabel>Observații interne</SectionLabel>
+        <SectionLabel>Internal Notes</SectionLabel>
         <textarea
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          placeholder="Notițe interne, context suplimentar..."
+          placeholder="Internal notes, additional context..."
           rows={3}
           style={{
             width: "100%",
@@ -680,7 +680,7 @@ export function ExpenseReportBuilderClient() {
             opacity: submitting ? 0.5 : 1,
           }}
         >
-          Salvează ciornă
+          Save draft
         </button>
         <button
           onClick={() => handleSubmit("pending")}
@@ -698,7 +698,7 @@ export function ExpenseReportBuilderClient() {
             opacity: submitting ? 0.5 : 1,
           }}
         >
-          Trimite spre aprobare
+          Submit for approval
         </button>
       </div>
     </div>
