@@ -23,13 +23,12 @@ import type { OperationsMeta, Store, Task, Order, Alert } from "@/app/api/operat
 import type { Insight, Report, StoreKpi, IntelligenceMeta } from "@/app/api/intelligence/route"
 import type { FinanceReport } from "@/app/api/finance/reports/route"
 
-
 const LIMIT = 50
 
 function buildUrl(base: string, params: Record<string, string | null | undefined>): string {
   const sp = new URLSearchParams()
   for (const [k, v] of Object.entries(params)) {
-    if (v != null && v !== "" && v !== "all" && v !== "Toate" && v !== "Toți" && v !== "Recente") {
+    if (v != null && v !== "" && v !== "all" && v !== "All" && v !== "Everyone" && v !== "Recent") {
       sp.set(k, v)
     }
   }
@@ -135,9 +134,9 @@ export function useClients(status?: string | null) {
   return useInfiniteQuery({
     queryKey: ["clients", status ?? "all"],
     queryFn: async ({ pageParam }) =>
-      fetch(
-        buildUrl("/api/crm/clients", { status, cursor: pageParam as string | null })
-      ).then((r) => r.json() as Promise<ClientsPage>),
+      fetch(buildUrl("/api/crm/clients", { status, cursor: pageParam as string | null })).then(
+        (r) => r.json() as Promise<ClientsPage>
+      ),
     initialPageParam: null as string | null,
     getNextPageParam: (page) => page.nextCursor ?? null,
     select: (data) => ({
@@ -184,9 +183,9 @@ export function useProjects(status?: string | null) {
   return useInfiniteQuery({
     queryKey: ["projects", status ?? "all"],
     queryFn: async ({ pageParam }) =>
-      fetch(
-        buildUrl("/api/projects", { status, cursor: pageParam as string | null })
-      ).then((r) => r.json() as Promise<ProjectsPage>),
+      fetch(buildUrl("/api/projects", { status, cursor: pageParam as string | null })).then(
+        (r) => r.json() as Promise<ProjectsPage>
+      ),
     initialPageParam: null as string | null,
     getNextPageParam: (page) => page.nextCursor ?? null,
     select: (data) => ({
@@ -235,9 +234,9 @@ export function usePurchaseOrders(status?: string | null) {
   return useInfiniteQuery({
     queryKey: ["procurement", status ?? "all"],
     queryFn: async ({ pageParam }) =>
-      fetch(
-        buildUrl("/api/procurement", { status, cursor: pageParam as string | null })
-      ).then((r) => r.json() as Promise<ProcurementPage>),
+      fetch(buildUrl("/api/procurement", { status, cursor: pageParam as string | null })).then(
+        (r) => r.json() as Promise<ProcurementPage>
+      ),
     initialPageParam: null as string | null,
     getNextPageParam: (page) => page.nextCursor ?? null,
     select: (data) => ({
@@ -261,9 +260,9 @@ export function useDocuments(category?: string | null) {
   return useInfiniteQuery({
     queryKey: ["documents", category ?? "all"],
     queryFn: async ({ pageParam }) =>
-      fetch(
-        buildUrl("/api/documents", { category, cursor: pageParam as string | null })
-      ).then((r) => r.json() as Promise<DocumentsPage>),
+      fetch(buildUrl("/api/documents", { category, cursor: pageParam as string | null })).then(
+        (r) => r.json() as Promise<DocumentsPage>
+      ),
     initialPageParam: null as string | null,
     getNextPageParam: (page) => page.nextCursor ?? null,
     select: (data) => ({
@@ -297,9 +296,13 @@ export function usePeople(search?: string) {
   return useInfiniteQuery({
     queryKey: ["people", search ?? ""],
     queryFn: async ({ pageParam }) =>
-      fetch(buildUrl("/api/people", { search: search ?? null, cursor: pageParam as string | null, limit: "100" })).then(
-        (r) => r.json() as Promise<PeoplePage>
-      ),
+      fetch(
+        buildUrl("/api/people", {
+          search: search ?? null,
+          cursor: pageParam as string | null,
+          limit: "100",
+        })
+      ).then((r) => r.json() as Promise<PeoplePage>),
     initialPageParam: null as string | null,
     getNextPageParam: (page) => page.nextCursor ?? null,
     select: (data) => ({
@@ -370,9 +373,9 @@ export function useAttendanceRecords(status?: string | null) {
   return useInfiniteQuery({
     queryKey: ["attendance", status ?? "all"],
     queryFn: async ({ pageParam }) =>
-      fetch(
-        buildUrl("/api/attendance", { status, cursor: pageParam as string | null })
-      ).then((r) => r.json() as Promise<AttendancePage>),
+      fetch(buildUrl("/api/attendance", { status, cursor: pageParam as string | null })).then(
+        (r) => r.json() as Promise<AttendancePage>
+      ),
     initialPageParam: null as string | null,
     getNextPageParam: (page) => page.nextCursor ?? null,
     select: (data) => ({
@@ -396,9 +399,9 @@ export function useVehicles(status?: string | null) {
   return useInfiniteQuery({
     queryKey: ["fleet", status ?? "all"],
     queryFn: async ({ pageParam }) =>
-      fetch(
-        buildUrl("/api/fleet", { status, cursor: pageParam as string | null })
-      ).then((r) => r.json() as Promise<FleetPage>),
+      fetch(buildUrl("/api/fleet", { status, cursor: pageParam as string | null })).then(
+        (r) => r.json() as Promise<FleetPage>
+      ),
     initialPageParam: null as string | null,
     getNextPageParam: (page) => page.nextCursor ?? null,
     select: (data) => ({
@@ -422,9 +425,9 @@ export function useKnowledgeArticles(category?: string | null) {
   return useInfiniteQuery({
     queryKey: ["knowledge", category ?? "all"],
     queryFn: async ({ pageParam }) =>
-      fetch(
-        buildUrl("/api/knowledge", { category, cursor: pageParam as string | null })
-      ).then((r) => r.json() as Promise<KnowledgePage>),
+      fetch(buildUrl("/api/knowledge", { category, cursor: pageParam as string | null })).then(
+        (r) => r.json() as Promise<KnowledgePage>
+      ),
     initialPageParam: null as string | null,
     getNextPageParam: (page) => page.nextCursor ?? null,
     select: (data) => ({
@@ -449,9 +452,9 @@ export function useCourses(category?: string | null) {
   return useInfiniteQuery({
     queryKey: ["learning", category ?? "all"],
     queryFn: async ({ pageParam }) =>
-      fetch(
-        buildUrl("/api/learning", { category, cursor: pageParam as string | null })
-      ).then((r) => r.json() as Promise<LearningPage>),
+      fetch(buildUrl("/api/learning", { category, cursor: pageParam as string | null })).then(
+        (r) => r.json() as Promise<LearningPage>
+      ),
     initialPageParam: null as string | null,
     getNextPageParam: (page) => page.nextCursor ?? null,
     select: (data) => ({
@@ -476,9 +479,9 @@ export function useShifts(status?: string | null) {
   return useInfiniteQuery({
     queryKey: ["schedule", status ?? "all"],
     queryFn: async ({ pageParam }) =>
-      fetch(
-        buildUrl("/api/schedule", { status, cursor: pageParam as string | null })
-      ).then((r) => r.json() as Promise<ShiftsPage>),
+      fetch(buildUrl("/api/schedule", { status, cursor: pageParam as string | null })).then(
+        (r) => r.json() as Promise<ShiftsPage>
+      ),
     initialPageParam: null as string | null,
     getNextPageParam: (page) => page.nextCursor ?? null,
     select: (data) => ({
@@ -501,9 +504,9 @@ export function useSuppliers(status?: string | null) {
   return useInfiniteQuery({
     queryKey: ["suppliers", status ?? "all"],
     queryFn: async ({ pageParam }) =>
-      fetch(
-        buildUrl("/api/suppliers", { status, cursor: pageParam as string | null })
-      ).then((r) => r.json() as Promise<SuppliersPage>),
+      fetch(buildUrl("/api/suppliers", { status, cursor: pageParam as string | null })).then(
+        (r) => r.json() as Promise<SuppliersPage>
+      ),
     initialPageParam: null as string | null,
     getNextPageParam: (page) => page.nextCursor ?? null,
     select: (data) => ({
@@ -526,9 +529,9 @@ export function useTools(status?: string | null) {
   return useInfiniteQuery({
     queryKey: ["tools", status ?? "all"],
     queryFn: async ({ pageParam }) =>
-      fetch(
-        buildUrl("/api/tools", { status, cursor: pageParam as string | null })
-      ).then((r) => r.json() as Promise<ToolsPage>),
+      fetch(buildUrl("/api/tools", { status, cursor: pageParam as string | null })).then(
+        (r) => r.json() as Promise<ToolsPage>
+      ),
     initialPageParam: null as string | null,
     getNextPageParam: (page) => page.nextCursor ?? null,
     select: (data) => ({
@@ -553,8 +556,7 @@ interface OperationsData {
 export function useOperationsData() {
   return useQuery({
     queryKey: ["operations"],
-    queryFn: () =>
-      fetch("/api/operations").then((r) => r.json() as Promise<OperationsData>),
+    queryFn: () => fetch("/api/operations").then((r) => r.json() as Promise<OperationsData>),
   })
 }
 
@@ -625,9 +627,9 @@ export function useNotifications(filter?: string | null) {
   return useInfiniteQuery({
     queryKey: ["notifications", filter ?? "all"],
     queryFn: async ({ pageParam }) =>
-      fetch(
-        buildUrl("/api/notifications", { filter, cursor: pageParam as string | null })
-      ).then((r) => r.json() as Promise<NotificationsPage>),
+      fetch(buildUrl("/api/notifications", { filter, cursor: pageParam as string | null })).then(
+        (r) => r.json() as Promise<NotificationsPage>
+      ),
     initialPageParam: null as string | null,
     getNextPageParam: (page) => page.nextCursor ?? null,
     select: (data) => ({
@@ -638,4 +640,3 @@ export function useNotifications(filter?: string | null) {
     }),
   })
 }
-

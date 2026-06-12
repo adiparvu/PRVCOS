@@ -162,7 +162,7 @@ export const GET = withGates(
         id: "c1",
         time: clockInStr!,
         label: "Clock In",
-        sub: `${row.storeName ?? "—"} · GPS ${row.gpsVerified ? "verificat" : "neverificat"}${row.lateMinutes ? ` · +${row.lateMinutes} min întârziere` : ""}`,
+        sub: `${row.storeName ?? "—"} · GPS ${row.gpsVerified ? "verified" : "unverified"}${row.lateMinutes ? ` · +${row.lateMinutes} min late` : ""}`,
         done: true,
         color: row.lateMinutes ? "rgba(255,159,10,.8)" : "rgba(48,209,88,.8)",
       })
@@ -173,7 +173,7 @@ export const GET = withGates(
         time: clockOutStr!,
         label: "Clock Out",
         sub: activeMinutes
-          ? `Tură finalizată · ${Math.floor(activeMinutes / 60)}h ${activeMinutes % 60}m total`
+          ? `Shift completed · ${Math.floor(activeMinutes / 60)}h ${activeMinutes % 60}m total`
           : null,
         done: true,
         color: "rgba(48,209,88,.8)",
@@ -183,7 +183,7 @@ export const GET = withGates(
         id: "c-pending",
         time: "—",
         label: "Clock Out",
-        sub: "Tură activă",
+        sub: "Active shift",
         done: false,
         color: "rgba(255,255,255,.15)",
       })
@@ -191,8 +191,8 @@ export const GET = withGates(
       timeline.push({
         id: "c-absent",
         time: "—",
-        label: "Nicio activitate înregistrată",
-        sub: row.status === "leave" ? "În concediu" : "Absență nemotivată",
+        label: "No activity recorded",
+        sub: row.status === "leave" ? "On leave" : "Unexcused absence",
         done: false,
         color: row.status === "leave" ? "rgba(10,132,255,.5)" : "rgba(255,69,58,.5)",
       })

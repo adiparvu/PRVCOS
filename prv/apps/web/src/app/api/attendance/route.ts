@@ -44,15 +44,15 @@ export interface AttendanceMeta {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 const TZ = "Europe/Bucharest"
-const DAY_LABELS = ["Dum", "Lun", "Mar", "Mie", "Joi", "Vin", "Sâm"] as const
+const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const
 const MONTH_LABELS = [
-  "Ian",
+  "Jan",
   "Feb",
   "Mar",
   "Apr",
-  "Mai",
-  "Iun",
-  "Iul",
+  "May",
+  "Jun",
+  "Jul",
   "Aug",
   "Sep",
   "Oct",
@@ -202,7 +202,10 @@ export const POST = withGates(
 
     const parsed = createAttendanceSchema.safeParse(body)
     if (!parsed.success) {
-      return NextResponse.json({ error: "Invalid payload", issues: parsed.error.issues }, { status: 422 })
+      return NextResponse.json(
+        { error: "Invalid payload", issues: parsed.error.issues },
+        { status: 422 }
+      )
     }
 
     const [record] = await db
