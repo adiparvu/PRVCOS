@@ -489,7 +489,7 @@ export function DocumentsListClient() {
             <line x1="12" y1="17" x2="12.01" y2="17" />
           </svg>
           <span style={{ fontSize: 13, color: amber, fontWeight: 500 }}>
-            Contract A4 Brașov expiră în 3 days
+            Contract A4 Brasov expires in 3 days
           </span>
         </div>
       )}

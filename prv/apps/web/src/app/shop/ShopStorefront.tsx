@@ -146,7 +146,7 @@ export function ShopStorefront() {
         </div>
         <button
           type="button"
-          aria-label="Deschide coșul"
+          aria-label="Open cart"
           onClick={() => setCartOpen(true)}
           className="relative w-[42px] h-[42px] rounded-[13px] flex items-center justify-center"
           style={{ background: "var(--prv-g2)", border: "1px solid var(--prv-border)" }}
@@ -202,7 +202,7 @@ export function ShopStorefront() {
         className="rounded-[16px] p-4 mb-[18px] relative"
         style={{ background: "var(--prv-g1)", border: "1px solid var(--prv-border-subtle)" }}
       >
-        <p className="text-[12px] font-semibold text-white/35 mb-3">Interval de preț</p>
+        <p className="text-[12px] font-semibold text-white/35 mb-3">Price range</p>
         <GlassRangeSlider
           min={PRICE_MIN}
           max={PRICE_MAX}
@@ -252,10 +252,10 @@ export function ShopStorefront() {
       <StandardSheet
         open={cartOpen}
         onClose={() => setCartOpen(false)}
-        title={`Coșul tău · ${cartCount} ${cartCount === 1 ? "produs" : "produse"}`}
+        title={`Your cart · ${cartCount} ${cartCount === 1 ? "item" : "items"}`}
       >
         {cartItems.length === 0 ? (
-          <p className="text-white/35 text-[14px] text-center py-10">Coșul este gol</p>
+          <p className="text-white/35 text-[14px] text-center py-10">Your cart is empty</p>
         ) : (
           <>
             <div className="flex flex-col">

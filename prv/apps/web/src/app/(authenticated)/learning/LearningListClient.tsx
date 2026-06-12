@@ -681,7 +681,7 @@ export function LearningListClient() {
             </div>
           )}
 
-          {/* continuă parcursul */}
+          {/* continue learning path */}
           {inProgressOther.length > 0 && (
             <div style={{ padding: "20px 16px 0" }}>
               <SectionHeader label="Continue Learning Path" />
@@ -693,7 +693,7 @@ export function LearningListClient() {
             </div>
           )}
 
-          {/* realizări */}
+          {/* achievements */}
           {achievements.length > 0 && (
             <div style={{ padding: "18px 16px 0" }}>
               <SectionHeader label="Recent Achievements" />

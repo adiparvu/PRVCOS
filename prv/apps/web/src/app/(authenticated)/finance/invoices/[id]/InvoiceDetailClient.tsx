@@ -695,7 +695,7 @@ function InvoiceActionsSheet({
           <textarea
             value={voidReason}
             onChange={(e) => setVoidReason(e.target.value)}
-            placeholder="Motiv anulare (obligatoriu)…"
+            placeholder="Cancellation reason (required)…"
             maxLength={500}
             style={{
               width: "100%",

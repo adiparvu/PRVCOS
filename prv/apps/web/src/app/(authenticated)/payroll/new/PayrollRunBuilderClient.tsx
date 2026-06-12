@@ -33,7 +33,7 @@ const EMPLOYEES: PayrollEmployee[] = [
     initials: "EM",
     name: "Elena Marin",
     role: "Project Manager",
-    location: "Timișoara",
+    location: "Timisoara",
     weeklyGross: 1120,
   },
   {
@@ -57,7 +57,7 @@ const EMPLOYEES: PayrollEmployee[] = [
     initials: "GS",
     name: "George Stoica",
     role: "Electrician",
-    location: "București",
+    location: "Bucharest",
     weeklyGross: 630,
   },
   {

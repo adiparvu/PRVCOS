@@ -162,7 +162,7 @@ function mapApiProject(p: ProjectSummary): Project {
 const PROJECTS: Project[] = [
   {
     id: "p1",
-    name: "Renovare Apartament · Cluj Mănăștur",
+    name: "Apartment Renovation · Cluj Manastur",
     pm: "Andrei P.",
     value: "€18,400",
     due: "Jun 28",
@@ -188,7 +188,7 @@ const PROJECTS: Project[] = [
       },
       {
         initials: "MR",
-        name: "Marius Roșu",
+        name: "Marius Rosu",
         role: "Site Supervisor",
         status: "online",
         statusLabel: "On Site",
@@ -209,7 +209,7 @@ const PROJECTS: Project[] = [
       },
       {
         initials: "IC",
-        name: "Ion Crișan",
+        name: "Ion Crisan",
         role: "Plumber",
         status: "offline",
         statusLabel: "Off Shift",
@@ -219,14 +219,14 @@ const PROJECTS: Project[] = [
   },
   {
     id: "p2",
-    name: "Bucătărie Completă · Timișoara",
+    name: "Full Kitchen · Timisoara",
     pm: "Elena M.",
     value: "€24,200",
     due: "Jul 15",
     pct: 45,
     status: "active",
     type: "renovation",
-    location: "Timișoara",
+    location: "Timisoara",
     workers: 5,
     phases: [
       { num: 1, name: "Design & Planning", dates: "May 20 – May 26", pct: 100, state: "done" },
@@ -269,14 +269,14 @@ const PROJECTS: Project[] = [
   },
   {
     id: "p3",
-    name: "Baie Modernă · București Floreasca",
+    name: "Modern Bathroom · Bucharest Floreasca",
     pm: "Radu D.",
     value: "€12,800",
     due: "Jun 20",
     pct: 90,
     status: "review",
     type: "renovation",
-    location: "București",
+    location: "Bucharest",
     workers: 3,
     phases: [
       { num: 1, name: "Demolition", dates: "May 10 – May 13", pct: 100, state: "done" },
@@ -312,14 +312,14 @@ const PROJECTS: Project[] = [
   },
   {
     id: "p4",
-    name: "Spațiu Comercial · Brașov",
+    name: "Commercial Space · Brasov",
     pm: "Vlad N.",
     value: "€67,000",
     due: "Aug 30",
     pct: 28,
     status: "active",
     type: "renovation",
-    location: "Brașov",
+    location: "Brasov",
     workers: 10,
     phases: [
       { num: 1, name: "Permits & Planning", dates: "May 1 – May 20", pct: 100, state: "done" },
@@ -355,14 +355,14 @@ const PROJECTS: Project[] = [
   },
   {
     id: "p5",
-    name: "Pardoseli · Iași Copou",
+    name: "Flooring · Iasi Copou",
     pm: "Maria I.",
     value: "€9,600",
     due: "Jun 3",
     pct: 100,
     status: "done",
     type: "renovation",
-    location: "Iași",
+    location: "Iasi",
     workers: 2,
     phases: [
       { num: 1, name: "Prep & Materials", dates: "May 26 – May 27", pct: 100, state: "done" },
@@ -379,7 +379,7 @@ const PROJECTS: Project[] = [
       },
       {
         initials: "DD",
-        name: "Dorel Dănilă",
+        name: "Dorel Danila",
         role: "Floor Specialist",
         status: "offline",
         statusLabel: "Done",
