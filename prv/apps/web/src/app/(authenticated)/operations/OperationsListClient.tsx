@@ -5,7 +5,7 @@ import Link from "next/link"
 import type { Store, Task, Order, Alert, OperationsMeta } from "@/app/api/operations/route"
 import { useOperationsData } from "@/lib/api-hooks"
 
-type FilterType = "Toate" | "Magazine" | "Sarcini" | "Comenzi"
+type FilterType = "All" | "Stores" | "Tasks" | "Orders"
 
 interface OperationsData {
   stores: Store[]
@@ -502,7 +502,7 @@ export default function OperationsListClient() {
   const [fabOpen, setFabOpen] = useState(false)
   const { data } = useOperationsData()
 
-  const filters: FilterType[] = ["Toate", "Magazine", "Sarcini", "Comenzi"]
+  const filters: FilterType[] = ["All", "Stores", "Tasks", "Orders"]
 
   const activeTasks = data?.tasks.filter((t) => t.status !== "done") ?? []
   const allTasks = data?.tasks ?? []
@@ -546,17 +546,17 @@ export default function OperationsListClient() {
       {/* KPI Strip */}
       <div style={{ display: "flex", gap: 8, padding: "16px 16px 0" }}>
         <KpiTile
-          label="Magazine"
+          label="Stores"
           value={data?.meta.totalStores ?? "—"}
           color="rgba(48,209,88,0.95)"
         />
         <KpiTile
-          label="Sarcini"
+          label="Tasks"
           value={data?.meta.activeTaskCount ?? "—"}
           color="rgba(255,159,10,0.95)"
         />
         <KpiTile
-          label="Comenzi"
+          label="Orders"
           value={data?.meta.ordersToday ?? "—"}
           color="rgba(10,132,255,0.9)"
         />
@@ -607,10 +607,10 @@ export default function OperationsListClient() {
       {/* Content */}
       <div style={{ marginTop: 6 }}>
         {/* Stores Section */}
-        {(filter === "All" || filter === "Magazine") && (
+        {(filter === "All" || filter === "Stores") && (
           <div>
             <SectionHeader
-              label="Magazine"
+              label="Stores"
               count={filter === "All" ? undefined : data?.stores.length}
             />
             <div
@@ -641,7 +641,7 @@ export default function OperationsListClient() {
                 : [1, 2, 3].map((n) => <SkeletonRow key={n} />)}
               {filter === "All" && data && data.stores.length > 3 && (
                 <button
-                  onClick={() => setFilter("Magazine")}
+                  onClick={() => setFilter("Stores")}
                   style={{
                     width: "100%",
                     padding: "13px 16px",
@@ -663,10 +663,10 @@ export default function OperationsListClient() {
         )}
 
         {/* Tasks Section */}
-        {(filter === "All" || filter === "Sarcini") && (
+        {(filter === "All" || filter === "Tasks") && (
           <div>
             <SectionHeader
-              label="Sarcini Active"
+              label="Active Tasks"
               count={filter === "All" ? undefined : allTasks.length}
             />
             <div
@@ -697,7 +697,7 @@ export default function OperationsListClient() {
                 : [1, 2, 3].map((n) => <SkeletonRow key={n} />)}
               {filter === "All" && data && activeTasks.length > 4 && (
                 <button
-                  onClick={() => setFilter("Sarcini")}
+                  onClick={() => setFilter("Tasks")}
                   style={{
                     width: "100%",
                     padding: "13px 16px",
@@ -719,10 +719,10 @@ export default function OperationsListClient() {
         )}
 
         {/* Orders Section */}
-        {(filter === "All" || filter === "Comenzi") && (
+        {(filter === "All" || filter === "Orders") && (
           <div>
             <SectionHeader
-              label="Comenzi Recente"
+              label="Recent Orders"
               count={filter === "All" ? undefined : allOrders.length}
             />
             <div
@@ -753,7 +753,7 @@ export default function OperationsListClient() {
                 : [1, 2, 3].map((n) => <SkeletonRow key={n} />)}
               {filter === "All" && data && allOrders.length > 4 && (
                 <button
-                  onClick={() => setFilter("Comenzi")}
+                  onClick={() => setFilter("Orders")}
                   style={{
                     width: "100%",
                     padding: "13px 16px",
