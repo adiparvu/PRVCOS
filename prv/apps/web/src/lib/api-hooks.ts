@@ -640,3 +640,124 @@ export function useNotifications(filter?: string | null) {
     }),
   })
 }
+
+// ── Renovation Projects ───────────────────────────────────────────────────────
+
+export interface RenovationProjectSummary {
+  id: string
+  projectCode: string | null
+  title: string
+  status: string
+  priority: string
+  projectType: string
+  estimatedValue: number | null
+  contractedValue: number | null
+  currency: string
+  completionPercentage: number
+  estimatedStartDate: string | null
+  estimatedEndDate: string | null
+  city: string | null
+  clientId: string | null
+  clientName: string | null
+  projectManagerId: string | null
+  projectManagerName: string | null
+  createdAt: string
+}
+
+interface RenovationProjectsPage {
+  projects: RenovationProjectSummary[]
+  count: number
+  nextCursor: string | null
+}
+
+export function useRenovationProjects(status?: string | null) {
+  return useInfiniteQuery({
+    queryKey: ["renovation-projects", status ?? "all"],
+    queryFn: async ({ pageParam }) =>
+      fetch(
+        buildUrl("/api/renovation/projects", { status, cursor: pageParam as string | null })
+      ).then((r) => r.json() as Promise<RenovationProjectsPage>),
+    initialPageParam: null as string | null,
+    getNextPageParam: (page) => page.nextCursor ?? null,
+    select: (data) => ({
+      pages: data.pages,
+      pageParams: data.pageParams,
+      projects: data.pages.flatMap((p) => p.projects),
+    }),
+  })
+}
+
+export function useRenovationProject(id: string) {
+  return useQuery({
+    queryKey: ["renovation-project", id],
+    queryFn: () =>
+      fetch(`/api/renovation/projects/${id}`).then(
+        (r) => r.json() as Promise<{ project: unknown }>
+      ),
+    enabled: !!id,
+  })
+}
+
+export function useRenovationPhases(projectId: string) {
+  return useQuery({
+    queryKey: ["renovation-phases", projectId],
+    queryFn: () =>
+      fetch(`/api/renovation/projects/${projectId}/phases`).then(
+        (r) => r.json() as Promise<{ phases: unknown[] }>
+      ),
+    enabled: !!projectId,
+  })
+}
+
+export function useRenovationTasks(projectId: string, status?: string | null) {
+  return useQuery({
+    queryKey: ["renovation-tasks", projectId, status ?? "all"],
+    queryFn: () =>
+      fetch(buildUrl(`/api/renovation/projects/${projectId}/tasks`, { status })).then(
+        (r) => r.json() as Promise<{ tasks: unknown[] }>
+      ),
+    enabled: !!projectId,
+  })
+}
+
+export function useRenovationEstimates(projectId: string) {
+  return useQuery({
+    queryKey: ["renovation-estimates", projectId],
+    queryFn: () =>
+      fetch(`/api/renovation/projects/${projectId}/estimates?lines=true`).then(
+        (r) => r.json() as Promise<{ estimates: unknown[] }>
+      ),
+    enabled: !!projectId,
+  })
+}
+
+export function useRenovationContracts(projectId: string) {
+  return useQuery({
+    queryKey: ["renovation-contracts", projectId],
+    queryFn: () =>
+      fetch(`/api/renovation/projects/${projectId}/contracts`).then(
+        (r) => r.json() as Promise<{ contracts: unknown[] }>
+      ),
+    enabled: !!projectId,
+  })
+}
+
+export function useRenovationSiteReports(projectId: string) {
+  return useInfiniteQuery({
+    queryKey: ["renovation-site-reports", projectId],
+    queryFn: async ({ pageParam }) =>
+      fetch(
+        buildUrl(`/api/renovation/projects/${projectId}/site-reports`, {
+          cursor: pageParam as string | null,
+        })
+      ).then((r) => r.json() as Promise<{ reports: unknown[]; nextCursor: string | null }>),
+    initialPageParam: null as string | null,
+    getNextPageParam: (page) => page.nextCursor ?? null,
+    enabled: !!projectId,
+    select: (data) => ({
+      pages: data.pages,
+      pageParams: data.pageParams,
+      reports: data.pages.flatMap((p) => p.reports),
+    }),
+  })
+}

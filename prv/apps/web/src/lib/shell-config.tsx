@@ -143,6 +143,15 @@ const ProjectsIcon = () =>
     </>
   )
 
+const RenovationIcon = () =>
+  ic(
+    <>
+      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+      <path d="M9 22V12h6v10" />
+      <path d="M12 7v2" />
+    </>
+  )
+
 const ChatIcon = () =>
   ic(
     <>
@@ -333,7 +342,7 @@ const SHELLS: Record<string, ShellConfig> = {
   executive: {
     tabs: [
       { id: "command", label: "Command", href: "/dashboard", icon: <CommandIcon /> },
-      { id: "companies", label: "Companies", href: "/operations", icon: <CompaniesIcon /> },
+      { id: "renovation", label: "Renovation", href: "/renovation", icon: <RenovationIcon /> },
       {
         id: "intelligence",
         label: "Intelligence",
@@ -440,7 +449,7 @@ const SHELLS: Record<string, ShellConfig> = {
     tabs: [
       { id: "today", label: "Today", href: "/dashboard", icon: <TodayIcon /> },
       { id: "tasks", label: "Tasks", href: "/schedule", icon: <TasksIcon /> },
-      { id: "projects", label: "Projects", href: "/projects", icon: <ProjectsIcon /> },
+      { id: "renovation", label: "Renovation", href: "/renovation", icon: <RenovationIcon /> },
       { id: "chat", label: "Chat", href: "/notifications", icon: <ChatIcon /> },
       { id: "me", label: "Me", href: "/people", icon: <MeIcon /> },
     ],
@@ -452,7 +461,7 @@ const SHELLS: Record<string, ShellConfig> = {
     tabs: [
       { id: "command", label: "Command", href: "/dashboard", icon: <CommandIcon /> },
       { id: "team", label: "Team", href: "/people", icon: <TeamIcon /> },
-      { id: "projects", label: "Projects", href: "/projects", icon: <ProjectsIcon /> },
+      { id: "renovation", label: "Renovation", href: "/renovation", icon: <RenovationIcon /> },
       { id: "chat", label: "Chat", href: "/notifications", icon: <ChatIcon /> },
       { id: "inbox", label: "Inbox", href: "/notifications", icon: <InboxIcon /> },
     ],
@@ -463,7 +472,7 @@ const SHELLS: Record<string, ShellConfig> = {
   project_oms: {
     tabs: [
       { id: "command", label: "Command", href: "/dashboard", icon: <CommandIcon /> },
-      { id: "projects", label: "Projects", href: "/projects", icon: <ProjectsIcon /> },
+      { id: "renovation", label: "Renovation", href: "/renovation", icon: <RenovationIcon /> },
       { id: "teams", label: "Teams", href: "/people", icon: <TeamIcon /> },
       { id: "reports", label: "Reports", href: "/intelligence", icon: <ReportsIcon /> },
       { id: "inbox", label: "Inbox", href: "/notifications", icon: <InboxIcon /> },
@@ -475,7 +484,7 @@ const SHELLS: Record<string, ShellConfig> = {
   project_ops_manager: {
     tabs: [
       { id: "command", label: "Command", href: "/dashboard", icon: <CommandIcon /> },
-      { id: "portfolio", label: "Portfolio", href: "/projects", icon: <ProjectsIcon /> },
+      { id: "renovation", label: "Renovation", href: "/renovation", icon: <RenovationIcon /> },
       { id: "people", label: "People", href: "/people", icon: <PeopleIcon /> },
       { id: "finance", label: "Finance", href: "/finance", icon: <FinanceIcon /> },
       {
@@ -492,7 +501,7 @@ const SHELLS: Record<string, ShellConfig> = {
   project_director: {
     tabs: [
       { id: "command", label: "Command", href: "/dashboard", icon: <CommandIcon /> },
-      { id: "portfolio", label: "Portfolio", href: "/projects", icon: <ProjectsIcon /> },
+      { id: "renovation", label: "Renovation", href: "/renovation", icon: <RenovationIcon /> },
       { id: "finance", label: "Finance", href: "/finance", icon: <FinanceIcon /> },
       { id: "people", label: "People", href: "/people", icon: <PeopleIcon /> },
       {
