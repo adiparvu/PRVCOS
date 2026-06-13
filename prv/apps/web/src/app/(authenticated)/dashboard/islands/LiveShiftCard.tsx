@@ -10,6 +10,14 @@ interface Props {
 export function LiveShiftCard({ userId }: Props) {
   const shift = useLiveShift(userId)
 
+  if (!shift.hasShift) return null
+
+  const badge = shift.isClockedOut
+    ? { label: "Done", bg: "rgba(255,255,255,0.10)", color: "rgba(255,255,255,0.45)" }
+    : shift.isClockedIn
+      ? { label: "Active", bg: "rgba(80,220,120,0.16)", color: "rgba(80,220,120,0.90)" }
+      : { label: "Scheduled", bg: "rgba(10,132,255,0.14)", color: "rgba(10,132,255,0.90)" }
+
   return (
     <GlassCard className="mb-3.5">
       <div className="flex items-start justify-between mb-2">
@@ -21,14 +29,17 @@ export function LiveShiftCard({ userId }: Props) {
             {shift.start} – {shift.end}
           </p>
           <p className="text-[12px] mt-0.5" style={{ color: "var(--prv-text-3)" }}>
-            {shift.location} · {shift.remainingH}h {shift.remainingM}m remaining
+            {shift.location}
+            {!shift.isClockedOut && shift.remainingH + shift.remainingM > 0
+              ? ` · ${shift.remainingH}h ${shift.remainingM}m remaining`
+              : ""}
           </p>
         </div>
         <span
           className="text-[10px] font-bold px-2 py-1 rounded-[8px]"
-          style={{ background: "rgba(80,220,120,0.16)", color: "rgba(80,220,120,0.90)" }}
+          style={{ background: badge.bg, color: badge.color }}
         >
-          Active
+          {badge.label}
         </span>
       </div>
       <div
@@ -44,7 +55,7 @@ export function LiveShiftCard({ userId }: Props) {
           className="h-full rounded-full transition-[width] duration-[1200ms] ease-out"
           style={{
             width: `${shift.progressPct}%`,
-            background: "rgba(255,255,255,0.55)",
+            background: shift.isClockedOut ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.55)",
           }}
         />
       </div>

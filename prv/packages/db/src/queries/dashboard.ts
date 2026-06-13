@@ -1,4 +1,4 @@
-import { sql, eq, and, gte, lt, inArray, isNull } from "drizzle-orm"
+import { sql, eq, and, gte, lt, inArray, isNull, or, ne } from "drizzle-orm"
 import { db } from "../client"
 import {
   users,
@@ -7,7 +7,25 @@ import {
   notifications,
   invoices,
   companyMemberships,
+  userPresence,
+  attendanceRecords,
+  tasks,
 } from "../schema"
+
+const TZ = "Europe/Bucharest"
+const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const
+
+function getWorkWeekDates(todayStr: string): string[] {
+  const today = new Date(todayStr)
+  const dow = today.getDay()
+  const monday = new Date(today)
+  monday.setDate(today.getDate() - ((dow + 6) % 7))
+  return Array.from({ length: 5 }, (_, i) => {
+    const d = new Date(monday)
+    d.setDate(monday.getDate() + i)
+    return d.toISOString().slice(0, 10)
+  })
+}
 
 // ── Manager KPIs ─────────────────────────────────────────────────────────────
 
@@ -97,6 +115,29 @@ export async function queryManagerKpis(companyId: string, userId: string): Promi
 
 // ── Worker context ────────────────────────────────────────────────────────────
 
+export interface WorkerTeamMember {
+  id: string
+  firstName: string
+  lastName: string
+  jobTitle: string | null
+  presenceStatus: string
+}
+
+export interface WorkerWeekDay {
+  date: string
+  label: string
+  workedMinutes: number
+  isClockedIn: boolean
+  today: boolean
+}
+
+export interface WorkerTask {
+  id: string
+  title: string
+  priority: string
+  status: string
+}
+
 export interface WorkerContext {
   firstName: string
   lastName: string
@@ -104,13 +145,19 @@ export interface WorkerContext {
   storeId: string | null
   inboxCount: number
   activeProjectCount: number
+  teamMembers: WorkerTeamMember[]
+  weekDays: WorkerWeekDay[]
+  todayTasks: WorkerTask[]
 }
 
 export async function queryWorkerContext(
   userId: string,
   companyId: string
 ): Promise<WorkerContext> {
-  const [userRow, inboxRow, projectRow] = await Promise.all([
+  const todayStr = new Intl.DateTimeFormat("sv-SE", { timeZone: TZ }).format(new Date())
+  const weekDates = getWorkWeekDates(todayStr)
+
+  const [userRow, inboxRow, projectRow, teamRows, attendanceRows, taskRows] = await Promise.all([
     db
       .select({
         firstName: users.firstName,
@@ -146,7 +193,69 @@ export async function queryWorkerContext(
           isNull(projects.deletedAt)
         )
       ),
+
+    db
+      .select({
+        id: users.id,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        jobTitle: users.jobTitle,
+        presenceStatus: userPresence.status,
+      })
+      .from(users)
+      .leftJoin(userPresence, eq(userPresence.userId, users.id))
+      .where(and(eq(users.companyId, companyId), ne(users.id, userId), eq(users.isActive, true)))
+      .limit(8),
+
+    db
+      .select({
+        date: attendanceRecords.date,
+        clockIn: attendanceRecords.clockIn,
+        clockOut: attendanceRecords.clockOut,
+      })
+      .from(attendanceRecords)
+      .where(
+        and(
+          eq(attendanceRecords.userId, userId),
+          eq(attendanceRecords.companyId, companyId),
+          inArray(attendanceRecords.date, weekDates)
+        )
+      ),
+
+    db
+      .select({
+        id: tasks.id,
+        title: tasks.title,
+        priority: tasks.priority,
+        status: tasks.status,
+      })
+      .from(tasks)
+      .where(
+        and(
+          eq(tasks.companyId, companyId),
+          isNull(tasks.deletedAt),
+          or(eq(tasks.assigneeUserId, userId), eq(tasks.isAllStores, true))
+        )
+      )
+      .limit(20),
   ])
+
+  const attendanceByDate = new Map(attendanceRows.map((r) => [r.date, r]))
+  const weekDays: WorkerWeekDay[] = weekDates.map((date) => {
+    const rec = attendanceByDate.get(date)
+    const isToday = date === todayStr
+    const dow = new Date(date).getDay()
+    let workedMinutes = 0
+    let isClockedIn = false
+    if (rec?.clockIn) {
+      const end = rec.clockOut ?? (isToday ? new Date() : null)
+      if (end) {
+        workedMinutes = Math.round((end.getTime() - rec.clockIn.getTime()) / 60_000)
+      }
+      isClockedIn = !rec.clockOut
+    }
+    return { date, label: DAY_LABELS[dow] ?? "---", workedMinutes, isClockedIn, today: isToday }
+  })
 
   return {
     firstName: userRow[0]?.firstName ?? "there",
@@ -155,6 +264,20 @@ export async function queryWorkerContext(
     storeId: userRow[0]?.storeId ?? null,
     inboxCount: inboxRow[0]?.count ?? 0,
     activeProjectCount: projectRow[0]?.count ?? 0,
+    teamMembers: teamRows.map((r) => ({
+      id: r.id,
+      firstName: r.firstName,
+      lastName: r.lastName,
+      jobTitle: r.jobTitle,
+      presenceStatus: r.presenceStatus ?? "offline",
+    })),
+    weekDays,
+    todayTasks: taskRows.map((r) => ({
+      id: r.id,
+      title: r.title,
+      priority: r.priority,
+      status: r.status,
+    })),
   }
 }
 
