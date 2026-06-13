@@ -45,3 +45,5 @@ export * from "./intelligence"
 export * from "./shop"
 // Sprint 33: Portal Platform — external portal accounts, magic tokens, sessions
 export * from "./portal"
+// Phase 7.5: Renovation Services Platform — projects, phases, tasks, estimates, contracts, site reports
+export * from "./renovation"
