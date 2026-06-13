@@ -374,3 +374,68 @@ export const budgetsRelations = relations(budgets, ({ one }) => ({
   store: one(stores, { fields: [budgets.storeId], references: [stores.id] }),
   createdBy: one(users, { fields: [budgets.createdByUserId], references: [users.id] }),
 }))
+
+// ─── Recurring Invoices ───────────────────────────────────────────────────────
+
+export const recurringFrequencyEnum = pgEnum("recurring_frequency", [
+  "weekly",
+  "monthly",
+  "quarterly",
+  "annual",
+])
+
+export const recurringInvoices = pgTable(
+  "recurring_invoices",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id, { onDelete: "cascade" }),
+    clientId: uuid("client_id").references(() => clients.id, { onDelete: "set null" }),
+    projectId: uuid("project_id").references(() => projects.id, { onDelete: "set null" }),
+    createdByUserId: uuid("created_by_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    templateInvoiceId: uuid("template_invoice_id").references(() => invoices.id, {
+      onDelete: "set null",
+    }),
+    name: varchar("name", { length: 255 }).notNull(),
+    frequency: recurringFrequencyEnum("frequency").notNull().default("monthly"),
+    nextRunDate: date("next_run_date").notNull(),
+    endDate: date("end_date"),
+    isActive: boolean("is_active").notNull().default(true),
+    subtotal: numeric("subtotal", { precision: 12, scale: 2 }).notNull(),
+    vatRate: numeric("vat_rate", { precision: 5, scale: 2 }).notNull().default("19"),
+    vatAmount: numeric("vat_amount", { precision: 12, scale: 2 }).notNull(),
+    total: numeric("total", { precision: 12, scale: 2 }).notNull(),
+    currency: varchar("currency", { length: 3 }).notNull().default("RON"),
+    notes: text("notes"),
+    lastRunAt: timestamp("last_run_at", { withTimezone: true }),
+    runCount: integer("run_count").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
+  },
+  (table) => [
+    index("recurring_invoices_company_id_idx").on(table.companyId),
+    index("recurring_invoices_next_run_idx").on(table.nextRunDate),
+    index("recurring_invoices_is_active_idx").on(table.isActive),
+  ]
+)
+
+export const recurringInvoicesRelations = relations(recurringInvoices, ({ one }) => ({
+  company: one(companies, { fields: [recurringInvoices.companyId], references: [companies.id] }),
+  client: one(clients, { fields: [recurringInvoices.clientId], references: [clients.id] }),
+  project: one(projects, {
+    fields: [recurringInvoices.projectId],
+    references: [projects.id],
+  }),
+  templateInvoice: one(invoices, {
+    fields: [recurringInvoices.templateInvoiceId],
+    references: [invoices.id],
+  }),
+  createdBy: one(users, {
+    fields: [recurringInvoices.createdByUserId],
+    references: [users.id],
+  }),
+}))
