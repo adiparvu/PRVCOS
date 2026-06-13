@@ -13,6 +13,7 @@ import { resolveQuickActions } from "@/lib/quick-actions"
 import { GlassCard, SectionLabel, QuickActionsGrid } from "../_shared"
 import { LiveKpiGrid } from "../islands/LiveKpiGrid"
 import { LiveActivityFeed } from "../islands/LiveActivityFeed"
+import { ExecutiveSummaryPanel } from "@/components/dashboard/ExecutiveSummaryPanel"
 
 const MONTH_SHORT = [
   "Jan",
@@ -308,6 +309,12 @@ export async function ExecutiveDashboard({ session }: Props) {
 
       {/* Quick Actions */}
       <QuickActionsGrid actions={quickActions} />
+
+      {/* Executive Summary — live financial + operational snapshot */}
+      <GlassCard className="mb-3.5">
+        <SectionLabel label="Situație executivă" />
+        <ExecutiveSummaryPanel />
+      </GlassCard>
 
       {/* Recent Activity — live client island seeded with real audit log entries */}
       <LiveActivityFeed initialEntries={INITIAL_ACTIVITY} companyId={session.companyId} />

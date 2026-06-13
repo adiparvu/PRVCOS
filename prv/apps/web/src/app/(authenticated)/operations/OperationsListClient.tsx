@@ -4,8 +4,9 @@ import { useState } from "react"
 import Link from "next/link"
 import type { Store, Task, Order, Alert, OperationsMeta } from "@/app/api/operations/route"
 import { useOperationsData } from "@/lib/api-hooks"
+import { KanbanDataLoader } from "./KanbanDataLoader"
 
-type FilterType = "All" | "Stores" | "Tasks" | "Orders"
+type FilterType = "All" | "Stores" | "Tasks" | "Orders" | "Kanban"
 
 interface OperationsData {
   stores: Store[]
@@ -502,7 +503,7 @@ export default function OperationsListClient() {
   const [fabOpen, setFabOpen] = useState(false)
   const { data } = useOperationsData()
 
-  const filters: FilterType[] = ["All", "Stores", "Tasks", "Orders"]
+  const filters: FilterType[] = ["All", "Stores", "Tasks", "Orders", "Kanban"]
 
   const activeTasks = data?.tasks.filter((t) => t.status !== "done") ?? []
   const allTasks = data?.tasks ?? []
@@ -715,6 +716,33 @@ export default function OperationsListClient() {
                 </button>
               )}
             </div>
+          </div>
+        )}
+
+        {/* Kanban Section */}
+        {filter === "Kanban" && (
+          <div>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "18px 16px 10px",
+              }}
+            >
+              <span
+                style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: "rgba(255,255,255,0.35)",
+                  textTransform: "uppercase",
+                  letterSpacing: 0.8,
+                }}
+              >
+                Kanban Board
+              </span>
+            </div>
+            <KanbanDataLoader />
           </div>
         )}
 
