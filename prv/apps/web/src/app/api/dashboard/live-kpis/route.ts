@@ -39,6 +39,7 @@ export const GET = withGates(
         activeProjects: kpis.activeProjects,
         alerts: kpis.alerts,
         pendingApprovals: kpis.pendingApprovals,
+        openTasks: kpis.openTasks,
       })
     }
 

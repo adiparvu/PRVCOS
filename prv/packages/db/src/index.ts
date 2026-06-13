@@ -7,8 +7,18 @@ export { queryCompanyKpis } from "./queries/kpis"
 export type { CompanyKpis } from "./queries/kpis"
 export { queryGroupKpis } from "./queries/group-kpis"
 export type { GroupKpis } from "./queries/group-kpis"
-export { queryManagerKpis, queryWorkerContext, querySpecialistContext } from "./queries/dashboard"
-export type { ManagerKpis, WorkerContext, SpecialistContext } from "./queries/dashboard"
+export {
+  queryManagerKpis,
+  queryManagerSnapshot,
+  queryWorkerContext,
+  querySpecialistContext,
+} from "./queries/dashboard"
+export type {
+  ManagerKpis,
+  ManagerSnapshot,
+  WorkerContext,
+  SpecialistContext,
+} from "./queries/dashboard"
 export {
   queryShopOrderSummary,
   queryTopProducts,

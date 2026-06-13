@@ -1,4 +1,4 @@
-import { sql, eq, and, gte, lt, inArray, isNull, or, ne } from "drizzle-orm"
+import { sql, eq, and, gte, lt, inArray, isNull, isNotNull, or, ne } from "drizzle-orm"
 import { db } from "../client"
 import {
   users,
@@ -10,6 +10,9 @@ import {
   userPresence,
   attendanceRecords,
   tasks,
+  leaveRequests,
+  payrollRuns,
+  stores,
 } from "../schema"
 
 const TZ = "Europe/Bucharest"
@@ -35,6 +38,7 @@ export interface ManagerKpis {
   activeProjects: number
   alerts: number
   pendingApprovals: number
+  openTasks: number
   periodKey: string
 }
 
@@ -44,64 +48,76 @@ export async function queryManagerKpis(companyId: string, userId: string): Promi
   const startOfNextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1)
   const periodKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`
 
-  const [revenueRow, workforceRow, projectsRow, alertsRow, approvalsRow] = await Promise.all([
-    db
-      .select({ total: sql<string>`COALESCE(SUM(${invoices.total}), 0)::text` })
-      .from(invoices)
-      .where(
-        and(
-          eq(invoices.companyId, companyId),
-          eq(invoices.status, "paid"),
-          gte(invoices.paidAt, startOfMonth),
-          lt(invoices.paidAt, startOfNextMonth)
-        )
-      ),
+  const [revenueRow, workforceRow, projectsRow, alertsRow, approvalsRow, openTasksRow] =
+    await Promise.all([
+      db
+        .select({ total: sql<string>`COALESCE(SUM(${invoices.total}), 0)::text` })
+        .from(invoices)
+        .where(
+          and(
+            eq(invoices.companyId, companyId),
+            eq(invoices.status, "paid"),
+            gte(invoices.paidAt, startOfMonth),
+            lt(invoices.paidAt, startOfNextMonth)
+          )
+        ),
 
-    db
-      .select({ count: sql<number>`COUNT(*)::int` })
-      .from(companyMemberships)
-      .where(
-        and(eq(companyMemberships.companyId, companyId), eq(companyMemberships.status, "ACTIVE"))
-      ),
+      db
+        .select({ count: sql<number>`COUNT(*)::int` })
+        .from(companyMemberships)
+        .where(
+          and(eq(companyMemberships.companyId, companyId), eq(companyMemberships.status, "ACTIVE"))
+        ),
 
-    db
-      .select({ count: sql<number>`COUNT(*)::int` })
-      .from(projects)
-      .where(
-        and(
-          eq(projects.companyId, companyId),
-          eq(projects.status, "active"),
-          eq(projects.isActive, true),
-          isNull(projects.deletedAt)
-        )
-      ),
+      db
+        .select({ count: sql<number>`COUNT(*)::int` })
+        .from(projects)
+        .where(
+          and(
+            eq(projects.companyId, companyId),
+            eq(projects.status, "active"),
+            eq(projects.isActive, true),
+            isNull(projects.deletedAt)
+          )
+        ),
 
-    db
-      .select({ count: sql<number>`COUNT(*)::int` })
-      .from(notifications)
-      .where(
-        and(
-          eq(notifications.companyId, companyId),
-          eq(notifications.userId, userId),
-          eq(notifications.isRead, false),
-          eq(notifications.isDismissed, false),
-          inArray(notifications.type, ["error", "warning"])
-        )
-      ),
+      db
+        .select({ count: sql<number>`COUNT(*)::int` })
+        .from(notifications)
+        .where(
+          and(
+            eq(notifications.companyId, companyId),
+            eq(notifications.userId, userId),
+            eq(notifications.isRead, false),
+            eq(notifications.isDismissed, false),
+            inArray(notifications.type, ["error", "warning"])
+          )
+        ),
 
-    db
-      .select({ count: sql<number>`COUNT(*)::int` })
-      .from(notifications)
-      .where(
-        and(
-          eq(notifications.companyId, companyId),
-          eq(notifications.userId, userId),
-          eq(notifications.isRead, false),
-          eq(notifications.isDismissed, false),
-          eq(notifications.type, "action_required")
-        )
-      ),
-  ])
+      db
+        .select({ count: sql<number>`COUNT(*)::int` })
+        .from(notifications)
+        .where(
+          and(
+            eq(notifications.companyId, companyId),
+            eq(notifications.userId, userId),
+            eq(notifications.isRead, false),
+            eq(notifications.isDismissed, false),
+            eq(notifications.type, "action_required")
+          )
+        ),
+
+      db
+        .select({ count: sql<number>`COUNT(*)::int` })
+        .from(tasks)
+        .where(
+          and(
+            eq(tasks.companyId, companyId),
+            isNull(tasks.deletedAt),
+            inArray(tasks.status, ["todo", "in_progress"])
+          )
+        ),
+    ])
 
   return {
     revenue: revenueRow[0]?.total ?? "0",
@@ -109,7 +125,90 @@ export async function queryManagerKpis(companyId: string, userId: string): Promi
     activeProjects: projectsRow[0]?.count ?? 0,
     alerts: alertsRow[0]?.count ?? 0,
     pendingApprovals: approvalsRow[0]?.count ?? 0,
+    openTasks: openTasksRow[0]?.count ?? 0,
     periodKey,
+  }
+}
+
+// ── Manager Snapshot ──────────────────────────────────────────────────────────
+
+export interface ManagerSnapshot extends ManagerKpis {
+  staffPresent: number
+  staffLate: number
+  staffOnLeave: number
+  pendingLeaveRequests: number
+  pendingPayrollRuns: number
+  snapshotDate: string
+}
+
+export async function queryManagerSnapshot(
+  companyId: string,
+  userId: string
+): Promise<ManagerSnapshot> {
+  const todayStr = new Intl.DateTimeFormat("sv-SE", { timeZone: TZ }).format(new Date())
+
+  const [kpis, presentRow, lateRow, leaveRow, pendingLeaveRow, pendingPayrollRow] =
+    await Promise.all([
+      queryManagerKpis(companyId, userId),
+
+      db
+        .select({ count: sql<number>`COUNT(*)::int` })
+        .from(attendanceRecords)
+        .where(
+          and(
+            eq(attendanceRecords.companyId, companyId),
+            eq(attendanceRecords.date, todayStr),
+            eq(attendanceRecords.status, "present")
+          )
+        ),
+
+      db
+        .select({ count: sql<number>`COUNT(*)::int` })
+        .from(attendanceRecords)
+        .where(
+          and(
+            eq(attendanceRecords.companyId, companyId),
+            eq(attendanceRecords.date, todayStr),
+            eq(attendanceRecords.status, "late")
+          )
+        ),
+
+      db
+        .select({ count: sql<number>`COUNT(*)::int` })
+        .from(attendanceRecords)
+        .where(
+          and(
+            eq(attendanceRecords.companyId, companyId),
+            eq(attendanceRecords.date, todayStr),
+            eq(attendanceRecords.status, "leave")
+          )
+        ),
+
+      db
+        .select({ count: sql<number>`COUNT(*)::int` })
+        .from(leaveRequests)
+        .where(
+          and(
+            eq(leaveRequests.companyId, companyId),
+            eq(leaveRequests.status, "pending"),
+            isNull(leaveRequests.deletedAt)
+          )
+        ),
+
+      db
+        .select({ count: sql<number>`COUNT(*)::int` })
+        .from(payrollRuns)
+        .where(and(eq(payrollRuns.companyId, companyId), eq(payrollRuns.status, "pending"))),
+    ])
+
+  return {
+    ...kpis,
+    staffPresent: presentRow[0]?.count ?? 0,
+    staffLate: lateRow[0]?.count ?? 0,
+    staffOnLeave: leaveRow[0]?.count ?? 0,
+    pendingLeaveRequests: pendingLeaveRow[0]?.count ?? 0,
+    pendingPayrollRuns: pendingPayrollRow[0]?.count ?? 0,
+    snapshotDate: todayStr,
   }
 }
 
