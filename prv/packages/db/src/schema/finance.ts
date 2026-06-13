@@ -297,6 +297,39 @@ export const expensesRelations = relations(expenses, ({ one }) => ({
   submittedBy: one(users, { fields: [expenses.submittedById], references: [users.id] }),
 }))
 
+// ─── Budgets ─────────────────────────────────────────────────────────────────
+
+export const budgetPeriodTypeEnum = pgEnum("budget_period_type", ["monthly", "quarterly", "annual"])
+
+export const budgets = pgTable(
+  "budgets",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id, { onDelete: "cascade" }),
+    storeId: uuid("store_id").references(() => stores.id, { onDelete: "set null" }),
+    createdByUserId: uuid("created_by_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    name: varchar("name", { length: 255 }).notNull(),
+    category: expenseCategoryEnum("category").notNull(),
+    periodType: budgetPeriodTypeEnum("period_type").notNull().default("monthly"),
+    periodKey: varchar("period_key", { length: 10 }).notNull(),
+    capAmount: numeric("cap_amount", { precision: 12, scale: 2 }).notNull(),
+    currency: varchar("currency", { length: 3 }).notNull().default("RON"),
+    notes: text("notes"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
+  },
+  (table) => [
+    index("budgets_company_id_idx").on(table.companyId),
+    index("budgets_period_key_idx").on(table.periodKey),
+    index("budgets_category_idx").on(table.category),
+  ]
+)
+
 // ─── Relations ───────────────────────────────────────────────────────────────
 
 export const productCategoriesRelations = relations(productCategories, ({ one, many }) => ({
@@ -334,4 +367,10 @@ export const invoicesRelations = relations(invoices, ({ one, many }) => ({
 export const invoiceItemsRelations = relations(invoiceItems, ({ one }) => ({
   invoice: one(invoices, { fields: [invoiceItems.invoiceId], references: [invoices.id] }),
   product: one(products, { fields: [invoiceItems.productId], references: [products.id] }),
+}))
+
+export const budgetsRelations = relations(budgets, ({ one }) => ({
+  company: one(companies, { fields: [budgets.companyId], references: [companies.id] }),
+  store: one(stores, { fields: [budgets.storeId], references: [stores.id] }),
+  createdBy: one(users, { fields: [budgets.createdByUserId], references: [users.id] }),
 }))
