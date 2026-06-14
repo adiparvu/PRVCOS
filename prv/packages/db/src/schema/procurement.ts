@@ -5,6 +5,7 @@ import {
   text,
   timestamp,
   numeric,
+  integer,
   pgEnum,
   index,
 } from "drizzle-orm/pg-core"
@@ -58,9 +59,36 @@ export const purchaseOrders = pgTable(
   ]
 )
 
-export const purchaseOrdersRelations = relations(purchaseOrders, ({ one }) => ({
+export const purchaseOrderItems = pgTable(
+  "purchase_order_items",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    purchaseOrderId: uuid("purchase_order_id")
+      .notNull()
+      .references(() => purchaseOrders.id, { onDelete: "cascade" }),
+
+    description: text("description").notNull(),
+    ref: varchar("ref", { length: 100 }),
+    unit: varchar("unit", { length: 50 }).notNull().default("buc"),
+    quantity: numeric("quantity", { precision: 10, scale: 3 }).notNull(),
+    unitPrice: numeric("unit_price", { precision: 12, scale: 2 }).notNull(),
+    total: numeric("total", { precision: 12, scale: 2 }).notNull(),
+    sortOrder: integer("sort_order").notNull().default(0),
+  },
+  (table) => [index("purchase_order_items_po_id_idx").on(table.purchaseOrderId)]
+)
+
+export const purchaseOrdersRelations = relations(purchaseOrders, ({ one, many }) => ({
   company: one(companies, { fields: [purchaseOrders.companyId], references: [companies.id] }),
   createdBy: one(users, { fields: [purchaseOrders.createdByUserId], references: [users.id] }),
   supplier: one(suppliers, { fields: [purchaseOrders.supplierId], references: [suppliers.id] }),
   project: one(projects, { fields: [purchaseOrders.projectId], references: [projects.id] }),
+  items: many(purchaseOrderItems),
+}))
+
+export const purchaseOrderItemsRelations = relations(purchaseOrderItems, ({ one }) => ({
+  purchaseOrder: one(purchaseOrders, {
+    fields: [purchaseOrderItems.purchaseOrderId],
+    references: [purchaseOrders.id],
+  }),
 }))
