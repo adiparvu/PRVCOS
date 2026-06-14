@@ -134,6 +134,34 @@ export interface AttendanceRecord {
   isActiveToday: boolean
 }
 
+export interface ShiftItem {
+  id: string
+  title: string
+  location: string | null
+  role: string
+  startTime: string
+  endTime: string
+  date: string
+  status: "confirmed" | "open" | "draft" | "scheduled"
+  totalSlots: number
+  filledSlots: number
+  assignees: { id: string; initials: string }[]
+}
+
+export interface AttendanceItem {
+  id: string
+  userId: string
+  firstName: string
+  lastName: string
+  initials: string
+  role: string
+  jobTitle: string | null
+  status: "present" | "late" | "absent" | "leave" | "clocked_out"
+  clockIn: string | null
+  clockOut: string | null
+  lateMinutes: number | null
+}
+
 export interface PeopleData {
   teamKpi: {
     total: number
@@ -142,17 +170,24 @@ export interface PeopleData {
   }
   members: TeamMember[]
   scheduleKpi: {
+    todayShifts: number
+    covered: number
     locations: number
     assigned: number
     unassigned: number
   }
   storeGroups: StoreGroup[]
+  shifts: ShiftItem[]
   attendanceKpi: {
+    present: number
+    late: number
+    absent: number
     activeToday: number
     inactiveToday: number
     total: number
   }
   attendance: AttendanceRecord[]
+  todayAttendance: AttendanceItem[]
 }
 
 // ─── Intelligence ────────────────────────────────────────────────────────────

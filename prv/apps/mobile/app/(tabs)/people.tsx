@@ -14,6 +14,8 @@ import {
   type TeamMember,
   type StoreGroup,
   type AttendanceRecord,
+  type ShiftItem,
+  type AttendanceItem,
 } from "@/hooks/usePeople"
 import { useRouter } from "expo-router"
 import { FABWithSheets } from "@/components/FABWithSheets"
@@ -22,6 +24,80 @@ import { colors, radius, spacing } from "@/tokens"
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type Segment = "team" | "schedule" | "attendance" | "org"
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function formatTime(iso: string | null): string {
+  if (!iso) return "—"
+  const d = new Date(iso)
+  return d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })
+}
+
+const STATUS_CONFIG: Record<
+  AttendanceItem["status"],
+  { label: string; bg: string; border: string; fg: string }
+> = {
+  present: {
+    label: "Present",
+    bg: "rgba(48,209,88,0.12)",
+    border: "rgba(48,209,88,0.25)",
+    fg: colors.green,
+  },
+  clocked_out: {
+    label: "Clocked Out",
+    bg: "rgba(100,210,255,0.08)",
+    border: "rgba(100,210,255,0.18)",
+    fg: "rgba(100,210,255,0.85)",
+  },
+  late: {
+    label: "Late",
+    bg: "rgba(255,159,10,0.10)",
+    border: "rgba(255,159,10,0.22)",
+    fg: colors.amber,
+  },
+  absent: {
+    label: "Absent",
+    bg: "rgba(255,69,58,0.10)",
+    border: "rgba(255,69,58,0.22)",
+    fg: colors.red,
+  },
+  leave: {
+    label: "On Leave",
+    bg: "rgba(191,90,242,0.10)",
+    border: "rgba(191,90,242,0.22)",
+    fg: "rgba(191,90,242,0.9)",
+  },
+}
+
+const SHIFT_STATUS_CONFIG: Record<
+  ShiftItem["status"],
+  { label: string; bg: string; border: string; fg: string }
+> = {
+  confirmed: {
+    label: "Confirmed",
+    bg: "rgba(48,209,88,0.10)",
+    border: "rgba(48,209,88,0.2)",
+    fg: colors.green,
+  },
+  scheduled: {
+    label: "Scheduled",
+    bg: "rgba(100,210,255,0.08)",
+    border: "rgba(100,210,255,0.18)",
+    fg: "rgba(100,210,255,0.8)",
+  },
+  open: {
+    label: "Open",
+    bg: "rgba(255,159,10,0.08)",
+    border: "rgba(255,159,10,0.18)",
+    fg: colors.amber,
+  },
+  draft: {
+    label: "Draft",
+    bg: "rgba(255,255,255,0.05)",
+    border: "rgba(255,255,255,0.08)",
+    fg: colors.text3,
+  },
+}
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
@@ -156,6 +232,96 @@ function StoreCard({ group }: { group: StoreGroup }) {
         ) : null}
       </View>
     </View>
+  )
+}
+
+function ShiftCard({ item }: { item: ShiftItem }) {
+  const sc = SHIFT_STATUS_CONFIG[item.status]
+  const coverage = item.totalSlots > 0 ? `${item.filledSlots}/${item.totalSlots}` : "—"
+  const isFull = item.filledSlots >= item.totalSlots && item.totalSlots > 0
+  return (
+    <View style={s.shiftCard}>
+      <View style={s.cardShine} pointerEvents="none" />
+      <View style={s.shiftCardTop}>
+        <View style={s.shiftTimeBlock}>
+          <Text style={s.shiftTime}>
+            {item.startTime} – {item.endTime}
+          </Text>
+          {item.location ? (
+            <Text style={s.shiftLocation} numberOfLines={1}>
+              {item.location}
+            </Text>
+          ) : null}
+        </View>
+        <View style={[s.statusBadge, { backgroundColor: sc.bg, borderColor: sc.border }]}>
+          <Text style={[s.statusBadgeText, { color: sc.fg }]}>{sc.label}</Text>
+        </View>
+      </View>
+      <Text style={s.shiftTitle} numberOfLines={1}>
+        {item.title}
+      </Text>
+      <View style={s.shiftFooter}>
+        <View style={s.shiftRoleBadge}>
+          <Text style={s.shiftRoleText}>{item.role}</Text>
+        </View>
+        <View style={s.shiftFooterRight}>
+          {item.assignees.length > 0 ? (
+            <View style={s.assigneeStack}>
+              {item.assignees.slice(0, 4).map((a, i) => (
+                <View
+                  key={a.id}
+                  style={[
+                    s.assigneeAvatar,
+                    { marginLeft: i === 0 ? 0 : -7, zIndex: item.assignees.length - i },
+                  ]}
+                >
+                  <Text style={s.assigneeInitials}>{a.initials}</Text>
+                </View>
+              ))}
+            </View>
+          ) : null}
+          <Text
+            style={[s.coverageText, isFull ? { color: colors.green } : { color: colors.amber }]}
+          >
+            {coverage} filled
+          </Text>
+        </View>
+      </View>
+    </View>
+  )
+}
+
+function AttendanceItemRow({ item, last }: { item: AttendanceItem; last: boolean }) {
+  const router = useRouter()
+  const sc = STATUS_CONFIG[item.status]
+  return (
+    <TouchableOpacity
+      style={[s.listRow, last ? s.listRowLast : null]}
+      activeOpacity={0.7}
+      onPress={() =>
+        router.push({ pathname: "/(auth)/employee-detail", params: { id: item.userId } })
+      }
+    >
+      <Avatar
+        initials={item.initials}
+        isOnline={item.status === "present"}
+        size={36}
+        opacity={item.status === "absent" ? 0.4 : 1}
+      />
+      <View style={s.rowInfo}>
+        <Text style={s.rowName}>
+          {item.firstName} {item.lastName}
+        </Text>
+        <Text style={s.rowSub}>
+          {item.clockIn ? `In ${formatTime(item.clockIn)}` : "—"}
+          {item.clockOut ? `  ·  Out ${formatTime(item.clockOut)}` : ""}
+          {item.lateMinutes ? `  ·  ${item.lateMinutes}m late` : ""}
+        </Text>
+      </View>
+      <View style={[s.statusBadge, { backgroundColor: sc.bg, borderColor: sc.border }]}>
+        <Text style={[s.statusBadgeText, { color: sc.fg }]}>{sc.label}</Text>
+      </View>
+    </TouchableOpacity>
   )
 }
 
@@ -323,7 +489,11 @@ function TeamContent({ data }: { data: ReturnType<typeof usePeople>["data"] }) {
 function ScheduleContent({ data }: { data: ReturnType<typeof usePeople>["data"] }) {
   if (!data) return <SkeletonContent />
 
-  const { scheduleKpi, storeGroups } = data
+  const { scheduleKpi, shifts, storeGroups } = data
+  const covPct =
+    scheduleKpi.todayShifts > 0
+      ? Math.round((scheduleKpi.covered / scheduleKpi.todayShifts) * 100)
+      : 0
 
   return (
     <>
@@ -333,8 +503,13 @@ function ScheduleContent({ data }: { data: ReturnType<typeof usePeople>["data"] 
         style={s.kpiScrollWrap}
         contentContainerStyle={s.kpiStrip}
       >
-        <KPIPill value={String(scheduleKpi.locations)} label="Locations" />
-        <KPIPill value={String(scheduleKpi.assigned)} label="Assigned" valueColor={colors.green} />
+        <KPIPill value={String(scheduleKpi.todayShifts)} label="Today" />
+        <KPIPill
+          value={`${covPct}%`}
+          label="Covered"
+          valueColor={covPct === 100 ? colors.green : covPct > 50 ? colors.amber : colors.red}
+        />
+        <KPIPill value={String(scheduleKpi.assigned)} label="Assigned" />
         {scheduleKpi.unassigned > 0 ? (
           <KPIPill
             value={String(scheduleKpi.unassigned)}
@@ -344,8 +519,16 @@ function ScheduleContent({ data }: { data: ReturnType<typeof usePeople>["data"] 
         ) : null}
       </ScrollView>
 
-      <SectionHeader title="Teams by Location" />
+      {shifts.length > 0 ? (
+        <>
+          <SectionHeader title="Today's Shifts" />
+          {shifts.map((shift) => (
+            <ShiftCard key={shift.id} item={shift} />
+          ))}
+        </>
+      ) : null}
 
+      <SectionHeader title="Teams by Location" />
       {storeGroups.length === 0 ? (
         <View style={s.empty}>
           <Text style={s.emptyText}>No location assignments found</Text>
@@ -354,11 +537,11 @@ function ScheduleContent({ data }: { data: ReturnType<typeof usePeople>["data"] 
         storeGroups.map((g) => <StoreCard key={g.storeId ?? "unassigned"} group={g} />)
       )}
 
-      <View style={s.moduleNote}>
-        <Text style={s.moduleNoteText}>
-          Full shift scheduling with time-based rosters is coming in a future release.
-        </Text>
-      </View>
+      {shifts.length === 0 ? (
+        <View style={s.moduleNote}>
+          <Text style={s.moduleNoteText}>No shifts scheduled for today.</Text>
+        </View>
+      ) : null}
     </>
   )
 }
@@ -366,9 +549,16 @@ function ScheduleContent({ data }: { data: ReturnType<typeof usePeople>["data"] 
 function AttendanceContent({ data }: { data: ReturnType<typeof usePeople>["data"] }) {
   if (!data) return <SkeletonContent />
 
-  const { attendanceKpi, attendance } = data
-  const active = attendance.filter((a) => a.isActiveToday)
-  const inactive = attendance.filter((a) => !a.isActiveToday)
+  const { attendanceKpi, todayAttendance, attendance } = data
+
+  const present = todayAttendance.filter(
+    (a) => a.status === "present" || a.status === "clocked_out"
+  )
+  const late = todayAttendance.filter((a) => a.status === "late")
+  const absent = todayAttendance.filter((a) => a.status === "absent")
+  const onLeave = todayAttendance.filter((a) => a.status === "leave")
+
+  const hasRealData = todayAttendance.length > 0
 
   return (
     <>
@@ -379,42 +569,106 @@ function AttendanceContent({ data }: { data: ReturnType<typeof usePeople>["data"
         contentContainerStyle={s.kpiStrip}
       >
         <KPIPill
-          value={String(attendanceKpi.activeToday)}
-          label="Active Today"
-          valueColor={attendanceKpi.activeToday > 0 ? colors.green : undefined}
+          value={String(attendanceKpi.present)}
+          label="Present"
+          valueColor={attendanceKpi.present > 0 ? colors.green : undefined}
         />
-        <KPIPill value={String(attendanceKpi.inactiveToday)} label="Inactive" />
+        <KPIPill
+          value={String(attendanceKpi.late)}
+          label="Late"
+          valueColor={attendanceKpi.late > 0 ? colors.amber : undefined}
+        />
+        <KPIPill
+          value={String(attendanceKpi.absent)}
+          label="Absent"
+          valueColor={attendanceKpi.absent > 0 ? colors.red : undefined}
+        />
         <KPIPill value={String(attendanceKpi.total)} label="Total" />
       </ScrollView>
 
-      {active.length > 0 ? (
+      {hasRealData ? (
         <>
-          <SectionHeader title="Active Today" />
-          <ListCard>
-            {active.map((a, i) => (
-              <AttendanceRow key={a.id} item={a} last={i === active.length - 1} />
-            ))}
-          </ListCard>
-        </>
-      ) : null}
+          {present.length > 0 ? (
+            <>
+              <SectionHeader title="Present" />
+              <ListCard>
+                {present.map((a, i) => (
+                  <AttendanceItemRow key={a.id} item={a} last={i === present.length - 1} />
+                ))}
+              </ListCard>
+            </>
+          ) : null}
 
-      {inactive.length > 0 ? (
+          {late.length > 0 ? (
+            <>
+              <SectionHeader title="Late" />
+              <ListCard>
+                {late.map((a, i) => (
+                  <AttendanceItemRow key={a.id} item={a} last={i === late.length - 1} />
+                ))}
+              </ListCard>
+            </>
+          ) : null}
+
+          {onLeave.length > 0 ? (
+            <>
+              <SectionHeader title="On Leave" />
+              <ListCard>
+                {onLeave.map((a, i) => (
+                  <AttendanceItemRow key={a.id} item={a} last={i === onLeave.length - 1} />
+                ))}
+              </ListCard>
+            </>
+          ) : null}
+
+          {absent.length > 0 ? (
+            <>
+              <SectionHeader title="Absent" />
+              <ListCard>
+                {absent.map((a, i) => (
+                  <AttendanceItemRow key={a.id} item={a} last={i === absent.length - 1} />
+                ))}
+              </ListCard>
+            </>
+          ) : null}
+        </>
+      ) : (
         <>
-          <SectionHeader title="Not Active Today" />
-          <ListCard>
-            {inactive.map((a, i) => (
-              <AttendanceRow key={a.id} item={a} last={i === inactive.length - 1} />
-            ))}
-          </ListCard>
+          {(() => {
+            const active = attendance.filter((a) => a.isActiveToday)
+            const inactive = attendance.filter((a) => !a.isActiveToday)
+            return (
+              <>
+                {active.length > 0 ? (
+                  <>
+                    <SectionHeader title="Active Today" />
+                    <ListCard>
+                      {active.map((a, i) => (
+                        <AttendanceRow key={a.id} item={a} last={i === active.length - 1} />
+                      ))}
+                    </ListCard>
+                  </>
+                ) : null}
+                {inactive.length > 0 ? (
+                  <>
+                    <SectionHeader title="Not Active Today" />
+                    <ListCard>
+                      {inactive.map((a, i) => (
+                        <AttendanceRow key={a.id} item={a} last={i === inactive.length - 1} />
+                      ))}
+                    </ListCard>
+                  </>
+                ) : null}
+                <View style={s.moduleNote}>
+                  <Text style={s.moduleNoteText}>
+                    No check-in records for today. Showing activity-based presence.
+                  </Text>
+                </View>
+              </>
+            )
+          })()}
         </>
-      ) : null}
-
-      <View style={s.moduleNote}>
-        <Text style={s.moduleNoteText}>
-          Based on system activity. Full check-in/check-out attendance tracking coming in a future
-          release.
-        </Text>
-      </View>
+      )}
     </>
   )
 }
@@ -657,6 +911,16 @@ const s = StyleSheet.create({
   },
   timeAgo: { fontSize: 11, color: colors.text3, fontWeight: "500" },
 
+  // Status badge (universal)
+  statusBadge: {
+    borderWidth: 1,
+    borderRadius: radius.pill,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    flexShrink: 0,
+  },
+  statusBadgeText: { fontSize: 11, fontWeight: "600" },
+
   // Store card
   card: {
     backgroundColor: colors.glass1,
@@ -709,7 +973,61 @@ const s = StyleSheet.create({
   },
   overflowText: { fontSize: 10, fontWeight: "700", color: colors.text3 },
 
-  // Attendance badges
+  // Shift card
+  shiftCard: {
+    backgroundColor: colors.glass1,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 18,
+    padding: spacing.base,
+    overflow: "hidden",
+    marginBottom: spacing.sm,
+  },
+  shiftCardTop: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: spacing.sm,
+  },
+  shiftTimeBlock: { flex: 1 },
+  shiftTime: { fontSize: 13, fontWeight: "700", color: colors.text1, letterSpacing: -0.2 },
+  shiftLocation: { fontSize: 11, color: colors.text3, marginTop: 2 },
+  shiftTitle: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: colors.text1,
+    marginBottom: spacing.md,
+  },
+  shiftFooter: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  shiftRoleBadge: {
+    backgroundColor: "rgba(255,255,255,0.06)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
+    borderRadius: radius.pill,
+    paddingHorizontal: 9,
+    paddingVertical: 3,
+  },
+  shiftRoleText: { fontSize: 11, fontWeight: "600", color: colors.text2 },
+  shiftFooterRight: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+  assigneeStack: { flexDirection: "row", alignItems: "center" },
+  assigneeAvatar: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "rgba(255,255,255,0.09)",
+    borderWidth: 1.5,
+    borderColor: colors.bg,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  assigneeInitials: { fontSize: 8, fontWeight: "700", color: "rgba(255,255,255,0.7)" },
+  coverageText: { fontSize: 12, fontWeight: "600" },
+
+  // Attendance badges (legacy)
   activeBadge: {
     backgroundColor: "rgba(48,209,88,0.12)",
     borderWidth: 1,
