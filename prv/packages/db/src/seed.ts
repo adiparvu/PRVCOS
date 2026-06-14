@@ -8,6 +8,16 @@ import { seedRoles } from "./seeds/roles"
 import { seedPermissions } from "./seeds/permissions"
 import { seedRolePermissions } from "./seeds/role-permissions"
 import { seedShop } from "./seeds/shop"
+import { seedCompany } from "./seeds/company"
+import { seedClients } from "./seeds/clients"
+import { seedSuppliers } from "./seeds/suppliers"
+import { seedRenovation } from "./seeds/renovation"
+import { seedProjects } from "./seeds/projects"
+import { seedFinance } from "./seeds/finance"
+import { seedFleet } from "./seeds/fleet"
+import { seedKnowledge } from "./seeds/knowledge"
+import { seedLearning } from "./seeds/learning"
+import { seedWorkforce } from "./seeds/workforce"
 
 async function seed() {
   if (process.env["NODE_ENV"] === "production") {
@@ -28,7 +38,65 @@ async function seed() {
   // Sprint 13: Shop platform — categories, products, reviews
   await seedShop()
 
-  console.log("✓ Seed complete")
+  // Demo company: PRV Renovations SRL + users
+  const { companyId, storeId, ceoId, managerId, supervisorId, workerIds } = await seedCompany()
+
+  // CRM: clients
+  const { clientIds } = await seedClients(companyId)
+
+  // Procurement: suppliers
+  await seedSuppliers(companyId)
+
+  // Core business: renovation projects
+  const { projectIds: renovationProjectIds } = await seedRenovation({
+    companyId,
+    clientIds,
+    managerId,
+    supervisorId,
+    workerIds,
+  })
+
+  // Project management: general projects
+  const { projectIds } = await seedProjects({
+    companyId,
+    storeId,
+    clientIds,
+    ceoId,
+    managerId,
+    supervisorId,
+    workerIds,
+  })
+
+  // Finance: invoices + expenses
+  await seedFinance({
+    companyId,
+    storeId,
+    clientIds,
+    managerId,
+    workerIds,
+    renovationProjectIds,
+  })
+
+  // Fleet + tools
+  await seedFleet({ companyId, storeId, supervisorId, workerIds })
+
+  // Knowledge base
+  await seedKnowledge({ companyId, managerId, supervisorId, workerIds })
+
+  // Learning platform
+  await seedLearning({ companyId, managerId, supervisorId, workerIds })
+
+  // Workforce: attendance + shifts
+  await seedWorkforce({
+    companyId,
+    storeId,
+    managerId,
+    supervisorId,
+    workerIds,
+    projectId: projectIds[0],
+  })
+
+  console.log("✅ Seed complete")
   process.exit(0)
 }
 
