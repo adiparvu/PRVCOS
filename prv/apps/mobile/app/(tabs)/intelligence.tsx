@@ -417,8 +417,8 @@ const REPORT_TILES = [
     ready: true,
     route: "/report-invoices",
   },
-  { icon: "◫", label: "P&L", desc: "Profit & loss statement", ready: false, route: null },
-  { icon: "✦", label: "AI Report", desc: "Executive AI summary", ready: false, route: null },
+  { icon: "◫", label: "P&L", desc: "Profit & loss statement", ready: true, route: "/report-pl" },
+  { icon: "✦", label: "AI Report", desc: "Executive AI summary", ready: true, route: "/report-ai" },
 ] as const
 
 function ReportsContent() {

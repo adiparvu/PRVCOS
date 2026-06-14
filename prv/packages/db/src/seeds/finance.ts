@@ -1,6 +1,7 @@
 // Seed: invoices and expenses
 import { db } from "../client"
 import { invoices, invoiceItems, expenses } from "../schema/finance"
+import { and, eq } from "drizzle-orm"
 
 export interface FinanceSeedResult {
   invoiceIds: string[]
@@ -120,20 +121,7 @@ export async function seedFinance(opts: {
       .returning({ id: invoices.id })
 
     if (!record) {
-      // already exists — fetch id
-      const [ex] = await db
-        .select({ id: invoices.id })
-        .from(invoices)
-        .where(
-          // @ts-ignore
-          import("drizzle-orm").then((m) =>
-            m.and(
-              m.eq(invoices.companyId, companyId),
-              m.eq(invoices.invoiceNumber, inv.invoiceNumber)
-            )
-          )
-        )
-        .limit(1)
+      // already exists — skip line items
       continue
     }
 

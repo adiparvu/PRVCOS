@@ -413,19 +413,117 @@ function SkeletonContent() {
   )
 }
 
-function OrgPlaceholder() {
+function OrgMemberNode({ item, last }: { item: TeamMember; last: boolean }) {
+  const router = useRouter()
   return (
-    <View style={s.placeholder}>
-      <View style={s.placeholderInner}>
-        <View style={s.cardShine} pointerEvents="none" />
-        <Text style={s.placeholderIcon}>⎇</Text>
-        <Text style={s.placeholderTitle}>Org Chart</Text>
-        <Text style={s.placeholderSub}>
-          Interactive org chart with reporting lines, roles, and team hierarchy coming in a future
-          release.
+    <TouchableOpacity
+      style={[s.orgMemberRow, last ? s.listRowLast : null]}
+      activeOpacity={0.7}
+      onPress={() => router.push({ pathname: "/(auth)/employee-detail", params: { id: item.id } })}
+    >
+      <View style={s.orgMemberBranch}>
+        <View style={s.orgBranchV} />
+        <View style={s.orgBranchH} />
+      </View>
+      <Avatar initials={item.initials} isOnline={item.isOnline} size={32} />
+      <View style={s.rowInfo}>
+        <Text style={s.rowName}>
+          {item.firstName} {item.lastName}
+        </Text>
+        <Text style={s.rowSub} numberOfLines={1}>
+          {item.jobTitle ?? item.role}
         </Text>
       </View>
-    </View>
+      <View
+        style={[
+          s.onlineDotSmall,
+          { backgroundColor: item.isOnline ? colors.green : "rgba(255,255,255,0.18)" },
+        ]}
+      />
+    </TouchableOpacity>
+  )
+}
+
+function OrgContent({ data }: { data: ReturnType<typeof usePeople>["data"] }) {
+  if (!data) return <SkeletonContent />
+
+  const { members, storeGroups, teamKpi } = data
+
+  const membersByStore = new Map<string | null, TeamMember[]>()
+  for (const m of members) {
+    const key = m.storeId
+    if (!membersByStore.has(key)) membersByStore.set(key, [])
+    membersByStore.get(key)!.push(m)
+  }
+
+  return (
+    <>
+      {/* Company root node */}
+      <View style={s.orgRootCard}>
+        <View style={s.cardShine} pointerEvents="none" />
+        <View style={s.orgRootIcon}>
+          <Text style={s.orgRootIconText}>⊞</Text>
+        </View>
+        <View style={s.orgRootInfo}>
+          <Text style={s.orgRootName}>PRV Group</Text>
+          <Text style={s.orgRootSub}>
+            {teamKpi.total} members · {teamKpi.uniqueRoles} roles
+          </Text>
+        </View>
+        <View style={[s.onlineCountBadge, teamKpi.online === 0 ? { opacity: 0.4 } : null]}>
+          <View
+            style={[
+              s.onlineCountDot,
+              { backgroundColor: teamKpi.online > 0 ? colors.green : "rgba(255,255,255,0.3)" },
+            ]}
+          />
+          <Text style={s.onlineCountText}>{teamKpi.online} online</Text>
+        </View>
+      </View>
+
+      {/* Department / store branches */}
+      {storeGroups.map((group) => {
+        const groupMembers = membersByStore.get(group.storeId) ?? []
+        return (
+          <View key={group.storeId ?? "unassigned"} style={s.orgBranch}>
+            <View style={s.orgBranchConnector} />
+
+            {/* Department node */}
+            <View style={s.orgDeptCard}>
+              <View style={s.cardShine} pointerEvents="none" />
+              <Text style={s.orgDeptName}>{group.storeName}</Text>
+              <View style={s.orgDeptRight}>
+                <Text style={s.orgDeptCount}>{group.memberCount}</Text>
+                <Text
+                  style={[
+                    s.orgDeptTag,
+                    { color: group.storeId === null ? colors.amber : colors.text3 },
+                  ]}
+                >
+                  {group.storeId === null ? "Unassigned" : "Location"}
+                </Text>
+              </View>
+            </View>
+
+            {/* Member nodes */}
+            {groupMembers.length > 0 ? (
+              <View style={s.orgMembersCard}>
+                <View style={s.cardShine} pointerEvents="none" />
+                {groupMembers.map((m, i) => (
+                  <OrgMemberNode key={m.id} item={m} last={i === groupMembers.length - 1} />
+                ))}
+              </View>
+            ) : null}
+          </View>
+        )
+      })}
+
+      {members.length === 0 ? (
+        <View style={s.empty}>
+          <Text style={s.emptyText}>No team members found</Text>
+        </View>
+      ) : null}
+    </>
   )
 }
 
@@ -740,7 +838,7 @@ export default function PeopleScreen() {
           {segment === "team" && <TeamContent data={data} />}
           {segment === "schedule" && <ScheduleContent data={data} />}
           {segment === "attendance" && <AttendanceContent data={data} />}
-          {segment === "org" && <OrgPlaceholder />}
+          {segment === "org" && <OrgContent data={data} />}
         </ScrollView>
       )}
 
@@ -1060,22 +1158,103 @@ const s = StyleSheet.create({
   },
   moduleNoteText: { fontSize: 12, color: colors.text3, lineHeight: 18, textAlign: "center" },
 
-  // Placeholder
-  placeholder: { paddingTop: spacing.xxl, alignItems: "center" },
-  placeholderInner: {
-    width: "100%",
+  // Org chart
+  orgRootCard: {
     backgroundColor: colors.glass1,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 20,
-    padding: spacing.xl,
-    alignItems: "center",
-    gap: spacing.sm,
+    borderRadius: 18,
+    padding: spacing.base,
     overflow: "hidden",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    marginBottom: spacing.sm,
   },
-  placeholderIcon: { fontSize: 36, color: colors.text2, marginBottom: spacing.sm },
-  placeholderTitle: { fontSize: 17, fontWeight: "600", color: colors.text2 },
-  placeholderSub: { fontSize: 14, color: colors.text3, textAlign: "center", lineHeight: 20 },
+  orgRootIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: "rgba(255,255,255,0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.14)",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  orgRootIconText: { fontSize: 18, color: colors.text1 },
+  orgRootInfo: { flex: 1, gap: 2 },
+  orgRootName: { fontSize: 15, fontWeight: "700", color: colors.text1 },
+  orgRootSub: { fontSize: 12, color: colors.text3 },
+
+  orgBranch: { marginBottom: spacing.sm },
+  orgBranchConnector: {
+    width: 2,
+    height: 14,
+    backgroundColor: "rgba(255,255,255,0.10)",
+    marginLeft: 19,
+    marginBottom: 0,
+  },
+  orgDeptCard: {
+    backgroundColor: "rgba(255,255,255,0.04)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
+    borderRadius: 14,
+    paddingHorizontal: spacing.base,
+    paddingVertical: 11,
+    overflow: "hidden",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 0,
+  },
+  orgDeptName: { fontSize: 14, fontWeight: "600", color: colors.text2 },
+  orgDeptRight: { flexDirection: "row", alignItems: "center", gap: 6 },
+  orgDeptCount: { fontSize: 14, fontWeight: "700", color: colors.text1 },
+  orgDeptTag: { fontSize: 11, fontWeight: "500" },
+
+  orgMembersCard: {
+    backgroundColor: "rgba(255,255,255,0.025)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.06)",
+    borderRadius: 14,
+    overflow: "hidden",
+    marginLeft: 20,
+    marginTop: 2,
+    borderTopLeftRadius: 4,
+  },
+  orgMemberRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: spacing.base,
+    paddingVertical: 9,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255,255,255,0.04)",
+    gap: spacing.sm,
+  },
+  orgMemberBranch: {
+    width: 12,
+    height: 32,
+    flexShrink: 0,
+    position: "relative",
+  },
+  orgBranchV: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    bottom: 16,
+    width: 1,
+    backgroundColor: "rgba(255,255,255,0.10)",
+  },
+  orgBranchH: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 15,
+    height: 1,
+    backgroundColor: "rgba(255,255,255,0.10)",
+  },
+  onlineDotSmall: { width: 7, height: 7, borderRadius: 4, flexShrink: 0 },
 
   // Empty / error
   empty: {
