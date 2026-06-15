@@ -209,9 +209,44 @@ export async function deleteConversation(conversationId: string, userId: string)
 
 // ── Semantic search (pgvector — requires embedding provider) ──────────────────
 
-export async function getEmbedding(_text: string, _companyId: string): Promise<number[]> {
-  // Requires an embedding provider (e.g. OPENAI_API_KEY with text-embedding-3-small).
-  // Returns [] when no provider is configured; semantic search will skip gracefully.
+// Preferred: Voyage AI (voyage-3-large, 1024-dim) — Anthropic's recommended partner.
+// Fallback:  OpenAI text-embedding-3-small (1536-dim).
+// Returns [] when neither key is set; callers skip gracefully.
+export async function getEmbedding(text: string, _companyId: string): Promise<number[]> {
+  const voyageKey = process.env.VOYAGE_API_KEY
+  if (voyageKey) {
+    try {
+      const res = await fetch("https://api.voyageai.com/v1/embeddings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${voyageKey}` },
+        body: JSON.stringify({ model: "voyage-3-large", input: [text], input_type: "document" }),
+      })
+      if (res.ok) {
+        const json = (await res.json()) as { data: { embedding: number[] }[] }
+        return json.data[0]?.embedding ?? []
+      }
+    } catch {
+      // fall through to OpenAI
+    }
+  }
+
+  const openaiKey = process.env.OPENAI_API_KEY
+  if (openaiKey) {
+    try {
+      const res = await fetch("https://api.openai.com/v1/embeddings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${openaiKey}` },
+        body: JSON.stringify({ model: "text-embedding-3-small", input: text }),
+      })
+      if (res.ok) {
+        const json = (await res.json()) as { data: { embedding: number[] }[] }
+        return json.data[0]?.embedding ?? []
+      }
+    } catch {
+      // no provider available
+    }
+  }
+
   return []
 }
 
@@ -275,6 +310,62 @@ export interface AIToolPermission {
   requiresMFA: boolean
 }
 
-export function checkAIToolPermission(_toolName: string, _context: AIConversationContext): boolean {
-  return false
+// scopeLevel: 0=superadmin  1=owner  2=regional_manager  3=store_manager  4=cashier/worker
+// minScopeLevel: maximum numeric value allowed (lower number = broader access)
+type ToolPolicy = { allowedRoles: string[]; minScopeLevel: number; requiresMFA: boolean }
+
+const AI_TOOL_REGISTRY: Record<string, ToolPolicy> = {
+  // Executive — CEO/owner only, broad company view
+  "executive.insights": { allowedRoles: ["superadmin", "owner"], minScopeLevel: 1, requiresMFA: true },
+  "executive.forecast": { allowedRoles: ["superadmin", "owner"], minScopeLevel: 1, requiresMFA: false },
+
+  // Finance — owner + finance managers
+  "finance.read": { allowedRoles: ["superadmin", "owner", "finance_manager"], minScopeLevel: 1, requiresMFA: false },
+  "finance.forecast": { allowedRoles: ["superadmin", "owner", "finance_manager"], minScopeLevel: 1, requiresMFA: false },
+  "finance.export": { allowedRoles: ["superadmin", "owner", "finance_manager"], minScopeLevel: 1, requiresMFA: true },
+
+  // Intelligence / Analytics
+  "intelligence.read": { allowedRoles: ["superadmin", "owner", "manager", "analyst", "regional_manager"], minScopeLevel: 2, requiresMFA: false },
+  "intelligence.anomalies": { allowedRoles: ["superadmin", "owner", "manager", "regional_manager"], minScopeLevel: 2, requiresMFA: false },
+
+  // HR / People
+  "hr.read": { allowedRoles: ["superadmin", "owner", "hr_manager", "manager", "regional_manager"], minScopeLevel: 2, requiresMFA: false },
+  "hr.payroll": { allowedRoles: ["superadmin", "owner", "hr_manager"], minScopeLevel: 1, requiresMFA: true },
+
+  // Projects
+  "projects.read": { allowedRoles: ["superadmin", "owner", "manager", "project_manager", "worker", "regional_manager", "store_manager"], minScopeLevel: 3, requiresMFA: false },
+  "projects.risk": { allowedRoles: ["superadmin", "owner", "manager", "project_manager", "regional_manager"], minScopeLevel: 2, requiresMFA: false },
+
+  // Operations / Inventory
+  "operations.read": { allowedRoles: ["superadmin", "owner", "manager", "store_manager", "regional_manager"], minScopeLevel: 3, requiresMFA: false },
+  "operations.inventory": { allowedRoles: ["superadmin", "owner", "manager", "store_manager", "regional_manager"], minScopeLevel: 3, requiresMFA: false },
+
+  // CRM
+  "crm.read": { allowedRoles: ["superadmin", "owner", "manager", "sales", "regional_manager"], minScopeLevel: 2, requiresMFA: false },
+
+  // Documents & Knowledge — broadest access
+  "documents.read": { allowedRoles: ["superadmin", "owner", "manager", "worker", "cashier", "store_manager", "regional_manager", "project_manager", "sales", "hr_manager", "finance_manager", "analyst"], minScopeLevel: 4, requiresMFA: false },
+  "knowledge.read": { allowedRoles: ["superadmin", "owner", "manager", "worker", "cashier", "store_manager", "regional_manager", "project_manager", "sales", "hr_manager", "finance_manager", "analyst"], minScopeLevel: 4, requiresMFA: false },
+}
+
+export function checkAIToolPermission(toolName: string, context: AIConversationContext): boolean {
+  const policy = AI_TOOL_REGISTRY[toolName]
+  if (!policy) return false
+
+  const roleAllowed = policy.allowedRoles.includes(context.role)
+  const scopeAllowed = context.scopeLevel <= policy.minScopeLevel
+
+  return roleAllowed && scopeAllowed
+}
+
+// Returns the full policy for a tool (for client-side hints / UI gating)
+export function getAIToolPolicy(toolName: string): ToolPolicy | null {
+  return AI_TOOL_REGISTRY[toolName] ?? null
+}
+
+// Returns all tools a given context can access
+export function listAccessibleAITools(context: AIConversationContext): string[] {
+  return Object.entries(AI_TOOL_REGISTRY)
+    .filter(([, policy]) => policy.allowedRoles.includes(context.role) && context.scopeLevel <= policy.minScopeLevel)
+    .map(([name]) => name)
 }
