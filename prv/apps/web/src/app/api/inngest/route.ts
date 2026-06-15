@@ -10,6 +10,7 @@ import {
   shopOrderProcessFunction,
   shopStockAlertFunction,
   processRecurringInvoicesFunction,
+  detectAnomaliesFunction,
 } from "@prv/jobs/functions"
 
 // Inngest webhook handler — receives events and dispatches to functions
@@ -26,6 +27,7 @@ export const { GET, POST, PUT } = serve({
     shopOrderProcessFunction,
     shopStockAlertFunction,
     processRecurringInvoicesFunction,
+    detectAnomaliesFunction,
   ],
   signingKey: process.env["INNGEST_SIGNING_KEY"],
 })
