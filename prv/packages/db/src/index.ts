@@ -12,12 +12,19 @@ export {
   queryManagerSnapshot,
   queryWorkerContext,
   querySpecialistContext,
+  querySpecialistRoleData,
 } from "./queries/dashboard"
 export type {
   ManagerKpis,
   ManagerSnapshot,
   WorkerContext,
   SpecialistContext,
+  SpecialistRoleData,
+  SpecialistAnomalyItem,
+  SpecialistReportItem,
+  SpecialistTicketItem,
+  SpecialistAuditErrorItem,
+  SpecialistHealthItem,
 } from "./queries/dashboard"
 export {
   queryShopOrderSummary,

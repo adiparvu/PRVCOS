@@ -465,7 +465,7 @@ function ReportsContent({ data }: { data: ReportsData | undefined }) {
       desc: "Revenue Forecast",
       kpi: data?.forecast.nextMonthFormatted,
       kpiColor: null,
-      route: null,
+      route: "/(auth)/report-forecast" as const,
     },
   ]
 

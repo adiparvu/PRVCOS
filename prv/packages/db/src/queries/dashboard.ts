@@ -1,4 +1,4 @@
-import { sql, eq, and, gte, lt, inArray, isNull, isNotNull, or, ne } from "drizzle-orm"
+import { sql, eq, and, gte, lt, inArray, isNull, isNotNull, or, ne, desc, gt } from "drizzle-orm"
 import { db } from "../client"
 import {
   users,
@@ -13,6 +13,9 @@ import {
   leaveRequests,
   payrollRuns,
   stores,
+  anomalyDetections,
+  generatedReports,
+  auditLogs,
 } from "../schema"
 
 const TZ = "Europe/Bucharest"
@@ -425,5 +428,217 @@ export async function querySpecialistContext(
     firstName: userRow[0]?.firstName ?? "there",
     inboxCount: inboxRow[0]?.count ?? 0,
     alertCount: alertRow[0]?.count ?? 0,
+  }
+}
+
+// ── Specialist role data ──────────────────────────────────────────────────────
+
+function timeAgo(date: Date): string {
+  const diff = Date.now() - date.getTime()
+  const mins = Math.floor(diff / 60_000)
+  if (mins < 2) return "just now"
+  if (mins < 60) return `${mins}m ago`
+  const hrs = Math.floor(mins / 60)
+  if (hrs < 24) return `${hrs}h ago`
+  return `${Math.floor(hrs / 24)}d ago`
+}
+
+export interface SpecialistAnomalyItem {
+  id: string
+  severity: string
+  title: string
+  domain: string
+  timeAgo: string
+}
+
+export interface SpecialistReportItem {
+  id: string
+  title: string
+  status: string
+  timeAgo: string
+}
+
+export interface SpecialistTicketItem {
+  id: string
+  title: string
+  priority: "P1" | "P2" | "P3"
+  timeAgo: string
+}
+
+export interface SpecialistAuditErrorItem {
+  id: string
+  action: string
+  path: string | null
+  timeAgo: string
+}
+
+export interface SpecialistHealthItem {
+  label: string
+  status: string
+  ok: boolean
+}
+
+export interface SpecialistRoleData {
+  anomalies: SpecialistAnomalyItem[]
+  reports: SpecialistReportItem[]
+  supportTickets: SpecialistTicketItem[]
+  auditErrors: SpecialistAuditErrorItem[]
+  systemHealth: SpecialistHealthItem[]
+  stats: {
+    memberCount: number
+    activePresence: number
+    auditCountToday: number
+    openAnomalies: number
+  }
+}
+
+export async function querySpecialistRoleData(
+  role: string,
+  companyId: string,
+  _userId: string
+): Promise<SpecialistRoleData> {
+  const now = new Date()
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+
+  const needsReports = role === "data_analyst" || role === "system_administrator"
+  const needsTickets = role === "app_support_specialist"
+  const needsAuditErrors = role === "qa_tester" || role === "system_administrator"
+
+  const [
+    memberRow,
+    presenceRow,
+    auditTodayRow,
+    anomalyRows,
+    reportRows,
+    ticketRows,
+    auditErrorRows,
+  ] = await Promise.all([
+    db
+      .select({ count: sql<number>`COUNT(*)::int` })
+      .from(companyMemberships)
+      .where(
+        and(eq(companyMemberships.companyId, companyId), eq(companyMemberships.status, "ACTIVE"))
+      ),
+
+    db
+      .select({ count: sql<number>`COUNT(*)::int` })
+      .from(userPresence)
+      .where(and(eq(userPresence.companyId, companyId), eq(userPresence.status, "online"))),
+
+    db
+      .select({ count: sql<number>`COUNT(*)::int` })
+      .from(auditLogs)
+      .where(and(eq(auditLogs.companyId, companyId), gte(auditLogs.createdAt, todayStart))),
+
+    db
+      .select({
+        id: anomalyDetections.id,
+        severity: anomalyDetections.severity,
+        title: anomalyDetections.title,
+        domain: anomalyDetections.domain,
+        createdAt: anomalyDetections.createdAt,
+      })
+      .from(anomalyDetections)
+      .where(
+        and(eq(anomalyDetections.companyId, companyId), isNull(anomalyDetections.resolvedAt))
+      )
+      .orderBy(desc(anomalyDetections.createdAt))
+      .limit(5),
+
+    needsReports
+      ? db
+          .select({
+            id: generatedReports.id,
+            title: generatedReports.title,
+            status: generatedReports.status,
+            createdAt: generatedReports.createdAt,
+          })
+          .from(generatedReports)
+          .where(eq(generatedReports.companyId, companyId))
+          .orderBy(desc(generatedReports.createdAt))
+          .limit(5)
+      : Promise.resolve([]),
+
+    needsTickets
+      ? db
+          .select({
+            id: notifications.id,
+            title: notifications.title,
+            type: notifications.type,
+            createdAt: notifications.createdAt,
+          })
+          .from(notifications)
+          .where(
+            and(
+              eq(notifications.companyId, companyId),
+              eq(notifications.isDismissed, false),
+              inArray(notifications.type, ["error", "action_required", "warning"])
+            )
+          )
+          .orderBy(desc(notifications.createdAt))
+          .limit(5)
+      : Promise.resolve([]),
+
+    needsAuditErrors
+      ? db
+          .select({
+            id: auditLogs.id,
+            action: auditLogs.action,
+            path: auditLogs.path,
+            createdAt: auditLogs.createdAt,
+          })
+          .from(auditLogs)
+          .where(and(eq(auditLogs.companyId, companyId), gt(auditLogs.gateFailed, 0)))
+          .orderBy(desc(auditLogs.createdAt))
+          .limit(5)
+      : Promise.resolve([]),
+  ])
+
+  const memberCount = memberRow[0]?.count ?? 0
+  const activePresence = presenceRow[0]?.count ?? 0
+  const auditCountToday = auditTodayRow[0]?.count ?? 0
+  const openAnomalies = anomalyRows.length
+
+  return {
+    anomalies: anomalyRows.map((r) => ({
+      id: r.id,
+      severity: r.severity,
+      title: r.title,
+      domain: r.domain,
+      timeAgo: timeAgo(r.createdAt),
+    })),
+    reports: reportRows.map((r) => ({
+      id: r.id,
+      title: r.title,
+      status: r.status,
+      timeAgo: timeAgo(r.createdAt),
+    })),
+    supportTickets: ticketRows.map((r, i) => ({
+      id: r.id,
+      title: r.title,
+      priority: (["P1", "P2", "P3"] as const)[Math.min(i, 2)] ?? "P3",
+      timeAgo: timeAgo(r.createdAt),
+    })),
+    auditErrors: auditErrorRows.map((r) => ({
+      id: r.id,
+      action: r.action,
+      path: r.path ?? null,
+      timeAgo: timeAgo(r.createdAt),
+    })),
+    systemHealth: [
+      { label: "Database", status: "Connected", ok: true },
+      {
+        label: "Active sessions",
+        status: `${activePresence} online`,
+        ok: activePresence >= 0,
+      },
+      {
+        label: "Open anomalies",
+        status: openAnomalies > 0 ? `${openAnomalies} active` : "None",
+        ok: openAnomalies === 0,
+      },
+      { label: "Audit log", status: `${auditCountToday} events today`, ok: true },
+    ],
+    stats: { memberCount, activePresence, auditCountToday, openAnomalies },
   }
 }
