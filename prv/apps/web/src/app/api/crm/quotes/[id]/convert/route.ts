@@ -3,6 +3,9 @@ import { NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 import type { GateContext } from "@prv/auth"
 import { writeAuditLog } from "@prv/auth"
+import { db } from "@prv/db"
+import { invoices, projects } from "@prv/db/schema"
+import { and, eq, isNull } from "drizzle-orm"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -23,18 +26,67 @@ export const POST = withGates(
     if (!parsed.success) return NextResponse.json({ error: "Invalid request" }, { status: 400 })
 
     const { projectName, note } = parsed.data
+    const { userId, companyId, sessionId } = ctx.session
 
-    await writeAuditLog({
-      actorId: ctx.session.userId,
-      companyId: ctx.session.companyId,
+    const [quote] = await db
+      .select({
+        id: invoices.id,
+        invoiceNumber: invoices.invoiceNumber,
+        status: invoices.status,
+        clientId: invoices.clientId,
+        total: invoices.total,
+        currency: invoices.currency,
+        dueDate: invoices.dueDate,
+        projectId: invoices.projectId,
+      })
+      .from(invoices)
+      .where(and(eq(invoices.id, id), eq(invoices.companyId, companyId), isNull(invoices.deletedAt)))
+      .limit(1)
+
+    if (!quote) return NextResponse.json({ error: "Not found" }, { status: 404 })
+    if (!["sent", "paid"].includes(quote.status))
+      return NextResponse.json({ error: `Cannot convert a quote in status '${quote.status}'` }, { status: 409 })
+    if (quote.projectId)
+      return NextResponse.json({ error: "Quote already linked to a project" }, { status: 409 })
+
+    const name = projectName ?? `Project from ${quote.invoiceNumber}`
+
+    const [newProject] = await db
+      .insert(projects)
+      .values({
+        companyId,
+        clientId: quote.clientId,
+        ownerId: userId,
+        name,
+        description: note ?? null,
+        budget: quote.total,
+        currency: quote.currency ?? "RON",
+        status: "draft",
+        metadata: { convertedFromQuoteId: id, convertedFromRef: quote.invoiceNumber },
+      })
+      .returning({ id: projects.id, name: projects.name })
+
+    if (!newProject) return NextResponse.json({ error: "Failed to create project" }, { status: 500 })
+
+    await db
+      .update(invoices)
+      .set({ projectId: newProject.id, status: "paid", paidAt: new Date() })
+      .where(and(eq(invoices.id, id), eq(invoices.companyId, companyId)))
+
+    void writeAuditLog({
+      actorId: userId,
+      companyId,
+      sessionId,
       action: "crm.quote.converted",
       entityType: "quote",
       entityId: id,
-      payload: { projectName: projectName ?? null, note: note ?? null },
-      ipAddress: req.headers.get("x-forwarded-for") ?? "unknown",
-      userAgent: req.headers.get("user-agent") ?? "unknown",
+      payload: { projectId: newProject.id, projectName: name, note: note ?? null },
+      method: "POST",
+      path: req.nextUrl.pathname,
+      ipAddress: ctx.ipAddress,
+      userAgent: ctx.userAgent,
     })
 
-    return NextResponse.json({ success: true, id, projectName })
+    return NextResponse.json({ success: true, id, projectId: newProject.id, projectName: name })
   }
 )
