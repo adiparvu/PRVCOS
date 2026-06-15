@@ -27,7 +27,7 @@ export const detectAnomaliesFunction = inngest.createFunction(
     const allAnomalies = await step.run("scan-companies", async () => {
       const { db } = await import("@prv/db")
       const { invoices, projects, attendanceRecords } = await import("@prv/db/schema")
-      const { eq, and, lt, not, inArray, count, sql } = await import("drizzle-orm")
+      const { eq, and, lt, not, inArray, isNull, count, sql } = await import("drizzle-orm")
 
       const todayStr = new Date().toISOString().slice(0, 10)
       const nowTs = new Date()
