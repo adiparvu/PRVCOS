@@ -1,5 +1,8 @@
 import { db } from "../client"
 import { notifications } from "../schema/notifications"
+import { approvalRequests } from "../schema/approvals"
+import { purchaseOrders } from "../schema/procurement"
+import { leaveRequests } from "../schema/workforce"
 import { eq, and, desc, lt, or, inArray, sql } from "drizzle-orm"
 import type { SQL } from "drizzle-orm"
 
@@ -185,8 +188,27 @@ export async function executeNotificationAction(
     .set({ isRead: true, readAt: new Date(), isDismissed: true, dismissedAt: new Date() })
     .where(eq(notifications.id, id))
 
-  // Entity-specific action routing — module handlers added per phase
-  // entityType "leave_request" → HR module, "purchase_order" → Procurement, etc.
+  // Entity-specific action routing
+  const entityType = notif.entityType
+  const entityId = notif.entityId
+  const decision = action === "approve" ? "approved" : "rejected"
+
+  if (entityType === "approval" && entityId) {
+    await db
+      .update(approvalRequests)
+      .set({ status: decision, resolvedAt: new Date(), updatedAt: new Date() })
+      .where(and(eq(approvalRequests.id, entityId), inArray(approvalRequests.status, ["pending", "urgent"])))
+  } else if (entityType === "purchase_order" && entityId) {
+    await db
+      .update(purchaseOrders)
+      .set({ status: decision, updatedAt: new Date() })
+      .where(and(eq(purchaseOrders.id, entityId), inArray(purchaseOrders.status, ["draft", "pending"])))
+  } else if ((entityType === "time_off_request" || entityType === "leave_request") && entityId) {
+    await db
+      .update(leaveRequests)
+      .set({ status: decision as "approved" | "rejected", updatedAt: new Date() })
+      .where(and(eq(leaveRequests.id, entityId), eq(leaveRequests.status, "pending")))
+  }
 
   return { ok: true }
 }
