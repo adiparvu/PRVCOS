@@ -169,16 +169,46 @@ export const POST = withGates(
     }
 
     const { action, reason } = parsed.data
+    const { userId, companyId, sessionId } = ctx.session
 
-    await writeAuditLog({
-      actorId: ctx.session.userId,
-      companyId: ctx.session.companyId,
+    const [existing] = await db
+      .select({ id: leaveRequests.id, status: leaveRequests.status })
+      .from(leaveRequests)
+      .where(
+        and(
+          eq(leaveRequests.id, id),
+          eq(leaveRequests.companyId, companyId),
+          isNull(leaveRequests.deletedAt)
+        )
+      )
+      .limit(1)
+
+    if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 })
+    if (existing.status !== "pending")
+      return NextResponse.json({ error: `Request is already ${existing.status}` }, { status: 409 })
+
+    const newStatus = action === "approve" ? "approved" : "rejected"
+    await db
+      .update(leaveRequests)
+      .set({
+        status: newStatus,
+        approvedByUserId: action === "approve" ? userId : null,
+        updatedAt: new Date(),
+      })
+      .where(eq(leaveRequests.id, id))
+
+    void writeAuditLog({
+      actorId: userId,
+      companyId,
+      sessionId,
       action: `hr.time_off.${action}`,
       entityType: "time_off_request",
       entityId: id,
-      payload: { reason: reason ?? null },
-      ipAddress: req.headers.get("x-forwarded-for") ?? "unknown",
-      userAgent: req.headers.get("user-agent") ?? "unknown",
+      payload: { reason: reason ?? null, newStatus },
+      method: "POST",
+      path: req.nextUrl.pathname,
+      ipAddress: ctx.ipAddress,
+      userAgent: ctx.userAgent,
     })
 
     return NextResponse.json({ success: true, id, action })
