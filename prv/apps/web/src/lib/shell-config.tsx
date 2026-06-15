@@ -358,11 +358,11 @@ const SHELLS: Record<string, ShellConfig> = {
 
   sysadmin: {
     tabs: [
-      { id: "system", label: "System", href: "/dashboard", icon: <SystemIcon /> },
+      { id: "system", label: "System", href: "/system", icon: <SystemIcon /> },
       { id: "users", label: "Users", href: "/people", icon: <UsersIcon /> },
-      { id: "security", label: "Security", href: "/dashboard", icon: <SecurityIcon /> },
-      { id: "audit", label: "Audit", href: "/dashboard", icon: <AuditIcon /> },
-      { id: "integrations", label: "Integrations", href: "/dashboard", icon: <IntegrationsIcon /> },
+      { id: "security", label: "Security", href: "/settings/security", icon: <SecurityIcon /> },
+      { id: "audit", label: "Audit", href: "/audit", icon: <AuditIcon /> },
+      { id: "integrations", label: "Integrations", href: "/integrations", icon: <IntegrationsIcon /> },
     ],
     diLabel: "System",
     searchScopes: ["all", "users", "audit", "sessions"],
@@ -370,7 +370,7 @@ const SHELLS: Record<string, ShellConfig> = {
 
   worker: {
     tabs: [
-      { id: "today", label: "Today", href: "/dashboard", icon: <TodayIcon /> },
+      { id: "today", label: "Today", href: "/today", icon: <TodayIcon /> },
       { id: "tasks", label: "Tasks", href: "/schedule", icon: <TasksIcon /> },
       { id: "schedule", label: "Schedule", href: "/schedule", icon: <ScheduleIcon /> },
       { id: "inbox", label: "Inbox", href: "/notifications", icon: <InboxIcon /> },
@@ -447,7 +447,7 @@ const SHELLS: Record<string, ShellConfig> = {
 
   project_worker: {
     tabs: [
-      { id: "today", label: "Today", href: "/dashboard", icon: <TodayIcon /> },
+      { id: "today", label: "Today", href: "/today", icon: <TodayIcon /> },
       { id: "tasks", label: "Tasks", href: "/schedule", icon: <TasksIcon /> },
       { id: "renovation", label: "Renovation", href: "/renovation", icon: <RenovationIcon /> },
       { id: "chat", label: "Chat", href: "/notifications", icon: <ChatIcon /> },
@@ -517,7 +517,7 @@ const SHELLS: Record<string, ShellConfig> = {
 
   seller: {
     tabs: [
-      { id: "today", label: "Today", href: "/dashboard", icon: <TodayIcon /> },
+      { id: "today", label: "Today", href: "/today", icon: <TodayIcon /> },
       { id: "pos", label: "POS", href: "/operations", icon: <POSIcon /> },
       { id: "products", label: "Products", href: "/operations", icon: <InventoryIcon /> },
       { id: "inbox", label: "Inbox", href: "/notifications", icon: <InboxIcon /> },
@@ -558,9 +558,9 @@ const SHELLS: Record<string, ShellConfig> = {
 
   app_support: {
     tabs: [
-      { id: "tickets", label: "Tickets", href: "/dashboard", icon: <TicketsIcon /> },
-      { id: "investigate", label: "Investigate", href: "/dashboard", icon: <ExploreIcon /> },
-      { id: "known_issues", label: "Known Issues", href: "/dashboard", icon: <AuditIcon /> },
+      { id: "tickets", label: "Tickets", href: "/tickets", icon: <TicketsIcon /> },
+      { id: "investigate", label: "Investigate", href: "/intelligence", icon: <ExploreIcon /> },
+      { id: "known_issues", label: "Known Issues", href: "/known-issues", icon: <AuditIcon /> },
       { id: "users", label: "Users", href: "/people", icon: <UsersIcon /> },
       { id: "inbox", label: "Inbox", href: "/notifications", icon: <InboxIcon /> },
     ],
@@ -582,10 +582,10 @@ const SHELLS: Record<string, ShellConfig> = {
 
   qa_tester: {
     tabs: [
-      { id: "testing", label: "Testing", href: "/dashboard", icon: <TestingIcon /> },
-      { id: "bugs", label: "Bugs", href: "/dashboard", icon: <BugsIcon /> },
-      { id: "test_cases", label: "Test Cases", href: "/dashboard", icon: <AuditIcon /> },
-      { id: "coverage", label: "Coverage", href: "/dashboard", icon: <CoverageIcon /> },
+      { id: "testing", label: "Testing", href: "/testing", icon: <TestingIcon /> },
+      { id: "bugs", label: "Bugs", href: "/bugs", icon: <BugsIcon /> },
+      { id: "test_cases", label: "Test Cases", href: "/test-cases", icon: <AuditIcon /> },
+      { id: "coverage", label: "Coverage", href: "/test-coverage", icon: <CoverageIcon /> },
       { id: "inbox", label: "Inbox", href: "/notifications", icon: <InboxIcon /> },
     ],
     diLabel: "QA",
