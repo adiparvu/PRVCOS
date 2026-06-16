@@ -261,3 +261,51 @@ export const PATCH = withGates(
     return NextResponse.json(updated)
   }
 )
+
+// ── DELETE /api/tools/[id] ────────────────────────────────────────────────────
+// Soft-deactivate. Blocks if tool is currently in use.
+
+export const DELETE = withGates(
+  { action: "tools.delete", endpointClass: "api_write" },
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
+    const { companyId } = ctx.session
+    const id = req.nextUrl.pathname.split("/").pop()
+    if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 })
+
+    const [existing] = await db
+      .select({ id: tools.id, name: tools.name, status: tools.status, isActive: tools.isActive })
+      .from(tools)
+      .where(and(eq(tools.id, id), eq(tools.companyId, companyId), isNull(tools.deletedAt)))
+      .limit(1)
+
+    if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 })
+    if (!existing.isActive)
+      return NextResponse.json({ error: "Tool is already inactive" }, { status: 409 })
+    if (existing.status === "in_use")
+      return NextResponse.json(
+        { error: "Cannot deactivate: tool is currently in use" },
+        { status: 409 }
+      )
+
+    await db
+      .update(tools)
+      .set({ isActive: false, deletedAt: new Date(), updatedAt: new Date() })
+      .where(and(eq(tools.id, id), eq(tools.companyId, companyId)))
+
+    void writeAuditLog({
+      companyId,
+      actorId: ctx.session.userId,
+      sessionId: ctx.session.sessionId,
+      action: "tools.delete",
+      entityType: "tool",
+      entityId: id,
+      payload: { name: existing.name },
+      method: "DELETE",
+      path: `/api/tools/${id}`,
+      ipAddress: ctx.ipAddress,
+      userAgent: ctx.userAgent,
+    })
+
+    return new NextResponse(null, { status: 204 })
+  }
+)
