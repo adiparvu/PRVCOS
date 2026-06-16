@@ -1,6 +1,8 @@
 import { withGates } from "@/lib/with-gates"
 import { NextRequest, NextResponse } from "next/server"
+import { z } from "zod"
 import type { GateContext } from "@prv/auth"
+import { writeAuditLog } from "@prv/auth"
 import { db } from "@prv/db"
 import { leaveRequests, users, stores } from "@prv/db/schema"
 import { and, desc, eq, isNull, lt } from "drizzle-orm"
@@ -66,6 +68,55 @@ function countWorkingDays(startDate: string, endDate: string): number {
   return days || 1
 }
 
+// ── POST /api/people/time-off ─────────────────────────────────────────────────
+
+const createSchema = z.object({
+  type: z.enum(["annual", "medical", "unpaid", "other"]).default("annual"),
+  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  notes: z.string().max(1000).optional(),
+})
+
+export const POST = withGates(
+  { action: "hr.time_off.write", endpointClass: "api_write" },
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
+    const { userId, companyId, sessionId } = ctx.session
+
+    const raw = await req.json().catch(() => ({}))
+    const parsed = createSchema.safeParse(raw)
+    if (!parsed.success)
+      return NextResponse.json({ error: "Invalid request", issues: parsed.error.issues }, { status: 422 })
+
+    const { type, startDate, endDate, notes } = parsed.data
+
+    if (new Date(startDate) > new Date(endDate))
+      return NextResponse.json({ error: "startDate must be on or before endDate" }, { status: 422 })
+
+    const [row] = await db
+      .insert(leaveRequests)
+      .values({ companyId, userId, type, startDate, endDate, notes: notes ?? null, status: "pending" })
+      .returning({ id: leaveRequests.id })
+
+    void writeAuditLog({
+      actorId: userId,
+      companyId,
+      sessionId,
+      action: "hr.time_off.create",
+      entityType: "time_off_request",
+      entityId: row!.id,
+      payload: { type, startDate, endDate },
+      method: "POST",
+      path: req.nextUrl.pathname,
+      ipAddress: ctx.ipAddress,
+      userAgent: ctx.userAgent,
+    })
+
+    return NextResponse.json({ id: row!.id, type, startDate, endDate, status: "pending" }, { status: 201 })
+  }
+)
+
+// ── GET /api/people/time-off ──────────────────────────────────────────────────
+
 export const GET = withGates(
   { action: "hr.time_off.read", endpointClass: "api_read" },
   async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
@@ -74,7 +125,6 @@ export const GET = withGates(
     const { companyId } = ctx.session
 
     const dbStatus = statusFilter === "declined" ? "rejected" : statusFilter
-
     const cursor = searchParams.get("cursor")
     const limit = Math.min(parseInt(searchParams.get("limit") ?? "50", 10), 200)
 
@@ -118,7 +168,6 @@ export const GET = withGates(
       const initials = r.firstName ? `${r.firstName[0]}${r.lastName![0]}` : "?"
       const apiType = toApiType(r.type)
       const apiStatus = toApiStatus(r.status)
-      const sameDay = r.startDate === r.endDate
       return {
         id: r.id,
         employeeId: r.userId,
@@ -130,7 +179,7 @@ export const GET = withGates(
         type: apiType,
         typeLabel: TYPE_LABELS[apiType],
         startDate: r.startDate,
-        endDate: sameDay ? null : r.endDate,
+        endDate: r.startDate === r.endDate ? null : r.endDate,
         workingDays: countWorkingDays(r.startDate, r.endDate),
         note: r.notes ?? null,
         hasCertificate: false,
