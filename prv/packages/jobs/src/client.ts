@@ -59,6 +59,20 @@ export type PRVEvents = {
       stockMinimum: number
     }
   }
+  "prv/leave.status_changed": {
+    data: {
+      leaveId: string
+      userId: string
+      companyId: string
+      decision: "approved" | "rejected"
+      leaveType: string
+      startDate: string
+      endDate: string
+      approverName: string
+      notes?: string
+      dashboardUrl?: string
+    }
+  }
 }
 
 export const inngest = new Inngest({

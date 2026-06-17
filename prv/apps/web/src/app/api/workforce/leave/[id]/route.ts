@@ -4,8 +4,9 @@ import type { GateContext } from "@prv/auth"
 import { writeAuditLog } from "@prv/auth"
 import { z } from "zod"
 import { db } from "@prv/db"
-import { leaveRequests } from "@prv/db/schema"
+import { leaveRequests, users } from "@prv/db/schema"
 import { and, eq, isNull } from "drizzle-orm"
+import { inngest } from "@prv/jobs/client"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -92,6 +93,31 @@ export const PATCH = withGates(
       path: req.nextUrl.pathname,
       ipAddress: ctx.ipAddress,
       userAgent: ctx.userAgent,
+    })
+
+    const [approver] = await db
+      .select({ firstName: users.firstName, lastName: users.lastName, email: users.email })
+      .from(users)
+      .where(eq(users.id, actorId))
+      .limit(1)
+
+    const approverName = approver
+      ? [approver.firstName, approver.lastName].filter(Boolean).join(" ") || approver.email
+      : "Your manager"
+
+    void inngest.send({
+      name: "prv/leave.status_changed",
+      data: {
+        leaveId: id,
+        userId: leave.userId,
+        companyId,
+        decision: parsed.data.status as "approved" | "rejected",
+        leaveType: leave.type,
+        startDate: leave.startDate,
+        endDate: leave.endDate,
+        approverName,
+        notes: parsed.data.notes ?? leave.notes ?? undefined,
+      },
     })
 
     return NextResponse.json({ id, status: parsed.data.status })
