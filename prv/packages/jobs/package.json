@@ -13,15 +13,19 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "inngest": "^3.30.0",
     "@prv/approval-engine": "workspace:*",
     "@prv/cache": "workspace:*",
     "@prv/db": "workspace:*",
     "@prv/email": "workspace:*",
-    "drizzle-orm": "^0.38.4"
+    "@prv/pdf": "workspace:*",
+    "@supabase/supabase-js": "^2.108.2",
+    "drizzle-orm": "^0.38.4",
+    "inngest": "^3.30.0"
   },
   "devDependencies": {
     "@prv/tsconfig": "workspace:*",
+    "@types/react": "^19.2.16",
+    "react": "19.2.4",
     "typescript": "^5.7.3"
   }
 }

@@ -14,3 +14,7 @@ export { detectAnomaliesFunction } from "./functions/intelligence/detect-anomali
 export { groupKpiSnapshotFunction } from "./functions/group-kpi-snapshot"
 export { leaveNotificationFunction } from "./functions/leave-notification"
 export { learningCompleteFunction } from "./functions/learning-complete"
+export { fleetMaintenanceFunction } from "./functions/fleet-maintenance"
+export { payrollRunFunction } from "./functions/payroll-run"
+export { renovationMilestoneFunction } from "./functions/renovation-milestone"
+export { pdfGenerateFunction } from "./functions/pdf-generate"

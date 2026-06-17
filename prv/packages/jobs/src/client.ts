@@ -101,6 +101,32 @@ export type PRVEvents = {
       completedAt: string
     }
   }
+  "prv/pdf.generate": {
+    data: {
+      template: "invoice" | "payslip" | "deviz" | "certificate" | "contract"
+      entityId: string
+      entityType: string
+      companyId: string
+      requestedBy: string
+      /** Storage path to write the PDF to */
+      storagePath: string
+      /** Arbitrary template props serialized as JSON string */
+      propsJson: string
+      /** Optional: notify this userId when done */
+      notifyUserId?: string
+    }
+  }
+  "prv/pdf.ready": {
+    data: {
+      entityId: string
+      entityType: string
+      companyId: string
+      storagePath: string
+      publicUrl: string
+      bytes: number
+      generatedAt: string
+    }
+  }
 }
 
 export const inngest = new Inngest({

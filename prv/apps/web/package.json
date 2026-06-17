@@ -15,13 +15,13 @@
   "dependencies": {
     "@prv/ai-engine": "workspace:*",
     "@prv/approval-engine": "workspace:*",
-    "@prv/search": "workspace:*",
     "@prv/auth": "workspace:*",
     "@prv/cache": "workspace:*",
     "@prv/db": "workspace:*",
     "@prv/email": "workspace:*",
     "@prv/env": "workspace:*",
     "@prv/jobs": "workspace:*",
+    "@prv/pdf": "workspace:*",
     "@prv/search": "workspace:*",
     "@prv/ui": "workspace:*",
     "@sentry/nextjs": "^9.5.0",
@@ -30,11 +30,11 @@
     "@tanstack/react-query-devtools": "^5.62.16",
     "clsx": "^2.1.1",
     "drizzle-orm": "^0.38.4",
-    "zod": "^3.24.1",
     "next": "16.2.7",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "tailwind-merge": "^3.6.0",
+    "zod": "^3.24.1",
     "zustand": "^5.0.3"
   },
   "devDependencies": {

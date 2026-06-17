@@ -1,0 +1,26 @@
+{
+  "name": "@prv/pdf",
+  "version": "0.0.1",
+  "private": true,
+  "exports": {
+    ".": "./src/index.ts",
+    "./templates": "./src/templates/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@react-pdf/renderer": "^4.5.1",
+    "date-fns": "^4.4.0"
+  },
+  "devDependencies": {
+    "@prv/tsconfig": "workspace:*",
+    "@types/react": "^19",
+    "react": "19.2.4",
+    "typescript": "^5.7.3"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
+  }
+}
