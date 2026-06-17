@@ -59,6 +59,18 @@ export type PRVEvents = {
       stockMinimum: number
     }
   }
+  "prv/learning.course_completed": {
+    data: {
+      enrollmentId: string
+      courseId: string
+      userId: string
+      companyId: string
+      courseTitle: string
+      courseCategory: string
+      instructorName?: string
+      completedAt: string
+    }
+  }
   "prv/leave.status_changed": {
     data: {
       leaveId: string

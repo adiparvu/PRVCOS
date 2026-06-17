@@ -13,3 +13,4 @@ export { processRecurringInvoicesFunction } from "./functions/finance/process-re
 export { detectAnomaliesFunction } from "./functions/intelligence/detect-anomalies"
 export { groupKpiSnapshotFunction } from "./functions/group-kpi-snapshot"
 export { leaveNotificationFunction } from "./functions/leave-notification"
+export { learningCompleteFunction } from "./functions/learning-complete"

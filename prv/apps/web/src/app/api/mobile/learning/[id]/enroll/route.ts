@@ -5,6 +5,7 @@ import { withMobileAuth } from "@/lib/mobile/auth"
 import { db } from "@prv/db"
 import { courseEnrollments, learningCourses } from "@prv/db/schema"
 import { and, eq, isNull } from "drizzle-orm"
+import { inngest } from "@prv/jobs/client"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -78,10 +79,11 @@ export const PATCH = withMobileAuth(async (req: NextRequest, ctx) => {
 
   if (!enrollment) return NextResponse.json({ error: "Not enrolled in this course" }, { status: 404 })
 
-  const autoStatus =
-    parsed.data.progressPct === 100 && !parsed.data.status ? "completed" : parsed.data.status
+  const isCompleting =
+    parsed.data.progressPct === 100 || parsed.data.status === "completed"
+  const autoStatus = isCompleting ? "completed" : (parsed.data.status ?? undefined)
 
-  await db
+  const [updated] = await db
     .update(courseEnrollments)
     .set({
       progressPct: parsed.data.progressPct,
@@ -90,6 +92,35 @@ export const PATCH = withMobileAuth(async (req: NextRequest, ctx) => {
       updatedAt: new Date(),
     })
     .where(and(eq(courseEnrollments.userId, userId), eq(courseEnrollments.courseId, id), eq(courseEnrollments.companyId, companyId)))
+    .returning({ id: courseEnrollments.id })
+
+  if (isCompleting && updated) {
+    const [course] = await db
+      .select({
+        title: learningCourses.title,
+        category: learningCourses.category,
+        instructorName: learningCourses.instructorName,
+      })
+      .from(learningCourses)
+      .where(and(eq(learningCourses.id, id), isNull(learningCourses.deletedAt)))
+      .limit(1)
+
+    if (course) {
+      void inngest.send({
+        name: "prv/learning.course_completed",
+        data: {
+          enrollmentId: updated.id,
+          courseId: id,
+          userId,
+          companyId,
+          courseTitle: course.title,
+          courseCategory: course.category ?? "general",
+          instructorName: course.instructorName ?? undefined,
+          completedAt: new Date().toISOString(),
+        },
+      })
+    }
+  }
 
   return NextResponse.json({ courseId: id, progressPct: parsed.data.progressPct })
 })

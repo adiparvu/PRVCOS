@@ -17,13 +17,14 @@ import {
   type ShiftItem,
   type AttendanceItem,
 } from "@/hooks/usePeople"
+import { useLearning, type CourseItem, type CourseStatus } from "@/hooks/useLearning"
 import { useRouter } from "expo-router"
 import { FABWithSheets } from "@/components/FABWithSheets"
 import { colors, radius, spacing } from "@/tokens"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type Segment = "team" | "schedule" | "attendance" | "org"
+type Segment = "team" | "schedule" | "attendance" | "org" | "learning"
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -771,6 +772,208 @@ function AttendanceContent({ data }: { data: ReturnType<typeof usePeople>["data"
   )
 }
 
+// ─── Learning ─────────────────────────────────────────────────────────────────
+
+const COURSE_STATUS_CONFIG: Record<
+  CourseStatus,
+  { label: string; bg: string; border: string; fg: string }
+> = {
+  new: {
+    label: "New",
+    bg: "rgba(100,210,255,0.08)",
+    border: "rgba(100,210,255,0.18)",
+    fg: "rgba(100,210,255,0.85)",
+  },
+  in_progress: {
+    label: "In Progress",
+    bg: "rgba(255,159,10,0.10)",
+    border: "rgba(255,159,10,0.22)",
+    fg: colors.amber,
+  },
+  completed: {
+    label: "Completed",
+    bg: "rgba(48,209,88,0.10)",
+    border: "rgba(48,209,88,0.22)",
+    fg: colors.green,
+  },
+  saved: {
+    label: "Saved",
+    bg: "rgba(255,255,255,0.06)",
+    border: "rgba(255,255,255,0.10)",
+    fg: colors.text3,
+  },
+}
+
+function CourseCard({ item }: { item: CourseItem }) {
+  const router = useRouter()
+  const sc = COURSE_STATUS_CONFIG[item.status]
+  return (
+    <TouchableOpacity
+      style={s.courseCard}
+      activeOpacity={0.8}
+      onPress={() => router.push({ pathname: "/(auth)/course-detail", params: { id: item.id } })}
+    >
+      <View style={s.cardShine} pointerEvents="none" />
+      <View style={s.courseCardTop}>
+        <View style={s.courseCardLeft}>
+          <Text style={s.courseCategoryLabel}>{item.categoryLabel}</Text>
+          <Text style={s.courseTitle} numberOfLines={2}>
+            {item.title}
+          </Text>
+        </View>
+        <View style={[s.statusBadge, { backgroundColor: sc.bg, borderColor: sc.border }]}>
+          <Text style={[s.statusBadgeText, { color: sc.fg }]}>{sc.label}</Text>
+        </View>
+      </View>
+
+      <View style={s.courseMeta}>
+        <Text style={s.courseMetaText}>{item.durationLabel}</Text>
+        <Text style={s.courseMetaDot}>·</Text>
+        <Text style={s.courseMetaText}>
+          {item.currentModule}/{item.totalModules} modules
+        </Text>
+        {item.hasCert ? (
+          <>
+            <Text style={s.courseMetaDot}>·</Text>
+            <Text style={[s.courseMetaText, { color: colors.amber }]}>Certificate</Text>
+          </>
+        ) : null}
+      </View>
+
+      {item.status === "in_progress" || item.status === "completed" ? (
+        <View style={s.progressWrap}>
+          <View style={s.progressTrack}>
+            <View
+              style={[
+                s.progressFill,
+                {
+                  width: `${item.progress}%`,
+                  backgroundColor:
+                    item.progress === 100
+                      ? colors.green
+                      : "rgba(255,255,255,0.75)",
+                },
+              ]}
+            />
+          </View>
+          <Text
+            style={[
+              s.progressPct,
+              item.progress === 100 ? { color: colors.green } : null,
+            ]}
+          >
+            {item.progress}%
+          </Text>
+        </View>
+      ) : null}
+    </TouchableOpacity>
+  )
+}
+
+function LearningContent() {
+  const [statusFilter, setStatusFilter] = useState<CourseStatus | undefined>(undefined)
+  const { data, isLoading, error } = useLearning(
+    statusFilter ? { status: statusFilter } : undefined
+  )
+
+  const filters: { key: CourseStatus | "all"; label: string }[] = [
+    { key: "all", label: "All" },
+    { key: "in_progress", label: "In Progress" },
+    { key: "completed", label: "Done" },
+    { key: "new", label: "New" },
+    { key: "saved", label: "Saved" },
+  ]
+
+  if (isLoading) return <SkeletonContent />
+
+  if (error || !data) {
+    return (
+      <View style={s.empty}>
+        <Text style={s.emptyText}>Could not load courses.</Text>
+      </View>
+    )
+  }
+
+  const { meta, achievements, courses } = data
+
+  return (
+    <>
+      {/* KPI strip */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={s.kpiScrollWrap}
+        contentContainerStyle={s.kpiStrip}
+      >
+        <KPIPill value={String(meta.completedCount)} label="Completed" valueColor={meta.completedCount > 0 ? colors.green : undefined} />
+        <KPIPill value={String(meta.inProgressCount)} label="In Progress" valueColor={meta.inProgressCount > 0 ? colors.amber : undefined} />
+        <KPIPill value={`${meta.monthlyHours}h`} label="This Month" />
+        {meta.avgScore > 0 ? (
+          <KPIPill value={`${meta.avgScore}%`} label="Avg Score" />
+        ) : null}
+      </ScrollView>
+
+      {/* Filter pills */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={s.kpiScrollWrap}
+        contentContainerStyle={[s.kpiStrip, { paddingBottom: spacing.sm }]}
+      >
+        {filters.map((f) => {
+          const active = (f.key === "all" && !statusFilter) || f.key === statusFilter
+          return (
+            <TouchableOpacity
+              key={f.key}
+              style={[s.filterPill, active && s.filterPillActive]}
+              onPress={() => setStatusFilter(f.key === "all" ? undefined : f.key)}
+              activeOpacity={0.75}
+            >
+              <Text style={[s.filterPillText, active && s.filterPillTextActive]}>
+                {f.label}
+              </Text>
+            </TouchableOpacity>
+          )
+        })}
+      </ScrollView>
+
+      {achievements.length > 0 ? (
+        <>
+          <SectionHeader title="Achievements" />
+          <ListCard>
+            {achievements.map((a, i) => (
+              <View key={a.id} style={[s.listRow, i === achievements.length - 1 ? s.listRowLast : null]}>
+                <View
+                  style={[
+                    s.achievementBadge,
+                    { backgroundColor: a.colorType === "amber" ? "rgba(255,159,10,0.12)" : "rgba(48,209,88,0.12)" },
+                  ]}
+                >
+                  <Text style={{ fontSize: 16 }}>{a.colorType === "amber" ? "★" : "✓"}</Text>
+                </View>
+                <View style={s.rowInfo}>
+                  <Text style={s.rowName}>{a.label}</Text>
+                  <Text style={s.rowSub}>{a.detail}</Text>
+                </View>
+                <Text style={s.timeAgo}>{a.date}</Text>
+              </View>
+            ))}
+          </ListCard>
+        </>
+      ) : null}
+
+      <SectionHeader title="Courses" action={`${data.count} total`} />
+      {courses.length === 0 ? (
+        <View style={s.empty}>
+          <Text style={s.emptyText}>No courses found.</Text>
+        </View>
+      ) : (
+        courses.map((c) => <CourseCard key={c.id} item={c} />)
+      )}
+    </>
+  )
+}
+
 // ─── Main screen ──────────────────────────────────────────────────────────────
 
 const SEGMENTS: { key: Segment; label: string }[] = [
@@ -778,6 +981,7 @@ const SEGMENTS: { key: Segment; label: string }[] = [
   { key: "schedule", label: "Schedule" },
   { key: "attendance", label: "Attendance" },
   { key: "org", label: "Org" },
+  { key: "learning", label: "Learning" },
 ]
 
 export default function PeopleScreen() {
@@ -839,6 +1043,7 @@ export default function PeopleScreen() {
           {segment === "schedule" && <ScheduleContent data={data} />}
           {segment === "attendance" && <AttendanceContent data={data} />}
           {segment === "org" && <OrgContent data={data} />}
+          {segment === "learning" && <LearningContent />}
         </ScrollView>
       )}
 
@@ -1278,4 +1483,78 @@ const s = StyleSheet.create({
     borderRadius: radius.pill,
   },
   retryBtnText: { fontSize: 15, fontWeight: "600", color: colors.text1 },
+
+  // Learning
+  courseCard: {
+    backgroundColor: colors.glass1,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 18,
+    padding: spacing.base,
+    overflow: "hidden",
+    marginBottom: spacing.sm,
+  },
+  courseCardTop: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  courseCardLeft: { flex: 1, gap: 3 },
+  courseCategoryLabel: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: colors.text3,
+    textTransform: "uppercase",
+    letterSpacing: 0.06,
+  },
+  courseTitle: { fontSize: 15, fontWeight: "600", color: colors.text1, lineHeight: 20 },
+  courseMeta: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    marginBottom: spacing.sm,
+    flexWrap: "wrap",
+  },
+  courseMetaText: { fontSize: 12, color: colors.text3 },
+  courseMetaDot: { fontSize: 12, color: colors.text3 },
+  progressWrap: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+  progressTrack: {
+    flex: 1,
+    height: 3,
+    backgroundColor: "rgba(255,255,255,0.08)",
+    borderRadius: 2,
+    overflow: "hidden",
+  },
+  progressFill: { height: "100%", borderRadius: 2 },
+  progressPct: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: colors.text3,
+    minWidth: 30,
+    textAlign: "right",
+  },
+  filterPill: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: radius.pill,
+    backgroundColor: "rgba(255,255,255,0.06)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.10)",
+  },
+  filterPillActive: {
+    backgroundColor: "rgba(255,255,255,0.13)",
+    borderColor: "rgba(255,255,255,0.22)",
+  },
+  filterPillText: { fontSize: 13, fontWeight: "600", color: colors.text3 },
+  filterPillTextActive: { color: colors.text1 },
+  achievementBadge: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
 })

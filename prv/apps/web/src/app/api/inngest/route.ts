@@ -13,6 +13,7 @@ import {
   detectAnomaliesFunction,
   groupKpiSnapshotFunction,
   leaveNotificationFunction,
+  learningCompleteFunction,
 } from "@prv/jobs/functions"
 
 // Inngest webhook handler — receives events and dispatches to functions
@@ -32,6 +33,7 @@ export const { GET, POST, PUT } = serve({
     detectAnomaliesFunction,
     groupKpiSnapshotFunction,
     leaveNotificationFunction,
+    learningCompleteFunction,
   ],
   signingKey: process.env["INNGEST_SIGNING_KEY"],
 })
