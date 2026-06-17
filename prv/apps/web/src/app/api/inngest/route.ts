@@ -15,6 +15,8 @@ import {
   leaveNotificationFunction,
   learningCompleteFunction,
   fleetMaintenanceFunction,
+  payrollRunFunction,
+  renovationMilestoneFunction,
 } from "@prv/jobs/functions"
 
 // Inngest webhook handler — receives events and dispatches to functions
@@ -36,6 +38,8 @@ export const { GET, POST, PUT } = serve({
     leaveNotificationFunction,
     learningCompleteFunction,
     fleetMaintenanceFunction,
+    payrollRunFunction,
+    renovationMilestoneFunction,
   ],
   signingKey: process.env["INNGEST_SIGNING_KEY"],
 })

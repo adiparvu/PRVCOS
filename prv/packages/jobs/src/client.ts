@@ -85,6 +85,22 @@ export type PRVEvents = {
       dashboardUrl?: string
     }
   }
+  "prv/payroll.run_completed": {
+    data: {
+      payrollRunId: string
+      companyId: string
+    }
+  }
+  "prv/renovation.milestone_reached": {
+    data: {
+      projectId: string
+      companyId: string
+      milestoneTitle: string
+      phaseTitle?: string
+      reportId?: string
+      completedAt: string
+    }
+  }
 }
 
 export const inngest = new Inngest({
