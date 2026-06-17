@@ -251,6 +251,18 @@ function IconPlus() {
 
 // ── Types & helpers ───────────────────────────────────────────────────────────
 
+async function downloadInvoicePdf(invoiceId: string, ref: string) {
+  const res = await fetch(`/api/finance/invoices/${invoiceId}/pdf`, { method: "POST" })
+  if (!res.ok) throw new Error("PDF generation failed")
+  const blob = await res.blob()
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  a.download = `${ref}.pdf`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
 function fmt(amount: number) {
   return "€" + amount.toLocaleString("en-US")
 }
@@ -379,6 +391,7 @@ function InvoiceActionsSheet({
   const [payDate] = useState(new Date().toISOString().slice(0, 10))
   const [voidReason, setVoidReason] = useState("")
   const [submitting, setSubmitting] = useState(false)
+  const [pdfLoading, setPdfLoading] = useState(false)
 
   const canAct = invoice.status !== "paid" && invoice.status !== "void"
 
@@ -780,10 +793,17 @@ function InvoiceActionsSheet({
             },
             {
               id: "download",
-              icon: <IconDownload />,
-              label: "Download PDF",
+              icon: pdfLoading ? <IconDownload /> : <IconDownload />,
+              label: pdfLoading ? "Se generează…" : "Download PDF",
               sub: `${invoice.ref}.pdf`,
-              action: () => {},
+              action: async () => {
+                setPdfLoading(true)
+                try {
+                  await downloadInvoicePdf(invoice.id, invoice.ref)
+                } finally {
+                  setPdfLoading(false)
+                }
+              },
             },
             {
               id: "edit",
