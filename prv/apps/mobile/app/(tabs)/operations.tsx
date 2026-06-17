@@ -19,12 +19,13 @@ import {
 } from "@/hooks/useOperations"
 import { useStores, formatRevenue } from "@/hooks/useStores"
 import { useClients, type ClientListItem } from "@/hooks/useClientDetail"
+import { useRenovation, type RenovationProject, type RenovationStatus } from "@/hooks/useRenovation"
 import { FABWithSheets } from "@/components/FABWithSheets"
 import { colors, radius, spacing, type as t } from "@/tokens"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type Segment = "projects" | "orders" | "tasks" | "stores" | "clients"
+type Segment = "projects" | "orders" | "tasks" | "stores" | "clients" | "renovation"
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -603,6 +604,172 @@ function TasksContent({ data }: { data: ReturnType<typeof useOperations>["data"]
   )
 }
 
+// ─── Renovation ───────────────────────────────────────────────────────────────
+
+const RENOV_STATUS: Record<
+  RenovationStatus,
+  { label: string; bg: string; fg: string; border: string }
+> = {
+  planning: { label: "Planning", bg: "rgba(100,210,255,0.10)", fg: "#64d2ff", border: "rgba(100,210,255,0.22)" },
+  in_progress: { label: "Active", bg: "rgba(48,209,88,0.12)", fg: colors.green, border: "rgba(48,209,88,0.25)" },
+  on_hold: { label: "On Hold", bg: "rgba(255,159,10,0.10)", fg: colors.amber, border: "rgba(255,159,10,0.22)" },
+  completed: { label: "Done", bg: "rgba(48,209,88,0.08)", fg: colors.green, border: "rgba(48,209,88,0.18)" },
+  cancelled: { label: "Cancelled", bg: colors.glass1, fg: colors.text3, border: colors.border },
+}
+
+const RENOV_PRIORITY: Record<string, string> = {
+  low: "↓ Low",
+  medium: "→ Medium",
+  high: "↑ High",
+  urgent: "⚠ Urgent",
+}
+
+function formatCurrency(value: number | null, currency: string | null): string {
+  if (value === null) return "—"
+  const cur = currency ?? "EUR"
+  try {
+    return new Intl.NumberFormat("en", { style: "currency", currency: cur, maximumFractionDigits: 0 }).format(value)
+  } catch {
+    return `${cur} ${value.toLocaleString()}`
+  }
+}
+
+function RenovCard({ item }: { item: RenovationProject }) {
+  const sc = RENOV_STATUS[item.status] ?? RENOV_STATUS.planning
+  const pct = item.completionPercentage ?? 0
+
+  return (
+    <View style={s.card}>
+      <View style={s.cardShine} pointerEvents="none" />
+      <View style={s.cardTop}>
+        <View style={{ flex: 1, gap: 3 }}>
+          {item.projectCode ? (
+            <Text style={s.renovCode}>{item.projectCode}</Text>
+          ) : null}
+          <Text style={s.cardTitle} numberOfLines={2}>
+            {item.title}
+          </Text>
+        </View>
+        <View style={[s.statusPill, { backgroundColor: sc.bg, borderColor: sc.border }]}>
+          <Text style={[s.statusPillText, { color: sc.fg }]}>{sc.label}</Text>
+        </View>
+      </View>
+
+      <View style={s.cardMeta}>
+        {item.clientName ? (
+          <View style={s.metaItem}>
+            <Text style={s.metaLabel}>Client</Text>
+            <Text style={s.metaValue} numberOfLines={1}>{item.clientName}</Text>
+          </View>
+        ) : null}
+        {item.city ? (
+          <View style={s.metaItem}>
+            <Text style={s.metaLabel}>City</Text>
+            <Text style={s.metaValue}>{item.city}</Text>
+          </View>
+        ) : null}
+        {item.estimatedValue !== null ? (
+          <View style={s.metaItem}>
+            <Text style={s.metaLabel}>Value</Text>
+            <Text style={s.metaValue}>{formatCurrency(item.estimatedValue, item.currency)}</Text>
+          </View>
+        ) : null}
+        {item.priority ? (
+          <View style={s.metaItem}>
+            <Text style={s.metaLabel}>Priority</Text>
+            <Text style={[s.metaValue, item.priority === "urgent" ? { color: colors.red } : item.priority === "high" ? { color: colors.amber } : null]}>
+              {RENOV_PRIORITY[item.priority] ?? item.priority}
+            </Text>
+          </View>
+        ) : null}
+      </View>
+
+      <View style={s.progressWrap}>
+        <View style={s.progressTrack}>
+          <View style={[s.progressFill, { width: `${pct}%` }]} />
+        </View>
+        <Text style={[s.progressPct, pct === 100 ? { color: colors.green } : null]}>
+          {pct}%
+        </Text>
+      </View>
+    </View>
+  )
+}
+
+function RenovationContent() {
+  const [statusFilter, setStatusFilter] = useState<RenovationStatus | undefined>(undefined)
+  const { data, isLoading, error } = useRenovation(statusFilter ? { status: statusFilter } : undefined)
+
+  const filters: { key: RenovationStatus | "all"; label: string }[] = [
+    { key: "all", label: "All" },
+    { key: "in_progress", label: "Active" },
+    { key: "planning", label: "Planning" },
+    { key: "on_hold", label: "On Hold" },
+    { key: "completed", label: "Done" },
+  ]
+
+  if (isLoading) return <SkeletonContent />
+  if (error || !data) {
+    return (
+      <View style={s.empty}>
+        <Text style={s.emptyText}>Could not load renovation projects.</Text>
+      </View>
+    )
+  }
+
+  const { projects } = data
+  const active = projects.filter((p) => p.status === "in_progress").length
+  const planning = projects.filter((p) => p.status === "planning").length
+  const done = projects.filter((p) => p.status === "completed").length
+
+  return (
+    <>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={s.kpiScrollWrap}
+        contentContainerStyle={s.kpiStrip}
+      >
+        <KPIPill value={String(projects.length)} label="Total" />
+        <KPIPill value={String(active)} label="Active" deltaColor={active > 0 ? colors.green : undefined} />
+        <KPIPill value={String(planning)} label="Planning" />
+        <KPIPill value={String(done)} label="Completed" deltaColor={done > 0 ? colors.green : undefined} />
+      </ScrollView>
+
+      {/* Filter pills */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={s.kpiScrollWrap}
+        contentContainerStyle={[s.kpiStrip, { paddingBottom: spacing.sm }]}
+      >
+        {filters.map((f) => {
+          const isActive = (f.key === "all" && !statusFilter) || f.key === statusFilter
+          return (
+            <TouchableOpacity
+              key={f.key}
+              style={[s.clientFilterPill, isActive && s.clientFilterPillActive]}
+              onPress={() => setStatusFilter(f.key === "all" ? undefined : f.key)}
+              activeOpacity={0.75}
+            >
+              <Text style={[s.clientFilterText, isActive && s.clientFilterTextActive]}>
+                {f.label}
+              </Text>
+            </TouchableOpacity>
+          )
+        })}
+      </ScrollView>
+
+      <SectionHeader title="Renovation Projects" action={`${projects.length} total`} />
+      {projects.length === 0 ? (
+        <EmptyState label="No renovation projects found" />
+      ) : (
+        projects.map((p) => <RenovCard key={p.id} item={p} />)
+      )}
+    </>
+  )
+}
+
 // ─── Main screen ──────────────────────────────────────────────────────────────
 
 const SEGMENTS: { key: Segment; label: string }[] = [
@@ -611,6 +778,7 @@ const SEGMENTS: { key: Segment; label: string }[] = [
   { key: "tasks", label: "Tasks" },
   { key: "stores", label: "Stores" },
   { key: "clients", label: "Clients" },
+  { key: "renovation", label: "Renovation" },
 ]
 
 export default function OperationsScreen() {
@@ -625,9 +793,13 @@ export default function OperationsScreen() {
         <Text style={s.title}>Operations</Text>
       </View>
 
-      {/* Fixed segment control */}
+      {/* Fixed segment control — scrollable to accommodate all segments */}
       <View style={s.segmentWrap}>
-        <View style={s.segment}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={s.segment}
+        >
           {SEGMENTS.map((seg) => (
             <Pressable
               key={seg.key}
@@ -639,7 +811,7 @@ export default function OperationsScreen() {
               </Text>
             </Pressable>
           ))}
-        </View>
+        </ScrollView>
       </View>
 
       {/* Scrollable content */}
@@ -670,6 +842,7 @@ export default function OperationsScreen() {
           {segment === "tasks" && <TasksContent data={data} />}
           {segment === "stores" && <StoresContent />}
           {segment === "clients" && <ClientsContent />}
+          {segment === "renovation" && <RenovationContent />}
         </ScrollView>
       )}
 
@@ -732,8 +905,8 @@ const s = StyleSheet.create({
     gap: 2,
   },
   segBtn: {
-    flex: 1,
     paddingVertical: 7,
+    paddingHorizontal: spacing.md,
     alignItems: "center",
     borderRadius: 9,
   },
@@ -856,6 +1029,13 @@ const s = StyleSheet.create({
     fontWeight: "600",
     color: colors.text1,
     lineHeight: 20,
+  },
+  renovCode: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: colors.text3,
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
   },
   statusPill: {
     paddingHorizontal: 10,
