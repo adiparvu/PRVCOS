@@ -177,3 +177,24 @@ export function useCreateEmployee() {
     },
   })
 }
+
+export type TaskPriority = "low" | "normal" | "high" | "urgent"
+
+export interface CreateTaskInput {
+  title: string
+  description?: string
+  dueDate?: string
+  projectId?: string
+  priority: TaskPriority
+}
+
+export function useCreateTask() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (input: CreateTaskInput) =>
+      api.post<{ id: string; title: string; isComplete: boolean }>("/api/mobile/tasks", input),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["operations"] })
+    },
+  })
+}

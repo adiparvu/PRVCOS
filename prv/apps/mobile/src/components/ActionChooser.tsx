@@ -17,8 +17,9 @@ const ACTIONS = [
     sub: "Place a materials or product order",
   },
   { type: "project" as const, icon: "◎", title: "New Project", sub: "Start a new renovation job" },
+  { type: "task" as const, icon: "◫", title: "New Task", sub: "Add a task to a project" },
   { type: "client" as const, icon: "◇", title: "New Client", sub: "Add a person or company" },
-  { type: "expense" as const, icon: "◫", title: "New Expense", sub: "Record a business expense" },
+  { type: "expense" as const, icon: "◐", title: "New Expense", sub: "Record a business expense" },
   {
     type: "employee" as const,
     icon: "◉",
@@ -27,7 +28,14 @@ const ACTIONS = [
   },
 ]
 
-export type CreateType = "invoice" | "order" | "project" | "client" | "expense" | "employee"
+export type CreateType =
+  | "invoice"
+  | "order"
+  | "project"
+  | "task"
+  | "client"
+  | "expense"
+  | "employee"
 
 interface Props {
   visible: boolean

@@ -5,6 +5,7 @@ import { ActionChooser, type CreateType } from "./ActionChooser"
 import { CreateInvoiceSheet } from "./CreateInvoiceSheet"
 import { CreateOrderSheet } from "./CreateOrderSheet"
 import { CreateProjectSheet } from "./CreateProjectSheet"
+import { CreateTaskSheet } from "./CreateTaskSheet"
 import { CreateClientSheet } from "./CreateClientSheet"
 import { CreateExpenseSheet } from "./CreateExpenseSheet"
 import { CreateEmployeeSheet } from "./CreateEmployeeSheet"
@@ -43,6 +44,7 @@ export function FABWithSheets({ bottomOffset = 86 }: Props) {
       <CreateInvoiceSheet visible={flow === "invoice"} onClose={closeAll} />
       <CreateOrderSheet visible={flow === "order"} onClose={closeAll} />
       <CreateProjectSheet visible={flow === "project"} onClose={closeAll} />
+      <CreateTaskSheet visible={flow === "task"} onClose={closeAll} />
       <CreateClientSheet visible={flow === "client"} onClose={closeAll} />
       <CreateExpenseSheet visible={flow === "expense"} onClose={closeAll} />
       <CreateEmployeeSheet visible={flow === "employee"} onClose={closeAll} />
