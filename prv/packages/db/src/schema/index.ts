@@ -47,3 +47,5 @@ export * from "./shop"
 export * from "./portal"
 // Phase 7.5: Renovation Services Platform — projects, phases, tasks, estimates, contracts, site reports
 export * from "./renovation"
+// Phase 13: Communication Center — channels, DMs, announcements
+export * from "./communications"
