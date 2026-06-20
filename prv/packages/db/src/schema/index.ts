@@ -49,3 +49,5 @@ export * from "./portal"
 export * from "./renovation"
 // Phase 13: Communication Center — channels, DMs, announcements
 export * from "./communications"
+// Phase 15: Analytics Platform — events, KPI snapshots, alerts
+export * from "./analytics"
