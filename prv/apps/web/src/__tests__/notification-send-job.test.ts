@@ -35,6 +35,7 @@ vi.mock("@prv/db/schema", () => ({
   notifications: {},
   notificationPreferences: {},
   users: {},
+  pushTokens: { token: {}, userId: {}, isActive: {} },
 }))
 vi.mock("drizzle-orm", () => ({ eq: vi.fn(), and: vi.fn() }))
 vi.mock("@prv/email", () => ({
@@ -92,7 +93,12 @@ beforeEach(() => {
 
   mockSelect.mockReset().mockImplementation(() => ({
     from: vi.fn().mockReturnValue({
-      where: vi.fn().mockReturnValue({ limit: mockSelectLimit }),
+      where: vi.fn().mockImplementation(() => {
+        // Must be both awaitable (for tokens query without .limit) and chainable
+        const p = Promise.resolve([]) as Promise<unknown[]> & { limit: typeof mockSelectLimit }
+        p.limit = mockSelectLimit
+        return p
+      }),
     }),
   }))
 

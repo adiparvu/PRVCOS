@@ -159,7 +159,7 @@ const bodySchema = z.object({
 export const POST = withGates(
   { action: "hr.time_off.approve", endpointClass: "api_write" },
   async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
-    const id = req.nextUrl.pathname.split("/").slice(-2, -1)[0]
+    const id = req.nextUrl.pathname.split("/").pop()
     if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 })
 
     const raw = await req.json().catch(() => ({}))

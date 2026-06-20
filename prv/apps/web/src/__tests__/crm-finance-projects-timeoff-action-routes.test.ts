@@ -51,6 +51,41 @@ vi.mock("@prv/db/schema", () => ({
     entityId: {},
     entityType: {},
   },
+  invoices: {
+    id: {},
+    companyId: {},
+    deletedAt: {},
+    status: {},
+    invoiceNumber: {},
+    total: {},
+    clientId: {},
+    projectId: {},
+    currency: {},
+    dueDate: {},
+  },
+  projects: {
+    id: {},
+    companyId: {},
+    deletedAt: {},
+    status: {},
+    name: {},
+    updatedAt: {},
+    completedAt: {},
+  },
+  clients: { id: {}, companyId: {}, deletedAt: {} },
+  anomalyDetections: {
+    id: {},
+    companyId: {},
+    type: {},
+    severity: {},
+    domain: {},
+    title: {},
+    description: {},
+    metric: {},
+    actionLabel: {},
+    href: {},
+  },
+  approvalRequests: { id: {}, companyId: {}, status: {} },
 }))
 
 vi.mock("drizzle-orm", async (importOriginal) => {
@@ -116,6 +151,10 @@ describe("POST /api/crm/quotes/[id]/approval", () => {
   })
 
   it("returns 200 and logs audit event", async () => {
+    mockDb.limit.mockResolvedValueOnce([
+      { id: "quote-1", status: "draft", invoiceNumber: "Q-001", total: "5000" },
+    ])
+    mockDb.returning.mockResolvedValueOnce([{ id: "approval-1" }])
     const { POST } = await import("@/app/api/crm/quotes/[id]/approval/route")
     const res = await POST(
       makeReq("/api/crm/quotes/quote-1/approval", "POST", {
@@ -146,6 +185,19 @@ describe("POST /api/crm/quotes/[id]/convert", () => {
   })
 
   it("returns 200 with projectName on success", async () => {
+    mockDb.limit.mockResolvedValueOnce([
+      {
+        id: "quote-1",
+        status: "sent",
+        invoiceNumber: "Q-001",
+        total: "5000",
+        clientId: "client-1",
+        currency: "RON",
+        dueDate: "2026-01-01",
+        projectId: null,
+      },
+    ])
+    mockDb.returning.mockResolvedValueOnce([{ id: "proj-1", name: "New Project" }])
     const { POST } = await import("@/app/api/crm/quotes/[id]/convert/route")
     const res = await POST(
       makeReq("/api/crm/quotes/quote-1/convert", "POST", {
@@ -183,6 +235,7 @@ describe("POST /api/crm/quotes/[id]/decision", () => {
   })
 
   it("returns 200 with accepted decision", async () => {
+    mockDb.limit.mockResolvedValueOnce([{ id: "quote-1", status: "draft" }])
     const { POST } = await import("@/app/api/crm/quotes/[id]/decision/route")
     const res = await POST(
       makeReq("/api/crm/quotes/quote-1/decision", "POST", {
@@ -197,6 +250,7 @@ describe("POST /api/crm/quotes/[id]/decision", () => {
   })
 
   it("returns 200 with rejected decision", async () => {
+    mockDb.limit.mockResolvedValueOnce([{ id: "quote-1", status: "sent" }])
     const { POST } = await import("@/app/api/crm/quotes/[id]/decision/route")
     const res = await POST(
       makeReq("/api/crm/quotes/quote-1/decision", "POST", {
@@ -227,6 +281,7 @@ describe("POST /api/crm/quotes/[id]/send", () => {
   })
 
   it("returns 200 with default email channel", async () => {
+    mockDb.limit.mockResolvedValueOnce([{ id: "quote-1", status: "draft" }])
     const { POST } = await import("@/app/api/crm/quotes/[id]/send/route")
     const res = await POST(makeReq("/api/crm/quotes/quote-1/send"), webCtx)
     expect(res.status).toBe(200)
@@ -236,6 +291,7 @@ describe("POST /api/crm/quotes/[id]/send", () => {
   })
 
   it("returns 200 with link channel", async () => {
+    mockDb.limit.mockResolvedValueOnce([{ id: "quote-1", status: "draft" }])
     const { POST } = await import("@/app/api/crm/quotes/[id]/send/route")
     const res = await POST(
       makeReq("/api/crm/quotes/quote-1/send", "POST", {
@@ -266,6 +322,19 @@ describe("POST /api/finance/invoices/[id]/reminder", () => {
   })
 
   it("returns 200 with default email channel", async () => {
+    mockDb.limit.mockResolvedValueOnce([
+      {
+        id: "inv-1",
+        status: "sent",
+        invoiceNumber: "INV-001",
+        total: "1000",
+        currency: "RON",
+        dueDate: "2026-01-01",
+        clientId: "client-1",
+        clientEmail: null,
+        clientName: null,
+      },
+    ])
     const { POST } = await import("@/app/api/finance/invoices/[id]/reminder/route")
     const res = await POST(makeReq("/api/finance/invoices/inv-1/reminder"), webCtx)
     expect(res.status).toBe(200)
@@ -275,6 +344,19 @@ describe("POST /api/finance/invoices/[id]/reminder", () => {
   })
 
   it("returns 200 with sms channel", async () => {
+    mockDb.limit.mockResolvedValueOnce([
+      {
+        id: "inv-1",
+        status: "sent",
+        invoiceNumber: "INV-001",
+        total: "1000",
+        currency: "RON",
+        dueDate: "2026-01-01",
+        clientId: "client-1",
+        clientEmail: null,
+        clientName: null,
+      },
+    ])
     const { POST } = await import("@/app/api/finance/invoices/[id]/reminder/route")
     const res = await POST(
       makeReq("/api/finance/invoices/inv-1/reminder", "POST", {

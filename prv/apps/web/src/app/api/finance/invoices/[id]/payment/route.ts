@@ -27,21 +27,36 @@ export const POST = withGates(
 
     const raw = await req.json().catch(() => ({}))
     const parsed = bodySchema.safeParse(raw)
-    if (!parsed.success) return NextResponse.json({ error: "Invalid request", issues: parsed.error.issues }, { status: 422 })
+    if (!parsed.success)
+      return NextResponse.json(
+        { error: "Invalid request", issues: parsed.error.issues },
+        { status: 400 }
+      )
 
     const { method, paidDate, amount, note } = parsed.data
     const { userId, companyId, sessionId } = ctx.session
 
     const [existing] = await db
-      .select({ id: invoices.id, status: invoices.status, invoiceNumber: invoices.invoiceNumber, total: invoices.total })
+      .select({
+        id: invoices.id,
+        status: invoices.status,
+        invoiceNumber: invoices.invoiceNumber,
+        total: invoices.total,
+      })
       .from(invoices)
-      .where(and(eq(invoices.id, id), eq(invoices.companyId, companyId), isNull(invoices.deletedAt)))
+      .where(
+        and(eq(invoices.id, id), eq(invoices.companyId, companyId), isNull(invoices.deletedAt))
+      )
       .limit(1)
 
     if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 })
-    if (existing.status === "paid") return NextResponse.json({ error: "Invoice is already paid" }, { status: 409 })
+    if (existing.status === "paid")
+      return NextResponse.json({ error: "Invoice is already paid" }, { status: 409 })
     if (!(PAYABLE as readonly string[]).includes(existing.status))
-      return NextResponse.json({ error: `Cannot record payment for invoice with status '${existing.status}'` }, { status: 409 })
+      return NextResponse.json(
+        { error: `Cannot record payment for invoice with status '${existing.status}'` },
+        { status: 409 }
+      )
 
     const paidAt = new Date(paidDate)
     await db
