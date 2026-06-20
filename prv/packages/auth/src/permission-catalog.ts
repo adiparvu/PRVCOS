@@ -85,6 +85,10 @@ type PermissionKey =
   // ── Analytics ──
   | "analytics.read"
   | "analytics.export"
+  // ── Alerts ──
+  | "alerts.read"
+  | "alerts.update"
+  | "alerts.assign"
   // ── Social Profiles ──
   | "social_profiles.view"
   | "social_profiles.edit_own"
@@ -193,6 +197,11 @@ export const PERMISSION_CATALOG: Record<PermissionKey, PermissionRule> = {
   // Analytics
   "analytics.read": { roles: RoleSets.analytics, scope: "SCOPE_COMPANY" },
   "analytics.export": { roles: RoleSets.analytics, scope: "SCOPE_COMPANY" },
+
+  // Alerts
+  "alerts.read": { roles: RoleSets.management, scope: "SCOPE_COMPANY" },
+  "alerts.update": { roles: RoleSets.management, scope: "SCOPE_COMPANY" },
+  "alerts.assign": { roles: RoleSets.admin, scope: "SCOPE_COMPANY" },
 
   // Social profiles
   "social_profiles.view": { roles: RoleSets.employee, scope: "SCOPE_TEAM" },

@@ -1,6 +1,6 @@
 import { db } from "@prv/db"
-import { users, projects, orders, invoices, notifications } from "@prv/db/schema"
-import { eq, and, gte, lt, inArray, not, count, isNull, desc, sql } from "drizzle-orm"
+import { users, projects, orders, invoices, notifications, alerts } from "@prv/db/schema"
+import { eq, and, gte, lt, inArray, not, count, isNull, desc, sql, ne } from "drizzle-orm"
 import type { MobileContext } from "./auth"
 import type { CommandData, KPIItem, AlertItem, InboxItem, QuickAction } from "./types"
 
@@ -307,11 +307,38 @@ export async function assembleCommand(ctx: MobileContext): Promise<CommandData> 
     },
   ]
 
-  // ── Alerts ─────────────────────────────────────────────────────────────────
+  // ── Alerts — merge DB alerts with synthetic derived alerts ────────────────
 
-  const alerts: AlertItem[] = []
-  if (overdueCount > 0) {
-    alerts.push({
+  const dbAlerts = await db
+    .select({
+      id: alerts.id,
+      severity: alerts.severity,
+      title: alerts.title,
+      description: alerts.description,
+      createdAt: alerts.createdAt,
+    })
+    .from(alerts)
+    .where(and(eq(alerts.companyId, ctx.companyId), ne(alerts.status, "resolved")))
+    .orderBy(desc(alerts.createdAt))
+    .limit(8)
+
+  const alertItems: AlertItem[] = dbAlerts.map((a) => ({
+    id: a.id,
+    severity:
+      a.severity === "l3_critical" || a.severity === "l4_emergency" || a.severity === "l5_crisis"
+        ? "red"
+        : "amber",
+    title: a.title,
+    subtitle: a.description ?? "",
+    timeAgo: timeAgo(a.createdAt),
+  }))
+
+  // Append synthetic derived alerts only if no DB alert covers the same topic
+  const hasSyntheticOverdue = !dbAlerts.some(
+    (a) => a.title.toLowerCase().includes("overdue") || a.title.toLowerCase().includes("invoice")
+  )
+  if (overdueCount > 0 && hasSyntheticOverdue) {
+    alertItems.push({
       id: "overdue-invoices",
       severity: "red",
       title: `${overdueCount} overdue invoice${overdueCount > 1 ? "s" : ""}`,
@@ -319,8 +346,9 @@ export async function assembleCommand(ctx: MobileContext): Promise<CommandData> 
       timeAgo: "Now",
     })
   }
-  if (onHoldProjects > 0) {
-    alerts.push({
+  const hasSyntheticOnHold = !dbAlerts.some((a) => a.title.toLowerCase().includes("on hold"))
+  if (onHoldProjects > 0 && hasSyntheticOnHold) {
+    alertItems.push({
       id: "on-hold-projects",
       severity: "amber",
       title: `${onHoldProjects} project${onHoldProjects > 1 ? "s" : ""} on hold`,
@@ -345,7 +373,7 @@ export async function assembleCommand(ctx: MobileContext): Promise<CommandData> 
     kpis,
     secondary,
     aiBriefing: buildAIBriefing(overdueCount, overdueAmount, onHoldProjects, alertCount),
-    alerts,
+    alerts: alertItems,
     quickActions: QUICK_ACTIONS[ctx.role] ?? DEFAULT_QUICK_ACTIONS,
     inbox,
   }
