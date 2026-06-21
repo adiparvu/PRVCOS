@@ -1,5 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk"
-import { eq, asc, desc, and, isNull, sql, gte, lt } from "drizzle-orm"
+import { eq, asc, desc, and, isNull, sql } from "drizzle-orm"
 
 const MODEL = "claude-sonnet-4-6"
 const MAX_HISTORY = 20
@@ -614,8 +614,8 @@ export async function logUsage(params: {
 }): Promise<void> {
   const { db } = await import("@prv/db")
   const { aiUsageLogs } = await import("@prv/db/schema")
-  const inputCostUsd = (params.inputTokens / 1_000_000) * 3.0
-  const outputCostUsd = (params.outputTokens / 1_000_000) * 15.0
+  const inputCostUsd = (params.inputTokens / 1_000_000) * INPUT_COST_PER_M
+  const outputCostUsd = (params.outputTokens / 1_000_000) * OUTPUT_COST_PER_M
   const estimatedCostUsd = (inputCostUsd + outputCostUsd).toFixed(6)
   await db.insert(aiUsageLogs).values({
     companyId: params.companyId,
@@ -643,7 +643,15 @@ export async function getUsageStats(
 }> {
   const { db } = await import("@prv/db")
   const { aiUsageLogs } = await import("@prv/db/schema")
-  const { eq, gte, lt, sum, count, sql } = await import("drizzle-orm")
+  const {
+    eq: deq,
+    gte: dgte,
+    lt: dlt,
+    and: dand,
+    sum,
+    count,
+    sql: dsql,
+  } = await import("drizzle-orm")
 
   const start = new Date(year, month - 1, 1)
   const end = new Date(year, month, 1)
@@ -657,20 +665,32 @@ export async function getUsageStats(
       msgs: count(),
     })
     .from(aiUsageLogs)
-    .where(eq(aiUsageLogs.companyId, companyId))
+    .where(
+      dand(
+        deq(aiUsageLogs.companyId, companyId),
+        dgte(aiUsageLogs.createdAt, start),
+        dlt(aiUsageLogs.createdAt, end)
+      )
+    )
     .groupBy(aiUsageLogs.agentType)
 
   const daily = await db
     .select({
-      date: sql<string>`date_trunc('day', ${aiUsageLogs.createdAt})::date::text`,
-      tokens: sum(sql<number>`${aiUsageLogs.inputTokens} + ${aiUsageLogs.outputTokens}`).mapWith(
+      date: dsql<string>`date_trunc('day', ${aiUsageLogs.createdAt})::date::text`,
+      tokens: sum(dsql<number>`${aiUsageLogs.inputTokens} + ${aiUsageLogs.outputTokens}`).mapWith(
         Number
       ),
     })
     .from(aiUsageLogs)
-    .where(eq(aiUsageLogs.companyId, companyId))
-    .groupBy(sql`date_trunc('day', ${aiUsageLogs.createdAt})`)
-    .orderBy(sql`date_trunc('day', ${aiUsageLogs.createdAt})`)
+    .where(
+      dand(
+        deq(aiUsageLogs.companyId, companyId),
+        dgte(aiUsageLogs.createdAt, start),
+        dlt(aiUsageLogs.createdAt, end)
+      )
+    )
+    .groupBy(dsql`date_trunc('day', ${aiUsageLogs.createdAt})`)
+    .orderBy(dsql`date_trunc('day', ${aiUsageLogs.createdAt})`)
 
   const empty: AgentType[] = ["general", "finance", "hr", "project", "renovation", "report_builder"]
   const byAgent = Object.fromEntries(
