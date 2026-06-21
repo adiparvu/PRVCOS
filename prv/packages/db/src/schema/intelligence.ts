@@ -184,6 +184,8 @@ export const aiMessages = pgTable("ai_messages", {
     .references(() => aiConversations.id, { onDelete: "cascade" }),
   role: aiMessageRoleEnum("role").notNull(),
   content: text("content").notNull(),
+  inputTokens: integer("input_tokens"),
+  outputTokens: integer("output_tokens"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 })
 
