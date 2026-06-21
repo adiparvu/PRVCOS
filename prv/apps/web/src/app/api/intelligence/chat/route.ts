@@ -41,6 +41,7 @@ export const POST = withGates(
           companyId: ctx.session.companyId,
           role: ctx.session.role,
           scopeLevel: 1,
+          agentType,
         },
         titleFromMessage(message)
       ))
@@ -62,6 +63,7 @@ export const POST = withGates(
       userId: ctx.session.userId,
       companyId: ctx.session.companyId,
       role: ctx.session.role,
+      agentType,
     })
 
     const { readable, writable } = new TransformStream<Uint8Array, Uint8Array>()
@@ -91,6 +93,7 @@ export const POST = withGates(
         "Transfer-Encoding": "chunked",
         "X-Content-Type-Options": "nosniff",
         "X-Conversation-Id": convId,
+        "X-Agent-Type": agentType,
       },
     })
   }

@@ -40,6 +40,7 @@ export * from "./knowledge"
 // Sprint 12: Learning — courses, enrollments, achievements
 export * from "./learning"
 // Sprint 12: Intelligence — AI insights, reports, anomalies, forecast series
+// Phase 17: agent types, token tracking, message feedback, usage logs
 export * from "./intelligence"
 // Sprint 13: Shop platform — reviews, wishlist, comparisons
 export * from "./shop"

@@ -233,3 +233,36 @@ export const documentEmbeddings = pgTable("document_embeddings", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 })
+
+// ── Message Feedback ───────────────────────────────────────────────────────────
+
+export const aiMessageFeedback = pgTable(
+  "ai_message_feedback",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    messageId: uuid("message_id")
+      .notNull()
+      .references(() => aiMessages.id, { onDelete: "cascade" }),
+    userId: uuid("user_id").notNull(),
+    rating: aiFeedbackEnum("rating").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [unique("ai_message_feedback_message_user_unique").on(t.messageId, t.userId)]
+)
+
+// ── AI Usage Logs ──────────────────────────────────────────────────────────────
+
+export const aiUsageLogs = pgTable("ai_usage_logs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  companyId: uuid("company_id").notNull(),
+  userId: uuid("user_id").notNull(),
+  conversationId: uuid("conversation_id"),
+  agentType: aiAgentTypeEnum("agent_type").notNull().default("general"),
+  model: varchar("model", { length: 100 }).notNull().default("claude-sonnet-4-6"),
+  inputTokens: integer("input_tokens").notNull().default(0),
+  outputTokens: integer("output_tokens").notNull().default(0),
+  estimatedCostUsd: numeric("estimated_cost_usd", { precision: 10, scale: 6 })
+    .notNull()
+    .default("0"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+})

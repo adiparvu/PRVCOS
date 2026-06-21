@@ -1,10 +1,12 @@
 import Anthropic from "@anthropic-ai/sdk"
-import { db } from "@prv/db"
-import { aiConversations, aiMessages, documentEmbeddings } from "@prv/db/schema"
-import { eq, asc, desc, and, isNull, sql } from "drizzle-orm"
+import { eq, asc, desc, and, isNull, sql, gte, lt } from "drizzle-orm"
 
 const MODEL = "claude-sonnet-4-6"
 const MAX_HISTORY = 20
+
+// Cost per 1M tokens (claude-sonnet-4-6 pricing)
+const INPUT_COST_PER_M = 3.0
+const OUTPUT_COST_PER_M = 15.0
 
 const SYSTEM_PROMPT = `You are PRV Intelligence — an AI business advisor embedded inside PRV, a Company Operating System used by Romanian companies.
 
@@ -23,6 +25,8 @@ Language rules:
 
 export type MessageRole = "user" | "assistant"
 
+export type AgentType = "general" | "finance" | "hr" | "project" | "renovation" | "report_builder"
+
 export interface ConversationMessage {
   role: MessageRole
   content: string
@@ -32,6 +36,7 @@ export interface ChatContext {
   userId: string
   companyId: string
   role: string
+  agentType?: AgentType
 }
 
 export type AIRole = "finance" | "hr" | "project" | "operations" | "executive"
@@ -43,6 +48,86 @@ export interface AIConversationContext {
   scopeLevel: number
   entityType?: string
   entityId?: string
+}
+
+export const AGENT_SYSTEM_PROMPTS: Record<AgentType, string> = {
+  general: SYSTEM_PROMPT,
+
+  finance: `You are PRV Finance Intelligence — a specialized AI finance advisor embedded inside PRV, the Company Operating System used by Romanian companies.
+
+Specialty: Financial analysis, cash flow management, invoicing, payroll costs, budget variance, and P&L reporting.
+
+PRV covers 18 integrated modules. Your focus is on the Finance module and its intersections with Procurement, Payroll, and Projects.
+
+Your role is to help CFOs, owners, and finance managers understand: cash position, receivables vs payables, invoice aging, payroll cost breakdown, budget vs actuals, and P&L by period or project. You reason like a senior CFO — concise, specific, action-oriented.
+
+Language rules:
+- If the user writes in Romanian, reply in Romanian.
+- If the user writes in English, reply in English.
+- Always be direct. No filler. Lead with the insight, not the setup.
+- Bullet lists are good for multi-item answers. Use them.
+- Numbers always include units (€, %, RON, days).`,
+
+  hr: `You are PRV HR Intelligence — a specialized AI HR advisor embedded inside PRV, the Company Operating System used by Romanian companies.
+
+Specialty: Headcount analytics, leave management, payroll compliance, performance tracking, and HR regulatory compliance (Romanian labor law).
+
+PRV covers 18 integrated modules. Your focus is on Workforce, Attendance, Payroll, and Learning modules.
+
+Your role is to help HR managers and company owners understand: headcount by department, leave balances and patterns, payroll cost per employee, attendance anomalies, performance review status, and compliance gaps. You reason like a senior CHRO — concise, data-driven, compliance-aware.
+
+Language rules:
+- If the user writes in Romanian, reply in Romanian.
+- If the user writes in English, reply in English.
+- Always be direct. No filler. Lead with the insight, not the setup.
+- Bullet lists are good for multi-item answers. Use them.
+- Numbers always include units (€, %, zile, ore).`,
+
+  project: `You are PRV Project Intelligence — a specialized AI project advisor embedded inside PRV, the Company Operating System used by Romanian companies.
+
+Specialty: Project status, milestone tracking, budget vs actuals, risk identification, and team velocity analysis.
+
+PRV covers 18 integrated modules. Your focus is on the Project Management module and its intersections with Finance, Workforce, and Procurement.
+
+Your role is to help project managers and executives understand: project health across the portfolio, milestone completion rates, budget burn rate, overdue tasks, team capacity, and project-level risks. You reason like a senior PMO director — concise, structured, risk-aware.
+
+Language rules:
+- If the user writes in Romanian, reply in Romanian.
+- If the user writes in English, reply in English.
+- Always be direct. No filler. Lead with the insight, not the setup.
+- Bullet lists are good for multi-item answers. Use them.
+- Numbers always include units (€, %, zile, km).`,
+
+  renovation: `You are PRV Renovation Intelligence — a specialized AI advisor for renovation project operations, embedded inside PRV, the Company Operating System used by Romanian companies.
+
+Specialty: Renovation job progress, materials management, construction timelines, client approvals, snagging lists, and site reporting.
+
+PRV covers 18 integrated modules. Your focus is on the Renovation Services Platform: job phases, site reports, material orders, client contracts, and quality control.
+
+Your role is to help renovation company owners and site managers understand: active job status, phase completions, material procurement gaps, client approval backlogs, snagging issues, and timeline deviations. You reason like a senior construction operations manager — concise, site-aware, client-focused.
+
+Language rules:
+- If the user writes in Romanian, reply in Romanian.
+- If the user writes in English, reply in English.
+- Always be direct. No filler. Lead with the insight, not the setup.
+- Bullet lists are good for multi-item answers. Use them.
+- Numbers always include units (€, %, zile, m², ore).`,
+
+  report_builder: `You are PRV Report Builder — a structured data extraction AI embedded inside PRV, the Company Operating System used by Romanian companies.
+
+Specialty: Translating natural language report requests into structured report query plans (JSON).
+
+When given a report description, you ALWAYS respond with a valid JSON object that contains:
+- "title": a concise report title (string)
+- "type": the report category (one of: "financial", "hr", "project", "renovation", "inventory", "analytics", "custom")
+- "filters": an object with filter keys and values relevant to the report (dates, entity IDs, statuses, etc.)
+- "columns": an array of column names to include in the report
+
+Do not include any prose outside the JSON object. Output only the JSON.
+
+Language rules:
+- Always output JSON regardless of the input language.
+- Field values (title, column names) should match the language the user wrote in (Romanian if Romanian, English if English).`,
 }
 
 // ── Pure helpers ──────────────────────────────────────────────────────────────
@@ -316,36 +401,134 @@ type ToolPolicy = { allowedRoles: string[]; minScopeLevel: number; requiresMFA: 
 
 const AI_TOOL_REGISTRY: Record<string, ToolPolicy> = {
   // Executive — CEO/owner only, broad company view
-  "executive.insights": { allowedRoles: ["superadmin", "owner"], minScopeLevel: 1, requiresMFA: true },
-  "executive.forecast": { allowedRoles: ["superadmin", "owner"], minScopeLevel: 1, requiresMFA: false },
+  "executive.insights": {
+    allowedRoles: ["superadmin", "owner"],
+    minScopeLevel: 1,
+    requiresMFA: true,
+  },
+  "executive.forecast": {
+    allowedRoles: ["superadmin", "owner"],
+    minScopeLevel: 1,
+    requiresMFA: false,
+  },
 
   // Finance — owner + finance managers
-  "finance.read": { allowedRoles: ["superadmin", "owner", "finance_manager"], minScopeLevel: 1, requiresMFA: false },
-  "finance.forecast": { allowedRoles: ["superadmin", "owner", "finance_manager"], minScopeLevel: 1, requiresMFA: false },
-  "finance.export": { allowedRoles: ["superadmin", "owner", "finance_manager"], minScopeLevel: 1, requiresMFA: true },
+  "finance.read": {
+    allowedRoles: ["superadmin", "owner", "finance_manager"],
+    minScopeLevel: 1,
+    requiresMFA: false,
+  },
+  "finance.forecast": {
+    allowedRoles: ["superadmin", "owner", "finance_manager"],
+    minScopeLevel: 1,
+    requiresMFA: false,
+  },
+  "finance.export": {
+    allowedRoles: ["superadmin", "owner", "finance_manager"],
+    minScopeLevel: 1,
+    requiresMFA: true,
+  },
 
   // Intelligence / Analytics
-  "intelligence.read": { allowedRoles: ["superadmin", "owner", "manager", "analyst", "regional_manager"], minScopeLevel: 2, requiresMFA: false },
-  "intelligence.anomalies": { allowedRoles: ["superadmin", "owner", "manager", "regional_manager"], minScopeLevel: 2, requiresMFA: false },
+  "intelligence.read": {
+    allowedRoles: ["superadmin", "owner", "manager", "analyst", "regional_manager"],
+    minScopeLevel: 2,
+    requiresMFA: false,
+  },
+  "intelligence.anomalies": {
+    allowedRoles: ["superadmin", "owner", "manager", "regional_manager"],
+    minScopeLevel: 2,
+    requiresMFA: false,
+  },
 
   // HR / People
-  "hr.read": { allowedRoles: ["superadmin", "owner", "hr_manager", "manager", "regional_manager"], minScopeLevel: 2, requiresMFA: false },
-  "hr.payroll": { allowedRoles: ["superadmin", "owner", "hr_manager"], minScopeLevel: 1, requiresMFA: true },
+  "hr.read": {
+    allowedRoles: ["superadmin", "owner", "hr_manager", "manager", "regional_manager"],
+    minScopeLevel: 2,
+    requiresMFA: false,
+  },
+  "hr.payroll": {
+    allowedRoles: ["superadmin", "owner", "hr_manager"],
+    minScopeLevel: 1,
+    requiresMFA: true,
+  },
 
   // Projects
-  "projects.read": { allowedRoles: ["superadmin", "owner", "manager", "project_manager", "worker", "regional_manager", "store_manager"], minScopeLevel: 3, requiresMFA: false },
-  "projects.risk": { allowedRoles: ["superadmin", "owner", "manager", "project_manager", "regional_manager"], minScopeLevel: 2, requiresMFA: false },
+  "projects.read": {
+    allowedRoles: [
+      "superadmin",
+      "owner",
+      "manager",
+      "project_manager",
+      "worker",
+      "regional_manager",
+      "store_manager",
+    ],
+    minScopeLevel: 3,
+    requiresMFA: false,
+  },
+  "projects.risk": {
+    allowedRoles: ["superadmin", "owner", "manager", "project_manager", "regional_manager"],
+    minScopeLevel: 2,
+    requiresMFA: false,
+  },
 
   // Operations / Inventory
-  "operations.read": { allowedRoles: ["superadmin", "owner", "manager", "store_manager", "regional_manager"], minScopeLevel: 3, requiresMFA: false },
-  "operations.inventory": { allowedRoles: ["superadmin", "owner", "manager", "store_manager", "regional_manager"], minScopeLevel: 3, requiresMFA: false },
+  "operations.read": {
+    allowedRoles: ["superadmin", "owner", "manager", "store_manager", "regional_manager"],
+    minScopeLevel: 3,
+    requiresMFA: false,
+  },
+  "operations.inventory": {
+    allowedRoles: ["superadmin", "owner", "manager", "store_manager", "regional_manager"],
+    minScopeLevel: 3,
+    requiresMFA: false,
+  },
 
   // CRM
-  "crm.read": { allowedRoles: ["superadmin", "owner", "manager", "sales", "regional_manager"], minScopeLevel: 2, requiresMFA: false },
+  "crm.read": {
+    allowedRoles: ["superadmin", "owner", "manager", "sales", "regional_manager"],
+    minScopeLevel: 2,
+    requiresMFA: false,
+  },
 
   // Documents & Knowledge — broadest access
-  "documents.read": { allowedRoles: ["superadmin", "owner", "manager", "worker", "cashier", "store_manager", "regional_manager", "project_manager", "sales", "hr_manager", "finance_manager", "analyst"], minScopeLevel: 4, requiresMFA: false },
-  "knowledge.read": { allowedRoles: ["superadmin", "owner", "manager", "worker", "cashier", "store_manager", "regional_manager", "project_manager", "sales", "hr_manager", "finance_manager", "analyst"], minScopeLevel: 4, requiresMFA: false },
+  "documents.read": {
+    allowedRoles: [
+      "superadmin",
+      "owner",
+      "manager",
+      "worker",
+      "cashier",
+      "store_manager",
+      "regional_manager",
+      "project_manager",
+      "sales",
+      "hr_manager",
+      "finance_manager",
+      "analyst",
+    ],
+    minScopeLevel: 4,
+    requiresMFA: false,
+  },
+  "knowledge.read": {
+    allowedRoles: [
+      "superadmin",
+      "owner",
+      "manager",
+      "worker",
+      "cashier",
+      "store_manager",
+      "regional_manager",
+      "project_manager",
+      "sales",
+      "hr_manager",
+      "finance_manager",
+      "analyst",
+    ],
+    minScopeLevel: 4,
+    requiresMFA: false,
+  },
 }
 
 export function checkAIToolPermission(toolName: string, context: AIConversationContext): boolean {
@@ -366,6 +549,9 @@ export function getAIToolPolicy(toolName: string): ToolPolicy | null {
 // Returns all tools a given context can access
 export function listAccessibleAITools(context: AIConversationContext): string[] {
   return Object.entries(AI_TOOL_REGISTRY)
-    .filter(([, policy]) => policy.allowedRoles.includes(context.role) && context.scopeLevel <= policy.minScopeLevel)
+    .filter(
+      ([, policy]) =>
+        policy.allowedRoles.includes(context.role) && context.scopeLevel <= policy.minScopeLevel
+    )
     .map(([name]) => name)
 }

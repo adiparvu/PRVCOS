@@ -13,7 +13,7 @@ import {
 } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { useRouter } from "expo-router"
-import { useState, useRef, useCallback, useId } from "react"
+import { useState, useRef, useCallback } from "react"
 import Svg, { Path } from "react-native-svg"
 import { useAuthStore } from "@/store/auth"
 import { colors, radius, spacing, type as t } from "@/tokens"
