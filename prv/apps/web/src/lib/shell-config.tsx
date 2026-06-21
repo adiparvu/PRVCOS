@@ -342,18 +342,13 @@ const SHELLS: Record<string, ShellConfig> = {
   executive: {
     tabs: [
       { id: "command", label: "Command", href: "/dashboard", icon: <CommandIcon /> },
-      { id: "renovation", label: "Renovation", href: "/renovation", icon: <RenovationIcon /> },
-      {
-        id: "intelligence",
-        label: "Intelligence",
-        href: "/intelligence",
-        icon: <IntelligenceIcon />,
-      },
+      { id: "analytics", label: "Analytics", href: "/analytics", icon: <AnalyticsIcon /> },
+      { id: "alerts", label: "Alerts", href: "/alerts", icon: <SecurityIcon /> },
       { id: "finance", label: "Finance", href: "/finance", icon: <FinanceIcon /> },
       { id: "operations", label: "Operations", href: "/operations", icon: <OperationsIcon /> },
     ],
     diLabel: "Revenue",
-    searchScopes: ["all", "employees", "projects", "stores", "finance", "documents"],
+    searchScopes: ["all", "employees", "projects", "stores", "finance", "documents", "alerts"],
   },
 
   sysadmin: {
@@ -427,15 +422,10 @@ const SHELLS: Record<string, ShellConfig> = {
       { id: "operations", label: "Operations", href: "/operations", icon: <OperationsIcon /> },
       { id: "people", label: "People", href: "/people", icon: <PeopleIcon /> },
       { id: "finance", label: "Finance", href: "/finance", icon: <FinanceIcon /> },
-      {
-        id: "intelligence",
-        label: "Intelligence",
-        href: "/intelligence",
-        icon: <IntelligenceIcon />,
-      },
+      { id: "alerts", label: "Alerts", href: "/alerts", icon: <SecurityIcon /> },
     ],
     diLabel: "Region",
-    searchScopes: ["employees", "operations", "finance", "documents"],
+    searchScopes: ["employees", "operations", "finance", "documents", "alerts"],
   },
 
   hr: {

@@ -8,16 +8,12 @@ import { and, eq } from "drizzle-orm"
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
 
-interface Params {
-  params: Promise<{ id: string }>
-}
-
 // PATCH /api/alerts/[id] — acknowledge, assign, or resolve
 export const PATCH = withGates(
   { action: "alerts.update", endpointClass: "api_write" },
-  async (req: NextRequest, ctx: GateContext, params?: Params): Promise<NextResponse> => {
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
     const { companyId, userId } = ctx.session
-    const { id } = await (params as Params).params
+    const id = req.nextUrl.pathname.split("/").pop()!
     const body = await req.json()
 
     const existing = await db
