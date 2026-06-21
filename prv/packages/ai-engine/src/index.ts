@@ -178,10 +178,15 @@ export function streamChatResponse(message: string, _ctx: ChatContext): Readable
 export function streamChatWithHistory(
   message: string,
   history: ConversationMessage[],
-  _ctx: ChatContext
+  _ctx: ChatContext,
+  agentType: AgentType = "general"
 ): ReadableStream<Uint8Array> {
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) return makeNoKeyStream("AI chat is not configured. Please set ANTHROPIC_API_KEY.")
+
+  // Resolve agent type: explicit param takes precedence, then ctx, then default
+  const resolvedAgent: AgentType = agentType ?? _ctx.agentType ?? "general"
+  const systemPrompt = AGENT_SYSTEM_PROMPTS[resolvedAgent] ?? SYSTEM_PROMPT
 
   const client = new Anthropic({ apiKey })
   const enc = new TextEncoder()
@@ -193,7 +198,7 @@ export function streamChatWithHistory(
         const stream = await client.messages.stream({
           model: MODEL,
           max_tokens: 1024,
-          system: SYSTEM_PROMPT,
+          system: systemPrompt,
           messages,
         })
         for await (const chunk of stream) {
@@ -216,6 +221,8 @@ export async function createConversation(
   context: AIConversationContext,
   title?: string
 ): Promise<string> {
+  const { db } = await import("@prv/db")
+  const { aiConversations } = await import("@prv/db/schema")
   const [conv] = await db
     .insert(aiConversations)
     .values({
@@ -230,9 +237,18 @@ export async function createConversation(
 export async function appendMessage(
   conversationId: string,
   role: MessageRole,
-  content: string
+  content: string,
+  tokens?: { inputTokens?: number; outputTokens?: number }
 ): Promise<void> {
-  await db.insert(aiMessages).values({ conversationId, role, content })
+  const { db } = await import("@prv/db")
+  const { aiConversations, aiMessages } = await import("@prv/db/schema")
+  await db.insert(aiMessages).values({
+    conversationId,
+    role,
+    content,
+    inputTokens: tokens?.inputTokens,
+    outputTokens: tokens?.outputTokens,
+  })
   await db
     .update(aiConversations)
     .set({ updatedAt: new Date() })
@@ -243,6 +259,8 @@ export async function getConversationHistory(
   conversationId: string,
   limit = MAX_HISTORY
 ): Promise<ConversationMessage[]> {
+  const { db } = await import("@prv/db")
+  const { aiMessages } = await import("@prv/db/schema")
   const msgs = await db
     .select({ role: aiMessages.role, content: aiMessages.content })
     .from(aiMessages)
@@ -259,6 +277,8 @@ export async function listConversations(
   userId: string,
   companyId: string
 ): Promise<{ id: string; title: string; updatedAt: Date }[]> {
+  const { db } = await import("@prv/db")
+  const { aiConversations } = await import("@prv/db/schema")
   return db
     .select({
       id: aiConversations.id,
@@ -278,6 +298,8 @@ export async function listConversations(
 }
 
 export async function deleteConversation(conversationId: string, userId: string): Promise<boolean> {
+  const { db } = await import("@prv/db")
+  const { aiConversations } = await import("@prv/db/schema")
   const result = await db
     .update(aiConversations)
     .set({ deletedAt: new Date() })
@@ -345,6 +367,8 @@ export async function upsertEmbedding(
   const embedding = await getEmbedding(content, companyId)
   if (embedding.length === 0) return false
 
+  const { db } = await import("@prv/db")
+  const { documentEmbeddings } = await import("@prv/db/schema")
   await db
     .insert(documentEmbeddings)
     .values({ companyId, sourceType, sourceId, chunkIndex, content, embedding })
@@ -363,6 +387,8 @@ export async function semanticSearch(
   const embedding = await getEmbedding(query, companyId)
   if (embedding.length === 0) return []
 
+  const { db } = await import("@prv/db")
+  const { documentEmbeddings } = await import("@prv/db/schema")
   const vectorLiteral = `[${embedding.join(",")}]`
   const rows = await db
     .select({
