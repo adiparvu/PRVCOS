@@ -165,6 +165,17 @@ export const forecastOpportunities = pgTable("forecast_opportunities", {
 
 // ── AI Conversation History ────────────────────────────────────────────────────
 
+export const aiAgentTypeEnum = pgEnum("ai_agent_type", [
+  "general",
+  "finance",
+  "hr",
+  "project",
+  "renovation",
+  "report_builder",
+])
+
+export const aiFeedbackEnum = pgEnum("ai_feedback", ["up", "down"])
+
 export const aiMessageRoleEnum = pgEnum("ai_message_role", ["user", "assistant"])
 
 export const aiConversations = pgTable("ai_conversations", {
@@ -172,6 +183,7 @@ export const aiConversations = pgTable("ai_conversations", {
   userId: uuid("user_id").notNull(),
   companyId: uuid("company_id").notNull(),
   title: varchar("title", { length: 200 }).notNull().default("New conversation"),
+  agentType: aiAgentTypeEnum("agent_type").notNull().default("general"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   deletedAt: timestamp("deleted_at", { withTimezone: true }),

@@ -6,6 +6,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
@@ -466,6 +467,7 @@ function ReportsContent() {
 
 export default function IntelligenceScreen() {
   const insets = useSafeAreaInsets()
+  const router = useRouter()
   const [seg, setSeg] = useState<Segment>("Insights")
   const { data, isLoading, isError, refetch, isFetching } = useIntelligence()
 
@@ -478,9 +480,25 @@ export default function IntelligenceScreen() {
       <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <View style={styles.headerRow}>
           <Text style={styles.headerTitle}>Intelligence</Text>
-          <View style={styles.aiBadge}>
-            <PulseDot />
-            <Text style={styles.aiBadgeText}>AI Powered</Text>
+          <View style={styles.headerActions}>
+            <TouchableOpacity
+              onPress={() => router.push("/intelligence-chat" as never)}
+              activeOpacity={0.7}
+              style={styles.chatLink}
+            >
+              <Text style={styles.chatLinkText}>AI Chat</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => router.push("/intelligence/cost" as never)}
+              activeOpacity={0.7}
+              style={styles.usageLink}
+            >
+              <Text style={styles.usageLinkText}>AI Usage</Text>
+            </TouchableOpacity>
+            <View style={styles.aiBadge}>
+              <PulseDot />
+              <Text style={styles.aiBadgeText}>AI Powered</Text>
+            </View>
           </View>
         </View>
       </View>
@@ -560,6 +578,21 @@ const styles = StyleSheet.create({
   },
   headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   headerTitle: { ...type.largeTitle, color: colors.text1 },
+  headerActions: { flexDirection: "row", alignItems: "center", gap: 8 },
+  chatLink: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: radius.pill,
+    backgroundColor: "rgba(255,255,255,0.08)",
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  chatLinkText: { ...type.caption1, color: colors.text2, fontWeight: "500" },
+  usageLink: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  usageLinkText: { ...type.caption1, color: colors.text3, textDecorationLine: "underline" },
   aiBadge: {
     flexDirection: "row",
     alignItems: "center",

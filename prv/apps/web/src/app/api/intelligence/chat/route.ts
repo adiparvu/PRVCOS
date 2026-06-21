@@ -16,6 +16,9 @@ export const runtime = "nodejs"
 const bodySchema = z.object({
   message: z.string().min(1).max(2000),
   conversationId: z.string().uuid().optional(),
+  agentType: z
+    .enum(["general", "finance", "hr", "project", "renovation", "report_builder"])
+    .default("general"),
 })
 
 export const POST = withGates(
@@ -27,7 +30,7 @@ export const POST = withGates(
       return NextResponse.json({ error: "Invalid request" }, { status: 400 })
     }
 
-    const { message, conversationId: existingConvId } = parsed.data
+    const { message, conversationId: existingConvId, agentType } = parsed.data
 
     // Create or reuse conversation
     const convId =

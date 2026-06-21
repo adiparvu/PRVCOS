@@ -1,0 +1,1461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phase 17 — AI Platform · PRV Company OS</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #000;
+    font-family: -apple-system, 'SF Pro Display', 'SF Pro Text', BlinkMacSystemFont, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 48px 32px 64px;
+    gap: 0;
+  }
+
+  /* Page header */
+  .page-header {
+    text-align: center;
+    margin-bottom: 52px;
+  }
+  .page-header .phase-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.35);
+    margin-bottom: 10px;
+  }
+  .page-header h1 {
+    font-size: 28px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.95);
+    letter-spacing: -0.5px;
+    margin-bottom: 6px;
+  }
+  .page-header .subtitle {
+    font-size: 14px;
+    color: rgba(255,255,255,0.45);
+    font-weight: 400;
+  }
+
+  /* Frames row */
+  .frames-row {
+    display: flex;
+    gap: 40px;
+    align-items: flex-start;
+    justify-content: center;
+  }
+
+  /* Phone wrapper */
+  .phone-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+  .phone-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.35);
+    text-align: center;
+  }
+  .phone-sublabel {
+    font-size: 12px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.55);
+    text-align: center;
+    margin-top: -14px;
+  }
+
+  /* Phone shell */
+  .phone {
+    width: 393px;
+    height: 852px;
+    background: #0a0a0a;
+    border-radius: 52px;
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.14);
+    box-shadow:
+      0 0 0 1px rgba(255,255,255,0.06) inset,
+      0 80px 160px rgba(0,0,0,0.9),
+      0 32px 64px rgba(0,0,0,0.6);
+    flex-shrink: 0;
+  }
+
+  /* Top edge shine */
+  .phone::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 32px; right: 32px;
+    height: 1px;
+    background: rgba(255,255,255,0.32);
+    border-radius: 0 0 2px 2px;
+    z-index: 100;
+  }
+
+  /* Side buttons */
+  .phone::after {
+    content: '';
+    position: absolute;
+    top: 160px; right: -2px;
+    width: 3px; height: 70px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 2px 0 0 2px;
+  }
+
+  /* Phone screen */
+  .screen {
+    position: absolute;
+    inset: 0;
+    background: #000;
+    border-radius: 52px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Status bar */
+  .status-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 28px 0;
+    height: 54px;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 10;
+  }
+  .status-time {
+    font-size: 15px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.95);
+    letter-spacing: -0.3px;
+  }
+  .status-icons {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .status-icons svg {
+    opacity: 0.95;
+  }
+
+  /* Dynamic island */
+  .dynamic-island {
+    width: 126px;
+    height: 37px;
+    background: #000;
+    border-radius: 20px;
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 50;
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+
+  /* Scroll content area */
+  .scroll-area {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Glass helpers */
+  .glass {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+  .glass-md {
+    background: rgba(255,255,255,0.10);
+    border: 1px solid rgba(255,255,255,0.14);
+  }
+  .glass-strong {
+    background: rgba(255,255,255,0.16);
+    border: 1px solid rgba(255,255,255,0.20);
+  }
+
+  /* ===========================
+     FRAME 1: AI CHAT HUB
+     =========================== */
+
+  .f1-header {
+    padding: 12px 20px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .f1-header-left {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .f1-header-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.95);
+    letter-spacing: -0.4px;
+  }
+  .f1-header-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(255,255,255,0.10);
+    border: 1px solid rgba(255,255,255,0.14);
+    border-radius: 100px;
+    padding: 2px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.65);
+    letter-spacing: 0.04em;
+  }
+  .f1-header-dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.4);
+  }
+  .f1-header-actions {
+    display: flex;
+    gap: 8px;
+  }
+  .icon-btn {
+    width: 36px; height: 36px;
+    border-radius: 100px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Agent selector */
+  .agent-selector {
+    padding: 0 20px 16px;
+    display: flex;
+    gap: 8px;
+    overflow: hidden;
+  }
+  .agent-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: 100px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.10);
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+  .agent-pill.active {
+    background: rgba(255,255,255,0.18);
+    border-color: rgba(255,255,255,0.30);
+  }
+  .agent-pill-icon {
+    font-size: 14px;
+    line-height: 1;
+  }
+  .agent-pill-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.55);
+    white-space: nowrap;
+    letter-spacing: -0.1px;
+  }
+  .agent-pill.active .agent-pill-name {
+    color: rgba(255,255,255,0.95);
+  }
+
+  /* Section divider */
+  .section-divider {
+    padding: 0 20px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.30);
+  }
+
+  /* Conversation list */
+  .conv-list {
+    padding: 0 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+  .conv-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    border-radius: 16px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.07);
+    cursor: pointer;
+    position: relative;
+  }
+  .conv-icon {
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+  .conv-body { flex: 1; min-width: 0; }
+  .conv-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.92);
+    letter-spacing: -0.2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 4px;
+  }
+  .conv-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: rgba(255,255,255,0.40);
+    font-weight: 400;
+  }
+  .conv-meta-tag {
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.45);
+    background: rgba(255,255,255,0.08);
+    border-radius: 4px;
+    padding: 1px 5px;
+  }
+  .conv-meta-dot { color: rgba(255,255,255,0.20); }
+  .conv-chevron {
+    color: rgba(255,255,255,0.20);
+    font-size: 16px;
+  }
+  .conv-msg-count {
+    background: rgba(255,255,255,0.10);
+    border-radius: 100px;
+    padding: 2px 7px;
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.45);
+  }
+
+  /* New conversation btn */
+  .new-conv-btn {
+    margin: 16px 20px 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 14px 20px;
+    border-radius: 100px;
+    background: rgba(255,255,255,0.10);
+    border: 1px solid rgba(255,255,255,0.18);
+    cursor: pointer;
+  }
+  .new-conv-btn span {
+    font-size: 15px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.90);
+    letter-spacing: -0.2px;
+  }
+
+  /* Tab bar */
+  .tab-bar {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 88px;
+    padding: 0 8px;
+    display: flex;
+    align-items: flex-start;
+    padding-top: 10px;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(40px);
+    -webkit-backdrop-filter: blur(40px);
+    border-top: 1px solid rgba(255,255,255,0.08);
+    z-index: 20;
+  }
+  .tab-bar-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    width: 100%;
+  }
+  .tab-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 16px;
+    border-radius: 12px;
+    cursor: pointer;
+    flex: 1;
+  }
+  .tab-item.active {
+    background: rgba(255,255,255,0.08);
+  }
+  .tab-icon { font-size: 20px; line-height: 1; }
+  .tab-label {
+    font-size: 10px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.35);
+    letter-spacing: 0.02em;
+  }
+  .tab-item.active .tab-label { color: rgba(255,255,255,0.90); }
+
+  /* ===========================
+     FRAME 2: AI CHAT
+     =========================== */
+
+  .f2-header {
+    padding: 10px 20px 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .back-btn {
+    width: 32px; height: 32px;
+    border-radius: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .back-arrow {
+    color: rgba(255,255,255,0.70);
+    font-size: 18px;
+    line-height: 1;
+  }
+  .f2-header-info { flex: 1; }
+  .f2-header-name {
+    font-size: 16px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.95);
+    letter-spacing: -0.3px;
+  }
+  .f2-header-status {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 1px;
+  }
+  .live-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: rgba(52, 199, 89, 0.90);
+    box-shadow: 0 0 6px rgba(52, 199, 89, 0.60);
+    flex-shrink: 0;
+    animation: pulse-dot 2s ease-in-out infinite;
+  }
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+  .f2-header-statustext {
+    font-size: 11px;
+    font-weight: 500;
+    color: rgba(52, 199, 89, 0.85);
+    letter-spacing: 0.02em;
+  }
+  .f2-header-right {
+    display: flex;
+    gap: 6px;
+  }
+
+  /* Chat messages */
+  .chat-area {
+    flex: 1;
+    padding: 8px 16px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    overflow: hidden;
+  }
+
+  /* User bubble */
+  .bubble-user {
+    align-self: flex-end;
+    max-width: 72%;
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 20px 20px 6px 20px;
+    padding: 10px 14px;
+  }
+  .bubble-user-text {
+    font-size: 14px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.92);
+    line-height: 1.45;
+    letter-spacing: -0.1px;
+  }
+
+  /* AI bubble */
+  .bubble-ai-wrap {
+    align-self: flex-start;
+    max-width: 85%;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .bubble-ai-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding-left: 4px;
+    margin-bottom: 0;
+  }
+  .ai-avatar {
+    width: 20px; height: 20px;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.16);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    color: rgba(255,255,255,0.80);
+    font-weight: 700;
+    letter-spacing: -0.5px;
+  }
+  .bubble-ai-labeltext {
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.40);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .bubble-ai {
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.11);
+    border-radius: 6px 20px 20px 20px;
+    padding: 12px 14px;
+  }
+  .bubble-ai-text {
+    font-size: 13.5px;
+    font-weight: 400;
+    color: rgba(255,255,255,0.85);
+    line-height: 1.55;
+    letter-spacing: -0.1px;
+  }
+  .bubble-ai-text strong {
+    font-weight: 600;
+    color: rgba(255,255,255,0.92);
+  }
+  .ai-data-row {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    padding: 3px 0;
+  }
+  .ai-data-bullet {
+    color: rgba(255,255,255,0.30);
+    font-size: 12px;
+  }
+  .ai-data-label {
+    font-size: 13px;
+    color: rgba(255,255,255,0.55);
+    font-weight: 500;
+    min-width: 140px;
+  }
+  .ai-data-value {
+    font-size: 13px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.92);
+    letter-spacing: -0.2px;
+  }
+  .ai-summary {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(255,255,255,0.08);
+    font-size: 13px;
+    color: rgba(255,255,255,0.70);
+    line-height: 1.5;
+    font-style: italic;
+  }
+  .ai-summary strong {
+    font-style: normal;
+    color: rgba(255,255,255,0.85);
+    font-weight: 600;
+  }
+
+  /* Feedback row */
+  .feedback-row {
+    display: flex;
+    gap: 6px;
+    padding-left: 4px;
+  }
+  .feedback-pill {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 100px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.09);
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .feedback-pill span { color: rgba(255,255,255,0.45); font-size: 11px; font-weight: 500; }
+
+  /* Streaming bubble */
+  .bubble-streaming .bubble-ai {
+    background: rgba(255,255,255,0.05);
+  }
+  .streaming-dots {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 2px;
+  }
+  .dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.40);
+  }
+  .dot:nth-child(1) { animation: blink 1.2s ease-in-out 0s infinite; }
+  .dot:nth-child(2) { animation: blink 1.2s ease-in-out 0.2s infinite; }
+  .dot:nth-child(3) { animation: blink 1.2s ease-in-out 0.4s infinite; }
+  @keyframes blink {
+    0%, 80%, 100% { opacity: 0.3; transform: scale(0.85); }
+    40% { opacity: 1; transform: scale(1); }
+  }
+  .streaming-label {
+    font-size: 12px;
+    color: rgba(255,255,255,0.40);
+    margin-left: 2px;
+    font-style: italic;
+  }
+
+  /* Chat input */
+  .chat-input-bar {
+    padding: 10px 16px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    background: rgba(0,0,0,0.5);
+  }
+  .chat-input-pill {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 24px;
+    padding: 10px 16px;
+    gap: 8px;
+  }
+  .chat-input-placeholder {
+    flex: 1;
+    font-size: 14px;
+    color: rgba(255,255,255,0.30);
+    font-weight: 400;
+  }
+  .chat-send-btn {
+    width: 32px; height: 32px;
+    border-radius: 100px;
+    background: rgba(255,255,255,0.90);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .chat-send-btn svg path { fill: #000; }
+
+  /* ===========================
+     FRAME 3: AI COST DASHBOARD
+     =========================== */
+
+  .f3-header {
+    padding: 12px 20px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .f3-header-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.95);
+    letter-spacing: -0.4px;
+  }
+  .date-range-pill {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 12px;
+    border-radius: 100px;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.12);
+  }
+  .date-range-text {
+    font-size: 12px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.60);
+    letter-spacing: 0.02em;
+  }
+
+  /* KPI row */
+  .kpi-row {
+    display: flex;
+    gap: 8px;
+    padding: 0 16px 16px;
+  }
+  .kpi-tile {
+    flex: 1;
+    padding: 12px 12px 14px;
+    border-radius: 16px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.10);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .kpi-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.35);
+  }
+  .kpi-value {
+    font-size: 22px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.95);
+    letter-spacing: -0.5px;
+    line-height: 1.1;
+  }
+  .kpi-delta {
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(52,199,89,0.80);
+    display: flex;
+    align-items: center;
+    gap: 2px;
+  }
+  .kpi-sub {
+    font-size: 11px;
+    font-weight: 400;
+    color: rgba(255,255,255,0.35);
+  }
+
+  /* Section card */
+  .section-card {
+    margin: 0 16px 12px;
+    padding: 14px 16px;
+    border-radius: 20px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  .section-title {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.35);
+    margin-bottom: 12px;
+  }
+
+  /* Usage by agent bars */
+  .agent-bar-list {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+  }
+  .agent-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .agent-bar-name {
+    font-size: 12px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.60);
+    width: 90px;
+    flex-shrink: 0;
+  }
+  .agent-bar-track {
+    flex: 1;
+    height: 6px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 100px;
+    overflow: hidden;
+  }
+  .agent-bar-fill {
+    height: 100%;
+    border-radius: 100px;
+    background: rgba(255,255,255,0.55);
+  }
+  .agent-bar-count {
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.40);
+    width: 54px;
+    text-align: right;
+    flex-shrink: 0;
+    letter-spacing: -0.2px;
+  }
+
+  /* Sparkline */
+  .sparkline-wrap {
+    padding: 4px 0 2px;
+  }
+  .sparkline-days {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 6px;
+  }
+  .sparkline-day {
+    font-size: 10px;
+    color: rgba(255,255,255,0.25);
+    font-weight: 500;
+  }
+
+  /* Model row */
+  .model-row {
+    margin: 0 16px;
+    padding: 13px 16px;
+    border-radius: 16px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .model-left {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .model-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.30);
+  }
+  .model-name {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.85);
+    letter-spacing: -0.2px;
+  }
+  .model-scope {
+    font-size: 11px;
+    color: rgba(255,255,255,0.35);
+    font-weight: 400;
+  }
+  .model-badge {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(52,199,89,0.08);
+    border: 1px solid rgba(52,199,89,0.18);
+    border-radius: 100px;
+    padding: 4px 10px;
+  }
+  .model-badge-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: rgba(52,199,89,0.80);
+  }
+  .model-badge-text {
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(52,199,89,0.85);
+    letter-spacing: 0.02em;
+  }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <div class="phase-label">PRV Company Operating System</div>
+  <h1>Phase 17 — AI Platform</h1>
+  <div class="subtitle">Agent Orchestration · Conversational AI · Usage Analytics</div>
+</div>
+
+<div class="frames-row">
+
+  <!-- ========================
+       FRAME 1: AI Chat Hub
+       ======================== -->
+  <div class="phone-wrapper">
+    <div class="phone-label">Frame 1</div>
+    <div class="phone-sublabel">AI Chat Hub — Agent Selection</div>
+    <div class="phone">
+      <div class="screen">
+
+        <!-- Status bar -->
+        <div class="status-bar">
+          <div class="status-time">9:41</div>
+          <div class="dynamic-island"></div>
+          <div class="status-icons">
+            <!-- Signal -->
+            <svg width="17" height="12" viewBox="0 0 17 12" fill="none">
+              <rect x="0" y="7" width="3" height="5" rx="1" fill="white" opacity="0.95"/>
+              <rect x="4.5" y="5" width="3" height="7" rx="1" fill="white" opacity="0.95"/>
+              <rect x="9" y="2.5" width="3" height="9.5" rx="1" fill="white" opacity="0.95"/>
+              <rect x="13.5" y="0" width="3" height="12" rx="1" fill="white" opacity="0.95"/>
+            </svg>
+            <!-- WiFi -->
+            <svg width="16" height="12" viewBox="0 0 16 12" fill="none">
+              <path d="M8 9.5C8.69 9.5 9.25 10.06 9.25 10.75S8.69 12 8 12 6.75 11.44 6.75 10.75 7.31 9.5 8 9.5z" fill="white"/>
+              <path d="M4.5 6.8C5.8 5.5 7.3 4.8 8 4.8s2.2.7 3.5 2" stroke="white" stroke-width="1.4" stroke-linecap="round" fill="none"/>
+              <path d="M1.5 4.2C3.5 2.2 5.6 1 8 1s4.5 1.2 6.5 3.2" stroke="white" stroke-width="1.4" stroke-linecap="round" fill="none" opacity="0.6"/>
+            </svg>
+            <!-- Battery -->
+            <svg width="25" height="12" viewBox="0 0 25 12" fill="none">
+              <rect x="0.5" y="0.5" width="21" height="11" rx="3.5" stroke="white" stroke-opacity="0.4"/>
+              <rect x="2" y="2" width="17" height="8" rx="2" fill="white"/>
+              <path d="M23 4v4a2 2 0 000-4z" fill="white" opacity="0.4"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Header -->
+        <div class="f1-header">
+          <div class="f1-header-left">
+            <div class="f1-header-title">AI Assistant</div>
+            <div style="display:flex; margin-top:2px;">
+              <div class="f1-header-badge">
+                <div class="f1-header-dot"></div>
+                6 Agents
+              </div>
+            </div>
+          </div>
+          <div class="f1-header-actions">
+            <div class="icon-btn">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <circle cx="6.5" cy="6.5" r="4.5" stroke="rgba(255,255,255,0.65)" stroke-width="1.5"/>
+                <path d="M10.5 10.5L14 14" stroke="rgba(255,255,255,0.65)" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div class="icon-btn">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <circle cx="8" cy="4" r="1.5" fill="rgba(255,255,255,0.65)"/>
+                <circle cx="8" cy="8" r="1.5" fill="rgba(255,255,255,0.65)"/>
+                <circle cx="8" cy="12" r="1.5" fill="rgba(255,255,255,0.65)"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- Agent selector -->
+        <div class="agent-selector">
+          <div class="agent-pill">
+            <span class="agent-pill-icon">💬</span>
+            <span class="agent-pill-name">General</span>
+          </div>
+          <div class="agent-pill active">
+            <span class="agent-pill-icon">📊</span>
+            <span class="agent-pill-name">Finance</span>
+          </div>
+          <div class="agent-pill">
+            <span class="agent-pill-icon">👥</span>
+            <span class="agent-pill-name">HR</span>
+          </div>
+          <div class="agent-pill">
+            <span class="agent-pill-icon">📐</span>
+            <span class="agent-pill-name">Projects</span>
+          </div>
+          <div class="agent-pill">
+            <span class="agent-pill-icon">🏗️</span>
+            <span class="agent-pill-name">Renovation</span>
+          </div>
+        </div>
+
+        <!-- Recent conversations -->
+        <div class="section-divider">Recent Conversations</div>
+
+        <div class="conv-list">
+          <!-- Item 1 -->
+          <div class="conv-item">
+            <div class="conv-icon">📊</div>
+            <div class="conv-body">
+              <div class="conv-title">Revenue analysis Q1 2026</div>
+              <div class="conv-meta">
+                <span class="conv-meta-tag">Finance</span>
+                <span class="conv-meta-dot">·</span>
+                <span>2h ago</span>
+                <span class="conv-meta-dot">·</span>
+                <span class="conv-msg-count">3</span>
+              </div>
+            </div>
+            <div class="conv-chevron">›</div>
+          </div>
+          <!-- Item 2 -->
+          <div class="conv-item" style="margin-top:8px;">
+            <div class="conv-icon">👥</div>
+            <div class="conv-body">
+              <div class="conv-title">Payroll summary</div>
+              <div class="conv-meta">
+                <span class="conv-meta-tag">HR</span>
+                <span class="conv-meta-dot">·</span>
+                <span>Yesterday</span>
+                <span class="conv-meta-dot">·</span>
+                <span class="conv-msg-count">5</span>
+              </div>
+            </div>
+            <div class="conv-chevron">›</div>
+          </div>
+          <!-- Item 3 -->
+          <div class="conv-item" style="margin-top:8px;">
+            <div class="conv-icon">📐</div>
+            <div class="conv-body">
+              <div class="conv-title">Project Delta status</div>
+              <div class="conv-meta">
+                <span class="conv-meta-tag">Projects</span>
+                <span class="conv-meta-dot">·</span>
+                <span>2d ago</span>
+                <span class="conv-meta-dot">·</span>
+                <span class="conv-msg-count">8</span>
+              </div>
+            </div>
+            <div class="conv-chevron">›</div>
+          </div>
+        </div>
+
+        <!-- New conversation btn -->
+        <div class="new-conv-btn">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M8 2v12M2 8h12" stroke="rgba(255,255,255,0.80)" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          <span>New Conversation</span>
+        </div>
+
+        <!-- Tab bar -->
+        <div class="tab-bar">
+          <div class="tab-bar-inner">
+            <div class="tab-item">
+              <div class="tab-icon">🏠</div>
+              <div class="tab-label">Home</div>
+            </div>
+            <div class="tab-item active">
+              <div class="tab-icon">🤖</div>
+              <div class="tab-label">AI</div>
+            </div>
+            <div class="tab-item">
+              <div class="tab-icon">📁</div>
+              <div class="tab-label">Projects</div>
+            </div>
+            <div class="tab-item">
+              <div class="tab-icon">📈</div>
+              <div class="tab-label">Finance</div>
+            </div>
+            <div class="tab-item">
+              <div class="tab-icon">⚙️</div>
+              <div class="tab-label">Settings</div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /screen -->
+    </div><!-- /phone -->
+  </div><!-- /phone-wrapper -->
+
+
+  <!-- ========================
+       FRAME 2: AI Chat
+       ======================== -->
+  <div class="phone-wrapper">
+    <div class="phone-label">Frame 2</div>
+    <div class="phone-sublabel">AI Chat — Active Conversation</div>
+    <div class="phone">
+      <div class="screen">
+
+        <!-- Status bar -->
+        <div class="status-bar">
+          <div class="status-time">9:41</div>
+          <div class="dynamic-island"></div>
+          <div class="status-icons">
+            <svg width="17" height="12" viewBox="0 0 17 12" fill="none">
+              <rect x="0" y="7" width="3" height="5" rx="1" fill="white" opacity="0.95"/>
+              <rect x="4.5" y="5" width="3" height="7" rx="1" fill="white" opacity="0.95"/>
+              <rect x="9" y="2.5" width="3" height="9.5" rx="1" fill="white" opacity="0.95"/>
+              <rect x="13.5" y="0" width="3" height="12" rx="1" fill="white" opacity="0.95"/>
+            </svg>
+            <svg width="16" height="12" viewBox="0 0 16 12" fill="none">
+              <path d="M8 9.5C8.69 9.5 9.25 10.06 9.25 10.75S8.69 12 8 12 6.75 11.44 6.75 10.75 7.31 9.5 8 9.5z" fill="white"/>
+              <path d="M4.5 6.8C5.8 5.5 7.3 4.8 8 4.8s2.2.7 3.5 2" stroke="white" stroke-width="1.4" stroke-linecap="round" fill="none"/>
+              <path d="M1.5 4.2C3.5 2.2 5.6 1 8 1s4.5 1.2 6.5 3.2" stroke="white" stroke-width="1.4" stroke-linecap="round" fill="none" opacity="0.6"/>
+            </svg>
+            <svg width="25" height="12" viewBox="0 0 25 12" fill="none">
+              <rect x="0.5" y="0.5" width="21" height="11" rx="3.5" stroke="white" stroke-opacity="0.4"/>
+              <rect x="2" y="2" width="17" height="8" rx="2" fill="white"/>
+              <path d="M23 4v4a2 2 0 000-4z" fill="white" opacity="0.4"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Header -->
+        <div class="f2-header">
+          <div class="back-btn">
+            <div class="back-arrow">‹</div>
+          </div>
+          <div class="f2-header-info">
+            <div class="f2-header-name">Finance Agent</div>
+            <div class="f2-header-status">
+              <div class="live-dot"></div>
+              <div class="f2-header-statustext">PRV AI · Live</div>
+            </div>
+          </div>
+          <div class="f2-header-right">
+            <div class="icon-btn">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <circle cx="8" cy="8" r="6.5" stroke="rgba(255,255,255,0.55)" stroke-width="1.4"/>
+                <path d="M8 7v5" stroke="rgba(255,255,255,0.55)" stroke-width="1.4" stroke-linecap="round"/>
+                <circle cx="8" cy="5" r="0.8" fill="rgba(255,255,255,0.55)"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chat area -->
+        <div class="chat-area">
+
+          <!-- User message 1 -->
+          <div class="bubble-user">
+            <div class="bubble-user-text">What's our cash position this week?</div>
+          </div>
+
+          <!-- AI response -->
+          <div class="bubble-ai-wrap">
+            <div class="bubble-ai-label">
+              <div class="ai-avatar">AI</div>
+              <div class="bubble-ai-labeltext">PRV AI · Finance</div>
+            </div>
+            <div class="bubble-ai">
+              <div class="bubble-ai-text">
+                <div style="font-weight:600; color:rgba(255,255,255,0.70); font-size:12px; letter-spacing:0.04em; text-transform:uppercase; margin-bottom:8px;">Cash position as of today</div>
+                <div class="ai-data-row">
+                  <span class="ai-data-bullet">·</span>
+                  <span class="ai-data-label">Available</span>
+                  <span class="ai-data-value">€47,320</span>
+                </div>
+                <div class="ai-data-row">
+                  <span class="ai-data-bullet">·</span>
+                  <span class="ai-data-label">Locked (pending invoices)</span>
+                  <span class="ai-data-value">€12,850</span>
+                </div>
+                <div class="ai-data-row">
+                  <span class="ai-data-bullet">·</span>
+                  <span class="ai-data-label">Expected this week</span>
+                  <span class="ai-data-value">€8,200</span>
+                </div>
+                <div class="ai-summary">
+                  <strong>Bottom line:</strong> €47K is solid. Watch the 3 overdue invoices due Friday — they total <strong>€4,200</strong>.
+                </div>
+              </div>
+            </div>
+            <div class="feedback-row">
+              <div class="feedback-pill">👍 <span>Helpful</span></div>
+              <div class="feedback-pill">👎 <span>Not helpful</span></div>
+              <div class="feedback-pill">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                  <path d="M6 1v3M9.5 2.5L7.12 4.88M11 6H8M9.5 9.5L7.12 7.12M6 11V8M2.5 9.5L4.88 7.12M1 6H4M2.5 2.5L4.88 4.88" stroke="rgba(255,255,255,0.40)" stroke-width="1.2" stroke-linecap="round"/>
+                </svg>
+                <span>Retry</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- User message 2 -->
+          <div class="bubble-user">
+            <div class="bubble-user-text">Which invoices are overdue?</div>
+          </div>
+
+          <!-- Streaming AI response -->
+          <div class="bubble-ai-wrap bubble-streaming">
+            <div class="bubble-ai-label">
+              <div class="ai-avatar">AI</div>
+              <div class="bubble-ai-labeltext">PRV AI · Finance</div>
+            </div>
+            <div class="bubble-ai">
+              <div style="display:flex; align-items:center; gap:10px;">
+                <div class="streaming-dots">
+                  <div class="dot"></div>
+                  <div class="dot"></div>
+                  <div class="dot"></div>
+                </div>
+                <span class="streaming-label">Looking at Finance…</span>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /chat-area -->
+
+        <!-- Input bar -->
+        <div class="chat-input-bar">
+          <div class="chat-input-pill">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="flex-shrink:0;">
+              <circle cx="8" cy="8" r="6.5" stroke="rgba(255,255,255,0.20)" stroke-width="1.3"/>
+              <path d="M8 5.5v3.5l2 1" stroke="rgba(255,255,255,0.20)" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <div class="chat-input-placeholder">Ask Finance AI…</div>
+          </div>
+          <div class="chat-send-btn">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M7 12V2M2 7l5-5 5 5" stroke="#000" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Tab bar -->
+        <div class="tab-bar">
+          <div class="tab-bar-inner">
+            <div class="tab-item">
+              <div class="tab-icon">🏠</div>
+              <div class="tab-label">Home</div>
+            </div>
+            <div class="tab-item active">
+              <div class="tab-icon">🤖</div>
+              <div class="tab-label">AI</div>
+            </div>
+            <div class="tab-item">
+              <div class="tab-icon">📁</div>
+              <div class="tab-label">Projects</div>
+            </div>
+            <div class="tab-item">
+              <div class="tab-icon">📈</div>
+              <div class="tab-label">Finance</div>
+            </div>
+            <div class="tab-item">
+              <div class="tab-icon">⚙️</div>
+              <div class="tab-label">Settings</div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /screen -->
+    </div><!-- /phone -->
+  </div><!-- /phone-wrapper -->
+
+
+  <!-- ========================
+       FRAME 3: AI Cost Dashboard
+       ======================== -->
+  <div class="phone-wrapper">
+    <div class="phone-label">Frame 3</div>
+    <div class="phone-sublabel">AI Cost Dashboard</div>
+    <div class="phone">
+      <div class="screen">
+
+        <!-- Status bar -->
+        <div class="status-bar">
+          <div class="status-time">9:41</div>
+          <div class="dynamic-island"></div>
+          <div class="status-icons">
+            <svg width="17" height="12" viewBox="0 0 17 12" fill="none">
+              <rect x="0" y="7" width="3" height="5" rx="1" fill="white" opacity="0.95"/>
+              <rect x="4.5" y="5" width="3" height="7" rx="1" fill="white" opacity="0.95"/>
+              <rect x="9" y="2.5" width="3" height="9.5" rx="1" fill="white" opacity="0.95"/>
+              <rect x="13.5" y="0" width="3" height="12" rx="1" fill="white" opacity="0.95"/>
+            </svg>
+            <svg width="16" height="12" viewBox="0 0 16 12" fill="none">
+              <path d="M8 9.5C8.69 9.5 9.25 10.06 9.25 10.75S8.69 12 8 12 6.75 11.44 6.75 10.75 7.31 9.5 8 9.5z" fill="white"/>
+              <path d="M4.5 6.8C5.8 5.5 7.3 4.8 8 4.8s2.2.7 3.5 2" stroke="white" stroke-width="1.4" stroke-linecap="round" fill="none"/>
+              <path d="M1.5 4.2C3.5 2.2 5.6 1 8 1s4.5 1.2 6.5 3.2" stroke="white" stroke-width="1.4" stroke-linecap="round" fill="none" opacity="0.6"/>
+            </svg>
+            <svg width="25" height="12" viewBox="0 0 25 12" fill="none">
+              <rect x="0.5" y="0.5" width="21" height="11" rx="3.5" stroke="white" stroke-opacity="0.4"/>
+              <rect x="2" y="2" width="17" height="8" rx="2" fill="white"/>
+              <path d="M23 4v4a2 2 0 000-4z" fill="white" opacity="0.4"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Header -->
+        <div class="f3-header">
+          <div class="f3-header-title">AI Usage</div>
+          <div class="date-range-pill">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+              <rect x="0.5" y="1.5" width="11" height="10" rx="2" stroke="rgba(255,255,255,0.40)" stroke-width="1.2"/>
+              <path d="M3.5 0v3M8.5 0v3" stroke="rgba(255,255,255,0.40)" stroke-width="1.2" stroke-linecap="round"/>
+              <path d="M0.5 5h11" stroke="rgba(255,255,255,0.40)" stroke-width="1.2"/>
+            </svg>
+            <div class="date-range-text">Jun 2026</div>
+          </div>
+        </div>
+
+        <!-- KPI row -->
+        <div class="kpi-row">
+          <div class="kpi-tile">
+            <div class="kpi-label">Tokens</div>
+            <div class="kpi-value">2.4M</div>
+            <div class="kpi-delta">↑ 12%</div>
+          </div>
+          <div class="kpi-tile">
+            <div class="kpi-label">Est. Cost</div>
+            <div class="kpi-value">€18.40</div>
+            <div class="kpi-sub">this month</div>
+          </div>
+          <div class="kpi-tile">
+            <div class="kpi-label">Messages</div>
+            <div class="kpi-value">847</div>
+            <div class="kpi-delta">↑ 23%</div>
+          </div>
+        </div>
+
+        <!-- Usage by Agent -->
+        <div class="section-card">
+          <div class="section-title">Usage by Agent</div>
+          <div class="agent-bar-list">
+            <div class="agent-bar-row">
+              <div class="agent-bar-name">Finance</div>
+              <div class="agent-bar-track">
+                <div class="agent-bar-fill" style="width:93%; background:rgba(255,255,255,0.70);"></div>
+              </div>
+              <div class="agent-bar-count">890K</div>
+            </div>
+            <div class="agent-bar-row">
+              <div class="agent-bar-name">General</div>
+              <div class="agent-bar-track">
+                <div class="agent-bar-fill" style="width:72%;"></div>
+              </div>
+              <div class="agent-bar-count">680K</div>
+            </div>
+            <div class="agent-bar-row">
+              <div class="agent-bar-name">Projects</div>
+              <div class="agent-bar-track">
+                <div class="agent-bar-fill" style="width:44%;"></div>
+              </div>
+              <div class="agent-bar-count">420K</div>
+            </div>
+            <div class="agent-bar-row">
+              <div class="agent-bar-name">HR</div>
+              <div class="agent-bar-track">
+                <div class="agent-bar-fill" style="width:31%;"></div>
+              </div>
+              <div class="agent-bar-count">290K</div>
+            </div>
+            <div class="agent-bar-row">
+              <div class="agent-bar-name">Renovation</div>
+              <div class="agent-bar-track">
+                <div class="agent-bar-fill" style="width:19%;"></div>
+              </div>
+              <div class="agent-bar-count">180K</div>
+            </div>
+            <div class="agent-bar-row">
+              <div class="agent-bar-name" style="font-size:11px;">Report Builder</div>
+              <div class="agent-bar-track">
+                <div class="agent-bar-fill" style="width:10%;"></div>
+              </div>
+              <div class="agent-bar-count">90K</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Daily Usage sparkline -->
+        <div class="section-card" style="margin-top:0;">
+          <div class="section-title">Daily Usage — 7 Days</div>
+          <div class="sparkline-wrap">
+            <svg width="100%" height="52" viewBox="0 0 330 52" preserveAspectRatio="none">
+              <!-- Grid lines -->
+              <line x1="0" y1="52" x2="330" y2="52" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+              <line x1="0" y1="26" x2="330" y2="26" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+              <!-- Area fill -->
+              <defs>
+                <linearGradient id="spark-grad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="rgba(255,255,255,0.20)"/>
+                  <stop offset="100%" stop-color="rgba(255,255,255,0.00)"/>
+                </linearGradient>
+              </defs>
+              <!-- Data points: day values normalized to 52px height -->
+              <!-- Values: 280, 320, 290, 410, 380, 450, 420 (K tokens) -->
+              <!-- Normalized to 0-52: max=450 -->
+              <!-- y = 52 - (val/450)*48 -->
+              <!-- x positions: 0,55,110,165,220,275,330 (but let's use 23,78,133,188,243,298,330) -->
+              <path d="M23,22 L78,18 L133,21 L188,8 L243,11 L298,4 L330,7 L330,52 L23,52 Z" fill="url(#spark-grad)"/>
+              <path d="M23,22 L78,18 L133,21 L188,8 L243,11 L298,4 L330,7" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              <!-- Dots -->
+              <circle cx="23" cy="22" r="2.5" fill="rgba(255,255,255,0.50)"/>
+              <circle cx="78" cy="18" r="2.5" fill="rgba(255,255,255,0.50)"/>
+              <circle cx="133" cy="21" r="2.5" fill="rgba(255,255,255,0.50)"/>
+              <circle cx="188" cy="8" r="3" fill="rgba(255,255,255,0.90)"/>
+              <circle cx="243" cy="11" r="2.5" fill="rgba(255,255,255,0.50)"/>
+              <circle cx="298" cy="4" r="3" fill="rgba(255,255,255,0.90)"/>
+              <circle cx="330" cy="7" r="2.5" fill="rgba(255,255,255,0.50)"/>
+            </svg>
+            <div class="sparkline-days">
+              <span class="sparkline-day">15</span>
+              <span class="sparkline-day">16</span>
+              <span class="sparkline-day">17</span>
+              <span class="sparkline-day">18</span>
+              <span class="sparkline-day">19</span>
+              <span class="sparkline-day">20</span>
+              <span class="sparkline-day">21</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Model row -->
+        <div class="model-row">
+          <div class="model-left">
+            <div class="model-label">Model</div>
+            <div class="model-name">claude-sonnet-4-6</div>
+            <div class="model-scope">All usage · All agents</div>
+          </div>
+          <div class="model-badge">
+            <div class="model-badge-dot"></div>
+            <div class="model-badge-text">Active</div>
+          </div>
+        </div>
+
+        <!-- Tab bar -->
+        <div class="tab-bar">
+          <div class="tab-bar-inner">
+            <div class="tab-item">
+              <div class="tab-icon">🏠</div>
+              <div class="tab-label">Home</div>
+            </div>
+            <div class="tab-item">
+              <div class="tab-icon">🤖</div>
+              <div class="tab-label">AI</div>
+            </div>
+            <div class="tab-item">
+              <div class="tab-icon">📁</div>
+              <div class="tab-label">Projects</div>
+            </div>
+            <div class="tab-item">
+              <div class="tab-icon">📈</div>
+              <div class="tab-label">Finance</div>
+            </div>
+            <div class="tab-item active">
+              <div class="tab-icon">⚙️</div>
+              <div class="tab-label">Settings</div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /screen -->
+    </div><!-- /phone -->
+  </div><!-- /phone-wrapper -->
+
+</div><!-- /frames-row -->
+
+<!-- Footer -->
+<div style="margin-top:52px; text-align:center;">
+  <div style="font-size:11px; font-weight:600; letter-spacing:0.10em; text-transform:uppercase; color:rgba(255,255,255,0.18);">
+    PRV Company Operating System · Phase 17 — AI Platform · Preview
+  </div>
+</div>
+
+</body>
+</html>
