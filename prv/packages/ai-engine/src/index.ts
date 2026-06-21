@@ -581,3 +581,183 @@ export function listAccessibleAITools(context: AIConversationContext): string[] 
     )
     .map(([name]) => name)
 }
+
+// ── Message Feedback ───────────────────────────────────────────────────────────
+
+export async function addMessageFeedback(
+  messageId: string,
+  userId: string,
+  rating: "up" | "down"
+): Promise<void> {
+  const { db } = await import("@prv/db")
+  const { aiMessageFeedback } = await import("@prv/db/schema")
+  const { sql } = await import("drizzle-orm")
+  await db
+    .insert(aiMessageFeedback)
+    .values({ messageId, userId, rating })
+    .onConflictDoUpdate({
+      target: [aiMessageFeedback.messageId, aiMessageFeedback.userId],
+      set: { rating, createdAt: sql`now()` },
+    })
+}
+
+// ── Usage Stats ────────────────────────────────────────────────────────────────
+
+export async function logUsage(params: {
+  companyId: string
+  userId: string
+  conversationId?: string
+  agentType: AgentType
+  model: string
+  inputTokens: number
+  outputTokens: number
+}): Promise<void> {
+  const { db } = await import("@prv/db")
+  const { aiUsageLogs } = await import("@prv/db/schema")
+  const inputCostUsd = (params.inputTokens / 1_000_000) * 3.0
+  const outputCostUsd = (params.outputTokens / 1_000_000) * 15.0
+  const estimatedCostUsd = (inputCostUsd + outputCostUsd).toFixed(6)
+  await db.insert(aiUsageLogs).values({
+    companyId: params.companyId,
+    userId: params.userId,
+    conversationId: params.conversationId,
+    agentType: params.agentType,
+    model: params.model,
+    inputTokens: params.inputTokens,
+    outputTokens: params.outputTokens,
+    estimatedCostUsd,
+  })
+}
+
+export async function getUsageStats(
+  companyId: string,
+  year: number,
+  month: number
+): Promise<{
+  totalInputTokens: number
+  totalOutputTokens: number
+  estimatedCostUsd: number
+  messageCount: number
+  byAgent: Record<AgentType, { inputTokens: number; outputTokens: number }>
+  dailyUsage: { date: string; tokens: number }[]
+}> {
+  const { db } = await import("@prv/db")
+  const { aiUsageLogs } = await import("@prv/db/schema")
+  const { eq, gte, lt, sum, count, sql } = await import("drizzle-orm")
+
+  const start = new Date(year, month - 1, 1)
+  const end = new Date(year, month, 1)
+
+  const rows = await db
+    .select({
+      agentType: aiUsageLogs.agentType,
+      inputTokens: sum(aiUsageLogs.inputTokens).mapWith(Number),
+      outputTokens: sum(aiUsageLogs.outputTokens).mapWith(Number),
+      cost: sum(aiUsageLogs.estimatedCostUsd).mapWith(Number),
+      msgs: count(),
+    })
+    .from(aiUsageLogs)
+    .where(eq(aiUsageLogs.companyId, companyId))
+    .groupBy(aiUsageLogs.agentType)
+
+  const daily = await db
+    .select({
+      date: sql<string>`date_trunc('day', ${aiUsageLogs.createdAt})::date::text`,
+      tokens: sum(sql<number>`${aiUsageLogs.inputTokens} + ${aiUsageLogs.outputTokens}`).mapWith(
+        Number
+      ),
+    })
+    .from(aiUsageLogs)
+    .where(eq(aiUsageLogs.companyId, companyId))
+    .groupBy(sql`date_trunc('day', ${aiUsageLogs.createdAt})`)
+    .orderBy(sql`date_trunc('day', ${aiUsageLogs.createdAt})`)
+
+  const empty: AgentType[] = ["general", "finance", "hr", "project", "renovation", "report_builder"]
+  const byAgent = Object.fromEntries(
+    empty.map((a) => [a, { inputTokens: 0, outputTokens: 0 }])
+  ) as Record<AgentType, { inputTokens: number; outputTokens: number }>
+
+  let totalInput = 0
+  let totalOutput = 0
+  let totalCost = 0
+  let totalMsgs = 0
+
+  for (const r of rows) {
+    const at = r.agentType as AgentType
+    if (byAgent[at]) {
+      byAgent[at].inputTokens = r.inputTokens ?? 0
+      byAgent[at].outputTokens = r.outputTokens ?? 0
+    }
+    totalInput += r.inputTokens ?? 0
+    totalOutput += r.outputTokens ?? 0
+    totalCost += r.cost ?? 0
+    totalMsgs += r.msgs
+  }
+
+  return {
+    totalInputTokens: totalInput,
+    totalOutputTokens: totalOutput,
+    estimatedCostUsd: totalCost,
+    messageCount: totalMsgs,
+    byAgent,
+    dailyUsage: daily.map((d) => ({ date: d.date, tokens: d.tokens ?? 0 })),
+  }
+}
+
+// ── Report Builder ─────────────────────────────────────────────────────────────
+
+export async function buildReportQuery(
+  description: string,
+  ctx: ChatContext
+): Promise<{
+  title: string
+  type: string
+  filters: Record<string, unknown>
+  columns: string[]
+  preview?: string
+}> {
+  const apiKey = process.env.ANTHROPIC_API_KEY
+  if (!apiKey) {
+    return {
+      title: description,
+      type: "custom",
+      filters: {},
+      columns: ["id", "name", "value", "date"],
+    }
+  }
+
+  const client = new Anthropic({ apiKey })
+  try {
+    const msg = await client.messages.create({
+      model: MODEL,
+      max_tokens: 512,
+      system: AGENT_SYSTEM_PROMPTS.report_builder,
+      messages: [{ role: "user", content: description }],
+    })
+    const text = msg.content[0]?.type === "text" ? msg.content[0].text : ""
+    const jsonMatch = text.match(/\{[\s\S]*\}/)
+    if (jsonMatch) {
+      const parsed = JSON.parse(jsonMatch[0]) as {
+        title?: string
+        type?: string
+        filters?: Record<string, unknown>
+        columns?: string[]
+      }
+      return {
+        title: parsed.title ?? description,
+        type: parsed.type ?? "custom",
+        filters: parsed.filters ?? {},
+        columns: parsed.columns ?? [],
+      }
+    }
+  } catch {
+    // fall through to default
+  }
+
+  return {
+    title: description,
+    type: "custom",
+    filters: {},
+    columns: ["id", "name", "value", "date"],
+  }
+}
