@@ -24,11 +24,21 @@ const EXECUTIVE_ACTIONS: QuickAction[] = [
     href: "/operations",
   },
   {
-    label: "Upload Doc",
-    icon: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12",
-    href: "/documents",
+    label: "Safety",
+    icon: "M12 2l-9 4v5c0 5.25 3.75 10.14 9 11.25C17.25 21.14 21 16.25 21 11V6l-9-4zM9 12l2 2 4-4",
+    href: "/safety",
   },
   { label: "View Reports", icon: "M3 3v18h18M18 17V9M13 17V5M8 17v-3", href: "/intelligence" },
+  {
+    label: "Procurement",
+    icon: "M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6",
+    href: "/procurement",
+  },
+  {
+    label: "Fleet",
+    icon: "M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v9a2 2 0 0 1-2 2h-2M14 17a2 2 0 1 0 4 0 2 2 0 0 0-4 0M5 17a2 2 0 1 0 4 0 2 2 0 0 0-4 0",
+    href: "/fleet",
+  },
 ]
 
 const MANAGER_ACTIONS: QuickAction[] = [
@@ -45,14 +55,14 @@ const MANAGER_ACTIONS: QuickAction[] = [
     href: "/approvals",
   },
   {
-    label: "Schedule",
-    icon: "M8 2v4M16 2v4M3 10h18M3 6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6Z",
-    href: "/schedule",
+    label: "Safety",
+    icon: "M12 2l-9 4v5c0 5.25 3.75 10.14 9 11.25C17.25 21.14 21 16.25 21 11V6l-9-4zM9 12l2 2 4-4",
+    href: "/safety",
   },
   {
-    label: "Documents",
-    icon: "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z",
-    href: "/documents",
+    label: "Knowledge",
+    icon: "M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20",
+    href: "/knowledge",
   },
 ]
 
