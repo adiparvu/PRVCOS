@@ -465,12 +465,14 @@
   .next-service-card {
     position: relative;
     overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.22) !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.28), 0 12px 40px rgba(0,0,0,0.5) !important;
   }
   .next-service-card::before {
     content: '';
     position: absolute;
     inset: 0;
-    background: radial-gradient(ellipse at 80% 0%, rgba(255,255,255,0.06), transparent 60%);
+    background: radial-gradient(ellipse at 50% -20%, rgba(255,255,255,0.08), transparent 70%);
     pointer-events: none;
   }
   .service-header-row {
@@ -968,7 +970,7 @@
             <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.7);animation:pulse 2s ease-in-out infinite;"></span>
             NEXT SERVICE
           </div>
-          <div class="glass-modal next-service-card" style="border:1px solid rgba(255,255,255,0.18);">
+          <div class="glass-card next-service-card">
             <div class="service-header-row">
               <div>
                 <div class="service-name" style="font-size:18px;">Oil Change</div>
