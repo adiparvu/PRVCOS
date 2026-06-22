@@ -1,0 +1,1476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phase 21 — Procurement Completion Preview</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #000000;
+    font-family: -apple-system, 'SF Pro Display', 'SF Pro Text', BlinkMacSystemFont, sans-serif;
+    min-height: 100vh;
+    color: rgba(255,255,255,0.95);
+    overflow-x: hidden;
+  }
+
+  /* ─── Noise texture overlay ─── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ─── Ambient glows ─── */
+  .ambient {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(120px);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .ambient-1 {
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(255,255,255,0.04) 0%, transparent 70%);
+    top: -200px; left: -100px;
+  }
+  .ambient-2 {
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(255,255,255,0.03) 0%, transparent 70%);
+    bottom: -150px; right: -100px;
+  }
+
+  /* ─── Page layout ─── */
+  .page {
+    position: relative;
+    z-index: 1;
+    padding: 60px 40px 80px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  /* ─── Header ─── */
+  .page-header {
+    text-align: center;
+    margin-bottom: 64px;
+  }
+
+  .phase-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.14);
+    border-radius: 100px;
+    padding: 6px 16px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.6);
+    margin-bottom: 20px;
+    backdrop-filter: blur(20px);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.18);
+  }
+
+  .phase-badge .dot {
+    width: 6px; height: 6px;
+    background: rgba(255,255,255,0.8);
+    border-radius: 50%;
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.8); }
+  }
+
+  .page-title {
+    font-size: clamp(28px, 4vw, 48px);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    color: rgba(255,255,255,0.95);
+    line-height: 1.1;
+    margin-bottom: 12px;
+  }
+
+  .page-subtitle {
+    font-size: 15px;
+    color: rgba(255,255,255,0.4);
+    font-weight: 400;
+    letter-spacing: 0.02em;
+  }
+
+  /* ─── Mockup container ─── */
+  .mockups {
+    display: flex;
+    gap: 32px;
+    justify-content: center;
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  /* ─── Phone frame ─── */
+  .phone-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    flex: 1;
+    min-width: 300px;
+    max-width: 380px;
+  }
+
+  .screen-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.35);
+  }
+
+  .phone-frame {
+    width: 100%;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 48px;
+    padding: 16px;
+    box-shadow:
+      0 24px 64px rgba(0,0,0,0.7),
+      inset 0 1px 0 rgba(255,255,255,0.12),
+      inset 0 -1px 0 rgba(255,255,255,0.04);
+    backdrop-filter: blur(32px);
+    position: relative;
+  }
+
+  .phone-frame::before {
+    content: '';
+    position: absolute;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80px;
+    height: 4px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 100px;
+    z-index: 10;
+  }
+
+  .phone-screen {
+    background: #000;
+    border-radius: 36px;
+    overflow: hidden;
+    min-height: 680px;
+    position: relative;
+  }
+
+  /* ─── Glass utilities ─── */
+  .glass-1 {
+    background: rgba(255,255,255,0.06);
+    backdrop-filter: blur(32px);
+    -webkit-backdrop-filter: blur(32px);
+    border: 1px solid rgba(255,255,255,0.10);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.15), 0 8px 32px rgba(0,0,0,0.4);
+  }
+
+  .glass-2 {
+    background: rgba(255,255,255,0.10);
+    backdrop-filter: blur(48px);
+    -webkit-backdrop-filter: blur(48px);
+    border: 1px solid rgba(255,255,255,0.12);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.20), 0 12px 40px rgba(0,0,0,0.5);
+  }
+
+  .glass-3 {
+    background: rgba(255,255,255,0.16);
+    backdrop-filter: blur(64px);
+    -webkit-backdrop-filter: blur(64px);
+    border: 1px solid rgba(255,255,255,0.14);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.25), 0 24px 64px rgba(0,0,0,0.7);
+  }
+
+  /* ══════════════════════════════════════════════
+     SCREEN 1 — Purchase Request Form
+  ══════════════════════════════════════════════ */
+  .screen-1 {
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .s1-top-area {
+    padding: 32px 20px 16px;
+    background: rgba(255,255,255,0.03);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .s1-modal {
+    flex: 1;
+    background: rgba(255,255,255,0.10);
+    backdrop-filter: blur(48px);
+    -webkit-backdrop-filter: blur(48px);
+    border-top: 1px solid rgba(255,255,255,0.18);
+    border-radius: 32px 32px 0 0;
+    padding: 20px 20px 24px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.25);
+  }
+
+  .modal-handle {
+    width: 40px;
+    height: 4px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 100px;
+    margin: 0 auto 20px;
+  }
+
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+
+  .modal-title {
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  .close-btn {
+    width: 28px;
+    height: 28px;
+    background: rgba(255,255,255,0.10);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.18);
+  }
+
+  .close-btn svg {
+    width: 12px; height: 12px;
+    fill: none;
+    stroke: rgba(255,255,255,0.6);
+    stroke-width: 2;
+    stroke-linecap: round;
+  }
+
+  /* Form fields */
+  .form-field {
+    margin-bottom: 10px;
+  }
+
+  .field-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.35);
+    margin-bottom: 5px;
+  }
+
+  .field-input {
+    width: 100%;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 12px;
+    padding: 9px 12px;
+    font-size: 12.5px;
+    color: rgba(255,255,255,0.85);
+    font-family: inherit;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .field-input.placeholder {
+    color: rgba(255,255,255,0.25);
+  }
+
+  .field-row {
+    display: flex;
+    gap: 8px;
+  }
+
+  .field-row .form-field {
+    flex: 1;
+  }
+
+  /* Segmented picker */
+  .segmented {
+    display: flex;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 10px;
+    padding: 2px;
+    gap: 2px;
+  }
+
+  .seg-option {
+    flex: 1;
+    text-align: center;
+    padding: 6px 4px;
+    font-size: 10px;
+    font-weight: 600;
+    border-radius: 8px;
+    color: rgba(255,255,255,0.35);
+    letter-spacing: 0.02em;
+  }
+
+  .seg-option.active {
+    background: rgba(255,255,255,0.14);
+    color: rgba(255,255,255,0.9);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.20), 0 2px 8px rgba(0,0,0,0.3);
+  }
+
+  /* Approval routing card */
+  .routing-card {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 14px;
+    padding: 10px 12px;
+    margin-bottom: 12px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.12);
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .routing-icon {
+    width: 28px;
+    height: 28px;
+    background: rgba(255,255,255,0.10);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.18);
+  }
+
+  .routing-text {
+    flex: 1;
+  }
+
+  .routing-label {
+    font-size: 9.5px;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.35);
+    margin-bottom: 3px;
+  }
+
+  .routing-value {
+    font-size: 11px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.80);
+    line-height: 1.4;
+  }
+
+  /* CTA Button */
+  .cta-btn {
+    width: 100%;
+    background: rgba(255,255,255,0.95);
+    color: #000;
+    border: none;
+    border-radius: 14px;
+    padding: 13px;
+    font-size: 14px;
+    font-weight: 700;
+    font-family: inherit;
+    letter-spacing: -0.01em;
+    box-shadow: 0 4px 20px rgba(255,255,255,0.15), inset 0 1px 0 rgba(255,255,255,1);
+    cursor: pointer;
+    text-align: center;
+  }
+
+  .cta-btn.ghost {
+    background: rgba(255,255,255,0.10);
+    color: rgba(255,255,255,0.85);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.20), 0 4px 16px rgba(0,0,0,0.3);
+  }
+
+  .chevron {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    vertical-align: middle;
+    margin-left: 2px;
+    opacity: 0.5;
+    position: relative;
+    top: -1px;
+  }
+
+  .attach-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+
+  .attach-thumb {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.07);
+    border: 1px dashed rgba(255,255,255,0.18);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .s1-status-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 24px 6px;
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.85);
+  }
+
+  /* ══════════════════════════════════════════════
+     SCREEN 2 — Goods Receipt Note
+  ══════════════════════════════════════════════ */
+  .screen-2 {
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .s2-header {
+    background: rgba(255,255,255,0.06);
+    backdrop-filter: blur(32px);
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    padding: 40px 20px 16px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.10);
+  }
+
+  .s2-title-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 4px;
+  }
+
+  .back-btn {
+    width: 28px; height: 28px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .s2-title {
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  .po-ref {
+    font-size: 11px;
+    color: rgba(255,255,255,0.35);
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    padding-left: 38px;
+  }
+
+  .s2-content {
+    flex: 1;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    overflow: hidden;
+  }
+
+  .supplier-card {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 16px;
+    padding: 12px 14px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.12);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .supplier-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.14);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.85);
+    flex-shrink: 0;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.20);
+  }
+
+  .supplier-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.90);
+  }
+
+  .supplier-date {
+    font-size: 10.5px;
+    color: rgba(255,255,255,0.35);
+    margin-top: 2px;
+  }
+
+  /* Items table */
+  .items-table {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.10);
+  }
+
+  .table-header {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1.2fr;
+    padding: 8px 12px;
+    background: rgba(255,255,255,0.04);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .th {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.30);
+  }
+
+  .table-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1.2fr;
+    padding: 9px 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    align-items: center;
+  }
+
+  .table-row:last-child {
+    border-bottom: none;
+  }
+
+  .td {
+    font-size: 10.5px;
+    color: rgba(255,255,255,0.75);
+    font-weight: 500;
+  }
+
+  .td.item-name {
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.90);
+  }
+
+  .qty-input {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255,255,255,0.10);
+    border: 1px solid rgba(255,255,255,0.16);
+    border-radius: 7px;
+    padding: 3px 7px;
+    font-size: 11px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.90);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.15);
+  }
+
+  .condition-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 7px;
+    border-radius: 6px;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+  }
+
+  .cond-good {
+    background: rgba(255,255,255,0.10);
+    color: rgba(255,255,255,0.80);
+    border: 1px solid rgba(255,255,255,0.14);
+  }
+
+  .cond-damaged {
+    background: rgba(255,255,255,0.05);
+    color: rgba(255,255,255,0.40);
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+
+  /* Photo row */
+  .photo-row {
+    background: rgba(255,255,255,0.04);
+    border: 1px dashed rgba(255,255,255,0.12);
+    border-radius: 14px;
+    padding: 11px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .photo-icon {
+    width: 30px; height: 30px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(255,255,255,0.12);
+  }
+
+  .partial-info {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 9px 12px;
+    font-size: 10.5px;
+    color: rgba(255,255,255,0.50);
+    line-height: 1.4;
+  }
+
+  .partial-info strong {
+    color: rgba(255,255,255,0.80);
+    font-weight: 600;
+  }
+
+  .match-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 2px 0;
+  }
+
+  .match-label {
+    font-size: 10.5px;
+    color: rgba(255,255,255,0.40);
+    font-weight: 500;
+  }
+
+  .match-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 100px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    background: rgba(255,255,255,0.10);
+    border: 1px solid rgba(255,255,255,0.16);
+    color: rgba(255,255,255,0.90);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.18);
+  }
+
+  .match-badge .badge-dot {
+    width: 5px; height: 5px;
+    background: rgba(255,255,255,0.85);
+    border-radius: 50%;
+  }
+
+  .s2-bottom {
+    padding: 12px 16px 20px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+  }
+
+  /* ══════════════════════════════════════════════
+     SCREEN 3 — Supplier Scorecard
+  ══════════════════════════════════════════════ */
+  .screen-3 {
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .s3-header {
+    background: rgba(255,255,255,0.06);
+    backdrop-filter: blur(32px);
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    padding: 40px 20px 16px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.10);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .s3-title {
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  .score-grade-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    background: rgba(255,255,255,0.14);
+    border: 1px solid rgba(255,255,255,0.20);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.30), 0 8px 24px rgba(0,0,0,0.5);
+    font-size: 16px;
+    font-weight: 800;
+    color: rgba(255,255,255,0.95);
+    letter-spacing: -0.03em;
+  }
+
+  .s3-content {
+    flex: 1;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    overflow: hidden;
+  }
+
+  /* Supplier identity card */
+  .s3-identity {
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 18px;
+    padding: 14px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.14);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .s3-avatar {
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.16);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 800;
+    color: rgba(255,255,255,0.90);
+    flex-shrink: 0;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.22);
+  }
+
+  .s3-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.92);
+    letter-spacing: -0.01em;
+  }
+
+  .s3-since {
+    font-size: 10px;
+    color: rgba(255,255,255,0.30);
+    margin-top: 2px;
+  }
+
+  /* Star rating */
+  .star-row {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    margin-top: 4px;
+  }
+
+  .star {
+    width: 10px; height: 10px;
+    position: relative;
+  }
+
+  .star svg {
+    width: 10px; height: 10px;
+  }
+
+  .star-score {
+    font-size: 11px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.75);
+    margin-left: 4px;
+  }
+
+  /* KPI grid */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .kpi-card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px;
+    padding: 11px 12px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.10);
+  }
+
+  .kpi-label {
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.30);
+    margin-bottom: 6px;
+  }
+
+  .kpi-value {
+    font-size: 18px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.92);
+    letter-spacing: -0.03em;
+    line-height: 1;
+  }
+
+  .kpi-sub {
+    font-size: 9px;
+    color: rgba(255,255,255,0.35);
+    margin-top: 3px;
+  }
+
+  /* Circular progress */
+  .kpi-circular {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .circle-wrap {
+    position: relative;
+    width: 38px;
+    height: 38px;
+    flex-shrink: 0;
+  }
+
+  .circle-wrap svg {
+    width: 38px;
+    height: 38px;
+    transform: rotate(-90deg);
+  }
+
+  .circle-track {
+    fill: none;
+    stroke: rgba(255,255,255,0.08);
+    stroke-width: 3;
+  }
+
+  .circle-fill {
+    fill: none;
+    stroke: rgba(255,255,255,0.75);
+    stroke-width: 3;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.6s ease;
+  }
+
+  /* Mini bar chart */
+  .mini-chart {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 14px;
+    padding: 10px 12px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+  }
+
+  .chart-title {
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.30);
+    margin-bottom: 10px;
+  }
+
+  .bar-chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 5px;
+    height: 42px;
+  }
+
+  .bar-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    height: 100%;
+    justify-content: flex-end;
+  }
+
+  .bar {
+    width: 100%;
+    border-radius: 4px 4px 0 0;
+    background: rgba(255,255,255,0.20);
+    transition: height 0.4s ease;
+  }
+
+  .bar.highlight {
+    background: rgba(255,255,255,0.55);
+  }
+
+  .bar-month {
+    font-size: 8px;
+    color: rgba(255,255,255,0.25);
+    font-weight: 600;
+    text-align: center;
+  }
+
+  /* Spend row */
+  .spend-row {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 14px;
+    padding: 11px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.12);
+  }
+
+  .spend-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.35);
+  }
+
+  .spend-value {
+    font-size: 16px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.90);
+    letter-spacing: -0.02em;
+  }
+
+  /* SVG icons helpers */
+  svg.icon {
+    fill: none;
+    stroke: rgba(255,255,255,0.55);
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  /* ─── Footer ─── */
+  .page-footer {
+    text-align: center;
+    margin-top: 60px;
+    padding-top: 32px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .footer-text {
+    font-size: 11px;
+    color: rgba(255,255,255,0.20);
+    letter-spacing: 0.05em;
+  }
+
+  .footer-pills {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 14px;
+  }
+
+  .footer-pill {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 100px;
+    padding: 5px 14px;
+    font-size: 10px;
+    color: rgba(255,255,255,0.30);
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+  }
+
+  /* ─── Responsive ─── */
+  @media (max-width: 800px) {
+    .page { padding: 40px 20px 60px; }
+    .mockups { flex-direction: column; align-items: center; }
+    .phone-wrapper { max-width: 340px; width: 100%; }
+  }
+
+  /* scrollbar on phone screen */
+  .phone-screen::-webkit-scrollbar { display: none; }
+</style>
+</head>
+<body>
+
+<div class="ambient ambient-1"></div>
+<div class="ambient ambient-2"></div>
+
+<div class="page">
+
+  <!-- ─── Page Header ─── -->
+  <div class="page-header">
+    <div class="phase-badge">
+      <span class="dot"></span>
+      PRV Company Operating System
+    </div>
+    <h1 class="page-title">Phase 21 — Procurement Completion</h1>
+    <p class="page-subtitle">GRN &nbsp;·&nbsp; Purchase Requests &nbsp;·&nbsp; Supplier Scorecard</p>
+  </div>
+
+  <!-- ─── Mockups ─── -->
+  <div class="mockups">
+
+    <!-- ══════════════════════════════
+         PHONE 1 — Purchase Request Form
+    ══════════════════════════════ -->
+    <div class="phone-wrapper">
+      <span class="screen-label">Screen 1 &nbsp;— &nbsp;Purchase Request</span>
+      <div class="phone-frame">
+        <div class="phone-screen">
+          <div class="screen-1">
+
+            <!-- Status bar -->
+            <div class="s1-status-bar">
+              <span>9:41</span>
+              <span style="display:flex;gap:6px;align-items:center;">
+                <!-- Signal bars -->
+                <svg width="14" height="10" viewBox="0 0 14 10" fill="none">
+                  <rect x="0" y="6" width="2.5" height="4" rx="0.8" fill="rgba(255,255,255,0.85)"/>
+                  <rect x="3.5" y="4" width="2.5" height="6" rx="0.8" fill="rgba(255,255,255,0.85)"/>
+                  <rect x="7" y="2" width="2.5" height="8" rx="0.8" fill="rgba(255,255,255,0.85)"/>
+                  <rect x="10.5" y="0" width="2.5" height="10" rx="0.8" fill="rgba(255,255,255,0.85)"/>
+                </svg>
+                <!-- Battery -->
+                <svg width="22" height="11" viewBox="0 0 22 11" fill="none">
+                  <rect x="0.5" y="0.5" width="18" height="10" rx="2.5" stroke="rgba(255,255,255,0.5)" stroke-width="1"/>
+                  <rect x="19.5" y="3.5" width="2" height="4" rx="1" fill="rgba(255,255,255,0.5)"/>
+                  <rect x="2" y="2" width="13" height="7" rx="1.5" fill="rgba(255,255,255,0.85)"/>
+                </svg>
+              </span>
+            </div>
+
+            <!-- Top context area -->
+            <div class="s1-top-area">
+              <div style="font-size:11px;color:rgba(255,255,255,0.25);font-weight:500;margin-bottom:4px;">Procurement</div>
+              <div style="font-size:20px;font-weight:700;letter-spacing:-0.02em;color:rgba(255,255,255,0.90);">Requests</div>
+            </div>
+
+            <!-- Bottom sheet modal -->
+            <div class="s1-modal">
+              <div class="modal-handle"></div>
+
+              <div class="modal-header">
+                <div class="modal-title">New Purchase Request</div>
+                <div class="close-btn">
+                  <svg viewBox="0 0 12 12">
+                    <line x1="2" y1="2" x2="10" y2="10"/>
+                    <line x1="10" y1="2" x2="2" y2="10"/>
+                  </svg>
+                </div>
+              </div>
+
+              <!-- Item description -->
+              <div class="form-field">
+                <div class="field-label">Item Description</div>
+                <div class="field-input">Industrial safety gloves, size L</div>
+              </div>
+
+              <!-- Category -->
+              <div class="form-field">
+                <div class="field-label">Category</div>
+                <div class="field-input" style="justify-content:space-between;">
+                  <span>Materials</span>
+                  <svg class="chevron" viewBox="0 0 14 14" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="2" stroke-linecap="round"><polyline points="3,5 7,9 11,5"/></svg>
+                </div>
+              </div>
+
+              <!-- Quantity + Cost row -->
+              <div class="field-row">
+                <div class="form-field">
+                  <div class="field-label">Qty / Unit</div>
+                  <div class="field-input">24 &nbsp;<span style="color:rgba(255,255,255,0.30)">pcs</span></div>
+                </div>
+                <div class="form-field">
+                  <div class="field-label">Est. Cost</div>
+                  <div class="field-input">1,200</div>
+                </div>
+                <div class="form-field" style="max-width:56px;">
+                  <div class="field-label">Currency</div>
+                  <div class="field-input">RON</div>
+                </div>
+              </div>
+
+              <!-- Urgency -->
+              <div class="form-field">
+                <div class="field-label">Urgency</div>
+                <div class="segmented">
+                  <div class="seg-option">Emergency</div>
+                  <div class="seg-option active">Standard</div>
+                  <div class="seg-option">Urgent</div>
+                </div>
+              </div>
+
+              <!-- Department -->
+              <div class="form-field">
+                <div class="field-label">Department / Project</div>
+                <div class="field-input" style="justify-content:space-between;">
+                  <span>Warehouse — Project A4</span>
+                  <svg class="chevron" viewBox="0 0 14 14" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="2" stroke-linecap="round"><polyline points="3,5 7,9 11,5"/></svg>
+                </div>
+              </div>
+
+              <!-- Justification -->
+              <div class="form-field">
+                <div class="field-label">Justification</div>
+                <div class="field-input" style="height:44px;align-items:flex-start;padding-top:8px;color:rgba(255,255,255,0.55);font-size:11.5px;">Monthly restock — current stock below minimum threshold</div>
+              </div>
+
+              <!-- Attachments -->
+              <div class="field-label" style="margin-bottom:6px;">Attachments</div>
+              <div class="attach-row" style="margin-bottom:12px;">
+                <div class="attach-thumb" style="background:rgba(255,255,255,0.08);border-style:solid;font-size:9px;font-weight:700;color:rgba(255,255,255,0.50);">PDF</div>
+                <div class="attach-thumb">
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" stroke-linecap="round"><line x1="7" y1="2" x2="7" y2="12"/><line x1="2" y1="7" x2="12" y2="7"/></svg>
+                </div>
+                <div style="font-size:10px;color:rgba(255,255,255,0.25);">quote_supplier.pdf &nbsp;+1</div>
+              </div>
+
+              <!-- Approval routing -->
+              <div class="routing-card">
+                <div class="routing-icon">
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="1.5" stroke-linecap="round"><circle cx="7" cy="4" r="2"/><path d="M2 12c0-3 2-5 5-5s5 2 5 5"/></svg>
+                </div>
+                <div class="routing-text">
+                  <div class="routing-label">Approval Routing</div>
+                  <div class="routing-value">Line Manager required &mdash; <span style="color:rgba(255,255,255,0.55);">amount &gt; 500 RON</span></div>
+                </div>
+              </div>
+
+              <!-- Submit -->
+              <div class="cta-btn">Submit Request</div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════
+         PHONE 2 — GRN Receive Goods
+    ══════════════════════════════ -->
+    <div class="phone-wrapper">
+      <span class="screen-label">Screen 2 &nbsp;— &nbsp;Goods Receipt Note</span>
+      <div class="phone-frame">
+        <div class="phone-screen">
+          <div class="screen-2">
+
+            <!-- Status bar -->
+            <div class="s1-status-bar">
+              <span>9:41</span>
+              <span style="display:flex;gap:6px;align-items:center;">
+                <svg width="14" height="10" viewBox="0 0 14 10" fill="none"><rect x="0" y="6" width="2.5" height="4" rx="0.8" fill="rgba(255,255,255,0.85)"/><rect x="3.5" y="4" width="2.5" height="6" rx="0.8" fill="rgba(255,255,255,0.85)"/><rect x="7" y="2" width="2.5" height="8" rx="0.8" fill="rgba(255,255,255,0.85)"/><rect x="10.5" y="0" width="2.5" height="10" rx="0.8" fill="rgba(255,255,255,0.85)"/></svg>
+                <svg width="22" height="11" viewBox="0 0 22 11" fill="none"><rect x="0.5" y="0.5" width="18" height="10" rx="2.5" stroke="rgba(255,255,255,0.5)" stroke-width="1"/><rect x="19.5" y="3.5" width="2" height="4" rx="1" fill="rgba(255,255,255,0.5)"/><rect x="2" y="2" width="13" height="7" rx="1.5" fill="rgba(255,255,255,0.85)"/></svg>
+              </span>
+            </div>
+
+            <!-- Header -->
+            <div class="s2-header">
+              <div class="s2-title-row">
+                <div class="back-btn">
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2" stroke-linecap="round"><polyline points="7,2 3,6 7,10"/></svg>
+                </div>
+                <div class="s2-title">Receive Goods</div>
+              </div>
+              <div class="po-ref">PO-2026-0042</div>
+            </div>
+
+            <div class="s2-content">
+
+              <!-- Supplier card -->
+              <div class="supplier-card">
+                <div class="supplier-avatar">TM</div>
+                <div>
+                  <div class="supplier-name">TehnoMetal SRL</div>
+                  <div class="supplier-date">Expected &nbsp;·&nbsp; 22 Jun 2026</div>
+                </div>
+                <div style="margin-left:auto;">
+                  <div style="font-size:9px;font-weight:600;color:rgba(255,255,255,0.30);letter-spacing:0.05em;text-transform:uppercase;text-align:right;">Status</div>
+                  <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.75);text-align:right;">In Transit</div>
+                </div>
+              </div>
+
+              <!-- Items table -->
+              <div class="items-table">
+                <div class="table-header">
+                  <div class="th">Item</div>
+                  <div class="th">Ordered</div>
+                  <div class="th">Received</div>
+                  <div class="th">Condition</div>
+                </div>
+
+                <div class="table-row">
+                  <div class="td item-name">Safety gloves L</div>
+                  <div class="td">24</div>
+                  <div class="td"><span class="qty-input">24</span></div>
+                  <div class="td"><span class="condition-badge cond-good">Good</span></div>
+                </div>
+
+                <div class="table-row">
+                  <div class="td item-name">Hard hats</div>
+                  <div class="td">10</div>
+                  <div class="td"><span class="qty-input">10</span></div>
+                  <div class="td"><span class="condition-badge cond-good">Good</span></div>
+                </div>
+
+                <div class="table-row">
+                  <div class="td item-name">Ear defenders</div>
+                  <div class="td">20</div>
+                  <div class="td"><span class="qty-input">18</span></div>
+                  <div class="td"><span class="condition-badge cond-good">Good</span></div>
+                </div>
+
+                <div class="table-row">
+                  <div class="td item-name">Steel toe boots</div>
+                  <div class="td">6 pr</div>
+                  <div class="td"><span class="qty-input">4</span></div>
+                  <div class="td"><span class="condition-badge cond-damaged">Damaged</span></div>
+                </div>
+
+                <div class="table-row">
+                  <div class="td item-name">Hi-vis vests</div>
+                  <div class="td">30</div>
+                  <div class="td"><span class="qty-input">–</span></div>
+                  <div class="td"><span class="condition-badge cond-damaged" style="opacity:0.5;">Pending</span></div>
+                </div>
+              </div>
+
+              <!-- Photo evidence -->
+              <div class="photo-row">
+                <div class="photo-icon">
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="1" y="3" width="12" height="9" rx="2"/><circle cx="7" cy="7.5" r="2"/><path d="M4.5 3l.7-2h3.6l.7 2"/>
+                  </svg>
+                </div>
+                <div>
+                  <div style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.75);">Add Photo Evidence</div>
+                  <div style="font-size:9.5px;color:rgba(255,255,255,0.30);margin-top:1px;">2 photos attached</div>
+                </div>
+                <div style="margin-left:auto;font-size:10px;font-weight:700;color:rgba(255,255,255,0.40);">VIEW</div>
+              </div>
+
+              <!-- Partial receipt info -->
+              <div class="partial-info">
+                <strong>3 of 5 items</strong> fully received &mdash; remaining 2 items will stay on order and tracked as a partial delivery.
+              </div>
+
+              <!-- 3-Way Match -->
+              <div class="match-row">
+                <div class="match-label">3-Way Match Status</div>
+                <div class="match-badge">
+                  <div class="badge-dot"></div>
+                  Partial Match
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Bottom CTA -->
+            <div class="s2-bottom">
+              <div class="cta-btn">Confirm Receipt</div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════
+         PHONE 3 — Supplier Scorecard
+    ══════════════════════════════ -->
+    <div class="phone-wrapper">
+      <span class="screen-label">Screen 3 &nbsp;— &nbsp;Supplier Scorecard</span>
+      <div class="phone-frame">
+        <div class="phone-screen">
+          <div class="screen-3">
+
+            <!-- Status bar -->
+            <div class="s1-status-bar">
+              <span>9:41</span>
+              <span style="display:flex;gap:6px;align-items:center;">
+                <svg width="14" height="10" viewBox="0 0 14 10" fill="none"><rect x="0" y="6" width="2.5" height="4" rx="0.8" fill="rgba(255,255,255,0.85)"/><rect x="3.5" y="4" width="2.5" height="6" rx="0.8" fill="rgba(255,255,255,0.85)"/><rect x="7" y="2" width="2.5" height="8" rx="0.8" fill="rgba(255,255,255,0.85)"/><rect x="10.5" y="0" width="2.5" height="10" rx="0.8" fill="rgba(255,255,255,0.85)"/></svg>
+                <svg width="22" height="11" viewBox="0 0 22 11" fill="none"><rect x="0.5" y="0.5" width="18" height="10" rx="2.5" stroke="rgba(255,255,255,0.5)" stroke-width="1"/><rect x="19.5" y="3.5" width="2" height="4" rx="1" fill="rgba(255,255,255,0.5)"/><rect x="2" y="2" width="13" height="7" rx="1.5" fill="rgba(255,255,255,0.85)"/></svg>
+              </span>
+            </div>
+
+            <!-- Header -->
+            <div class="s3-header">
+              <div>
+                <div style="font-size:11px;color:rgba(255,255,255,0.30);font-weight:500;margin-bottom:2px;">Procurement</div>
+                <div class="s3-title">Supplier Scorecard</div>
+              </div>
+              <div class="score-grade-badge">A+</div>
+            </div>
+
+            <div class="s3-content">
+
+              <!-- Supplier identity -->
+              <div class="s3-identity">
+                <div class="s3-avatar">TM</div>
+                <div style="flex:1;">
+                  <div class="s3-name">TehnoMetal SRL</div>
+                  <div class="s3-since">Partner since Jan 2023 &nbsp;·&nbsp; 47 orders</div>
+                  <div class="star-row">
+                    <!-- 4.7 stars — 4 full + 1 partial -->
+                    <svg class="star" viewBox="0 0 10 10"><polygon points="5,1 6.2,4 9.5,4 6.9,6.1 7.9,9.5 5,7.5 2.1,9.5 3.1,6.1 0.5,4 3.8,4" fill="rgba(255,255,255,0.85)"/></svg>
+                    <svg class="star" viewBox="0 0 10 10"><polygon points="5,1 6.2,4 9.5,4 6.9,6.1 7.9,9.5 5,7.5 2.1,9.5 3.1,6.1 0.5,4 3.8,4" fill="rgba(255,255,255,0.85)"/></svg>
+                    <svg class="star" viewBox="0 0 10 10"><polygon points="5,1 6.2,4 9.5,4 6.9,6.1 7.9,9.5 5,7.5 2.1,9.5 3.1,6.1 0.5,4 3.8,4" fill="rgba(255,255,255,0.85)"/></svg>
+                    <svg class="star" viewBox="0 0 10 10"><polygon points="5,1 6.2,4 9.5,4 6.9,6.1 7.9,9.5 5,7.5 2.1,9.5 3.1,6.1 0.5,4 3.8,4" fill="rgba(255,255,255,0.85)"/></svg>
+                    <svg class="star" viewBox="0 0 10 10">
+                      <defs><linearGradient id="sg"><stop offset="70%" stop-color="rgba(255,255,255,0.85)"/><stop offset="70%" stop-color="rgba(255,255,255,0.18)"/></linearGradient></defs>
+                      <polygon points="5,1 6.2,4 9.5,4 6.9,6.1 7.9,9.5 5,7.5 2.1,9.5 3.1,6.1 0.5,4 3.8,4" fill="url(#sg)"/>
+                    </svg>
+                    <span class="star-score">4.7 / 5</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- KPI Grid -->
+              <div class="kpi-grid">
+
+                <!-- On-time delivery -->
+                <div class="kpi-card">
+                  <div class="kpi-label">On-Time Delivery</div>
+                  <div class="kpi-circular">
+                    <div class="circle-wrap">
+                      <svg viewBox="0 0 38 38">
+                        <circle class="circle-track" cx="19" cy="19" r="15"/>
+                        <!-- circumference = 2*pi*15 ≈ 94.25; 94% = 88.6 dasharray -->
+                        <circle class="circle-fill" cx="19" cy="19" r="15"
+                          stroke-dasharray="88.6 94.25"
+                          stroke-dashoffset="0"/>
+                      </svg>
+                    </div>
+                    <div>
+                      <div class="kpi-value">94%</div>
+                      <div class="kpi-sub">last 6 months</div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Order accuracy -->
+                <div class="kpi-card">
+                  <div class="kpi-label">Order Accuracy</div>
+                  <div class="kpi-circular">
+                    <div class="circle-wrap">
+                      <svg viewBox="0 0 38 38">
+                        <circle class="circle-track" cx="19" cy="19" r="15"/>
+                        <circle class="circle-fill" cx="19" cy="19" r="15"
+                          stroke-dasharray="92.4 94.25"
+                          stroke-dashoffset="0"/>
+                      </svg>
+                    </div>
+                    <div>
+                      <div class="kpi-value">98%</div>
+                      <div class="kpi-sub">fill rate</div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Quality rejection -->
+                <div class="kpi-card">
+                  <div class="kpi-label">Quality Rejection</div>
+                  <div class="kpi-value" style="font-size:22px;">1.2<span style="font-size:13px;font-weight:500;color:rgba(255,255,255,0.45);">%</span></div>
+                  <div class="kpi-sub">defect rate</div>
+                </div>
+
+                <!-- Avg lead time -->
+                <div class="kpi-card">
+                  <div class="kpi-label">Avg Lead Time</div>
+                  <div class="kpi-value" style="font-size:22px;">4.2<span style="font-size:13px;font-weight:500;color:rgba(255,255,255,0.45);"> d</span></div>
+                  <div class="kpi-sub">calendar days</div>
+                </div>
+
+              </div>
+
+              <!-- Total spend -->
+              <div class="spend-row">
+                <div>
+                  <div class="spend-label">Total Spend YTD</div>
+                  <div class="spend-value">84,200 RON</div>
+                </div>
+                <div style="text-align:right;">
+                  <div style="font-size:9px;color:rgba(255,255,255,0.25);font-weight:600;letter-spacing:0.05em;text-transform:uppercase;margin-bottom:2px;">vs Prior Year</div>
+                  <div style="font-size:13px;font-weight:700;color:rgba(255,255,255,0.55);">+12.4%</div>
+                </div>
+              </div>
+
+              <!-- Mini bar chart -->
+              <div class="mini-chart">
+                <div class="chart-title">Delivery Performance — Last 6 Months</div>
+                <div class="bar-chart">
+                  <div class="bar-col">
+                    <div class="bar" style="height:28px;"></div>
+                    <div class="bar-month">Jan</div>
+                  </div>
+                  <div class="bar-col">
+                    <div class="bar" style="height:34px;"></div>
+                    <div class="bar-month">Feb</div>
+                  </div>
+                  <div class="bar-col">
+                    <div class="bar" style="height:26px;"></div>
+                    <div class="bar-month">Mar</div>
+                  </div>
+                  <div class="bar-col">
+                    <div class="bar" style="height:38px;"></div>
+                    <div class="bar-month">Apr</div>
+                  </div>
+                  <div class="bar-col">
+                    <div class="bar" style="height:32px;"></div>
+                    <div class="bar-month">May</div>
+                  </div>
+                  <div class="bar-col">
+                    <div class="bar highlight" style="height:42px;"></div>
+                    <div class="bar-month" style="color:rgba(255,255,255,0.55);">Jun</div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /mockups -->
+
+  <!-- ─── Footer ─── -->
+  <div class="page-footer">
+    <div class="footer-text">PRV Company Operating System &nbsp;&mdash;&nbsp; Phase 21 Procurement Completion &nbsp;&mdash;&nbsp; Stakeholder Preview</div>
+    <div class="footer-pills">
+      <span class="footer-pill">Purchase Request Flow</span>
+      <span class="footer-pill">Goods Receipt Note</span>
+      <span class="footer-pill">3-Way Match</span>
+      <span class="footer-pill">Supplier Scorecard</span>
+      <span class="footer-pill">Liquid Glass UI</span>
+    </div>
+  </div>
+
+</div><!-- /page -->
+
+</body>
+</html>
