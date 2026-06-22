@@ -761,3 +761,80 @@ export function useRenovationSiteReports(projectId: string) {
     }),
   })
 }
+
+// ── Purchase Requests ─────────────────────────────────────────────────────────
+
+export interface PurchaseRequest {
+  id: string
+  ref: string
+  itemDescription: string
+  category: string
+  quantity: number
+  unit: string
+  estimatedCost: number
+  currency: string
+  urgency: "standard" | "urgent" | "emergency"
+  department: string | null
+  justification: string | null
+  status: "draft" | "submitted" | "approved" | "rejected" | "converted"
+  requestedByName: string
+  approvedByName: string | null
+  createdAt: string
+  purchaseOrderId: string | null
+}
+
+export interface PRMeta {
+  totalCount: number
+  submittedCount: number
+  approvedCount: number
+  pendingValue: number
+}
+
+export interface SupplierScorecard {
+  supplierId: string
+  supplierName: string
+  onTimeRate: number
+  totalSpend: number
+  totalOrders: number
+  avgLeadTimeDays: number | null
+  qualityRejectionRate: number
+  grade: string
+  currency: string
+}
+
+interface PurchaseRequestsPage {
+  requests: PurchaseRequest[]
+  count: number
+  nextCursor: string | null
+  meta: PRMeta
+}
+
+export function usePurchaseRequests(status?: string | null) {
+  return useInfiniteQuery({
+    queryKey: ["purchase-requests", status ?? "all"],
+    queryFn: async ({ pageParam }) =>
+      fetch(
+        buildUrl("/api/procurement/requests", { status, cursor: pageParam as string | null })
+      ).then((r) => r.json() as Promise<PurchaseRequestsPage>),
+    initialPageParam: null as string | null,
+    getNextPageParam: (page) => page.nextCursor ?? null,
+    select: (data) => ({
+      pages: data.pages,
+      pageParams: data.pageParams,
+      requests: data.pages.flatMap((p) => p.requests),
+      meta: data.pages[0]?.meta ?? null,
+      count: data.pages[0]?.count ?? 0,
+    }),
+  })
+}
+
+export function useSupplierScorecard(supplierId: string | null) {
+  return useQuery({
+    queryKey: ["supplier-scorecard", supplierId],
+    queryFn: () =>
+      fetch(`/api/suppliers/${supplierId}/scorecard`).then(
+        (r) => r.json() as Promise<SupplierScorecard>
+      ),
+    enabled: !!supplierId,
+  })
+}

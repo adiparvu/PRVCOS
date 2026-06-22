@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react"
 import Link from "next/link"
 import { useSheetStack } from "@prv/ui"
+import { useSupplierScorecard } from "@/lib/api-hooks"
 import type {
   SupplierDetail,
   SupplierActivityType,
@@ -404,6 +405,7 @@ export function SupplierDetailClient({ id }: SupplierDetailClientProps) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const { openSheet } = useSheetStack()
+  const scorecard = useSupplierScorecard(id)
 
   const fetchSupplier = useCallback(async () => {
     try {
@@ -1149,6 +1151,164 @@ export function SupplierDetailClient({ id }: SupplierDetailClientProps) {
                 </div>
               </div>
             ))}
+          </div>
+        </>
+      )}
+
+      {/* Scorecard */}
+      {scorecard.data && (
+        <>
+          <SectionLabel>Scorecard</SectionLabel>
+          <div
+            style={{
+              background: "var(--prv-g1)",
+              border: "1px solid var(--prv-border-subtle)",
+              borderRadius: 18,
+              padding: 16,
+              marginBottom: 14,
+              position: "relative",
+              overflow: "hidden",
+            }}
+          >
+            <div
+              style={{
+                position: "absolute",
+                inset: "0 0 auto",
+                height: 1,
+                background: "linear-gradient(90deg,transparent,var(--prv-border),transparent)",
+              }}
+            />
+            {/* Grade badge */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginBottom: 14,
+              }}
+            >
+              <div>
+                <p style={{ fontSize: 12, color: "rgba(255,255,255,0.45)", margin: "0 0 2px" }}>
+                  Supplier Grade
+                </p>
+                <p style={{ fontSize: 13, color: "rgba(255,255,255,0.65)", margin: 0 }}>
+                  {scorecard.data.totalOrders} orders · {scorecard.data.currency}
+                </p>
+              </div>
+              <div
+                style={{
+                  width: 52,
+                  height: 52,
+                  borderRadius: 14,
+                  background: "rgba(255,255,255,0.10)",
+                  border: "1px solid rgba(255,255,255,0.18)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 20,
+                  fontWeight: 800,
+                  color: "rgba(255,255,255,0.92)",
+                }}
+              >
+                {scorecard.data.grade}
+              </div>
+            </div>
+            {/* KPI grid */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+              {[
+                {
+                  label: "On-Time Delivery",
+                  value: `${scorecard.data.onTimeRate.toFixed(1)}%`,
+                  sub: "of orders on time",
+                },
+                {
+                  label: "Order Accuracy",
+                  value: `${(100 - scorecard.data.qualityRejectionRate).toFixed(1)}%`,
+                  sub: "acceptance rate",
+                },
+                {
+                  label: "Avg Lead Time",
+                  value:
+                    scorecard.data.avgLeadTimeDays != null
+                      ? `${scorecard.data.avgLeadTimeDays}d`
+                      : "—",
+                  sub: "avg. delivery days",
+                },
+                {
+                  label: "Total Spend",
+                  value:
+                    scorecard.data.totalSpend >= 1000
+                      ? `${Math.round(scorecard.data.totalSpend / 1000)}k`
+                      : String(Math.round(scorecard.data.totalSpend)),
+                  sub: scorecard.data.currency,
+                },
+              ].map((kpi) => (
+                <div
+                  key={kpi.label}
+                  style={{
+                    background: "rgba(255,255,255,0.05)",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    borderRadius: 12,
+                    padding: "10px 12px",
+                  }}
+                >
+                  <p
+                    style={{
+                      fontSize: 16,
+                      fontWeight: 700,
+                      color: "rgba(255,255,255,0.90)",
+                      margin: "0 0 2px",
+                    }}
+                  >
+                    {kpi.value}
+                  </p>
+                  <p
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 600,
+                      color: "rgba(255,255,255,0.35)",
+                      margin: 0,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.07em",
+                    }}
+                  >
+                    {kpi.label}
+                  </p>
+                  <p style={{ fontSize: 11, color: "rgba(255,255,255,0.25)", margin: "2px 0 0" }}>
+                    {kpi.sub}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+
+      {scorecard.isLoading && (
+        <>
+          <SectionLabel>Scorecard</SectionLabel>
+          <div
+            style={{
+              background: "var(--prv-g1)",
+              border: "1px solid var(--prv-border-subtle)",
+              borderRadius: 18,
+              padding: 16,
+              marginBottom: 14,
+            }}
+          >
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+              {[1, 2, 3, 4].map((i) => (
+                <div
+                  key={i}
+                  style={{
+                    background: "rgba(255,255,255,0.05)",
+                    borderRadius: 12,
+                    padding: "10px 12px",
+                    height: 72,
+                  }}
+                />
+              ))}
+            </div>
           </div>
         </>
       )}
