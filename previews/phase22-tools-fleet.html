@@ -1,0 +1,1255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phase 22 — Tools & Fleet Completion · PRV Company OS</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #000000;
+    --glass1-bg: rgba(255,255,255,0.06);
+    --glass2-bg: rgba(255,255,255,0.10);
+    --glass3-bg: rgba(255,255,255,0.16);
+    --glass1-blur: blur(32px) saturate(180%);
+    --glass2-blur: blur(48px) saturate(180%);
+    --glass3-blur: blur(64px) saturate(200%);
+    --shadow-float: 0 24px 64px rgba(0,0,0,0.7);
+    --border: rgba(255,255,255,0.12);
+    --border-top: inset 0 1px 0 rgba(255,255,255,0.10);
+    --text-100: rgba(255,255,255,0.95);
+    --text-65: rgba(255,255,255,0.65);
+    --text-35: rgba(255,255,255,0.35);
+    --text-15: rgba(255,255,255,0.15);
+    --r-card: 20px;
+    --r-panel: 24px;
+    --r-modal: 32px;
+    --font: -apple-system, "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+  }
+
+  html, body {
+    background: var(--bg);
+    color: var(--text-100);
+    font-family: var(--font);
+    min-height: 100vh;
+    padding: 48px 24px 64px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Page header */
+  .page-header {
+    text-align: center;
+    margin-bottom: 52px;
+  }
+  .page-header .eyebrow {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-35);
+    margin-bottom: 12px;
+  }
+  .page-header h1 {
+    font-size: clamp(28px, 4vw, 44px);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    color: var(--text-100);
+    margin-bottom: 10px;
+    line-height: 1.1;
+  }
+  .page-header .subtitle {
+    font-size: 15px;
+    color: var(--text-65);
+    letter-spacing: 0.01em;
+  }
+  .page-header .phase-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--glass2-bg);
+    backdrop-filter: var(--glass2-blur);
+    -webkit-backdrop-filter: var(--glass2-blur);
+    border: 1px solid var(--border);
+    box-shadow: var(--border-top);
+    border-radius: 100px;
+    padding: 6px 16px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-65);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+  .phase-badge .dot {
+    width: 6px; height: 6px;
+    background: var(--text-65);
+    border-radius: 50%;
+  }
+
+  /* 2x2 grid */
+  .phone-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 40px;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  /* Phone frame */
+  .phone-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+  .phone-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-35);
+  }
+  .phone-frame {
+    width: 100%;
+    max-width: 360px;
+    background: #0a0a0a;
+    border-radius: 44px;
+    border: 1.5px solid rgba(255,255,255,0.14);
+    box-shadow:
+      0 0 0 1px rgba(0,0,0,0.8),
+      0 32px 80px rgba(0,0,0,0.85),
+      0 8px 24px rgba(0,0,0,0.6),
+      inset 0 1px 0 rgba(255,255,255,0.08);
+    padding: 14px;
+    position: relative;
+  }
+  .phone-frame::before {
+    content: '';
+    position: absolute;
+    top: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100px;
+    height: 30px;
+    background: #000;
+    border-radius: 0 0 20px 20px;
+    z-index: 10;
+  }
+  .phone-frame::after {
+    content: '';
+    position: absolute;
+    top: 19px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 10px;
+    height: 10px;
+    background: #111;
+    border-radius: 50%;
+    border: 1.5px solid #1a1a1a;
+    z-index: 11;
+  }
+  .phone-screen {
+    background: #050505;
+    border-radius: 32px;
+    overflow: hidden;
+    position: relative;
+    padding-top: 44px;
+    min-height: 680px;
+  }
+
+  /* Status bar */
+  .status-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 20px;
+    position: absolute;
+    top: 12px;
+    left: 0; right: 0;
+    z-index: 5;
+  }
+  .status-time { font-size: 13px; font-weight: 600; color: var(--text-100); }
+  .status-icons { display: flex; gap: 5px; align-items: center; }
+  .status-icons svg { fill: var(--text-100); }
+
+  /* Screen content area */
+  .screen-content {
+    padding: 8px 16px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    overflow-y: auto;
+    max-height: 636px;
+  }
+
+  /* Shared components */
+  .glass-card {
+    background: var(--glass1-bg);
+    backdrop-filter: var(--glass1-blur);
+    -webkit-backdrop-filter: var(--glass1-blur);
+    border-radius: var(--r-card);
+    border: 1px solid var(--border);
+    box-shadow: var(--border-top), var(--shadow-float);
+    padding: 14px;
+  }
+  .glass-sheet {
+    background: var(--glass2-bg);
+    backdrop-filter: var(--glass2-blur);
+    -webkit-backdrop-filter: var(--glass2-blur);
+    border-radius: var(--r-panel);
+    border: 1px solid var(--border);
+    box-shadow: var(--border-top), var(--shadow-float);
+    padding: 16px;
+  }
+  .glass-modal {
+    background: var(--glass3-bg);
+    backdrop-filter: var(--glass3-blur);
+    -webkit-backdrop-filter: var(--glass3-blur);
+    border-radius: var(--r-modal);
+    border: 1px solid rgba(255,255,255,0.18);
+    box-shadow: var(--border-top), 0 32px 80px rgba(0,0,0,0.85);
+    padding: 18px;
+  }
+
+  .cta-btn {
+    display: block;
+    width: 100%;
+    background: #fff;
+    color: #000;
+    border: none;
+    border-radius: 100px;
+    padding: 14px 20px;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    text-align: center;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(255,255,255,0.15);
+  }
+
+  .label-xs {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-35);
+    margin-bottom: 4px;
+  }
+  .text-sm { font-size: 12px; color: var(--text-65); }
+  .text-md { font-size: 14px; color: var(--text-100); }
+  .text-lg { font-size: 17px; font-weight: 700; color: var(--text-100); }
+
+  .input-field {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 10px 12px;
+    font-size: 13px;
+    color: var(--text-65);
+    font-family: var(--font);
+    width: 100%;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 9px;
+    border-radius: 100px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .badge-available { background: rgba(255,255,255,0.15); color: var(--text-100); }
+  .badge-scheduled { background: rgba(255,255,255,0.10); color: var(--text-65); border: 1px solid var(--border); }
+  .badge-overdue { background: rgba(255,255,255,0.05); color: var(--text-35); border: 1px solid rgba(255,255,255,0.08); }
+  .badge-done { background: rgba(255,255,255,0.08); color: var(--text-35); }
+  .badge-business { background: rgba(255,255,255,0.12); color: var(--text-100); }
+  .badge-delivery { background: rgba(255,255,255,0.08); color: var(--text-65); }
+
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 8px 0;
+  }
+
+  /* ============================
+     SCREEN 1 — Tool Checkout
+  ============================ */
+  .drag-handle {
+    width: 36px; height: 4px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 2px;
+    margin: 0 auto 14px;
+  }
+  .sheet-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+  .sheet-header h2 { font-size: 17px; font-weight: 700; }
+  .close-btn {
+    width: 28px; height: 28px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    color: var(--text-65);
+    cursor: pointer;
+    border: 1px solid var(--border);
+  }
+
+  .tool-info-card {
+    background: rgba(255,255,255,0.04);
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    padding: 12px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  .tool-icon {
+    width: 44px; height: 44px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+  .tool-details { flex: 1; min-width: 0; }
+  .tool-name { font-size: 14px; font-weight: 700; color: var(--text-100); margin-bottom: 2px; }
+  .tool-meta { font-size: 11px; color: var(--text-35); }
+
+  .segmented {
+    display: flex;
+    gap: 6px;
+    margin-top: 4px;
+  }
+  .seg-opt {
+    flex: 1;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 4px;
+    text-align: center;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-35);
+    cursor: pointer;
+  }
+  .seg-opt.active {
+    background: rgba(255,255,255,0.12);
+    border-color: rgba(255,255,255,0.2);
+    color: var(--text-100);
+  }
+
+  .approval-notice {
+    background: rgba(255,255,255,0.04);
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.08);
+    padding: 10px 12px;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  .approval-icon {
+    font-size: 16px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .approval-text { font-size: 11px; color: var(--text-65); line-height: 1.5; }
+  .approval-text strong { color: var(--text-100); font-weight: 600; }
+
+  .form-group { margin-bottom: 8px; }
+  .form-row { display: flex; gap: 8px; }
+  .form-row .form-group { flex: 1; }
+
+  /* ============================
+     SCREEN 2 — Vehicle Trip Log
+  ============================ */
+  .screen-nav {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .back-btn {
+    width: 32px; height: 32px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    color: var(--text-65);
+  }
+  .screen-nav h2 { font-size: 17px; font-weight: 700; flex: 1; }
+
+  .vehicle-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 4px;
+  }
+  .vehicle-icon {
+    width: 44px; height: 44px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+  .vehicle-info { flex: 1; }
+  .vehicle-plate {
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    color: var(--text-100);
+    margin-bottom: 2px;
+  }
+  .vehicle-model { font-size: 11px; color: var(--text-35); }
+
+  .fuel-bar-wrap { margin-top: 8px; }
+  .fuel-bar-label {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 4px;
+  }
+  .fuel-bar-track {
+    height: 4px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .fuel-bar-fill {
+    height: 100%;
+    background: rgba(255,255,255,0.6);
+    border-radius: 2px;
+    width: 68%;
+  }
+
+  .input-with-icon {
+    position: relative;
+  }
+  .input-with-icon .icon {
+    position: absolute;
+    left: 10px; top: 50%;
+    transform: translateY(-50%);
+    font-size: 13px;
+    color: var(--text-35);
+  }
+  .input-with-icon .input-field {
+    padding-left: 28px;
+  }
+
+  .recent-trips { margin-top: 4px; }
+  .trip-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 9px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .trip-row:last-child { border-bottom: none; }
+  .trip-dest { font-size: 13px; font-weight: 600; color: var(--text-100); margin-bottom: 2px; }
+  .trip-meta { font-size: 10px; color: var(--text-35); }
+  .trip-km { font-size: 12px; font-weight: 700; color: var(--text-65); }
+
+  /* ============================
+     SCREEN 3 — Maintenance
+  ============================ */
+  .next-service-card {
+    position: relative;
+    overflow: hidden;
+  }
+  .next-service-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 80% 0%, rgba(255,255,255,0.06), transparent 60%);
+    pointer-events: none;
+  }
+  .service-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+  }
+  .service-name { font-size: 16px; font-weight: 700; color: var(--text-100); }
+  .service-due {
+    font-size: 12px;
+    color: var(--text-65);
+    margin-top: 3px;
+  }
+  .service-due span { color: var(--text-100); font-weight: 600; }
+  .due-sub { font-size: 11px; color: var(--text-35); margin-top: 2px; }
+
+  .compliance-row {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .compliance-chip {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 5px 10px;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-65);
+    flex: 1;
+    min-width: 0;
+    justify-content: center;
+  }
+  .compliance-chip.warn {
+    color: var(--text-35);
+    border-color: rgba(255,255,255,0.06);
+  }
+  .chip-icon { font-size: 11px; }
+  .pulse-dot {
+    width: 5px; height: 5px;
+    background: rgba(255,255,255,0.4);
+    border-radius: 50%;
+    flex-shrink: 0;
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.3; transform: scale(0.8); }
+  }
+
+  .maint-list { display: flex; flex-direction: column; gap: 0; }
+  .maint-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 9px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .maint-row:last-child { border-bottom: none; }
+  .maint-type { font-size: 12px; font-weight: 600; color: var(--text-100); }
+  .maint-sub { font-size: 10px; color: var(--text-35); margin-top: 2px; }
+  .maint-right { text-align: right; }
+
+  .history-row {
+    display: flex;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    gap: 8px;
+  }
+  .history-row:last-child { border-bottom: none; }
+  .history-date { font-size: 10px; color: var(--text-35); width: 54px; flex-shrink: 0; }
+  .history-type { font-size: 12px; color: var(--text-65); flex: 1; }
+  .history-cost { font-size: 11px; font-weight: 700; color: var(--text-65); }
+
+  /* ============================
+     SCREEN 4 — Asset Analytics
+  ============================ */
+  .period-picker {
+    display: flex;
+    gap: 2px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 10px;
+    padding: 2px;
+    border: 1px solid var(--border);
+  }
+  .period-opt {
+    flex: 1;
+    text-align: center;
+    padding: 5px 6px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-35);
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .period-opt.active {
+    background: rgba(255,255,255,0.10);
+    color: var(--text-100);
+  }
+
+  .analytics-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .kpi-card {
+    background: rgba(255,255,255,0.05);
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .kpi-label { font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-35); }
+  .kpi-value { font-size: 22px; font-weight: 800; letter-spacing: -0.03em; color: var(--text-100); line-height: 1; }
+  .kpi-sub { font-size: 10px; color: var(--text-35); }
+
+  /* Ring progress */
+  .ring-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .ring-svg { flex-shrink: 0; }
+  .ring-bg { stroke: rgba(255,255,255,0.08); }
+  .ring-fill { stroke: rgba(255,255,255,0.7); stroke-linecap: round; transition: stroke-dashoffset 0.5s ease; }
+
+  .tool-usage-list { display: flex; flex-direction: column; gap: 0; }
+  .tool-usage-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .tool-usage-row:last-child { border-bottom: none; }
+  .tool-rank { font-size: 10px; font-weight: 700; color: var(--text-15); width: 14px; flex-shrink: 0; }
+  .tool-usage-name { font-size: 12px; color: var(--text-100); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tool-usage-count { font-size: 10px; color: var(--text-35); width: 32px; text-align: right; }
+  .tool-usage-pct { font-size: 11px; font-weight: 700; color: var(--text-65); width: 30px; text-align: right; }
+
+  .usage-mini-bar {
+    flex: 1;
+    height: 3px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 2px;
+    overflow: hidden;
+    max-width: 60px;
+  }
+  .usage-mini-fill {
+    height: 100%;
+    background: rgba(255,255,255,0.4);
+    border-radius: 2px;
+  }
+
+  /* Stacked bar */
+  .stacked-bar-wrap { margin-top: 6px; }
+  .stacked-bar {
+    display: flex;
+    height: 8px;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 8px;
+  }
+  .bar-fuel { background: rgba(255,255,255,0.65); flex: 0 0 52%; }
+  .bar-maint { background: rgba(255,255,255,0.28); flex: 0 0 30%; }
+  .bar-insur { background: rgba(255,255,255,0.10); flex: 0 0 18%; }
+  .stacked-legend {
+    display: flex;
+    gap: 12px;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 10px;
+    color: var(--text-35);
+  }
+  .legend-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .alert-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px;
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    animation: subtlePulse 3s ease-in-out infinite;
+  }
+  @keyframes subtlePulse {
+    0%, 100% { border-color: rgba(255,255,255,0.08); }
+    50% { border-color: rgba(255,255,255,0.16); }
+  }
+  .alert-icon { font-size: 16px; flex-shrink: 0; }
+  .alert-text { font-size: 12px; color: var(--text-65); }
+  .alert-text strong { color: var(--text-100); font-weight: 700; }
+
+  /* section labels */
+  .section-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-15);
+    padding: 4px 0 2px;
+  }
+
+  /* Responsive */
+  @media (max-width: 660px) {
+    .phone-grid {
+      grid-template-columns: 1fr;
+    }
+    .phone-frame { max-width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Page Header -->
+<div class="page-header">
+  <div class="phase-badge"><span class="dot"></span>PRV Company Operating System</div>
+  <h1>Phase 22 — Tools &amp; Fleet Completion</h1>
+  <p class="subtitle">Tool Checkout &nbsp;·&nbsp; Trip Management &nbsp;·&nbsp; Maintenance &nbsp;·&nbsp; Asset Analytics</p>
+</div>
+
+<!-- 2x2 Phone Grid -->
+<div class="phone-grid">
+
+  <!-- ===== SCREEN 1: Tool Checkout ===== -->
+  <div class="phone-wrap">
+    <div class="phone-label">Screen 1 — Tool Checkout</div>
+    <div class="phone-frame">
+      <div class="phone-screen">
+        <!-- Status Bar -->
+        <div class="status-bar">
+          <span class="status-time">9:41</span>
+          <div class="status-icons">
+            <svg width="16" height="12" viewBox="0 0 16 12"><rect x="0" y="3" width="3" height="9" rx="1" opacity="0.3"/><rect x="4" y="2" width="3" height="10" rx="1" opacity="0.5"/><rect x="8" y="0" width="3" height="12" rx="1" opacity="0.7"/><rect x="12" y="0" width="3" height="12" rx="1"/></svg>
+            <svg width="16" height="12" viewBox="0 0 16 12"><path d="M8 1.5a8 8 0 0 1 5.6 2.3L15 2.4A9.5 9.5 0 0 0 8 0 9.5 9.5 0 0 0 1 2.4l1.4 1.4A8 8 0 0 1 8 1.5z" opacity="0.4"/><path d="M8 4.5a5 5 0 0 1 3.5 1.4L12.9 4.5A6.5 6.5 0 0 0 8 3 6.5 6.5 0 0 0 3.1 4.5l1.4 1.4A5 5 0 0 1 8 4.5z" opacity="0.6"/><path d="M8 7.5a2 2 0 0 1 1.4.6L10.8 6.7A3.5 3.5 0 0 0 8 6 3.5 3.5 0 0 0 5.2 6.7l1.4 1.4A2 2 0 0 1 8 7.5z" opacity="0.8"/><circle cx="8" cy="10.5" r="1.5"/></svg>
+            <svg width="25" height="12" viewBox="0 0 25 12"><rect x="0" y="1" width="22" height="10" rx="3" stroke="rgba(255,255,255,0.4)" stroke-width="1" fill="none"/><rect x="22.5" y="3.5" width="2" height="5" rx="1" fill="rgba(255,255,255,0.4)"/><rect x="1.5" y="2.5" width="16" height="7" rx="2" fill="white"/></svg>
+          </div>
+        </div>
+
+        <div class="screen-content">
+          <!-- Drag handle + header -->
+          <div style="margin-top:8px;">
+            <div class="drag-handle"></div>
+            <div class="sheet-header">
+              <h2 style="font-size:17px; font-weight:700;">Check Out Tool</h2>
+              <div class="close-btn">✕</div>
+            </div>
+          </div>
+
+          <!-- Tool info card -->
+          <div class="tool-info-card">
+            <div class="tool-icon">🔧</div>
+            <div class="tool-details">
+              <div class="tool-name">DeWalt DCD996 Drill</div>
+              <div class="tool-meta">SN-2024-0042 &nbsp;·&nbsp; Power Tools</div>
+            </div>
+            <div class="badge badge-available">Available</div>
+          </div>
+
+          <!-- Purpose -->
+          <div class="form-group">
+            <div class="label-xs">Purpose</div>
+            <div class="input-field" style="color: var(--text-35);">Describe intended use…</div>
+          </div>
+
+          <!-- Project link -->
+          <div class="form-group">
+            <div class="label-xs">Project Link</div>
+            <div class="input-field" style="display:flex; justify-content:space-between; align-items:center;">
+              <span style="color:var(--text-35);">Select project…</span>
+              <span style="color:var(--text-35); font-size:10px;">▾</span>
+            </div>
+          </div>
+
+          <!-- Return date -->
+          <div class="form-group">
+            <div class="label-xs">Expected Return Date</div>
+            <div class="input-field" style="display:flex; justify-content:space-between; align-items:center;">
+              <span style="color:var(--text-65);">25 Jun 2026</span>
+              <span style="font-size:13px; color:var(--text-35);">📅</span>
+            </div>
+          </div>
+
+          <!-- Condition segmented -->
+          <div class="form-group">
+            <div class="label-xs">Condition on Checkout</div>
+            <div class="segmented">
+              <div class="seg-opt active">Excellent</div>
+              <div class="seg-opt">Good</div>
+              <div class="seg-opt">Fair</div>
+            </div>
+          </div>
+
+          <!-- Approval notice -->
+          <div class="approval-notice">
+            <div class="approval-icon">⚠️</div>
+            <div class="approval-text">
+              <strong>Manager approval required.</strong><br>
+              This tool is valued over 2,000 RON and requires sign-off before checkout is confirmed.
+            </div>
+          </div>
+
+          <!-- CTA -->
+          <div class="cta-btn" style="margin-top:4px;">Request Checkout</div>
+
+          <!-- Footer note -->
+          <div style="text-align:center; font-size:11px; color:var(--text-35); padding: 0 8px;">
+            Expected return: 3 days &nbsp;·&nbsp; Overdue alerts enabled
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SCREEN 2: Vehicle Trip Log ===== -->
+  <div class="phone-wrap">
+    <div class="phone-label">Screen 2 — Trip Log</div>
+    <div class="phone-frame">
+      <div class="phone-screen">
+        <div class="status-bar">
+          <span class="status-time">9:41</span>
+          <div class="status-icons">
+            <svg width="16" height="12" viewBox="0 0 16 12"><rect x="0" y="3" width="3" height="9" rx="1" opacity="0.3"/><rect x="4" y="2" width="3" height="10" rx="1" opacity="0.5"/><rect x="8" y="0" width="3" height="12" rx="1" opacity="0.7"/><rect x="12" y="0" width="3" height="12" rx="1"/></svg>
+            <svg width="16" height="12" viewBox="0 0 16 12"><path d="M8 1.5a8 8 0 0 1 5.6 2.3L15 2.4A9.5 9.5 0 0 0 8 0 9.5 9.5 0 0 0 1 2.4l1.4 1.4A8 8 0 0 1 8 1.5z" opacity="0.4"/><path d="M8 4.5a5 5 0 0 1 3.5 1.4L12.9 4.5A6.5 6.5 0 0 0 8 3 6.5 6.5 0 0 0 3.1 4.5l1.4 1.4A5 5 0 0 1 8 4.5z" opacity="0.6"/><path d="M8 7.5a2 2 0 0 1 1.4.6L10.8 6.7A3.5 3.5 0 0 0 8 6 3.5 3.5 0 0 0 5.2 6.7l1.4 1.4A2 2 0 0 1 8 7.5z" opacity="0.8"/><circle cx="8" cy="10.5" r="1.5"/></svg>
+            <svg width="25" height="12" viewBox="0 0 25 12"><rect x="0" y="1" width="22" height="10" rx="3" stroke="rgba(255,255,255,0.4)" stroke-width="1" fill="none"/><rect x="22.5" y="3.5" width="2" height="5" rx="1" fill="rgba(255,255,255,0.4)"/><rect x="1.5" y="2.5" width="16" height="7" rx="2" fill="white"/></svg>
+          </div>
+        </div>
+
+        <div class="screen-content">
+          <!-- Nav -->
+          <div class="screen-nav" style="margin-top:8px;">
+            <div class="back-btn">‹</div>
+            <h2>New Trip</h2>
+          </div>
+
+          <!-- Vehicle card -->
+          <div class="glass-card" style="padding:12px;">
+            <div class="vehicle-card">
+              <div class="vehicle-icon">🚐</div>
+              <div class="vehicle-info">
+                <div class="vehicle-plate">B-123-PRV</div>
+                <div class="vehicle-model">Toyota HiAce &nbsp;·&nbsp; Van</div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-size:18px; font-weight:800; color:var(--text-100);">68%</div>
+                <div style="font-size:9px; color:var(--text-35); text-transform:uppercase; letter-spacing:0.06em;">Fuel</div>
+              </div>
+            </div>
+            <div class="fuel-bar-wrap">
+              <div class="fuel-bar-label">
+                <span style="font-size:10px; color:var(--text-35);">Fuel level</span>
+                <span style="font-size:10px; color:var(--text-65);">~340 km range</span>
+              </div>
+              <div class="fuel-bar-track">
+                <div class="fuel-bar-fill"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Trip details -->
+          <div class="glass-card" style="padding:12px; display:flex; flex-direction:column; gap:8px;">
+            <div class="form-group" style="margin:0;">
+              <div class="label-xs">Start Location</div>
+              <div class="input-with-icon">
+                <span class="icon">📍</span>
+                <div class="input-field">Depozit Central, Sector 2</div>
+              </div>
+            </div>
+            <div style="height:1px; background:var(--border);"></div>
+            <div class="form-group" style="margin:0;">
+              <div class="label-xs">End Location</div>
+              <div class="input-with-icon">
+                <span class="icon">🏁</span>
+                <div class="input-field" style="color:var(--text-35);">Enter destination…</div>
+              </div>
+            </div>
+            <div class="form-group" style="margin:0;">
+              <div class="label-xs">Purpose</div>
+              <div class="input-field" style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="color:var(--text-100);">Client Visit</span>
+                <span style="color:var(--text-35); font-size:10px;">▾</span>
+              </div>
+            </div>
+            <div class="form-row" style="gap:8px;">
+              <div class="form-group" style="margin:0; flex:1;">
+                <div class="label-xs">Project (opt.)</div>
+                <div class="input-field" style="color:var(--text-35); font-size:12px;">Link…</div>
+              </div>
+              <div class="form-group" style="margin:0; flex:1;">
+                <div class="label-xs">Driver</div>
+                <div class="input-field" style="font-size:12px; color:var(--text-65);">I. Popescu</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Odometer -->
+          <div class="glass-card" style="padding:12px;">
+            <div class="label-xs" style="margin-bottom:8px;">Odometer</div>
+            <div class="form-row">
+              <div style="flex:1;">
+                <div style="font-size:10px; color:var(--text-35); margin-bottom:4px;">Start km</div>
+                <div class="input-field" style="font-size:13px; font-weight:700; color:var(--text-100);">142,856</div>
+              </div>
+              <div style="flex:1;">
+                <div style="font-size:10px; color:var(--text-35); margin-bottom:4px;">Est. end km</div>
+                <div class="input-field" style="font-size:13px; color:var(--text-35);">Auto</div>
+              </div>
+              <div style="flex:1;">
+                <div style="font-size:10px; color:var(--text-35); margin-bottom:4px;">Fuel (L)</div>
+                <div class="input-field" style="font-size:13px; color:var(--text-35);">Opt.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- CTA -->
+          <div class="cta-btn">Start Trip</div>
+
+          <!-- Recent trips -->
+          <div class="section-label">Recent Trips</div>
+          <div class="glass-card" style="padding:10px 12px;">
+            <div class="recent-trips">
+              <div class="trip-row">
+                <div>
+                  <div class="trip-dest">Baneasa Airport</div>
+                  <div class="trip-meta">20 Jun &nbsp;·&nbsp; <span class="badge badge-business" style="padding:1px 6px; font-size:9px;">Business</span></div>
+                </div>
+                <div class="trip-km">38 km</div>
+              </div>
+              <div class="trip-row">
+                <div>
+                  <div class="trip-dest">Ploiești Client Site</div>
+                  <div class="trip-meta">18 Jun &nbsp;·&nbsp; <span class="badge badge-delivery" style="padding:1px 6px; font-size:9px;">Delivery</span></div>
+                </div>
+                <div class="trip-km">56 km</div>
+              </div>
+              <div class="trip-row">
+                <div>
+                  <div class="trip-dest">Piața Victoriei</div>
+                  <div class="trip-meta">16 Jun &nbsp;·&nbsp; <span class="badge badge-business" style="padding:1px 6px; font-size:9px;">Client Visit</span></div>
+                </div>
+                <div class="trip-km">22 km</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SCREEN 3: Maintenance Schedule ===== -->
+  <div class="phone-wrap">
+    <div class="phone-label">Screen 3 — Maintenance</div>
+    <div class="phone-frame">
+      <div class="phone-screen">
+        <div class="status-bar">
+          <span class="status-time">9:41</span>
+          <div class="status-icons">
+            <svg width="16" height="12" viewBox="0 0 16 12"><rect x="0" y="3" width="3" height="9" rx="1" opacity="0.3"/><rect x="4" y="2" width="3" height="10" rx="1" opacity="0.5"/><rect x="8" y="0" width="3" height="12" rx="1" opacity="0.7"/><rect x="12" y="0" width="3" height="12" rx="1"/></svg>
+            <svg width="16" height="12" viewBox="0 0 16 12"><path d="M8 1.5a8 8 0 0 1 5.6 2.3L15 2.4A9.5 9.5 0 0 0 8 0 9.5 9.5 0 0 0 1 2.4l1.4 1.4A8 8 0 0 1 8 1.5z" opacity="0.4"/><path d="M8 4.5a5 5 0 0 1 3.5 1.4L12.9 4.5A6.5 6.5 0 0 0 8 3 6.5 6.5 0 0 0 3.1 4.5l1.4 1.4A5 5 0 0 1 8 4.5z" opacity="0.6"/><path d="M8 7.5a2 2 0 0 1 1.4.6L10.8 6.7A3.5 3.5 0 0 0 8 6 3.5 3.5 0 0 0 5.2 6.7l1.4 1.4A2 2 0 0 1 8 7.5z" opacity="0.8"/><circle cx="8" cy="10.5" r="1.5"/></svg>
+            <svg width="25" height="12" viewBox="0 0 25 12"><rect x="0" y="1" width="22" height="10" rx="3" stroke="rgba(255,255,255,0.4)" stroke-width="1" fill="none"/><rect x="22.5" y="3.5" width="2" height="5" rx="1" fill="rgba(255,255,255,0.4)"/><rect x="1.5" y="2.5" width="16" height="7" rx="2" fill="white"/></svg>
+          </div>
+        </div>
+
+        <div class="screen-content">
+          <div style="margin-top:8px;">
+            <div style="font-size:11px; color:var(--text-35); font-weight:600; margin-bottom:2px;">Toyota HiAce B-123-PRV</div>
+            <h2 style="font-size:20px; font-weight:800; letter-spacing:-0.02em;">Maintenance</h2>
+          </div>
+
+          <!-- Next service (prominent) -->
+          <div class="glass-modal next-service-card">
+            <div class="service-header-row">
+              <div>
+                <div class="service-name">Oil Change</div>
+                <div class="service-due">Due in <span>12 days</span> &nbsp;/&nbsp; <span>850 km</span></div>
+                <div class="due-sub">4 Jul 2026 &nbsp;·&nbsp; ~143,706 km</div>
+              </div>
+              <div class="badge badge-scheduled">Scheduled</div>
+            </div>
+            <div style="height:3px; background:rgba(255,255,255,0.06); border-radius:2px; overflow:hidden; margin-top:4px;">
+              <div style="height:100%; width:72%; background:rgba(255,255,255,0.4); border-radius:2px;"></div>
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-top:4px;">
+              <span style="font-size:10px; color:var(--text-15);">Last service: 3 May 2026</span>
+              <span style="font-size:10px; color:var(--text-35);">72% interval used</span>
+            </div>
+          </div>
+
+          <!-- Compliance row -->
+          <div class="section-label">Compliance Status</div>
+          <div class="compliance-row">
+            <div class="compliance-chip">
+              <span class="chip-icon">✓</span>
+              <div>
+                <div style="font-size:9px; font-weight:700;">Insurance</div>
+                <div style="font-size:9px; color:var(--text-15);">180d</div>
+              </div>
+            </div>
+            <div class="compliance-chip">
+              <span class="chip-icon">✓</span>
+              <div>
+                <div style="font-size:9px; font-weight:700;">ITP</div>
+                <div style="font-size:9px; color:var(--text-15);">45d</div>
+              </div>
+            </div>
+            <div class="compliance-chip warn">
+              <div class="pulse-dot"></div>
+              <div>
+                <div style="font-size:9px; font-weight:700; color:var(--text-35);">Road Tax</div>
+                <div style="font-size:9px; color:var(--text-15);">8d !</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Schedule list -->
+          <div class="section-label">Upcoming</div>
+          <div class="glass-card" style="padding:10px 12px;">
+            <div class="maint-list">
+              <div class="maint-row">
+                <div>
+                  <div class="maint-type">Oil Change</div>
+                  <div class="maint-sub">4 Jul 2026 &nbsp;·&nbsp; 143,706 km</div>
+                </div>
+                <div class="badge badge-scheduled">Scheduled</div>
+              </div>
+              <div class="maint-row">
+                <div>
+                  <div class="maint-type">Tire Rotation</div>
+                  <div class="maint-sub">18 Jul 2026 &nbsp;·&nbsp; 145,000 km</div>
+                </div>
+                <div class="badge badge-scheduled">Scheduled</div>
+              </div>
+              <div class="maint-row">
+                <div>
+                  <div class="maint-type">Air Filter Replace</div>
+                  <div class="maint-sub">Overdue since 1 Jun 2026</div>
+                </div>
+                <div class="badge badge-overdue">Overdue</div>
+              </div>
+              <div class="maint-row">
+                <div>
+                  <div class="maint-type">Brake Inspection</div>
+                  <div class="maint-sub">15 Aug 2026 &nbsp;·&nbsp; 150,000 km</div>
+                </div>
+                <div class="badge badge-scheduled">Scheduled</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- CTA -->
+          <div class="cta-btn">Log Service</div>
+
+          <!-- Service history -->
+          <div class="section-label">Service History</div>
+          <div class="glass-card" style="padding:10px 12px;">
+            <div class="history-row">
+              <div class="history-date">3 May 26</div>
+              <div class="history-type">Oil Change</div>
+              <div style="font-size:10px; color:var(--text-35);">141,200 km</div>
+              <div class="history-cost">420 RON</div>
+            </div>
+            <div class="history-row">
+              <div class="history-date">10 Mar 26</div>
+              <div class="history-type">ITP + Service</div>
+              <div style="font-size:10px; color:var(--text-35);">138,100 km</div>
+              <div class="history-cost">1,240 RON</div>
+            </div>
+            <div class="history-row">
+              <div class="history-date">12 Jan 26</div>
+              <div class="history-type">Tire Rotation</div>
+              <div style="font-size:10px; color:var(--text-35);">135,480 km</div>
+              <div class="history-cost">180 RON</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SCREEN 4: Asset Analytics ===== -->
+  <div class="phone-wrap">
+    <div class="phone-label">Screen 4 — Asset Analytics</div>
+    <div class="phone-frame">
+      <div class="phone-screen">
+        <div class="status-bar">
+          <span class="status-time">9:41</span>
+          <div class="status-icons">
+            <svg width="16" height="12" viewBox="0 0 16 12"><rect x="0" y="3" width="3" height="9" rx="1" opacity="0.3"/><rect x="4" y="2" width="3" height="10" rx="1" opacity="0.5"/><rect x="8" y="0" width="3" height="12" rx="1" opacity="0.7"/><rect x="12" y="0" width="3" height="12" rx="1"/></svg>
+            <svg width="16" height="12" viewBox="0 0 16 12"><path d="M8 1.5a8 8 0 0 1 5.6 2.3L15 2.4A9.5 9.5 0 0 0 8 0 9.5 9.5 0 0 0 1 2.4l1.4 1.4A8 8 0 0 1 8 1.5z" opacity="0.4"/><path d="M8 4.5a5 5 0 0 1 3.5 1.4L12.9 4.5A6.5 6.5 0 0 0 8 3 6.5 6.5 0 0 0 3.1 4.5l1.4 1.4A5 5 0 0 1 8 4.5z" opacity="0.6"/><path d="M8 7.5a2 2 0 0 1 1.4.6L10.8 6.7A3.5 3.5 0 0 0 8 6 3.5 3.5 0 0 0 5.2 6.7l1.4 1.4A2 2 0 0 1 8 7.5z" opacity="0.8"/><circle cx="8" cy="10.5" r="1.5"/></svg>
+            <svg width="25" height="12" viewBox="0 0 25 12"><rect x="0" y="1" width="22" height="10" rx="3" stroke="rgba(255,255,255,0.4)" stroke-width="1" fill="none"/><rect x="22.5" y="3.5" width="2" height="5" rx="1" fill="rgba(255,255,255,0.4)"/><rect x="1.5" y="2.5" width="16" height="7" rx="2" fill="white"/></svg>
+          </div>
+        </div>
+
+        <div class="screen-content">
+          <!-- Header + period picker -->
+          <div class="analytics-header" style="margin-top:8px;">
+            <h2 style="font-size:17px; font-weight:800; letter-spacing:-0.02em;">Asset Analytics</h2>
+            <div class="period-picker">
+              <div class="period-opt">7d</div>
+              <div class="period-opt active">30d</div>
+              <div class="period-opt">90d</div>
+            </div>
+          </div>
+
+          <!-- KPI 2x2 grid -->
+          <div class="kpi-grid">
+            <!-- Fleet utilization ring -->
+            <div class="kpi-card">
+              <div class="kpi-label">Fleet Util.</div>
+              <div class="ring-wrap">
+                <svg class="ring-svg" width="44" height="44" viewBox="0 0 44 44">
+                  <circle class="ring-bg" cx="22" cy="22" r="18" stroke-width="3.5" fill="none"/>
+                  <!-- 73% of circumference: 2*pi*18 = 113.1, 73% = 82.6 -->
+                  <circle class="ring-fill" cx="22" cy="22" r="18" stroke-width="3.5" fill="none"
+                    stroke-dasharray="113.1" stroke-dashoffset="30.5"
+                    transform="rotate(-90 22 22)"/>
+                </svg>
+                <div>
+                  <div class="kpi-value">73%</div>
+                </div>
+              </div>
+              <div class="kpi-sub">+4% vs last mo</div>
+            </div>
+
+            <!-- Tool checkout ring -->
+            <div class="kpi-card">
+              <div class="kpi-label">Tool Rate</div>
+              <div class="ring-wrap">
+                <svg class="ring-svg" width="44" height="44" viewBox="0 0 44 44">
+                  <circle class="ring-bg" cx="22" cy="22" r="18" stroke-width="3.5" fill="none"/>
+                  <!-- 61% of 113.1 = 69, offset = 113.1 - 69 = 44.1 -->
+                  <circle class="ring-fill" cx="22" cy="22" r="18" stroke-width="3.5" fill="none"
+                    stroke-dasharray="113.1" stroke-dashoffset="44.1"
+                    transform="rotate(-90 22 22)" stroke="rgba(255,255,255,0.5)"/>
+                </svg>
+                <div>
+                  <div class="kpi-value" style="color:rgba(255,255,255,0.8);">61%</div>
+                </div>
+              </div>
+              <div class="kpi-sub">Checkout rate</div>
+            </div>
+
+            <!-- Avg trip -->
+            <div class="kpi-card">
+              <div class="kpi-label">Avg Trip</div>
+              <div style="display:flex; align-items:baseline; gap:3px; margin: 4px 0 2px;">
+                <div class="kpi-value" style="font-size:26px;">42</div>
+                <div style="font-size:13px; color:var(--text-65); font-weight:600; margin-bottom:2px;">km</div>
+              </div>
+              <div class="kpi-sub">↑ 3 km vs prior</div>
+            </div>
+
+            <!-- Maintenance cost -->
+            <div class="kpi-card">
+              <div class="kpi-label">Maint. Cost</div>
+              <div style="margin: 4px 0 2px;">
+                <div style="font-size:18px; font-weight:800; letter-spacing:-0.03em; color:var(--text-100); line-height:1;">3,840</div>
+                <div style="font-size:10px; color:var(--text-35); margin-top:2px;">RON / month</div>
+              </div>
+              <div class="kpi-sub">↓ 12% vs prior</div>
+            </div>
+          </div>
+
+          <!-- Top tools -->
+          <div class="section-label">Top 5 Tools by Usage</div>
+          <div class="glass-card" style="padding:10px 12px;">
+            <div class="tool-usage-list">
+              <div class="tool-usage-row">
+                <div class="tool-rank">1</div>
+                <div class="tool-usage-name">DeWalt DCD996 Drill</div>
+                <div class="usage-mini-bar"><div class="usage-mini-fill" style="width:92%;"></div></div>
+                <div class="tool-usage-count" style="color:var(--text-35);">24×</div>
+                <div class="tool-usage-pct">92%</div>
+              </div>
+              <div class="tool-usage-row">
+                <div class="tool-rank">2</div>
+                <div class="tool-usage-name">Bosch GSB 18V</div>
+                <div class="usage-mini-bar"><div class="usage-mini-fill" style="width:78%;"></div></div>
+                <div class="tool-usage-count" style="color:var(--text-35);">19×</div>
+                <div class="tool-usage-pct">78%</div>
+              </div>
+              <div class="tool-usage-row">
+                <div class="tool-rank">3</div>
+                <div class="tool-usage-name">Makita Circular Saw</div>
+                <div class="usage-mini-bar"><div class="usage-mini-fill" style="width:65%;"></div></div>
+                <div class="tool-usage-count" style="color:var(--text-35);">16×</div>
+                <div class="tool-usage-pct">65%</div>
+              </div>
+              <div class="tool-usage-row">
+                <div class="tool-rank">4</div>
+                <div class="tool-usage-name">Laser Level Kit</div>
+                <div class="usage-mini-bar"><div class="usage-mini-fill" style="width:48%;"></div></div>
+                <div class="tool-usage-count" style="color:var(--text-35);">12×</div>
+                <div class="tool-usage-pct">48%</div>
+              </div>
+              <div class="tool-usage-row">
+                <div class="tool-rank">5</div>
+                <div class="tool-usage-name">Pressure Washer</div>
+                <div class="usage-mini-bar"><div class="usage-mini-fill" style="width:34%;"></div></div>
+                <div class="tool-usage-count" style="color:var(--text-35);">8×</div>
+                <div class="tool-usage-pct">34%</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Fleet cost breakdown -->
+          <div class="section-label">Fleet Cost Breakdown</div>
+          <div class="glass-card" style="padding:12px;">
+            <div class="stacked-bar-wrap">
+              <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                <span style="font-size:11px; color:var(--text-65); font-weight:600;">Monthly Fleet Costs</span>
+                <span style="font-size:11px; font-weight:800; color:var(--text-100);">7,420 RON</span>
+              </div>
+              <div class="stacked-bar">
+                <div class="bar-fuel"></div>
+                <div class="bar-maint"></div>
+                <div class="bar-insur"></div>
+              </div>
+              <div class="stacked-legend">
+                <div class="legend-item">
+                  <div class="legend-dot" style="background:rgba(255,255,255,0.65);"></div>
+                  <span>Fuel 52%</span>
+                </div>
+                <div class="legend-item">
+                  <div class="legend-dot" style="background:rgba(255,255,255,0.28);"></div>
+                  <span>Maintenance 30%</span>
+                </div>
+                <div class="legend-item">
+                  <div class="legend-dot" style="background:rgba(255,255,255,0.10);"></div>
+                  <span>Insurance 18%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Alert card -->
+          <div class="alert-card">
+            <div class="alert-icon">⏱</div>
+            <div class="alert-text">
+              <strong>2 tools overdue for return.</strong> DeWalt DCD996 (+2d), Laser Level Kit (+1d).
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Footer -->
+<div style="text-align:center; margin-top:56px; padding-bottom:8px;">
+  <div style="font-size:11px; color:var(--text-15); letter-spacing:0.08em; text-transform:uppercase; font-weight:600;">
+    PRV Company OS &nbsp;·&nbsp; Phase 22 &nbsp;·&nbsp; Tools &amp; Fleet
+  </div>
+</div>
+
+</body>
+</html>
