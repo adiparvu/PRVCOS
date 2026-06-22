@@ -52,3 +52,5 @@ export * from "./renovation"
 export * from "./communications"
 // Phase 15: Analytics Platform — events, KPI snapshots, alerts
 export * from "./analytics"
+// Phase 18: Safety Center — incidents, inspections, briefings, training records
+export * from "./safety"
