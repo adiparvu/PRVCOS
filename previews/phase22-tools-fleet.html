@@ -964,21 +964,29 @@
           </div>
 
           <!-- Next service (prominent) -->
-          <div class="glass-modal next-service-card">
+          <div class="section-label" style="display:flex;align-items:center;gap:6px;">
+            <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.7);animation:pulse 2s ease-in-out infinite;"></span>
+            NEXT SERVICE
+          </div>
+          <div class="glass-modal next-service-card" style="border:1px solid rgba(255,255,255,0.18);">
             <div class="service-header-row">
               <div>
-                <div class="service-name">Oil Change</div>
-                <div class="service-due">Due in <span>12 days</span> &nbsp;/&nbsp; <span>850 km</span></div>
+                <div class="service-name" style="font-size:18px;">Oil Change</div>
+                <div class="service-due" style="margin-top:4px; font-size:13px;">
+                  Due in <span style="font-size:15px;font-weight:800;">12 days</span>
+                  &nbsp;·&nbsp;
+                  <span style="font-weight:700;">850 km</span> remaining
+                </div>
                 <div class="due-sub">4 Jul 2026 &nbsp;·&nbsp; ~143,706 km</div>
               </div>
               <div class="badge badge-scheduled">Scheduled</div>
             </div>
-            <div style="height:3px; background:rgba(255,255,255,0.06); border-radius:2px; overflow:hidden; margin-top:4px;">
-              <div style="height:100%; width:72%; background:rgba(255,255,255,0.4); border-radius:2px;"></div>
+            <div style="height:4px; background:rgba(255,255,255,0.08); border-radius:2px; overflow:hidden; margin-top:10px;">
+              <div style="height:100%; width:72%; background:rgba(255,255,255,0.55); border-radius:2px;"></div>
             </div>
-            <div style="display:flex; justify-content:space-between; margin-top:4px;">
-              <span style="font-size:10px; color:var(--text-15);">Last service: 3 May 2026</span>
-              <span style="font-size:10px; color:var(--text-35);">72% interval used</span>
+            <div style="display:flex; justify-content:space-between; margin-top:5px;">
+              <span style="font-size:10px; color:var(--text-35);">Last: 3 May 2026</span>
+              <span style="font-size:10px; color:var(--text-65); font-weight:600;">72% interval used</span>
             </div>
           </div>
 
