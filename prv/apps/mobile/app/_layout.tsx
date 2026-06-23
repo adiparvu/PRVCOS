@@ -29,10 +29,17 @@ export default function RootLayout() {
     if (!isHydrated) return
 
     const inAuthGroup = segments[0] === "(auth)"
+    const inPublicGroup = segments[0] === "(public)"
+    const inTabsGroup = segments[0] === "(tabs)"
 
-    if (!session && !inAuthGroup) {
-      router.replace("/(auth)/login")
+    if (!session && !inAuthGroup && !inPublicGroup) {
+      // Unauthenticated users default to the public app
+      router.replace("/(public)/home")
     } else if (session && inAuthGroup) {
+      // After login, employees go to the Business OS
+      router.replace("/(tabs)/command")
+    } else if (session && inPublicGroup) {
+      // Authenticated employees who somehow land on public → Business OS
       router.replace("/(tabs)/command")
     }
   }, [session, isHydrated, segments])
