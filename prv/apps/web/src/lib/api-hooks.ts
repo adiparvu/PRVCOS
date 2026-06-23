@@ -838,3 +838,110 @@ export function useSupplierScorecard(supplierId: string | null) {
     enabled: !!supplierId,
   })
 }
+
+// ── Safety ────────────────────────────────────────────────────────────────────
+
+export function useSafetyDashboard() {
+  return useQuery({
+    queryKey: ["safety-dashboard"],
+    queryFn: () => fetch("/api/safety").then((r) => r.json()),
+    staleTime: 30_000,
+  })
+}
+
+interface IncidentsPage {
+  incidents: unknown[]
+  meta: unknown
+  nextCursor: string | null
+}
+
+export function useIncidents(status?: string | null, severity?: string | null) {
+  return useInfiniteQuery({
+    queryKey: ["safety-incidents", status ?? "all", severity ?? "all"],
+    queryFn: async ({ pageParam }) =>
+      fetch(
+        buildUrl("/api/safety/incidents", {
+          status,
+          severity,
+          cursor: pageParam as string | null,
+        })
+      ).then((r) => r.json() as Promise<IncidentsPage>),
+    initialPageParam: null as string | null,
+    getNextPageParam: (page) => page.nextCursor ?? null,
+    select: (data) => ({
+      pages: data.pages,
+      pageParams: data.pageParams,
+      incidents: data.pages.flatMap((p) => p.incidents),
+      meta: data.pages[0]?.meta ?? null,
+    }),
+  })
+}
+
+interface InspectionsPage {
+  inspections: unknown[]
+  meta: unknown
+  nextCursor: string | null
+}
+
+export function useInspections(status?: string | null) {
+  return useInfiniteQuery({
+    queryKey: ["safety-inspections", status ?? "all"],
+    queryFn: async ({ pageParam }) =>
+      fetch(
+        buildUrl("/api/safety/inspections", { status, cursor: pageParam as string | null })
+      ).then((r) => r.json() as Promise<InspectionsPage>),
+    initialPageParam: null as string | null,
+    getNextPageParam: (page) => page.nextCursor ?? null,
+    select: (data) => ({
+      pages: data.pages,
+      pageParams: data.pageParams,
+      inspections: data.pages.flatMap((p) => p.inspections),
+      meta: data.pages[0]?.meta ?? null,
+    }),
+  })
+}
+
+interface BriefingsPage {
+  briefings: unknown[]
+  meta: unknown
+  nextCursor: string | null
+}
+
+export function useBriefings(isActive?: boolean | null) {
+  return useInfiniteQuery({
+    queryKey: ["safety-briefings", isActive ?? "all"],
+    queryFn: async ({ pageParam }) =>
+      fetch(
+        buildUrl("/api/safety/briefings", {
+          isActive: isActive != null ? String(isActive) : null,
+          cursor: pageParam as string | null,
+        })
+      ).then((r) => r.json() as Promise<BriefingsPage>),
+    initialPageParam: null as string | null,
+    getNextPageParam: (page) => page.nextCursor ?? null,
+    select: (data) => ({
+      pages: data.pages,
+      pageParams: data.pageParams,
+      briefings: data.pages.flatMap((p) => p.briefings),
+      meta: data.pages[0]?.meta ?? null,
+    }),
+  })
+}
+
+export function useIncidentDetail(id: string | null) {
+  return useQuery({
+    queryKey: ["safety-incident-detail", id],
+    queryFn: () => fetch(`/api/safety/incidents/${id}`).then((r) => r.json()),
+    enabled: !!id,
+    staleTime: 30_000,
+  })
+}
+
+export function useInspectionDetail(id: string | null) {
+  return useQuery({
+    queryKey: ["safety-inspection-detail", id],
+    queryFn: () => fetch(`/api/safety/inspections/${id}`).then((r) => r.json()),
+    enabled: !!id,
+    staleTime: 30_000,
+  })
+}
