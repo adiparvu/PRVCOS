@@ -1,0 +1,1610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PRV Phase 23 — Public App</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0a0a0a;
+    font-family: -apple-system, "SF Pro Display", "SF Pro Text", sans-serif;
+    min-height: 100vh;
+    padding: 40px 20px 80px;
+    color: #fff;
+  }
+
+  h1.section-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.35);
+    text-align: center;
+    margin-bottom: 8px;
+  }
+  h2.section-title {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    color: #fff;
+    text-align: center;
+    margin-bottom: 40px;
+  }
+
+  .row {
+    display: flex;
+    gap: 32px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 64px;
+  }
+
+  /* ─── Phone frame ─────────────────────────────── */
+  .phone {
+    width: 390px;
+    min-height: 844px;
+    background: #000;
+    border-radius: 52px;
+    border: 1.5px solid rgba(255,255,255,0.12);
+    box-shadow:
+      0 0 0 8px #111,
+      0 0 0 9px rgba(255,255,255,0.06),
+      0 48px 120px rgba(0,0,0,0.9),
+      0 24px 48px rgba(0,0,0,0.6);
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* notch */
+  .phone::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 126px; height: 34px;
+    background: #000;
+    border-radius: 0 0 20px 20px;
+    z-index: 10;
+  }
+
+  .screen {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+    background: #000;
+  }
+
+  .status-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 24px 0;
+    font-size: 12px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.9);
+    position: relative;
+    z-index: 5;
+  }
+  .status-bar .time { font-size: 15px; font-weight: 700; padding-left: 4px; }
+  .status-icons { display: flex; gap: 6px; align-items: center; font-size: 11px; }
+
+  /* ─── Glass helpers ──────────────────────────── */
+  .glass {
+    background: rgba(255,255,255,0.06);
+    backdrop-filter: blur(32px) saturate(180%);
+    -webkit-backdrop-filter: blur(32px) saturate(180%);
+    border: 1px solid rgba(255,255,255,0.10);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.18);
+  }
+  .glass2 {
+    background: rgba(255,255,255,0.10);
+    backdrop-filter: blur(48px) saturate(180%);
+    -webkit-backdrop-filter: blur(48px) saturate(180%);
+    border: 1px solid rgba(255,255,255,0.14);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.22);
+  }
+
+  /* ─── Floating Tab Bar ───────────────────────── */
+  .tab-bar {
+    position: absolute;
+    bottom: 20px; left: 16px; right: 16px;
+    height: 64px;
+    border-radius: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    padding: 0 8px;
+    z-index: 20;
+    background: rgba(255,255,255,0.09);
+    backdrop-filter: blur(48px) saturate(200%);
+    -webkit-backdrop-filter: blur(48px) saturate(200%);
+    border: 1px solid rgba(255,255,255,0.16);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.24),
+                0 12px 40px rgba(0,0,0,0.7);
+  }
+  .tab-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 8px 14px;
+    border-radius: 20px;
+    cursor: pointer;
+    flex: 1;
+  }
+  .tab-item.active { background: rgba(255,255,255,0.12); }
+  .tab-icon { font-size: 18px; color: rgba(255,255,255,0.5); }
+  .tab-item.active .tab-icon { color: #fff; }
+  .tab-label { font-size: 9px; font-weight: 600; color: rgba(255,255,255,0.4); letter-spacing: 0.04em; }
+  .tab-item.active .tab-label { color: rgba(255,255,255,0.9); }
+
+  /* ─── Pill button ─────────────────────────────── */
+  .pill-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 20px;
+    border-radius: 100px;
+    background: #fff;
+    color: #000;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: -0.1px;
+    cursor: pointer;
+    border: none;
+    white-space: nowrap;
+  }
+  .pill-btn.ghost {
+    background: rgba(255,255,255,0.10);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.18);
+  }
+
+  /* ─── SCREEN 1: HOME ─────────────────────────── */
+  .home-bg {
+    position: absolute; inset: 0;
+    background: linear-gradient(180deg, #141414 0%, #000 55%);
+  }
+
+  .hero-image {
+    width: 100%; height: 340px;
+    background: linear-gradient(180deg,
+      rgba(40,40,40,1) 0%,
+      rgba(20,20,20,1) 60%,
+      rgba(0,0,0,1) 100%);
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-image::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(180deg, transparent 30%, rgba(0,0,0,0.95) 100%);
+  }
+  /* Simulated room photo */
+  .hero-room {
+    position: absolute; inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  .hero-room::before {
+    content: '';
+    position: absolute;
+    width: 100%; height: 100%;
+    background:
+      radial-gradient(ellipse 200% 80% at 50% 60%, rgba(255,255,255,0.03) 0%, transparent 70%),
+      linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 50%, #1a1a1a 100%);
+  }
+  /* floor line */
+  .hero-room::after {
+    content: '';
+    position: absolute;
+    bottom: 38%;
+    left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
+  }
+
+  .hero-content {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    padding: 24px 20px 20px;
+    z-index: 5;
+  }
+  .hero-tag {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.5);
+    margin-bottom: 8px;
+  }
+  .hero-title {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.8px;
+    line-height: 1.1;
+    color: #fff;
+    margin-bottom: 6px;
+  }
+  .hero-sub {
+    font-size: 13px;
+    color: rgba(255,255,255,0.5);
+    margin-bottom: 16px;
+    line-height: 1.4;
+  }
+  .hero-actions { display: flex; gap: 10px; }
+
+  .home-content {
+    position: relative;
+    z-index: 3;
+    padding: 16px 16px 100px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    overflow-y: auto;
+    max-height: calc(100% - 340px);
+  }
+
+  .section-hd {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .section-hd-title {
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+  }
+  .section-hd-link {
+    font-size: 12px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.4);
+  }
+
+  /* Services grid */
+  .services-scroll {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+  }
+  .service-chip {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 12px 14px;
+    border-radius: 16px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.10);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.14);
+    min-width: 72px;
+  }
+  .service-icon { font-size: 22px; }
+  .service-name { font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.7); text-align: center; }
+
+  /* Project cards */
+  .project-card {
+    border-radius: 20px;
+    overflow: hidden;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.10);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.14);
+    flex-shrink: 0;
+    width: 200px;
+  }
+  .project-img {
+    height: 120px;
+    background: linear-gradient(135deg, #1a1a1a, #222);
+    position: relative;
+    overflow: hidden;
+  }
+  .project-img::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(80,80,80,0.2), rgba(30,30,30,0.5));
+  }
+  .project-img-label {
+    position: absolute;
+    bottom: 8px; left: 8px;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.5);
+    background: rgba(0,0,0,0.5);
+    padding: 3px 7px;
+    border-radius: 100px;
+    backdrop-filter: blur(8px);
+  }
+  .project-info {
+    padding: 10px 12px 12px;
+  }
+  .project-title { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+  .project-meta { font-size: 10px; color: rgba(255,255,255,0.4); }
+
+  /* Stars */
+  .stars { color: rgba(255,255,255,0.8); font-size: 11px; letter-spacing: 1px; }
+
+  /* Review card */
+  .review-card {
+    border-radius: 16px;
+    padding: 14px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.10);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.14);
+    flex-shrink: 0;
+    width: 240px;
+  }
+  .review-top { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .reviewer-avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: rgba(255,255,255,0.12);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700; color: rgba(255,255,255,0.7);
+    flex-shrink: 0;
+  }
+  .reviewer-name { font-size: 12px; font-weight: 700; }
+  .reviewer-date { font-size: 10px; color: rgba(255,255,255,0.35); }
+  .review-text { font-size: 11px; color: rgba(255,255,255,0.55); line-height: 1.5; }
+
+  /* Stats row */
+  .stats-row {
+    display: flex;
+    gap: 10px;
+  }
+  .stat-card {
+    flex: 1;
+    padding: 14px 12px;
+    border-radius: 16px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.10);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.14);
+    text-align: center;
+  }
+  .stat-value { font-size: 22px; font-weight: 800; letter-spacing: -1px; }
+  .stat-label { font-size: 9px; font-weight: 600; color: rgba(255,255,255,0.4); letter-spacing: 0.06em; text-transform: uppercase; margin-top: 2px; }
+
+  /* ─── SCREEN 2: SHOP ─────────────────────────── */
+  .shop-header {
+    padding: 52px 16px 12px;
+    background: rgba(0,0,0,0.8);
+    backdrop-filter: blur(20px);
+    position: relative;
+    z-index: 5;
+  }
+  .shop-title { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 12px; }
+
+  .search-bar-pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 100px;
+    padding: 10px 14px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.12);
+  }
+  .search-bar-pill span { font-size: 13px; color: rgba(255,255,255,0.35); }
+
+  /* Category chips */
+  .cat-scroll {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 12px 16px;
+    scrollbar-width: none;
+  }
+  .cat-chip {
+    flex-shrink: 0;
+    padding: 7px 16px;
+    border-radius: 100px;
+    font-size: 12px;
+    font-weight: 600;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.12);
+    color: rgba(255,255,255,0.65);
+    white-space: nowrap;
+  }
+  .cat-chip.active {
+    background: #fff;
+    color: #000;
+    border-color: transparent;
+  }
+
+  /* Product grid */
+  .products-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    padding: 0 16px 100px;
+  }
+  .product-card {
+    border-radius: 20px;
+    overflow: hidden;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.10);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.14);
+    position: relative;
+  }
+  .product-img {
+    height: 130px;
+    background: linear-gradient(135deg, #1a1a1a, #222);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .product-img-icon { font-size: 36px; opacity: 0.3; }
+  .product-heart {
+    position: absolute; top: 8px; right: 8px;
+    width: 28px; height: 28px; border-radius: 50%;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(8px);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px;
+  }
+  .product-badge {
+    position: absolute; top: 8px; left: 8px;
+    font-size: 9px; font-weight: 700;
+    background: #fff; color: #000;
+    padding: 2px 7px; border-radius: 100px;
+    letter-spacing: 0.04em;
+  }
+  .product-info { padding: 10px 12px 12px; }
+  .product-name { font-size: 12px; font-weight: 700; margin-bottom: 4px; line-height: 1.3; }
+  .product-meta { display: flex; align-items: center; justify-content: space-between; }
+  .product-price { font-size: 15px; font-weight: 800; letter-spacing: -0.5px; }
+  .product-stock { font-size: 9px; color: rgba(255,255,255,0.4); }
+  .add-btn {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; color: #000; font-weight: 700; cursor: pointer;
+  }
+
+  /* ─── SCREEN 3: SEARCH ───────────────────────── */
+  .search-overlay {
+    position: absolute; inset: 0;
+    background: rgba(0,0,0,0.85);
+    backdrop-filter: blur(48px) saturate(180%);
+    z-index: 30;
+    padding: 52px 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .search-bar-active {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255,255,255,0.10);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 100px;
+    padding: 12px 16px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.22),
+                0 0 0 1px rgba(255,255,255,0.08);
+  }
+  .search-cursor {
+    width: 2px; height: 16px;
+    background: #fff;
+    border-radius: 1px;
+    animation: blink 1s step-end infinite;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+  .search-input-text { font-size: 15px; color: rgba(255,255,255,0.9); flex: 1; }
+  .search-cancel { font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.5); flex-shrink: 0; }
+
+  .search-section-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.35);
+    margin-bottom: 8px;
+  }
+
+  .search-result-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border-radius: 14px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  .search-result-thumb {
+    width: 40px; height: 40px; border-radius: 10px;
+    background: rgba(255,255,255,0.08);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; flex-shrink: 0;
+  }
+  .search-result-name { font-size: 14px; font-weight: 600; }
+  .search-result-sub { font-size: 11px; color: rgba(255,255,255,0.4); margin-top: 1px; }
+  .search-result-price { font-size: 14px; font-weight: 700; margin-left: auto; }
+
+  .suggestion-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+  .suggestion-chip {
+    padding: 7px 14px;
+    border-radius: 100px;
+    font-size: 12px;
+    font-weight: 600;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.12);
+    color: rgba(255,255,255,0.6);
+  }
+
+  /* ─── SCREEN 4: ACCOUNT ──────────────────────── */
+  .account-header {
+    padding: 52px 20px 20px;
+    text-align: center;
+  }
+  .account-avatar {
+    width: 80px; height: 80px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.10);
+    border: 2px solid rgba(255,255,255,0.2);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.3);
+    margin: 0 auto 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px; font-weight: 700; color: rgba(255,255,255,0.8);
+  }
+  .account-name { font-size: 20px; font-weight: 800; letter-spacing: -0.4px; margin-bottom: 4px; }
+  .account-email { font-size: 13px; color: rgba(255,255,255,0.4); }
+
+  .account-content {
+    padding: 0 16px 100px;
+    display: flex; flex-direction: column; gap: 12px;
+    overflow-y: auto;
+    max-height: calc(100% - 200px);
+  }
+
+  .menu-section {
+    border-radius: 20px;
+    overflow: hidden;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.10);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.14);
+  }
+  .menu-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    cursor: pointer;
+  }
+  .menu-row:last-child { border-bottom: none; }
+  .menu-row-icon {
+    width: 34px; height: 34px; border-radius: 10px;
+    background: rgba(255,255,255,0.08);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; flex-shrink: 0;
+  }
+  .menu-row-label { font-size: 14px; font-weight: 600; flex: 1; }
+  .menu-row-value { font-size: 12px; color: rgba(255,255,255,0.35); }
+  .menu-row-chevron { font-size: 11px; color: rgba(255,255,255,0.25); margin-left: 4px; }
+  .menu-badge {
+    background: #fff; color: #000;
+    font-size: 10px; font-weight: 800;
+    padding: 1px 7px; border-radius: 100px;
+    margin-right: 4px;
+  }
+
+  /* ─── SCREEN 5: CLIENT PORTAL ────────────────── */
+  .portal-header {
+    padding: 52px 20px 16px;
+  }
+  .portal-title { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 4px; }
+  .portal-sub { font-size: 13px; color: rgba(255,255,255,0.4); }
+
+  .portal-content {
+    padding: 0 16px 100px;
+    display: flex; flex-direction: column; gap: 14px;
+    overflow-y: auto;
+    max-height: calc(100% - 130px);
+  }
+
+  .project-portal-card {
+    border-radius: 20px;
+    overflow: hidden;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.10);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.14);
+  }
+  .project-portal-header {
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .project-portal-name { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+  .project-portal-meta { font-size: 11px; color: rgba(255,255,255,0.4); }
+  .progress-bar-wrap {
+    margin-top: 10px;
+    height: 4px; background: rgba(255,255,255,0.08); border-radius: 2px;
+    overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%; border-radius: 2px;
+    background: #fff;
+  }
+  .progress-label {
+    display: flex; justify-content: space-between;
+    font-size: 10px; color: rgba(255,255,255,0.4); margin-top: 4px;
+  }
+
+  .project-portal-tabs {
+    display: flex;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .portal-tab {
+    flex-shrink: 0;
+    padding: 10px 16px;
+    font-size: 12px; font-weight: 600;
+    color: rgba(255,255,255,0.4);
+    border-bottom: 2px solid transparent;
+  }
+  .portal-tab.active {
+    color: #fff;
+    border-bottom-color: #fff;
+  }
+
+  .portal-section { padding: 14px 16px; }
+
+  .invoice-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .invoice-row:last-child { border-bottom: none; }
+  .invoice-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: rgba(255,255,255,0.07);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; flex-shrink: 0;
+  }
+  .invoice-name { font-size: 13px; font-weight: 600; }
+  .invoice-date { font-size: 10px; color: rgba(255,255,255,0.35); margin-top: 1px; }
+  .invoice-amount { font-size: 14px; font-weight: 700; margin-left: auto; }
+  .status-pill {
+    font-size: 9px; font-weight: 700;
+    padding: 3px 8px; border-radius: 100px;
+    letter-spacing: 0.06em; text-transform: uppercase;
+  }
+  .status-paid { background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.7); }
+  .status-due { background: rgba(255,255,255,0.25); color: #fff; }
+
+  .timeline-item {
+    display: flex; gap: 12px;
+    padding: 8px 0;
+    position: relative;
+  }
+  .timeline-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #fff; flex-shrink: 0;
+    margin-top: 4px;
+    box-shadow: 0 0 0 3px rgba(255,255,255,0.12);
+  }
+  .timeline-dot.done { background: rgba(255,255,255,0.4); }
+  .timeline-text { font-size: 12px; font-weight: 600; }
+  .timeline-date { font-size: 10px; color: rgba(255,255,255,0.35); margin-top: 1px; }
+
+  /* ─── SCREEN 6: CART + CHECKOUT ─────────────── */
+  .checkout-header {
+    padding: 52px 20px 16px;
+    display: flex; align-items: center; gap: 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .back-btn {
+    width: 34px; height: 34px; border-radius: 50%;
+    background: rgba(255,255,255,0.08);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; flex-shrink: 0;
+  }
+  .checkout-title { font-size: 18px; font-weight: 700; }
+
+  .cart-content {
+    padding: 16px; overflow-y: auto;
+    max-height: calc(100% - 200px);
+    display: flex; flex-direction: column; gap: 10px;
+  }
+
+  .cart-item {
+    display: flex; gap: 12px;
+    padding: 12px;
+    border-radius: 16px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.10);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.14);
+    align-items: center;
+  }
+  .cart-thumb {
+    width: 52px; height: 52px; border-radius: 12px;
+    background: rgba(255,255,255,0.08);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; flex-shrink: 0;
+  }
+  .cart-name { font-size: 13px; font-weight: 700; margin-bottom: 3px; }
+  .cart-variant { font-size: 11px; color: rgba(255,255,255,0.4); }
+  .cart-price { font-size: 15px; font-weight: 800; margin-left: auto; flex-shrink: 0; }
+  .qty-ctrl {
+    display: flex; align-items: center; gap: 10px;
+    margin-top: 6px;
+  }
+  .qty-btn {
+    width: 24px; height: 24px; border-radius: 50%;
+    background: rgba(255,255,255,0.10);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 700; cursor: pointer;
+  }
+  .qty-val { font-size: 13px; font-weight: 700; }
+
+  .cart-summary {
+    position: absolute; bottom: 84px; left: 16px; right: 16px;
+    border-radius: 20px;
+    padding: 16px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.14);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.2),
+                0 20px 60px rgba(0,0,0,0.6);
+    backdrop-filter: blur(32px);
+  }
+  .summary-row {
+    display: flex; justify-content: space-between;
+    font-size: 13px; color: rgba(255,255,255,0.55);
+    padding: 4px 0;
+  }
+  .summary-row.total {
+    font-size: 17px; font-weight: 800; color: #fff;
+    border-top: 1px solid rgba(255,255,255,0.10);
+    margin-top: 8px; padding-top: 10px;
+  }
+  .checkout-btn {
+    width: 100%; margin-top: 12px;
+    padding: 14px;
+    border-radius: 100px;
+    background: #fff; color: #000;
+    font-size: 15px; font-weight: 800;
+    text-align: center; cursor: pointer;
+    letter-spacing: -0.2px;
+  }
+
+  /* ─── Labels ─────────────────────────────────── */
+  .screen-label {
+    text-align: center;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.3);
+    margin-top: 16px;
+  }
+
+  /* horizontal scroll row */
+  .hscroll {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+  }
+</style>
+</head>
+<body>
+
+<h1 class="section-label">Phase 23</h1>
+<h2 class="section-title">Public App</h2>
+
+<!-- ═══════════════════════════════════════════════ ROW 1 ══ -->
+<div class="row">
+
+  <!-- ── SCREEN 1: HOME ───────────────────────── -->
+  <div style="display:flex;flex-direction:column;align-items:center;">
+    <div class="phone" style="min-height:900px;">
+      <div class="screen" style="height:900px;">
+        <div style="position:absolute;inset:0;overflow:hidden;">
+
+          <!-- Hero image -->
+          <div class="hero-image">
+            <div class="hero-room">
+              <!-- Decorative room elements -->
+              <div style="position:absolute;bottom:40%;left:10%;width:80%;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.04),transparent);"></div>
+              <div style="position:absolute;bottom:40%;left:15%;width:20px;height:60px;background:rgba(255,255,255,0.03);border-radius:2px;"></div>
+              <div style="position:absolute;bottom:40%;right:20%;width:40px;height:80px;background:rgba(255,255,255,0.02);border-radius:2px;"></div>
+            </div>
+            <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0.2) 0%,rgba(0,0,0,0.85) 100%);"></div>
+            <div class="hero-content">
+              <div class="hero-tag">Premium Renovations</div>
+              <div class="hero-title">Transform Your<br>Living Space</div>
+              <div class="hero-sub">Expert craftsmanship in interior design, bathrooms, kitchens, and more.</div>
+              <div class="hero-actions">
+                <div class="pill-btn" style="font-size:12px;padding:9px 18px;">Get a Quote</div>
+                <div class="pill-btn ghost" style="font-size:12px;padding:9px 18px;">Our Work</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Scrollable content below hero -->
+          <div class="home-content">
+            <!-- Services -->
+            <div>
+              <div class="section-hd">
+                <div class="section-hd-title">Services</div>
+                <div class="section-hd-link">All →</div>
+              </div>
+              <div class="services-scroll">
+                <div class="service-chip">
+                  <div class="service-icon">🛁</div>
+                  <div class="service-name">Bathroom</div>
+                </div>
+                <div class="service-chip">
+                  <div class="service-icon">🍳</div>
+                  <div class="service-name">Kitchen</div>
+                </div>
+                <div class="service-chip">
+                  <div class="service-icon">🪵</div>
+                  <div class="service-name">Flooring</div>
+                </div>
+                <div class="service-chip">
+                  <div class="service-icon">🎨</div>
+                  <div class="service-name">Painting</div>
+                </div>
+                <div class="service-chip">
+                  <div class="service-icon">⚡</div>
+                  <div class="service-name">Electrical</div>
+                </div>
+                <div class="service-chip">
+                  <div class="service-icon">🔧</div>
+                  <div class="service-name">Plumbing</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Featured Projects -->
+            <div>
+              <div class="section-hd">
+                <div class="section-hd-title">Featured Projects</div>
+                <div class="section-hd-link">All →</div>
+              </div>
+              <div class="hscroll">
+                <div class="project-card">
+                  <div class="project-img">
+                    <div style="position:absolute;inset:0;background:linear-gradient(135deg,#1c1c1c,#282828);display:flex;align-items:center;justify-content:center;font-size:32px;opacity:0.18;">🛁</div>
+                    <div class="project-img-label">Before / After</div>
+                  </div>
+                  <div class="project-info">
+                    <div class="project-title">Modern Bathroom Renovation</div>
+                    <div class="project-meta">Cluj-Napoca · 3 weeks</div>
+                  </div>
+                </div>
+                <div class="project-card">
+                  <div class="project-img">
+                    <div style="position:absolute;inset:0;background:linear-gradient(135deg,#1c1c1c,#282828);display:flex;align-items:center;justify-content:center;font-size:32px;opacity:0.18;">🍳</div>
+                    <div class="project-img-label">Before / After</div>
+                  </div>
+                  <div class="project-info">
+                    <div class="project-title">Open-Plan Kitchen Remodel</div>
+                    <div class="project-meta">București · 6 weeks</div>
+                  </div>
+                </div>
+                <div class="project-card">
+                  <div class="project-img">
+                    <div style="position:absolute;inset:0;background:linear-gradient(135deg,#1c1c1c,#282828);display:flex;align-items:center;justify-content:center;font-size:32px;opacity:0.18;">🪵</div>
+                    <div class="project-img-label">Before / After</div>
+                  </div>
+                  <div class="project-info">
+                    <div class="project-title">Hardwood Floor Installation</div>
+                    <div class="project-meta">Timișoara · 2 weeks</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Reviews -->
+            <div>
+              <div class="section-hd">
+                <div class="section-hd-title">
+                  Reviews
+                  <span style="font-size:14px;font-weight:500;color:rgba(255,255,255,0.4);margin-left:8px;">4.9 ★ · 128 reviews</span>
+                </div>
+              </div>
+              <div class="hscroll">
+                <div class="review-card">
+                  <div class="review-top">
+                    <div class="reviewer-avatar">MC</div>
+                    <div>
+                      <div class="reviewer-name">Maria Constantin</div>
+                      <div class="stars">★★★★★</div>
+                    </div>
+                    <div class="reviewer-date" style="margin-left:auto;">2w ago</div>
+                  </div>
+                  <div class="review-text">"Incredible work on our bathroom. The team was professional, on time, and the result exceeded expectations."</div>
+                </div>
+                <div class="review-card">
+                  <div class="review-top">
+                    <div class="reviewer-avatar">AP</div>
+                    <div>
+                      <div class="reviewer-name">Alex Popa</div>
+                      <div class="stars">★★★★★</div>
+                    </div>
+                    <div class="reviewer-date" style="margin-left:auto;">1m ago</div>
+                  </div>
+                  <div class="review-text">"Completely transformed our kitchen. Fast, clean work with premium materials. Highly recommend."</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Stats -->
+            <div>
+              <div class="stats-row">
+                <div class="stat-card">
+                  <div class="stat-value">850+</div>
+                  <div class="stat-label">Projects</div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-value">12</div>
+                  <div class="stat-label">Years</div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-value">4.9★</div>
+                  <div class="stat-label">Rating</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Status bar -->
+        <div class="status-bar" style="position:absolute;top:0;left:0;right:0;">
+          <div class="time">9:41</div>
+          <div class="status-icons">
+            <span>●●●</span><span>WiFi</span><span>🔋</span>
+          </div>
+        </div>
+
+        <!-- Tab Bar -->
+        <div class="tab-bar">
+          <div class="tab-item active">
+            <div class="tab-icon">⌂</div>
+            <div class="tab-label">Home</div>
+          </div>
+          <div class="tab-item">
+            <div class="tab-icon">🛒</div>
+            <div class="tab-label">Shop</div>
+          </div>
+          <div class="tab-item">
+            <div class="tab-icon">⌕</div>
+            <div class="tab-label">Search</div>
+          </div>
+          <div class="tab-item">
+            <div class="tab-icon">♡</div>
+            <div class="tab-label">Favorites</div>
+          </div>
+          <div class="tab-item">
+            <div class="tab-icon">◯</div>
+            <div class="tab-label">Account</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+    <div class="screen-label">Home</div>
+  </div>
+
+  <!-- ── SCREEN 2: SHOP ───────────────────────── -->
+  <div style="display:flex;flex-direction:column;align-items:center;">
+    <div class="phone" style="min-height:900px;">
+      <div class="screen" style="height:900px;overflow:hidden;">
+
+        <div class="status-bar">
+          <div class="time">9:41</div>
+          <div class="status-icons"><span>●●●</span><span>WiFi</span><span>🔋</span></div>
+        </div>
+
+        <div class="shop-header">
+          <div class="shop-title">Shop</div>
+          <div class="search-bar-pill">
+            <span style="font-size:15px;opacity:0.4;">⌕</span>
+            <span>Search products…</span>
+          </div>
+        </div>
+
+        <!-- Category filter -->
+        <div class="cat-scroll">
+          <div class="cat-chip active">All</div>
+          <div class="cat-chip">Tiles</div>
+          <div class="cat-chip">Sanitaryware</div>
+          <div class="cat-chip">Flooring</div>
+          <div class="cat-chip">Paint</div>
+          <div class="cat-chip">Tools</div>
+          <div class="cat-chip">Lighting</div>
+        </div>
+
+        <!-- Products grid -->
+        <div class="products-grid">
+          <div class="product-card">
+            <div class="product-img">
+              <div class="product-img-icon">🪨</div>
+              <div class="product-heart">♡</div>
+              <div class="product-badge">NEW</div>
+            </div>
+            <div class="product-info">
+              <div class="product-name">Marble Effect Wall Tile 60×120</div>
+              <div class="product-meta">
+                <div>
+                  <div class="product-price">320 RON</div>
+                  <div class="product-stock">/ sqm · In Stock</div>
+                </div>
+                <div class="add-btn">+</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="product-card">
+            <div class="product-img">
+              <div class="product-img-icon">🚿</div>
+              <div class="product-heart">♡</div>
+            </div>
+            <div class="product-info">
+              <div class="product-name">Rain Shower System 30cm</div>
+              <div class="product-meta">
+                <div>
+                  <div class="product-price">1.840 RON</div>
+                  <div class="product-stock">Unit · In Stock</div>
+                </div>
+                <div class="add-btn">+</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="product-card">
+            <div class="product-img">
+              <div class="product-img-icon">🪵</div>
+              <div class="product-heart">♡</div>
+              <div class="product-badge">-15%</div>
+            </div>
+            <div class="product-info">
+              <div class="product-name">Oak Hardwood Flooring 20×120</div>
+              <div class="product-meta">
+                <div>
+                  <div class="product-price">195 RON</div>
+                  <div class="product-stock">/ sqm · 48h</div>
+                </div>
+                <div class="add-btn">+</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="product-card">
+            <div class="product-img">
+              <div class="product-img-icon">🎨</div>
+              <div class="product-heart">♡</div>
+            </div>
+            <div class="product-info">
+              <div class="product-name">Premium Interior Wall Paint 15L</div>
+              <div class="product-meta">
+                <div>
+                  <div class="product-price">420 RON</div>
+                  <div class="product-stock">Tin · In Stock</div>
+                </div>
+                <div class="add-btn">+</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="product-card">
+            <div class="product-img">
+              <div class="product-img-icon">💡</div>
+              <div class="product-heart">♡</div>
+            </div>
+            <div class="product-info">
+              <div class="product-name">LED Recessed Panel 60×60</div>
+              <div class="product-meta">
+                <div>
+                  <div class="product-price">280 RON</div>
+                  <div class="product-stock">Unit · In Stock</div>
+                </div>
+                <div class="add-btn">+</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="product-card">
+            <div class="product-img">
+              <div class="product-img-icon">🚪</div>
+              <div class="product-heart">♡</div>
+            </div>
+            <div class="product-info">
+              <div class="product-name">Interior Door Frame Oak 210×90</div>
+              <div class="product-meta">
+                <div>
+                  <div class="product-price">2.100 RON</div>
+                  <div class="product-stock">Unit · 3–5d</div>
+                </div>
+                <div class="add-btn">+</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab Bar -->
+        <div class="tab-bar">
+          <div class="tab-item"><div class="tab-icon">⌂</div><div class="tab-label">Home</div></div>
+          <div class="tab-item active"><div class="tab-icon">🛒</div><div class="tab-label">Shop</div></div>
+          <div class="tab-item"><div class="tab-icon">⌕</div><div class="tab-label">Search</div></div>
+          <div class="tab-item"><div class="tab-icon">♡</div><div class="tab-label">Favorites</div></div>
+          <div class="tab-item"><div class="tab-icon">◯</div><div class="tab-label">Account</div></div>
+        </div>
+
+      </div>
+    </div>
+    <div class="screen-label">Shop</div>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════ ROW 2 ══ -->
+<h1 class="section-label" style="margin-bottom:8px;">Phase 23 · continued</h1>
+<h2 class="section-title">Search · Account · Client Portal · Checkout</h2>
+
+<div class="row">
+
+  <!-- ── SCREEN 3: SEARCH ──────────────────────── -->
+  <div style="display:flex;flex-direction:column;align-items:center;">
+    <div class="phone" style="min-height:900px;">
+      <div class="screen" style="height:900px;overflow:hidden;background:#0a0a0a;">
+
+        <div class="status-bar">
+          <div class="time">9:41</div>
+          <div class="status-icons"><span>●●●</span><span>WiFi</span><span>🔋</span></div>
+        </div>
+
+        <!-- Dimmed background content (shop) -->
+        <div style="position:absolute;inset:0;opacity:0.2;padding:52px 16px 0;">
+          <div style="height:40px;background:rgba(255,255,255,0.06);border-radius:12px;margin-bottom:8px;"></div>
+          <div style="display:flex;gap:8px;margin-bottom:12px;">
+            <div style="height:28px;width:60px;background:rgba(255,255,255,0.05);border-radius:100px;"></div>
+            <div style="height:28px;width:70px;background:rgba(255,255,255,0.05);border-radius:100px;"></div>
+            <div style="height:28px;width:80px;background:rgba(255,255,255,0.05);border-radius:100px;"></div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div style="height:160px;background:rgba(255,255,255,0.04);border-radius:16px;"></div>
+            <div style="height:160px;background:rgba(255,255,255,0.04);border-radius:16px;"></div>
+          </div>
+        </div>
+
+        <!-- Search overlay -->
+        <div class="search-overlay">
+          <div class="search-bar-active">
+            <span style="font-size:16px;color:rgba(255,255,255,0.5);">⌕</span>
+            <div class="search-input-text">marble tile</div>
+            <div class="search-cursor"></div>
+            <div class="search-cancel">Cancel</div>
+          </div>
+
+          <div>
+            <div class="search-section-title">Top Results</div>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <div class="search-result-row">
+                <div class="search-result-thumb">🪨</div>
+                <div>
+                  <div class="search-result-name">Marble Effect Wall Tile 60×120</div>
+                  <div class="search-result-sub">Tiles · In Stock</div>
+                </div>
+                <div class="search-result-price">320 RON</div>
+              </div>
+              <div class="search-result-row">
+                <div class="search-result-thumb">🪨</div>
+                <div>
+                  <div class="search-result-name">Carrara White Mosaic 30×30</div>
+                  <div class="search-result-sub">Tiles · In Stock</div>
+                </div>
+                <div class="search-result-price">185 RON</div>
+              </div>
+              <div class="search-result-row">
+                <div class="search-result-thumb">🪨</div>
+                <div>
+                  <div class="search-result-name">Porcelain Marble Slab 120×260</div>
+                  <div class="search-result-sub">Tiles · 3–5 days</div>
+                </div>
+                <div class="search-result-price">640 RON</div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div class="search-section-title">Services</div>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <div class="search-result-row">
+                <div class="search-result-thumb">🛁</div>
+                <div>
+                  <div class="search-result-name">Bathroom Renovation</div>
+                  <div class="search-result-sub">Service · Get a quote</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div class="search-section-title">Suggested</div>
+            <div class="suggestion-chips">
+              <div class="suggestion-chip">marble floor</div>
+              <div class="suggestion-chip">white tiles</div>
+              <div class="suggestion-chip">60×60 tiles</div>
+              <div class="suggestion-chip">tile grout</div>
+              <div class="suggestion-chip">tile adhesive</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab Bar -->
+        <div class="tab-bar">
+          <div class="tab-item"><div class="tab-icon">⌂</div><div class="tab-label">Home</div></div>
+          <div class="tab-item"><div class="tab-icon">🛒</div><div class="tab-label">Shop</div></div>
+          <div class="tab-item active"><div class="tab-icon">⌕</div><div class="tab-label">Search</div></div>
+          <div class="tab-item"><div class="tab-icon">♡</div><div class="tab-label">Favorites</div></div>
+          <div class="tab-item"><div class="tab-icon">◯</div><div class="tab-label">Account</div></div>
+        </div>
+
+      </div>
+    </div>
+    <div class="screen-label">Search</div>
+  </div>
+
+  <!-- ── SCREEN 4: ACCOUNT ─────────────────────── -->
+  <div style="display:flex;flex-direction:column;align-items:center;">
+    <div class="phone" style="min-height:900px;">
+      <div class="screen" style="height:900px;overflow:hidden;">
+
+        <div class="status-bar">
+          <div class="time">9:41</div>
+          <div class="status-icons"><span>●●●</span><span>WiFi</span><span>🔋</span></div>
+        </div>
+
+        <div class="account-header">
+          <div class="account-avatar">MC</div>
+          <div class="account-name">Maria Constantin</div>
+          <div class="account-email">maria@example.com</div>
+        </div>
+
+        <div class="account-content">
+
+          <!-- Orders quick summary -->
+          <div class="menu-section">
+            <div class="menu-row">
+              <div class="menu-row-icon">📦</div>
+              <div class="menu-row-label">My Orders</div>
+              <div class="menu-badge">2</div>
+              <div class="menu-row-chevron">›</div>
+            </div>
+            <div class="menu-row">
+              <div class="menu-row-icon">❤️</div>
+              <div class="menu-row-label">Favorites</div>
+              <div class="menu-row-value">12 items</div>
+              <div class="menu-row-chevron">›</div>
+            </div>
+            <div class="menu-row">
+              <div class="menu-row-icon">⭐</div>
+              <div class="menu-row-label">My Reviews</div>
+              <div class="menu-row-value">4 reviews</div>
+              <div class="menu-row-chevron">›</div>
+            </div>
+          </div>
+
+          <!-- Client Portal entry -->
+          <div class="menu-section" style="border:1px solid rgba(255,255,255,0.18);box-shadow:inset 0 1px 0 rgba(255,255,255,0.22);">
+            <div class="menu-row" style="padding:16px;">
+              <div class="menu-row-icon" style="background:rgba(255,255,255,0.14);width:40px;height:40px;border-radius:14px;font-size:20px;">🏗️</div>
+              <div>
+                <div class="menu-row-label">Client Portal</div>
+                <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:2px;">1 active project</div>
+              </div>
+              <div class="menu-row-chevron" style="font-size:14px;margin-left:auto;">›</div>
+            </div>
+          </div>
+
+          <!-- Profile & Settings -->
+          <div class="menu-section">
+            <div class="menu-row">
+              <div class="menu-row-icon">👤</div>
+              <div class="menu-row-label">Profile</div>
+              <div class="menu-row-chevron">›</div>
+            </div>
+            <div class="menu-row">
+              <div class="menu-row-icon">📍</div>
+              <div class="menu-row-label">Address Book</div>
+              <div class="menu-row-value">2 addresses</div>
+              <div class="menu-row-chevron">›</div>
+            </div>
+            <div class="menu-row">
+              <div class="menu-row-icon">💳</div>
+              <div class="menu-row-label">Payment Methods</div>
+              <div class="menu-row-value">Visa ···4242</div>
+              <div class="menu-row-chevron">›</div>
+            </div>
+            <div class="menu-row">
+              <div class="menu-row-icon">🔔</div>
+              <div class="menu-row-label">Notifications</div>
+              <div class="menu-row-chevron">›</div>
+            </div>
+          </div>
+
+          <!-- Danger zone -->
+          <div class="menu-section">
+            <div class="menu-row">
+              <div class="menu-row-icon">🚪</div>
+              <div class="menu-row-label" style="color:rgba(255,255,255,0.55);">Sign Out</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab Bar -->
+        <div class="tab-bar">
+          <div class="tab-item"><div class="tab-icon">⌂</div><div class="tab-label">Home</div></div>
+          <div class="tab-item"><div class="tab-icon">🛒</div><div class="tab-label">Shop</div></div>
+          <div class="tab-item"><div class="tab-icon">⌕</div><div class="tab-label">Search</div></div>
+          <div class="tab-item"><div class="tab-icon">♡</div><div class="tab-label">Favorites</div></div>
+          <div class="tab-item active"><div class="tab-icon">◯</div><div class="tab-label">Account</div></div>
+        </div>
+
+      </div>
+    </div>
+    <div class="screen-label">Account</div>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════ ROW 3 ══ -->
+<h1 class="section-label" style="margin-bottom:8px;">Phase 23 · continued</h1>
+<h2 class="section-title">Client Portal · Checkout</h2>
+
+<div class="row">
+
+  <!-- ── SCREEN 5: CLIENT PORTAL ───────────────── -->
+  <div style="display:flex;flex-direction:column;align-items:center;">
+    <div class="phone" style="min-height:900px;">
+      <div class="screen" style="height:900px;overflow:hidden;">
+
+        <div class="status-bar">
+          <div class="time">9:41</div>
+          <div class="status-icons"><span>●●●</span><span>WiFi</span><span>🔋</span></div>
+        </div>
+
+        <div class="portal-header">
+          <div class="portal-title">My Project</div>
+          <div class="portal-sub">Client Portal · 1 active project</div>
+        </div>
+
+        <div class="portal-content">
+
+          <div class="project-portal-card">
+            <div class="project-portal-header">
+              <div class="project-portal-name">Bathroom Renovation — Str. Avram Iancu</div>
+              <div class="project-portal-meta">Started 3 May 2026 · Cluj-Napoca</div>
+              <div class="progress-bar-wrap">
+                <div class="progress-bar-fill" style="width:68%;"></div>
+              </div>
+              <div class="progress-label">
+                <span>68% complete</span>
+                <span>Est. done 12 Jul</span>
+              </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="project-portal-tabs">
+              <div class="portal-tab">Overview</div>
+              <div class="portal-tab active">Invoices</div>
+              <div class="portal-tab">Photos</div>
+              <div class="portal-tab">Documents</div>
+              <div class="portal-tab">Updates</div>
+            </div>
+
+            <!-- Invoices section -->
+            <div class="portal-section">
+              <div class="invoice-row">
+                <div class="invoice-icon">🧾</div>
+                <div>
+                  <div class="invoice-name">Invoice #PRV-2026-041</div>
+                  <div class="invoice-date">Issued 20 May 2026</div>
+                </div>
+                <div style="margin-left:auto;text-align:right;">
+                  <div class="invoice-amount">4.800 RON</div>
+                  <div class="status-pill status-paid">Paid</div>
+                </div>
+              </div>
+              <div class="invoice-row">
+                <div class="invoice-icon">🧾</div>
+                <div>
+                  <div class="invoice-name">Invoice #PRV-2026-058</div>
+                  <div class="invoice-date">Issued 10 Jun 2026</div>
+                </div>
+                <div style="margin-left:auto;text-align:right;">
+                  <div class="invoice-amount">6.200 RON</div>
+                  <div class="status-pill status-due">Due Now</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Pay Now CTA -->
+            <div style="padding:0 16px 16px;">
+              <div class="pill-btn" style="width:100%;justify-content:center;font-size:14px;">
+                Pay 6.200 RON — Visa ···4242
+              </div>
+            </div>
+          </div>
+
+          <!-- Progress Timeline -->
+          <div class="project-portal-card">
+            <div class="project-portal-header">
+              <div class="project-portal-name">Progress Timeline</div>
+            </div>
+            <div class="portal-section">
+              <div class="timeline-item">
+                <div class="timeline-dot done"></div>
+                <div>
+                  <div class="timeline-text" style="color:rgba(255,255,255,0.5);">Demolition</div>
+                  <div class="timeline-date">Completed 8 May</div>
+                </div>
+              </div>
+              <div class="timeline-item">
+                <div class="timeline-dot done"></div>
+                <div>
+                  <div class="timeline-text" style="color:rgba(255,255,255,0.5);">Plumbing & Electrical</div>
+                  <div class="timeline-date">Completed 18 May</div>
+                </div>
+              </div>
+              <div class="timeline-item">
+                <div class="timeline-dot done"></div>
+                <div>
+                  <div class="timeline-text" style="color:rgba(255,255,255,0.5);">Tiling</div>
+                  <div class="timeline-date">Completed 5 Jun</div>
+                </div>
+              </div>
+              <div class="timeline-item">
+                <div class="timeline-dot"></div>
+                <div>
+                  <div class="timeline-text">Sanitary fixtures installation</div>
+                  <div class="timeline-date">In progress · Est. 28 Jun</div>
+                </div>
+              </div>
+              <div class="timeline-item">
+                <div class="timeline-dot" style="background:rgba(255,255,255,0.15);box-shadow:none;"></div>
+                <div>
+                  <div class="timeline-text" style="color:rgba(255,255,255,0.4);">Finishing & Handover</div>
+                  <div class="timeline-date">Est. 12 Jul</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Tab Bar -->
+        <div class="tab-bar">
+          <div class="tab-item"><div class="tab-icon">⌂</div><div class="tab-label">Home</div></div>
+          <div class="tab-item"><div class="tab-icon">🛒</div><div class="tab-label">Shop</div></div>
+          <div class="tab-item"><div class="tab-icon">⌕</div><div class="tab-label">Search</div></div>
+          <div class="tab-item"><div class="tab-icon">♡</div><div class="tab-label">Favorites</div></div>
+          <div class="tab-item active"><div class="tab-icon">◯</div><div class="tab-label">Account</div></div>
+        </div>
+
+      </div>
+    </div>
+    <div class="screen-label">Client Portal</div>
+  </div>
+
+  <!-- ── SCREEN 6: CART + CHECKOUT ─────────────── -->
+  <div style="display:flex;flex-direction:column;align-items:center;">
+    <div class="phone" style="min-height:900px;">
+      <div class="screen" style="height:900px;overflow:hidden;">
+
+        <div class="status-bar">
+          <div class="time">9:41</div>
+          <div class="status-icons"><span>●●●</span><span>WiFi</span><span>🔋</span></div>
+        </div>
+
+        <div class="checkout-header">
+          <div class="back-btn">‹</div>
+          <div class="checkout-title">Cart  <span style="font-size:14px;font-weight:500;color:rgba(255,255,255,0.35);">3 items</span></div>
+        </div>
+
+        <div class="cart-content">
+
+          <div class="cart-item">
+            <div class="cart-thumb">🪨</div>
+            <div style="flex:1;">
+              <div class="cart-name">Marble Effect Wall Tile 60×120</div>
+              <div class="cart-variant">Colour: White Carrara</div>
+              <div class="qty-ctrl">
+                <div class="qty-btn">–</div>
+                <div class="qty-val">12</div>
+                <div class="qty-btn">+</div>
+                <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-left:4px;">sqm</div>
+              </div>
+            </div>
+            <div class="cart-price">3.840 RON</div>
+          </div>
+
+          <div class="cart-item">
+            <div class="cart-thumb">🚿</div>
+            <div style="flex:1;">
+              <div class="cart-name">Rain Shower System 30cm</div>
+              <div class="cart-variant">Finish: Matte Black</div>
+              <div class="qty-ctrl">
+                <div class="qty-btn">–</div>
+                <div class="qty-val">1</div>
+                <div class="qty-btn">+</div>
+              </div>
+            </div>
+            <div class="cart-price">1.840 RON</div>
+          </div>
+
+          <div class="cart-item">
+            <div class="cart-thumb">🎨</div>
+            <div style="flex:1;">
+              <div class="cart-name">Premium Interior Wall Paint 15L</div>
+              <div class="cart-variant">Colour: Off White</div>
+              <div class="qty-ctrl">
+                <div class="qty-btn">–</div>
+                <div class="qty-val">2</div>
+                <div class="qty-btn">+</div>
+                <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-left:4px;">tins</div>
+              </div>
+            </div>
+            <div class="cart-price">840 RON</div>
+          </div>
+
+          <!-- Discount code -->
+          <div style="display:flex;gap:8px;align-items:center;padding:4px 0;">
+            <div style="flex:1;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.10);border-radius:12px;padding:12px 14px;font-size:13px;color:rgba(255,255,255,0.35);">Discount code…</div>
+            <div style="padding:12px 16px;border-radius:12px;background:rgba(255,255,255,0.10);border:1px solid rgba(255,255,255,0.14);font-size:13px;font-weight:700;color:#fff;">Apply</div>
+          </div>
+
+          <!-- Delivery info -->
+          <div class="cart-item" style="flex-direction:column;gap:8px;align-items:flex-start;">
+            <div style="font-size:12px;font-weight:700;color:rgba(255,255,255,0.6);">Delivery Address</div>
+            <div style="font-size:13px;font-weight:600;">Str. Memorandumului 10, Cluj-Napoca</div>
+            <div style="font-size:11px;color:rgba(255,255,255,0.35);">Estimated delivery: 3–5 business days</div>
+          </div>
+
+        </div>
+
+        <!-- Order Summary -->
+        <div class="cart-summary">
+          <div class="summary-row"><span>Subtotal</span><span>6.520 RON</span></div>
+          <div class="summary-row"><span>Delivery</span><span>Free</span></div>
+          <div class="summary-row"><span>VAT (19%)</span><span>1.238,80 RON</span></div>
+          <div class="summary-row total"><span>Total</span><span>7.758,80 RON</span></div>
+          <div class="checkout-btn">Proceed to Payment →</div>
+        </div>
+
+        <!-- Tab Bar -->
+        <div class="tab-bar">
+          <div class="tab-item"><div class="tab-icon">⌂</div><div class="tab-label">Home</div></div>
+          <div class="tab-item active"><div class="tab-icon">🛒</div><div class="tab-label">Shop</div></div>
+          <div class="tab-item"><div class="tab-icon">⌕</div><div class="tab-label">Search</div></div>
+          <div class="tab-item"><div class="tab-icon">♡</div><div class="tab-label">Favorites</div></div>
+          <div class="tab-item"><div class="tab-icon">◯</div><div class="tab-label">Account</div></div>
+        </div>
+
+      </div>
+    </div>
+    <div class="screen-label">Cart & Checkout</div>
+  </div>
+
+</div>
+
+</body>
+</html>
