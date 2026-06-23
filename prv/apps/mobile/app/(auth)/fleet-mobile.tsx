@@ -43,7 +43,7 @@ function useFleetMobile() {
   return useQuery<FleetData>({
     queryKey: ["mobile-fleet"],
     queryFn: async () => {
-      const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/fleet?limit=30`, {
+      const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/mobile/fleet`, {
         headers: { Authorization: `Bearer ${session?.token}` },
       })
       return res.json()

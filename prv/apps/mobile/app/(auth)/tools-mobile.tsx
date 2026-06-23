@@ -42,7 +42,7 @@ function useToolsMobile() {
   return useQuery<ToolsData>({
     queryKey: ["mobile-tools"],
     queryFn: async () => {
-      const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/tools?limit=30`, {
+      const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/mobile/tools`, {
         headers: { Authorization: `Bearer ${session?.token}` },
       })
       return res.json()
