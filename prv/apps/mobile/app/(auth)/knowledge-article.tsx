@@ -53,7 +53,7 @@ function useArticleDetail(id: string) {
   return useQuery<ArticleDetail>({
     queryKey: ["knowledge-article", id],
     queryFn: async () => {
-      const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/knowledge/${id}`, {
+      const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/mobile/knowledge/${id}`, {
         headers: { Authorization: `Bearer ${session?.token}` },
       })
       if (!res.ok) throw new Error("Failed to load article")

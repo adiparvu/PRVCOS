@@ -48,7 +48,7 @@ function useSuppliersMobile() {
   return useQuery<SuppliersData>({
     queryKey: ["mobile-suppliers"],
     queryFn: async () => {
-      const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/suppliers?limit=30`, {
+      const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/mobile/suppliers`, {
         headers: { Authorization: `Bearer ${session?.token}` },
       })
       return res.json()
