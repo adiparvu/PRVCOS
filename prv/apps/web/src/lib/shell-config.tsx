@@ -319,6 +319,57 @@ const CoverageIcon = () =>
     </>
   )
 
+const SafetyIcon = () =>
+  ic(
+    <>
+      <path d="M12 2L3 7v5c0 5.25 3.75 10.14 9 11.25C17.25 22.14 21 17.25 21 12V7l-9-5z" />
+      <path d="m9 12 2 2 4-4" />
+    </>
+  )
+
+const FleetIcon = () =>
+  ic(
+    <>
+      <rect x="1" y="10" width="22" height="9" rx="2" />
+      <path d="M4 19v2M20 19v2" />
+      <circle cx="7" cy="19" r="2" />
+      <circle cx="17" cy="19" r="2" />
+      <path d="M1 13h22M5 10V7a1 1 0 0 1 1-1h4l3-4 3 4h2a1 1 0 0 1 1 1v3" />
+    </>
+  )
+
+const ToolsIcon = () =>
+  ic(
+    <>
+      <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+    </>
+  )
+
+const SuppliersIcon = () =>
+  ic(
+    <>
+      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+      <polyline points="9 22 9 12 15 12 15 22" />
+    </>
+  )
+
+const KnowledgeIcon = () =>
+  ic(
+    <>
+      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+      <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+      <path d="M8 7h8M8 11h6" />
+    </>
+  )
+
+const LearningIcon = () =>
+  ic(
+    <>
+      <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+      <path d="M6 12v5c3 3 9 3 12 0v-5" />
+    </>
+  )
+
 // ── Tab definition ─────────────────────────────────────────────────────────
 
 export interface ShellTab {
@@ -343,9 +394,21 @@ const SHELLS: Record<string, ShellConfig> = {
     tabs: [
       { id: "command", label: "Command", href: "/dashboard", icon: <CommandIcon /> },
       { id: "analytics", label: "Analytics", href: "/analytics", icon: <AnalyticsIcon /> },
-      { id: "alerts", label: "Alerts", href: "/alerts", icon: <SecurityIcon /> },
       { id: "finance", label: "Finance", href: "/finance", icon: <FinanceIcon /> },
       { id: "operations", label: "Operations", href: "/operations", icon: <OperationsIcon /> },
+      { id: "people", label: "People", href: "/people", icon: <PeopleIcon /> },
+      {
+        id: "intelligence",
+        label: "Intelligence",
+        href: "/intelligence",
+        icon: <IntelligenceIcon />,
+      },
+      { id: "safety", label: "Safety", href: "/safety", icon: <SafetyIcon /> },
+      { id: "fleet", label: "Fleet", href: "/fleet", icon: <FleetIcon /> },
+      { id: "tools", label: "Tools", href: "/tools", icon: <ToolsIcon /> },
+      { id: "suppliers", label: "Suppliers", href: "/suppliers", icon: <SuppliersIcon /> },
+      { id: "knowledge", label: "Knowledge", href: "/knowledge", icon: <KnowledgeIcon /> },
+      { id: "alerts", label: "Alerts", href: "/alerts", icon: <SecurityIcon /> },
     ],
     diLabel: "Revenue",
     searchScopes: ["all", "employees", "projects", "stores", "finance", "documents", "alerts"],
@@ -373,6 +436,8 @@ const SHELLS: Record<string, ShellConfig> = {
       { id: "today", label: "Today", href: "/today", icon: <TodayIcon /> },
       { id: "tasks", label: "Tasks", href: "/schedule", icon: <TasksIcon /> },
       { id: "schedule", label: "Schedule", href: "/schedule", icon: <ScheduleIcon /> },
+      { id: "learning", label: "Learning", href: "/learning", icon: <LearningIcon /> },
+      { id: "knowledge", label: "Knowledge", href: "/knowledge", icon: <KnowledgeIcon /> },
       { id: "inbox", label: "Inbox", href: "/notifications", icon: <InboxIcon /> },
       { id: "me", label: "Me", href: "/people", icon: <MeIcon /> },
     ],
@@ -422,6 +487,10 @@ const SHELLS: Record<string, ShellConfig> = {
       { id: "operations", label: "Operations", href: "/operations", icon: <OperationsIcon /> },
       { id: "people", label: "People", href: "/people", icon: <PeopleIcon /> },
       { id: "finance", label: "Finance", href: "/finance", icon: <FinanceIcon /> },
+      { id: "safety", label: "Safety", href: "/safety", icon: <SafetyIcon /> },
+      { id: "fleet", label: "Fleet", href: "/fleet", icon: <FleetIcon /> },
+      { id: "tools", label: "Tools", href: "/tools", icon: <ToolsIcon /> },
+      { id: "suppliers", label: "Suppliers", href: "/suppliers", icon: <SuppliersIcon /> },
       { id: "alerts", label: "Alerts", href: "/alerts", icon: <SecurityIcon /> },
     ],
     diLabel: "Region",
@@ -434,6 +503,8 @@ const SHELLS: Record<string, ShellConfig> = {
       { id: "people", label: "People", href: "/people", icon: <PeopleIcon /> },
       { id: "payroll", label: "Payroll", href: "/payroll", icon: <PayrollIcon /> },
       { id: "documents", label: "Documents", href: "/documents", icon: <DocumentsIcon /> },
+      { id: "learning", label: "Learning", href: "/learning", icon: <LearningIcon /> },
+      { id: "knowledge", label: "Knowledge", href: "/knowledge", icon: <KnowledgeIcon /> },
       { id: "inbox", label: "Inbox", href: "/notifications", icon: <InboxIcon /> },
     ],
     diLabel: "Payroll",
@@ -482,6 +553,9 @@ const SHELLS: Record<string, ShellConfig> = {
       { id: "renovation", label: "Renovation", href: "/renovation", icon: <RenovationIcon /> },
       { id: "people", label: "People", href: "/people", icon: <PeopleIcon /> },
       { id: "finance", label: "Finance", href: "/finance", icon: <FinanceIcon /> },
+      { id: "safety", label: "Safety", href: "/safety", icon: <SafetyIcon /> },
+      { id: "tools", label: "Tools", href: "/tools", icon: <ToolsIcon /> },
+      { id: "suppliers", label: "Suppliers", href: "/suppliers", icon: <SuppliersIcon /> },
       {
         id: "intelligence",
         label: "Intelligence",
@@ -499,6 +573,9 @@ const SHELLS: Record<string, ShellConfig> = {
       { id: "renovation", label: "Renovation", href: "/renovation", icon: <RenovationIcon /> },
       { id: "finance", label: "Finance", href: "/finance", icon: <FinanceIcon /> },
       { id: "people", label: "People", href: "/people", icon: <PeopleIcon /> },
+      { id: "safety", label: "Safety", href: "/safety", icon: <SafetyIcon /> },
+      { id: "tools", label: "Tools", href: "/tools", icon: <ToolsIcon /> },
+      { id: "suppliers", label: "Suppliers", href: "/suppliers", icon: <SuppliersIcon /> },
       {
         id: "intelligence",
         label: "Intelligence",
