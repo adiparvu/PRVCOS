@@ -842,6 +842,20 @@ const MORE_LINKS = [
     icon: "◌",
     path: "/(auth)/safety" as const,
   },
+  {
+    key: "knowledge",
+    label: "Knowledge Base",
+    subtitle: "Procedures & Policies",
+    icon: "◯",
+    path: "/(auth)/knowledge-mobile" as const,
+  },
+  {
+    key: "learning",
+    label: "Learning Center",
+    subtitle: "Courses & Certifications",
+    icon: "⊛",
+    path: "/(auth)/learning-mobile" as const,
+  },
 ]
 
 function MoreContent() {
