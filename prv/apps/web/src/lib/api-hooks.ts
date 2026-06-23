@@ -945,3 +945,40 @@ export function useInspectionDetail(id: string | null) {
     staleTime: 30_000,
   })
 }
+
+export function useBriefingDetail(id: string | null) {
+  return useQuery({
+    queryKey: ["safety-briefing-detail", id],
+    queryFn: () => fetch(`/api/safety/briefings/${id}`).then((r) => r.json()),
+    enabled: !!id,
+    staleTime: 30_000,
+  })
+}
+
+interface TrainingPage {
+  records: unknown[]
+  meta: unknown
+  nextCursor: string | null
+}
+
+export function useTrainingRecords(userId?: string | null, expiringSoon?: boolean | null) {
+  return useInfiniteQuery({
+    queryKey: ["safety-training", userId ?? "all", expiringSoon ?? false],
+    queryFn: async ({ pageParam }) =>
+      fetch(
+        buildUrl("/api/safety/training", {
+          userId: userId ?? null,
+          expiringSoon: expiringSoon ? "true" : null,
+          cursor: pageParam as string | null,
+        })
+      ).then((r) => r.json() as Promise<TrainingPage>),
+    initialPageParam: null as string | null,
+    getNextPageParam: (page) => page.nextCursor ?? null,
+    select: (data) => ({
+      pages: data.pages,
+      pageParams: data.pageParams,
+      records: data.pages.flatMap((p) => p.records),
+      meta: data.pages[0]?.meta ?? null,
+    }),
+  })
+}

@@ -25,7 +25,7 @@ import { colors, radius, spacing, type as t } from "@/tokens"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type Segment = "projects" | "orders" | "tasks" | "stores" | "clients" | "renovation"
+type Segment = "projects" | "orders" | "tasks" | "stores" | "clients" | "renovation" | "more"
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -610,10 +610,30 @@ const RENOV_STATUS: Record<
   RenovationStatus,
   { label: string; bg: string; fg: string; border: string }
 > = {
-  planning: { label: "Planning", bg: "rgba(100,210,255,0.10)", fg: "#64d2ff", border: "rgba(100,210,255,0.22)" },
-  in_progress: { label: "Active", bg: "rgba(48,209,88,0.12)", fg: colors.green, border: "rgba(48,209,88,0.25)" },
-  on_hold: { label: "On Hold", bg: "rgba(255,159,10,0.10)", fg: colors.amber, border: "rgba(255,159,10,0.22)" },
-  completed: { label: "Done", bg: "rgba(48,209,88,0.08)", fg: colors.green, border: "rgba(48,209,88,0.18)" },
+  planning: {
+    label: "Planning",
+    bg: "rgba(100,210,255,0.10)",
+    fg: "#64d2ff",
+    border: "rgba(100,210,255,0.22)",
+  },
+  in_progress: {
+    label: "Active",
+    bg: "rgba(48,209,88,0.12)",
+    fg: colors.green,
+    border: "rgba(48,209,88,0.25)",
+  },
+  on_hold: {
+    label: "On Hold",
+    bg: "rgba(255,159,10,0.10)",
+    fg: colors.amber,
+    border: "rgba(255,159,10,0.22)",
+  },
+  completed: {
+    label: "Done",
+    bg: "rgba(48,209,88,0.08)",
+    fg: colors.green,
+    border: "rgba(48,209,88,0.18)",
+  },
   cancelled: { label: "Cancelled", bg: colors.glass1, fg: colors.text3, border: colors.border },
 }
 
@@ -628,7 +648,11 @@ function formatCurrency(value: number | null, currency: string | null): string {
   if (value === null) return "—"
   const cur = currency ?? "EUR"
   try {
-    return new Intl.NumberFormat("en", { style: "currency", currency: cur, maximumFractionDigits: 0 }).format(value)
+    return new Intl.NumberFormat("en", {
+      style: "currency",
+      currency: cur,
+      maximumFractionDigits: 0,
+    }).format(value)
   } catch {
     return `${cur} ${value.toLocaleString()}`
   }
@@ -643,9 +667,7 @@ function RenovCard({ item }: { item: RenovationProject }) {
       <View style={s.cardShine} pointerEvents="none" />
       <View style={s.cardTop}>
         <View style={{ flex: 1, gap: 3 }}>
-          {item.projectCode ? (
-            <Text style={s.renovCode}>{item.projectCode}</Text>
-          ) : null}
+          {item.projectCode ? <Text style={s.renovCode}>{item.projectCode}</Text> : null}
           <Text style={s.cardTitle} numberOfLines={2}>
             {item.title}
           </Text>
@@ -659,7 +681,9 @@ function RenovCard({ item }: { item: RenovationProject }) {
         {item.clientName ? (
           <View style={s.metaItem}>
             <Text style={s.metaLabel}>Client</Text>
-            <Text style={s.metaValue} numberOfLines={1}>{item.clientName}</Text>
+            <Text style={s.metaValue} numberOfLines={1}>
+              {item.clientName}
+            </Text>
           </View>
         ) : null}
         {item.city ? (
@@ -677,7 +701,16 @@ function RenovCard({ item }: { item: RenovationProject }) {
         {item.priority ? (
           <View style={s.metaItem}>
             <Text style={s.metaLabel}>Priority</Text>
-            <Text style={[s.metaValue, item.priority === "urgent" ? { color: colors.red } : item.priority === "high" ? { color: colors.amber } : null]}>
+            <Text
+              style={[
+                s.metaValue,
+                item.priority === "urgent"
+                  ? { color: colors.red }
+                  : item.priority === "high"
+                    ? { color: colors.amber }
+                    : null,
+              ]}
+            >
               {RENOV_PRIORITY[item.priority] ?? item.priority}
             </Text>
           </View>
@@ -688,9 +721,7 @@ function RenovCard({ item }: { item: RenovationProject }) {
         <View style={s.progressTrack}>
           <View style={[s.progressFill, { width: `${pct}%` }]} />
         </View>
-        <Text style={[s.progressPct, pct === 100 ? { color: colors.green } : null]}>
-          {pct}%
-        </Text>
+        <Text style={[s.progressPct, pct === 100 ? { color: colors.green } : null]}>{pct}%</Text>
       </View>
     </View>
   )
@@ -698,7 +729,9 @@ function RenovCard({ item }: { item: RenovationProject }) {
 
 function RenovationContent() {
   const [statusFilter, setStatusFilter] = useState<RenovationStatus | undefined>(undefined)
-  const { data, isLoading, error } = useRenovation(statusFilter ? { status: statusFilter } : undefined)
+  const { data, isLoading, error } = useRenovation(
+    statusFilter ? { status: statusFilter } : undefined
+  )
 
   const filters: { key: RenovationStatus | "all"; label: string }[] = [
     { key: "all", label: "All" },
@@ -731,9 +764,17 @@ function RenovationContent() {
         contentContainerStyle={s.kpiStrip}
       >
         <KPIPill value={String(projects.length)} label="Total" />
-        <KPIPill value={String(active)} label="Active" deltaColor={active > 0 ? colors.green : undefined} />
+        <KPIPill
+          value={String(active)}
+          label="Active"
+          deltaColor={active > 0 ? colors.green : undefined}
+        />
         <KPIPill value={String(planning)} label="Planning" />
-        <KPIPill value={String(done)} label="Completed" deltaColor={done > 0 ? colors.green : undefined} />
+        <KPIPill
+          value={String(done)}
+          label="Completed"
+          deltaColor={done > 0 ? colors.green : undefined}
+        />
       </ScrollView>
 
       {/* Filter pills */}
@@ -770,6 +811,61 @@ function RenovationContent() {
   )
 }
 
+// ─── More Content (Fleet / Tools / Suppliers / Safety) ────────────────────────
+
+const MORE_LINKS = [
+  {
+    key: "fleet",
+    label: "Fleet",
+    subtitle: "Vehicles & Fuel",
+    icon: "◈",
+    path: "/(auth)/fleet-mobile" as const,
+  },
+  {
+    key: "tools",
+    label: "Tools",
+    subtitle: "Equipment & Utilisation",
+    icon: "⊞",
+    path: "/(auth)/tools-mobile" as const,
+  },
+  {
+    key: "suppliers",
+    label: "Suppliers",
+    subtitle: "Vendor Scorecards",
+    icon: "◉",
+    path: "/(auth)/suppliers-mobile" as const,
+  },
+  {
+    key: "safety",
+    label: "Safety Center",
+    subtitle: "Incidents & Inspections",
+    icon: "◌",
+    path: "/(auth)/safety" as const,
+  },
+]
+
+function MoreContent() {
+  const router = useRouter()
+  return (
+    <View style={s.moreGrid}>
+      {MORE_LINKS.map((item) => (
+        <TouchableOpacity
+          key={item.key}
+          style={s.moreCard}
+          activeOpacity={0.75}
+          onPress={() => router.push(item.path)}
+        >
+          <View style={s.moreShine} pointerEvents="none" />
+          <Text style={s.moreIcon}>{item.icon}</Text>
+          <Text style={s.moreLabel}>{item.label}</Text>
+          <Text style={s.moreSub}>{item.subtitle}</Text>
+          <Text style={s.moreChevron}>›</Text>
+        </TouchableOpacity>
+      ))}
+    </View>
+  )
+}
+
 // ─── Main screen ──────────────────────────────────────────────────────────────
 
 const SEGMENTS: { key: Segment; label: string }[] = [
@@ -779,6 +875,7 @@ const SEGMENTS: { key: Segment; label: string }[] = [
   { key: "stores", label: "Stores" },
   { key: "clients", label: "Clients" },
   { key: "renovation", label: "Renovation" },
+  { key: "more", label: "More" },
 ]
 
 export default function OperationsScreen() {
@@ -843,6 +940,7 @@ export default function OperationsScreen() {
           {segment === "stores" && <StoresContent />}
           {segment === "clients" && <ClientsContent />}
           {segment === "renovation" && <RenovationContent />}
+          {segment === "more" && <MoreContent />}
         </ScrollView>
       )}
 
@@ -1401,5 +1499,55 @@ const s = StyleSheet.create({
     fontSize: 22,
     color: colors.text1,
     lineHeight: 26,
+  },
+
+  // More segment
+  moreGrid: {
+    paddingHorizontal: 4,
+    paddingTop: 8,
+    gap: 10,
+  },
+  moreCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    backgroundColor: colors.glass1,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    position: "relative",
+    overflow: "hidden",
+  },
+  moreShine: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 1,
+    backgroundColor: colors.shineTop,
+  },
+  moreIcon: {
+    fontSize: 20,
+    color: colors.text2,
+    width: 28,
+    textAlign: "center",
+  },
+  moreLabel: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: colors.text1,
+    flex: 1,
+  },
+  moreSub: {
+    fontSize: 12,
+    color: colors.text3,
+    marginRight: 4,
+  },
+  moreChevron: {
+    fontSize: 20,
+    color: colors.text4,
+    lineHeight: 22,
   },
 })
