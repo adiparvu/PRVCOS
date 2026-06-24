@@ -2,21 +2,22 @@ import { NextRequest, NextResponse } from "next/server"
 import { withMobileAuth } from "@/lib/mobile/auth"
 import { db } from "@prv/db"
 import { aiConversations, aiMessages } from "@prv/db/schema"
+import { and, asc, desc, eq, isNull } from "drizzle-orm"
+import Anthropic from "@anthropic-ai/sdk"
 import {
   AGENT_SYSTEM_PROMPTS,
   buildAnthropicMessages,
-  getConversationHistory,
   logUsage,
   titleFromMessage,
   type AgentType,
+  type ConversationMessage,
 } from "@prv/ai-engine"
-import { and, desc, eq, isNull } from "drizzle-orm"
-import Anthropic from "@anthropic-ai/sdk"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
 
 const MODEL = "claude-sonnet-4-6"
+const MAX_HISTORY = 20
 
 const MOBILE_AGENT_MAP: Record<string, AgentType> = {
   General: "general",
@@ -35,15 +36,15 @@ export const POST = withMobileAuth(async (req: NextRequest, ctx) => {
     agentType?: string
   }
 
-  const message = (body.message ?? "").trim()
-  if (!message) {
+  const userMessage = body.message?.trim()
+  if (!userMessage) {
     return NextResponse.json({ error: "Missing message" }, { status: 400 })
   }
 
-  const agentType: AgentType = MOBILE_AGENT_MAP[body.agentType ?? ""] ?? "general"
+  const agentType: AgentType = MOBILE_AGENT_MAP[body.agentType ?? "General"] ?? "general"
   const systemPrompt = AGENT_SYSTEM_PROMPTS[agentType]
 
-  // Find or create conversation for this user + agent type
+  // Find or create a conversation for this user + agentType
   const existing = await db
     .select({ id: aiConversations.id })
     .from(aiConversations)
@@ -59,8 +60,9 @@ export const POST = withMobileAuth(async (req: NextRequest, ctx) => {
     .limit(1)
 
   let conversationId: string
-  if (existing[0]) {
-    conversationId = existing[0].id
+
+  if (existing.length > 0) {
+    conversationId = existing[0]!.id
   } else {
     const [conv] = await db
       .insert(aiConversations)
@@ -68,22 +70,32 @@ export const POST = withMobileAuth(async (req: NextRequest, ctx) => {
         userId,
         companyId,
         agentType,
-        title: titleFromMessage(message),
+        title: titleFromMessage(userMessage),
       })
       .returning({ id: aiConversations.id })
     conversationId = conv!.id
   }
 
-  // Get history and build messages for Anthropic
-  const history = await getConversationHistory(conversationId)
-  const anthropicMessages = buildAnthropicMessages(history, message)
+  // Load history
+  const historyRows = await db
+    .select({ role: aiMessages.role, content: aiMessages.content })
+    .from(aiMessages)
+    .where(eq(aiMessages.conversationId, conversationId))
+    .orderBy(asc(aiMessages.createdAt))
+    .limit(MAX_HISTORY)
+
+  const history: ConversationMessage[] = historyRows.map((r) => ({
+    role: r.role as "user" | "assistant",
+    content: r.content,
+  }))
 
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) {
-    return NextResponse.json({ error: "AI not configured" }, { status: 503 })
+    return NextResponse.json({ reply: "AI chat is not configured.", messageId: null })
   }
 
   const client = new Anthropic({ apiKey })
+  const messages = buildAnthropicMessages(history, userMessage)
 
   let reply = "Unable to get a response. Please try again."
   let inputTokens = 0
@@ -94,25 +106,24 @@ export const POST = withMobileAuth(async (req: NextRequest, ctx) => {
       model: MODEL,
       max_tokens: 1024,
       system: systemPrompt,
-      messages: anthropicMessages,
+      messages,
     })
-
     reply = response.content[0]?.type === "text" ? response.content[0].text : reply
     inputTokens = response.usage.input_tokens
     outputTokens = response.usage.output_tokens
   } catch {
-    // return error reply below
+    return NextResponse.json({ reply, messageId: null })
   }
 
   // Persist user message
   await db.insert(aiMessages).values({
     conversationId,
     role: "user",
-    content: message,
+    content: userMessage,
     inputTokens,
   })
 
-  // Persist assistant reply and capture message ID
+  // Persist assistant message and get its ID
   const [inserted] = await db
     .insert(aiMessages)
     .values({
@@ -122,6 +133,8 @@ export const POST = withMobileAuth(async (req: NextRequest, ctx) => {
       outputTokens,
     })
     .returning({ id: aiMessages.id })
+
+  const messageId = inserted?.id ?? null
 
   // Update conversation timestamp
   await db
@@ -140,5 +153,5 @@ export const POST = withMobileAuth(async (req: NextRequest, ctx) => {
     outputTokens,
   })
 
-  return NextResponse.json({ reply, messageId: inserted?.id ?? null })
+  return NextResponse.json({ reply, messageId })
 })
