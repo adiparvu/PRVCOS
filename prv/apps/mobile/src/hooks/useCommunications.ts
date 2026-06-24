@@ -92,7 +92,7 @@ export function useChannels(type?: ChannelType) {
     queryKey: ["communications", "channels", type ?? "all"],
     queryFn: () =>
       api.get<{ channels: Channel[] }>(
-        `/api/communications/channels${type ? `?type=${type}` : ""}`
+        `/api/mobile/communications/channels${type ? `?type=${type}` : ""}`
       ),
     staleTime: 30_000,
   })
@@ -107,7 +107,7 @@ export function useChannelMessages(channelId: string) {
     queryKey: ["communications", "channels", channelId, "messages"],
     queryFn: ({ pageParam }) =>
       api.get(
-        `/api/communications/channels/${channelId}/messages${pageParam ? `?cursor=${pageParam}` : ""}`
+        `/api/mobile/communications/channels/${channelId}/messages${pageParam ? `?cursor=${pageParam}` : ""}`
       ),
     initialPageParam: null as string | null,
     getNextPageParam: (last) => last.nextCursor ?? undefined,
@@ -123,7 +123,7 @@ export function useCreateChannel() {
       description?: string
       type?: ChannelType
       memberIds?: string[]
-    }) => api.post("/api/communications/channels", data),
+    }) => api.post("/api/mobile/communications/channels", data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["communications", "channels"] })
     },
@@ -139,7 +139,7 @@ export function useSendChannelMessage(channelId: string) {
       parentId?: string
       mentionedUserIds?: string[]
       metadata?: Record<string, unknown>
-    }) => api.post(`/api/communications/channels/${channelId}/messages`, data),
+    }) => api.post(`/api/mobile/communications/channels/${channelId}/messages`, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["communications", "channels", channelId, "messages"] })
       qc.invalidateQueries({ queryKey: ["communications", "channels"] })
@@ -152,7 +152,7 @@ export function useSendChannelMessage(channelId: string) {
 export function useDmConversations() {
   return useQuery<{ conversations: DmConversation[] }>({
     queryKey: ["communications", "dms"],
-    queryFn: () => api.get("/api/communications/dms"),
+    queryFn: () => api.get("/api/mobile/communications/dms"),
     staleTime: 20_000,
   })
 }
@@ -162,7 +162,7 @@ export function useDmMessages(conversationId: string) {
     queryKey: ["communications", "dms", conversationId, "messages"],
     queryFn: ({ pageParam }) =>
       api.get(
-        `/api/communications/dms/${conversationId}/messages${pageParam ? `?cursor=${pageParam}` : ""}`
+        `/api/mobile/communications/dms/${conversationId}/messages${pageParam ? `?cursor=${pageParam}` : ""}`
       ),
     initialPageParam: null as string | null,
     getNextPageParam: (last) => last.nextCursor ?? undefined,
@@ -174,9 +174,12 @@ export function useStartDm() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (participantIds: string[]) =>
-      api.post<{ conversation: DmConversation; existing: boolean }>("/api/communications/dms", {
-        participantIds,
-      }),
+      api.post<{ conversation: DmConversation; existing: boolean }>(
+        "/api/mobile/communications/dms",
+        {
+          participantIds,
+        }
+      ),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["communications", "dms"] })
     },
@@ -190,7 +193,7 @@ export function useSendDmMessage(conversationId: string) {
       content: string
       type?: MessageType
       metadata?: Record<string, unknown>
-    }) => api.post(`/api/communications/dms/${conversationId}/messages`, data),
+    }) => api.post(`/api/mobile/communications/dms/${conversationId}/messages`, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["communications", "dms", conversationId, "messages"] })
       qc.invalidateQueries({ queryKey: ["communications", "dms"] })
@@ -203,7 +206,8 @@ export function useSendDmMessage(conversationId: string) {
 export function useAnnouncements(pinned?: boolean) {
   return useQuery<{ announcements: Announcement[] }>({
     queryKey: ["communications", "announcements", pinned ?? "all"],
-    queryFn: () => api.get(`/api/communications/announcements${pinned ? "?pinned=true" : ""}`),
+    queryFn: () =>
+      api.get(`/api/mobile/communications/announcements${pinned ? "?pinned=true" : ""}`),
     staleTime: 60_000,
   })
 }
@@ -211,7 +215,7 @@ export function useAnnouncements(pinned?: boolean) {
 export function useAnnouncement(id: string) {
   return useQuery<{ announcement: Announcement & { readAt: string | null } }>({
     queryKey: ["communications", "announcements", id],
-    queryFn: () => api.get(`/api/communications/announcements/${id}`),
+    queryFn: () => api.get(`/api/mobile/communications/announcements/${id}`),
     staleTime: 60_000,
     enabled: !!id,
   })
@@ -229,7 +233,7 @@ export function useCreateAnnouncement() {
       sendEmail?: boolean
       publishedAt?: string
       scheduledAt?: string
-    }) => api.post("/api/communications/announcements", data),
+    }) => api.post("/api/mobile/communications/announcements", data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["communications", "announcements"] })
     },
@@ -240,7 +244,7 @@ export function useMarkAnnouncementRead() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (announcementId: string) =>
-      api.post(`/api/communications/announcements/${announcementId}/read`, {}),
+      api.post(`/api/mobile/communications/announcements/${announcementId}/read`, {}),
     onSuccess: (_data, announcementId) => {
       qc.invalidateQueries({ queryKey: ["communications", "announcements"] })
       qc.invalidateQueries({ queryKey: ["communications", "announcements", announcementId] })
@@ -262,7 +266,7 @@ export function useUpdateAnnouncement(id: string) {
         publishedAt: string | null
         scheduledAt: string | null
       }>
-    ) => api.patch(`/api/communications/announcements/${id}`, data),
+    ) => api.patch(`/api/mobile/communications/announcements/${id}`, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["communications", "announcements"] })
       qc.invalidateQueries({ queryKey: ["communications", "announcements", id] })
@@ -274,7 +278,7 @@ export function useDeleteAnnouncement() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (announcementId: string) =>
-      api.delete(`/api/communications/announcements/${announcementId}`),
+      api.delete(`/api/mobile/communications/announcements/${announcementId}`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["communications", "announcements"] })
     },

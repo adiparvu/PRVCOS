@@ -482,14 +482,14 @@ export default function IntelligenceScreen() {
           <Text style={styles.headerTitle}>Intelligence</Text>
           <View style={styles.headerActions}>
             <TouchableOpacity
-              onPress={() => router.push("/intelligence-chat" as never)}
+              onPress={() => router.push("/(auth)/intelligence-chat" as never)}
               activeOpacity={0.7}
               style={styles.chatLink}
             >
               <Text style={styles.chatLinkText}>AI Chat</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              onPress={() => router.push("/intelligence/cost" as never)}
+              onPress={() => router.push("/(auth)/intelligence-cost" as never)}
               activeOpacity={0.7}
               style={styles.usageLink}
             >

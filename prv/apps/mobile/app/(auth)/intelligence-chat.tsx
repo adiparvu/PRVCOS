@@ -363,7 +363,7 @@ export default function IntelligenceChatScreen() {
         </View>
         <TouchableOpacity
           style={s.usageBtn}
-          onPress={() => router.push("/intelligence/cost" as never)}
+          onPress={() => router.push("/(auth)/intelligence-cost" as never)}
           activeOpacity={0.7}
         >
           <Text style={s.usageBtnText}>AI Usage</Text>
