@@ -84,7 +84,9 @@ export const PATCH = withMobileAuth(async (req: NextRequest, ctx) => {
     scheduledAt?: string | null
   }
 
-  const updates: Record<string, unknown> = { updatedAt: new Date() }
+  const updates: Partial<typeof announcements.$inferInsert> & { updatedAt: Date } = {
+    updatedAt: new Date(),
+  }
   if (body.title !== undefined) updates.title = body.title
   if (body.body !== undefined) updates.body = body.body
   if (body.audience !== undefined) updates.audience = body.audience
@@ -98,7 +100,7 @@ export const PATCH = withMobileAuth(async (req: NextRequest, ctx) => {
 
   const [updated] = await db
     .update(announcements)
-    .set(updates as Parameters<(typeof db)["update"]>[0])
+    .set(updates)
     .where(eq(announcements.id, id))
     .returning()
 

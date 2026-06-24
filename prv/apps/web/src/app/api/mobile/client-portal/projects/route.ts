@@ -42,16 +42,24 @@ function mapStatus(status: string): {
 }
 
 /** Map the mobile ?status= param to the DB renovation statuses it covers */
-function mobileStatusToDbStatuses(mobileStatus: string): readonly string[] | null {
+type RenovationStatus =
+  | "in_progress"
+  | "completed"
+  | "cancelled"
+  | "inquiry"
+  | "estimation"
+  | "contracted"
+  | "paused"
+function mobileStatusToDbStatuses(mobileStatus: string): RenovationStatus[] | null {
   switch (mobileStatus) {
     case "planning":
-      return ["inquiry", "estimation", "contracted"]
+      return ["inquiry", "estimation", "contracted"] as RenovationStatus[]
     case "in_progress":
-      return ["in_progress"]
+      return ["in_progress"] as RenovationStatus[]
     case "on_hold":
-      return ["paused"]
+      return ["paused"] as RenovationStatus[]
     case "completed":
-      return ["completed", "cancelled"]
+      return ["completed", "cancelled"] as RenovationStatus[]
     default:
       return null
   }
@@ -78,7 +86,7 @@ export const GET = withPortalMobileAuth(
     if (statusParam) {
       const dbStatuses = mobileStatusToDbStatuses(statusParam)
       if (dbStatuses) {
-        conditions.push(inArray(renovationProjects.status, dbStatuses as [string, ...string[]]))
+        conditions.push(inArray(renovationProjects.status, dbStatuses))
       }
     }
 

@@ -3,10 +3,9 @@ import { withMobileAuth } from "@/lib/mobile/auth"
 import { db } from "@prv/db"
 import { aiConversations, aiMessages } from "@prv/db/schema"
 import { and, asc, desc, eq, isNull } from "drizzle-orm"
-import Anthropic from "@anthropic-ai/sdk"
 import {
   AGENT_SYSTEM_PROMPTS,
-  buildAnthropicMessages,
+  streamChatWithHistory,
   logUsage,
   titleFromMessage,
   type AgentType,
@@ -16,7 +15,6 @@ import {
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
 
-const MODEL = "claude-sonnet-4-6"
 const MAX_HISTORY = 20
 
 const MOBILE_AGENT_MAP: Record<string, AgentType> = {
@@ -42,7 +40,10 @@ export const POST = withMobileAuth(async (req: NextRequest, ctx) => {
   }
 
   const agentType: AgentType = MOBILE_AGENT_MAP[body.agentType ?? "General"] ?? "general"
-  const systemPrompt = AGENT_SYSTEM_PROMPTS[agentType]
+
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return NextResponse.json({ reply: "AI chat is not configured.", messageId: null })
+  }
 
   // Find or create a conversation for this user + agentType
   const existing = await db
@@ -89,49 +90,34 @@ export const POST = withMobileAuth(async (req: NextRequest, ctx) => {
     content: r.content,
   }))
 
-  const apiKey = process.env.ANTHROPIC_API_KEY
-  if (!apiKey) {
-    return NextResponse.json({ reply: "AI chat is not configured.", messageId: null })
-  }
-
-  const client = new Anthropic({ apiKey })
-  const messages = buildAnthropicMessages(history, userMessage)
-
+  // Collect streaming response into a string
   let reply = "Unable to get a response. Please try again."
-  let inputTokens = 0
-  let outputTokens = 0
-
   try {
-    const response = await client.messages.create({
-      model: MODEL,
-      max_tokens: 1024,
-      system: systemPrompt,
-      messages,
-    })
-    reply = response.content[0]?.type === "text" ? response.content[0].text : reply
-    inputTokens = response.usage.input_tokens
-    outputTokens = response.usage.output_tokens
+    const stream = streamChatWithHistory(
+      userMessage,
+      history,
+      { userId, companyId, role: ctx.role, agentType },
+      agentType
+    )
+    const reader = stream.getReader()
+    const dec = new TextDecoder()
+    const chunks: string[] = []
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      chunks.push(dec.decode(value))
+    }
+    reply = chunks.join("")
   } catch {
     return NextResponse.json({ reply, messageId: null })
   }
 
-  // Persist user message
-  await db.insert(aiMessages).values({
-    conversationId,
-    role: "user",
-    content: userMessage,
-    inputTokens,
-  })
+  // Persist user then assistant message
+  await db.insert(aiMessages).values({ conversationId, role: "user", content: userMessage })
 
-  // Persist assistant message and get its ID
   const [inserted] = await db
     .insert(aiMessages)
-    .values({
-      conversationId,
-      role: "assistant",
-      content: reply,
-      outputTokens,
-    })
+    .values({ conversationId, role: "assistant", content: reply })
     .returning({ id: aiMessages.id })
 
   const messageId = inserted?.id ?? null
@@ -142,14 +128,15 @@ export const POST = withMobileAuth(async (req: NextRequest, ctx) => {
     .set({ updatedAt: new Date() })
     .where(eq(aiConversations.id, conversationId))
 
-  // Log usage (non-blocking)
+  // Log usage (approximate: output token count by word)
+  const outputTokens = Math.ceil(reply.split(/\s+/).length * 1.3)
   void logUsage({
     companyId,
     userId,
     conversationId,
     agentType,
-    model: MODEL,
-    inputTokens,
+    model: "claude-sonnet-4-6",
+    inputTokens: 0,
     outputTokens,
   })
 

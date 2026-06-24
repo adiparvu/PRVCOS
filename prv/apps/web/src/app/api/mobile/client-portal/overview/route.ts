@@ -95,7 +95,7 @@ export const GET = withPortalMobileAuth(
           eq(renovationProjects.companyId, ctx.companyId),
           eq(renovationProjects.clientId, ctx.clientId),
           isNull(renovationProjects.deletedAt),
-          inArray(renovationProjects.status, activeStatuses)
+          inArray(renovationProjects.status, [...activeStatuses])
         )
       )
       .orderBy(desc(renovationProjects.createdAt))
@@ -111,7 +111,7 @@ export const GET = withPortalMobileAuth(
           eq(renovationProjects.companyId, ctx.companyId),
           eq(renovationProjects.clientId, ctx.clientId),
           isNull(renovationProjects.deletedAt),
-          inArray(renovationProjects.status, activeStatuses)
+          inArray(renovationProjects.status, [...activeStatuses])
         )
       )
 
@@ -221,42 +221,44 @@ export const GET = withPortalMobileAuth(
       .limit(2)
 
     // Merge and sort activity items by date, take top 5
-    type ActivityItem = {
+    type ActivityItemFinal = {
       id: string
       type: "photo_uploaded" | "milestone_completed" | "invoice_sent" | "document_added" | "message"
       title: string
       subtitle: string
       timeAgo: string
-      _ts: number
     }
+    type ActivityItemWithTs = ActivityItemFinal & { _ts: number }
 
-    const activityItems: ActivityItem[] = [
-      ...recentReports.map((r) => ({
-        id: r.id,
-        type: (r.reportType === "milestone"
-          ? "milestone_completed"
-          : "photo_uploaded") as ActivityItem["type"],
-        title:
-          r.reportType === "milestone"
-            ? "Milestone completed"
-            : r.reportType === "inspection"
-              ? "Inspection report added"
-              : "Site update",
-        subtitle: r.workPerformed
-          ? r.workPerformed.slice(0, 80) + (r.workPerformed.length > 80 ? "…" : "")
-          : "New site report available",
-        timeAgo: timeAgo(r.createdAt),
-        _ts: r.createdAt.getTime(),
-      })),
-      ...recentInvoices.map((inv) => ({
-        id: inv.id,
-        type: "invoice_sent" as ActivityItem["type"],
-        title: `Invoice ${inv.invoiceNumber}`,
-        subtitle: `${formatEuro(inv.total)} — new invoice issued`,
-        timeAgo: timeAgo(inv.createdAt),
-        _ts: inv.createdAt.getTime(),
-      })),
-    ]
+    const activityItems: ActivityItemFinal[] = (
+      [
+        ...recentReports.map((r) => ({
+          id: r.id,
+          type: (r.reportType === "milestone"
+            ? "milestone_completed"
+            : "photo_uploaded") as ActivityItemFinal["type"],
+          title:
+            r.reportType === "milestone"
+              ? "Milestone completed"
+              : r.reportType === "inspection"
+                ? "Inspection report added"
+                : "Site update",
+          subtitle: r.workPerformed
+            ? r.workPerformed.slice(0, 80) + (r.workPerformed.length > 80 ? "…" : "")
+            : "New site report available",
+          timeAgo: timeAgo(r.createdAt),
+          _ts: r.createdAt.getTime(),
+        })),
+        ...recentInvoices.map((inv) => ({
+          id: inv.id,
+          type: "invoice_sent" as ActivityItemFinal["type"],
+          title: `Invoice ${inv.invoiceNumber}`,
+          subtitle: `${formatEuro(inv.total)} — new invoice issued`,
+          timeAgo: timeAgo(inv.createdAt),
+          _ts: inv.createdAt.getTime(),
+        })),
+      ] as ActivityItemWithTs[]
+    )
       .sort((a, b) => b._ts - a._ts)
       .slice(0, 5)
       .map(({ _ts: _unused, ...rest }) => rest)

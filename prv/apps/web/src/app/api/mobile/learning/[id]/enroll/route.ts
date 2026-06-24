@@ -35,11 +35,19 @@ export const POST = withMobileAuth(async (req: NextRequest, ctx) => {
     )
     .limit(1)
 
-  if (!course) return NextResponse.json({ error: "Course not found", code: "NOT_FOUND" }, { status: 404 })
+  if (!course)
+    return NextResponse.json({ error: "Course not found", code: "NOT_FOUND" }, { status: 404 })
 
   await db
     .insert(courseEnrollments)
-    .values({ companyId, userId, courseId: id, status: "in_progress", progressPct: 0, currentModule: 0 })
+    .values({
+      companyId,
+      userId,
+      courseId: id,
+      status: "in_progress",
+      progressPct: 0,
+      currentModule: 0,
+    })
     .onConflictDoUpdate({
       target: [courseEnrollments.userId, courseEnrollments.courseId],
       set: { status: "in_progress", updatedAt: new Date() },
@@ -69,7 +77,10 @@ export const PATCH = withMobileAuth(async (req: NextRequest, ctx) => {
 
   const parsed = progressSchema.safeParse(body)
   if (!parsed.success)
-    return NextResponse.json({ error: "Invalid payload", issues: parsed.error.issues }, { status: 422 })
+    return NextResponse.json(
+      { error: "Invalid payload", issues: parsed.error.issues },
+      { status: 422 }
+    )
 
   const [enrollment] = await db
     .select({ userId: courseEnrollments.userId })
@@ -77,21 +88,29 @@ export const PATCH = withMobileAuth(async (req: NextRequest, ctx) => {
     .where(and(eq(courseEnrollments.userId, userId), eq(courseEnrollments.courseId, id)))
     .limit(1)
 
-  if (!enrollment) return NextResponse.json({ error: "Not enrolled in this course" }, { status: 404 })
+  if (!enrollment)
+    return NextResponse.json({ error: "Not enrolled in this course" }, { status: 404 })
 
-  const isCompleting =
-    parsed.data.progressPct === 100 || parsed.data.status === "completed"
+  const isCompleting = parsed.data.progressPct === 100 || parsed.data.status === "completed"
   const autoStatus = isCompleting ? "completed" : (parsed.data.status ?? undefined)
 
   const [updated] = await db
     .update(courseEnrollments)
     .set({
       progressPct: parsed.data.progressPct,
-      ...(parsed.data.currentModule !== undefined ? { currentModule: parsed.data.currentModule } : {}),
+      ...(parsed.data.currentModule !== undefined
+        ? { currentModule: parsed.data.currentModule }
+        : {}),
       ...(autoStatus ? { status: autoStatus } : {}),
       updatedAt: new Date(),
     })
-    .where(and(eq(courseEnrollments.userId, userId), eq(courseEnrollments.courseId, id), eq(courseEnrollments.companyId, companyId)))
+    .where(
+      and(
+        eq(courseEnrollments.userId, userId),
+        eq(courseEnrollments.courseId, id),
+        eq(courseEnrollments.companyId, companyId)
+      )
+    )
     .returning({ id: courseEnrollments.id })
 
   if (isCompleting && updated) {
@@ -99,7 +118,6 @@ export const PATCH = withMobileAuth(async (req: NextRequest, ctx) => {
       .select({
         title: learningCourses.title,
         category: learningCourses.category,
-        instructorName: learningCourses.instructorName,
       })
       .from(learningCourses)
       .where(and(eq(learningCourses.id, id), isNull(learningCourses.deletedAt)))
@@ -115,7 +133,6 @@ export const PATCH = withMobileAuth(async (req: NextRequest, ctx) => {
           companyId,
           courseTitle: course.title,
           courseCategory: course.category ?? "general",
-          instructorName: course.instructorName ?? undefined,
           completedAt: new Date().toISOString(),
         },
       })
