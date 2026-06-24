@@ -396,30 +396,48 @@ function DriverRow({ driver }: { driver: IntelligenceForecastDriver }) {
 // ─── Reports Content ──────────────────────────────────────────────────────────
 
 const REPORT_TILES = [
-  { icon: "≡", label: "Revenue", desc: "Monthly breakdown", ready: true, route: "/report-revenue" },
+  {
+    icon: "≡",
+    label: "Revenue",
+    desc: "Monthly breakdown",
+    ready: true,
+    route: "/(auth)/report-revenue",
+  },
   {
     icon: "⟁",
     label: "Projects",
     desc: "Pipeline & completion",
     ready: true,
-    route: "/report-projects",
+    route: "/(auth)/report-projects",
   },
   {
     icon: "◎",
     label: "Workforce",
     desc: "Activity & utilization",
     ready: true,
-    route: "/report-workforce",
+    route: "/(auth)/report-workforce",
   },
   {
     icon: "◩",
     label: "Invoices",
     desc: "Collection & aging",
     ready: true,
-    route: "/report-invoices",
+    route: "/(auth)/report-invoices",
   },
-  { icon: "◫", label: "P&L", desc: "Profit & loss statement", ready: true, route: "/report-pl" },
-  { icon: "✦", label: "AI Report", desc: "Executive AI summary", ready: true, route: "/report-ai" },
+  {
+    icon: "◫",
+    label: "P&L",
+    desc: "Profit & loss statement",
+    ready: true,
+    route: "/(auth)/report-pl",
+  },
+  {
+    icon: "✦",
+    label: "AI Report",
+    desc: "Executive AI summary",
+    ready: true,
+    route: "/(auth)/report-ai",
+  },
 ] as const
 
 function ReportsContent() {

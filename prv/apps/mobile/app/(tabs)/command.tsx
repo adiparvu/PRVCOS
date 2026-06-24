@@ -157,6 +157,13 @@ export default function CommandScreen() {
                 <Text style={styles.searchBtnIcon}>⌕</Text>
               </TouchableOpacity>
               <TouchableOpacity
+                style={styles.searchBtn}
+                onPress={() => router.push("/(auth)/communications")}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.searchBtnIcon}>◫</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
                 style={styles.profileBtn}
                 onPress={() => router.push("/(auth)/profile")}
                 activeOpacity={0.8}
