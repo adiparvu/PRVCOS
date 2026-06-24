@@ -214,7 +214,7 @@ async function sendChatMessage(
   agentType: AgentType,
   token: string | undefined
 ): Promise<{ reply: string; messageId: string | null }> {
-  const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/intelligence/chat`, {
+  const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/mobile/intelligence/chat`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -247,7 +247,7 @@ async function submitFeedback(
   rating: "up" | "down",
   token: string | undefined
 ): Promise<void> {
-  await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/intelligence/feedback`, {
+  await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/mobile/intelligence/feedback`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

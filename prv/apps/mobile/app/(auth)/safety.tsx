@@ -53,7 +53,7 @@ function useSafety() {
   return useQuery<SafetyData>({
     queryKey: ["safety-center"],
     queryFn: async () => {
-      const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/safety`, {
+      const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/mobile/safety`, {
         headers: { Authorization: `Bearer ${session?.token}` },
       })
       return res.json()
