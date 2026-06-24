@@ -138,8 +138,8 @@ function StatusBadge({
   const isResolved = status === "resolved" || status === "completed"
   const isOverdue = status === "overdue"
 
-  let bg = colors.glass2
-  let fg = colors.text2
+  let bg: string = colors.glass2
+  let fg: string = colors.text2
 
   if (isOpen) {
     bg = "rgba(255,159,10,0.14)"

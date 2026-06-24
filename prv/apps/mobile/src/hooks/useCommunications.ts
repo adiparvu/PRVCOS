@@ -278,7 +278,7 @@ export function useDeleteAnnouncement() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (announcementId: string) =>
-      api.delete(`/api/mobile/communications/announcements/${announcementId}`),
+      api.del(`/api/mobile/communications/announcements/${announcementId}`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["communications", "announcements"] })
     },

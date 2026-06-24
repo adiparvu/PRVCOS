@@ -1,6 +1,7 @@
 {
   "extends": "@prv/tsconfig/react-library.json",
   "compilerOptions": {
+    "types": ["vitest/globals"],
     "paths": {
       "@/*": ["./src/*"]
     }

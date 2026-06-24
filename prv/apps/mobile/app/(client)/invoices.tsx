@@ -56,14 +56,12 @@ export default function InvoicesScreen() {
           <GlassCard style={styles.summaryCard}>
             <View style={styles.summaryCardShine} pointerEvents="none" />
             <View style={styles.summaryHalf}>
-              <Text style={styles.summaryValue}>{summary.totalSpent}</Text>
+              <Text style={styles.summaryValue}>{summary.total}</Text>
               <Text style={styles.summaryLabel}>Total Spent</Text>
             </View>
             <View style={styles.summaryDivider} />
             <View style={styles.summaryHalf}>
-              <Text style={[styles.summaryValue, { color: colors.amber }]}>
-                {summary.pendingAmount}
-              </Text>
+              <Text style={[styles.summaryValue, { color: colors.amber }]}>{summary.pending}</Text>
               <Text style={styles.summaryLabel}>Pending</Text>
             </View>
           </GlassCard>

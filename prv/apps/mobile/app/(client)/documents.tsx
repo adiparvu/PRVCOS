@@ -25,7 +25,7 @@ const TYPE_GLYPHS: Record<string, string> = {
 }
 
 function docGlyph(type: string): string {
-  return TYPE_GLYPHS[type] ?? TYPE_GLYPHS.other
+  return TYPE_GLYPHS[type] ?? TYPE_GLYPHS.other ?? "▪"
 }
 
 export default function DocumentsScreen() {
