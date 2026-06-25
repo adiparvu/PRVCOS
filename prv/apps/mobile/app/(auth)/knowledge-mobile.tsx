@@ -2,59 +2,10 @@ import { useState } from "react"
 import { RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { useRouter } from "expo-router"
-import { useQuery } from "@tanstack/react-query"
 import { GlassCard } from "@/components/Glass"
 import { SkeletonRow } from "@/components/Skeleton"
-import { useAuthStore } from "@/store/auth"
-import { api } from "@/lib/api"
+import { useKnowledge, type ArticleType, type KnowledgeArticle } from "@/hooks/useKnowledge"
 import { colors, radius, spacing, type as t } from "@/tokens"
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-type ArticleType = "sop" | "policy" | "guide" | "faq"
-type ArticleCategory = "operations" | "hr" | "finance" | "procurement" | "fleet" | "projects"
-
-interface KnowledgeMeta {
-  total: number
-  sopCount: number
-  recentlyUpdated: number
-}
-
-interface Article {
-  id: string
-  title: string
-  type: ArticleType
-  typeLabel: string
-  category: ArticleCategory
-  categoryLabel: string
-  author: string
-  updatedDate: string
-  readMinutes: number
-  views: number
-  version: string | null
-  isPinned: boolean
-  readProgress: number
-}
-
-interface KnowledgeData {
-  meta: KnowledgeMeta
-  articles: Article[]
-}
-
-// ─── Data hook ────────────────────────────────────────────────────────────────
-
-function useKnowledge(typeFilter?: ArticleType, categoryFilter?: ArticleCategory) {
-  const sp = new URLSearchParams()
-  if (typeFilter) sp.set("type", typeFilter)
-  if (categoryFilter) sp.set("category", categoryFilter)
-  const qs = sp.toString()
-
-  return useQuery<KnowledgeData>({
-    queryKey: ["mobile-knowledge", typeFilter, categoryFilter],
-    queryFn: () => api.get<KnowledgeData>(`/api/mobile/knowledge${qs ? `?${qs}` : ""}`),
-    staleTime: 60_000,
-  })
-}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -109,7 +60,7 @@ function MetaChip({
   )
 }
 
-function ArticleCard({ item }: { item: Article }) {
+function ArticleCard({ item }: { item: KnowledgeArticle }) {
   const router = useRouter()
   const glyph = TYPE_GLYPH[item.type]
   const typeColor = TYPE_COLOR[item.type]
@@ -179,7 +130,7 @@ export default function KnowledgeMobileScreen() {
   const router = useRouter()
   const [typeFilter, setTypeFilter] = useState<FilterKey>("all")
   const { data, isLoading, refetch, isRefetching } = useKnowledge(
-    typeFilter === "all" ? undefined : typeFilter
+    typeFilter === "all" ? undefined : { type: typeFilter }
   )
 
   return (
