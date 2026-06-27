@@ -84,7 +84,7 @@ export const GET = withGates(
         qMap.set(row.id, {
           id: row.id,
           questionText: row.questionText,
-          sortOrder: row.sortOrder,
+          sortOrder: row.sortOrder ?? 0,
           options: [],
         })
       }

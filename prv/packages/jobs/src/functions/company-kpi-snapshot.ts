@@ -150,8 +150,8 @@ export const companyKpiSnapshotFunction = inngest.createFunction(
             .where(
               and(
                 eq(attendanceRecords.companyId, cid),
-                gte(attendanceRecords.checkInAt, todayStart),
-                lt(attendanceRecords.checkInAt, todayEnd)
+                gte(attendanceRecords.clockIn, todayStart),
+                lt(attendanceRecords.clockIn, todayEnd)
               )
             ),
 

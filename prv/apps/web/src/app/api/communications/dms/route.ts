@@ -58,8 +58,8 @@ export const GET = withGates(
 
     const participantsByConv = participantRows.reduce<Record<string, typeof participantRows>>(
       (acc, p) => {
-        if (!acc[p.conversationId]) acc[p.conversationId] = []
-        acc[p.conversationId].push(p)
+        const list = acc[p.conversationId] ?? (acc[p.conversationId] = [])
+        list.push(p)
         return acc
       },
       {}
@@ -116,6 +116,10 @@ export const POST = withGates(
       .insert(directConversations)
       .values({ companyId: ctx.session.companyId })
       .returning()
+
+    if (!conversation) {
+      return NextResponse.json({ error: "Failed to create conversation" }, { status: 500 })
+    }
 
     await db.insert(dmParticipants).values(
       allParticipantIds.map((userId) => ({

@@ -13,6 +13,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
+    "@prv/ai-engine": "workspace:*",
     "@prv/approval-engine": "workspace:*",
     "@prv/cache": "workspace:*",
     "@prv/db": "workspace:*",

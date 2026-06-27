@@ -130,7 +130,7 @@ interface NewPRFormState {
 function NewPRForm({ onSuccess, onClose }: { onSuccess: () => void; onClose: () => void }) {
   const [form, setForm] = useState<NewPRFormState>({
     itemDescription: "",
-    category: CATEGORIES[0],
+    category: CATEGORIES[0] ?? "",
     quantity: "1",
     unit: "pcs",
     estimatedCost: "",

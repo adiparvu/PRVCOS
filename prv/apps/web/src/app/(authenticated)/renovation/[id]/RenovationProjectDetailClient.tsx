@@ -177,10 +177,10 @@ const DETAIL_TABS: TabItem[] = [
   { value: "reports", label: "Reports" },
 ]
 
-function fmtCurrency(value: number, currency: string) {
+function fmtCurrency(value: number, currency: string | null | undefined) {
   return new Intl.NumberFormat("ro-RO", {
     style: "currency",
-    currency,
+    currency: currency || "RON",
     maximumFractionDigits: 0,
   }).format(value)
 }

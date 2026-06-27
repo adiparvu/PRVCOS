@@ -40,9 +40,10 @@ export const fleetMaintenanceFunction = inngest.createFunction(
 
     // Filter at-risk vehicles in JS to avoid SQL arithmetic on columns
     const atRisk = allVehicles.filter((v) => {
-      const insExpiring = v.insuranceExpiresAt && v.insuranceExpiresAt <= warnDate
-      const itpExpiring = v.itpExpiresAt && v.itpExpiresAt <= warnDate
-      const serviceDue = v.nextServiceAtKm != null && v.mileageKm >= v.nextServiceAtKm - SERVICE_KM_WARNING
+      const insExpiring = v.insuranceExpiresAt && new Date(v.insuranceExpiresAt) <= warnDate
+      const itpExpiring = v.itpExpiresAt && new Date(v.itpExpiresAt) <= warnDate
+      const serviceDue =
+        v.nextServiceAtKm != null && v.mileageKm >= v.nextServiceAtKm - SERVICE_KM_WARNING
       return insExpiring || itpExpiring || serviceDue
     })
 
@@ -89,15 +90,22 @@ export const fleetMaintenanceFunction = inngest.createFunction(
         for (const vehicle of vehicleList) {
           const alerts: string[] = []
 
-          if (vehicle.insuranceExpiresAt && vehicle.insuranceExpiresAt <= warnDate) {
-            const days = Math.ceil((vehicle.insuranceExpiresAt.getTime() - now.getTime()) / 86400000)
+          if (vehicle.insuranceExpiresAt && new Date(vehicle.insuranceExpiresAt) <= warnDate) {
+            const days = Math.ceil(
+              (new Date(vehicle.insuranceExpiresAt).getTime() - now.getTime()) / 86400000
+            )
             alerts.push(`insurance expires in ${days} day${days !== 1 ? "s" : ""}`)
           }
-          if (vehicle.itpExpiresAt && vehicle.itpExpiresAt <= warnDate) {
-            const days = Math.ceil((vehicle.itpExpiresAt.getTime() - now.getTime()) / 86400000)
+          if (vehicle.itpExpiresAt && new Date(vehicle.itpExpiresAt) <= warnDate) {
+            const days = Math.ceil(
+              (new Date(vehicle.itpExpiresAt).getTime() - now.getTime()) / 86400000
+            )
             alerts.push(`ITP expires in ${days} day${days !== 1 ? "s" : ""}`)
           }
-          if (vehicle.nextServiceAtKm != null && vehicle.mileageKm >= vehicle.nextServiceAtKm - SERVICE_KM_WARNING) {
+          if (
+            vehicle.nextServiceAtKm != null &&
+            vehicle.mileageKm >= vehicle.nextServiceAtKm - SERVICE_KM_WARNING
+          ) {
             const kmLeft = vehicle.nextServiceAtKm - vehicle.mileageKm
             alerts.push(kmLeft > 0 ? `service due in ${kmLeft} km` : "service overdue")
           }

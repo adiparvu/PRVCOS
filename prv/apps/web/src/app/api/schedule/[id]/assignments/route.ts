@@ -68,7 +68,7 @@ export const POST = withGates(
     const shift = await resolveShift(sid, companyId)
     if (!shift) return NextResponse.json({ error: "Shift not found" }, { status: 404 })
 
-    if (shift.status === "cancelled" || shift.status === "done")
+    if ((shift.status as string) === "cancelled" || (shift.status as string) === "done")
       return NextResponse.json(
         { error: `Cannot assign workers to a ${shift.status} shift` },
         { status: 409 }
@@ -83,7 +83,10 @@ export const POST = withGates(
 
     const parsed = createSchema.safeParse(body)
     if (!parsed.success)
-      return NextResponse.json({ error: "Invalid payload", issues: parsed.error.issues }, { status: 422 })
+      return NextResponse.json(
+        { error: "Invalid payload", issues: parsed.error.issues },
+        { status: 422 }
+      )
 
     // Verify user belongs to this company
     const [member] = await db
@@ -92,8 +95,7 @@ export const POST = withGates(
       .where(and(eq(users.id, parsed.data.userId), eq(users.companyId, companyId)))
       .limit(1)
 
-    if (!member)
-      return NextResponse.json({ error: "User not found in company" }, { status: 404 })
+    if (!member) return NextResponse.json({ error: "User not found in company" }, { status: 404 })
 
     // Check slot capacity
     const [countRow] = await db

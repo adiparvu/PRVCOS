@@ -8,7 +8,7 @@ export function fmtEuro(n: number): string {
 }
 
 /** Format an ISO date string as a short locale date: "Jun 28" */
-export function fmtShortDate(dateStr: string): string {
+export function fmtShortDate(dateStr: string | null | undefined): string {
   if (!dateStr) return "—"
   try {
     return new Date(dateStr).toLocaleDateString("en-US", { month: "short", day: "numeric" })

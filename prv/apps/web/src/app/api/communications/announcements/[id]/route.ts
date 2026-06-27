@@ -24,11 +24,9 @@ const patchSchema = z.object({
 // GET /api/communications/announcements/[id]
 export const GET = withGates(
   { action: "communications.announcements.read", endpointClass: "api_read" },
-  async (
-    _req: NextRequest,
-    ctx: GateContext,
-    { params }: { params: { id: string } }
-  ): Promise<NextResponse> => {
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
+    const id = req.nextUrl.pathname.split("/").at(-1) ?? ""
+
     const [row] = await db
       .select({
         id: announcements.id,
@@ -53,7 +51,7 @@ export const GET = withGates(
       .leftJoin(users, eq(announcements.authorUserId, users.id))
       .where(
         and(
-          eq(announcements.id, params.id),
+          eq(announcements.id, id),
           eq(announcements.companyId, ctx.session.companyId),
           isNull(announcements.deletedAt)
         )
@@ -67,7 +65,7 @@ export const GET = withGates(
       .from(announcementReads)
       .where(
         and(
-          eq(announcementReads.announcementId, params.id),
+          eq(announcementReads.announcementId, id),
           eq(announcementReads.userId, ctx.session.userId)
         )
       )
@@ -82,17 +80,15 @@ export const GET = withGates(
 // PATCH /api/communications/announcements/[id]
 export const PATCH = withGates(
   { action: "communications.announcements.update", endpointClass: "api_write" },
-  async (
-    req: NextRequest,
-    ctx: GateContext,
-    { params }: { params: { id: string } }
-  ): Promise<NextResponse> => {
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
+    const id = req.nextUrl.pathname.split("/").at(-1) ?? ""
+
     const [existing] = await db
       .select({ id: announcements.id, authorUserId: announcements.authorUserId })
       .from(announcements)
       .where(
         and(
-          eq(announcements.id, params.id),
+          eq(announcements.id, id),
           eq(announcements.companyId, ctx.session.companyId),
           isNull(announcements.deletedAt)
         )
@@ -126,17 +122,17 @@ export const PATCH = withGates(
 
     const [updated] = await db
       .update(announcements)
-      .set(updates as Parameters<typeof db.update>[0])
-      .where(eq(announcements.id, params.id))
+      .set(updates)
+      .where(eq(announcements.id, id))
       .returning()
 
     await writeAuditLog({
       companyId: ctx.session.companyId,
       actorId: ctx.session.userId,
       action: "communications.announcement.updated",
-      resourceType: "announcement",
-      resourceId: params.id,
-      metadata: { changes: Object.keys(parsed.data) },
+      entityType: "announcement",
+      entityId: id,
+      payload: { changes: Object.keys(parsed.data) },
     })
 
     return NextResponse.json({ announcement: updated })
@@ -146,17 +142,15 @@ export const PATCH = withGates(
 // DELETE /api/communications/announcements/[id]
 export const DELETE = withGates(
   { action: "communications.announcements.delete", endpointClass: "api_write" },
-  async (
-    _req: NextRequest,
-    ctx: GateContext,
-    { params }: { params: { id: string } }
-  ): Promise<NextResponse> => {
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
+    const id = req.nextUrl.pathname.split("/").at(-1) ?? ""
+
     const [existing] = await db
       .select({ id: announcements.id })
       .from(announcements)
       .where(
         and(
-          eq(announcements.id, params.id),
+          eq(announcements.id, id),
           eq(announcements.companyId, ctx.session.companyId),
           isNull(announcements.deletedAt)
         )
@@ -168,15 +162,15 @@ export const DELETE = withGates(
     await db
       .update(announcements)
       .set({ deletedAt: new Date(), updatedAt: new Date() })
-      .where(eq(announcements.id, params.id))
+      .where(eq(announcements.id, id))
 
     await writeAuditLog({
       companyId: ctx.session.companyId,
       actorId: ctx.session.userId,
       action: "communications.announcement.deleted",
-      resourceType: "announcement",
-      resourceId: params.id,
-      metadata: {},
+      entityType: "announcement",
+      entityId: id,
+      payload: {},
     })
 
     return new NextResponse(null, { status: 204 })

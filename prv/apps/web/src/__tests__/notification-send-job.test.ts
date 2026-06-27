@@ -95,7 +95,9 @@ beforeEach(() => {
     from: vi.fn().mockReturnValue({
       where: vi.fn().mockImplementation(() => {
         // Must be both awaitable (for tokens query without .limit) and chainable
-        const p = Promise.resolve([]) as Promise<unknown[]> & { limit: typeof mockSelectLimit }
+        const p = Promise.resolve<unknown[]>([]) as Promise<unknown[]> & {
+          limit: typeof mockSelectLimit
+        }
         p.limit = mockSelectLimit
         return p
       }),

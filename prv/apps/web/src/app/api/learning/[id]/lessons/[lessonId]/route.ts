@@ -85,18 +85,16 @@ export const GET = withGates(
           qMap.set(row.id, {
             id: row.id,
             questionText: row.questionText,
-            sortOrder: row.sortOrder,
+            sortOrder: row.sortOrder ?? 0,
             options: [],
           })
         }
         if (row.optionId) {
-          qMap
-            .get(row.id)!
-            .options.push({
-              id: row.optionId,
-              text: row.optionText ?? "",
-              sortOrder: row.optionSortOrder,
-            })
+          qMap.get(row.id)!.options.push({
+            id: row.optionId,
+            text: row.optionText ?? "",
+            sortOrder: row.optionSortOrder ?? 0,
+          })
         }
       }
       questions = Array.from(qMap.values())

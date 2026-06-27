@@ -134,13 +134,17 @@ export const POST = withGates(
       })
       .returning()
 
+    if (!announcement) {
+      return NextResponse.json({ error: "Failed to create announcement" }, { status: 500 })
+    }
+
     await writeAuditLog({
       companyId: ctx.session.companyId,
       actorId: ctx.session.userId,
       action: "communications.announcement.created",
-      resourceType: "announcement",
-      resourceId: announcement.id,
-      metadata: { title, audience },
+      entityType: "announcement",
+      entityId: announcement.id,
+      payload: { title, audience },
     })
 
     return NextResponse.json({ announcement }, { status: 201 })

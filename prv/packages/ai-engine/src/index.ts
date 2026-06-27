@@ -48,6 +48,7 @@ export interface AIConversationContext {
   scopeLevel: number
   entityType?: string
   entityId?: string
+  agentType?: AgentType
 }
 
 export const AGENT_SYSTEM_PROMPTS: Record<AgentType, string> = {

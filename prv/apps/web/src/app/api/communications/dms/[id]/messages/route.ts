@@ -35,12 +35,9 @@ async function assertParticipant(conversationId: string, userId: string, company
 // GET /api/communications/dms/[id]/messages
 export const GET = withGates(
   { action: "communications.dms.read", endpointClass: "api_read" },
-  async (
-    req: NextRequest,
-    ctx: GateContext,
-    { params }: { params: { id: string } }
-  ): Promise<NextResponse> => {
-    const conversationId = params.id
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
+    // path: .../dms/[id]/messages — id is second-to-last segment
+    const conversationId = req.nextUrl.pathname.split("/").at(-2) ?? ""
     const { searchParams } = req.nextUrl
     const cursor = searchParams.get("cursor")
 
@@ -96,7 +93,7 @@ export const GET = withGates(
 
     const hasMore = rows.length > PAGE_SIZE
     const messages = rows.slice(0, PAGE_SIZE)
-    const nextCursor = hasMore ? messages[messages.length - 1].createdAt?.toISOString() : null
+    const nextCursor = hasMore ? (messages.at(-1)?.createdAt?.toISOString() ?? null) : null
 
     // Update last read timestamp
     await db
@@ -116,12 +113,8 @@ export const GET = withGates(
 // POST /api/communications/dms/[id]/messages
 export const POST = withGates(
   { action: "communications.dms.create", endpointClass: "api_write" },
-  async (
-    req: NextRequest,
-    ctx: GateContext,
-    { params }: { params: { id: string } }
-  ): Promise<NextResponse> => {
-    const conversationId = params.id
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
+    const conversationId = req.nextUrl.pathname.split("/").at(-2) ?? ""
 
     const [conv] = await db
       .select({ id: directConversations.id })
@@ -166,13 +159,15 @@ export const POST = withGates(
       })
       .returning()
 
-    await db
-      .update(directConversations)
-      .set({
-        lastMessageAt: message.createdAt,
-        lastMessagePreview: content.slice(0, 200),
-      })
-      .where(eq(directConversations.id, conversationId))
+    if (message) {
+      await db
+        .update(directConversations)
+        .set({
+          lastMessageAt: message.createdAt,
+          lastMessagePreview: content.slice(0, 200),
+        })
+        .where(eq(directConversations.id, conversationId))
+    }
 
     return NextResponse.json({ message }, { status: 201 })
   }

@@ -84,6 +84,10 @@ export const POST = withGates(
       })
       .returning()
 
+    if (!channel) {
+      return NextResponse.json({ error: "Failed to create channel" }, { status: 500 })
+    }
+
     // Add creator as admin member
     const memberInserts = [
       {
@@ -108,9 +112,9 @@ export const POST = withGates(
       companyId: ctx.session.companyId,
       actorId: ctx.session.userId,
       action: "communications.channel.created",
-      resourceType: "chat_channel",
-      resourceId: channel.id,
-      metadata: { name, type },
+      entityType: "chat_channel",
+      entityId: channel.id,
+      payload: { name, type },
     })
 
     return NextResponse.json({ channel }, { status: 201 })

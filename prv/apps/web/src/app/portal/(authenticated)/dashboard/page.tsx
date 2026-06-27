@@ -245,12 +245,11 @@ function Section({
         </Link>
       </div>
       <div
-        className="overflow-hidden rounded-[20px] divide-y"
+        className="overflow-hidden rounded-[20px] divide-y divide-white/[0.06]"
         style={{
           background: "rgba(255,255,255,0.04)",
           border: "1px solid rgba(255,255,255,0.10)",
           boxShadow: "inset 0 1px 0 rgba(255,255,255,0.06)",
-          divideColor: "rgba(255,255,255,0.06)",
         }}
       >
         {children}

@@ -20,10 +20,7 @@ export const GET = withGates(
     const userId = sp.get("userId")
     const status = sp.get("status")
 
-    const conditions = [
-      eq(leaveRequests.companyId, companyId),
-      isNull(leaveRequests.deletedAt),
-    ]
+    const conditions = [eq(leaveRequests.companyId, companyId), isNull(leaveRequests.deletedAt)]
     if (userId) conditions.push(eq(leaveRequests.userId, userId))
     if (status && ["pending", "approved", "rejected"].includes(status))
       conditions.push(eq(leaveRequests.status, status as "pending" | "approved" | "rejected"))
@@ -63,7 +60,10 @@ export const POST = withGates(
 
     const parsed = postSchema.safeParse(body)
     if (!parsed.success)
-      return NextResponse.json({ error: "Invalid payload", issues: parsed.error.issues }, { status: 422 })
+      return NextResponse.json(
+        { error: "Invalid payload", issues: parsed.error.issues },
+        { status: 422 }
+      )
 
     const [row] = await db
       .insert(leaveRequests)
@@ -78,6 +78,10 @@ export const POST = withGates(
       })
       .returning({ id: leaveRequests.id })
 
+    if (!row) {
+      return NextResponse.json({ error: "Failed to create leave request" }, { status: 500 })
+    }
+
     void writeAuditLog({
       companyId,
       actorId,
@@ -85,7 +89,11 @@ export const POST = withGates(
       action: "workforce.write",
       entityType: "leave_request",
       entityId: row.id,
-      payload: { userId: parsed.data.userId, startDate: parsed.data.startDate, endDate: parsed.data.endDate },
+      payload: {
+        userId: parsed.data.userId,
+        startDate: parsed.data.startDate,
+        endDate: parsed.data.endDate,
+      },
       method: "POST",
       path: req.nextUrl.pathname,
       ipAddress: ctx.ipAddress,

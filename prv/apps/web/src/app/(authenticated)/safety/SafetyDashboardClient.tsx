@@ -144,9 +144,7 @@ function IncidentRow({ inc }: { inc: IncidentSummary }) {
               })}
             </span>
             <span style={{ fontSize: 11, color: "rgba(255,255,255,0.25)" }}>·</span>
-            <span style={{ fontSize: 11, color: "rgba(255,255,255,0.45)" }}>
-              {inc.reporterName}
-            </span>
+            <span style={{ fontSize: 11, color: "rgba(255,255,255,0.45)" }}>{inc.reportedBy}</span>
           </div>
         </div>
       </div>
@@ -193,11 +191,11 @@ function InspectionRow({ insp }: { insp: InspectionSummary }) {
                 year: "numeric",
               })}
             </span>
-            {insp.assignedToName && (
+            {insp.assignedTo && (
               <>
                 <span style={{ fontSize: 11, color: "rgba(255,255,255,0.25)" }}>·</span>
                 <span style={{ fontSize: 11, color: "rgba(255,255,255,0.45)" }}>
-                  {insp.assignedToName}
+                  {insp.assignedTo}
                 </span>
               </>
             )}

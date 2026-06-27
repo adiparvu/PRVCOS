@@ -54,6 +54,12 @@ export interface InspectionSummary {
   projectId: string | null
 }
 
+export interface SafetyDashboard {
+  meta: SafetyMeta
+  recentIncidents: IncidentSummary[]
+  upcomingInspections: InspectionSummary[]
+}
+
 // ── GET /api/safety ───────────────────────────────────────────────────────────
 
 export const GET = withGates(

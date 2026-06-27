@@ -35,11 +35,11 @@ export const POST = withGates(
     // New invoice number: same year, next sequence
     const issueDate = new Date().toISOString().slice(0, 10)
     const year = issueDate.slice(0, 4)
-    const [{ cnt }] = await db
+    const [cntRow] = await db
       .select({ cnt: sql<number>`COUNT(*)::int` })
       .from(invoices)
       .where(eq(invoices.companyId, companyId))
-    const seq = String((cnt ?? 0) + 1).padStart(4, "0")
+    const seq = String((cntRow?.cnt ?? 0) + 1).padStart(4, "0")
     const invoiceNumber = `PRV-${year}-${seq}`
 
     const dueDate = new Date()

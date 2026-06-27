@@ -312,7 +312,7 @@ export async function ExecutiveDashboard({ session }: Props) {
 
       {/* Executive Summary — live financial + operational snapshot */}
       <GlassCard className="mb-3.5">
-        <SectionLabel label="Situație executivă" />
+        <SectionLabel>Situație executivă</SectionLabel>
         <ExecutiveSummaryPanel />
       </GlassCard>
 

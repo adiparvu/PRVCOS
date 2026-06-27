@@ -62,7 +62,7 @@ export const GET = withGates(
       .orderBy(desc(renovationMaterialRequests.createdAt))
 
     const includeLines = new URL(req.url).searchParams.get("lines") === "true"
-    let linesByRequest: Record<string, typeof lines> = {}
+    let linesByRequest: Record<string, (typeof renovationMaterialRequestLines.$inferSelect)[]> = {}
 
     if (includeLines && requests.length > 0) {
       const requestIds = requests.map((r) => r.id)

@@ -37,12 +37,10 @@ async function assertMember(channelId: string, userId: string, companyId: string
 // GET /api/communications/channels/[id]/messages
 export const GET = withGates(
   { action: "communications.channels.read", endpointClass: "api_read" },
-  async (
-    req: NextRequest,
-    ctx: GateContext,
-    { params }: { params: { id: string } }
-  ): Promise<NextResponse> => {
-    const channelId = params.id
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
+    // path: .../channels/[id]/messages — id is second-to-last segment
+    const parts = req.nextUrl.pathname.split("/")
+    const channelId = parts.at(-2) ?? ""
     const { searchParams } = req.nextUrl
     const cursor = searchParams.get("cursor")
     const parentId = searchParams.get("parentId")
@@ -104,7 +102,7 @@ export const GET = withGates(
 
     const hasMore = rows.length > PAGE_SIZE
     const messages = rows.slice(0, PAGE_SIZE)
-    const nextCursor = hasMore ? messages[messages.length - 1].createdAt?.toISOString() : null
+    const nextCursor = hasMore ? (messages.at(-1)?.createdAt?.toISOString() ?? null) : null
 
     return NextResponse.json({ messages, hasMore, nextCursor })
   }
@@ -113,12 +111,8 @@ export const GET = withGates(
 // POST /api/communications/channels/[id]/messages
 export const POST = withGates(
   { action: "communications.messages.create", endpointClass: "api_write" },
-  async (
-    req: NextRequest,
-    ctx: GateContext,
-    { params }: { params: { id: string } }
-  ): Promise<NextResponse> => {
-    const channelId = params.id
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
+    const channelId = req.nextUrl.pathname.split("/").at(-2) ?? ""
 
     const [channel] = await db
       .select({ id: chatChannels.id, type: chatChannels.type })
@@ -157,14 +151,16 @@ export const POST = withGates(
       .returning()
 
     // Update channel last message denorm
-    await db
-      .update(chatChannels)
-      .set({
-        lastMessageAt: message.createdAt,
-        lastMessagePreview: content.slice(0, 200),
-        updatedAt: new Date(),
-      })
-      .where(eq(chatChannels.id, channelId))
+    if (message) {
+      await db
+        .update(chatChannels)
+        .set({
+          lastMessageAt: message.createdAt,
+          lastMessagePreview: content.slice(0, 200),
+          updatedAt: new Date(),
+        })
+        .where(eq(chatChannels.id, channelId))
+    }
 
     // Increment thread count if this is a reply
     if (parentId) {

@@ -87,10 +87,7 @@ export const PATCH = withGates(
     if (!contract) return NextResponse.json({ error: "Not found" }, { status: 404 })
 
     if (contract.status === "completed")
-      return NextResponse.json(
-        { error: "Cannot modify a completed contract" },
-        { status: 409 }
-      )
+      return NextResponse.json({ error: "Cannot modify a completed contract" }, { status: 409 })
 
     let body: unknown
     try {
@@ -101,15 +98,24 @@ export const PATCH = withGates(
 
     const parsed = patchSchema.safeParse(body)
     if (!parsed.success)
-      return NextResponse.json({ error: "Invalid payload", issues: parsed.error.issues }, { status: 422 })
+      return NextResponse.json(
+        { error: "Invalid payload", issues: parsed.error.issues },
+        { status: 422 }
+      )
 
-    const { contractValue, ...rest } = parsed.data
+    const { contractValue, signedByClientAt, signedByCompanyAt, ...rest } = parsed.data
 
     const [updated] = await db
       .update(renovationContracts)
       .set({
         ...rest,
         ...(contractValue !== undefined ? { contractValue: String(contractValue) } : {}),
+        ...(signedByClientAt !== undefined
+          ? { signedByClientAt: signedByClientAt ? new Date(signedByClientAt) : null }
+          : {}),
+        ...(signedByCompanyAt !== undefined
+          ? { signedByCompanyAt: signedByCompanyAt ? new Date(signedByCompanyAt) : null }
+          : {}),
         updatedAt: new Date(),
       })
       .where(

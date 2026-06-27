@@ -10,7 +10,7 @@ import {
   renovationProjects,
   users,
 } from "@prv/db/schema"
-import { and, asc, desc, eq, isNull } from "drizzle-orm"
+import { and, asc, desc, eq, inArray, isNull } from "drizzle-orm"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -89,7 +89,7 @@ export const GET = withGates(
             .where(
               estimateIds.length === 1
                 ? eq(renovationEstimateLines.estimateId, estimateIds[0]!)
-                : renovationEstimateLines.estimateId.in(estimateIds)
+                : inArray(renovationEstimateLines.estimateId, estimateIds)
             )
             .orderBy(
               asc(renovationEstimateLines.estimateId),

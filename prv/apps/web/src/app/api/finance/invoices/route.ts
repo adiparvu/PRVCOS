@@ -160,11 +160,11 @@ export const POST = withGates(
 
     // Generate invoice number: PRV-YYYY-NNNN
     const year = issueDate.slice(0, 4)
-    const [{ cnt }] = await db
+    const [cntRow] = await db
       .select({ cnt: sql<number>`COUNT(*)::int` })
       .from(invoices)
       .where(eq(invoices.companyId, companyId))
-    const seq = String((cnt ?? 0) + 1).padStart(4, "0")
+    const seq = String((cntRow?.cnt ?? 0) + 1).padStart(4, "0")
     const invoiceNumber = `PRV-${year}-${seq}`
 
     // Compute totals

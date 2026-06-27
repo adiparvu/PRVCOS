@@ -117,6 +117,10 @@ export const POST = withGates(
       })
       .returning({ id: documentSignatures.id })
 
+    if (!sig) {
+      return NextResponse.json({ error: "Failed to create signature" }, { status: 500 })
+    }
+
     void writeAuditLog({
       companyId,
       actorId,

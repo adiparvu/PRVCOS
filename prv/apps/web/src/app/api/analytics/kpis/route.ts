@@ -132,8 +132,8 @@ export const GET = withGates(
               .where(
                 and(
                   eq(attendanceRecords.companyId, companyId),
-                  gte(attendanceRecords.checkInAt, todayStart),
-                  lt(attendanceRecords.checkInAt, todayEnd)
+                  gte(attendanceRecords.clockIn, todayStart),
+                  lt(attendanceRecords.clockIn, todayEnd)
                 )
               ),
             db
