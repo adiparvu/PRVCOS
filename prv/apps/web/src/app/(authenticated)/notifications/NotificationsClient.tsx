@@ -113,7 +113,9 @@ export function NotificationsClient({
   const [modules, setModules] = useState(INITIAL_MODULES)
 
   const filterRef = useRef(filter)
-  filterRef.current = filter
+  useEffect(() => {
+    filterRef.current = filter
+  }, [filter])
 
   // Fetch list when filter changes
   useEffect(() => {
