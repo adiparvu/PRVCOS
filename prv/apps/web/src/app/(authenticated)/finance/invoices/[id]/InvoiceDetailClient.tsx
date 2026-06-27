@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState } from "react"
+import { useInvoiceDetail } from "@/lib/api-hooks"
 import Link from "next/link"
 import { useSheetStack } from "@prv/ui"
 import type {
@@ -884,24 +885,9 @@ function InvoiceActionsSheet({
 // ── Main component ────────────────────────────────────────────────────────────
 
 export function InvoiceDetailClient({ id }: { id: string }) {
-  const [invoice, setInvoice] = useState<InvoiceDetail | null>(null)
-  const [loading, setLoading] = useState(true)
+  const { data, isLoading: loading } = useInvoiceDetail(id)
+  const invoice = data?.invoice ?? null
   const { openSheet } = useSheetStack()
-
-  const load = useCallback(async () => {
-    setLoading(true)
-    try {
-      const res = await fetch(`/api/finance/invoices/${id}`)
-      const data = await res.json()
-      setInvoice(data.invoice ?? null)
-    } finally {
-      setLoading(false)
-    }
-  }, [id])
-
-  useEffect(() => {
-    load()
-  }, [load])
 
   function openActions() {
     if (!invoice) return

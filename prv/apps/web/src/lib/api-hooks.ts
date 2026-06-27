@@ -22,6 +22,8 @@ import type { ClientDetail } from "@/app/api/crm/clients/[id]/route"
 import type { SupplierDetail } from "@/app/api/suppliers/[id]/route"
 import type { ShiftDetail } from "@/app/api/schedule/[id]/route"
 import type { AttendanceDetail } from "@/app/api/attendance/[id]/route"
+import type { QuoteDetail } from "@/app/api/crm/quotes/[id]/route"
+import type { InvoiceDetail } from "@/app/api/finance/invoices/[id]/route"
 import type { KnowledgeArticle, KnowledgeMeta } from "@/app/api/knowledge/route"
 import type { Course, Achievement, LearningMeta } from "@/app/api/learning/route"
 import type { ShiftSummary, ShiftsMeta } from "@/app/api/schedule/route"
@@ -1080,6 +1082,28 @@ export function useAttendanceDetail(id: string) {
     queryFn: () =>
       fetch(`/api/attendance/${id}`).then(
         (r) => r.json() as Promise<{ record: AttendanceDetail | null }>
+      ),
+    enabled: !!id,
+  })
+}
+
+export function useQuoteDetail(id: string) {
+  return useQuery({
+    queryKey: ["quote-detail", id],
+    queryFn: () =>
+      fetch(`/api/crm/quotes/${id}`).then(
+        (r) => r.json() as Promise<{ quote: QuoteDetail | null }>
+      ),
+    enabled: !!id,
+  })
+}
+
+export function useInvoiceDetail(id: string) {
+  return useQuery({
+    queryKey: ["invoice-detail", id],
+    queryFn: () =>
+      fetch(`/api/finance/invoices/${id}`).then(
+        (r) => r.json() as Promise<{ invoice: InvoiceDetail | null }>
       ),
     enabled: !!id,
   })

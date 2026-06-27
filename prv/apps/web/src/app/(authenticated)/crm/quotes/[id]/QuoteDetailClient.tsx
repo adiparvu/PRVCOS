@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState } from "react"
+import { useQuoteDetail } from "@/lib/api-hooks"
 import Link from "next/link"
 import { useSheetStack } from "@prv/ui"
 import type {
@@ -956,24 +957,9 @@ function QuoteActionsSheet({ quote, onClose }: { quote: QuoteDetail; onClose: ()
 // ── Main component ────────────────────────────────────────────────────────────
 
 export function QuoteDetailClient({ id }: { id: string }) {
-  const [quote, setQuote] = useState<QuoteDetail | null>(null)
-  const [loading, setLoading] = useState(true)
+  const { data, isLoading: loading } = useQuoteDetail(id)
+  const quote = data?.quote ?? null
   const { openSheet } = useSheetStack()
-
-  const load = useCallback(async () => {
-    setLoading(true)
-    try {
-      const res = await fetch(`/api/crm/quotes/${id}`)
-      const data = await res.json()
-      setQuote(data.quote ?? null)
-    } finally {
-      setLoading(false)
-    }
-  }, [id])
-
-  useEffect(() => {
-    load()
-  }, [load])
 
   function openActions() {
     if (!quote) return

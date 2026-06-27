@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState } from "react"
+import { useQuery } from "@tanstack/react-query"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 
@@ -120,25 +121,18 @@ function GlassCard({ children, mb = 14 }: { children: React.ReactNode; mb?: numb
 
 export function PurchaseRequestDetailClient({ id }: { id: string }) {
   const router = useRouter()
-  const [pr, setPr] = useState<PRDetail | null>(null)
-  const [error, setError] = useState(false)
+  const { data, isError, refetch } = useQuery({
+    queryKey: ["purchase-request-detail", id],
+    queryFn: () =>
+      fetch(`/api/procurement/requests/${id}`).then((r) => {
+        if (!r.ok) throw new Error("Failed to load purchase request")
+        return r.json() as Promise<{ request: PRDetail }>
+      }),
+    enabled: !!id,
+  })
+  const pr = data?.request ?? null
+  const error = isError
   const [actionLoading, setActionLoading] = useState<string | null>(null)
-
-  const fetchPR = useCallback(async () => {
-    setError(false)
-    try {
-      const res = await fetch(`/api/procurement/requests/${id}`)
-      if (!res.ok) throw new Error()
-      const data = (await res.json()) as { request: PRDetail }
-      setPr(data.request)
-    } catch {
-      setError(true)
-    }
-  }, [id])
-
-  useEffect(() => {
-    void fetchPR()
-  }, [fetchPR])
 
   async function doAction(action: string) {
     setActionLoading(action)
@@ -148,7 +142,7 @@ export function PurchaseRequestDetailClient({ id }: { id: string }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action }),
       })
-      await fetchPR()
+      await refetch()
     } finally {
       setActionLoading(null)
     }
