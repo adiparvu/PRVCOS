@@ -16,6 +16,9 @@ export async function seedKnowledge(opts: {
 
   const { companyId, managerId, supervisorId, workerIds } = opts
   const [worker1Id, worker2Id, worker3Id] = workerIds
+  if (!worker1Id || !worker2Id || !worker3Id) {
+    throw new Error("seed requires at least 3 worker ids")
+  }
 
   const articleDefs = [
     {

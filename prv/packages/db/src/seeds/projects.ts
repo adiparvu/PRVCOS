@@ -21,6 +21,9 @@ export async function seedProjects(opts: {
   const { companyId, storeId, clientIds, ceoId, managerId, supervisorId, workerIds } = opts
   const [clientId1, clientId2] = clientIds
   const [worker1Id, worker2Id] = workerIds
+  if (!worker1Id || !worker2Id) {
+    throw new Error("seedProjects requires at least 2 worker ids")
+  }
 
   const projectDefs = [
     {

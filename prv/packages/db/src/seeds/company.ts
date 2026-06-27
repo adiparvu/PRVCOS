@@ -24,7 +24,7 @@ export async function seedCompany(): Promise<CompanySeedResult> {
     .values({
       name: "PRV Renovations SRL",
       slug: COMPANY_SLUG,
-      type: "renovation",
+      type: "renovations",
       status: "active",
       country: "RO",
       city: "București",
@@ -75,6 +75,8 @@ export async function seedCompany(): Promise<CompanySeedResult> {
       lastName: "Popescu",
       jobTitle: "CEO",
       role: "company_owner",
+      systemRole: "ceo" as const,
+      scopeLevel: "SCOPE_COMPANY" as const,
     },
     {
       email: "manager@prv-demo.ro",
@@ -82,6 +84,8 @@ export async function seedCompany(): Promise<CompanySeedResult> {
       lastName: "Constantin",
       jobTitle: "Project Manager",
       role: "manager",
+      systemRole: "operations_manager" as const,
+      scopeLevel: "SCOPE_STORE" as const,
     },
     {
       email: "supervisor@prv-demo.ro",
@@ -89,6 +93,8 @@ export async function seedCompany(): Promise<CompanySeedResult> {
       lastName: "Ionescu",
       jobTitle: "Site Supervisor",
       role: "employee",
+      systemRole: "team_leader" as const,
+      scopeLevel: "SCOPE_TEAM" as const,
     },
     {
       email: "worker1@prv-demo.ro",
@@ -96,6 +102,8 @@ export async function seedCompany(): Promise<CompanySeedResult> {
       lastName: "Gheorghe",
       jobTitle: "Electrician",
       role: "employee",
+      systemRole: "worker" as const,
+      scopeLevel: "SCOPE_RECORD" as const,
     },
     {
       email: "worker2@prv-demo.ro",
@@ -103,6 +111,8 @@ export async function seedCompany(): Promise<CompanySeedResult> {
       lastName: "Popa",
       jobTitle: "Interior Designer",
       role: "employee",
+      systemRole: "worker" as const,
+      scopeLevel: "SCOPE_RECORD" as const,
     },
     {
       email: "worker3@prv-demo.ro",
@@ -110,6 +120,8 @@ export async function seedCompany(): Promise<CompanySeedResult> {
       lastName: "Dumitrescu",
       jobTitle: "Plumber",
       role: "employee",
+      systemRole: "worker" as const,
+      scopeLevel: "SCOPE_RECORD" as const,
     },
   ]
 
@@ -119,10 +131,13 @@ export async function seedCompany(): Promise<CompanySeedResult> {
     await db
       .insert(users)
       .values({
+        companyId,
         email: u.email,
         firstName: u.firstName,
         lastName: u.lastName,
         jobTitle: u.jobTitle,
+        role: u.systemRole,
+        scopeLevel: u.scopeLevel,
         isActive: true,
       })
       .onConflictDoNothing()

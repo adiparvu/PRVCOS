@@ -19,6 +19,9 @@ export async function seedWorkforce(opts: {
 
   const { companyId, storeId, supervisorId, workerIds, projectId } = opts
   const [worker1Id, worker2Id, worker3Id] = workerIds
+  if (!worker1Id || !worker2Id || !worker3Id) {
+    throw new Error("seed requires at least 3 worker ids")
+  }
 
   const allWorkers = [supervisorId, worker1Id, worker2Id, worker3Id]
 

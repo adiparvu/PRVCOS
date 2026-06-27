@@ -16,6 +16,9 @@ export async function seedLearning(opts: {
 
   const { companyId, managerId, supervisorId, workerIds } = opts
   const [worker1Id, worker2Id, worker3Id] = workerIds
+  if (!worker1Id || !worker2Id || !worker3Id) {
+    throw new Error("seed requires at least 3 worker ids")
+  }
 
   const courseDefs = [
     {
@@ -197,11 +200,12 @@ export async function seedLearning(opts: {
   ]
 
   for (const e of enrollmentDefs) {
-    if (!courseIds[e.courseIdx]) continue
+    const courseId = courseIds[e.courseIdx]
+    if (!courseId) continue
     await db
       .insert(courseEnrollments)
       .values({
-        courseId: courseIds[e.courseIdx],
+        courseId,
         userId: e.userId,
         companyId,
         status: e.status,
