@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import Link from "next/link"
 import { BusinessCard } from "@/components/business-card/BusinessCard"
 import { PublicCardActions } from "./PublicCardActions"
 
@@ -77,9 +78,9 @@ export default async function PublicCardPage({ params }: Props) {
       <div className="min-h-svh flex items-center justify-center" style={{ background: "#000" }}>
         <div className="text-center">
           <p className="text-white/40 text-[15px]">Card not found or not public</p>
-          <a href="/" className="text-white/20 text-[13px] mt-2 block">
+          <Link href="/" className="text-white/20 text-[13px] mt-2 block">
             Built with PRV
-          </a>
+          </Link>
         </div>
       </div>
     )

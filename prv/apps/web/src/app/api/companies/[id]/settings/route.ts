@@ -22,7 +22,7 @@ export const GET = withGates(
   { action: "companies.settings.read", endpointClass: "api_read" },
   async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
     const { searchParams } = new URL(req.url)
-    const module = searchParams.get("module")
+    const moduleParam = searchParams.get("module")
 
     // Extract company id from URL path
     const segments = req.nextUrl.pathname.split("/")
@@ -34,13 +34,13 @@ export const GET = withGates(
     if (companyId !== ctx.session.companyId) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
-    if (!module) {
+    if (!moduleParam) {
       return NextResponse.json({ error: "?module is required" }, { status: 400 })
     }
 
     const rows = await cacheMemo(
       "company_settings",
-      settingsCacheKey(companyId, module),
+      settingsCacheKey(companyId, moduleParam),
       () =>
         db
           .select({
@@ -49,11 +49,13 @@ export const GET = withGates(
             updatedAt: companySettings.updatedAt,
           })
           .from(companySettings)
-          .where(and(eq(companySettings.companyId, companyId), eq(companySettings.module, module))),
+          .where(
+            and(eq(companySettings.companyId, companyId), eq(companySettings.module, moduleParam))
+          ),
       { ttl: CacheTTL.COMPANY_CONTEXT }
     )
 
-    return NextResponse.json({ module, settings: rows })
+    return NextResponse.json({ module: moduleParam, settings: rows })
   }
 )
 

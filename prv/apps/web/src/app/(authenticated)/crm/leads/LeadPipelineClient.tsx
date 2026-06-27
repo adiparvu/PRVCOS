@@ -462,6 +462,7 @@ export function LeadPipelineClient() {
   const [selected, setSelected] = useState<Lead | null>(null)
   const [converted, setConverted] = useState<Set<string>>(new Set())
   const [synced, setSynced] = useState(false)
+  const [pipeline, setPipeline] = useState<KanbanColumn[]>(() => buildPipelineCols([]))
   const { data: leadsData } = useLeads()
 
   useEffect(() => {
@@ -477,8 +478,6 @@ export function LeadPipelineClient() {
   const hotLeads = activeLeads.filter((l) => l.score >= 70)
   const pipelineValue = activeLeads.reduce((s, l) => s + l.estimatedValue, 0)
   const proposalLeads = leads.filter((l) => l.stage === "proposal")
-
-  const [pipeline, setPipeline] = useState<KanbanColumn[]>(() => buildPipelineCols([]))
 
   function handleCardMove(cardId: string, fromCol: string, toCol: string) {
     setLeads((prev) => prev.map((l) => (l.id === cardId ? { ...l, stage: toCol as LeadStage } : l)))

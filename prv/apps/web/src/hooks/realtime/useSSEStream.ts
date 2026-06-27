@@ -23,7 +23,9 @@ export function useSSEStream({ channels, onEvent, enabled = true }: UseSSEStream
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const attemptsRef = useRef(0)
   const onEventRef = useRef(onEvent)
-  onEventRef.current = onEvent
+  useEffect(() => {
+    onEventRef.current = onEvent
+  }, [onEvent])
 
   useEffect(() => {
     if (!enabled || channels.length === 0) return

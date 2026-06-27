@@ -172,6 +172,7 @@ function SheetBtn({
 export function PurchaseOrderDetailClient({ id }: PurchaseOrderDetailClientProps) {
   const [order, setOrder] = useState<PODetail | null>(null)
   const [error, setError] = useState(false)
+  const [now] = useState(() => Date.now())
   const { openSheet } = useSheetStack()
 
   const fetchOrder = useCallback(async () => {
@@ -407,7 +408,7 @@ export function PurchaseOrderDetailClient({ id }: PurchaseOrderDetailClientProps
   const itemsTotal = order.items.reduce((s, item) => s + item.price, 0)
   const neededByDate = order.neededBy ? new Date(order.neededBy) : null
   const isUrgent =
-    isPending && neededByDate !== null && neededByDate.getTime() - Date.now() < 3 * 86_400_000
+    isPending && neededByDate !== null && neededByDate.getTime() - now < 3 * 86_400_000
 
   return (
     <div

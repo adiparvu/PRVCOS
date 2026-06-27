@@ -442,7 +442,7 @@ function ApprovalStepRow({
               fontStyle: "italic",
             }}
           >
-            "{step.note}"
+            &quot;{step.note}&quot;
           </div>
         )}
 

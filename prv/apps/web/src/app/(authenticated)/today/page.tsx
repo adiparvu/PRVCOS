@@ -69,9 +69,9 @@ export default async function TodayPage() {
   }
 
   const today = ctx?.weekDays.find((d) => d.today)
-  const activeTasks = (ctx?.todayTasks ?? []).filter(
-    (t) => t.status !== "done" && t.status !== "cancelled"
-  ).slice(0, 8)
+  const activeTasks = (ctx?.todayTasks ?? [])
+    .filter((t) => t.status !== "done" && t.status !== "cancelled")
+    .slice(0, 8)
 
   return (
     <div className="px-4 pt-14 pb-28 max-w-2xl mx-auto">
@@ -85,7 +85,8 @@ export default async function TodayPage() {
             className="text-[26px] font-semibold tracking-tight leading-tight"
             style={{ color: "var(--prv-text-1)" }}
           >
-            {greeting()}{ctx ? `, ${ctx.firstName}` : ""}
+            {greeting()}
+            {ctx ? `, ${ctx.firstName}` : ""}
           </h1>
         </div>
         {(ctx?.inboxCount ?? 0) > 0 && (
@@ -111,7 +112,7 @@ export default async function TodayPage() {
 
       {/* Attendance */}
       <GlassCard className="mb-3.5">
-        <SectionLabel>Today's Attendance</SectionLabel>
+        <SectionLabel>Today&apos;s Attendance</SectionLabel>
         <div className="flex items-center gap-3 mb-3">
           <span
             className="w-[8px] h-[8px] rounded-full flex-shrink-0"
@@ -149,12 +150,11 @@ export default async function TodayPage() {
               <span
                 className="w-[6px] h-[6px] rounded-full"
                 style={{
-                  background:
-                    d.isClockedIn
-                      ? "rgba(80,220,120,0.9)"
-                      : d.workedMinutes > 0
-                        ? "rgba(255,255,255,0.6)"
-                        : "rgba(255,255,255,0.18)",
+                  background: d.isClockedIn
+                    ? "rgba(80,220,120,0.9)"
+                    : d.workedMinutes > 0
+                      ? "rgba(255,255,255,0.6)"
+                      : "rgba(255,255,255,0.18)",
                 }}
               />
             </div>
@@ -164,7 +164,7 @@ export default async function TodayPage() {
 
       {/* Tasks */}
       <GlassCard className="mb-3.5">
-        <SectionLabel>Today's Tasks · {activeTasks.length}</SectionLabel>
+        <SectionLabel>Today&apos;s Tasks · {activeTasks.length}</SectionLabel>
         {activeTasks.length === 0 ? (
           <p className="py-2 text-[13px]" style={{ color: "var(--prv-text-3)" }}>
             No tasks for today

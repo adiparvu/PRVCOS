@@ -376,7 +376,7 @@ export function NotificationsClient({
                 className="text-[13px] max-w-[220px]"
                 style={{ color: "rgba(255,255,255,0.25)", lineHeight: 1.5 }}
               >
-                No notifications here. You'll be notified when something needs your attention.
+                No notifications here. You&apos;ll be notified when something needs your attention.
               </p>
             </div>
           )}

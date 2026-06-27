@@ -289,7 +289,7 @@ function ApprovalDetailView({
           className="p-3 rounded-[12px] text-[13px] text-white/65 italic leading-relaxed"
           style={{ background: "var(--prv-g2)" }}
         >
-          "{detail.reason}"
+          &quot;{detail.reason}&quot;
         </div>
       </GlassCard>
 

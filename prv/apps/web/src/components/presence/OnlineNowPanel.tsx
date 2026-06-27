@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect } from "react"
+import Link from "next/link"
 import { usePresenceStore } from "./store/presenceStore"
 import { usePresence } from "./hooks/usePresence"
 import { PresenceDot } from "./PresenceDot"
@@ -35,7 +36,10 @@ export function OnlineNowPanel({ companyId, currentUserId = "" }: Props) {
     >
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <p className="text-[11px] font-medium uppercase tracking-widest" style={{ color: "var(--prv-text-3)" }}>
+          <p
+            className="text-[11px] font-medium uppercase tracking-widest"
+            style={{ color: "var(--prv-text-3)" }}
+          >
             Online Now
           </p>
           <div
@@ -45,13 +49,13 @@ export function OnlineNowPanel({ companyId, currentUserId = "" }: Props) {
             {online.length}
           </div>
         </div>
-        <a
+        <Link
           href="/people?status=online"
           className="text-[12px] transition-colors"
           style={{ color: "var(--prv-text-3)" }}
         >
           See all →
-        </a>
+        </Link>
       </div>
 
       <div className="flex items-center gap-2">

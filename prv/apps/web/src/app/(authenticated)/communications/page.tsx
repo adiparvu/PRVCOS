@@ -11,10 +11,8 @@ export default async function CommunicationsPage() {
   const sessionId = cookieStore.get("prv_session")?.value
   if (!sessionId) redirect("/auth/login")
 
-  try {
-    const session = await getSession(sessionId)
-    return <CommunicationsClient userId={session.userId} companyId={session.companyId} />
-  } catch {
-    redirect("/auth/login")
-  }
+  const session = await getSession(sessionId).catch(() => null)
+  if (!session) redirect("/auth/login")
+
+  return <CommunicationsClient userId={session.userId} companyId={session.companyId} />
 }

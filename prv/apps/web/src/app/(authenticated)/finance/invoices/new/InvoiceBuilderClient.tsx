@@ -166,7 +166,7 @@ function InvoicePreview({
   const tax = items.reduce((s, it) => s + it.qty * it.unitPrice * (it.taxRate / 100), 0)
   const total = subtotal + tax
 
-  const refNum = `INV-${String(Date.now()).slice(-4)}`
+  const [refNum] = useState(() => `INV-${String(Date.now()).slice(-4)}`)
 
   return (
     <div

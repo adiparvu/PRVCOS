@@ -97,7 +97,7 @@ export function ReportBuilderClient({ role: _role }: { role: string }) {
     }
   }
 
-  function useTemplate(label: string) {
+  function applyTemplate(label: string) {
     setDescription(label)
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto"
@@ -377,7 +377,7 @@ export function ReportBuilderClient({ role: _role }: { role: string }) {
         {TEMPLATES.map((t) => (
           <button
             key={t.label}
-            onClick={() => useTemplate(t.label)}
+            onClick={() => applyTemplate(t.label)}
             className="flex flex-col items-start gap-1.5 p-3.5 rounded-[16px] text-left relative overflow-hidden"
             style={{
               background: "var(--prv-g1)",

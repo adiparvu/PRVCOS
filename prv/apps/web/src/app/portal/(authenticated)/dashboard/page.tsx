@@ -113,7 +113,7 @@ export default async function PortalDashboardPage() {
         <h1 className="text-2xl font-semibold text-white/95" style={{ letterSpacing: "-0.03em" }}>
           Good to see you, {session.name.split(" ")[0]}
         </h1>
-        <p className="mt-1 text-sm text-white/40">Here's your project overview.</p>
+        <p className="mt-1 text-sm text-white/40">Here&apos;s your project overview.</p>
       </div>
 
       {/* KPI row */}
