@@ -22,7 +22,7 @@ const REVERT: Record<string, string> = { completed: "active", active: "draft" }
 export const POST = withGates(
   { action: "projects.phase.write", endpointClass: "api_write" },
   async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
-    const id = req.nextUrl.pathname.split("/").slice(-3, -2)[0]
+    const id = req.nextUrl.pathname.split("/").at(-2) ?? ""
     if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 })
 
     const raw = await req.json().catch(() => ({}))
@@ -35,7 +35,9 @@ export const POST = withGates(
     const [project] = await db
       .select({ id: projects.id, status: projects.status })
       .from(projects)
-      .where(and(eq(projects.id, id), eq(projects.companyId, companyId), isNull(projects.deletedAt)))
+      .where(
+        and(eq(projects.id, id), eq(projects.companyId, companyId), isNull(projects.deletedAt))
+      )
       .limit(1)
 
     if (!project) return NextResponse.json({ error: "Not found" }, { status: 404 })

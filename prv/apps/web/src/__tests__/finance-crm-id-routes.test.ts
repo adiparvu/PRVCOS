@@ -315,6 +315,9 @@ describe("POST /api/finance/invoices/[id]/payment", () => {
   it("records payment and returns 200 with audit log", async () => {
     const { writeAuditLog } = await import("@prv/auth")
     const { POST } = await import("@/app/api/finance/invoices/[id]/payment/route")
+    mockDb.limit.mockResolvedValueOnce([
+      { id: "inv-1", status: "sent", invoiceNumber: "PRV-2026-0001", total: "1190" },
+    ])
     const res = await POST(
       makeReq("/api/finance/invoices/inv-1/payment", "POST", {
         json: async () => ({ method: "bank_transfer", paidDate: "2026-06-10", amount: 1190 }),

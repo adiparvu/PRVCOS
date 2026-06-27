@@ -394,6 +394,7 @@ describe("POST /api/projects/[id]/flag", () => {
 
   it("returns 200 with type and severity on success", async () => {
     const { POST } = await import("@/app/api/projects/[id]/flag/route")
+    mockDb.limit.mockResolvedValueOnce([{ id: "proj-1", name: "Apartament Pipera" }])
     const res = await POST(
       makeReq("/api/projects/proj-1/flag", "POST", {
         json: async () => ({
@@ -436,6 +437,7 @@ describe("POST /api/projects/[id]/phase", () => {
 
   it("returns 200 with action advance", async () => {
     const { POST } = await import("@/app/api/projects/[id]/phase/route")
+    mockDb.limit.mockResolvedValueOnce([{ id: "proj-1", status: "draft" }])
     const res = await POST(
       makeReq("/api/projects/proj-1/phase", "POST", {
         json: async () => ({ action: "advance" }),
@@ -450,6 +452,7 @@ describe("POST /api/projects/[id]/phase", () => {
 
   it("returns 200 with action revert", async () => {
     const { POST } = await import("@/app/api/projects/[id]/phase/route")
+    mockDb.limit.mockResolvedValueOnce([{ id: "proj-1", status: "active" }])
     const res = await POST(
       makeReq("/api/projects/proj-1/phase", "POST", {
         json: async () => ({ action: "revert", note: "Going back to planning" }),
@@ -486,6 +489,7 @@ describe("POST /api/people/time-off/[id]", () => {
 
   it("returns 200 on approve", async () => {
     const { POST } = await import("@/app/api/people/time-off/[id]/route")
+    mockDb.limit.mockResolvedValueOnce([{ id: "req-1", status: "pending" }])
     const res = await POST(
       makeReq("/api/people/time-off/req-1", "POST", {
         json: async () => ({ action: "approve" }),
@@ -500,6 +504,7 @@ describe("POST /api/people/time-off/[id]", () => {
 
   it("returns 200 on decline with reason", async () => {
     const { POST } = await import("@/app/api/people/time-off/[id]/route")
+    mockDb.limit.mockResolvedValueOnce([{ id: "req-1", status: "pending" }])
     const res = await POST(
       makeReq("/api/people/time-off/req-1", "POST", {
         json: async () => ({ action: "decline", reason: "Business critical period" }),

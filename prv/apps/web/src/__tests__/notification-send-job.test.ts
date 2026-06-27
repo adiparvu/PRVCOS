@@ -44,6 +44,14 @@ vi.mock("@prv/email", () => ({
   notificationEmail: mockNotificationEmail,
 }))
 
+// Mock the Expo push transport (resolved by path so it matches the relative
+// import inside packages/jobs/src/functions/notification-send.ts). The factory
+// is hoisted, so it must not reference top-level variables — inline everything.
+vi.mock("../../../../packages/jobs/src/lib/expo-push", () => ({
+  sendExpoPushNotifications: async () => [{ status: "ok" as const }],
+  isExpoToken: (t: string) => t.startsWith("ExponentPushToken[") || t.startsWith("ExpoPushToken["),
+}))
+
 // Import the barrel — triggers inngest.createFunction for all 6 jobs,
 // which captures the notification-send handler via the ID filter above.
 import "@prv/jobs/functions"
@@ -214,6 +222,20 @@ describe("notification-send Inngest job", () => {
       .mockReset()
       .mockResolvedValueOnce([{ email: true, push: true }])
       .mockResolvedValueOnce([{ email: "eve@example.com", firstName: "Eve" }])
+
+    // The push-tokens query has no .limit(), so it resolves via .where().
+    // Return a valid Expo token so the send-push step fires.
+    mockSelect.mockReset().mockImplementation(() => ({
+      from: vi.fn().mockReturnValue({
+        where: vi.fn().mockImplementation(() => {
+          const p = Promise.resolve<unknown[]>([
+            { token: "ExponentPushToken[eve-device]" },
+          ]) as Promise<unknown[]> & { limit: typeof mockSelectLimit }
+          p.limit = mockSelectLimit
+          return p
+        }),
+      }),
+    }))
 
     const step = makeStep()
     await captureRef.handler!({ event: BASE_EVENT, step })

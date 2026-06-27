@@ -42,6 +42,7 @@ vi.mock("@prv/db", () => ({ db: mockDb }))
 
 vi.mock("@prv/db/schema", () => ({
   leaveRequests: {},
+  invoices: { id: {}, status: {}, invoiceNumber: {}, total: {}, companyId: {}, deletedAt: {} },
   users: {},
   stores: {},
   auditLogs: {},
@@ -112,6 +113,9 @@ describe("POST /api/finance/invoices/[id]/payment", () => {
 
   it("records payment and returns 200 with success:true", async () => {
     const { POST } = await import("@/app/api/finance/invoices/[id]/payment/route")
+    mockDb.limit.mockResolvedValueOnce([
+      { id: "inv-1", status: "sent", invoiceNumber: "PRV-2025-0001", total: "1190" },
+    ])
     const res = await POST(
       makeReq("/api/finance/invoices/inv-1/payment", "POST", {
         json: async () => ({ method: "bank_transfer", paidDate: "2025-01-15" }),
@@ -127,6 +131,9 @@ describe("POST /api/finance/invoices/[id]/payment", () => {
   it("fires audit log with action finance.invoice.payment", async () => {
     const { writeAuditLog } = await import("@prv/auth")
     const { POST } = await import("@/app/api/finance/invoices/[id]/payment/route")
+    mockDb.limit.mockResolvedValueOnce([
+      { id: "inv-1", status: "sent", invoiceNumber: "PRV-2025-0001", total: "1190" },
+    ])
     await POST(
       makeReq("/api/finance/invoices/inv-1/payment", "POST", {
         json: async () => ({ method: "cash", paidDate: "2025-01-15" }),
@@ -152,6 +159,9 @@ describe("POST /api/finance/invoices/[id]/void", () => {
 
   it("voids invoice and returns 200 with success:true", async () => {
     const { POST } = await import("@/app/api/finance/invoices/[id]/void/route")
+    mockDb.limit.mockResolvedValueOnce([
+      { id: "inv-1", status: "sent", invoiceNumber: "PRV-2025-0001" },
+    ])
     const res = await POST(
       makeReq("/api/finance/invoices/inv-1/void", "POST", {
         json: async () => ({ reason: "Duplicate invoice" }),
@@ -166,6 +176,9 @@ describe("POST /api/finance/invoices/[id]/void", () => {
   it("fires audit log with action finance.invoice.void", async () => {
     const { writeAuditLog } = await import("@prv/auth")
     const { POST } = await import("@/app/api/finance/invoices/[id]/void/route")
+    mockDb.limit.mockResolvedValueOnce([
+      { id: "inv-1", status: "sent", invoiceNumber: "PRV-2025-0001" },
+    ])
     await POST(
       makeReq("/api/finance/invoices/inv-1/void", "POST", {
         json: async () => ({ reason: "Error in amounts" }),
@@ -202,6 +215,7 @@ describe("POST /api/people/time-off/[id]", () => {
 
   it("approves time-off and returns 200 with success:true", async () => {
     const { POST } = await import("@/app/api/people/time-off/[id]/route")
+    mockDb.limit.mockResolvedValueOnce([{ id: "req-1", status: "pending" }])
     const res = await POST(
       makeReq("/api/people/time-off/req-1", "POST", {
         json: async () => ({ action: "approve" }),
@@ -217,6 +231,7 @@ describe("POST /api/people/time-off/[id]", () => {
   it("fires audit log with action hr.time_off.approve", async () => {
     const { writeAuditLog } = await import("@prv/auth")
     const { POST } = await import("@/app/api/people/time-off/[id]/route")
+    mockDb.limit.mockResolvedValueOnce([{ id: "req-1", status: "pending" }])
     await POST(
       makeReq("/api/people/time-off/req-1", "POST", {
         json: async () => ({ action: "approve" }),
@@ -231,6 +246,7 @@ describe("POST /api/people/time-off/[id]", () => {
   it("fires audit log with action hr.time_off.decline when declining", async () => {
     const { writeAuditLog } = await import("@prv/auth")
     const { POST } = await import("@/app/api/people/time-off/[id]/route")
+    mockDb.limit.mockResolvedValueOnce([{ id: "req-1", status: "pending" }])
     await POST(
       makeReq("/api/people/time-off/req-1", "POST", {
         json: async () => ({ action: "decline", reason: "Insufficient leave balance" }),
