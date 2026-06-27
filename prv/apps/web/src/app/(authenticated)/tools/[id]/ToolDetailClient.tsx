@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useToolDetail } from "@/lib/api-hooks"
 import Link from "next/link"
 import { useSheetStack } from "@prv/ui"
 import type { ToolDetail, MaintenanceStatus } from "@/app/api/tools/[id]/route"
@@ -217,25 +217,10 @@ function SectionLabel({ children }: { children: string }) {
 // ── Main component ────────────────────────────────────────────────────────────
 
 export function ToolDetailClient({ id }: ToolDetailClientProps) {
-  const [tool, setTool] = useState<ToolDetail | null>(null)
-  const [error, setError] = useState(false)
+  const { data: toolData, isError } = useToolDetail(id)
+  const tool = toolData?.tool ?? null
+  const error = isError
   const { openSheet } = useSheetStack()
-
-  const fetchTool = useCallback(async () => {
-    setError(false)
-    try {
-      const res = await fetch(`/api/tools/${id}`)
-      if (!res.ok) throw new Error()
-      const data = (await res.json()) as { tool: ToolDetail }
-      setTool(data.tool)
-    } catch {
-      setError(true)
-    }
-  }, [id])
-
-  useEffect(() => {
-    void fetchTool()
-  }, [fetchTool])
 
   const handleFAB = () => {
     if (!tool) return

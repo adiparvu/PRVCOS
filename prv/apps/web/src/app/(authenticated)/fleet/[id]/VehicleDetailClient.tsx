@@ -1,8 +1,8 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
 import Link from "next/link"
 import { useSheetStack } from "@prv/ui"
+import { useVehicleDetail } from "@/lib/api-hooks"
 import type { VehicleDetail, MaintenanceStatus } from "@/app/api/fleet/[id]/route"
 
 interface VehicleDetailClientProps {
@@ -160,25 +160,10 @@ function SheetBtn({
 // ── Main component ────────────────────────────────────────────────────────────
 
 export function VehicleDetailClient({ id }: VehicleDetailClientProps) {
-  const [vehicle, setVehicle] = useState<VehicleDetail | null>(null)
-  const [error, setError] = useState(false)
+  const { data, isError } = useVehicleDetail(id)
+  const vehicle = data?.vehicle ?? null
+  const error = isError
   const { openSheet } = useSheetStack()
-
-  const fetchVehicle = useCallback(async () => {
-    setError(false)
-    try {
-      const res = await fetch(`/api/fleet/${id}`)
-      if (!res.ok) throw new Error()
-      const data = (await res.json()) as { vehicle: VehicleDetail }
-      setVehicle(data.vehicle)
-    } catch {
-      setError(true)
-    }
-  }, [id])
-
-  useEffect(() => {
-    void fetchVehicle()
-  }, [fetchVehicle])
 
   const handleFAB = () => {
     if (!vehicle) return

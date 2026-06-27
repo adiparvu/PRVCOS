@@ -14,6 +14,10 @@ import type { TimeOffRequest } from "@/app/api/people/time-off/route"
 import type { ApprovalSummary, ApprovalsMeta } from "@/app/api/approvals/route"
 import type { AttendanceRecord, AttendanceMeta } from "@/app/api/attendance/route"
 import type { VehicleSummary, FleetMeta } from "@/app/api/fleet/route"
+import type { VehicleDetail } from "@/app/api/fleet/[id]/route"
+import type { PODetail } from "@/app/api/procurement/[id]/route"
+import type { ToolDetail } from "@/app/api/tools/[id]/route"
+import type { ApprovalDetail } from "@/app/api/approvals/[id]/route"
 import type { KnowledgeArticle, KnowledgeMeta } from "@/app/api/knowledge/route"
 import type { Course, Achievement, LearningMeta } from "@/app/api/learning/route"
 import type { ShiftSummary, ShiftsMeta } from "@/app/api/schedule/route"
@@ -410,6 +414,18 @@ export function useVehicles(status?: string | null) {
       vehicles: data.pages.flatMap((p) => p.vehicles),
       meta: data.pages[0]?.meta ?? null,
     }),
+  })
+}
+
+export function useVehicleDetail(id: string) {
+  return useQuery({
+    queryKey: ["vehicle-detail", id],
+    queryFn: () =>
+      fetch(`/api/fleet/${id}`).then((r) => {
+        if (!r.ok) throw new Error("Failed to load vehicle")
+        return r.json() as Promise<{ vehicle: VehicleDetail }>
+      }),
+    enabled: !!id,
   })
 }
 
@@ -980,5 +996,43 @@ export function useTrainingRecords(userId?: string | null, expiringSoon?: boolea
       records: data.pages.flatMap((p) => p.records),
       meta: data.pages[0]?.meta ?? null,
     }),
+  })
+}
+
+// ── Detail queries ────────────────────────────────────────────────────────────
+
+export function usePurchaseOrderDetail(id: string) {
+  return useQuery({
+    queryKey: ["purchase-order-detail", id],
+    queryFn: () =>
+      fetch(`/api/procurement/${id}`).then((r) => {
+        if (!r.ok) throw new Error("Failed to load purchase order")
+        return r.json() as Promise<{ order: PODetail }>
+      }),
+    enabled: !!id,
+  })
+}
+
+export function useToolDetail(id: string) {
+  return useQuery({
+    queryKey: ["tool-detail", id],
+    queryFn: () =>
+      fetch(`/api/tools/${id}`).then((r) => {
+        if (!r.ok) throw new Error("Failed to load tool")
+        return r.json() as Promise<{ tool: ToolDetail }>
+      }),
+    enabled: !!id,
+  })
+}
+
+export function useApprovalDetail(id: string) {
+  return useQuery({
+    queryKey: ["approval-detail", id],
+    queryFn: () =>
+      fetch(`/api/approvals/${id}`).then((r) => {
+        if (!r.ok) throw new Error("Failed to load approval")
+        return r.json() as Promise<{ approval: ApprovalDetail }>
+      }),
+    enabled: !!id,
   })
 }

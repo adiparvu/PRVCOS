@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState } from "react"
+import { usePurchaseOrderDetail } from "@/lib/api-hooks"
 import Link from "next/link"
 import { useSheetStack } from "@prv/ui"
 import type { PODetail, POActivityType } from "@/app/api/procurement/[id]/route"
@@ -170,26 +171,11 @@ function SheetBtn({
 // ── Main component ────────────────────────────────────────────────────────────
 
 export function PurchaseOrderDetailClient({ id }: PurchaseOrderDetailClientProps) {
-  const [order, setOrder] = useState<PODetail | null>(null)
-  const [error, setError] = useState(false)
+  const { data: orderData, isError } = usePurchaseOrderDetail(id)
+  const order = orderData?.order ?? null
+  const error = isError
   const [now] = useState(() => Date.now())
   const { openSheet } = useSheetStack()
-
-  const fetchOrder = useCallback(async () => {
-    setError(false)
-    try {
-      const res = await fetch(`/api/procurement/${id}`)
-      if (!res.ok) throw new Error()
-      const data = (await res.json()) as { order: PODetail }
-      setOrder(data.order)
-    } catch {
-      setError(true)
-    }
-  }, [id])
-
-  useEffect(() => {
-    void fetchOrder()
-  }, [fetchOrder])
 
   const handleFAB = () => {
     if (!order) return

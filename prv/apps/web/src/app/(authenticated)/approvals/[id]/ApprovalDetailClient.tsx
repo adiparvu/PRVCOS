@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useApprovalDetail } from "@/lib/api-hooks"
 import Link from "next/link"
 import { useSheetStack } from "@prv/ui"
 import type { ApprovalDetail, ChainStepStatus } from "@/app/api/approvals/[id]/route"
@@ -276,25 +276,10 @@ function SectionLabel({ children }: { children: string }) {
 // ── Main component ────────────────────────────────────────────────────────────
 
 export function ApprovalDetailClient({ id }: ApprovalDetailClientProps) {
-  const [approval, setApproval] = useState<ApprovalDetail | null>(null)
-  const [error, setError] = useState(false)
+  const { data: approvalData, isError } = useApprovalDetail(id)
+  const approval = approvalData?.approval ?? null
+  const error = isError
   const { openSheet } = useSheetStack()
-
-  const fetchApproval = useCallback(async () => {
-    setError(false)
-    try {
-      const res = await fetch(`/api/approvals/${id}`)
-      if (!res.ok) throw new Error()
-      const data = (await res.json()) as { approval: ApprovalDetail }
-      setApproval(data.approval)
-    } catch {
-      setError(true)
-    }
-  }, [id])
-
-  useEffect(() => {
-    void fetchApproval()
-  }, [fetchApproval])
 
   const handleFAB = () => {
     if (!approval) return
