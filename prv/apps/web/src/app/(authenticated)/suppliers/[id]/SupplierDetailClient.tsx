@@ -1,9 +1,8 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
 import Link from "next/link"
 import { useSheetStack } from "@prv/ui"
-import { useSupplierScorecard } from "@/lib/api-hooks"
+import { useSupplierScorecard, useSupplierDetail } from "@/lib/api-hooks"
 import type {
   SupplierDetail,
   SupplierActivityType,
@@ -401,29 +400,11 @@ function LoadingSkeleton() {
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 export function SupplierDetailClient({ id }: SupplierDetailClientProps) {
-  const [supplier, setSupplier] = useState<SupplierDetail | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const { data, isError, isLoading: loading } = useSupplierDetail(id)
+  const supplier = data?.supplier ?? null
+  const error = isError ? "Failed to load supplier." : null
   const { openSheet } = useSheetStack()
   const scorecard = useSupplierScorecard(id)
-
-  const fetchSupplier = useCallback(async () => {
-    try {
-      setLoading(true)
-      const res = await fetch(`/api/suppliers/${id}`, { cache: "no-store" })
-      if (!res.ok) throw new Error("Not found")
-      const data = await res.json()
-      setSupplier(data.supplier)
-    } catch {
-      setError("Failed to load supplier.")
-    } finally {
-      setLoading(false)
-    }
-  }, [id])
-
-  useEffect(() => {
-    fetchSupplier()
-  }, [fetchSupplier])
 
   function openActions() {
     if (!supplier) return

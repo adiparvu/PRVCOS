@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useAttendanceDetail } from "@/lib/api-hooks"
 import Link from "next/link"
 import { useSheetStack } from "@prv/ui"
 import type { AttendanceDetail } from "@/app/api/attendance/[id]/route"
@@ -212,24 +212,9 @@ function fmtMinutes(min: number): string {
 }
 
 export function AttendanceDetailClient({ id }: AttendanceDetailClientProps) {
-  const [record, setRecord] = useState<AttendanceDetail | null>(null)
-  const [loading, setLoading] = useState(true)
+  const { data, isLoading: loading } = useAttendanceDetail(id)
+  const record = data?.record ?? null
   const { openSheet } = useSheetStack()
-
-  const fetchRecord = useCallback(async () => {
-    setLoading(true)
-    try {
-      const res = await fetch(`/api/attendance/${id}`)
-      const data = await res.json()
-      setRecord(data.record ?? null)
-    } finally {
-      setLoading(false)
-    }
-  }, [id])
-
-  useEffect(() => {
-    fetchRecord()
-  }, [fetchRecord])
 
   const handleFAB = () => {
     if (!record) return

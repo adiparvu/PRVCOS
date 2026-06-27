@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useShiftDetail } from "@/lib/api-hooks"
 import Link from "next/link"
 import { useSheetStack } from "@prv/ui"
 import type { ShiftDetail } from "@/app/api/schedule/[id]/route"
@@ -300,24 +300,9 @@ const AVATAR_COLORS = [
 ]
 
 export function ShiftDetailClient({ id }: ShiftDetailClientProps) {
-  const [shift, setShift] = useState<ShiftDetail | null>(null)
-  const [loading, setLoading] = useState(true)
+  const { data, isLoading: loading } = useShiftDetail(id)
+  const shift = data?.shift ?? null
   const { openSheet } = useSheetStack()
-
-  const fetchShift = useCallback(async () => {
-    setLoading(true)
-    try {
-      const res = await fetch(`/api/schedule/${id}`)
-      const data = await res.json()
-      setShift(data.shift ?? null)
-    } finally {
-      setLoading(false)
-    }
-  }, [id])
-
-  useEffect(() => {
-    fetchShift()
-  }, [fetchShift])
 
   const handleFAB = () => {
     if (!shift) return

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useClientDetail } from "@/lib/api-hooks"
 import Link from "next/link"
 import { useSheetStack } from "@prv/ui"
 import type { ClientDetail, ClientActivityType } from "@/app/api/crm/clients/[id]/route"
@@ -354,28 +354,10 @@ function LoadingSkeleton() {
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 export function ClientDetailClient({ id }: ClientDetailClientProps) {
-  const [client, setClient] = useState<ClientDetail | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const { data, isError, isLoading: loading } = useClientDetail(id)
+  const client = data?.client ?? null
+  const error = isError ? "Failed to load client." : null
   const { openSheet } = useSheetStack()
-
-  const fetchClient = useCallback(async () => {
-    try {
-      setLoading(true)
-      const res = await fetch(`/api/crm/clients/${id}`, { cache: "no-store" })
-      if (!res.ok) throw new Error("Not found")
-      const data = await res.json()
-      setClient(data.client)
-    } catch {
-      setError("Failed to load client.")
-    } finally {
-      setLoading(false)
-    }
-  }, [id])
-
-  useEffect(() => {
-    fetchClient()
-  }, [fetchClient])
 
   function openActions() {
     if (!client) return

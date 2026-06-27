@@ -18,6 +18,10 @@ import type { VehicleDetail } from "@/app/api/fleet/[id]/route"
 import type { PODetail } from "@/app/api/procurement/[id]/route"
 import type { ToolDetail } from "@/app/api/tools/[id]/route"
 import type { ApprovalDetail } from "@/app/api/approvals/[id]/route"
+import type { ClientDetail } from "@/app/api/crm/clients/[id]/route"
+import type { SupplierDetail } from "@/app/api/suppliers/[id]/route"
+import type { ShiftDetail } from "@/app/api/schedule/[id]/route"
+import type { AttendanceDetail } from "@/app/api/attendance/[id]/route"
 import type { KnowledgeArticle, KnowledgeMeta } from "@/app/api/knowledge/route"
 import type { Course, Achievement, LearningMeta } from "@/app/api/learning/route"
 import type { ShiftSummary, ShiftsMeta } from "@/app/api/schedule/route"
@@ -1033,6 +1037,50 @@ export function useApprovalDetail(id: string) {
         if (!r.ok) throw new Error("Failed to load approval")
         return r.json() as Promise<{ approval: ApprovalDetail }>
       }),
+    enabled: !!id,
+  })
+}
+
+export function useClientDetail(id: string) {
+  return useQuery({
+    queryKey: ["client-detail", id],
+    queryFn: () =>
+      fetch(`/api/crm/clients/${id}`, { cache: "no-store" }).then((r) => {
+        if (!r.ok) throw new Error("Failed to load client")
+        return r.json() as Promise<{ client: ClientDetail }>
+      }),
+    enabled: !!id,
+  })
+}
+
+export function useSupplierDetail(id: string) {
+  return useQuery({
+    queryKey: ["supplier-detail", id],
+    queryFn: () =>
+      fetch(`/api/suppliers/${id}`, { cache: "no-store" }).then((r) => {
+        if (!r.ok) throw new Error("Failed to load supplier")
+        return r.json() as Promise<{ supplier: SupplierDetail }>
+      }),
+    enabled: !!id,
+  })
+}
+
+export function useShiftDetail(id: string) {
+  return useQuery({
+    queryKey: ["shift-detail", id],
+    queryFn: () =>
+      fetch(`/api/schedule/${id}`).then((r) => r.json() as Promise<{ shift: ShiftDetail | null }>),
+    enabled: !!id,
+  })
+}
+
+export function useAttendanceDetail(id: string) {
+  return useQuery({
+    queryKey: ["attendance-detail", id],
+    queryFn: () =>
+      fetch(`/api/attendance/${id}`).then(
+        (r) => r.json() as Promise<{ record: AttendanceDetail | null }>
+      ),
     enabled: !!id,
   })
 }
