@@ -4,15 +4,14 @@ export default [
   ...coreWebVitals,
   {
     rules: {
-      // set-state-in-effect is back to error: every data-loading effect has been
-      // migrated to TanStack Query, and the few genuinely effect-driven cases
-      // (client clocks, localStorage hydration, realtime-backed fetches) carry an
-      // inline eslint-disable with a documented reason, so new violations fail CI.
+      // set-state-in-effect and refs are at error (the base config default):
+      // every data-loading effect has moved to TanStack Query and the few
+      // genuinely effect-driven / ref-positioning cases carry an inline
+      // eslint-disable with a documented reason, so new violations fail CI.
       //
-      // refs / preserve-manual-memoization stay warnings for now: the remaining
-      // cases are ref-based positioning reads during render that need a deliberate
-      // measure-into-state refactor rather than a blanket change.
-      "react-hooks/refs": "warn",
+      // preserve-manual-memoization stays a warning: it is a React Compiler
+      // optimization advisory (one component the compiler declines to memoize),
+      // not a correctness issue, so it should surface without failing the build.
       "react-hooks/preserve-manual-memoization": "warn",
     },
   },

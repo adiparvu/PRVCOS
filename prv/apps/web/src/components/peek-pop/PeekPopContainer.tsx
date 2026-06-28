@@ -43,6 +43,10 @@ export function PeekPopContainer({
   if (disabled) return <>{children}</>
 
   const isPeeking = state === "peeking"
+  // The anchor rect is captured at gesture start and stays static while the peek
+  // is open, so reading it during render is intentional here.
+  // eslint-disable-next-line react-hooks/refs
+  const anchorRect = anchorRectRef.current
   const overlay =
     typeof document !== "undefined" ? (
       <>
@@ -53,7 +57,7 @@ export function PeekPopContainer({
           name={name}
           avatarUrl={avatarUrl}
           state={state}
-          anchorRect={anchorRectRef.current}
+          anchorRect={anchorRect}
           onDismiss={dismiss}
         />
         {/* Swipe-up hint when peeking */}

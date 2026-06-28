@@ -38,6 +38,11 @@ export function ContextMenuBuilder({
   const primary = actions.filter((a) => !a.destructive)
   const destructive = actions.filter((a) => a.destructive)
 
+  // The anchor element is static while the menu is open, so reading its rect
+  // during render is intentional here (the menu only mounts on open).
+  // eslint-disable-next-line react-hooks/refs
+  const anchorRect = anchorRef.current?.getBoundingClientRect()
+
   return (
     <div
       ref={menuRef}
@@ -48,10 +53,8 @@ export function ContextMenuBuilder({
         border: "1px solid rgba(255,255,255,0.12)",
         boxShadow:
           "0 24px 64px rgba(0,0,0,0.7), 0 8px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.10)",
-        top: anchorRef.current ? anchorRef.current.getBoundingClientRect().bottom + 8 : "50%",
-        left: anchorRef.current
-          ? Math.min(anchorRef.current.getBoundingClientRect().left, window.innerWidth - 232)
-          : "50%",
+        top: anchorRect ? anchorRect.bottom + 8 : "50%",
+        left: anchorRect ? Math.min(anchorRect.left, window.innerWidth - 232) : "50%",
       }}
     >
       {/* Section header */}
