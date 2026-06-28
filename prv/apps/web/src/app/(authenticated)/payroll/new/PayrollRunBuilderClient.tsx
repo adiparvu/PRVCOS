@@ -19,6 +19,8 @@ type RunType = "weekly" | "monthly" | "special"
 
 // ── Static data ───────────────────────────────────────────────────────────────
 
+// NOTE: sample roster — needs a compensation/salary data model (no payRate
+// field exists yet) before it can list real employees with gross pay.
 const EMPLOYEES: PayrollEmployee[] = [
   {
     id: "e1",

@@ -57,6 +57,8 @@ interface ChartData {
   expenses: number[]
 }
 
+// NOTE: sample sparkline series — needs a finance time-series endpoint to
+// replace with real historical revenue / profit / expense / cash-flow data.
 const SPARK = {
   revenue: [320, 348, 360, 402, 438, 482],
   profit: [86, 96, 102, 114, 122, 138],
