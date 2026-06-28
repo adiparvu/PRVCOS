@@ -1,8 +1,15 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState } from "react"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import Link from "next/link"
 import type { SecuritySession, SecurityActivity } from "@/app/api/me/security/route"
+
+type SecurityData = {
+  mfa: { enabled: boolean; backupCodesRemaining: number } | null
+  sessions: SecuritySession[]
+  recentActivity: SecurityActivity[]
+}
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
@@ -189,31 +196,21 @@ function Skeleton() {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function SecurityClient() {
-  const [mfa, setMfa] = useState<{ enabled: boolean; backupCodesRemaining: number } | null>(null)
-  const [sessions, setSessions] = useState<SecuritySession[]>([])
-  const [activity, setActivity] = useState<SecurityActivity[]>([])
-  const [loading, setLoading] = useState(true)
   const [revoking, setRevoking] = useState<string | null>(null)
   const [revokeAllBusy, setRevokeAllBusy] = useState(false)
+  const queryClient = useQueryClient()
 
-  const load = useCallback(async () => {
-    setLoading(true)
-    try {
-      const res = await fetch("/api/me/security")
-      if (res.ok) {
-        const data = await res.json()
-        setMfa(data.mfa)
-        setSessions(data.sessions ?? [])
-        setActivity(data.recentActivity ?? [])
-      }
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    load()
-  }, [load])
+  const { data, isLoading: loading } = useQuery({
+    queryKey: ["me-security"],
+    queryFn: () =>
+      fetch("/api/me/security").then((r) => {
+        if (!r.ok) throw new Error("Failed to load security settings")
+        return r.json() as Promise<SecurityData>
+      }),
+  })
+  const mfa = data?.mfa ?? null
+  const sessions = data?.sessions ?? []
+  const activity = data?.recentActivity ?? []
 
   const revokeSession = async (sessionId: string) => {
     setRevoking(sessionId)
@@ -221,7 +218,13 @@ export function SecurityClient() {
       const res = await fetch(`/api/me/security?sessionId=${encodeURIComponent(sessionId)}`, {
         method: "DELETE",
       })
-      if (res.ok) setSessions((prev) => prev.filter((s) => s.sessionId !== sessionId))
+      if (res.ok) {
+        queryClient.setQueryData<SecurityData>(["me-security"], (prev) =>
+          prev
+            ? { ...prev, sessions: prev.sessions.filter((s) => s.sessionId !== sessionId) }
+            : prev
+        )
+      }
     } finally {
       setRevoking(null)
     }
@@ -238,7 +241,9 @@ export function SecurityClient() {
           })
         )
       )
-      setSessions((prev) => prev.filter((s) => s.isCurrent))
+      queryClient.setQueryData<SecurityData>(["me-security"], (prev) =>
+        prev ? { ...prev, sessions: prev.sessions.filter((s) => s.isCurrent) } : prev
+      )
     } finally {
       setRevokeAllBusy(false)
     }

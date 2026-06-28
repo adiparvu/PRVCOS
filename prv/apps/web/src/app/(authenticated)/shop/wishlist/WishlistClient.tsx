@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState } from "react"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import type { WishlistItem } from "@/app/api/shop/wishlist/route"
@@ -324,28 +325,23 @@ function WishlistCard({
 
 export function WishlistClient() {
   const router = useRouter()
-  const [items, setItems] = useState<WishlistItem[]>([])
-  const [loading, setLoading] = useState(true)
   const [cartFlash, setCartFlash] = useState(false)
+  const queryClient = useQueryClient()
 
-  const load = useCallback(async () => {
-    setLoading(true)
-    try {
-      const res = await fetch("/api/shop/wishlist")
-      if (!res.ok) return
-      const data = await res.json()
-      setItems(data.items ?? [])
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    load()
-  }, [load])
+  const { data, isLoading: loading } = useQuery({
+    queryKey: ["shop-wishlist"],
+    queryFn: () =>
+      fetch("/api/shop/wishlist").then((r) => {
+        if (!r.ok) throw new Error("Failed to load wishlist")
+        return r.json() as Promise<{ items: WishlistItem[] }>
+      }),
+  })
+  const items = data?.items ?? []
 
   const handleRemove = (productId: string) => {
-    setItems((prev) => prev.filter((i) => i.productId !== productId))
+    queryClient.setQueryData<{ items: WishlistItem[] }>(["shop-wishlist"], (prev) =>
+      prev ? { items: prev.items.filter((i) => i.productId !== productId) } : prev
+    )
   }
 
   const handleAddToCart = (item: WishlistItem) => {
