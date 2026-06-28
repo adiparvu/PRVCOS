@@ -857,7 +857,7 @@ export function ShopManageClient() {
       showToast("Network error", "error")
       setStockSheet((s) => s && { ...s, saving: false })
     }
-  }, [stockSheet, showToast])
+  }, [stockSheet, showToast, queryClient])
 
   const saveCreate = useCallback(async () => {
     if (!createSheet.name.trim()) return
@@ -890,7 +890,7 @@ export function ShopManageClient() {
       showToast("Network error", "error")
       setCreateSheet((s) => ({ ...s, saving: false }))
     }
-  }, [createSheet, showToast])
+  }, [createSheet, showToast, queryClient])
 
   if (loading) return <Skeleton />
 

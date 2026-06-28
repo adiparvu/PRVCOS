@@ -805,7 +805,6 @@ export function ProjectsWorkspace() {
   const { data, isLoading } = useProjects()
   const projects = useMemo<Project[]>(
     () => (data?.projects ?? []).map(mapApiProject),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [data?.projects]
   )
 

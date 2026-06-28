@@ -155,9 +155,7 @@ export const POST = withGates(
       status: statusMap[estimate.status] ?? "draft",
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const element = createElement(DevizPdf, props as any)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = await generatePdfBuffer(element as any)
 
     if (!result.success) {

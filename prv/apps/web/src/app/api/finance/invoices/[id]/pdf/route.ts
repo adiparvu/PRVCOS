@@ -125,9 +125,7 @@ export const POST = withGates(
       status: uiStatus === "void" ? undefined : uiStatus,
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const element = createElement(InvoicePdf, props as any)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = await generatePdfBuffer(element as any)
 
     if (!result.success) {

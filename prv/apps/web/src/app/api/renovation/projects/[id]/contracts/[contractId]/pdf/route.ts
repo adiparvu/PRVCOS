@@ -133,9 +133,7 @@ export const POST = withGates(
       endDate: contract.endDate ?? new Date(Date.now() + 90 * 86400000).toISOString().slice(0, 10),
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const element = createElement(ContractPdf, props as any)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = await generatePdfBuffer(element as any)
 
     if (!result.success) {
