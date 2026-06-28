@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useMemo } from "react"
 import {
   GlassStatCard,
   GlassAlertBanner,
@@ -123,14 +123,20 @@ function buildKanban(tasks: Task[]): KanbanColumn[] {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function OperationsWorkspace() {
-  const [kanban, setKanban] = useState<KanbanColumn[]>([])
   const [activeTab, setActiveTab] = useState("stores")
 
   const { data, isLoading } = useOperationsData()
 
-  useEffect(() => {
-    if (data?.tasks) setKanban(buildKanban(data.tasks))
-  }, [data?.tasks])
+  // Derive the kanban board from server tasks, but keep it as local state so
+  // drag-and-drop can reorder cards optimistically. Re-sync during render
+  // (React's recommended pattern) whenever a new tasks reference arrives.
+  const tasks = data?.tasks
+  const [syncedTasks, setSyncedTasks] = useState<typeof tasks>(undefined)
+  const [kanban, setKanban] = useState<KanbanColumn[]>([])
+  if (tasks && tasks !== syncedTasks) {
+    setSyncedTasks(tasks)
+    setKanban(buildKanban(tasks))
+  }
 
   const storeSections = useMemo<ListViewSection[]>(() => {
     if (!data?.stores) return []

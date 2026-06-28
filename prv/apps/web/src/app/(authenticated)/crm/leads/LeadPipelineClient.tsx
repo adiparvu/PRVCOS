@@ -1,7 +1,7 @@
 "use client"
 import { useRouter } from "next/navigation"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import Link from "next/link"
 import { useLeads } from "@/lib/api-hooks"
 import {
@@ -465,14 +465,15 @@ export function LeadPipelineClient() {
   const [pipeline, setPipeline] = useState<KanbanColumn[]>(() => buildPipelineCols([]))
   const { data: leadsData } = useLeads()
 
-  useEffect(() => {
-    if (!synced && leadsData?.leads?.length) {
-      const fetched = leadsData.leads as Lead[]
-      setLeads(fetched)
-      setPipeline(buildPipelineCols(fetched))
-      setSynced(true)
-    }
-  }, [synced, leadsData])
+  // Seed local board state from the query once, then leave it under local
+  // control so drag-and-drop / conversions are not clobbered by refetches.
+  // React supports this guarded setState during render (no effect needed).
+  if (!synced && leadsData?.leads?.length) {
+    const fetched = leadsData.leads as Lead[]
+    setLeads(fetched)
+    setPipeline(buildPipelineCols(fetched))
+    setSynced(true)
+  }
 
   const activeLeads = leads.filter((l) => l.stage !== "won" && l.stage !== "lost")
   const hotLeads = activeLeads.filter((l) => l.score >= 70)
