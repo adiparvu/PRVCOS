@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useQuery } from "@tanstack/react-query"
 import Link from "next/link"
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
@@ -132,25 +132,15 @@ function Skeleton() {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function RolesClient() {
-  const [roles, setRoles] = useState<Role[]>([])
-  const [loading, setLoading] = useState(true)
-
-  const load = useCallback(async () => {
-    setLoading(true)
-    try {
-      const res = await fetch("/api/roles")
-      if (res.ok) {
-        const data = await res.json()
-        setRoles(data.roles ?? [])
-      }
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    load()
-  }, [load])
+  const { data, isLoading: loading } = useQuery({
+    queryKey: ["admin-roles"],
+    queryFn: () =>
+      fetch("/api/roles").then((r) => {
+        if (!r.ok) throw new Error("Failed to load roles")
+        return r.json() as Promise<{ roles: Role[] }>
+      }),
+  })
+  const roles = data?.roles ?? []
 
   if (loading) return <Skeleton />
 

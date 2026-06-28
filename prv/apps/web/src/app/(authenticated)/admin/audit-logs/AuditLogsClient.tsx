@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState } from "react"
+import { useQuery } from "@tanstack/react-query"
 import Link from "next/link"
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
@@ -308,27 +309,18 @@ function Skeleton() {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function AuditLogsClient() {
-  const [entries, setEntries] = useState<AuditEntry[]>([])
-  const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<FilterModule>("all")
   const [selected, setSelected] = useState<AuditEntry | null>(null)
 
-  const load = useCallback(async () => {
-    setLoading(true)
-    try {
-      const res = await fetch("/api/audit-logs")
-      if (res.ok) {
-        const data = await res.json()
-        setEntries(data.items ?? [])
-      }
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    load()
-  }, [load])
+  const { data, isLoading: loading } = useQuery({
+    queryKey: ["audit-logs"],
+    queryFn: () =>
+      fetch("/api/audit-logs").then((r) => {
+        if (!r.ok) throw new Error("Failed to load audit logs")
+        return r.json() as Promise<{ items: AuditEntry[] }>
+      }),
+  })
+  const entries = data?.items ?? []
 
   if (loading) return <Skeleton />
 

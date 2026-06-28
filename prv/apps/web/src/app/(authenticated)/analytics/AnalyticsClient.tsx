@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState } from "react"
+import { useQuery } from "@tanstack/react-query"
 import Link from "next/link"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -316,24 +317,16 @@ function TrendBars({
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function AnalyticsClient() {
-  const [data, setData] = useState<AnalyticsData | null>(null)
-  const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState<"overview" | "trends">("overview")
 
-  const load = useCallback(async () => {
-    setLoading(true)
-    try {
-      const res = await fetch("/api/analytics/kpis")
-      if (!res.ok) return
-      setData(await res.json())
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    load()
-  }, [load])
+  const { data, isLoading: loading } = useQuery({
+    queryKey: ["analytics-kpis"],
+    queryFn: () =>
+      fetch("/api/analytics/kpis").then((r) => {
+        if (!r.ok) throw new Error("Failed to load analytics")
+        return r.json() as Promise<AnalyticsData>
+      }),
+  })
 
   if (loading) return <Skeleton />
   if (!data) return null
