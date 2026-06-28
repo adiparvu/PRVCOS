@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import Link from "next/link"
 import type { CourseDetail, CourseModule } from "@/app/api/learning/[id]/route"
 import type { CourseStatus, CourseCategory } from "@/app/api/learning/route"
@@ -560,7 +561,15 @@ function LessonSheet({
   courseId: string
   onClose: () => void
 }) {
-  const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([])
+  const { data: quizData, isLoading: quizLoading } = useQuery({
+    queryKey: ["lesson-quiz", courseId, lesson.id],
+    queryFn: () =>
+      fetch(`/api/learning/${courseId}/lessons/${lesson.id}/quiz`).then(
+        (r) => r.json() as Promise<{ questions: QuizQuestion[] }>
+      ),
+    enabled: lesson.type === "quiz",
+  })
+  const quizQuestions = quizData?.questions ?? []
   const [quizAnswers, setQuizAnswers] = useState<Record<string, string>>({})
   const [quizResult, setQuizResult] = useState<{
     score: number
@@ -569,20 +578,9 @@ function LessonSheet({
     totalQuestions: number
     answers: Record<string, { correct: boolean; correctOptionId: string; explanation?: string }>
   } | null>(null)
-  const [quizLoading, setQuizLoading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [completing, setCompleting] = useState(false)
   const [completed, setCompleted] = useState(lesson.completedByUser)
-
-  useEffect(() => {
-    if (lesson.type === "quiz") {
-      setQuizLoading(true)
-      fetch(`/api/learning/${courseId}/lessons/${lesson.id}/quiz`)
-        .then((r) => r.json())
-        .then((d) => setQuizQuestions(d.questions ?? []))
-        .finally(() => setQuizLoading(false))
-    }
-  }, [lesson.id, lesson.type, courseId])
 
   function handleMarkComplete() {
     setCompleting(true)
@@ -1069,9 +1067,18 @@ export function CourseDetailClient({ id }: { id: string }) {
   const [loading, setLoading] = useState(true)
   const [fabOpen, setFabOpen] = useState(false)
   const [activeTab, setActiveTab] = useState<TabId>("modules")
-  const [lessons, setLessons] = useState<LessonItem[]>([])
-  const [lessonsLoading, setLessonsLoading] = useState(false)
   const [openLesson, setOpenLesson] = useState<LessonItem | null>(null)
+  const queryClient = useQueryClient()
+
+  const { data: lessonsData, isLoading: lessonsLoading } = useQuery({
+    queryKey: ["course-lessons", id],
+    queryFn: () =>
+      fetch(`/api/learning/${id}/lessons`).then(
+        (r) => r.json() as Promise<{ lessons: LessonItem[] }>
+      ),
+    enabled: activeTab === "lessons",
+  })
+  const lessons = lessonsData?.lessons ?? []
 
   useEffect(() => {
     fetch(`/api/learning/${id}`)
@@ -1080,18 +1087,16 @@ export function CourseDetailClient({ id }: { id: string }) {
       .finally(() => setLoading(false))
   }, [id])
 
-  useEffect(() => {
-    if (activeTab === "lessons" && lessons.length === 0) {
-      setLessonsLoading(true)
-      fetch(`/api/learning/${id}/lessons`)
-        .then((r) => r.json())
-        .then((d) => setLessons(d.lessons ?? []))
-        .finally(() => setLessonsLoading(false))
-    }
-  }, [activeTab, id, lessons.length])
-
   function handleLessonComplete(lessonId: string) {
-    setLessons((prev) => prev.map((l) => (l.id === lessonId ? { ...l, completedByUser: true } : l)))
+    queryClient.setQueryData<{ lessons: LessonItem[] }>(["course-lessons", id], (prev) =>
+      prev
+        ? {
+            lessons: prev.lessons.map((l) =>
+              l.id === lessonId ? { ...l, completedByUser: true } : l
+            ),
+          }
+        : prev
+    )
   }
 
   const isActionable = course?.status === "in_progress" || course?.status === "new"

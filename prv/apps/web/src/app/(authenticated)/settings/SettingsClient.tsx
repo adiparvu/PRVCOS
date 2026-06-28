@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect, useCallback, useRef } from "react"
+import { useState, useRef } from "react"
+import { useQuery } from "@tanstack/react-query"
 import Link from "next/link"
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
@@ -402,8 +403,11 @@ function EditProfileSheet({
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
 
-  // Reset form when sheet opens
-  useEffect(() => {
+  // Reset the form whenever the sheet opens or the profile changes — done
+  // during render (React's recommended alternative to a syncing effect).
+  const [resetKey, setResetKey] = useState({ open, profile })
+  if (resetKey.open !== open || resetKey.profile !== profile) {
+    setResetKey({ open, profile })
     if (open) {
       setFirstName(profile.firstName)
       setLastName(profile.lastName)
@@ -414,7 +418,7 @@ function EditProfileSheet({
       setError(null)
       setSaved(false)
     }
-  }, [open, profile])
+  }
 
   const save = async () => {
     if (!firstName.trim() || !lastName.trim()) {
@@ -779,42 +783,34 @@ export function SettingsClient() {
     glassStyle: "adaptive",
     syncEnabled: true,
   })
-  const [loading, setLoading] = useState(true)
   const [editOpen, setEditOpen] = useState(false)
+  const [seeded, setSeeded] = useState(false)
   const savingPrefsRef = useRef(false)
 
-  const load = useCallback(async () => {
-    setLoading(true)
-    try {
+  // Load profile + preference bundles once; the editable copies below stay
+  // local so the toggles remain optimistic.
+  const { data: settingsBundle, isLoading: loading } = useQuery({
+    queryKey: ["settings-bundle"],
+    queryFn: async () => {
       const [meRes, notifRes, appRes] = await Promise.all([
         fetch("/api/me"),
         fetch("/api/me/notifications"),
         fetch("/api/preferences"),
       ])
-      if (meRes.ok) {
-        const data = await meRes.json()
-        setProfile(data.user)
+      return {
+        profile: meRes.ok ? ((await meRes.json()).user as UserProfile) : null,
+        notif: notifRes.ok ? ((await notifRes.json()) as NotifPrefs) : null,
+        app: appRes.ok ? ((await appRes.json()) as AppPrefs) : null,
       }
-      if (notifRes.ok) {
-        const data = await notifRes.json()
-        setNotifPrefs({ inApp: data.inApp, push: data.push, email: data.email, sms: data.sms })
-      }
-      if (appRes.ok) {
-        const data = await appRes.json()
-        setAppPrefs({
-          theme: data.theme,
-          glassStyle: data.glassStyle,
-          syncEnabled: data.syncEnabled,
-        })
-      }
-    } finally {
-      setLoading(false)
-    }
-  }, [])
+    },
+  })
 
-  useEffect(() => {
-    load()
-  }, [load])
+  if (settingsBundle && !seeded) {
+    setSeeded(true)
+    if (settingsBundle.profile) setProfile(settingsBundle.profile)
+    if (settingsBundle.notif) setNotifPrefs(settingsBundle.notif)
+    if (settingsBundle.app) setAppPrefs(settingsBundle.app)
+  }
 
   const updateNotif = async (patch: Partial<NotifPrefs>) => {
     const next = { ...notifPrefs, ...patch }
