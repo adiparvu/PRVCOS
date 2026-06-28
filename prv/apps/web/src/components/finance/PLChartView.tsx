@@ -1,6 +1,7 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
+import { useQuery } from "@tanstack/react-query"
 
 interface PLPeriod {
   label: string
@@ -182,19 +183,23 @@ function PeriodDetail({ period, currency }: { period: PLPeriod; currency: string
 export function PLChartView() {
   const [year, setYear] = useState(new Date().getFullYear())
   const [periodType, setPeriodType] = useState<"monthly" | "quarterly">("monthly")
-  const [data, setData] = useState<PLData | null>(null)
-  const [loading, setLoading] = useState(true)
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null)
 
-  useEffect(() => {
-    setLoading(true)
+  const { data, isLoading: loading } = useQuery({
+    queryKey: ["pl-report", year, periodType],
+    queryFn: () =>
+      fetch(`/api/finance/reports/pl?year=${year}&periodType=${periodType}`).then(
+        (r) => r.json() as Promise<PLData>
+      ),
+  })
+
+  // Clear the selected bar whenever the year / period selection changes.
+  const paramKey = `${year}-${periodType}`
+  const [activeParamKey, setActiveParamKey] = useState(paramKey)
+  if (paramKey !== activeParamKey) {
+    setActiveParamKey(paramKey)
     setSelectedIdx(null)
-    fetch(`/api/finance/reports/pl?year=${year}&periodType=${periodType}`)
-      .then((r) => r.json())
-      .then(setData)
-      .catch(() => null)
-      .finally(() => setLoading(false))
-  }, [year, periodType])
+  }
 
   const maxVal = data ? Math.max(...data.periods.map((p) => Math.max(p.revenue, p.costs)), 1) : 1
 

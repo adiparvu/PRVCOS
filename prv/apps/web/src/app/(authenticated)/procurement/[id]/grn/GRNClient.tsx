@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState } from "react"
+import { useQuery } from "@tanstack/react-query"
 import Link from "next/link"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -140,30 +141,26 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 export function GRNClient({ poId }: { poId: string }) {
-  const [po, setPo] = useState<POSummaryForGRN | null>(null)
-  const [error, setError] = useState(false)
+  const { data: poData, isError: error } = useQuery({
+    queryKey: ["grn-po", poId],
+    queryFn: () =>
+      fetch(`/api/procurement/${poId}`).then((r) => {
+        if (!r.ok) throw new Error("Failed to load purchase order")
+        return r.json() as Promise<{ order: POSummaryForGRN }>
+      }),
+    enabled: !!poId,
+  })
+  const po = poData?.order ?? null
   const [lines, setLines] = useState<LineState[]>([])
+  const [linesSeeded, setLinesSeeded] = useState(false)
+  if (po && !linesSeeded) {
+    setLinesSeeded(true)
+    setLines(po.items.map(() => ({ received: "", condition: "good" as ItemCondition })))
+  }
   const [notes, setNotes] = useState("")
   const [submitting, setSubmitting] = useState(false)
   const [success, setSuccess] = useState<{ grnId: string } | null>(null)
   const [submitError, setSubmitError] = useState<string | null>(null)
-
-  const fetchPO = useCallback(async () => {
-    setError(false)
-    try {
-      const res = await fetch(`/api/procurement/${poId}`)
-      if (!res.ok) throw new Error()
-      const data = (await res.json()) as { order: POSummaryForGRN }
-      setPo(data.order)
-      setLines(data.order.items.map(() => ({ received: "", condition: "good" as ItemCondition })))
-    } catch {
-      setError(true)
-    }
-  }, [poId])
-
-  useEffect(() => {
-    void fetchPO()
-  }, [fetchPO])
 
   function setLine(i: number, patch: Partial<LineState>) {
     setLines((prev) => prev.map((l, idx) => (idx === i ? { ...l, ...patch } : l)))
