@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef, useCallback } from "react"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { createSupabaseBrowserClient } from "@/lib/supabase/client"
 
 // ─── Types ─────────────────────────────────────────────────────────────────
@@ -907,55 +908,42 @@ export function CommunicationsClient({ userId, companyId }: Props) {
   const [tab, setTab] = useState<Tab>("dms")
   const [view, setView] = useState<View>("list")
 
-  // DMs state
-  const [dms, setDms] = useState<DMConversation[]>([])
-  const [dmsLoading, setDmsLoading] = useState(true)
+  const queryClient = useQueryClient()
+
+  // Selected items — local UI state.
   const [activeDm, setActiveDm] = useState<DMConversation | null>(null)
-
-  // Channels state
-  const [channels, setChannels] = useState<Channel[]>([])
-  const [channelsLoading, setChannelsLoading] = useState(false)
   const [activeChannel, setActiveChannel] = useState<Channel | null>(null)
-
-  // Announcements state
-  const [announcements, setAnnouncements] = useState<Announcement[]>([])
-  const [annLoading, setAnnLoading] = useState(false)
   const [activeAnn, setActiveAnn] = useState<Announcement | null>(null)
 
-  // Load DMs on mount
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setDmsLoading(true)
-    fetch("/api/communications/dms")
-      .then((r) => r.json())
-      .then((d: { conversations: DMConversation[] }) => setDms(d.conversations ?? []))
-      .catch(() => null)
-      .finally(() => setDmsLoading(false))
-  }, [])
+  // DMs load on mount; channels / announcements load lazily when their tab opens.
+  const { data: dmsData, isLoading: dmsLoading } = useQuery({
+    queryKey: ["comms", "dms"],
+    queryFn: () =>
+      fetch("/api/communications/dms").then(
+        (r) => r.json() as Promise<{ conversations: DMConversation[] }>
+      ),
+  })
+  const dms = dmsData?.conversations ?? []
 
-  // Load channels when tab changes
-  useEffect(() => {
-    if (tab !== "channels" || channels.length > 0) return
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setChannelsLoading(true)
-    fetch("/api/communications/channels")
-      .then((r) => r.json())
-      .then((d: { channels: Channel[] }) => setChannels(d.channels ?? []))
-      .catch(() => null)
-      .finally(() => setChannelsLoading(false))
-  }, [tab, channels.length])
+  const { data: channelsData, isLoading: channelsLoading } = useQuery({
+    queryKey: ["comms", "channels"],
+    queryFn: () =>
+      fetch("/api/communications/channels").then(
+        (r) => r.json() as Promise<{ channels: Channel[] }>
+      ),
+    enabled: tab === "channels",
+  })
+  const channels = channelsData?.channels ?? []
 
-  // Load announcements when tab changes
-  useEffect(() => {
-    if (tab !== "announcements" || announcements.length > 0) return
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setAnnLoading(true)
-    fetch("/api/communications/announcements")
-      .then((r) => r.json())
-      .then((d: { announcements: Announcement[] }) => setAnnouncements(d.announcements ?? []))
-      .catch(() => null)
-      .finally(() => setAnnLoading(false))
-  }, [tab, announcements.length])
+  const { data: annData, isLoading: annLoading } = useQuery({
+    queryKey: ["comms", "announcements"],
+    queryFn: () =>
+      fetch("/api/communications/announcements").then(
+        (r) => r.json() as Promise<{ announcements: Announcement[] }>
+      ),
+    enabled: tab === "announcements",
+  })
+  const announcements = annData?.announcements ?? []
 
   // Supabase realtime — new DM received
   useEffect(() => {
@@ -970,11 +958,8 @@ export function CommunicationsClient({ userId, companyId }: Props) {
           table: "dm_messages",
         },
         () => {
-          // Refresh DM list preview
-          fetch("/api/communications/dms")
-            .then((r) => r.json())
-            .then((d: { conversations: DMConversation[] }) => setDms(d.conversations ?? []))
-            .catch(() => null)
+          // Refresh the DM list preview through the query cache.
+          void queryClient.invalidateQueries({ queryKey: ["comms", "dms"] })
         }
       )
       .subscribe()
@@ -982,7 +967,7 @@ export function CommunicationsClient({ userId, companyId }: Props) {
     return () => {
       void supabase.removeChannel(ch)
     }
-  }, [userId, companyId])
+  }, [userId, companyId, queryClient])
 
   const handleOpenDm = useCallback((dm: DMConversation) => {
     setActiveDm(dm)
@@ -1008,10 +993,20 @@ export function CommunicationsClient({ userId, companyId }: Props) {
 
   const handleMarkRead = useCallback(
     (id: string) => {
-      setAnnouncements((prev) => prev.map((a) => (a.id === id ? { ...a, isRead: true } : a)))
+      queryClient.setQueryData<{ announcements: Announcement[] }>(
+        ["comms", "announcements"],
+        (prev) =>
+          prev
+            ? {
+                announcements: prev.announcements.map((a) =>
+                  a.id === id ? { ...a, isRead: true } : a
+                ),
+              }
+            : prev
+      )
       if (activeAnn?.id === id) setActiveAnn((prev) => (prev ? { ...prev, isRead: true } : prev))
     },
-    [activeAnn?.id]
+    [activeAnn?.id, queryClient]
   )
 
   const unreadAnn = announcements.filter((a) => !a.isRead).length
