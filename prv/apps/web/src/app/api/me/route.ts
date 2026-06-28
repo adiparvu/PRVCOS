@@ -24,6 +24,7 @@ export const GET = withGates(
         jobTitle: users.jobTitle,
         avatarUrl: users.avatarUrl,
         bio: users.bio,
+        skills: users.skills,
         role: users.role,
         locale: users.locale,
         timezone: users.timezone,
@@ -55,6 +56,7 @@ const patchSchema = z.object({
   bio: z.string().max(500).optional(),
   locale: z.string().max(10).optional(),
   timezone: z.string().max(60).optional(),
+  skills: z.array(z.string().trim().min(1).max(40)).max(20).optional(),
 })
 
 // PATCH /api/me — update own profile

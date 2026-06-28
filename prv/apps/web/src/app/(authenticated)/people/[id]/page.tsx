@@ -60,6 +60,7 @@ export default async function PersonProfilePage({ params }: Props) {
       jobTitle: users.jobTitle,
       avatarUrl: users.avatarUrl,
       bio: users.bio,
+      skills: users.skills,
       role: users.role,
       createdAt: users.createdAt,
       teamId: users.teamId,
@@ -229,6 +230,7 @@ export default async function PersonProfilePage({ params }: Props) {
       socialProfiles={socialRows.filter((s) => s.isPublic)}
       companyId={session.companyId}
       isOwnProfile={id === session.userId}
+      skills={person.skills}
     />
   )
 }

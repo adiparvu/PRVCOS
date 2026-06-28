@@ -74,6 +74,7 @@ interface PersonProfileClientProps {
   upcomingShifts: ProfileShift[]
   colleagues: ProfileColleague[]
   recentActivity: ProfileActivity[]
+  skills: string[]
 }
 
 // ── Profile formatting helpers ──────────────────────────────────────────────
@@ -196,44 +197,130 @@ function StatsStrip({ stats }: { stats: ProfileStats }) {
 }
 
 // Skills section
-// NOTE: skills have no backend table yet — kept as sample data until a
-// user_skills schema + endpoint exists. All other profile sections use real data.
-const MOCK_SKILLS = [
-  "Operations",
-  "Inventory",
-  "Team Lead",
-  "Scheduling",
-  "Reporting",
-  "Safety",
-  "Training",
-]
+function SkillsSection({ isOwnProfile, skills }: { isOwnProfile: boolean; skills: string[] }) {
+  const [editing, setEditing] = useState(false)
+  const [list, setList] = useState<string[]>(skills)
+  const [input, setInput] = useState("")
+  const [saving, setSaving] = useState(false)
 
-function SkillsSection({ isOwnProfile }: { isOwnProfile: boolean }) {
+  const addSkill = () => {
+    const v = input.trim()
+    setInput("")
+    if (!v || list.includes(v) || list.length >= 20) return
+    setList((prev) => [...prev, v])
+  }
+  const removeSkill = (skill: string) => setList((prev) => prev.filter((x) => x !== skill))
+  const cancel = () => {
+    setList(skills)
+    setInput("")
+    setEditing(false)
+  }
+  const save = async () => {
+    setSaving(true)
+    try {
+      await fetch("/api/me", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ skills: list }),
+      })
+      setEditing(false)
+    } finally {
+      setSaving(false)
+    }
+  }
+
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
         <SectionLabel>Skills & Expertise</SectionLabel>
-        {isOwnProfile && (
-          <button className="text-[12px] font-medium" style={{ color: "rgba(255,255,255,0.35)" }}>
-            Edit
-          </button>
-        )}
+        {isOwnProfile &&
+          (editing ? (
+            <div className="flex gap-3">
+              <button
+                onClick={cancel}
+                className="text-[12px] font-medium"
+                style={{ color: "rgba(255,255,255,0.35)" }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={save}
+                disabled={saving}
+                className="text-[12px] font-semibold"
+                style={{ color: "rgba(255,255,255,0.85)" }}
+              >
+                {saving ? "Saving…" : "Save"}
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setEditing(true)}
+              className="text-[12px] font-medium"
+              style={{ color: "rgba(255,255,255,0.35)" }}
+            >
+              Edit
+            </button>
+          ))}
       </div>
-      <div className="flex flex-wrap gap-2">
-        {MOCK_SKILLS.map((skill) => (
-          <span
-            key={skill}
-            className="px-3 py-1.5 rounded-[100px] text-[12px] font-medium"
+      {list.length === 0 && !editing ? (
+        <p className="text-[12px] mx-1" style={{ color: "rgba(255,255,255,0.30)" }}>
+          {isOwnProfile ? "Add your skills to showcase your expertise." : "No skills listed."}
+        </p>
+      ) : (
+        <div className="flex flex-wrap gap-2">
+          {list.map((skill) => (
+            <span
+              key={skill}
+              className="px-3 py-1.5 rounded-[100px] text-[12px] font-medium inline-flex items-center gap-1.5"
+              style={{
+                background: "rgba(255,255,255,0.07)",
+                border: "1px solid rgba(255,255,255,0.12)",
+                color: "rgba(255,255,255,0.60)",
+              }}
+            >
+              {skill}
+              {editing && (
+                <button
+                  onClick={() => removeSkill(skill)}
+                  aria-label={`Remove ${skill}`}
+                  className="leading-none"
+                  style={{ color: "rgba(255,255,255,0.4)" }}
+                >
+                  ×
+                </button>
+              )}
+            </span>
+          ))}
+        </div>
+      )}
+      {editing && (
+        <div className="flex gap-2 mt-2.5">
+          <input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault()
+                addSkill()
+              }
+            }}
+            placeholder="Add a skill"
+            className="flex-1 h-9 rounded-[12px] px-3 text-[13px] text-white/80 placeholder:text-white/25 outline-none"
+            style={{ background: "var(--prv-g1)", border: "1px solid var(--prv-border-subtle)" }}
+          />
+          <button
+            onClick={addSkill}
+            className="h-9 px-4 rounded-[12px] text-[13px] font-semibold"
             style={{
-              background: "rgba(255,255,255,0.07)",
-              border: "1px solid rgba(255,255,255,0.12)",
-              color: "rgba(255,255,255,0.60)",
+              background: "rgba(255,255,255,0.10)",
+              border: "1px solid rgba(255,255,255,0.14)",
+              color: "rgba(255,255,255,0.85)",
             }}
           >
-            {skill}
-          </span>
-        ))}
-      </div>
+            Add
+          </button>
+        </div>
+      )}
     </div>
   )
 }
@@ -484,6 +571,7 @@ export function PersonProfileClient({
   upcomingShifts,
   colleagues,
   recentActivity,
+  skills,
 }: PersonProfileClientProps) {
   const router = useRouter()
   const [showSocialEditor, setShowSocialEditor] = useState(false)
@@ -641,7 +729,7 @@ export function PersonProfileClient({
             </GlassPanel>
 
             {/* Skills */}
-            <SkillsSection isOwnProfile={isOwnProfile} />
+            <SkillsSection isOwnProfile={isOwnProfile} skills={skills} />
 
             {/* Upcoming shifts */}
             <SectionLabel>Upcoming Shifts</SectionLabel>

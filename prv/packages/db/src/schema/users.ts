@@ -83,6 +83,7 @@ export const users = pgTable(
     lastName: varchar("last_name", { length: 100 }).notNull(),
     avatarUrl: text("avatar_url"),
     bio: text("bio"),
+    skills: jsonb("skills").$type<string[]>().notNull().default([]),
 
     // Employment
     employeeId: varchar("employee_id", { length: 100 }),
