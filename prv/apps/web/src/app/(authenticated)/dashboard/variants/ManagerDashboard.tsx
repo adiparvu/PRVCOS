@@ -1,5 +1,8 @@
 import { cacheMemo } from "@prv/cache"
-import { queryManagerKpis } from "@prv/db"
+import { queryManagerKpis, db } from "@prv/db"
+import { auditLogs, attendanceRecords } from "@prv/db/schema"
+import { and, desc, eq, sql } from "drizzle-orm"
+import { auditActionToActivity } from "../_activity"
 import { GlassAlertBanner } from "@prv/ui"
 import type { PRVSession } from "@prv/auth"
 import type { ActivityEventPayload } from "@prv/cache"
@@ -9,30 +12,6 @@ import { GlassCard, SectionLabel, QuickActionsGrid, InlineAlert, formatCurrency 
 import { LiveKpiGrid } from "../islands/LiveKpiGrid"
 import { LiveActivityFeed } from "../islands/LiveActivityFeed"
 import Link from "next/link"
-
-const INITIAL_ACTIVITY: ActivityEventPayload[] = [
-  {
-    id: "1",
-    type: "info",
-    title: "New leave request submitted",
-    description: "Ion Dima",
-    timestamp: "12 minutes ago",
-  },
-  {
-    id: "2",
-    type: "warning",
-    title: "Task overdue — Inventory count",
-    description: "Section B",
-    timestamp: "1 hour ago",
-  },
-  {
-    id: "3",
-    type: "success",
-    title: "Daily target reached",
-    description: "Cluj · Main",
-    timestamp: "3 hours ago",
-  },
-]
 
 const SCOPE_LABELS: Partial<Record<PRVSession["role"], string>> = {
   store_manager: "Store",
@@ -47,6 +26,8 @@ const SCOPE_LABELS: Partial<Record<PRVSession["role"], string>> = {
 }
 
 // Priority items that need manager action
+// NOTE: sample data — wire to real alerts/approvals once a manager-scoped
+// priority feed exists.
 const PRIORITY_ITEMS = [
   {
     id: "p1",
@@ -96,14 +77,8 @@ const PRIORITY_COLORS = {
 }
 
 // Staff attendance snapshot
-const STAFF_SNAPSHOT = [
-  { label: "On shift", value: 18, color: "rgba(48,209,88,0.85)" },
-  { label: "Late", value: 2, color: "rgba(255,159,10,0.85)" },
-  { label: "Absent", value: 3, color: "rgba(255,59,48,0.85)" },
-  { label: "On leave", value: 1, color: "rgba(10,132,255,0.75)" },
-]
-
 // Store / area performance
+// NOTE: sample data — needs per-store revenue targets (no target model yet).
 const STORE_PERF = [
   { name: "Cluj Main", target: 92, actual: 97, trend: "+5%" },
   { name: "Floreasca", target: 88, actual: 83, trend: "-5%" },
@@ -138,6 +113,55 @@ export async function ManagerDashboard({ session }: Props) {
     activeProjects: kpis?.activeProjects ?? 0,
     alerts: kpis?.alerts ?? 0,
     pendingApprovals: kpis?.pendingApprovals ?? 0,
+  }
+
+  // Today's staff status + the latest real activity for this company.
+  const today = new Date().toISOString().slice(0, 10)
+  let INITIAL_ACTIVITY: ActivityEventPayload[] = []
+  let STAFF_SNAPSHOT = [
+    { label: "On shift", value: 0, color: "rgba(48,209,88,0.85)" },
+    { label: "Late", value: 0, color: "rgba(255,159,10,0.85)" },
+    { label: "Absent", value: 0, color: "rgba(255,59,48,0.85)" },
+    { label: "On leave", value: 0, color: "rgba(10,132,255,0.75)" },
+  ]
+  try {
+    const [activityRows, attendanceCounts] = await Promise.all([
+      db
+        .select({
+          id: auditLogs.id,
+          action: auditLogs.action,
+          entityType: auditLogs.entityType,
+          actorId: auditLogs.actorId,
+          createdAt: auditLogs.createdAt,
+        })
+        .from(auditLogs)
+        .where(and(eq(auditLogs.companyId, session.companyId), eq(auditLogs.gateFailed, 0)))
+        .orderBy(desc(auditLogs.createdAt))
+        .limit(5),
+      db
+        .select({ status: attendanceRecords.status, count: sql<number>`count(*)::int` })
+        .from(attendanceRecords)
+        .where(
+          and(eq(attendanceRecords.companyId, session.companyId), eq(attendanceRecords.date, today))
+        )
+        .groupBy(attendanceRecords.status),
+    ])
+    INITIAL_ACTIVITY = activityRows.map((r) =>
+      auditActionToActivity(r.action, r.entityType ?? null, r.id, r.createdAt, r.actorId ?? null)
+    )
+    const cm = new Map(attendanceCounts.map((r) => [r.status, r.count]))
+    STAFF_SNAPSHOT = [
+      {
+        label: "On shift",
+        value: (cm.get("present") ?? 0) + (cm.get("clocked_out") ?? 0),
+        color: "rgba(48,209,88,0.85)",
+      },
+      { label: "Late", value: cm.get("late") ?? 0, color: "rgba(255,159,10,0.85)" },
+      { label: "Absent", value: cm.get("absent") ?? 0, color: "rgba(255,59,48,0.85)" },
+      { label: "On leave", value: cm.get("leave") ?? 0, color: "rgba(10,132,255,0.75)" },
+    ]
+  } catch {
+    // Leave the zeroed snapshot / empty activity on error.
   }
 
   const totalStaff = STAFF_SNAPSHOT.reduce((s, x) => s + x.value, 0)
