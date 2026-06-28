@@ -120,6 +120,9 @@ export function NotificationsClient({
   // Fetch list when filter changes
   useEffect(() => {
     if (filter === initialFilter && notifications === initialNotifications) return
+    // Refetch on filter change. The list is SSR-seeded and kept live by a
+    // realtime subscription with many in-place updates, so it stays effect-managed.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true)
     fetch(`/api/notifications?filter=${filter}&includeCounts=true`)
       .then((r) => r.json())

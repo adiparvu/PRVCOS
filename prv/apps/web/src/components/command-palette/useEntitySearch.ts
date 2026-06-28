@@ -40,6 +40,8 @@ export function useEntitySearch(query: string): SearchState {
     const trimmed = query.trim()
     if (trimmed.length < MIN_QUERY_LEN) {
       abortRef.current?.abort()
+      // Debounced search: clear results immediately for short queries.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setState({ results: [], loading: false })
       return
     }

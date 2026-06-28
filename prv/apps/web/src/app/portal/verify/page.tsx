@@ -17,6 +17,8 @@ function VerifyInner() {
 
     const token = searchParams.get("token")
     if (!token) {
+      // One-shot token verification on mount.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setStatus("error")
       setErrorMessage("Invalid link. Please request a new one.")
       return

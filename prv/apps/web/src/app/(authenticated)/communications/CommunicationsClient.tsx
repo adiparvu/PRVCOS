@@ -473,6 +473,9 @@ function MessageThread({
   )
 
   useEffect(() => {
+    // Reset the thread when the active conversation changes; messages then load
+    // below and are kept live by the realtime subscription.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true)
     setMessages([])
     load()
@@ -921,6 +924,7 @@ export function CommunicationsClient({ userId, companyId }: Props) {
 
   // Load DMs on mount
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setDmsLoading(true)
     fetch("/api/communications/dms")
       .then((r) => r.json())
@@ -932,6 +936,7 @@ export function CommunicationsClient({ userId, companyId }: Props) {
   // Load channels when tab changes
   useEffect(() => {
     if (tab !== "channels" || channels.length > 0) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setChannelsLoading(true)
     fetch("/api/communications/channels")
       .then((r) => r.json())
@@ -943,6 +948,7 @@ export function CommunicationsClient({ userId, companyId }: Props) {
   // Load announcements when tab changes
   useEffect(() => {
     if (tab !== "announcements" || announcements.length > 0) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setAnnLoading(true)
     fetch("/api/communications/announcements")
       .then((r) => r.json())

@@ -453,6 +453,8 @@ export function CommandPalettePanel({ role }: { role: string }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const bodyRef = useRef<HTMLDivElement>(null)
 
+  // Client-mounted flag for portal rendering.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => setMounted(true), [])
 
   const allCommands = useMemo(() => getCommandsForRole(role), [role])
@@ -461,6 +463,8 @@ export function CommandPalettePanel({ role }: { role: string }) {
   // Reset + focus on open
   useEffect(() => {
     if (isOpen) {
+      // Reset the palette query/selection each time it opens.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setQuery("")
       setActiveIdx(0)
       setRecents(getRecent())

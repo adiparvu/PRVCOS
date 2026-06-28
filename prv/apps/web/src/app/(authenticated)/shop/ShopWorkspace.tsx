@@ -692,6 +692,8 @@ export function ShopWorkspace() {
   const products = data?.products ?? []
 
   useEffect(() => {
+    // Hydrate the cart from localStorage (client-only).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCart(readStoredCart())
   }, [])
 

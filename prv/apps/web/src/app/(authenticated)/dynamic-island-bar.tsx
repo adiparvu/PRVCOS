@@ -38,6 +38,8 @@ export function DynamicIslandBar({ role, userId, companyId }: DynamicIslandBarPr
   // Auto-expand 4 s when a critical indicator fires
   useEffect(() => {
     if (ctx.indicator === "critical") {
+      // Auto-expand the island for a critical indicator, then collapse on a timer.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setExpanded(true)
       const t = setTimeout(() => setExpanded(false), 4_000)
       return () => clearTimeout(t)

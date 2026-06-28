@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect } from "react"
+import { useQuery } from "@tanstack/react-query"
 import { useRouter } from "next/navigation"
 import type { ProductDetail } from "@/app/api/shop/products/[id]/route"
 import type { Product, ProductCategory } from "@/app/api/shop/products/route"
@@ -297,37 +298,42 @@ function RelatedCard({ product, onClick }: { product: Product; onClick: (id: str
 
 export function ProductDetailClient({ id }: { id: string }) {
   const router = useRouter()
-  const [product, setProduct] = useState<ProductDetail | null>(null)
-  const [related, setRelated] = useState<Product[]>([])
-  const [loading, setLoading] = useState(true)
   const [qty, setQty] = useState(1)
   const [added, setAdded] = useState(false)
   const [cartCount, setCartCount] = useState(0)
+  const [qtySeeded, setQtySeeded] = useState(false)
 
+  // Cart count is hydrated from localStorage, which only exists on the client.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCartCount(readCart().reduce((s, i) => s + i.qty, 0))
   }, [])
 
-  const load = useCallback(async () => {
-    setLoading(true)
-    try {
-      const res = await fetch(`/api/shop/products/${id}`)
-      if (!res.ok) {
-        router.replace("/shop")
-        return
-      }
-      const data = await res.json()
-      setProduct(data.product)
-      setRelated(data.related ?? [])
-      setQty(data.product?.minOrderQty ?? 1)
-    } finally {
-      setLoading(false)
-    }
-  }, [id, router])
+  const {
+    data,
+    isLoading: loading,
+    isError,
+  } = useQuery({
+    queryKey: ["product-detail", id],
+    queryFn: () =>
+      fetch(`/api/shop/products/${id}`).then((r) => {
+        if (!r.ok) throw new Error("Product not found")
+        return r.json() as Promise<{ product: ProductDetail; related: Product[] }>
+      }),
+  })
+  const product = data?.product ?? null
+  const related = data?.related ?? []
 
+  // Seed the order quantity from the product's minimum once it loads.
+  if (product && !qtySeeded) {
+    setQtySeeded(true)
+    setQty(product.minOrderQty ?? 1)
+  }
+
+  // Unknown / unavailable product id → bounce back to the shop.
   useEffect(() => {
-    load()
-  }, [load])
+    if (isError) router.replace("/shop")
+  }, [isError, router])
 
   const addToCart = () => {
     if (!product) return
