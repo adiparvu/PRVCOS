@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server"
 import { withPortalMobileAuth } from "@/lib/mobile/portal-auth"
 import type { PortalSessionContext } from "@/lib/portal-auth"
 import { db } from "@prv/db"
-import { renovationProjects, renovationPhases } from "@prv/db/schema"
-import { and, desc, eq, inArray, isNull } from "drizzle-orm"
+import { renovationProjects, renovationPhases, renovationSiteReports } from "@prv/db/schema"
+import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -138,6 +138,30 @@ export const GET = withPortalMobileAuth(
       }
     }
 
+    // Total client-visible site-report photos per project (sum of the photos
+    // JSONB array lengths). Clients only see photos from client-visible reports.
+    const photoRows =
+      projectIds.length > 0
+        ? await db
+            .select({
+              projectId: renovationSiteReports.projectId,
+              total: sql<number>`COALESCE(SUM(jsonb_array_length(${renovationSiteReports.photos})), 0)::int`,
+            })
+            .from(renovationSiteReports)
+            .where(
+              and(
+                inArray(renovationSiteReports.projectId, projectIds),
+                eq(renovationSiteReports.clientVisible, true)
+              )
+            )
+            .groupBy(renovationSiteReports.projectId)
+        : []
+
+    const photosCountMap: Record<string, number> = {}
+    for (const row of photoRows) {
+      photosCountMap[row.projectId] = row.total
+    }
+
     const projects = rows.map((r) => {
       const { mapped, label } = mapStatus(r.status)
       const startDate = r.actualStartDate ?? r.estimatedStartDate ?? null
@@ -157,7 +181,7 @@ export const GET = withPortalMobileAuth(
         budget: formatBudget(r.estimatedValue),
         spent: formatBudget(r.contractedValue),
         nextMilestone: nextMilestoneMap[r.id] ?? null,
-        photosCount: 0, // TODO: query site_report photos JSONB aggregation when needed
+        photosCount: photosCountMap[r.id] ?? 0,
         address,
       }
     })
