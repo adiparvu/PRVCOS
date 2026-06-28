@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState } from "react"
+import { useQuery } from "@tanstack/react-query"
 import Link from "next/link"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -225,24 +226,15 @@ function KpiTile({
 
 export function ShopAnalyticsClient() {
   const [month, setMonth] = useState(thisMonth())
-  const [data, setData] = useState<AnalyticsData | null>(null)
-  const [loading, setLoading] = useState(true)
 
-  const load = useCallback(async (m: string) => {
-    setLoading(true)
-    try {
-      const res = await fetch(`/api/shop/analytics?month=${m}-01&limit=10`)
-      if (!res.ok) return
-      const json = await res.json()
-      setData(json)
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    load(month)
-  }, [load, month])
+  const { data, isLoading: loading } = useQuery({
+    queryKey: ["shop-analytics", month],
+    queryFn: () =>
+      fetch(`/api/shop/analytics?month=${month}-01&limit=10`).then((r) => {
+        if (!r.ok) throw new Error("Failed to load shop analytics")
+        return r.json() as Promise<AnalyticsData>
+      }),
+  })
 
   if (loading) return <Skeleton />
 
