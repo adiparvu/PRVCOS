@@ -37,12 +37,71 @@ interface PresenceData {
   lastSeenAt: string | null
 }
 
+export interface ProfileStats {
+  attendancePct: number | null
+  shiftsThisMonth: number
+  activeProjects: number
+}
+export interface ProfileShift {
+  id: string
+  title: string
+  location: string | null
+  date: string
+  startTime: string
+  endTime: string
+}
+export interface ProfileColleague {
+  id: string
+  name: string
+  initials: string
+  avatarUrl: string | null
+  status: string
+}
+export interface ProfileActivity {
+  id: string
+  action: string
+  entityType: string | null
+  createdAt: string
+}
+
 interface PersonProfileClientProps {
   person: PersonData
   presence: PresenceData
   socialProfiles: SocialProfile[]
   companyId: string
   isOwnProfile: boolean
+  stats: ProfileStats
+  upcomingShifts: ProfileShift[]
+  colleagues: ProfileColleague[]
+  recentActivity: ProfileActivity[]
+}
+
+// ── Profile formatting helpers ──────────────────────────────────────────────
+function humanizeActivity(action: string): string {
+  const parts = action.split(".")
+  const verb = parts[parts.length - 1] ?? action
+  const noun = parts.length > 1 ? (parts[parts.length - 2] ?? "") : ""
+  const fmt = (x: string) => x.replace(/_/g, " ")
+  const label = (noun ? `${fmt(noun)} ${fmt(verb)}` : fmt(verb)).trim()
+  return label.charAt(0).toUpperCase() + label.slice(1)
+}
+function activityTypeFor(action: string): ActivityType {
+  if (/attendance|clock|check/i.test(action)) return "check_in"
+  if (/approv/i.test(action)) return "approval"
+  if (/document|upload|file/i.test(action)) return "document"
+  if (/shift|schedule/i.test(action)) return "shift"
+  return "task"
+}
+function fmtActivityTime(iso: string): string {
+  return new Date(iso).toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  })
+}
+function toMinutes(t: string): number {
+  return Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5))
 }
 
 // ── Sub-components ────────────────────────────────────────────────────────────
@@ -93,16 +152,19 @@ function GlassPanel({
 }
 
 // Stats strip
-const MOCK_STATS = [
-  { label: "Attendance", value: "96%", sub: "this month" },
-  { label: "Tasks Done", value: "42", sub: "this month" },
-  { label: "Projects", value: "3", sub: "active" },
-]
-
-function StatsStrip() {
+function StatsStrip({ stats }: { stats: ProfileStats }) {
+  const items = [
+    {
+      label: "Attendance",
+      value: stats.attendancePct != null ? `${stats.attendancePct}%` : "—",
+      sub: "this month",
+    },
+    { label: "Shifts", value: String(stats.shiftsThisMonth), sub: "this month" },
+    { label: "Projects", value: String(stats.activeProjects), sub: "active" },
+  ]
   return (
     <div className="grid grid-cols-3 gap-2.5">
-      {MOCK_STATS.map(({ label, value, sub }) => (
+      {items.map(({ label, value, sub }) => (
         <div
           key={label}
           className="rounded-[16px] text-center py-3 px-2"
@@ -134,6 +196,8 @@ function StatsStrip() {
 }
 
 // Skills section
+// NOTE: skills have no backend table yet — kept as sample data until a
+// user_skills schema + endpoint exists. All other profile sections use real data.
 const MOCK_SKILLS = [
   "Operations",
   "Inventory",
@@ -202,174 +266,179 @@ const ACTIVITY_COLOR: Record<ActivityType, string> = {
   shift: "rgba(255,159,10,0.75)",
 }
 
-const MOCK_ACTIVITY: ActivityEntry[] = [
-  { id: "1", type: "check_in", title: "Checked in at Main Store", time: "Today, 08:47" },
-  { id: "2", type: "task", title: "Completed: Inventory count — Aisle 3", time: "Today, 11:20" },
-  { id: "3", type: "approval", title: "Approved overtime request", time: "Yesterday, 16:05" },
-  { id: "4", type: "document", title: "Uploaded safety report Q2", time: "Jun 10, 14:30" },
-  { id: "5", type: "shift", title: "Shift ended — 8h 12m worked", time: "Jun 10, 17:00" },
-]
-
-function ActivityFeed() {
+function ActivityFeed({ activity }: { activity: ProfileActivity[] }) {
+  if (activity.length === 0) {
+    return (
+      <GlassPanel>
+        <p className="text-[12px] text-center py-6" style={{ color: "rgba(255,255,255,0.30)" }}>
+          No recent activity
+        </p>
+      </GlassPanel>
+    )
+  }
   return (
     <GlassPanel>
-      {MOCK_ACTIVITY.map((entry, i) => (
-        <div
-          key={entry.id}
-          className="flex items-start gap-3 px-4 py-3"
-          style={{
-            borderBottom:
-              i < MOCK_ACTIVITY.length - 1 ? "1px solid rgba(255,255,255,0.06)" : "none",
-          }}
-        >
-          {/* Icon */}
+      {activity.map((entry, i) => {
+        const type = activityTypeFor(entry.action)
+        return (
           <div
-            className="w-7 h-7 rounded-[9px] flex items-center justify-center flex-shrink-0 mt-0.5"
+            key={entry.id}
+            className="flex items-start gap-3 px-4 py-3"
             style={{
-              background: "rgba(255,255,255,0.07)",
-              border: "1px solid rgba(255,255,255,0.10)",
+              borderBottom: i < activity.length - 1 ? "1px solid rgba(255,255,255,0.06)" : "none",
             }}
           >
-            <svg
-              width="13"
-              height="13"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke={ACTIVITY_COLOR[entry.type]}
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+            {/* Icon */}
+            <div
+              className="w-7 h-7 rounded-[9px] flex items-center justify-center flex-shrink-0 mt-0.5"
+              style={{
+                background: "rgba(255,255,255,0.07)",
+                border: "1px solid rgba(255,255,255,0.10)",
+              }}
             >
-              <path d={ACTIVITY_ICON[entry.type]} />
-            </svg>
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke={ACTIVITY_COLOR[type]}
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d={ACTIVITY_ICON[type]} />
+              </svg>
+            </div>
+            {/* Text */}
+            <div className="flex-1 min-w-0">
+              <p
+                className="text-[13px] font-medium leading-snug"
+                style={{ color: "rgba(255,255,255,0.78)" }}
+              >
+                {humanizeActivity(entry.action)}
+                {entry.entityType ? ` · ${entry.entityType.replace(/_/g, " ")}` : ""}
+              </p>
+              <p className="text-[11px] mt-0.5" style={{ color: "rgba(255,255,255,0.30)" }}>
+                {fmtActivityTime(entry.createdAt)}
+              </p>
+            </div>
           </div>
-          {/* Text */}
-          <div className="flex-1 min-w-0">
-            <p
-              className="text-[13px] font-medium leading-snug"
-              style={{ color: "rgba(255,255,255,0.78)" }}
-            >
-              {entry.title}
-            </p>
-            <p className="text-[11px] mt-0.5" style={{ color: "rgba(255,255,255,0.30)" }}>
-              {entry.time}
-            </p>
-          </div>
-        </div>
-      ))}
+        )
+      })}
     </GlassPanel>
   )
 }
 
 // Upcoming shifts
-interface ShiftEntry {
-  day: string
-  date: string
-  start: string
-  end: string
-  location: string
-}
-
-const MOCK_SHIFTS: ShiftEntry[] = [
-  { day: "Thu", date: "12", start: "09:00", end: "17:00", location: "Main Store" },
-  { day: "Fri", date: "13", start: "09:00", end: "17:00", location: "Main Store" },
-  { day: "Mon", date: "16", start: "10:00", end: "18:00", location: "Depot B" },
-]
-
-function UpcomingShifts() {
+function UpcomingShifts({ shifts }: { shifts: ProfileShift[] }) {
+  if (shifts.length === 0) {
+    return (
+      <GlassPanel>
+        <p className="text-[12px] text-center py-6" style={{ color: "rgba(255,255,255,0.30)" }}>
+          No upcoming shifts
+        </p>
+      </GlassPanel>
+    )
+  }
   return (
     <GlassPanel>
-      {MOCK_SHIFTS.map((shift, i) => (
-        <div
-          key={`${shift.day}${shift.date}`}
-          className="flex items-center gap-3 px-4 py-3"
-          style={{
-            borderBottom: i < MOCK_SHIFTS.length - 1 ? "1px solid rgba(255,255,255,0.06)" : "none",
-          }}
-        >
-          {/* Date chip */}
+      {shifts.map((shift, i) => {
+        const d = new Date(`${shift.date}T12:00:00`)
+        const day = d.toLocaleDateString("en-US", { weekday: "short" })
+        const dom = String(d.getDate())
+        const durH =
+          Math.round(((toMinutes(shift.endTime) - toMinutes(shift.startTime)) / 60) * 10) / 10
+        return (
           <div
-            className="w-[44px] flex-shrink-0 rounded-[10px] py-2 text-center"
+            key={shift.id}
+            className="flex items-center gap-3 px-4 py-3"
             style={{
-              background: i === 0 ? "rgba(10,132,255,0.14)" : "rgba(255,255,255,0.06)",
-              border: `1px solid ${i === 0 ? "rgba(10,132,255,0.25)" : "rgba(255,255,255,0.10)"}`,
+              borderBottom: i < shifts.length - 1 ? "1px solid rgba(255,255,255,0.06)" : "none",
             }}
           >
-            <p
-              className="text-[10px] font-semibold uppercase"
-              style={{ color: i === 0 ? "rgba(10,132,255,0.90)" : "rgba(255,255,255,0.35)" }}
+            {/* Date chip */}
+            <div
+              className="w-[44px] flex-shrink-0 rounded-[10px] py-2 text-center"
+              style={{
+                background: i === 0 ? "rgba(10,132,255,0.14)" : "rgba(255,255,255,0.06)",
+                border: `1px solid ${i === 0 ? "rgba(10,132,255,0.25)" : "rgba(255,255,255,0.10)"}`,
+              }}
             >
-              {shift.day}
-            </p>
-            <p
-              className="text-[18px] font-bold leading-tight"
-              style={{ color: i === 0 ? "rgba(10,132,255,0.95)" : "rgba(255,255,255,0.75)" }}
-            >
-              {shift.date}
-            </p>
-          </div>
+              <p
+                className="text-[10px] font-semibold uppercase"
+                style={{ color: i === 0 ? "rgba(10,132,255,0.90)" : "rgba(255,255,255,0.35)" }}
+              >
+                {day}
+              </p>
+              <p
+                className="text-[18px] font-bold leading-tight"
+                style={{ color: i === 0 ? "rgba(10,132,255,0.95)" : "rgba(255,255,255,0.75)" }}
+              >
+                {dom}
+              </p>
+            </div>
 
-          {/* Info */}
-          <div className="flex-1 min-w-0">
-            <p
-              className="text-[13px] font-semibold leading-snug"
-              style={{ color: "rgba(255,255,255,0.82)" }}
-            >
-              {shift.start} – {shift.end}
-            </p>
-            <p className="text-[11px] mt-0.5" style={{ color: "rgba(255,255,255,0.35)" }}>
-              {shift.location}
-            </p>
-          </div>
+            {/* Info */}
+            <div className="flex-1 min-w-0">
+              <p
+                className="text-[13px] font-semibold leading-snug"
+                style={{ color: "rgba(255,255,255,0.82)" }}
+              >
+                {shift.startTime} – {shift.endTime}
+              </p>
+              <p className="text-[11px] mt-0.5" style={{ color: "rgba(255,255,255,0.35)" }}>
+                {shift.location ?? shift.title}
+              </p>
+            </div>
 
-          {/* Duration pill */}
-          <span
-            className="text-[11px] font-medium px-2 py-0.5 rounded-[100px]"
-            style={{
-              background: "rgba(255,255,255,0.07)",
-              border: "1px solid rgba(255,255,255,0.10)",
-              color: "rgba(255,255,255,0.40)",
-            }}
-          >
-            8h
-          </span>
-        </div>
-      ))}
+            {/* Duration pill */}
+            <span
+              className="text-[11px] font-medium px-2 py-0.5 rounded-[100px]"
+              style={{
+                background: "rgba(255,255,255,0.07)",
+                border: "1px solid rgba(255,255,255,0.10)",
+                color: "rgba(255,255,255,0.40)",
+              }}
+            >
+              {durH}h
+            </span>
+          </div>
+        )
+      })}
     </GlassPanel>
   )
 }
 
 // Colleagues / team presence
-interface Colleague {
-  initials: string
-  name: string
-  status: "online" | "away" | "offline"
+function statusDot(status: string): string {
+  if (status === "online") return "rgba(48,209,88,0.9)"
+  if (status === "away" || status === "busy" || status === "in_meeting")
+    return "rgba(255,159,10,0.9)"
+  return "rgba(255,255,255,0.25)"
+}
+function statusLabel(status: string): string {
+  if (status === "online") return "Active"
+  return status.charAt(0).toUpperCase() + status.slice(1).replace(/_/g, " ")
 }
 
-const MOCK_COLLEAGUES: Colleague[] = [
-  { initials: "MB", name: "Maria Badea", status: "online" },
-  { initials: "GS", name: "George Stoica", status: "online" },
-  { initials: "IP", name: "Ion Petrescu", status: "away" },
-  { initials: "AL", name: "Ana Lungu", status: "offline" },
-  { initials: "RC", name: "Radu Constantin", status: "online" },
-]
-
-const STATUS_DOT: Record<Colleague["status"], string> = {
-  online: "rgba(48,209,88,0.9)",
-  away: "rgba(255,159,10,0.9)",
-  offline: "rgba(255,255,255,0.25)",
-}
-
-function TeamSection() {
+function TeamSection({ colleagues }: { colleagues: ProfileColleague[] }) {
+  if (colleagues.length === 0) {
+    return (
+      <GlassPanel>
+        <p className="text-[12px] text-center py-6" style={{ color: "rgba(255,255,255,0.30)" }}>
+          No teammates yet
+        </p>
+      </GlassPanel>
+    )
+  }
   return (
     <GlassPanel>
-      {MOCK_COLLEAGUES.map((c, i) => (
+      {colleagues.map((c, i) => (
         <div
-          key={c.name}
+          key={c.id}
           className="flex items-center gap-3 px-4 py-2.5"
           style={{
-            borderBottom:
-              i < MOCK_COLLEAGUES.length - 1 ? "1px solid rgba(255,255,255,0.06)" : "none",
+            borderBottom: i < colleagues.length - 1 ? "1px solid rgba(255,255,255,0.06)" : "none",
           }}
         >
           {/* Avatar */}
@@ -387,7 +456,7 @@ function TeamSection() {
             <span
               className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full"
               style={{
-                background: STATUS_DOT[c.status],
+                background: statusDot(c.status),
                 border: "1.5px solid var(--prv-bg)",
               }}
             />
@@ -396,7 +465,7 @@ function TeamSection() {
             {c.name}
           </p>
           <span className="text-[11px]" style={{ color: "rgba(255,255,255,0.28)" }}>
-            {c.status === "online" ? "Active" : c.status === "away" ? "Away" : "Offline"}
+            {statusLabel(c.status)}
           </span>
         </div>
       ))}
@@ -411,6 +480,10 @@ export function PersonProfileClient({
   presence,
   socialProfiles,
   isOwnProfile,
+  stats,
+  upcomingShifts,
+  colleagues,
+  recentActivity,
 }: PersonProfileClientProps) {
   const router = useRouter()
   const [showSocialEditor, setShowSocialEditor] = useState(false)
@@ -480,7 +553,7 @@ export function PersonProfileClient({
 
         {/* Stats strip */}
         <div className="mt-4">
-          <StatsStrip />
+          <StatsStrip stats={stats} />
         </div>
 
         {/* Segment tabs */}
@@ -572,11 +645,11 @@ export function PersonProfileClient({
 
             {/* Upcoming shifts */}
             <SectionLabel>Upcoming Shifts</SectionLabel>
-            <UpcomingShifts />
+            <UpcomingShifts shifts={upcomingShifts} />
 
             {/* Team */}
             <SectionLabel>Team on Shift</SectionLabel>
-            <TeamSection />
+            <TeamSection colleagues={colleagues} />
 
             {/* Social profiles */}
             {(socialProfiles.length > 0 || isOwnProfile) && (
@@ -615,7 +688,7 @@ export function PersonProfileClient({
         ) : (
           <div className="mt-4">
             <SectionLabel>Recent Activity</SectionLabel>
-            <ActivityFeed />
+            <ActivityFeed activity={recentActivity} />
           </div>
         )}
       </div>

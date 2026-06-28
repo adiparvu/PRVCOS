@@ -2,8 +2,19 @@ import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import { getSession } from "@prv/auth"
 import { db } from "@prv/db"
-import { users, userPresence, socialProfiles } from "@prv/db/schema"
-import { eq, and } from "drizzle-orm"
+import {
+  users,
+  userPresence,
+  socialProfiles,
+  attendanceRecords,
+  shifts,
+  shiftAssignments,
+  projectMembers,
+  projects,
+  auditLogs,
+  stores,
+} from "@prv/db/schema"
+import { eq, and, gte, desc, ne, isNull, inArray } from "drizzle-orm"
 import type { Metadata } from "next"
 import { PersonProfileClient } from "./PersonProfileClient"
 
@@ -51,6 +62,8 @@ export default async function PersonProfilePage({ params }: Props) {
       bio: users.bio,
       role: users.role,
       createdAt: users.createdAt,
+      teamId: users.teamId,
+      departmentId: users.departmentId,
     })
     .from(users)
     .where(and(eq(users.id, id), eq(users.companyId, session.companyId)))
@@ -75,8 +88,114 @@ export default async function PersonProfilePage({ params }: Props) {
     .from(socialProfiles)
     .where(and(eq(socialProfiles.userId, id), eq(socialProfiles.companyId, session.companyId)))
 
+  // ── Real profile aggregates ──────────────────────────────────────────────
+  const todayStr = new Date().toISOString().slice(0, 10)
+  const monthStart = `${todayStr.slice(0, 7)}-01`
+
+  const [attRows, shiftRows, projectRows, activityRows] = await Promise.all([
+    db
+      .select({ status: attendanceRecords.status })
+      .from(attendanceRecords)
+      .where(and(eq(attendanceRecords.userId, id), gte(attendanceRecords.date, monthStart))),
+    db
+      .select({
+        id: shifts.id,
+        title: shifts.title,
+        location: shifts.location,
+        storeName: stores.name,
+        date: shifts.date,
+        startTime: shifts.startTime,
+        endTime: shifts.endTime,
+      })
+      .from(shiftAssignments)
+      .innerJoin(shifts, eq(shiftAssignments.shiftId, shifts.id))
+      .leftJoin(stores, eq(shifts.storeId, stores.id))
+      .where(
+        and(eq(shiftAssignments.userId, id), isNull(shifts.deletedAt), gte(shifts.date, monthStart))
+      )
+      .orderBy(shifts.date, shifts.startTime),
+    db
+      .select({ projectId: projectMembers.projectId })
+      .from(projectMembers)
+      .innerJoin(projects, eq(projectMembers.projectId, projects.id))
+      .where(and(eq(projectMembers.userId, id), inArray(projects.status, ["active", "on_hold"]))),
+    db
+      .select({
+        id: auditLogs.id,
+        action: auditLogs.action,
+        entityType: auditLogs.entityType,
+        createdAt: auditLogs.createdAt,
+      })
+      .from(auditLogs)
+      .where(and(eq(auditLogs.companyId, session.companyId), eq(auditLogs.actorId, id)))
+      .orderBy(desc(auditLogs.createdAt))
+      .limit(6),
+  ])
+
+  const presentDays = attRows.filter(
+    (r) => r.status === "present" || r.status === "late" || r.status === "clocked_out"
+  ).length
+  const attendancePct = attRows.length > 0 ? Math.round((presentDays / attRows.length) * 100) : null
+
+  const upcomingShifts = shiftRows
+    .filter((sft) => sft.date >= todayStr)
+    .slice(0, 5)
+    .map((sft) => ({
+      id: sft.id,
+      title: sft.title,
+      location: sft.location ?? sft.storeName ?? null,
+      date: sft.date,
+      startTime: sft.startTime,
+      endTime: sft.endTime,
+    }))
+
+  // Colleagues — same team, else same department — with live presence.
+  const scopeColumn = person.teamId ? users.teamId : person.departmentId ? users.departmentId : null
+  const scopeValue = person.teamId ?? person.departmentId ?? null
+  const colleagueRows =
+    scopeColumn && scopeValue
+      ? await db
+          .select({
+            id: users.id,
+            firstName: users.firstName,
+            lastName: users.lastName,
+            avatarUrl: users.avatarUrl,
+            presenceStatus: userPresence.status,
+          })
+          .from(users)
+          .leftJoin(userPresence, eq(userPresence.userId, users.id))
+          .where(
+            and(
+              eq(users.companyId, session.companyId),
+              ne(users.id, id),
+              eq(scopeColumn, scopeValue),
+              isNull(users.deletedAt)
+            )
+          )
+          .limit(6)
+      : []
+
   return (
     <PersonProfileClient
+      stats={{
+        attendancePct,
+        shiftsThisMonth: shiftRows.length,
+        activeProjects: projectRows.length,
+      }}
+      upcomingShifts={upcomingShifts}
+      colleagues={colleagueRows.map((c) => ({
+        id: c.id,
+        name: `${c.firstName} ${c.lastName}`,
+        initials: `${c.firstName.charAt(0)}${c.lastName.charAt(0)}`.toUpperCase(),
+        avatarUrl: c.avatarUrl ?? null,
+        status: c.presenceStatus ?? "offline",
+      }))}
+      recentActivity={activityRows.map((a) => ({
+        id: a.id,
+        action: a.action,
+        entityType: a.entityType ?? null,
+        createdAt: a.createdAt.toISOString(),
+      }))}
       person={{
         id: person.id,
         firstName: person.firstName,
