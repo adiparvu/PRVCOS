@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect } from "react"
+import { useQuery } from "@tanstack/react-query"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import type { Product, ProductCategory } from "@/app/api/shop/products/route"
@@ -676,8 +677,6 @@ function persistCart(items: CartItem[]) {
 }
 
 export function ShopWorkspace() {
-  const [products, setProducts] = useState<Product[]>([])
-  const [loading, setLoading] = useState(true)
   const [category, setCategory] = useState<CatFilter>("all")
   const [search, setSearch] = useState("")
   const [cart, setCart] = useState<CartItem[]>([])
@@ -685,21 +684,16 @@ export function ShopWorkspace() {
   const [placing, setPlacing] = useState(false)
   const router = useRouter()
 
-  const load = useCallback(async () => {
-    setLoading(true)
-    try {
-      const res = await fetch("/api/shop/products")
-      const data = await res.json()
-      setProducts(data.products ?? [])
-    } finally {
-      setLoading(false)
-    }
-  }, [])
+  const { data, isLoading: loading } = useQuery({
+    queryKey: ["shop-products"],
+    queryFn: () =>
+      fetch("/api/shop/products").then((r) => r.json() as Promise<{ products: Product[] }>),
+  })
+  const products = data?.products ?? []
 
   useEffect(() => {
-    load()
     setCart(readStoredCart())
-  }, [load])
+  }, [])
 
   const addToCart = (product: Product) => {
     setCart((prev) => {

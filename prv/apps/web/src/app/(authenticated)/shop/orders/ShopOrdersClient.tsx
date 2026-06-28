@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState } from "react"
+import { useQuery } from "@tanstack/react-query"
 import Link from "next/link"
 import type { Order, OrderStatus } from "@/app/api/shop/orders/route"
 
@@ -317,31 +318,26 @@ function OrderCard({ order }: { order: Order }) {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function ShopOrdersClient() {
-  const [orders, setOrders] = useState<Order[]>([])
-  const [meta, setMeta] = useState<{
-    total: number
-    processing: number
-    delivered: number
-    totalValue: number
-  } | null>(null)
-  const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<FilterId>("all")
 
-  const load = useCallback(async () => {
-    setLoading(true)
-    try {
-      const res = await fetch("/api/shop/orders")
-      const data = await res.json()
-      setOrders(data.orders ?? [])
-      setMeta(data.meta ?? null)
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    load()
-  }, [load])
+  const { data, isLoading: loading } = useQuery({
+    queryKey: ["shop-orders"],
+    queryFn: () =>
+      fetch("/api/shop/orders").then(
+        (r) =>
+          r.json() as Promise<{
+            orders: Order[]
+            meta: {
+              total: number
+              processing: number
+              delivered: number
+              totalValue: number
+            } | null
+          }>
+      ),
+  })
+  const orders = data?.orders ?? []
+  const meta = data?.meta ?? null
 
   if (loading) return <Skeleton />
 
