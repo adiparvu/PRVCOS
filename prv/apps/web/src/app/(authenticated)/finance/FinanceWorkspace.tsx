@@ -57,15 +57,6 @@ interface ChartData {
   expenses: number[]
 }
 
-// NOTE: sample sparkline series — needs a finance time-series endpoint to
-// replace with real historical revenue / profit / expense / cash-flow data.
-const SPARK = {
-  revenue: [320, 348, 360, 402, 438, 482],
-  profit: [86, 96, 102, 114, 122, 138],
-  expenses: [234, 252, 258, 288, 316, 344],
-  cashflow: [78, 84, 88, 90, 92, 94],
-}
-
 const STATUS_STYLE: Record<string, { bg: string; color: string; label: string }> = {
   paid: { bg: "rgba(48,209,88,0.14)", color: "rgba(48,209,88,0.95)", label: "Paid" },
   due: { bg: "rgba(255,159,10,0.14)", color: "rgba(255,159,10,0.95)", label: "Scadent" },
@@ -307,6 +298,32 @@ export function FinanceWorkspace() {
   // Derive transactions from real invoices + expenses data
   const transactions = deriveTransactions(liveInvoices, liveExpenses)
 
+  // ── Sparkline series derived from the live revenue / expense chart ─────────
+  const revenueSeries = chart?.revenue ?? []
+  const expenseSeries = chart?.expenses ?? []
+  const profitSeries = revenueSeries.map((r, i) => r - (expenseSeries[i] ?? 0))
+  const cashflowSeries: number[] = []
+  profitSeries.reduce((acc, p) => {
+    const v = acc + p
+    cashflowSeries.push(v)
+    return v
+  }, 0)
+  const lastProfit = profitSeries.at(-1) ?? 0
+  const prevProfit = profitSeries.at(-2) ?? lastProfit
+  const cashflowDir: "up" | "down" | "flat" =
+    profitSeries.length < 2
+      ? "flat"
+      : lastProfit > prevProfit
+        ? "up"
+        : lastProfit < prevProfit
+          ? "down"
+          : "flat"
+  const cashflowValue = profitSeries.length > 0 ? fmt(lastProfit * 1000) : "—"
+  const cashflowTrend =
+    profitSeries.length >= 2
+      ? `${lastProfit - prevProfit >= 0 ? "+" : ""}${Math.round(lastProfit - prevProfit)}K`
+      : "stable"
+
   return (
     <div className="px-4 pt-14 pb-28 max-w-2xl mx-auto">
       {/* Header */}
@@ -331,25 +348,25 @@ export function FinanceWorkspace() {
           label="Revenue"
           value={meta?.totalRevenueLabel ?? "—"}
           trend={{ direction: trendDir(meta?.revenueTrend), value: meta?.revenueTrend ?? "—" }}
-          sparkline={SPARK.revenue}
+          sparkline={revenueSeries}
         />
         <GlassStatCard
           label="Profit"
           value={meta?.profitLabel ?? "—"}
           trend={{ direction: trendDir(meta?.profitTrend), value: meta?.profitTrend ?? "—" }}
-          sparkline={SPARK.profit}
+          sparkline={profitSeries}
         />
         <GlassStatCard
           label="Expenses"
           value={meta?.totalExpensesLabel ?? "—"}
           trend={{ direction: trendDir(meta?.expensesTrend), value: meta?.expensesTrend ?? "—" }}
-          sparkline={SPARK.expenses}
+          sparkline={expenseSeries}
         />
         <GlassStatCard
           label="Cash Flow"
-          value="€94K"
-          trend={{ direction: "flat", value: "stable" }}
-          sparkline={SPARK.cashflow}
+          value={cashflowValue}
+          trend={{ direction: cashflowDir, value: cashflowTrend }}
+          sparkline={cashflowSeries}
         />
       </div>
 
