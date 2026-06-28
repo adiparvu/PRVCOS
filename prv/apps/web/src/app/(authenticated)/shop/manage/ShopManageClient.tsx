@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect, useCallback, useRef } from "react"
+import { useState, useCallback, useRef } from "react"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import Link from "next/link"
 import type { Product, ProductCategory } from "@/app/api/shop/products/route"
 
@@ -787,8 +788,16 @@ const EMPTY_CREATE: CreateSheetState = {
 }
 
 export function ShopManageClient() {
-  const [products, setProducts] = useState<Product[]>([])
-  const [loading, setLoading] = useState(true)
+  const queryClient = useQueryClient()
+  const { data: productsData, isLoading: loading } = useQuery({
+    queryKey: ["shop-products-manage"],
+    queryFn: () =>
+      fetch("/api/shop/products?limit=200").then((r) => {
+        if (!r.ok) throw new Error("Failed to load products")
+        return r.json() as Promise<{ products: Product[] }>
+      }),
+  })
+  const products = productsData?.products ?? []
   const [search, setSearch] = useState("")
   const [stockSheet, setStockSheet] = useState<StockSheetState | null>(null)
   const [createSheet, setCreateSheet] = useState<CreateSheetState>(EMPTY_CREATE)
@@ -800,22 +809,6 @@ export function ShopManageClient() {
     if (toastTimer.current) clearTimeout(toastTimer.current)
     toastTimer.current = setTimeout(() => setToast(null), 3000)
   }, [])
-
-  const load = useCallback(async () => {
-    setLoading(true)
-    try {
-      const res = await fetch("/api/shop/products?limit=200")
-      if (!res.ok) return
-      const data = await res.json()
-      setProducts(data.products ?? [])
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    load()
-  }, [load])
 
   const saveStock = useCallback(async () => {
     if (!stockSheet || stockSheet.adjustment === 0) return
@@ -836,22 +829,27 @@ export function ShopManageClient() {
         return
       }
       const { stockQuantity } = (await res.json()) as { stockQuantity: number }
-      setProducts((prev) =>
-        prev.map((p) =>
-          p.id === stockSheet.product.id
-            ? {
-                ...p,
-                stock: stockQuantity,
-                badge:
-                  stockQuantity === 0
-                    ? "low-stock"
-                    : stockQuantity <=
-                        (stockSheet.product as Product & { stockMinimum?: number }).stockMinimum!
-                      ? "low-stock"
-                      : p.badge,
-              }
-            : p
-        )
+      queryClient.setQueryData<{ products: Product[] }>(["shop-products-manage"], (cache) =>
+        cache
+          ? {
+              products: cache.products.map((p) =>
+                p.id === stockSheet.product.id
+                  ? {
+                      ...p,
+                      stock: stockQuantity,
+                      badge:
+                        stockQuantity === 0
+                          ? "low-stock"
+                          : stockQuantity <=
+                              (stockSheet.product as Product & { stockMinimum?: number })
+                                .stockMinimum!
+                            ? "low-stock"
+                            : p.badge,
+                    }
+                  : p
+              ),
+            }
+          : cache
       )
       setStockSheet(null)
       showToast("Stoc actualizat", "success")
@@ -883,7 +881,9 @@ export function ShopManageClient() {
         return
       }
       const { product } = (await res.json()) as { product: Product }
-      setProducts((prev) => [product, ...prev])
+      queryClient.setQueryData<{ products: Product[] }>(["shop-products-manage"], (cache) =>
+        cache ? { products: [product, ...cache.products] } : cache
+      )
       setCreateSheet(EMPTY_CREATE)
       showToast("Produs creat", "success")
     } catch {

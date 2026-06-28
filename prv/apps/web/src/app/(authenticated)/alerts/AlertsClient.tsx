@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useCallback } from "react"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import Link from "next/link"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -321,36 +322,38 @@ function AlertRow({
 type FilterTab = "open" | "all"
 
 export function AlertsClient() {
-  const [alertList, setAlertList] = useState<Alert[]>([])
-  const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState<FilterTab>("open")
+  const queryClient = useQueryClient()
 
-  const load = useCallback(async (status: FilterTab) => {
-    setLoading(true)
-    try {
-      const res = await fetch(`/api/alerts?status=${status}`)
-      if (!res.ok) return
-      const json = await res.json()
-      setAlertList(json.alerts ?? [])
-    } finally {
-      setLoading(false)
-    }
-  }, [])
+  const { data, isLoading: loading } = useQuery({
+    queryKey: ["alerts", tab],
+    queryFn: () =>
+      fetch(`/api/alerts?status=${tab}`).then((r) => {
+        if (!r.ok) throw new Error("Failed to load alerts")
+        return r.json() as Promise<{ alerts: Alert[] }>
+      }),
+  })
+  const alertList = data?.alerts ?? []
 
-  useEffect(() => {
-    load(tab)
-  }, [load, tab])
-
-  const handleAcknowledge = useCallback(async (id: string) => {
-    await fetch(`/api/alerts/${id}`, {
-      method: "PATCH",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ action: "acknowledge" }),
-    })
-    setAlertList((prev) =>
-      prev.map((a) => (a.id === id ? { ...a, status: "acknowledged" as AlertStatus } : a))
-    )
-  }, [])
+  const handleAcknowledge = useCallback(
+    async (id: string) => {
+      await fetch(`/api/alerts/${id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "acknowledge" }),
+      })
+      queryClient.setQueryData<{ alerts: Alert[] }>(["alerts", tab], (prev) =>
+        prev
+          ? {
+              alerts: prev.alerts.map((a) =>
+                a.id === id ? { ...a, status: "acknowledged" as AlertStatus } : a
+              ),
+            }
+          : prev
+      )
+    },
+    [queryClient, tab]
+  )
 
   const handleResolve = useCallback(
     async (id: string) => {
@@ -359,13 +362,20 @@ export function AlertsClient() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ action: "resolve" }),
       })
-      setAlertList((prev) =>
-        tab === "open"
-          ? prev.filter((a) => a.id !== id)
-          : prev.map((a) => (a.id === id ? { ...a, status: "resolved" as AlertStatus } : a))
+      queryClient.setQueryData<{ alerts: Alert[] }>(["alerts", tab], (prev) =>
+        prev
+          ? {
+              alerts:
+                tab === "open"
+                  ? prev.alerts.filter((a) => a.id !== id)
+                  : prev.alerts.map((a) =>
+                      a.id === id ? { ...a, status: "resolved" as AlertStatus } : a
+                    ),
+            }
+          : prev
       )
     },
-    [tab]
+    [queryClient, tab]
   )
 
   // Counts by severity for the open alerts
