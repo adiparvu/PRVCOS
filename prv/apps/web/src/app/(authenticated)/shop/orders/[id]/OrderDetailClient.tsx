@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useCallback } from "react"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import Link from "next/link"
 import type { Order, OrderStatus } from "@/app/api/shop/orders/route"
 
@@ -300,25 +301,19 @@ function StatusStepper({ current }: { current: OrderStatus }) {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function OrderDetailClient({ id }: { id: string }) {
-  const [order, setOrder] = useState<FullOrder | null>(null)
-  const [loading, setLoading] = useState(true)
   const [advancing, setAdvancing] = useState(false)
+  const queryClient = useQueryClient()
 
-  const load = useCallback(async () => {
-    setLoading(true)
-    try {
-      const res = await fetch(`/api/shop/orders/${id}`)
-      if (!res.ok) return
-      const data = await res.json()
-      setOrder(data.order)
-    } finally {
-      setLoading(false)
-    }
-  }, [id])
-
-  useEffect(() => {
-    load()
-  }, [load])
+  const { data, isLoading: loading } = useQuery({
+    queryKey: ["shop-order-detail", id],
+    queryFn: () =>
+      fetch(`/api/shop/orders/${id}`).then((r) => {
+        if (!r.ok) throw new Error("Failed to load order")
+        return r.json() as Promise<{ order: FullOrder }>
+      }),
+    enabled: !!id,
+  })
+  const order = data?.order ?? null
 
   const advanceStatus = useCallback(
     async (toStatus: OrderStatus) => {
@@ -331,13 +326,15 @@ export function OrderDetailClient({ id }: { id: string }) {
           body: JSON.stringify({ status: toStatus }),
         })
         if (res.ok) {
-          setOrder((o) => o && { ...o, status: toStatus })
+          queryClient.setQueryData<{ order: FullOrder }>(["shop-order-detail", id], (prev) =>
+            prev ? { order: { ...prev.order, status: toStatus } } : prev
+          )
         }
       } finally {
         setAdvancing(false)
       }
     },
-    [id, order]
+    [id, order, queryClient]
   )
 
   if (loading) return <Skeleton />
