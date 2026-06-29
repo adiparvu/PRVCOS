@@ -54,6 +54,38 @@ export const leaveRequests = pgTable(
   ]
 )
 
+// ─── Team Availability ───────────────────────────────────────────────────────
+// Manual scheduling-availability overrides per member per day. The schedule
+// grid derives a baseline from shifts + approved leave; rows here record a
+// manager's explicit override for a specific date, which wins over the baseline.
+
+export const availabilityStateEnum = pgEnum("availability_state", ["yes", "maybe", "no"])
+
+export const teamAvailability = pgTable(
+  "team_availability",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    setByUserId: uuid("set_by_user_id").references(() => users.id, { onDelete: "set null" }),
+
+    date: varchar("date", { length: 10 }).notNull(), // YYYY-MM-DD
+    state: availabilityStateEnum("state").notNull(),
+
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("team_availability_company_id_idx").on(table.companyId),
+    index("team_availability_user_id_idx").on(table.userId),
+    unique("team_availability_user_date_unique").on(table.companyId, table.userId, table.date),
+  ]
+)
+
 // ─── Attendance Records ──────────────────────────────────────────────────────
 
 export const attendanceStatusEnum = pgEnum("attendance_status", [

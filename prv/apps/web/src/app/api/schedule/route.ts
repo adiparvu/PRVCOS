@@ -4,7 +4,15 @@ import type { GateContext } from "@prv/auth"
 import { writeAuditLog } from "@prv/auth"
 import { z } from "zod"
 import { db } from "@prv/db"
-import { shifts, shiftAssignments, users, stores, projects, leaveRequests } from "@prv/db/schema"
+import {
+  shifts,
+  shiftAssignments,
+  users,
+  stores,
+  projects,
+  leaveRequests,
+  teamAvailability,
+} from "@prv/db/schema"
 import { and, asc, eq, gt, gte, inArray, isNull, lte } from "drizzle-orm"
 import { weekDates, availabilityCell } from "@/lib/metrics-helpers"
 
@@ -52,9 +60,13 @@ export type AvailabilityCell = "yes" | "maybe" | "no"
 
 export interface TeamAvailability {
   // Member display names (row order), the weekday letters (column order) and a
-  // sparse "row-col" → state map, all derived from real shifts + approved leave.
+  // sparse "row-col" → state map. The baseline is derived from real shifts +
+  // approved leave; any saved manual override wins. `userIds` and `dates` are
+  // the row/column keys clients need to persist an edit back.
   people: string[]
+  userIds: string[]
   days: string[]
+  dates: string[]
   values: Record<string, AvailabilityCell>
 }
 
@@ -173,17 +185,46 @@ async function buildTeamAvailability(
     leaveByUser.set(l.userId, list)
   }
 
+  // Saved manual overrides for these members within the week window.
+  const overrideRows = memberIds.length
+    ? await db
+        .select({
+          userId: teamAvailability.userId,
+          date: teamAvailability.date,
+          state: teamAvailability.state,
+        })
+        .from(teamAvailability)
+        .where(
+          and(
+            eq(teamAvailability.companyId, companyId),
+            inArray(teamAvailability.userId, memberIds),
+            gte(teamAvailability.date, monday),
+            lte(teamAvailability.date, sunday)
+          )
+        )
+    : []
+
+  const overrideByKey = new Map<string, AvailabilityCell>()
+  for (const o of overrideRows) overrideByKey.set(`${o.userId}|${o.date}`, o.state)
+
   const values: Record<string, AvailabilityCell> = {}
   memberRows.forEach((m, r) => {
     const onLeave = leaveByUser.get(m.id) ?? []
     const shiftDates = datesByUser.get(m.id) ?? new Set<string>()
     dates.forEach((date, c) => {
-      const cell: AvailabilityCell = availabilityCell(date, onLeave, shiftDates)
-      values[`${r}-${c}`] = cell
+      // A saved override wins over the derived baseline.
+      const override = overrideByKey.get(`${m.id}|${date}`)
+      values[`${r}-${c}`] = override ?? availabilityCell(date, onLeave, shiftDates)
     })
   })
 
-  return { people: memberRows.map((m) => m.firstName), days: AVAIL_DAY_LETTERS, values }
+  return {
+    people: memberRows.map((m) => m.firstName),
+    userIds: memberRows.map((m) => m.id),
+    days: AVAIL_DAY_LETTERS,
+    dates,
+    values,
+  }
 }
 
 // ── GET ───────────────────────────────────────────────────────────────────────

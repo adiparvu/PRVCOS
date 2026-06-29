@@ -359,7 +359,28 @@ export function ScheduleWorkspace({ storeName }: { storeName: string }) {
   }
   const availPeople = serverAvail?.people ?? AVAIL_PEOPLE
   const availDays = serverAvail?.days ?? AVAIL_DAYS
+  const availUserIds = serverAvail?.userIds ?? []
+  const availDates = serverAvail?.dates ?? []
   const takenSlots = shiftData?.takenSlots ?? []
+
+  // Persist a single availability override (optimistic; reverts on failure).
+  const saveAvailability = (r: number, c: number, next: Availability) => {
+    const key = `${r}-${c}`
+    const prev = avail[key]
+    setAvail((p) => ({ ...p, [key]: next }))
+    const userId = availUserIds[r]
+    const date = availDates[c]
+    if (!userId || !date) return
+    void fetch("/api/schedule/availability", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId, date, state: next }),
+    })
+      .then((res) => {
+        if (!res.ok) setAvail((p) => ({ ...p, [key]: prev ?? "no" }))
+      })
+      .catch(() => setAvail((p) => ({ ...p, [key]: prev ?? "no" })))
+  }
 
   const shifts = useMemo(() => (shiftData?.shifts ?? []).map(mapShift), [shiftData?.shifts])
   const meta = shiftData?.meta
@@ -585,7 +606,7 @@ export function ScheduleWorkspace({ storeName }: { storeName: string }) {
           people={availPeople}
           days={availDays}
           value={avail}
-          onChange={(r, c, next) => setAvail((prev) => ({ ...prev, [`${r}-${c}`]: next }))}
+          onChange={saveAvailability}
         />
       </div>
 

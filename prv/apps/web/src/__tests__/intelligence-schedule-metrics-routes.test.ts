@@ -20,6 +20,9 @@ function nextResult(): unknown[] {
 const mockDb = {
   select: vi.fn().mockReturnThis(),
   selectDistinct: vi.fn().mockReturnThis(),
+  insert: vi.fn().mockReturnThis(),
+  values: vi.fn().mockReturnThis(),
+  onConflictDoUpdate: vi.fn(() => Promise.resolve([])),
   from: vi.fn().mockReturnThis(),
   where: vi.fn().mockReturnThis(),
   leftJoin: vi.fn().mockReturnThis(),
@@ -42,6 +45,7 @@ vi.mock("@prv/db/schema", () => {
     "stores",
     "projects",
     "leaveRequests",
+    "teamAvailability",
     "orders",
     "clients",
     "expenses",
@@ -91,6 +95,9 @@ function resetMocks() {
   queue.length = 0
   mockDb.select.mockReturnThis()
   mockDb.selectDistinct.mockReturnThis()
+  mockDb.insert.mockReturnThis()
+  mockDb.values.mockReturnThis()
+  mockDb.onConflictDoUpdate.mockImplementation(() => Promise.resolve([]))
   mockDb.from.mockReturnThis()
   mockDb.where.mockReturnThis()
   mockDb.leftJoin.mockReturnThis()
@@ -196,6 +203,8 @@ describe("GET /api/schedule", () => {
     expect(body.teamAvailability).toBeDefined()
     expect(body.teamAvailability.days).toEqual(["M", "T", "W", "T", "F", "S", "S"])
     expect(body.teamAvailability.people).toEqual([])
+    expect(body.teamAvailability.userIds).toEqual([])
+    expect(body.teamAvailability.dates).toHaveLength(7)
   })
 
   it("derives availability cells for real members", async () => {
@@ -231,5 +240,71 @@ describe("GET /api/schedule", () => {
     const body = await res.json()
     // Falls back to the current week label rather than throwing on Invalid Date.
     expect(body.meta.weekLabel).toMatch(/\w+–\w+/)
+  })
+})
+
+// ─── PUT /api/schedule/availability ───────────────────────────────────────────
+
+function makePut(body: unknown): Request {
+  return {
+    method: "PUT",
+    nextUrl: { pathname: "/api/schedule/availability", searchParams: new URLSearchParams() },
+    url: "http://localhost/api/schedule/availability",
+    headers: { get: () => null },
+    json: async () => body,
+  } as unknown as Request
+}
+
+describe("PUT /api/schedule/availability", () => {
+  beforeEach(resetMocks)
+
+  it("returns 422 for an invalid state value", async () => {
+    const { PUT } = await import("@/app/api/schedule/availability/route")
+    const res = await PUT(
+      makePut({ userId: "00000000-0000-0000-0000-000000000001", date: "2026-06-30", state: "x" }),
+      webCtx
+    )
+    expect(res.status).toBe(422)
+  })
+
+  it("returns 422 for a malformed date", async () => {
+    const { PUT } = await import("@/app/api/schedule/availability/route")
+    const res = await PUT(
+      makePut({ userId: "00000000-0000-0000-0000-000000000001", date: "30-06-2026", state: "yes" }),
+      webCtx
+    )
+    expect(res.status).toBe(422)
+  })
+
+  it("returns 404 when the member is not in the caller's company", async () => {
+    queue.push([]) // scope check → no member
+    const { PUT } = await import("@/app/api/schedule/availability/route")
+    const res = await PUT(
+      makePut({ userId: "00000000-0000-0000-0000-000000000001", date: "2026-06-30", state: "no" }),
+      webCtx
+    )
+    expect(res.status).toBe(404)
+  })
+
+  it("upserts the override and returns ok", async () => {
+    queue.push([{ id: "00000000-0000-0000-0000-000000000001" }]) // scope check → member found
+    const { PUT } = await import("@/app/api/schedule/availability/route")
+    const res = await PUT(
+      makePut({
+        userId: "00000000-0000-0000-0000-000000000001",
+        date: "2026-06-30",
+        state: "maybe",
+      }),
+      webCtx
+    )
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body).toEqual({
+      ok: true,
+      userId: "00000000-0000-0000-0000-000000000001",
+      date: "2026-06-30",
+      state: "maybe",
+    })
+    expect(mockDb.onConflictDoUpdate).toHaveBeenCalledTimes(1)
   })
 })
