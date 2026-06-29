@@ -1,6 +1,6 @@
 import { cacheMemo } from "@prv/cache"
 import { queryManagerKpis, db } from "@prv/db"
-import { auditLogs, attendanceRecords, stores, orders } from "@prv/db/schema"
+import { auditLogs, attendanceRecords, stores, orders, alerts } from "@prv/db/schema"
 import { and, desc, eq, gte, isNull, lt, sql, sum } from "drizzle-orm"
 import { auditActionToActivity } from "../_activity"
 import { GlassAlertBanner } from "@prv/ui"
@@ -26,34 +26,25 @@ const SCOPE_LABELS: Partial<Record<PRVSession["role"], string>> = {
 }
 
 // Priority items that need manager action
-// NOTE: sample data — wire to real alerts/approvals once a manager-scoped
-// priority feed exists.
-const PRIORITY_ITEMS = [
-  {
-    id: "p1",
-    level: "critical" as const,
-    title: "Payroll approval due",
-    detail: "Jun run · 24 employees · deadline today",
-    href: "/payroll",
-    icon: "M12 1v4M12 19v4M4.9 4.9l2.8 2.8M17.7 17.7l2.1 2.1M2 12h4M18 12h4",
-  },
-  {
-    id: "p2",
-    level: "warning" as const,
-    title: "3 leave requests pending",
-    detail: "Oldest: 2 days ago",
-    href: "/people/time-off",
-    icon: "M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01",
-  },
-  {
-    id: "p3",
-    level: "info" as const,
-    title: "Inventory report ready",
-    detail: "Section B · 14 low-stock items",
-    href: "/operations",
-    icon: "M5 8h14M5 8a2 2 0 1 0 0-4h14a2 2 0 1 0 0 4M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8",
-  },
-]
+type PriorityLevel = "critical" | "warning" | "info"
+type PriorityItem = {
+  id: string
+  level: PriorityLevel
+  title: string
+  detail: string
+  href: string
+  icon: string
+}
+
+// Warning-triangle glyph used for every alert-derived priority.
+const ALERT_ICON =
+  "M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"
+
+function alertLevel(sev: string): PriorityLevel {
+  if (sev === "l3_critical" || sev === "l4_emergency" || sev === "l5_crisis") return "critical"
+  if (sev === "l2_warning") return "warning"
+  return "info"
+}
 
 const PRIORITY_COLORS = {
   critical: {
@@ -118,13 +109,14 @@ export async function ManagerDashboard({ session }: Props) {
     { label: "On leave", value: 0, color: "rgba(10,132,255,0.75)" },
   ]
   let STORE_PERF: { name: string; target: number; actual: number; trend: string }[] = []
+  let PRIORITY_ITEMS: PriorityItem[] = []
   const monthStartDate = new Date(`${today.slice(0, 7)}-01T00:00:00.000Z`)
   const lm = new Date(monthStartDate)
   lm.setUTCMonth(lm.getUTCMonth() - 1)
   const lastMonthStartDate = lm
   try {
-    const [activityRows, attendanceCounts, storeRows, thisRevRows, lastRevRows] = await Promise.all(
-      [
+    const [activityRows, attendanceCounts, storeRows, thisRevRows, lastRevRows, alertRows] =
+      await Promise.all([
         db
           .select({
             id: auditLogs.id,
@@ -175,8 +167,18 @@ export async function ManagerDashboard({ session }: Props) {
             )
           )
           .groupBy(orders.storeId),
-      ]
-    )
+        db
+          .select({
+            id: alerts.id,
+            severity: alerts.severity,
+            title: alerts.title,
+            description: alerts.description,
+          })
+          .from(alerts)
+          .where(and(eq(alerts.companyId, session.companyId), eq(alerts.status, "open")))
+          .orderBy(desc(alerts.severity), desc(alerts.createdAt))
+          .limit(4),
+      ])
     INITIAL_ACTIVITY = activityRows.map((r) =>
       auditActionToActivity(r.action, r.entityType ?? null, r.id, r.createdAt, r.actorId ?? null)
     )
@@ -202,6 +204,14 @@ export async function ManagerDashboard({ session }: Props) {
         const diff = actual - last
         return { name: st.name, target: 100, actual, trend: `${diff >= 0 ? "+" : ""}${diff}%` }
       })
+    PRIORITY_ITEMS = alertRows.map((a) => ({
+      id: a.id,
+      level: alertLevel(a.severity),
+      title: a.title,
+      detail: a.description ?? "",
+      href: "/alerts",
+      icon: ALERT_ICON,
+    }))
   } catch {
     // Leave the zeroed snapshot / empty activity on error.
   }
