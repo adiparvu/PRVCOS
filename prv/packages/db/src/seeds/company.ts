@@ -77,6 +77,8 @@ export async function seedCompany(): Promise<CompanySeedResult> {
       role: "company_owner",
       systemRole: "ceo" as const,
       scopeLevel: "SCOPE_COMPANY" as const,
+      payType: "monthly" as const,
+      payRate: "25000",
     },
     {
       email: "manager@prv-demo.ro",
@@ -86,6 +88,8 @@ export async function seedCompany(): Promise<CompanySeedResult> {
       role: "manager",
       systemRole: "operations_manager" as const,
       scopeLevel: "SCOPE_STORE" as const,
+      payType: "monthly" as const,
+      payRate: "12000",
     },
     {
       email: "supervisor@prv-demo.ro",
@@ -95,6 +99,8 @@ export async function seedCompany(): Promise<CompanySeedResult> {
       role: "employee",
       systemRole: "team_leader" as const,
       scopeLevel: "SCOPE_TEAM" as const,
+      payType: "monthly" as const,
+      payRate: "8000",
     },
     {
       email: "worker1@prv-demo.ro",
@@ -104,6 +110,8 @@ export async function seedCompany(): Promise<CompanySeedResult> {
       role: "employee",
       systemRole: "worker" as const,
       scopeLevel: "SCOPE_RECORD" as const,
+      payType: "monthly" as const,
+      payRate: "6500",
     },
     {
       email: "worker2@prv-demo.ro",
@@ -113,6 +121,8 @@ export async function seedCompany(): Promise<CompanySeedResult> {
       role: "employee",
       systemRole: "worker" as const,
       scopeLevel: "SCOPE_RECORD" as const,
+      payType: "monthly" as const,
+      payRate: "7000",
     },
     {
       email: "worker3@prv-demo.ro",
@@ -122,6 +132,8 @@ export async function seedCompany(): Promise<CompanySeedResult> {
       role: "employee",
       systemRole: "worker" as const,
       scopeLevel: "SCOPE_RECORD" as const,
+      payType: "monthly" as const,
+      payRate: "6000",
     },
   ]
 
@@ -138,6 +150,8 @@ export async function seedCompany(): Promise<CompanySeedResult> {
         jobTitle: u.jobTitle,
         role: u.systemRole,
         scopeLevel: u.scopeLevel,
+        payType: u.payType,
+        payRate: u.payRate,
         isActive: true,
       })
       .onConflictDoNothing()

@@ -6,6 +6,7 @@ import {
   timestamp,
   boolean,
   jsonb,
+  numeric,
   pgEnum,
   index,
   unique,
@@ -15,6 +16,10 @@ import { relations } from "drizzle-orm"
 import { companies, departments, teams, stores } from "./companies"
 
 export const securityLevelEnum = pgEnum("security_level", ["L2", "L3", "L4", "L5"])
+
+// Compensation basis for payroll (sensitive — only exposed through
+// payroll-permissioned endpoints, never the general profile APIs).
+export const payTypeEnum = pgEnum("pay_type", ["hourly", "monthly", "annual"])
 
 export const userStatusEnum = pgEnum("user_status", [
   "active",
@@ -92,6 +97,10 @@ export const users = pgTable(
     teamId: uuid("team_id").references(() => teams.id, { onDelete: "set null" }),
     storeId: uuid("store_id").references(() => stores.id, { onDelete: "set null" }),
     managerId: uuid("manager_id"),
+
+    // Compensation (sensitive) — pay rate is per the pay type (hourly/monthly/annual)
+    payType: payTypeEnum("pay_type"),
+    payRate: numeric("pay_rate", { precision: 12, scale: 2 }),
 
     // Role & access
     role: systemRoleEnum("role").notNull(),

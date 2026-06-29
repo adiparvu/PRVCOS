@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useQuery } from "@tanstack/react-query"
 import Link from "next/link"
 import { GlassInput } from "@prv/ui"
 
@@ -18,59 +19,6 @@ interface PayrollEmployee {
 type RunType = "weekly" | "monthly" | "special"
 
 // ── Static data ───────────────────────────────────────────────────────────────
-
-// NOTE: sample roster — needs a compensation/salary data model (no payRate
-// field exists yet) before it can list real employees with gross pay.
-const EMPLOYEES: PayrollEmployee[] = [
-  {
-    id: "e1",
-    initials: "AP",
-    name: "Andrei Popescu",
-    role: "Project Manager",
-    location: "Cluj",
-    weeklyGross: 1120,
-  },
-  {
-    id: "e2",
-    initials: "EM",
-    name: "Elena Marin",
-    role: "Project Manager",
-    location: "Timisoara",
-    weeklyGross: 1120,
-  },
-  {
-    id: "e3",
-    initials: "MI",
-    name: "Maria Ionescu",
-    role: "HR Manager",
-    location: "Cluj",
-    weeklyGross: 980,
-  },
-  {
-    id: "e4",
-    initials: "LT",
-    name: "Liviu Toma",
-    role: "Tile Specialist",
-    location: "Cluj",
-    weeklyGross: 686,
-  },
-  {
-    id: "e5",
-    initials: "GS",
-    name: "George Stoica",
-    role: "Electrician",
-    location: "Bucharest",
-    weeklyGross: 630,
-  },
-  {
-    id: "e6",
-    initials: "RC",
-    name: "Radu Ciobanu",
-    role: "Plumber",
-    location: "Cluj",
-    weeklyGross: 595,
-  },
-]
 
 const RUN_TYPES: { value: RunType; label: string }[] = [
   { value: "weekly", label: "Weekly" },
@@ -111,8 +59,17 @@ export function PayrollRunBuilderClient() {
   const [saved, setSaved] = useState<null | "draft" | "launched">(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+  const { data: empData } = useQuery({
+    queryKey: ["payroll-employees"],
+    queryFn: () =>
+      fetch("/api/payroll/employees").then(
+        (r) => r.json() as Promise<{ employees: PayrollEmployee[] }>
+      ),
+  })
+  const employees = empData?.employees ?? []
+
   // Full-run financials (142 employees)
-  const totalGross = 28400
+  const totalGross = employees.reduce((sum, e) => sum + e.weeklyGross, 0)
   const totalCAS = Math.round(totalGross * 0.25)
   const totalCASS = Math.round(totalGross * 0.1)
   const totalTax = Math.round((totalGross - totalCAS - totalCASS) * 0.1)
@@ -286,13 +243,13 @@ export function PayrollRunBuilderClient() {
 
       {/* Employee preview */}
       <p className="text-[11px] font-semibold text-white/35 uppercase tracking-widest mx-1 mb-2.5">
-        Employees (142)
+        Employees ({employees.length})
       </p>
       <div
         className="rounded-[18px] overflow-hidden mb-4"
         style={{ background: g1, border: `1px solid ${bds}` }}
       >
-        {EMPLOYEES.map((emp) => {
+        {employees.map((emp) => {
           const net = calcNet(emp.weeklyGross)
           return (
             <div
@@ -321,9 +278,6 @@ export function PayrollRunBuilderClient() {
             </div>
           )
         })}
-        <div className="px-4 py-3 text-center">
-          <span className="text-[12px] text-white/30">+136 employees</span>
-        </div>
       </div>
 
       {/* Financial summary */}
