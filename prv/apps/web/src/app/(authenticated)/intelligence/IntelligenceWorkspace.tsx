@@ -13,7 +13,7 @@ import {
   type TabItem,
   type DonutSegment,
 } from "@prv/ui"
-import { useIntelligence, useForecastMetrics } from "@/lib/api-hooks"
+import { useIntelligence, useForecastMetrics, useAnalyticsMetrics } from "@/lib/api-hooks"
 
 // ── Static display data ───────────────────────────────────────────────────────
 
@@ -25,7 +25,7 @@ const PERIODS: SegmentItem[] = [
   { id: "1y", label: "1Y" },
 ]
 
-/* static: wire to /api/intelligence/forecast when hook is added */
+// Fallback shape used until /api/intelligence/analytics-metrics resolves.
 const CHART_DATA: Record<string, { labels: string[]; actual: number[]; forecast?: number[] }> = {
   "1w": {
     labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
@@ -61,11 +61,12 @@ const DONUT_SEGMENTS: DonutSegment[] = [
   { label: "Other", value: 15 },
 ]
 
+// Fallback sparklines until /api/intelligence/analytics-metrics resolves.
 const SPARK = {
-  conversion: [3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.8],
+  revenue: [12, 14, 13, 16, 15, 18, 17],
   avgOrder: [162, 165, 168, 172, 175, 180, 184],
-  churn: [8, 8, 9, 9, 10, 11, 12],
-  aiActions: [28, 30, 33, 36, 40, 43, 47],
+  orders: [8, 9, 7, 11, 10, 13, 12],
+  alerts: [2, 1, 2, 3, 2, 1, 2],
 }
 
 // ── Icon / badge maps for reports ─────────────────────────────────────────────
@@ -153,13 +154,16 @@ export function IntelligenceWorkspace() {
 
   const { data, isLoading } = useIntelligence()
   const { data: forecastData } = useForecastMetrics()
+  const { data: analytics } = useAnalyticsMetrics()
+
+  const spark = analytics?.spark ?? SPARK
 
   const forecastRows = (forecastData?.metrics ?? []).map((m) => ({
     ...m,
     color: FORECAST_COLOR[m.label] ?? "var(--prv-text-2)",
   }))
 
-  const chart = CHART_DATA[period]!
+  const chart = analytics?.chart?.[period] ?? CHART_DATA[period]!
 
   const insights = data?.insights ?? []
   const reports = data?.reports ?? []
@@ -197,7 +201,7 @@ export function IntelligenceWorkspace() {
               ? { direction: "up", value: meta.revenueTrend }
               : undefined
           }
-          sparkline={SPARK.conversion}
+          sparkline={spark.revenue}
         />
         <GlassStatCard
           label="Avg Margin"
@@ -207,13 +211,13 @@ export function IntelligenceWorkspace() {
               ? { direction: "up", value: meta.marginTrend }
               : undefined
           }
-          sparkline={SPARK.avgOrder}
+          sparkline={spark.avgOrder}
         />
         <GlassStatCard
           label="Orders Today"
           value={isLoading ? "…" : String(meta?.ordersToday ?? 0)}
           trend={{ direction: "flat", value: "today" }}
-          sparkline={SPARK.churn}
+          sparkline={spark.orders}
         />
         <GlassStatCard
           label="Active Alerts"
@@ -221,7 +225,7 @@ export function IntelligenceWorkspace() {
           trend={
             (meta?.activeAlerts ?? 0) > 0 ? { direction: "down", value: "need review" } : undefined
           }
-          sparkline={SPARK.aiActions}
+          sparkline={spark.alerts}
         />
       </div>
 
@@ -239,7 +243,7 @@ export function IntelligenceWorkspace() {
             className="mb-4"
           />
 
-          {/* Revenue trend area chart — static scaffolding until /api/intelligence/forecast hook is added */}
+          {/* Revenue trend area chart — real orders via /api/intelligence/analytics-metrics */}
           <GlassCard className="p-4 mb-3.5">
             <GlassAreaChart
               series={[

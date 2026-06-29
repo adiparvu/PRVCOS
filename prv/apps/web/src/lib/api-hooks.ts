@@ -619,6 +619,27 @@ export function useForecastMetrics() {
   })
 }
 
+export interface AnalyticsChart {
+  labels: string[]
+  actual: number[]
+  forecast: number[]
+}
+
+export interface AnalyticsMetrics {
+  chart: Record<string, AnalyticsChart>
+  spark: { revenue: number[]; avgOrder: number[]; orders: number[]; alerts: number[] }
+}
+
+export function useAnalyticsMetrics() {
+  return useQuery({
+    queryKey: ["intelligence-analytics-metrics"],
+    queryFn: () =>
+      fetch("/api/intelligence/analytics-metrics").then(
+        (r) => r.json() as Promise<AnalyticsMetrics>
+      ),
+  })
+}
+
 // ── Roles ─────────────────────────────────────────────────────────────────────
 
 interface RoleItem {
