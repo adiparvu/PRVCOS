@@ -1158,3 +1158,54 @@ export function useInvoiceDetail(id: string) {
     enabled: !!id,
   })
 }
+
+// ── Group Rollup ──────────────────────────────────────────────────────────────
+
+export interface GroupSummary {
+  id: string
+  name: string
+  slug: string
+  description: string | null
+  logoUrl: string | null
+  isActive: boolean
+}
+
+export function useGroups() {
+  return useQuery({
+    queryKey: ["groups"],
+    queryFn: () =>
+      fetch("/api/groups").then((r) => r.json() as Promise<{ groups: GroupSummary[] }>),
+  })
+}
+
+export interface GroupRollupRow {
+  companyId: string
+  name: string
+  revenue: number
+  share: number
+  activeProjects: number
+  headcount: number
+}
+
+export interface GroupRollup {
+  group: { id: string; name: string }
+  kpis: {
+    totalRevenue: string
+    totalActiveProjects: number
+    totalActiveEmployees: number
+    totalOpenAlerts: number
+    companiesIncluded: number
+    periodKey: string
+  }
+  trend: { labels: string[]; revenue: number[] }
+  breakdown: GroupRollupRow[]
+}
+
+export function useGroupRollup(groupId: string | null) {
+  return useQuery({
+    queryKey: ["group-rollup", groupId],
+    enabled: !!groupId,
+    queryFn: () =>
+      fetch(`/api/groups/${groupId}/rollup`).then((r) => r.json() as Promise<GroupRollup>),
+  })
+}

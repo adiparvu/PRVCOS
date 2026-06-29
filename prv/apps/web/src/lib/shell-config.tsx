@@ -28,6 +28,15 @@ const ic = (d: string | ReactNode, extra?: string) => (
   </svg>
 )
 
+const GroupIcon = () =>
+  ic(
+    <>
+      <path d="M12 2 2 7l10 5 10-5-10-5Z" />
+      <path d="M2 17l10 5 10-5" />
+      <path d="M2 12l10 5 10-5" />
+    </>
+  )
+
 const CommandIcon = () =>
   ic(
     <>
@@ -393,6 +402,7 @@ const SHELLS: Record<string, ShellConfig> = {
   executive: {
     tabs: [
       { id: "command", label: "Command", href: "/dashboard", icon: <CommandIcon /> },
+      { id: "group", label: "Group", href: "/groups", icon: <GroupIcon /> },
       { id: "analytics", label: "Analytics", href: "/analytics", icon: <AnalyticsIcon /> },
       { id: "finance", label: "Finance", href: "/finance", icon: <FinanceIcon /> },
       { id: "operations", label: "Operations", href: "/operations", icon: <OperationsIcon /> },
