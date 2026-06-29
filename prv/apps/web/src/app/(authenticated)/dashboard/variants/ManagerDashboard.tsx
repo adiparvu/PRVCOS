@@ -1,7 +1,7 @@
 import { cacheMemo } from "@prv/cache"
 import { queryManagerKpis, db } from "@prv/db"
-import { auditLogs, attendanceRecords } from "@prv/db/schema"
-import { and, desc, eq, sql } from "drizzle-orm"
+import { auditLogs, attendanceRecords, stores, orders } from "@prv/db/schema"
+import { and, desc, eq, gte, isNull, lt, sql, sum } from "drizzle-orm"
 import { auditActionToActivity } from "../_activity"
 import { GlassAlertBanner } from "@prv/ui"
 import type { PRVSession } from "@prv/auth"
@@ -78,13 +78,6 @@ const PRIORITY_COLORS = {
 
 // Staff attendance snapshot
 // Store / area performance
-// NOTE: sample data — needs per-store revenue targets (no target model yet).
-const STORE_PERF = [
-  { name: "Cluj Main", target: 92, actual: 97, trend: "+5%" },
-  { name: "Floreasca", target: 88, actual: 83, trend: "-5%" },
-  { name: "Depot B", target: 80, actual: 85, trend: "+5%" },
-]
-
 interface Props {
   session: PRVSession
 }
@@ -124,28 +117,66 @@ export async function ManagerDashboard({ session }: Props) {
     { label: "Absent", value: 0, color: "rgba(255,59,48,0.85)" },
     { label: "On leave", value: 0, color: "rgba(10,132,255,0.75)" },
   ]
+  let STORE_PERF: { name: string; target: number; actual: number; trend: string }[] = []
+  const monthStartDate = new Date(`${today.slice(0, 7)}-01T00:00:00.000Z`)
+  const lm = new Date(monthStartDate)
+  lm.setUTCMonth(lm.getUTCMonth() - 1)
+  const lastMonthStartDate = lm
   try {
-    const [activityRows, attendanceCounts] = await Promise.all([
-      db
-        .select({
-          id: auditLogs.id,
-          action: auditLogs.action,
-          entityType: auditLogs.entityType,
-          actorId: auditLogs.actorId,
-          createdAt: auditLogs.createdAt,
-        })
-        .from(auditLogs)
-        .where(and(eq(auditLogs.companyId, session.companyId), eq(auditLogs.gateFailed, 0)))
-        .orderBy(desc(auditLogs.createdAt))
-        .limit(5),
-      db
-        .select({ status: attendanceRecords.status, count: sql<number>`count(*)::int` })
-        .from(attendanceRecords)
-        .where(
-          and(eq(attendanceRecords.companyId, session.companyId), eq(attendanceRecords.date, today))
-        )
-        .groupBy(attendanceRecords.status),
-    ])
+    const [activityRows, attendanceCounts, storeRows, thisRevRows, lastRevRows] = await Promise.all(
+      [
+        db
+          .select({
+            id: auditLogs.id,
+            action: auditLogs.action,
+            entityType: auditLogs.entityType,
+            actorId: auditLogs.actorId,
+            createdAt: auditLogs.createdAt,
+          })
+          .from(auditLogs)
+          .where(and(eq(auditLogs.companyId, session.companyId), eq(auditLogs.gateFailed, 0)))
+          .orderBy(desc(auditLogs.createdAt))
+          .limit(5),
+        db
+          .select({ status: attendanceRecords.status, count: sql<number>`count(*)::int` })
+          .from(attendanceRecords)
+          .where(
+            and(
+              eq(attendanceRecords.companyId, session.companyId),
+              eq(attendanceRecords.date, today)
+            )
+          )
+          .groupBy(attendanceRecords.status),
+        db
+          .select({ id: stores.id, name: stores.name, target: stores.monthlyRevenueTarget })
+          .from(stores)
+          .where(and(eq(stores.companyId, session.companyId), eq(stores.isActive, true)))
+          .limit(8),
+        db
+          .select({ storeId: orders.storeId, total: sum(orders.total) })
+          .from(orders)
+          .where(
+            and(
+              eq(orders.companyId, session.companyId),
+              gte(orders.createdAt, monthStartDate),
+              isNull(orders.deletedAt)
+            )
+          )
+          .groupBy(orders.storeId),
+        db
+          .select({ storeId: orders.storeId, total: sum(orders.total) })
+          .from(orders)
+          .where(
+            and(
+              eq(orders.companyId, session.companyId),
+              gte(orders.createdAt, lastMonthStartDate),
+              lt(orders.createdAt, monthStartDate),
+              isNull(orders.deletedAt)
+            )
+          )
+          .groupBy(orders.storeId),
+      ]
+    )
     INITIAL_ACTIVITY = activityRows.map((r) =>
       auditActionToActivity(r.action, r.entityType ?? null, r.id, r.createdAt, r.actorId ?? null)
     )
@@ -160,6 +191,17 @@ export async function ManagerDashboard({ session }: Props) {
       { label: "Absent", value: cm.get("absent") ?? 0, color: "rgba(255,59,48,0.85)" },
       { label: "On leave", value: cm.get("leave") ?? 0, color: "rgba(10,132,255,0.75)" },
     ]
+    const thisRev = new Map(thisRevRows.map((r) => [r.storeId, Number(r.total ?? 0)]))
+    const lastRev = new Map(lastRevRows.map((r) => [r.storeId, Number(r.total ?? 0)]))
+    STORE_PERF = storeRows
+      .filter((st) => st.target != null && Number(st.target) > 0)
+      .map((st) => {
+        const target = Number(st.target)
+        const actual = Math.round(((thisRev.get(st.id) ?? 0) / target) * 100)
+        const last = Math.round(((lastRev.get(st.id) ?? 0) / target) * 100)
+        const diff = actual - last
+        return { name: st.name, target: 100, actual, trend: `${diff >= 0 ? "+" : ""}${diff}%` }
+      })
   } catch {
     // Leave the zeroed snapshot / empty activity on error.
   }

@@ -53,6 +53,7 @@ export async function seedCompany(): Promise<CompanySeedResult> {
       companyId,
       name: "Sediu Central",
       code: "HQ",
+      monthlyRevenueTarget: "120000",
       address: "Bd. Unirii 42, Sector 4",
       city: "București",
       isActive: true,

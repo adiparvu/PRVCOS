@@ -6,6 +6,7 @@ import {
   timestamp,
   boolean,
   jsonb,
+  numeric,
   pgEnum,
   foreignKey,
 } from "drizzle-orm/pg-core"
@@ -87,6 +88,9 @@ export const stores = pgTable("stores", {
   email: varchar("email", { length: 254 }),
   address: text("address"),
   city: varchar("city", { length: 100 }),
+
+  // Monthly revenue goal for store-performance tracking on the manager dashboard
+  monthlyRevenueTarget: numeric("monthly_revenue_target", { precision: 14, scale: 2 }),
 
   isActive: boolean("is_active").notNull().default(true),
   settings: jsonb("settings").notNull().default({}),
