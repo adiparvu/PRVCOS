@@ -12,6 +12,13 @@ const t1 = "var(--prv-text-1)"
 const t3 = "var(--prv-text-3)"
 const bds = "var(--prv-border-subtle)"
 
+const PERIODS: { id: string; label: string }[] = [
+  { id: "1w", label: "1W" },
+  { id: "1m", label: "1M" },
+  { id: "qtd", label: "QTD" },
+  { id: "ytd", label: "YTD" },
+]
+
 function Label({ children }: { children: React.ReactNode }) {
   return (
     <p className="text-[11px] font-semibold text-white/35 uppercase tracking-widest mx-1 mt-6 mb-2.5">
@@ -37,7 +44,8 @@ export function GroupRollupWorkspace() {
   // Default to the first group once the list loads (render-time seed).
   const groupId = activeId ?? groups[0]?.id ?? null
 
-  const { data, isLoading } = useGroupRollup(groupId)
+  const [period, setPeriod] = useState("qtd")
+  const { data, isLoading } = useGroupRollup(groupId, period)
   const kpis = data?.kpis
   const breakdown = data?.breakdown ?? []
   const trend = data?.trend ?? { labels: [], revenue: [] }
@@ -91,6 +99,30 @@ export function GroupRollupWorkspace() {
             })}
           </div>
         )}
+
+        {/* Period selector */}
+        <div
+          className="inline-flex gap-0.5 mt-3.5 p-[3px] rounded-full"
+          style={{ background: g1, border: `1px solid ${bds}` }}
+        >
+          {PERIODS.map((p) => {
+            const on = p.id === period
+            return (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => setPeriod(p.id)}
+                className="px-4 py-1.5 rounded-full text-[12.5px] font-semibold transition-colors"
+                style={{
+                  background: on ? "rgba(255,255,255,0.92)" : "transparent",
+                  color: on ? "#000" : t3,
+                }}
+              >
+                {p.label}
+              </button>
+            )
+          })}
+        </div>
       </div>
 
       {/* CEO 60-second KPIs */}

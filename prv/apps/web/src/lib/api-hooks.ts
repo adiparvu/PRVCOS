@@ -1189,6 +1189,7 @@ export interface GroupRollupRow {
 
 export interface GroupRollup {
   group: { id: string; name: string }
+  period: string
   kpis: {
     totalRevenue: string
     totalActiveProjects: number
@@ -1201,11 +1202,13 @@ export interface GroupRollup {
   breakdown: GroupRollupRow[]
 }
 
-export function useGroupRollup(groupId: string | null) {
+export function useGroupRollup(groupId: string | null, period = "qtd") {
   return useQuery({
-    queryKey: ["group-rollup", groupId],
+    queryKey: ["group-rollup", groupId, period],
     enabled: !!groupId,
     queryFn: () =>
-      fetch(`/api/groups/${groupId}/rollup`).then((r) => r.json() as Promise<GroupRollup>),
+      fetch(`/api/groups/${groupId}/rollup?period=${period}`).then(
+        (r) => r.json() as Promise<GroupRollup>
+      ),
   })
 }

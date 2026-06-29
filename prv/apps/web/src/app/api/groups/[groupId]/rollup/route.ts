@@ -10,7 +10,7 @@ import {
   companyMemberships,
   groupKpiSnapshots,
 } from "@prv/db/schema"
-import { and, eq, gte, lt, isNull, inArray, asc, desc, sql } from "drizzle-orm"
+import { and, eq, gte, isNull, inArray, desc, sql } from "drizzle-orm"
 import { hasScope } from "@prv/auth"
 import { queryGroupKpis, type GroupKpis } from "@prv/db/queries/group-kpis"
 import type { GateContext } from "@prv/auth"
@@ -29,6 +29,7 @@ export interface GroupRollupRow {
 
 export interface GroupRollup {
   group: { id: string; name: string }
+  period: string
   kpis: GroupKpis
   trend: { labels: string[]; revenue: number[] }
   breakdown: GroupRollupRow[]
@@ -82,23 +83,39 @@ export const GET = withGates(
     const companyIds = memberRows.map((m) => m.companyId)
     const nameById = new Map(memberRows.map((m) => [m.companyId, m.name]))
 
+    // Rolling 1W/1M, calendar QTD/YTD — bounds the revenue window + trend length.
+    const raw = (req.nextUrl.searchParams.get("period") ?? "qtd").toLowerCase()
+    const period = ["1w", "1m", "qtd", "ytd"].includes(raw) ? raw : "qtd"
     const now = new Date()
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-    const startOfNextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1)
+    const windowStart =
+      period === "1w"
+        ? new Date(now.getTime() - 7 * 86_400_000)
+        : period === "1m"
+          ? new Date(now.getTime() - 30 * 86_400_000)
+          : period === "ytd"
+            ? new Date(now.getFullYear(), 0, 1)
+            : new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1)
+    const windowStartStr = windowStart.toISOString().slice(0, 10)
 
-    // Live KPIs + the snapshot trend (independent of the per-company queries).
+    // Point-in-time KPIs (projects / employees / alerts) + the windowed trend.
     const [kpis, snapshotRows] = await Promise.all([
       queryGroupKpis(groupId, ctx.session.userId),
       db
         .select({ date: groupKpiSnapshots.snapshotDate, revenue: groupKpiSnapshots.totalRevenue })
         .from(groupKpiSnapshots)
-        .where(eq(groupKpiSnapshots.groupId, groupId))
+        .where(
+          and(
+            eq(groupKpiSnapshots.groupId, groupId),
+            gte(groupKpiSnapshots.snapshotDate, windowStartStr)
+          )
+        )
         .orderBy(desc(groupKpiSnapshots.snapshotDate))
-        .limit(8),
+        .limit(31),
     ])
 
-    // Per-company breakdown (live). Empty group → no rows.
+    // Per-company breakdown (live, windowed to the period). Empty group → no rows.
     let breakdown: GroupRollupRow[] = []
+    let groupRevenue = 0
     if (companyIds.length > 0) {
       const [revRows, projRows, headRows] = await Promise.all([
         db
@@ -111,8 +128,7 @@ export const GET = withGates(
             and(
               inArray(invoices.companyId, companyIds),
               eq(invoices.status, "paid"),
-              gte(invoices.paidAt, startOfMonth),
-              lt(invoices.paidAt, startOfNextMonth)
+              gte(invoices.paidAt, windowStart)
             )
           )
           .groupBy(invoices.companyId),
@@ -144,6 +160,7 @@ export const GET = withGates(
       const projById = new Map(projRows.map((r) => [r.companyId, r.count]))
       const headById = new Map(headRows.map((r) => [r.companyId, r.count]))
       const totalRevenue = Array.from(revById.values()).reduce((a, b) => a + b, 0)
+      groupRevenue = totalRevenue
 
       breakdown = companyIds
         .map((cid) => {
@@ -184,8 +201,12 @@ export const GET = withGates(
       revenue: ordered.map((s) => Math.round(Number(s.revenue))),
     }
 
+    // Headline revenue reflects the selected period and equals the breakdown sum.
+    kpis.totalRevenue = String(groupRevenue)
+
     const rollup: GroupRollup = {
       group: { id: groupId, name: groupRow[0]?.name ?? "Group" },
+      period,
       kpis,
       trend,
       breakdown,

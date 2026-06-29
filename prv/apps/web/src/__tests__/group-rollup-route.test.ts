@@ -71,12 +71,13 @@ vi.mock("drizzle-orm", async (importOriginal) => {
   }
 })
 
-function makeReq(scopeLevel: string) {
+function makeReq(scopeLevel: string, period?: string) {
+  const search = new URLSearchParams(period ? { period } : {})
   return {
     req: {
       method: "GET",
-      nextUrl: { pathname: "/api/groups/g1/rollup", searchParams: new URLSearchParams() },
-      url: "http://localhost/api/groups/g1/rollup",
+      nextUrl: { pathname: "/api/groups/g1/rollup", searchParams: search },
+      url: `http://localhost/api/groups/g1/rollup${period ? `?period=${period}` : ""}`,
       headers: { get: () => null },
     } as unknown as Request,
     ctx: {
@@ -119,7 +120,20 @@ describe("GET /api/groups/[groupId]/rollup", () => {
     expect(body.group).toBeDefined()
     expect(body.kpis).toBeDefined()
     expect(body.kpis.totalActiveProjects).toBe(0)
+    expect(body.period).toBe("qtd")
     expect(body.trend).toEqual({ labels: [], revenue: [] })
     expect(Array.isArray(body.breakdown)).toBe(true)
+  })
+
+  it("echoes a valid period and falls back to qtd for an invalid one", async () => {
+    const { GET } = await import("@/app/api/groups/[groupId]/rollup/route")
+
+    const ok = await GET(...(Object.values(makeReq("SCOPE_PLATFORM", "1w")) as [Request, never]))
+    expect((await ok.json()).period).toBe("1w")
+
+    const bad = await GET(
+      ...(Object.values(makeReq("SCOPE_PLATFORM", "bogus")) as [Request, never])
+    )
+    expect((await bad.json()).period).toBe("qtd")
   })
 })
