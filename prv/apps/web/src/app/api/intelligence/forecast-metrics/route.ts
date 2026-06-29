@@ -4,6 +4,7 @@ import { and, eq, gte, lt, isNull, sum, count } from "drizzle-orm"
 import { db } from "@prv/db"
 import { orders, clients, expenses } from "@prv/db/schema"
 import type { GateContext } from "@prv/auth"
+import { trendOf, eurK } from "@/lib/metrics-helpers"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -14,25 +15,6 @@ export interface ForecastMetric {
   trend: string
   trendDir: "up" | "down" | "flat"
   pct: number
-}
-
-function trendOf(
-  cur: number,
-  prev: number
-): { trend: string; dir: "up" | "down" | "flat"; pct: number } {
-  const growth = prev > 0 ? ((cur - prev) / prev) * 100 : cur > 0 ? 100 : 0
-  const dir: "up" | "down" | "flat" = growth > 1 ? "up" : growth < -1 ? "down" : "flat"
-  const arrow = dir === "up" ? "▲" : dir === "down" ? "▼" : "→"
-  return {
-    trend: `${arrow} ${Math.abs(Math.round(growth * 10) / 10)}%`,
-    dir,
-    pct: Math.max(8, Math.min(95, Math.round(50 + growth))),
-  }
-}
-function eurK(n: number): string {
-  if (n >= 1_000_000) return `€${(n / 1_000_000).toFixed(1)}M`
-  if (n >= 1000) return `€${Math.round(n / 1000)}K`
-  return `€${Math.round(n)}`
 }
 
 // GET /api/intelligence/forecast-metrics — month-over-month projection of the

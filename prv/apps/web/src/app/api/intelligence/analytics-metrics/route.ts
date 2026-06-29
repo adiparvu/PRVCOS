@@ -4,6 +4,7 @@ import { and, eq, gte, isNull, sum } from "drizzle-orm"
 import { db } from "@prv/db"
 import { orders, alerts, stores } from "@prv/db/schema"
 import type { GateContext } from "@prv/auth"
+import { forecastTail, buildDonut, type DonutDatum } from "@/lib/metrics-helpers"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -12,11 +13,6 @@ export interface AnalyticsChart {
   labels: string[]
   actual: number[]
   forecast: number[]
-}
-
-export interface DonutDatum {
-  label: string
-  value: number
 }
 
 export interface AnalyticsMetrics {
@@ -40,17 +36,6 @@ const MONTH = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "O
 
 function utcDayStart(d: Date): number {
   return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())
-}
-
-// Linear forecast tail: continue the last point by the recent growth rate,
-// producing [lastActual, projectedNext] so the chart draws a short forecast leg.
-function forecastTail(actual: number[]): number[] {
-  if (actual.length === 0) return []
-  const last = actual.at(-1) ?? 0
-  const prev = actual.at(-2) ?? last
-  let growth = prev > 0 ? (last - prev) / prev : 0.08
-  growth = Math.max(-0.2, Math.min(0.3, growth))
-  return [last, Math.round(last * (1 + growth))]
 }
 
 // GET /api/intelligence/analytics-metrics — revenue trend (per period) and the
@@ -156,17 +141,7 @@ export const GET = withGates(
     }
 
     // Revenue breakdown by store (top 4 + Other) over the trailing 90 days.
-    const storeRev = storeRevRows
-      .map((r) => ({
-        label: r.storeName ?? "Unassigned",
-        value: Math.round(Number(r.revenue ?? 0)),
-      }))
-      .filter((d) => d.value > 0)
-      .sort((a, b) => b.value - a.value)
-    const TOP = 4
-    const restValue = storeRev.slice(TOP).reduce((acc, d) => acc + d.value, 0)
-    const donut: DonutDatum[] =
-      restValue > 0 ? [...storeRev.slice(0, TOP), { label: "Other", value: restValue }] : storeRev
+    const donut: DonutDatum[] = buildDonut(storeRevRows)
 
     const metrics: AnalyticsMetrics = {
       chart,

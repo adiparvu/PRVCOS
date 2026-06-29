@@ -6,6 +6,7 @@ import { z } from "zod"
 import { db } from "@prv/db"
 import { shifts, shiftAssignments, users, stores, projects, leaveRequests } from "@prv/db/schema"
 import { and, asc, eq, gt, gte, inArray, isNull, lte } from "drizzle-orm"
+import { weekDates, availabilityCell } from "@/lib/metrics-helpers"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -112,16 +113,6 @@ function fmtDayLabel(dateStr: string): string {
 
 const AVAIL_DAY_LETTERS = ["M", "T", "W", "T", "F", "S", "S"]
 
-// The seven ISO dates (YYYY-MM-DD) of the week starting on `monday`.
-function weekDates(monday: string): string[] {
-  const base = new Date(monday + "T12:00:00Z")
-  return Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(base)
-    d.setUTCDate(base.getUTCDate() + i)
-    return d.toISOString().slice(0, 10)
-  })
-}
-
 // Build the team-availability grid from real signals: a member is "no" on an
 // approved-leave day, "yes" on a day they hold a shift assignment, "maybe"
 // otherwise. The grid stays editable client-side for manual overrides.
@@ -181,8 +172,7 @@ async function buildTeamAvailability(
     const onLeave = leaveByUser.get(m.id) ?? []
     const shiftDates = datesByUser.get(m.id) ?? new Set<string>()
     dates.forEach((date, c) => {
-      const isOff = onLeave.some((pd) => pd.start <= date && date <= pd.end)
-      const cell: AvailabilityCell = isOff ? "no" : shiftDates.has(date) ? "yes" : "maybe"
+      const cell: AvailabilityCell = availabilityCell(date, onLeave, shiftDates)
       values[`${r}-${c}`] = cell
     })
   })
