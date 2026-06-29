@@ -26,7 +26,7 @@ import type { QuoteDetail } from "@/app/api/crm/quotes/[id]/route"
 import type { InvoiceDetail } from "@/app/api/finance/invoices/[id]/route"
 import type { KnowledgeArticle, KnowledgeMeta } from "@/app/api/knowledge/route"
 import type { Course, Achievement, LearningMeta } from "@/app/api/learning/route"
-import type { ShiftSummary, ShiftsMeta } from "@/app/api/schedule/route"
+import type { ShiftSummary, ShiftsMeta, TeamAvailability } from "@/app/api/schedule/route"
 import type { SupplierSummary } from "@/app/api/suppliers/route"
 import type { ToolSummary, ToolsMeta } from "@/app/api/tools/route"
 import type { OperationsMeta, Store, Task, Order, Alert } from "@/app/api/operations/route"
@@ -495,6 +495,8 @@ interface ShiftsPage {
   shifts: ShiftSummary[]
   meta: ShiftsMeta
   nextCursor: string | null
+  teamAvailability?: TeamAvailability
+  takenSlots?: string[]
 }
 
 export function useShifts(status?: string | null) {
@@ -511,6 +513,8 @@ export function useShifts(status?: string | null) {
       pageParams: data.pageParams,
       shifts: data.pages.flatMap((p) => p.shifts),
       meta: data.pages[0]?.meta ?? null,
+      teamAvailability: data.pages[0]?.teamAvailability ?? null,
+      takenSlots: data.pages[0]?.takenSlots ?? [],
     }),
   })
 }

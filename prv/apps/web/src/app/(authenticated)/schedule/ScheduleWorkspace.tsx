@@ -105,25 +105,16 @@ function mapLeave(r: TimeOffRequest): LeaveRequest {
   }
 }
 
-// ── Static UI-only data ───────────────────────────────────────────────────────
+// ── Fallback / config data ────────────────────────────────────────────────────
+// Pre-load fallbacks for the availability grid (real people + states arrive
+// from /api/schedule); the slot grid is fixed bookable working hours.
 
-const AVAIL_PEOPLE = ["Andrei", "Maria", "Radu", "Elena"]
+const AVAIL_PEOPLE = ["—", "—", "—", "—"]
 const AVAIL_DAYS = ["M", "T", "W", "T", "F", "S", "S"]
 
-const INITIAL_AVAIL: Record<string, Availability> = (() => {
-  const seed: Availability[][] = [
-    ["yes", "yes", "yes", "maybe", "yes", "no", "no"],
-    ["yes", "maybe", "yes", "yes", "yes", "yes", "no"],
-    ["maybe", "yes", "yes", "no", "yes", "maybe", "no"],
-    ["yes", "yes", "no", "yes", "maybe", "no", "no"],
-  ]
-  const map: Record<string, Availability> = {}
-  seed.forEach((row, r) => row.forEach((v, c) => (map[`${r}-${c}`] = v)))
-  return map
-})()
+const INITIAL_AVAIL: Record<string, Availability> = {}
 
 const SLOTS = ["08:00", "08:30", "09:00", "09:30", "10:00", "10:30", "11:00", "11:30"]
-const TAKEN_SLOTS = ["08:30", "10:30"]
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
@@ -358,6 +349,18 @@ export function ScheduleWorkspace({ storeName }: { storeName: string }) {
   const { data: shiftData, isLoading: shiftsLoading } = useShifts()
   const { data: leaveData, isLoading: leaveLoading } = useTimeOffRequests("pending")
 
+  // Team availability + today's booked slots come from real shifts / approved
+  // leave; the grid is seeded once (render-time) then editable client-side.
+  const serverAvail = shiftData?.teamAvailability ?? null
+  const [availSeeded, setAvailSeeded] = useState(false)
+  if (serverAvail && !availSeeded) {
+    setAvailSeeded(true)
+    setAvail(serverAvail.values)
+  }
+  const availPeople = serverAvail?.people ?? AVAIL_PEOPLE
+  const availDays = serverAvail?.days ?? AVAIL_DAYS
+  const takenSlots = shiftData?.takenSlots ?? []
+
   const shifts = useMemo(() => (shiftData?.shifts ?? []).map(mapShift), [shiftData?.shifts])
   const meta = shiftData?.meta
   const leaves = useMemo(() => (leaveData?.requests ?? []).map(mapLeave), [leaveData?.requests])
@@ -571,7 +574,7 @@ export function ScheduleWorkspace({ storeName }: { storeName: string }) {
           slots={SLOTS}
           value={slot}
           onChange={setSlot}
-          takenSlots={TAKEN_SLOTS}
+          takenSlots={takenSlots}
         />
       </div>
 
@@ -579,8 +582,8 @@ export function ScheduleWorkspace({ storeName }: { storeName: string }) {
       <SectionLabel>Team availability</SectionLabel>
       <div className="rounded-[18px] p-4" style={{ background: g1, border: `1px solid ${bds}` }}>
         <GlassAvailabilityGrid
-          people={AVAIL_PEOPLE}
-          days={AVAIL_DAYS}
+          people={availPeople}
+          days={availDays}
           value={avail}
           onChange={(r, c, next) => setAvail((prev) => ({ ...prev, [`${r}-${c}`]: next }))}
         />

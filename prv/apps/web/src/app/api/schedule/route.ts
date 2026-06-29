@@ -4,7 +4,7 @@ import type { GateContext } from "@prv/auth"
 import { writeAuditLog } from "@prv/auth"
 import { z } from "zod"
 import { db } from "@prv/db"
-import { shifts, shiftAssignments, users, stores, projects } from "@prv/db/schema"
+import { shifts, shiftAssignments, users, stores, projects, leaveRequests } from "@prv/db/schema"
 import { and, asc, eq, gt, gte, inArray, isNull, lte } from "drizzle-orm"
 
 export const dynamic = "force-dynamic"
@@ -45,6 +45,16 @@ export interface ShiftsMeta {
   coveragePct: number
   totalHours: number
   weekLabel: string
+}
+
+export type AvailabilityCell = "yes" | "maybe" | "no"
+
+export interface TeamAvailability {
+  // Member display names (row order), the weekday letters (column order) and a
+  // sparse "row-col" → state map, all derived from real shifts + approved leave.
+  people: string[]
+  days: string[]
+  values: Record<string, AvailabilityCell>
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -100,6 +110,86 @@ function fmtDayLabel(dateStr: string): string {
   return `${DAY_NAMES[d.getUTCDay()]} ${d.getUTCDate()} ${MONTH_LABELS[d.getUTCMonth()]}`
 }
 
+const AVAIL_DAY_LETTERS = ["M", "T", "W", "T", "F", "S", "S"]
+
+// The seven ISO dates (YYYY-MM-DD) of the week starting on `monday`.
+function weekDates(monday: string): string[] {
+  const base = new Date(monday + "T12:00:00Z")
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(base)
+    d.setUTCDate(base.getUTCDate() + i)
+    return d.toISOString().slice(0, 10)
+  })
+}
+
+// Build the team-availability grid from real signals: a member is "no" on an
+// approved-leave day, "yes" on a day they hold a shift assignment, "maybe"
+// otherwise. The grid stays editable client-side for manual overrides.
+async function buildTeamAvailability(
+  companyId: string,
+  monday: string,
+  sunday: string,
+  datesByUser: Map<string, Set<string>>
+): Promise<TeamAvailability> {
+  const dates = weekDates(monday)
+
+  const memberRows = await db
+    .select({ id: users.id, firstName: users.firstName, lastName: users.lastName })
+    .from(users)
+    .where(
+      and(
+        eq(users.companyId, companyId),
+        eq(users.status, "active"),
+        eq(users.isActive, true),
+        isNull(users.deletedAt)
+      )
+    )
+    .orderBy(asc(users.firstName))
+    .limit(6)
+
+  const memberIds = memberRows.map((m) => m.id)
+
+  const leaveRows = memberIds.length
+    ? await db
+        .select({
+          userId: leaveRequests.userId,
+          startDate: leaveRequests.startDate,
+          endDate: leaveRequests.endDate,
+        })
+        .from(leaveRequests)
+        .where(
+          and(
+            eq(leaveRequests.companyId, companyId),
+            eq(leaveRequests.status, "approved"),
+            inArray(leaveRequests.userId, memberIds),
+            lte(leaveRequests.startDate, sunday),
+            gte(leaveRequests.endDate, monday),
+            isNull(leaveRequests.deletedAt)
+          )
+        )
+    : []
+
+  const leaveByUser = new Map<string, { start: string; end: string }[]>()
+  for (const l of leaveRows) {
+    const list = leaveByUser.get(l.userId) ?? []
+    list.push({ start: l.startDate, end: l.endDate })
+    leaveByUser.set(l.userId, list)
+  }
+
+  const values: Record<string, AvailabilityCell> = {}
+  memberRows.forEach((m, r) => {
+    const onLeave = leaveByUser.get(m.id) ?? []
+    const shiftDates = datesByUser.get(m.id) ?? new Set<string>()
+    dates.forEach((date, c) => {
+      const isOff = onLeave.some((pd) => pd.start <= date && date <= pd.end)
+      const cell: AvailabilityCell = isOff ? "no" : shiftDates.has(date) ? "yes" : "maybe"
+      values[`${r}-${c}`] = cell
+    })
+  })
+
+  return { people: memberRows.map((m) => m.firstName), days: AVAIL_DAY_LETTERS, values }
+}
+
 // ── GET ───────────────────────────────────────────────────────────────────────
 
 export const GET = withGates(
@@ -146,7 +236,19 @@ export const GET = withGates(
 
     if (shiftRows.length === 0) {
       const meta: ShiftsMeta = { total: 0, open: 0, coveragePct: 100, totalHours: 0, weekLabel }
-      return NextResponse.json({ shifts: [], count: 0, meta })
+      const teamAvailability = await buildTeamAvailability(
+        ctx.session.companyId,
+        monday,
+        sunday,
+        new Map()
+      )
+      return NextResponse.json({
+        shifts: [],
+        count: 0,
+        meta,
+        teamAvailability,
+        takenSlots: [],
+      })
     }
 
     const hasMore = shiftRows.length > LIMIT
@@ -219,7 +321,39 @@ export const GET = withGates(
       weekLabel,
     }
 
-    return NextResponse.json({ shifts: filtered, count: filtered.length, meta, nextCursor })
+    // Map each shift to its date, then accumulate the set of dates each member
+    // is assigned to, for the availability grid.
+    const dateByShift = new Map(pageRows.map((s) => [s.id, s.date]))
+    const datesByUser = new Map<string, Set<string>>()
+    for (const a of assigneeRows) {
+      const date = dateByShift.get(a.shiftId)
+      if (!date) continue
+      const set = datesByUser.get(a.userId) ?? new Set<string>()
+      set.add(date)
+      datesByUser.set(a.userId, set)
+    }
+
+    const teamAvailability = await buildTeamAvailability(
+      ctx.session.companyId,
+      monday,
+      sunday,
+      datesByUser
+    )
+
+    // Today's booked slots = start times of shifts dated today (HH:MM).
+    const today = todayStr()
+    const takenSlots = Array.from(
+      new Set(pageRows.filter((s) => s.date === today).map((s) => s.startTime.slice(0, 5)))
+    )
+
+    return NextResponse.json({
+      shifts: filtered,
+      count: filtered.length,
+      meta,
+      nextCursor,
+      teamAvailability,
+      takenSlots,
+    })
   }
 )
 
