@@ -9,6 +9,7 @@ import { seedPermissions } from "./seeds/permissions"
 import { seedRolePermissions } from "./seeds/role-permissions"
 import { seedShop } from "./seeds/shop"
 import { seedCompany } from "./seeds/company"
+import { seedGroup } from "./seeds/group"
 import { seedClients } from "./seeds/clients"
 import { seedSuppliers } from "./seeds/suppliers"
 import { seedRenovation } from "./seeds/renovation"
@@ -40,6 +41,9 @@ async function seed() {
 
   // Demo company: PRV Renovations SRL + users
   const { companyId, storeId, ceoId, managerId, supervisorId, workerIds } = await seedCompany()
+
+  // Holding group + nightly KPI snapshots so the CEO group rollup has data.
+  await seedGroup({ companyId, ceoId })
 
   // CRM: clients
   const { clientIds } = await seedClients(companyId)

@@ -77,7 +77,8 @@ export async function seedCompany(): Promise<CompanySeedResult> {
       jobTitle: "CEO",
       role: "company_owner",
       systemRole: "ceo" as const,
-      scopeLevel: "SCOPE_COMPANY" as const,
+      // Group CEO — sees the whole PRV Group rollup (SCOPE_GROUP ≥ SCOPE_COMPANY).
+      scopeLevel: "SCOPE_GROUP" as const,
       payType: "monthly" as const,
       payRate: "25000",
     },
