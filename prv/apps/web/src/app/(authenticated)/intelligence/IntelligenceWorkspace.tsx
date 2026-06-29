@@ -13,7 +13,7 @@ import {
   type TabItem,
   type DonutSegment,
 } from "@prv/ui"
-import { useIntelligence } from "@/lib/api-hooks"
+import { useIntelligence, useForecastMetrics } from "@/lib/api-hooks"
 
 // ── Static display data ───────────────────────────────────────────────────────
 
@@ -95,58 +95,15 @@ const REPORT_STATUS_BADGE: Record<string, { bg: string; color: string; label: st
   scheduled: { bg: "rgba(10,132,255,0.14)", color: "rgba(10,132,255,0.90)", label: "Scheduled" },
 }
 
-interface ForecastRow {
-  label: string
-  value: string
-  trend: string
-  trendDir: "up" | "down" | "flat"
-  pct: number
-  color: string
+// Per-label bar colour for the forecast rows (kept client-side; the values,
+// trends and progress come from /api/intelligence/forecast-metrics).
+const FORECAST_COLOR: Record<string, string> = {
+  Revenue: "var(--prv-text-2)",
+  Orders: "rgba(10,132,255,0.70)",
+  "New Clients": "rgba(191,90,242,0.70)",
+  "Churn Risk": "rgba(255,69,58,0.70)",
+  Expenses: "rgba(255,159,10,0.60)",
 }
-
-/* static: wire to /api/intelligence/forecast when hook is added */
-const FORECAST_ROWS: ForecastRow[] = [
-  {
-    label: "Revenue",
-    value: "€534K",
-    trend: "▲ 10.8%",
-    trendDir: "up",
-    pct: 88,
-    color: "var(--prv-text-2)",
-  },
-  {
-    label: "Orders",
-    value: "4,280",
-    trend: "▲ 8.4%",
-    trendDir: "up",
-    pct: 76,
-    color: "rgba(10,132,255,0.70)",
-  },
-  {
-    label: "New Clients",
-    value: "148",
-    trend: "▲ 5.1%",
-    trendDir: "up",
-    pct: 62,
-    color: "rgba(191,90,242,0.70)",
-  },
-  {
-    label: "Churn Risk",
-    value: "12",
-    trend: "▲ 3",
-    trendDir: "down",
-    pct: 28,
-    color: "rgba(255,69,58,0.70)",
-  },
-  {
-    label: "Expenses",
-    value: "€360K",
-    trend: "→ +4.7%",
-    trendDir: "flat",
-    pct: 54,
-    color: "rgba(255,159,10,0.60)",
-  },
-]
 
 const TREND_COLOR = {
   up: "rgba(48,209,88,0.95)",
@@ -195,6 +152,12 @@ export function IntelligenceWorkspace() {
   const [activeTab, setActiveTab] = useState("analytics")
 
   const { data, isLoading } = useIntelligence()
+  const { data: forecastData } = useForecastMetrics()
+
+  const forecastRows = (forecastData?.metrics ?? []).map((m) => ({
+    ...m,
+    color: FORECAST_COLOR[m.label] ?? "var(--prv-text-2)",
+  }))
 
   const chart = CHART_DATA[period]!
 
@@ -238,7 +201,7 @@ export function IntelligenceWorkspace() {
         />
         <GlassStatCard
           label="Avg Margin"
-          value={isLoading ? "…" : (meta ? `${meta.avgMarginPct}%` : "—")}
+          value={isLoading ? "…" : meta ? `${meta.avgMarginPct}%` : "—"}
           trend={
             meta?.marginTrend && meta.marginTrend !== "—"
               ? { direction: "up", value: meta.marginTrend }
@@ -256,9 +219,7 @@ export function IntelligenceWorkspace() {
           label="Active Alerts"
           value={isLoading ? "…" : String(meta?.activeAlerts ?? 0)}
           trend={
-            (meta?.activeAlerts ?? 0) > 0
-              ? { direction: "down", value: "need review" }
-              : undefined
+            (meta?.activeAlerts ?? 0) > 0 ? { direction: "down", value: "need review" } : undefined
           }
           sparkline={SPARK.aiActions}
         />
@@ -440,7 +401,9 @@ export function IntelligenceWorkspace() {
                 <p className="text-[13px] text-white/65 leading-relaxed">
                   {meta?.activeAlerts ?? 0} active alert
                   {(meta?.activeAlerts ?? 0) !== 1 ? "s" : ""} ·{" "}
-                  <span className="text-white/95 font-semibold">{meta?.ordersToday ?? 0} orders</span>{" "}
+                  <span className="text-white/95 font-semibold">
+                    {meta?.ordersToday ?? 0} orders
+                  </span>{" "}
                   today.
                 </p>
               </>
@@ -520,9 +483,7 @@ export function IntelligenceWorkspace() {
             <GlassCard>
               {reports.map((r) => {
                 const icon = REPORT_TYPE_ICON[r.type] ?? REPORT_TYPE_ICON.monthly!
-                const badge =
-                  REPORT_STATUS_BADGE[r.status] ??
-                  REPORT_STATUS_BADGE.ready!
+                const badge = REPORT_STATUS_BADGE[r.status] ?? REPORT_STATUS_BADGE.ready!
                 return (
                   <div
                     key={r.id}
@@ -575,9 +536,13 @@ export function IntelligenceWorkspace() {
       {activeTab === "forecast" && (
         <>
           <Label>AI Forecast · Next 30 Days</Label>
-          {/* static: wire to /api/intelligence/forecast when hook is added */}
           <GlassCard>
-            {FORECAST_ROWS.map((row) => (
+            {forecastRows.length === 0 && (
+              <p className="px-4 py-6 text-[13px] text-white/35 text-center">
+                No forecast data available yet.
+              </p>
+            )}
+            {forecastRows.map((row) => (
               <div
                 key={row.label}
                 className="flex items-center gap-3 px-4 py-3.5"

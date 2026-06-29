@@ -601,6 +601,24 @@ export function useIntelligence(type?: string | null, priority?: string | null) 
   })
 }
 
+export interface ForecastMetric {
+  label: string
+  value: string
+  trend: string
+  trendDir: "up" | "down" | "flat"
+  pct: number
+}
+
+export function useForecastMetrics() {
+  return useQuery({
+    queryKey: ["intelligence-forecast-metrics"],
+    queryFn: () =>
+      fetch("/api/intelligence/forecast-metrics").then(
+        (r) => r.json() as Promise<{ metrics: ForecastMetric[] }>
+      ),
+  })
+}
+
 // ── Roles ─────────────────────────────────────────────────────────────────────
 
 interface RoleItem {
