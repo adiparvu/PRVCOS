@@ -4,7 +4,7 @@ import { and, eq, gte, isNull, sum } from "drizzle-orm"
 import { db } from "@prv/db"
 import { orders, alerts, stores } from "@prv/db/schema"
 import type { GateContext } from "@prv/auth"
-import { forecastTail, buildDonut, type DonutDatum } from "@/lib/metrics-helpers"
+import { forecastTail, buildDonut, eurK, type DonutDatum } from "@/lib/metrics-helpers"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -26,8 +26,11 @@ export interface AnalyticsMetrics {
     orders: number[]
     alerts: number[]
   }
-  // Revenue breakdown by store over the trailing 90 days (top stores + Other).
+  // Revenue breakdown by store over the trailing 90 days (top stores + Other),
+  // plus the matching grand total label so the donut centre reconciles with the
+  // slices (both derived from the same 90-day window).
   donut: DonutDatum[]
+  donutTotalLabel: string
 }
 
 const DAY_MS = 86_400_000
@@ -140,8 +143,10 @@ export const GET = withGates(
       sparkAlerts.push(alertTs.reduce((c, t) => (t >= start && t < end ? c + 1 : c), 0))
     }
 
-    // Revenue breakdown by store (top 4 + Other) over the trailing 90 days.
+    // Revenue breakdown by store (top 4 + Other) over the trailing 90 days; the
+    // centre total is the sum of the slices, so the chart stays internally coherent.
     const donut: DonutDatum[] = buildDonut(storeRevRows)
+    const donutTotal = donut.reduce((acc, d) => acc + d.value, 0)
 
     const metrics: AnalyticsMetrics = {
       chart,
@@ -152,6 +157,7 @@ export const GET = withGates(
         alerts: sparkAlerts,
       },
       donut,
+      donutTotalLabel: eurK(donutTotal),
     }
 
     return NextResponse.json(metrics)

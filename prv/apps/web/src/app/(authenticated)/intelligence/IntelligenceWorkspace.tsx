@@ -172,6 +172,12 @@ export function IntelligenceWorkspace() {
   const storeKpis = data?.storeKpis ?? []
   const meta = data?.meta
 
+  // When the donut is real, its centre total must match the slices (same 90-day
+  // window); fall back to the company-wide revenue label otherwise.
+  const donutCenter = analytics?.donut?.length
+    ? analytics.donutTotalLabel
+    : (meta?.totalRevenueLabel ?? "—")
+
   // Derive recommendation-type insights for the AI tab
   const aiRecommendations = insights.filter((i) => i.type === "recommendation")
 
@@ -269,7 +275,7 @@ export function IntelligenceWorkspace() {
                 segments={donutSegments}
                 size={140}
                 centerLabel="Total"
-                centerValue={isLoading ? "…" : (meta?.totalRevenueLabel ?? "—")}
+                centerValue={isLoading ? "…" : donutCenter}
                 showLegend
                 animated
               />

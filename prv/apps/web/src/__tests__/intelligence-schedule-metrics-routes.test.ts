@@ -172,6 +172,7 @@ describe("GET /api/intelligence/analytics-metrics", () => {
     expect(body.spark.avgOrder).toHaveLength(7)
     expect(body.spark.alerts).toHaveLength(7)
     expect(Array.isArray(body.donut)).toBe(true)
+    expect(typeof body.donutTotalLabel).toBe("string")
   })
 })
 
