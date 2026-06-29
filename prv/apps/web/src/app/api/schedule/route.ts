@@ -90,6 +90,12 @@ function todayStr(): string {
   return new Intl.DateTimeFormat("sv-SE", { timeZone: TZ }).format(new Date())
 }
 
+// A well-formed YYYY-MM-DD that also parses to a real calendar date.
+function isValidDateStr(s: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return false
+  return !Number.isNaN(new Date(s + "T12:00:00Z").getTime())
+}
+
 function weekBounds(anchorDate: string): { monday: string; sunday: string; weekLabel: string } {
   const d = new Date(anchorDate + "T12:00:00Z")
   const dow = d.getUTCDay()
@@ -188,7 +194,8 @@ export const GET = withGates(
     const { searchParams } = req.nextUrl
     const statusFilter = searchParams.get("status") as ShiftStatus | null
     const cursor = searchParams.get("cursor")
-    const anchor = searchParams.get("week") ?? todayStr()
+    const weekParam = searchParams.get("week")
+    const anchor = weekParam && isValidDateStr(weekParam) ? weekParam : todayStr()
     const { monday, sunday, weekLabel } = weekBounds(anchor)
 
     // 1. Fetch shifts for the week

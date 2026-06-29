@@ -213,4 +213,23 @@ describe("GET /api/schedule", () => {
     // No overlapping leave and no shifts → every cell is "maybe".
     expect(cells.every((c) => c === "maybe")).toBe(true)
   })
+
+  it("ignores a malformed week param instead of erroring", async () => {
+    queue.push([], []) // shiftRows, members
+    const req = {
+      method: "GET",
+      nextUrl: {
+        pathname: "/api/schedule",
+        searchParams: new URLSearchParams("week=not-a-date"),
+      },
+      url: "http://localhost/api/schedule?week=not-a-date",
+      headers: { get: () => null },
+    } as unknown as Request
+    const { GET } = await import("@/app/api/schedule/route")
+    const res = await GET(req, webCtx)
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    // Falls back to the current week label rather than throwing on Invalid Date.
+    expect(body.meta.weekLabel).toMatch(/\w+–\w+/)
+  })
 })
