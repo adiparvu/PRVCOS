@@ -54,6 +54,7 @@ const CHART_DATA: Record<string, { labels: string[]; actual: number[]; forecast?
   },
 }
 
+// Fallback breakdown until /api/intelligence/analytics-metrics resolves.
 const DONUT_SEGMENTS: DonutSegment[] = [
   { label: "Shop", value: 40 },
   { label: "Renovations", value: 25 },
@@ -157,6 +158,7 @@ export function IntelligenceWorkspace() {
   const { data: analytics } = useAnalyticsMetrics()
 
   const spark = analytics?.spark ?? SPARK
+  const donutSegments = analytics?.donut?.length ? analytics.donut : DONUT_SEGMENTS
 
   const forecastRows = (forecastData?.metrics ?? []).map((m) => ({
     ...m,
@@ -264,7 +266,7 @@ export function IntelligenceWorkspace() {
                 Revenue Breakdown
               </p>
               <GlassDonutChart
-                segments={DONUT_SEGMENTS}
+                segments={donutSegments}
                 size={140}
                 centerLabel="Total"
                 centerValue={isLoading ? "…" : (meta?.totalRevenueLabel ?? "—")}

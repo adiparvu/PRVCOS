@@ -629,9 +629,15 @@ export interface AnalyticsChart {
   forecast: number[]
 }
 
+export interface DonutDatum {
+  label: string
+  value: number
+}
+
 export interface AnalyticsMetrics {
   chart: Record<string, AnalyticsChart>
   spark: { revenue: number[]; avgOrder: number[]; orders: number[]; alerts: number[] }
+  donut: DonutDatum[]
 }
 
 export function useAnalyticsMetrics() {

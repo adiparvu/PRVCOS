@@ -1,8 +1,8 @@
 import { withGates } from "@/lib/with-gates"
 import { NextRequest, NextResponse } from "next/server"
-import { and, eq, gte, isNull } from "drizzle-orm"
+import { and, eq, gte, isNull, sum } from "drizzle-orm"
 import { db } from "@prv/db"
-import { orders, alerts } from "@prv/db/schema"
+import { orders, alerts, stores } from "@prv/db/schema"
 import type { GateContext } from "@prv/auth"
 
 export const dynamic = "force-dynamic"
@@ -12,6 +12,11 @@ export interface AnalyticsChart {
   labels: string[]
   actual: number[]
   forecast: number[]
+}
+
+export interface DonutDatum {
+  label: string
+  value: number
 }
 
 export interface AnalyticsMetrics {
@@ -25,6 +30,8 @@ export interface AnalyticsMetrics {
     orders: number[]
     alerts: number[]
   }
+  // Revenue breakdown by store over the trailing 90 days (top stores + Other).
+  donut: DonutDatum[]
 }
 
 const DAY_MS = 86_400_000
@@ -55,8 +62,9 @@ export const GET = withGates(
     const now = new Date()
     const yearAgo = new Date(now.getTime() - 370 * DAY_MS)
     const weekAgo = new Date(utcDayStart(now) - 6 * DAY_MS)
+    const ninetyAgo = new Date(now.getTime() - 90 * DAY_MS)
 
-    const [orderRows, alertRows] = await Promise.all([
+    const [orderRows, alertRows, storeRevRows] = await Promise.all([
       db
         .select({ total: orders.total, createdAt: orders.createdAt })
         .from(orders)
@@ -67,6 +75,14 @@ export const GET = withGates(
         .select({ createdAt: alerts.createdAt })
         .from(alerts)
         .where(and(eq(alerts.companyId, cid), gte(alerts.createdAt, weekAgo))),
+      db
+        .select({ storeName: stores.name, revenue: sum(orders.total) })
+        .from(orders)
+        .leftJoin(stores, eq(orders.storeId, stores.id))
+        .where(
+          and(eq(orders.companyId, cid), gte(orders.createdAt, ninetyAgo), isNull(orders.deletedAt))
+        )
+        .groupBy(orders.storeId, stores.name),
     ])
 
     const events = orderRows.map((o) => ({ ts: o.createdAt.getTime(), total: Number(o.total) }))
@@ -139,6 +155,19 @@ export const GET = withGates(
       sparkAlerts.push(alertTs.reduce((c, t) => (t >= start && t < end ? c + 1 : c), 0))
     }
 
+    // Revenue breakdown by store (top 4 + Other) over the trailing 90 days.
+    const storeRev = storeRevRows
+      .map((r) => ({
+        label: r.storeName ?? "Unassigned",
+        value: Math.round(Number(r.revenue ?? 0)),
+      }))
+      .filter((d) => d.value > 0)
+      .sort((a, b) => b.value - a.value)
+    const TOP = 4
+    const restValue = storeRev.slice(TOP).reduce((acc, d) => acc + d.value, 0)
+    const donut: DonutDatum[] =
+      restValue > 0 ? [...storeRev.slice(0, TOP), { label: "Other", value: restValue }] : storeRev
+
     const metrics: AnalyticsMetrics = {
       chart,
       spark: {
@@ -147,6 +176,7 @@ export const GET = withGates(
         orders: sparkOrders,
         alerts: sparkAlerts,
       },
+      donut,
     }
 
     return NextResponse.json(metrics)
