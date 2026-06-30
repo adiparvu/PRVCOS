@@ -157,6 +157,13 @@ const CEO_CMDS: CommandEntry[] = [
     href: "/dashboard/overview",
   },
   {
+    id: "ceo.group",
+    label: "Group Rollup",
+    section: "CEO Dashboard",
+    keywords: ["companies", "rollup", "consolidated", "holding", "group", "multi-company"],
+    href: "/groups",
+  },
+  {
     id: "ceo.ai",
     label: "AI Briefing",
     section: "CEO Dashboard",
