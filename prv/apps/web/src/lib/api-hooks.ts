@@ -1212,3 +1212,30 @@ export function useGroupRollup(groupId: string | null, period = "qtd") {
       ),
   })
 }
+
+export interface GroupMember {
+  companyId: string
+  companyName: string
+  isActive: boolean
+  joinedAt: string
+}
+
+export interface GroupDetail {
+  group: {
+    id: string
+    name: string
+    slug: string
+    description: string | null
+    logoUrl: string | null
+  }
+  members: GroupMember[]
+  eligibleCompanies: { id: string; name: string }[]
+}
+
+export function useGroupDetail(groupId: string | null) {
+  return useQuery({
+    queryKey: ["group-detail", groupId],
+    enabled: !!groupId,
+    queryFn: () => fetch(`/api/groups/${groupId}`).then((r) => r.json() as Promise<GroupDetail>),
+  })
+}

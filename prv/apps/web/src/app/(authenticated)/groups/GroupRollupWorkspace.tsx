@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Link from "next/link"
 import { GlassStatCard, GlassAreaChart } from "@prv/ui"
 import { useGroups, useGroupRollup } from "@/lib/api-hooks"
 import { eurK } from "@/lib/metrics-helpers"
@@ -66,14 +67,39 @@ export function GroupRollupWorkspace() {
           <h1 className="text-[30px] font-semibold tracking-tight" style={{ color: t1 }}>
             {data?.group.name ?? "Group"}
           </h1>
-          {kpis && (
-            <span
-              className="inline-flex items-center px-3.5 py-2 rounded-full text-[13px] font-semibold"
-              style={{ background: g1, border: `1px solid ${bds}`, color: "var(--prv-text-2)" }}
-            >
-              {kpis.companiesIncluded} {kpis.companiesIncluded === 1 ? "company" : "companies"}
-            </span>
-          )}
+          <div className="flex items-center gap-2">
+            {kpis && (
+              <span
+                className="inline-flex items-center px-3.5 py-2 rounded-full text-[13px] font-semibold"
+                style={{ background: g1, border: `1px solid ${bds}`, color: "var(--prv-text-2)" }}
+              >
+                {kpis.companiesIncluded} {kpis.companiesIncluded === 1 ? "company" : "companies"}
+              </span>
+            )}
+            {groupId && (
+              <Link
+                href={`/groups/manage?group=${groupId}`}
+                aria-label="Manage group"
+                className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
+                style={{ background: g1, border: `1px solid ${bds}` }}
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="var(--prv-text-2)"
+                  strokeWidth="2"
+                  className="w-[17px] h-[17px]"
+                >
+                  <circle cx="12" cy="12" r="3" />
+                  <path
+                    d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </Link>
+            )}
+          </div>
         </div>
 
         {/* Group switcher — only when the user can see more than one group */}
