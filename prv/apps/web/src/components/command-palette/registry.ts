@@ -171,6 +171,13 @@ const CEO_CMDS: CommandEntry[] = [
     href: "/groups/manage",
   },
   {
+    id: "ceo.group.create",
+    label: "Create Group",
+    section: "CEO Dashboard",
+    keywords: ["group", "new", "create", "holding", "company group"],
+    href: "/groups?new=1",
+  },
+  {
     id: "ceo.ai",
     label: "AI Briefing",
     section: "CEO Dashboard",

@@ -2,9 +2,12 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import { useSearchParams } from "next/navigation"
+import { useQueryClient } from "@tanstack/react-query"
 import { GlassStatCard, GlassAreaChart } from "@prv/ui"
 import { useGroups, useGroupRollup } from "@/lib/api-hooks"
 import { eurK } from "@/lib/metrics-helpers"
+import { CreateGroupSheet } from "./CreateGroupSheet"
 
 // ── CSS variable shorthands (Liquid Glass tokens) ─────────────────────────────
 const g1 = "var(--prv-g1)"
@@ -38,8 +41,17 @@ function initials(name: string): string {
 }
 
 export function GroupRollupWorkspace() {
+  const searchParams = useSearchParams()
+  const queryClient = useQueryClient()
   const { data: groupsData } = useGroups()
   const groups = groupsData?.groups ?? []
+
+  const [showCreate, setShowCreate] = useState(searchParams.get("new") === "1")
+  const handleCreated = (newId: string) => {
+    void queryClient.invalidateQueries({ queryKey: ["groups"] })
+    setActiveId(newId)
+    setShowCreate(false)
+  }
 
   const [activeId, setActiveId] = useState<string | null>(null)
   // Default to the first group once the list loads (render-time seed).
@@ -99,6 +111,23 @@ export function GroupRollupWorkspace() {
                 </svg>
               </Link>
             )}
+            <button
+              type="button"
+              onClick={() => setShowCreate(true)}
+              aria-label="New group"
+              className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
+              style={{ background: g1, border: `1px solid ${bds}` }}
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="var(--prv-text-2)"
+                strokeWidth="2.2"
+                className="w-[17px] h-[17px]"
+              >
+                <path d="M12 5v14M5 12h14" strokeLinecap="round" />
+              </svg>
+            </button>
           </div>
         </div>
 
@@ -253,12 +282,37 @@ export function GroupRollupWorkspace() {
       {/* Empty state — user not in a group, or no data yet */}
       {!isLoading && !kpis && (
         <div
-          className="rounded-[22px] p-6 mt-6 text-center text-[13px]"
-          style={{ background: g1, border: `1px solid ${bds}`, color: t3 }}
+          className="rounded-[22px] p-6 mt-6 text-center"
+          style={{ background: g1, border: `1px solid ${bds}` }}
         >
-          No group rollup available for your account.
+          <p className="text-[13px]" style={{ color: t3 }}>
+            No group rollup available for your account.
+          </p>
+          <button
+            type="button"
+            onClick={() => setShowCreate(true)}
+            className="mt-3 inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-[13px] font-semibold"
+            style={{ background: "rgba(255,255,255,0.92)", color: "#000" }}
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#000"
+              strokeWidth="2.4"
+              className="w-3.5 h-3.5"
+            >
+              <path d="M12 5v14M5 12h14" strokeLinecap="round" />
+            </svg>
+            New Group
+          </button>
         </div>
       )}
+
+      <CreateGroupSheet
+        open={showCreate}
+        onClose={() => setShowCreate(false)}
+        onCreated={handleCreated}
+      />
     </div>
   )
 }
