@@ -718,7 +718,7 @@ export function ShopWorkspace() {
     })
   }
 
-  const navigateToProduct = (id: string) => router.push(`/shop/${id}`)
+  const navigateToProduct = (id: string) => router.push(`/commerce/${id}`)
 
   const cartCount = cart.reduce((s, i) => s + i.qty, 0)
 
@@ -742,7 +742,7 @@ export function ShopWorkspace() {
       setCart([])
       persistCart([])
       setCartOpen(false)
-      router.push("/shop/orders")
+      router.push("/commerce/orders")
     } finally {
       setPlacing(false)
     }
@@ -788,7 +788,7 @@ export function ShopWorkspace() {
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <Link
-              href="/shop/wishlist"
+              href="/commerce/wishlist"
               style={{
                 width: 36,
                 height: 36,

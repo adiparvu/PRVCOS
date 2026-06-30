@@ -332,7 +332,7 @@ export function ProductDetailClient({ id }: { id: string }) {
 
   // Unknown / unavailable product id → bounce back to the shop.
   useEffect(() => {
-    if (isError) router.replace("/shop")
+    if (isError) router.replace("/commerce")
   }, [isError, router])
 
   const addToCart = () => {
@@ -417,7 +417,7 @@ export function ProductDetailClient({ id }: { id: string }) {
 
         <div style={{ position: "relative" }}>
           <button
-            onClick={() => router.push("/shop")}
+            onClick={() => router.push("/commerce")}
             style={{
               width: 36,
               height: 36,
@@ -746,7 +746,7 @@ export function ProductDetailClient({ id }: { id: string }) {
                 <RelatedCard
                   key={p.id}
                   product={p}
-                  onClick={(pid) => router.push(`/shop/${pid}`)}
+                  onClick={(pid) => router.push(`/commerce/${pid}`)}
                 />
               ))}
             </div>

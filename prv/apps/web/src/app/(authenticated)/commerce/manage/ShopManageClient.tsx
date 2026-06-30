@@ -911,7 +911,7 @@ export function ShopManageClient() {
         {/* Header */}
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
           <Link
-            href="/shop"
+            href="/commerce"
             style={{
               display: "flex",
               alignItems: "center",
@@ -934,7 +934,7 @@ export function ShopManageClient() {
             Gestionare produse
           </h1>
           <Link
-            href="/shop/analytics"
+            href="/commerce/analytics"
             style={{
               display: "flex",
               alignItems: "center",

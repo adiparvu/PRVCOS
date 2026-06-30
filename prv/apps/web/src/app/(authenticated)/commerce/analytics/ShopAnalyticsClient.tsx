@@ -247,7 +247,7 @@ export function ShopAnalyticsClient() {
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
         <Link
-          href="/shop"
+          href="/commerce"
           style={{
             display: "flex",
             alignItems: "center",
@@ -382,7 +382,7 @@ export function ShopAnalyticsClient() {
             )}
           </div>
           <Link
-            href="/shop/manage"
+            href="/commerce/manage"
             style={{
               fontSize: 11,
               fontWeight: 600,

@@ -367,7 +367,7 @@ export function WishlistClient() {
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
         <Link
-          href="/shop"
+          href="/commerce"
           style={{
             display: "flex",
             alignItems: "center",
@@ -518,7 +518,7 @@ export function WishlistClient() {
             Save products you like for later.
           </p>
           <Link
-            href="/shop"
+            href="/commerce"
             style={{
               display: "inline-block",
               padding: "10px 22px",
@@ -554,7 +554,7 @@ export function WishlistClient() {
               item={item}
               onRemove={handleRemove}
               onAddToCart={handleAddToCart}
-              onNavigate={(id) => router.push(`/shop/${id}`)}
+              onNavigate={(id) => router.push(`/commerce/${id}`)}
             />
           ))}
         </div>

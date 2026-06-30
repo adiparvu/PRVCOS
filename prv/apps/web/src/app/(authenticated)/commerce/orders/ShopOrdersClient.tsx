@@ -193,7 +193,7 @@ function OrderCard({ order }: { order: Order }) {
 
   return (
     <Link
-      href={`/shop/orders/${order.id}`}
+      href={`/commerce/orders/${order.id}`}
       style={{
         display: "block",
         background: "var(--prv-g1)",
@@ -354,7 +354,7 @@ export function ShopOrdersClient() {
       <div className="flex items-center justify-between mb-5">
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <Link
-            href="/shop"
+            href="/commerce"
             style={{
               display: "flex",
               alignItems: "center",

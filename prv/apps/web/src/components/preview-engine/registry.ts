@@ -92,7 +92,7 @@ export const ENTITY_REGISTRY: Record<EntityType, EntityConfig> = {
     requiredPermission: "products.read",
     renderer: "product",
     modules: ["context_menu"],
-    primaryDestination: "/shop/products/[id]",
+    primaryDestination: "/commerce/products/[id]",
     contextActions: [
       { id: "view", label: "View Product", icon: VIEW_ICON },
       { id: "edit", label: "Edit", icon: EDIT_ICON, requiredPermission: "products.update" },
@@ -104,7 +104,7 @@ export const ENTITY_REGISTRY: Record<EntityType, EntityConfig> = {
     requiredPermission: "orders.read",
     renderer: "product",
     modules: ["context_menu"],
-    primaryDestination: "/shop/orders/[id]",
+    primaryDestination: "/commerce/orders/[id]",
     contextActions: [
       { id: "view", label: "View Order", icon: VIEW_ICON },
       { id: "edit", label: "Update Status", icon: EDIT_ICON, requiredPermission: "orders.update" },

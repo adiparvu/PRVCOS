@@ -353,7 +353,7 @@ export function OrderDetailClient({ id }: { id: string }) {
         </p>
         <div style={{ textAlign: "center" }}>
           <Link
-            href="/shop/orders"
+            href="/commerce/orders"
             style={{ color: "rgba(255,255,255,0.50)", fontSize: 13, textDecoration: "none" }}
           >
             ← Back la comenzi
@@ -370,7 +370,7 @@ export function OrderDetailClient({ id }: { id: string }) {
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
         <Link
-          href="/shop/orders"
+          href="/commerce/orders"
           style={{
             display: "flex",
             alignItems: "center",
