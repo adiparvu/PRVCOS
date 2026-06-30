@@ -164,6 +164,13 @@ const CEO_CMDS: CommandEntry[] = [
     href: "/groups",
   },
   {
+    id: "ceo.group.manage",
+    label: "Manage Group",
+    section: "CEO Dashboard",
+    keywords: ["group", "companies", "add", "remove", "rename", "members", "administration"],
+    href: "/groups/manage",
+  },
+  {
     id: "ceo.ai",
     label: "AI Briefing",
     section: "CEO Dashboard",
