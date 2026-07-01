@@ -6,6 +6,7 @@ import { db } from "@prv/db"
 import { projects, projectTasks, users } from "@prv/db/schema"
 import { and, eq, asc } from "drizzle-orm"
 import { z } from "zod"
+import { writeProjectActivity } from "@/lib/project-activity"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -188,6 +189,16 @@ export const POST = withGates(
       path: `/api/projects/${id}/tasks`,
       ipAddress: ctx.ipAddress,
       userAgent: ctx.userAgent,
+    })
+
+    void writeProjectActivity({
+      companyId,
+      projectId: id,
+      actorId,
+      kind: "task",
+      summary: `created task \u201C${d.title}\u201D`,
+      entityType: "task",
+      entityId: record?.id ?? null,
     })
 
     return NextResponse.json({ id: record?.id }, { status: 201 })

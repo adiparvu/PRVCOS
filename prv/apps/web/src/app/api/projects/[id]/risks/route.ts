@@ -7,6 +7,7 @@ import { projects, projectRisks, users } from "@prv/db/schema"
 import { and, eq, desc } from "drizzle-orm"
 import { z } from "zod"
 import { scoreRisk, type RiskBand } from "@/lib/risk"
+import { writeProjectActivity } from "@/lib/project-activity"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -193,6 +194,16 @@ export const POST = withGates(
       path: `/api/projects/${id}/risks`,
       ipAddress: ctx.ipAddress,
       userAgent: ctx.userAgent,
+    })
+
+    void writeProjectActivity({
+      companyId,
+      projectId: id,
+      actorId,
+      kind: "risk",
+      summary: `logged risk \u201C${d.title}\u201D (${scoreRisk(d.impact, d.probability).band})`,
+      entityType: "risk",
+      entityId: record?.id ?? null,
     })
 
     return NextResponse.json({ id: record?.id }, { status: 201 })

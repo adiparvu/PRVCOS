@@ -37,6 +37,7 @@ import type { WorkloadRow, WorkloadSummary } from "@/app/api/resources/workload/
 import type { BudgetLine, BudgetResponse } from "@/app/api/projects/[id]/budget/route"
 import type { TaskSummary } from "@/app/api/projects/[id]/tasks/route"
 import type { RiskSummary, RiskRegisterMeta } from "@/app/api/projects/[id]/risks/route"
+import type { ActivityEntry } from "@/app/api/projects/[id]/activity/route"
 
 const LIMIT = 50
 
@@ -1634,5 +1635,43 @@ export function useDeleteRisk(projectId: string) {
       return res.json() as Promise<{ removed: number }>
     },
     onSettled: () => void qc.invalidateQueries({ queryKey: ["project-risks", projectId] }),
+  })
+}
+
+// ── Project Activity Log (6.7) ─────────────────────────────────────────────────
+
+export type { ActivityEntry }
+
+interface ActivityPage {
+  entries: ActivityEntry[]
+  nextCursor: string | null
+}
+
+export function useProjectActivity(projectId: string | null) {
+  return useInfiniteQuery({
+    queryKey: ["project-activity", projectId],
+    enabled: !!projectId,
+    initialPageParam: null as string | null,
+    queryFn: ({ pageParam }) =>
+      fetch(
+        buildUrl(`/api/projects/${projectId}/activity`, { before: pageParam ?? undefined })
+      ).then((r) => r.json() as Promise<ActivityPage>),
+    getNextPageParam: (last) => last.nextCursor,
+  })
+}
+
+export function usePostProjectComment(projectId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (comment: string) => {
+      const res = await fetch(`/api/projects/${projectId}/activity`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ comment }),
+      })
+      if (!res.ok) throw new Error("Failed to post comment")
+      return res.json() as Promise<{ ok: boolean }>
+    },
+    onSettled: () => void qc.invalidateQueries({ queryKey: ["project-activity", projectId] }),
   })
 }

@@ -551,6 +551,22 @@ export function ProjectDetailClient({ id }: ProjectDetailClientProps) {
           >
             Risk register ›
           </Link>
+          <Link
+            href={`/projects/${id}/activity`}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 5,
+              marginTop: 12,
+              marginLeft: 16,
+              fontSize: 12,
+              fontWeight: 600,
+              color: "var(--prv-text-2)",
+              textDecoration: "none",
+            }}
+          >
+            Activity log ›
+          </Link>
         </div>
       </div>
 

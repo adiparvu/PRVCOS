@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PRV · Project Activity — Liquid Glass Preview</title>
+    <style>
+      :root {
+        --g1: rgba(255,255,255,0.06); --g2: rgba(255,255,255,0.10);
+        --t1: rgba(255,255,255,0.95); --t2: rgba(255,255,255,0.65); --t3: rgba(255,255,255,0.35); --t4: rgba(255,255,255,0.22);
+        --border: rgba(255,255,255,0.12); --border-subtle: rgba(255,255,255,0.08);
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+      }
+      * { box-sizing:border-box; margin:0; padding:0; }
+      body { background:#000; color:var(--t1); min-height:100vh; -webkit-font-smoothing:antialiased; padding:40px 16px 80px; }
+      .aura { position:fixed; inset:0; z-index:-1; background:radial-gradient(1100px 480px at 50% -8%, rgba(255,255,255,0.06), transparent 60%); }
+      .wrap { max-width:640px; margin:0 auto; }
+      .eyebrow { font-size:12px; font-weight:600; letter-spacing:0.14em; text-transform:uppercase; color:var(--t3); }
+      h1 { font-size:28px; font-weight:680; letter-spacing:-0.02em; margin:3px 0 22px; }
+      .glass { background:var(--g1); border:1px solid var(--border-subtle); box-shadow:inset 0 1px 0 rgba(255,255,255,0.22); }
+      /* Composer */
+      .composer { border-radius:18px; padding:12px 14px; display:flex; gap:11px; align-items:center; margin-bottom:24px; }
+      .composer .av { width:34px; height:34px; border-radius:10px; background:var(--g2); display:grid; place-items:center; font-size:12px; font-weight:700; flex:0 0 auto; box-shadow:inset 0 1px 0 rgba(255,255,255,0.2); }
+      .composer input { flex:1; background:transparent; border:0; outline:0; color:var(--t1); font-size:14px; font-family:inherit; }
+      .composer button { padding:7px 15px; border-radius:100px; background:rgba(255,255,255,0.92); color:#000; border:0; font-size:12.5px; font-weight:640; cursor:pointer; }
+      /* Timeline */
+      .daylabel { font-size:11px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--t3); margin:0 4px 12px; }
+      .tl { position:relative; padding-left:38px; }
+      .tl::before { content:""; position:absolute; left:16px; top:6px; bottom:6px; width:1px; background:var(--border-subtle); }
+      .ev { position:relative; padding-bottom:20px; }
+      .ev:last-child { padding-bottom:0; }
+      .node { position:absolute; left:-30px; top:0; width:34px; height:34px; border-radius:10px; background:var(--g1); border:1px solid var(--border-subtle); display:grid; place-items:center; color:var(--t2); box-shadow:inset 0 1px 0 rgba(255,255,255,0.18); }
+      .node svg { width:15px; height:15px; stroke:currentColor; fill:none; stroke-width:1.8; }
+      .body { padding-top:2px; }
+      .sum { font-size:13.5px; color:var(--t1); line-height:1.4; }
+      .sum b { font-weight:660; }
+      .when { font-size:11.5px; color:var(--t3); margin-top:3px; }
+      .comment { margin-top:7px; font-size:13px; color:var(--t2); background:var(--g1); border:1px solid var(--border-subtle); border-radius:12px; padding:9px 12px; line-height:1.45; }
+      .note { text-align:center; color:var(--t3); font-size:11.5px; margin:26px auto 0; line-height:1.6; }
+      code { color:var(--t2); }
+    </style>
+  </head>
+  <body>
+    <div class="aura"></div>
+    <div class="wrap">
+      <div class="eyebrow">Project · Activity</div>
+      <h1>Activity Log</h1>
+
+      <div class="composer glass">
+        <div class="av">EV</div>
+        <input placeholder="Write a comment…" />
+        <button>Post</button>
+      </div>
+
+      <div class="daylabel">Today</div>
+      <div class="tl">
+        <div class="ev">
+          <div class="node"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+          <div class="body"><div class="sum"><b>Elena Vasile</b> moved a task to review</div><div class="when">14:20 · Task</div></div>
+        </div>
+        <div class="ev">
+          <div class="node"><svg viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg></div>
+          <div class="body"><div class="sum"><b>Maria Pop</b> logged risk “Asbestos discovery in wall cavity” (critical)</div><div class="when">11:48 · Risk</div></div>
+        </div>
+        <div class="ev">
+          <div class="node"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+          <div class="body"><div class="sum"><b>Elena Vasile</b> commented</div><div class="when">10:05 · Comment</div><div class="comment">Client approved the revised kitchen layout — proceeding with cabinet order today.</div></div>
+        </div>
+      </div>
+
+      <div class="daylabel" style="margin-top:22px">Yesterday</div>
+      <div class="tl">
+        <div class="ev">
+          <div class="node"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+          <div class="body"><div class="sum"><b>Andrei Dinu</b> created task “Install kitchen cabinets”</div><div class="when">16:32 · Task</div></div>
+        </div>
+        <div class="ev">
+          <div class="node"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M3 10h18"/></svg></div>
+          <div class="body"><div class="sum"><b>Elena Vasile</b> updated the materials budget</div><div class="when">09:14 · Budget</div></div>
+        </div>
+      </div>
+
+      <p class="note">
+        Liquid Glass preview · Phase 6.7 Activity Log. A dedicated per-project
+        timeline (separate from the immutable company audit log) that
+        auto-records task / status / risk / budget events and free-text comments,
+        each with actor, kind icon and time. Backed by
+        <code>project_activity</code> + <code>/api/projects/[id]/activity</code>;
+        cursor-paginated, comments via POST. Pure black · monochrome · SF-symbol
+        icons.
+      </p>
+    </div>
+  </body>
+</html>

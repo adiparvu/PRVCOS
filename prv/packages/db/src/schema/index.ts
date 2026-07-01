@@ -21,6 +21,8 @@ export * from "./project-budgets"
 export * from "./project-tasks"
 // Phase 6.6: Project Risk Register — impact × probability severity matrix
 export * from "./project-risks"
+// Phase 6.7: Project Activity Log — per-project event timeline + comments
+export * from "./project-activity"
 // Sprint 06: Finance (Products, Orders, Invoices)
 export * from "./finance"
 // Sprint 06: Document Management

@@ -6,6 +6,7 @@ import { db } from "@prv/db"
 import { projects, projectTasks } from "@prv/db/schema"
 import { and, eq } from "drizzle-orm"
 import { z } from "zod"
+import { writeProjectActivity } from "@/lib/project-activity"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -161,6 +162,18 @@ export const PATCH = withGates(
       ipAddress: ctx.ipAddress,
       userAgent: ctx.userAgent,
     })
+
+    if (d.status !== undefined) {
+      void writeProjectActivity({
+        companyId,
+        projectId,
+        actorId,
+        kind: "status",
+        summary: `moved a task to ${d.status.replace("_", " ")}`,
+        entityType: "task",
+        entityId: taskId,
+      })
+    }
 
     return NextResponse.json({ id: updated?.id, status: updated?.status })
   }
