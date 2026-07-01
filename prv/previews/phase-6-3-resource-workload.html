@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PRV · Resource Workload — Liquid Glass Preview</title>
+    <style>
+      :root {
+        --g1: rgba(255,255,255,0.06); --g2: rgba(255,255,255,0.10); --g3: rgba(255,255,255,0.16);
+        --t1: rgba(255,255,255,0.95); --t2: rgba(255,255,255,0.65); --t3: rgba(255,255,255,0.35); --t4: rgba(255,255,255,0.22);
+        --border: rgba(255,255,255,0.12); --border-subtle: rgba(255,255,255,0.08);
+        --over: rgba(255,69,58,0.9); --over-bg: rgba(255,69,58,0.16);
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+      }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body { background:#000; color:var(--t1); min-height:100vh; -webkit-font-smoothing:antialiased; padding:40px 16px 80px; }
+      .aura { position:fixed; inset:0; z-index:-1; background:radial-gradient(1100px 480px at 50% -8%, rgba(255,255,255,0.06), transparent 60%); }
+      .wrap { max-width: 720px; margin:0 auto; }
+      .eyebrow { font-size:12px; font-weight:600; letter-spacing:0.14em; text-transform:uppercase; color:var(--t3); }
+      h1 { font-size:28px; font-weight:680; letter-spacing:-0.02em; margin:3px 0 22px; }
+      .glass { background:var(--g1); border:1px solid var(--border-subtle); box-shadow:inset 0 1px 0 rgba(255,255,255,0.22); backdrop-filter:blur(32px) saturate(180%); }
+      /* Summary strip */
+      .strip { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:22px; }
+      .stat { border-radius:18px; padding:14px 16px; }
+      .stat .k { font-size:11px; font-weight:600; letter-spacing:0.04em; text-transform:uppercase; color:var(--t3); }
+      .stat .v { font-size:26px; font-weight:700; letter-spacing:-0.02em; margin-top:6px; }
+      .stat .v.warn { color:var(--over); }
+      /* Workload rows */
+      .label { font-size:11px; font-weight:600; letter-spacing:0.16em; text-transform:uppercase; color:var(--t3); margin:0 4px 12px; }
+      .list { border-radius:22px; overflow:hidden; }
+      .person { padding:14px 16px; border-bottom:1px solid var(--border-subtle); }
+      .person:last-child { border-bottom:0; }
+      .prow { display:flex; align-items:center; gap:13px; }
+      .av { width:40px; height:40px; border-radius:12px; background:var(--g2); display:grid; place-items:center; font-size:13px; font-weight:700; flex:0 0 auto; box-shadow:inset 0 1px 0 rgba(255,255,255,0.2); }
+      .meta { flex:1; min-width:0; }
+      .name { font-size:14.5px; font-weight:640; letter-spacing:-0.01em; }
+      .role { font-size:11.5px; color:var(--t3); margin-top:2px; }
+      .pct { font-size:15px; font-weight:700; font-variant-numeric:tabular-nums; }
+      .pct.over { color:var(--over); }
+      .tag { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; border-radius:100px; padding:3px 8px; margin-left:8px; }
+      .tag.over { color:var(--over); background:var(--over-bg); border:1px solid rgba(255,69,58,0.3); }
+      .tag.under { color:var(--t3); border:1px solid var(--border); }
+      /* Utilization bar */
+      .bar { height:8px; border-radius:100px; background:rgba(255,255,255,0.08); margin-top:11px; overflow:hidden; position:relative; }
+      .fill { height:100%; border-radius:100px; background:rgba(255,255,255,0.85); }
+      .fill.optimal { background:rgba(255,255,255,0.6); }
+      .fill.under { background:rgba(255,255,255,0.32); }
+      .fill.over { background:var(--over); }
+      .cap { position:absolute; top:-3px; bottom:-3px; left:100%; width:2px; background:rgba(255,255,255,0.4); } /* 100% marker (only meaningful when scale>100) */
+      /* Per-project slices */
+      .slices { margin-top:12px; display:flex; flex-direction:column; gap:7px; }
+      .slice { display:flex; align-items:center; gap:10px; font-size:12px; }
+      .slice .dot { width:6px; height:6px; border-radius:50%; background:var(--t3); flex:0 0 auto; }
+      .slice .pn { color:var(--t2); flex:1; }
+      .slice .pp { color:var(--t3); font-variant-numeric:tabular-nums; }
+      /* Assign panel */
+      .assign { border-radius:22px; padding:16px; margin-top:22px; }
+      .assign h3 { font-size:14px; font-weight:640; margin-bottom:4px; }
+      .assign p.sub { font-size:12px; color:var(--t3); margin-bottom:14px; }
+      .arow { display:flex; align-items:center; gap:10px; }
+      .pick { flex:1; display:flex; align-items:center; gap:11px; padding:10px 12px; border-radius:14px; background:var(--g1); border:1px solid var(--border-subtle); }
+      .pick .av { width:32px; height:32px; border-radius:10px; font-size:11px; }
+      .stepper { display:flex; align-items:center; gap:0; border-radius:12px; overflow:hidden; border:1px solid var(--border); }
+      .stepper button { width:34px; height:38px; background:var(--g1); border:0; color:var(--t1); font-size:18px; cursor:pointer; }
+      .stepper .val { width:56px; text-align:center; font-size:14px; font-weight:700; font-variant-numeric:tabular-nums; }
+      .cta { padding:0 18px; height:38px; border-radius:12px; background:rgba(255,255,255,0.92); color:#000; border:0; font-size:13px; font-weight:640; cursor:pointer; }
+      .conflict { margin-top:12px; font-size:12px; color:var(--over); display:flex; align-items:center; gap:8px; }
+      .note { text-align:center; color:var(--t3); font-size:11.5px; margin:26px auto 0; line-height:1.6; }
+      code { color:var(--t2); }
+    </style>
+  </head>
+  <body>
+    <div class="aura"></div>
+    <div class="wrap">
+      <div class="eyebrow">Phase 6.3 · Projects</div>
+      <h1>Resource Workload</h1>
+
+      <div class="strip">
+        <div class="stat glass"><div class="k">People</div><div class="v">7</div></div>
+        <div class="stat glass"><div class="k">Over-allocated</div><div class="v warn">2</div></div>
+        <div class="stat glass"><div class="k">Under-utilized</div><div class="v">3</div></div>
+        <div class="stat glass"><div class="k">Avg utilization</div><div class="v">84%</div></div>
+      </div>
+
+      <div class="label">Team · by utilization</div>
+      <div class="list glass">
+        <div class="person">
+          <div class="prow">
+            <div class="av">MP</div>
+            <div class="meta"><div class="name">Maria Pop</div><div class="role">Site Supervisor</div></div>
+            <span class="pct over">130%</span><span class="tag over">Over</span>
+          </div>
+          <div class="bar"><div class="fill over" style="width:100%"></div></div>
+          <div class="slices">
+            <div class="slice"><span class="dot"></span><span class="pn">Kitchen Reno — Ionescu</span><span class="pp">80%</span></div>
+            <div class="slice"><span class="dot"></span><span class="pn">Bathroom Refit — Marek</span><span class="pp">50%</span></div>
+          </div>
+        </div>
+        <div class="person">
+          <div class="prow">
+            <div class="av">AD</div>
+            <div class="meta"><div class="name">Andrei Dinu</div><div class="role">Lead Electrician</div></div>
+            <span class="pct">100%</span>
+          </div>
+          <div class="bar"><div class="fill" style="width:76.9%"></div></div>
+          <div class="slices">
+            <div class="slice"><span class="dot"></span><span class="pn">Office Fit-out — Delta SRL</span><span class="pp">100%</span></div>
+          </div>
+        </div>
+        <div class="person">
+          <div class="prow">
+            <div class="av">EV</div>
+            <div class="meta"><div class="name">Elena Vasile</div><div class="role">Project Manager</div></div>
+            <span class="pct">85%</span>
+          </div>
+          <div class="bar"><div class="fill optimal" style="width:65.4%"></div></div>
+        </div>
+        <div class="person">
+          <div class="prow">
+            <div class="av">RG</div>
+            <div class="meta"><div class="name">Radu Gheorghe</div><div class="role">Carpenter</div></div>
+            <span class="pct">40%</span><span class="tag under">Available</span>
+          </div>
+          <div class="bar"><div class="fill under" style="width:30.8%"></div></div>
+        </div>
+      </div>
+
+      <div class="assign glass">
+        <h3>Assign to Kitchen Reno — Ionescu</h3>
+        <p class="sub">Commit a share of an employee's capacity to this project.</p>
+        <div class="arow">
+          <div class="pick"><div class="av">RG</div><div class="meta"><div class="name" style="font-size:13px">Radu Gheorghe</div><div class="role">Carpenter · 40% committed</div></div></div>
+          <div class="stepper"><button>−</button><span class="val">25%</span><button>+</button></div>
+          <button class="cta">Assign</button>
+        </div>
+        <div class="conflict">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg>
+          Maria Pop is already at 130% — new assignments would deepen the conflict.
+        </div>
+      </div>
+
+      <p class="note">
+        Liquid Glass preview · Phase 6.3 Resources. Employee → project
+        allocations with a live <strong>utilization</strong> roll-up: bars are
+        color-banded (dim &lt; 85% under · white 85–100% optimal/full ·
+        <span style="color:var(--over)">red &gt; 100% over</span> per HIG
+        destructive). Backed by <code>project_allocations</code> +
+        <code>GET /api/resources/workload</code> (conflict detection) and
+        <code>POST /api/projects/[id]/allocations</code>. Bars over 100% scale
+        against the busiest person so the overflow is visible. Pure black ·
+        monochrome · SF-symbol iconography.
+      </p>
+    </div>
+  </body>
+</html>

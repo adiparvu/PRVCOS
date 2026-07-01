@@ -32,6 +32,8 @@ import type { ToolSummary, ToolsMeta } from "@/app/api/tools/route"
 import type { OperationsMeta, Store, Task, Order, Alert } from "@/app/api/operations/route"
 import type { Insight, Report, StoreKpi, IntelligenceMeta } from "@/app/api/intelligence/route"
 import type { FinanceReport } from "@/app/api/finance/reports/route"
+import type { ProjectAllocation } from "@/app/api/projects/[id]/allocations/route"
+import type { WorkloadRow, WorkloadSummary } from "@/app/api/resources/workload/route"
 
 const LIMIT = 50
 
@@ -1319,6 +1321,79 @@ export function useToggleFavorite() {
     },
     onSettled: () => {
       void qc.invalidateQueries({ queryKey: ["favorites"] })
+    },
+  })
+}
+
+// ── Project Resources & Allocations (6.3) ──────────────────────────────────────
+
+export type { ProjectAllocation, WorkloadRow, WorkloadSummary }
+
+export interface AllocationInput {
+  userId: string
+  allocationPercentage: number
+  roleLabel?: string | null
+  startDate?: string | null
+  endDate?: string | null
+  notes?: string | null
+}
+
+export function useProjectAllocations(projectId: string | null) {
+  return useQuery({
+    queryKey: ["project-allocations", projectId],
+    enabled: !!projectId,
+    queryFn: () =>
+      fetch(`/api/projects/${projectId}/allocations`).then(
+        (r) => r.json() as Promise<{ allocations: ProjectAllocation[] }>
+      ),
+  })
+}
+
+export function useWorkload() {
+  return useQuery({
+    queryKey: ["resources-workload"],
+    queryFn: () =>
+      fetch("/api/resources/workload").then(
+        (r) => r.json() as Promise<{ people: WorkloadRow[]; summary: WorkloadSummary }>
+      ),
+    staleTime: 30_000,
+  })
+}
+
+// Assign/update an allocation. Invalidates both the project's allocation list
+// and the company workload board so utilization stays in sync.
+export function useUpsertAllocation(projectId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: AllocationInput) => {
+      const res = await fetch(`/api/projects/${projectId}/allocations`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      })
+      if (!res.ok) throw new Error("Failed to save allocation")
+      return res.json() as Promise<{ id: string }>
+    },
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: ["project-allocations", projectId] })
+      void qc.invalidateQueries({ queryKey: ["resources-workload"] })
+    },
+  })
+}
+
+export function useDeleteAllocation(projectId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (allocationId: string) => {
+      const res = await fetch(`/api/projects/${projectId}/allocations/${allocationId}`, {
+        method: "DELETE",
+      })
+      if (!res.ok) throw new Error("Failed to remove allocation")
+      return res.json() as Promise<{ removed: number }>
+    },
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: ["project-allocations", projectId] })
+      void qc.invalidateQueries({ queryKey: ["resources-workload"] })
     },
   })
 }

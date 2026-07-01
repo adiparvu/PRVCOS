@@ -13,6 +13,8 @@ export * from "./clients"
 export * from "./suppliers"
 // Sprint 06: Project Management
 export * from "./projects"
+// Phase 6.3: Project Resource Allocations — employee % allocation + utilization
+export * from "./project-allocations"
 // Sprint 06: Finance (Products, Orders, Invoices)
 export * from "./finance"
 // Sprint 06: Document Management

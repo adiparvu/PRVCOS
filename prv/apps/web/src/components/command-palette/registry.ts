@@ -38,6 +38,22 @@ const BASE: CommandEntry[] = [
     href: "/projects",
   },
   {
+    id: "nav.resources",
+    label: "Resource Workload",
+    section: "Navigation",
+    keywords: [
+      "resources",
+      "workload",
+      "allocation",
+      "utilization",
+      "capacity",
+      "staffing",
+      "team load",
+      "over-allocated",
+    ],
+    href: "/projects/resources",
+  },
+  {
     id: "nav.people",
     label: "People & HR",
     section: "Navigation",
