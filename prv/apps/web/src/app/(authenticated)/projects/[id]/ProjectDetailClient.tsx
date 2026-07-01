@@ -535,6 +535,22 @@ export function ProjectDetailClient({ id }: ProjectDetailClientProps) {
           >
             Open task board ›
           </Link>
+          <Link
+            href={`/projects/${id}/risks`}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 5,
+              marginTop: 12,
+              marginLeft: 16,
+              fontSize: 12,
+              fontWeight: 600,
+              color: "var(--prv-text-2)",
+              textDecoration: "none",
+            }}
+          >
+            Risk register ›
+          </Link>
         </div>
       </div>
 

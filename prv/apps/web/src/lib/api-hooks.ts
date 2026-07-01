@@ -36,6 +36,7 @@ import type { ProjectAllocation } from "@/app/api/projects/[id]/allocations/rout
 import type { WorkloadRow, WorkloadSummary } from "@/app/api/resources/workload/route"
 import type { BudgetLine, BudgetResponse } from "@/app/api/projects/[id]/budget/route"
 import type { TaskSummary } from "@/app/api/projects/[id]/tasks/route"
+import type { RiskSummary, RiskRegisterMeta } from "@/app/api/projects/[id]/risks/route"
 
 const LIMIT = 50
 
@@ -1552,5 +1553,86 @@ export function useDeleteTask(projectId: string) {
       return res.json() as Promise<{ removed: number }>
     },
     onSettled: () => void qc.invalidateQueries({ queryKey: ["project-tasks", projectId] }),
+  })
+}
+
+// ── Project Risk Register (6.6) ────────────────────────────────────────────────
+
+export type { RiskSummary, RiskRegisterMeta }
+
+export type RiskCategory =
+  | "schedule"
+  | "cost"
+  | "quality"
+  | "safety"
+  | "resource"
+  | "external"
+  | "other"
+export type RiskStatus = "open" | "mitigating" | "monitoring" | "closed" | "accepted"
+
+export interface CreateRiskInput {
+  title: string
+  description?: string | null
+  category?: RiskCategory
+  impact: number
+  probability: number
+  mitigation?: string | null
+  status?: RiskStatus
+  ownerId?: string | null
+  dueDate?: string | null
+}
+
+export function useProjectRisks(projectId: string | null) {
+  return useQuery({
+    queryKey: ["project-risks", projectId],
+    enabled: !!projectId,
+    queryFn: () =>
+      fetch(`/api/projects/${projectId}/risks`).then(
+        (r) => r.json() as Promise<{ risks: RiskSummary[]; meta: RiskRegisterMeta }>
+      ),
+  })
+}
+
+export function useCreateRisk(projectId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: CreateRiskInput) => {
+      const res = await fetch(`/api/projects/${projectId}/risks`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      })
+      if (!res.ok) throw new Error("Failed to log risk")
+      return res.json() as Promise<{ id: string }>
+    },
+    onSettled: () => void qc.invalidateQueries({ queryKey: ["project-risks", projectId] }),
+  })
+}
+
+export function useUpdateRisk(projectId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ riskId, patch }: { riskId: string; patch: Partial<CreateRiskInput> }) => {
+      const res = await fetch(`/api/projects/${projectId}/risks/${riskId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patch),
+      })
+      if (!res.ok) throw new Error("Failed to update risk")
+      return res.json() as Promise<{ id: string }>
+    },
+    onSettled: () => void qc.invalidateQueries({ queryKey: ["project-risks", projectId] }),
+  })
+}
+
+export function useDeleteRisk(projectId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (riskId: string) => {
+      const res = await fetch(`/api/projects/${projectId}/risks/${riskId}`, { method: "DELETE" })
+      if (!res.ok) throw new Error("Failed to delete risk")
+      return res.json() as Promise<{ removed: number }>
+    },
+    onSettled: () => void qc.invalidateQueries({ queryKey: ["project-risks", projectId] }),
   })
 }

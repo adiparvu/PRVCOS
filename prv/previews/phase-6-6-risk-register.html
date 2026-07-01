@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PRV · Risk Register — Liquid Glass Preview</title>
+    <style>
+      :root {
+        --g1: rgba(255,255,255,0.06); --g2: rgba(255,255,255,0.10);
+        --t1: rgba(255,255,255,0.95); --t2: rgba(255,255,255,0.65); --t3: rgba(255,255,255,0.35); --t4: rgba(255,255,255,0.22);
+        --border: rgba(255,255,255,0.12); --border-subtle: rgba(255,255,255,0.08);
+        --crit: rgba(255,69,58,0.9); --high: rgba(255,159,10,0.95);
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+      }
+      * { box-sizing:border-box; margin:0; padding:0; }
+      body { background:#000; color:var(--t1); min-height:100vh; -webkit-font-smoothing:antialiased; padding:40px 16px 80px; }
+      .aura { position:fixed; inset:0; z-index:-1; background:radial-gradient(1100px 480px at 50% -8%, rgba(255,255,255,0.06), transparent 60%); }
+      .wrap { max-width:720px; margin:0 auto; }
+      .eyebrow { font-size:12px; font-weight:600; letter-spacing:0.14em; text-transform:uppercase; color:var(--t3); }
+      h1 { font-size:28px; font-weight:680; letter-spacing:-0.02em; margin:3px 0 22px; }
+      .glass { background:var(--g1); border:1px solid var(--border-subtle); box-shadow:inset 0 1px 0 rgba(255,255,255,0.22); }
+      .strip { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:22px; }
+      .stat { border-radius:18px; padding:14px 16px; }
+      .stat .k { font-size:11px; font-weight:600; letter-spacing:0.04em; text-transform:uppercase; color:var(--t3); }
+      .stat .v { font-size:26px; font-weight:700; letter-spacing:-0.02em; margin-top:6px; }
+      .stat .v.warn { color:var(--crit); }
+      .label { font-size:11px; font-weight:600; letter-spacing:0.16em; text-transform:uppercase; color:var(--t3); margin:0 4px 12px; }
+      .layout { display:grid; grid-template-columns:auto 1fr; gap:20px; align-items:start; margin-bottom:24px; }
+      /* Matrix */
+      .matrix { display:grid; grid-template-columns:auto repeat(5, 34px); grid-auto-rows:34px; gap:4px; }
+      .mh { font-size:10px; color:var(--t3); display:grid; place-items:center; }
+      .cell { border-radius:8px; display:grid; place-items:center; font-size:11px; font-weight:700; color:var(--t2); border:1px solid var(--border-subtle); position:relative; }
+      .yaxis { writing-mode:vertical-rl; transform:rotate(180deg); font-size:10px; color:var(--t3); text-transform:uppercase; letter-spacing:0.1em; display:grid; place-items:center; }
+      .dot { position:absolute; width:10px; height:10px; border-radius:50%; background:var(--t1); box-shadow:0 0 0 2px rgba(0,0,0,0.5); }
+      .axis-x { grid-column:2 / -1; text-align:center; font-size:10px; color:var(--t3); text-transform:uppercase; letter-spacing:0.1em; margin-top:2px; }
+      /* Register list */
+      .list { border-radius:22px; overflow:hidden; }
+      .risk { padding:13px 16px; border-bottom:1px solid var(--border-subtle); }
+      .risk:last-child { border-bottom:0; }
+      .rtop { display:flex; align-items:center; gap:10px; }
+      .sev { font-size:11px; font-weight:800; width:34px; height:26px; border-radius:8px; display:grid; place-items:center; flex:0 0 auto; font-variant-numeric:tabular-nums; }
+      .band-critical { color:var(--crit); background:rgba(255,69,58,0.16); border:1px solid rgba(255,69,58,0.3); }
+      .band-high { color:var(--high); background:rgba(255,159,10,0.14); border:1px solid rgba(255,159,10,0.28); }
+      .band-medium { color:var(--t1); background:var(--g2); border:1px solid var(--border-subtle); }
+      .band-low { color:var(--t3); background:var(--g1); border:1px solid var(--border-subtle); }
+      .rttl { font-size:14px; font-weight:640; letter-spacing:-0.01em; flex:1; }
+      .status { font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:var(--t3); border:1px solid var(--border); border-radius:100px; padding:3px 9px; }
+      .rsub { font-size:11.5px; color:var(--t3); margin-top:6px; margin-left:44px; display:flex; gap:12px; flex-wrap:wrap; }
+      .note { text-align:center; color:var(--t3); font-size:11.5px; margin:26px auto 0; line-height:1.6; }
+      code { color:var(--t2); }
+    </style>
+  </head>
+  <body>
+    <div class="aura"></div>
+    <div class="wrap">
+      <div class="eyebrow">Project · Risks</div>
+      <h1>Risk Register</h1>
+
+      <div class="strip">
+        <div class="stat glass"><div class="k">Total risks</div><div class="v">6</div></div>
+        <div class="stat glass"><div class="k">Open</div><div class="v">4</div></div>
+        <div class="stat glass"><div class="k">Critical</div><div class="v warn">1</div></div>
+        <div class="stat glass"><div class="k">Top score</div><div class="v">20</div></div>
+      </div>
+
+      <div class="label">Probability × Impact</div>
+      <div class="layout">
+        <div>
+          <div class="matrix">
+            <div class="yaxis" style="grid-row:1 / span 5; grid-column:1;">Probability →</div>
+            <!-- row P5 -->
+            <div class="cell" style="background:rgba(255,255,255,0.10)">5</div>
+            <div class="cell" style="background:rgba(255,159,10,0.12)">10</div>
+            <div class="cell" style="background:rgba(255,69,58,0.14)">15<span class="dot"></span></div>
+            <div class="cell" style="background:rgba(255,69,58,0.20)">20<span class="dot"></span></div>
+            <div class="cell" style="background:rgba(255,69,58,0.26)">25</div>
+            <!-- row P4 -->
+            <div class="cell" style="background:rgba(255,255,255,0.08)">4</div>
+            <div class="cell" style="background:rgba(255,255,255,0.12)">8</div>
+            <div class="cell" style="background:rgba(255,159,10,0.14)">12<span class="dot"></span></div>
+            <div class="cell" style="background:rgba(255,69,58,0.16)">16</div>
+            <div class="cell" style="background:rgba(255,69,58,0.20)">20</div>
+            <!-- row P3 -->
+            <div class="cell" style="background:rgba(255,255,255,0.06)">3</div>
+            <div class="cell" style="background:rgba(255,255,255,0.10)">6</div>
+            <div class="cell" style="background:rgba(255,255,255,0.12)">9<span class="dot"></span></div>
+            <div class="cell" style="background:rgba(255,159,10,0.14)">12</div>
+            <div class="cell" style="background:rgba(255,69,58,0.16)">15</div>
+            <!-- row P2 -->
+            <div class="cell" style="background:rgba(255,255,255,0.05)">2</div>
+            <div class="cell" style="background:rgba(255,255,255,0.07)">4</div>
+            <div class="cell" style="background:rgba(255,255,255,0.10)">6</div>
+            <div class="cell" style="background:rgba(255,255,255,0.12)">8<span class="dot"></span></div>
+            <div class="cell" style="background:rgba(255,159,10,0.13)">10</div>
+            <!-- row P1 -->
+            <div class="cell" style="background:rgba(255,255,255,0.04)">1</div>
+            <div class="cell" style="background:rgba(255,255,255,0.05)">2</div>
+            <div class="cell" style="background:rgba(255,255,255,0.06)">3</div>
+            <div class="cell" style="background:rgba(255,255,255,0.07)">4</div>
+            <div class="cell" style="background:rgba(255,255,255,0.10)">5</div>
+            <div class="axis-x">Impact →</div>
+          </div>
+        </div>
+        <div style="font-size:12px; color:var(--t2); line-height:1.7;">
+          Each risk is plotted by <strong>impact × probability</strong> (1–5).
+          Severity = the product (1–25), bucketed:
+          <br />• <span style="color:var(--crit)">Critical ≥ 15</span>
+          <br />• <span style="color:var(--high)">High ≥ 8</span>
+          <br />• Medium ≥ 4 · Low &lt; 4
+          <br /><br />Dots show where this project's live risks sit. The register
+          below is sorted by severity.
+        </div>
+      </div>
+
+      <div class="label">Register · by severity</div>
+      <div class="list glass">
+        <div class="risk">
+          <div class="rtop"><span class="sev band-critical">20</span><span class="rttl">Long-lead countertop stone may slip delivery</span><span class="status">Mitigating</span></div>
+          <div class="rsub"><span>Schedule</span><span>Owner: Elena Vasile</span><span>I5 × P4</span></div>
+        </div>
+        <div class="risk">
+          <div class="rtop"><span class="sev band-critical">15</span><span class="rttl">Asbestos discovery in wall cavity</span><span class="status">Open</span></div>
+          <div class="rsub"><span>Safety</span><span>Owner: Maria Pop</span><span>I5 × P3</span></div>
+        </div>
+        <div class="risk">
+          <div class="rtop"><span class="sev band-high">12</span><span class="rttl">Electrician double-booked across two projects</span><span class="status">Open</span></div>
+          <div class="rsub"><span>Resource</span><span>Owner: —</span><span>I4 × P3</span></div>
+        </div>
+        <div class="risk">
+          <div class="rtop"><span class="sev band-medium">8</span><span class="rttl">Client scope-creep on bathroom fittings</span><span class="status">Monitoring</span></div>
+          <div class="rsub"><span>Cost</span><span>Owner: Elena Vasile</span><span>I4 × P2</span></div>
+        </div>
+        <div class="risk">
+          <div class="rtop"><span class="sev band-low">3</span><span class="rttl">Minor paint-batch colour variance</span><span class="status">Accepted</span></div>
+          <div class="rsub"><span>Quality</span><span>Owner: Radu Gheorghe</span><span>I3 × P1</span></div>
+        </div>
+      </div>
+
+      <p class="note">
+        Liquid Glass preview · Phase 6.6 Risk Register. Classic 5×5 matrix —
+        severity = impact × probability, banded Critical / High / Medium / Low
+        (critical cells red-tinted per HIG). Backed by <code>project_risks</code>
+        + <code>/api/projects/[id]/risks</code> with server-computed scoring,
+        mitigation, owner, and a status lifecycle. Pure black · monochrome.
+      </p>
+    </div>
+  </body>
+</html>

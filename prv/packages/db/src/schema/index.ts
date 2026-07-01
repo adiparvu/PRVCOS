@@ -19,6 +19,8 @@ export * from "./project-allocations"
 export * from "./project-budgets"
 // Phase 6.2: Project Tasks — Kanban lifecycle, subtasks, dependencies, hours
 export * from "./project-tasks"
+// Phase 6.6: Project Risk Register — impact × probability severity matrix
+export * from "./project-risks"
 // Sprint 06: Finance (Products, Orders, Invoices)
 export * from "./finance"
 // Sprint 06: Document Management
