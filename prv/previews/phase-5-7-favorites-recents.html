@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PRV · Favorites & Recents — Liquid Glass Preview</title>
+    <style>
+      :root {
+        --g1: rgba(255, 255, 255, 0.06);
+        --g2: rgba(255, 255, 255, 0.1);
+        --g3: rgba(255, 255, 255, 0.16);
+        --t1: rgba(255, 255, 255, 0.95);
+        --t2: rgba(255, 255, 255, 0.65);
+        --t3: rgba(255, 255, 255, 0.35);
+        --t4: rgba(255, 255, 255, 0.22);
+        --border: rgba(255, 255, 255, 0.12);
+        --border-subtle: rgba(255, 255, 255, 0.08);
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+      }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body {
+        background: #000; color: var(--t1); min-height: 100vh;
+        -webkit-font-smoothing: antialiased; padding: 40px 16px 80px;
+      }
+      .aura {
+        position: fixed; inset: 0; z-index: -1;
+        background: radial-gradient(1100px 480px at 50% -8%, rgba(255,255,255,0.06), transparent 60%);
+      }
+      .eyebrow {
+        font-size: 12px; font-weight: 600; letter-spacing: 0.14em;
+        text-transform: uppercase; color: var(--t3); text-align: center;
+      }
+      h1 {
+        font-size: 26px; font-weight: 680; letter-spacing: -0.02em;
+        text-align: center; margin: 4px 0 30px;
+      }
+      /* Command palette */
+      .palette {
+        max-width: 560px; margin: 0 auto; border-radius: 32px;
+        background: var(--g3); border: 1px solid var(--border);
+        backdrop-filter: blur(64px) saturate(200%);
+        box-shadow: 0 32px 80px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.25);
+        overflow: hidden;
+      }
+      .search {
+        display: flex; align-items: center; gap: 12px;
+        padding: 14px 18px; border-bottom: 1px solid var(--border-subtle);
+      }
+      .search svg { width: 17px; height: 17px; stroke: var(--t3); flex: 0 0 auto; }
+      .search input {
+        flex: 1; background: transparent; border: 0; outline: 0;
+        font-size: 17px; color: var(--t1); font-family: inherit;
+      }
+      .esc {
+        font-size: 11px; padding: 3px 7px; border-radius: 6px;
+        background: var(--g2); border: 1px solid var(--border); color: var(--t4);
+      }
+      .sec-head {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 12px 18px 5px;
+      }
+      .sec-title {
+        font-size: 10px; font-weight: 700; text-transform: uppercase;
+        letter-spacing: 0.10em; color: var(--t3);
+      }
+      .clear {
+        font-size: 10px; font-weight: 600; letter-spacing: 0.04em;
+        text-transform: uppercase; color: var(--t4);
+        background: transparent; border: 0; cursor: pointer;
+      }
+      .row {
+        display: flex; align-items: center; gap: 10px;
+        margin: 1px 8px; padding: 9px 12px; border-radius: 12px;
+      }
+      .row.active { background: rgba(255,255,255,0.10); }
+      .ic {
+        width: 32px; height: 32px; border-radius: 9px; flex: 0 0 auto;
+        display: flex; align-items: center; justify-content: center;
+        background: var(--g1); border: 1px solid var(--border-subtle); color: var(--t2);
+      }
+      .ic svg { width: 14px; height: 14px; }
+      .row .txt { flex: 1; min-width: 0; }
+      .row .lbl { font-size: 13px; font-weight: 500; color: var(--t1); }
+      .row .sub { font-size: 11px; color: var(--t3); margin-top: 1px; }
+      .chip {
+        font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+        color: var(--t4); background: var(--g1); border: 1px solid var(--border-subtle);
+        border-radius: 5px; padding: 2px 6px;
+      }
+      .footer {
+        display: flex; align-items: center; gap: 16px;
+        padding: 8px 18px; border-top: 1px solid var(--border-subtle);
+      }
+      .footer span { font-size: 11px; color: var(--t4); display: flex; align-items: center; gap: 5px; }
+      .kbd { padding: 2px 6px; border-radius: 5px; background: var(--g2); border: 1px solid var(--border); font-size: 10px; }
+      /* Favorite star button demo */
+      .demo { max-width: 560px; margin: 26px auto 0; display: flex; align-items: center; gap: 12px; }
+      .card {
+        flex: 1; display: flex; align-items: center; gap: 12px;
+        padding: 14px 16px; border-radius: 20px;
+        background: var(--g1); border: 1px solid var(--border-subtle);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.18);
+      }
+      .card .lbl { font-size: 14.5px; font-weight: 640; letter-spacing: -0.01em; }
+      .card .sub { font-size: 11.5px; color: var(--t3); margin-top: 2px; }
+      .star {
+        width: 34px; height: 34px; border-radius: 999px; flex: 0 0 auto;
+        display: inline-flex; align-items: center; justify-content: center;
+        border: 1px solid var(--border-subtle); box-shadow: inset 0 1px 0 rgba(255,255,255,0.18);
+      }
+      .star.on { background: rgba(255,255,255,0.14); color: var(--t1); }
+      .star.off { background: var(--g1); color: var(--t3); }
+      .star svg { width: 17px; height: 17px; }
+      .note { text-align: center; color: var(--t3); font-size: 11.5px; margin: 26px auto 0; max-width: 560px; line-height: 1.6; }
+      code { color: var(--t2); }
+    </style>
+  </head>
+  <body>
+    <div class="aura"></div>
+    <div class="eyebrow">Phase 5.7 · Navigation</div>
+    <h1>Favorites &amp; Recents</h1>
+
+    <div class="palette">
+      <div class="search">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+        <input value="" placeholder="Search or type a command…" readonly />
+        <span class="esc">esc</span>
+      </div>
+
+      <div class="sec-head"><span class="sec-title">Favorites</span></div>
+      <div class="row active">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg></div>
+        <div class="txt"><div class="lbl">Kitchen Reno — Ionescu</div><div class="sub">project</div></div>
+      </div>
+      <div class="row">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg></div>
+        <div class="txt"><div class="lbl">Q3 Revenue Report</div><div class="sub">report</div></div>
+      </div>
+      <div class="row">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg></div>
+        <div class="txt"><div class="lbl">Maria Pop</div><div class="sub">employee</div></div>
+      </div>
+
+      <div class="sec-head"><span class="sec-title">Recent</span><button class="clear">Clear</button></div>
+      <div class="row">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><polyline points="12 7 12 12 15.5 14" /></svg></div>
+        <div class="txt"><div class="lbl">Bosch Impact Drill</div><div class="sub">product</div></div>
+      </div>
+      <div class="row">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><polyline points="12 7 12 12 15.5 14" /></svg></div>
+        <div class="txt"><div class="lbl">Invoice 2041</div><div class="sub">invoice</div></div>
+      </div>
+
+      <div class="sec-head"><span class="sec-title">Navigation</span></div>
+      <div class="row">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></svg></div>
+        <div class="txt"><div class="lbl">Calendar</div></div>
+      </div>
+
+      <div class="footer">
+        <span><span class="kbd">↑↓</span> navigate</span>
+        <span><span class="kbd">↵</span> open</span>
+        <span style="margin-left:auto"><span class="kbd">⌘K</span> toggle</span>
+      </div>
+    </div>
+
+    <div class="demo">
+      <div class="card">
+        <div class="txt"><div class="lbl">Kitchen Reno — Ionescu</div><div class="sub">Project · due 2 Jul</div></div>
+        <span class="star on"><svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.7"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg></span>
+      </div>
+      <div class="card">
+        <div class="txt"><div class="lbl">Bathroom Refit</div><div class="sub">Project · planning</div></div>
+        <span class="star off"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg></span>
+      </div>
+    </div>
+
+    <p class="note">
+      Liquid Glass preview · Phase 5.7. <strong>Favorites</strong> — any entity
+      (project, employee, product, report…) starred via the glass
+      <code>FavoriteButton</code>, persisted to <code>user_favorites</code>
+      (company + user scoped, audit-logged) so they sync across devices, and
+      surfaced at the top of ⌘K. <strong>Recents</strong> — the last entities you
+      viewed, stored locally only (privacy — never synced), capped at 20 per
+      module, with a <code>Clear</code> affordance. Pure black · monochrome ·
+      SF-symbol star &amp; clock icons.
+    </p>
+  </body>
+</html>

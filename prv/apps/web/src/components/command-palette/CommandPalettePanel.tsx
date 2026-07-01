@@ -7,6 +7,8 @@ import { useRouter } from "next/navigation"
 import { useCommandPalette } from "@prv/ui"
 import { getCommandsForRole } from "./registry"
 import { useEntitySearch } from "./useEntitySearch"
+import { useFavorites } from "@/lib/api-hooks"
+import { getRecents, clearRecents, recordRecent, type RecentEntity } from "@/lib/recents"
 import type { CommandEntry, EntityResult, EntityType, EntityStatus } from "./types"
 
 // ── Recents ───────────────────────────────────────────────────────────────────
@@ -144,15 +146,63 @@ function CommandIcon() {
   )
 }
 
+function StarIcon({ filled }: { filled?: boolean }) {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill={filled ? "currentColor" : "none"}
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+    </svg>
+  )
+}
+
+function ClockIcon() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="12" r="9" />
+      <polyline points="12 7 12 12 15.5 14" />
+    </svg>
+  )
+}
+
 // ── Types ─────────────────────────────────────────────────────────────────────
+
+interface PaletteLink {
+  id: string
+  label: string
+  sublabel?: string
+  href: string
+  icon: "star" | "clock"
+}
 
 type PaletteItem =
   | { kind: "command"; entry: CommandEntry }
   | { kind: "entity"; result: EntityResult }
+  | { kind: "link"; link: PaletteLink }
 
 interface DisplaySection {
   title: string
   items: PaletteItem[]
+  /** Optional right-aligned header affordance (e.g. "Clear" for recents). */
+  action?: { label: string; onClick: () => void }
 }
 
 // ── Row ───────────────────────────────────────────────────────────────────────
@@ -169,6 +219,7 @@ function PaletteRow({
   onSelect: () => void
 }) {
   const isCmd = item.kind === "command"
+  const isLink = item.kind === "link"
 
   return (
     <button
@@ -226,6 +277,12 @@ function PaletteRow({
       >
         {isCmd ? (
           <CommandIcon />
+        ) : isLink ? (
+          (item as { kind: "link"; link: PaletteLink }).link.icon === "star" ? (
+            <StarIcon filled />
+          ) : (
+            <ClockIcon />
+          )
         ) : (
           <EntityIcon type={(item as { kind: "entity"; result: EntityResult }).result.entityType} />
         )}
@@ -246,11 +303,19 @@ function PaletteRow({
         >
           {isCmd
             ? item.entry.label
-            : (item as { kind: "entity"; result: EntityResult }).result.title}
+            : isLink
+              ? (item as { kind: "link"; link: PaletteLink }).link.label
+              : (item as { kind: "entity"; result: EntityResult }).result.title}
         </p>
-        {!isCmd && (item as { kind: "entity"; result: EntityResult }).result.subtitle && (
+        {item.kind === "entity" &&
+          (item as { kind: "entity"; result: EntityResult }).result.subtitle && (
+            <p style={{ fontSize: 11, color: "var(--prv-text-3)", margin: "1px 0 0" }}>
+              {(item as { kind: "entity"; result: EntityResult }).result.subtitle}
+            </p>
+          )}
+        {isLink && (item as { kind: "link"; link: PaletteLink }).link.sublabel && (
           <p style={{ fontSize: 11, color: "var(--prv-text-3)", margin: "1px 0 0" }}>
-            {(item as { kind: "entity"; result: EntityResult }).result.subtitle}
+            {(item as { kind: "link"; link: PaletteLink }).link.sublabel}
           </p>
         )}
         {isCmd && item.entry.description && (
@@ -261,7 +326,7 @@ function PaletteRow({
       </div>
 
       {/* Right side: status dot + type chip OR shortcut + badge */}
-      {!isCmd &&
+      {item.kind === "entity" &&
         (() => {
           const r = (item as { kind: "entity"; result: EntityResult }).result
           return (
@@ -448,6 +513,7 @@ export function CommandPalettePanel({ role }: { role: string }) {
   const [query, setQuery] = useState("")
   const [activeIdx, setActiveIdx] = useState(0)
   const [recents, setRecents] = useState<string[]>([])
+  const [entityRecents, setEntityRecents] = useState<RecentEntity[]>([])
   const [mounted, setMounted] = useState(false)
 
   const inputRef = useRef<HTMLInputElement>(null)
@@ -459,6 +525,8 @@ export function CommandPalettePanel({ role }: { role: string }) {
 
   const allCommands = useMemo(() => getCommandsForRole(role), [role])
   const { results: entityResults, loading: entityLoading } = useEntitySearch(query)
+  const { data: favData } = useFavorites()
+  const favorites = favData?.favorites
 
   // Reset + focus on open
   useEffect(() => {
@@ -468,6 +536,7 @@ export function CommandPalettePanel({ role }: { role: string }) {
       setQuery("")
       setActiveIdx(0)
       setRecents(getRecent())
+      setEntityRecents(getRecents({ limit: 8 }))
       setTimeout(() => inputRef.current?.focus(), 40)
     }
   }, [isOpen])
@@ -479,12 +548,53 @@ export function CommandPalettePanel({ role }: { role: string }) {
     if (!trimmed) {
       const result: DisplaySection[] = []
 
+      // Favorites (server-synced) — the user's starred entities across modules.
+      if (favorites && favorites.length > 0) {
+        result.push({
+          title: "Favorites",
+          items: favorites.slice(0, 8).map((f) => ({
+            kind: "link" as const,
+            link: {
+              id: `fav-${f.id}`,
+              label: f.label,
+              sublabel: f.entityType,
+              href: f.href,
+              icon: "star" as const,
+            },
+          })),
+        })
+      }
+
+      // Recents (local-only, privacy) — last entities this user viewed.
+      if (entityRecents.length > 0) {
+        result.push({
+          title: "Recent",
+          action: {
+            label: "Clear",
+            onClick: () => {
+              clearRecents()
+              setEntityRecents([])
+            },
+          },
+          items: entityRecents.map((r) => ({
+            kind: "link" as const,
+            link: {
+              id: `recent-${r.entityType}-${r.entityId}`,
+              label: r.label,
+              sublabel: r.entityType,
+              href: r.href,
+              icon: "clock" as const,
+            },
+          })),
+        })
+      }
+
       const recentCmds = recents
         .map((id) => allCommands.find((c) => c.id === id))
         .filter(Boolean) as CommandEntry[]
       if (recentCmds.length > 0) {
         result.push({
-          title: "Recent",
+          title: "Recent Commands",
           items: recentCmds.map((entry) => ({ kind: "command" as const, entry })),
         })
       }
@@ -528,7 +638,7 @@ export function CommandPalettePanel({ role }: { role: string }) {
     }
 
     return out
-  }, [query, allCommands, entityResults, recents])
+  }, [query, allCommands, entityResults, recents, favorites, entityRecents])
 
   const flatItems = useMemo(() => sections.flatMap((s) => s.items), [sections])
   const activeItem = flatItems[activeIdx] ?? null
@@ -539,7 +649,17 @@ export function CommandPalettePanel({ role }: { role: string }) {
       pushRecent(item.entry.id)
       if (item.entry.href) router.push(item.entry.href)
       else item.entry.action?.()
+    } else if (item.kind === "link") {
+      router.push(item.link.href)
     } else {
+      // Opening an entity from search counts as a view — record it locally.
+      recordRecent({
+        entityType: item.result.entityType,
+        entityId: item.result.id,
+        label: item.result.title,
+        href: item.result.href,
+        module: item.result.entityType,
+      })
       router.push(item.result.href)
     }
     close()
@@ -715,23 +835,54 @@ export function CommandPalettePanel({ role }: { role: string }) {
               let gi = 0
               return sections.map((section) => (
                 <div key={section.title}>
-                  <p
+                  <div
                     style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
                       padding: "10px 18px 5px",
-                      fontSize: 10,
-                      fontWeight: 700,
-                      textTransform: "uppercase",
-                      letterSpacing: "0.10em",
-                      color: "var(--prv-text-3)",
-                      margin: 0,
                     }}
                   >
-                    {section.title}
-                  </p>
+                    <p
+                      style={{
+                        fontSize: 10,
+                        fontWeight: 700,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.10em",
+                        color: "var(--prv-text-3)",
+                        margin: 0,
+                      }}
+                    >
+                      {section.title}
+                    </p>
+                    {section.action && (
+                      <button
+                        onClick={section.action.onClick}
+                        style={{
+                          background: "transparent",
+                          border: "none",
+                          cursor: "pointer",
+                          fontSize: 10,
+                          fontWeight: 600,
+                          letterSpacing: "0.04em",
+                          textTransform: "uppercase",
+                          color: "var(--prv-text-4)",
+                          padding: 0,
+                        }}
+                      >
+                        {section.action.label}
+                      </button>
+                    )}
+                  </div>
                   {section.items.map((item) => {
                     const isActive = gi === activeIdx
                     const idx = gi++
-                    const key = item.kind === "command" ? item.entry.id : item.result.id
+                    const key =
+                      item.kind === "command"
+                        ? item.entry.id
+                        : item.kind === "link"
+                          ? item.link.id
+                          : item.result.id
                     return (
                       <PaletteRow
                         key={key}

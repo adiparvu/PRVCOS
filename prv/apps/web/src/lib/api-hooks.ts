@@ -1,6 +1,6 @@
 "use client"
 
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query"
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import type { InvoiceSummary } from "@/app/api/finance/invoices/route"
 import type { Expense, FinanceMeta, PlRow } from "@/app/api/finance/expenses/route"
 import type { QuoteSummary } from "@/app/api/crm/quotes/route"
@@ -1261,5 +1261,64 @@ export function useCalendar(from: string, to: string) {
       fetch(`/api/calendar?from=${from}&to=${to}`).then(
         (r) => r.json() as Promise<{ events: CalendarEvent[]; range: { from: string; to: string } }>
       ),
+  })
+}
+
+// ── Favorites ─────────────────────────────────────────────────────────────────
+
+export interface Favorite {
+  id: string
+  entityType: string
+  entityId: string
+  label: string
+  href: string
+  createdAt: string
+}
+
+export interface FavoriteTarget {
+  entityType: string
+  entityId: string
+  label: string
+  href: string
+}
+
+export function useFavorites() {
+  return useQuery({
+    queryKey: ["favorites"],
+    queryFn: () =>
+      fetch("/api/favorites").then((r) => r.json() as Promise<{ favorites: Favorite[] }>),
+    staleTime: 30_000,
+  })
+}
+
+/**
+ * Toggle a favorite on/off. `favorited` is the CURRENT state — when true we
+ * DELETE, otherwise we POST. Invalidates the favorites cache on settle so the
+ * command palette and any favorite buttons re-sync.
+ */
+export function useToggleFavorite() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ target, favorited }: { target: FavoriteTarget; favorited: boolean }) => {
+      if (favorited) {
+        const qs = new URLSearchParams({
+          entityType: target.entityType,
+          entityId: target.entityId,
+        })
+        const res = await fetch(`/api/favorites?${qs.toString()}`, { method: "DELETE" })
+        if (!res.ok) throw new Error("Failed to remove favorite")
+        return { favorited: false }
+      }
+      const res = await fetch("/api/favorites", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(target),
+      })
+      if (!res.ok) throw new Error("Failed to add favorite")
+      return { favorited: true }
+    },
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: ["favorites"] })
+    },
   })
 }

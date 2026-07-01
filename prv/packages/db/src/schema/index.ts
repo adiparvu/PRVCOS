@@ -6,6 +6,8 @@ export * from "./users"
 export * from "./audit-logs"
 // Sprint 05: Appearance & Personalization System
 export * from "./user-preferences"
+// Phase 5.7: Universal Favorites — cross-module, device-synced favorites
+export * from "./user-favorites"
 // Sprint 06: CRM & Supplier Management
 export * from "./clients"
 export * from "./suppliers"
