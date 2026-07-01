@@ -1239,3 +1239,27 @@ export function useGroupDetail(groupId: string | null) {
     queryFn: () => fetch(`/api/groups/${groupId}`).then((r) => r.json() as Promise<GroupDetail>),
   })
 }
+
+// ── Universal Calendar ────────────────────────────────────────────────────────
+
+export type CalendarModule = "projects" | "shifts" | "finance" | "leave"
+
+export interface CalendarEvent {
+  id: string
+  date: string
+  module: CalendarModule
+  title: string
+  subtitle: string
+  time: string
+}
+
+export function useCalendar(from: string, to: string) {
+  return useQuery({
+    queryKey: ["calendar", from, to],
+    enabled: !!from && !!to,
+    queryFn: () =>
+      fetch(`/api/calendar?from=${from}&to=${to}`).then(
+        (r) => r.json() as Promise<{ events: CalendarEvent[]; range: { from: string; to: string } }>
+      ),
+  })
+}

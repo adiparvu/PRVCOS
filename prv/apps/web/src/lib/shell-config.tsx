@@ -46,6 +46,15 @@ const CommerceIcon = () =>
     </>
   )
 
+const CalendarIcon = () =>
+  ic(
+    <>
+      <rect x="3" y="4" width="18" height="17" rx="3" />
+      <path d="M3 9h18" />
+      <path d="M8 2v4M16 2v4" strokeLinecap="round" />
+    </>
+  )
+
 const CommandIcon = () =>
   ic(
     <>
@@ -412,6 +421,7 @@ const SHELLS: Record<string, ShellConfig> = {
     tabs: [
       { id: "command", label: "Command", href: "/dashboard", icon: <CommandIcon /> },
       { id: "group", label: "Group", href: "/groups", icon: <GroupIcon /> },
+      { id: "calendar", label: "Calendar", href: "/calendar", icon: <CalendarIcon /> },
       { id: "analytics", label: "Analytics", href: "/analytics", icon: <AnalyticsIcon /> },
       { id: "finance", label: "Finance", href: "/finance", icon: <FinanceIcon /> },
       { id: "operations", label: "Operations", href: "/operations", icon: <OperationsIcon /> },

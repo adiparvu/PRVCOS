@@ -24,6 +24,13 @@ const BASE: CommandEntry[] = [
     href: "/notifications",
   },
   {
+    id: "nav.calendar",
+    label: "Calendar",
+    section: "Navigation",
+    keywords: ["calendar", "schedule", "events", "agenda", "deadlines", "milestones"],
+    href: "/calendar",
+  },
+  {
     id: "nav.projects",
     label: "Projects",
     section: "Navigation",
