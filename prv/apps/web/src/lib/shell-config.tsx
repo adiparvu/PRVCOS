@@ -37,6 +37,15 @@ const GroupIcon = () =>
     </>
   )
 
+const CommerceIcon = () =>
+  ic(
+    <>
+      <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
+      <path d="M3 6h18" />
+      <path d="M16 10a4 4 0 0 1-8 0" />
+    </>
+  )
+
 const CommandIcon = () =>
   ic(
     <>
@@ -613,6 +622,7 @@ const SHELLS: Record<string, ShellConfig> = {
     tabs: [
       { id: "command", label: "Command", href: "/dashboard", icon: <CommandIcon /> },
       { id: "store", label: "Store", href: "/operations", icon: <StoreIcon /> },
+      { id: "commerce", label: "Commerce", href: "/commerce", icon: <CommerceIcon /> },
       { id: "staff", label: "Staff", href: "/people", icon: <TeamIcon /> },
       { id: "inventory", label: "Inventory", href: "/operations", icon: <InventoryIcon /> },
       { id: "reports", label: "Reports", href: "/intelligence", icon: <ReportsIcon /> },
@@ -625,6 +635,7 @@ const SHELLS: Record<string, ShellConfig> = {
     tabs: [
       { id: "command", label: "Command", href: "/dashboard", icon: <CommandIcon /> },
       { id: "stores", label: "Stores", href: "/operations", icon: <StoreIcon /> },
+      { id: "commerce", label: "Commerce", href: "/commerce", icon: <CommerceIcon /> },
       { id: "finance", label: "Finance", href: "/finance", icon: <FinanceIcon /> },
       { id: "procurement", label: "Procurement", href: "/procurement", icon: <ProcurementIcon /> },
       {

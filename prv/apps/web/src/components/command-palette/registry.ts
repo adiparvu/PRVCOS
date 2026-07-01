@@ -52,6 +52,13 @@ const BASE: CommandEntry[] = [
     href: "/operations",
   },
   {
+    id: "nav.commerce",
+    label: "Commerce",
+    section: "Navigation",
+    keywords: ["shop", "products", "orders", "store", "wishlist", "catalog"],
+    href: "/commerce",
+  },
+  {
     id: "nav.intelligence",
     label: "Intelligence & Analytics",
     section: "Navigation",
