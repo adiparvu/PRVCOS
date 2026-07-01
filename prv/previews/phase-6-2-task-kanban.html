@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PRV · Task Kanban — Liquid Glass Preview</title>
+    <style>
+      :root {
+        --g1: rgba(255,255,255,0.06); --g2: rgba(255,255,255,0.10);
+        --t1: rgba(255,255,255,0.95); --t2: rgba(255,255,255,0.65); --t3: rgba(255,255,255,0.35); --t4: rgba(255,255,255,0.22);
+        --border: rgba(255,255,255,0.12); --border-subtle: rgba(255,255,255,0.08);
+        --crit: rgba(255,69,58,0.9); --high: rgba(255,159,10,0.95);
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+      }
+      * { box-sizing:border-box; margin:0; padding:0; }
+      body { background:#000; color:var(--t1); min-height:100vh; -webkit-font-smoothing:antialiased; padding:40px 20px 80px; }
+      .aura { position:fixed; inset:0; z-index:-1; background:radial-gradient(1200px 500px at 50% -8%, rgba(255,255,255,0.06), transparent 60%); }
+      .eyebrow { font-size:12px; font-weight:600; letter-spacing:0.14em; text-transform:uppercase; color:var(--t3); }
+      h1 { font-size:28px; font-weight:680; letter-spacing:-0.02em; margin:3px 0 22px; }
+      .board { display:flex; gap:14px; overflow-x:auto; padding-bottom:8px; }
+      .col { flex:0 0 260px; }
+      .colhead { display:flex; align-items:center; gap:8px; padding:0 4px 12px; }
+      .colhead .ct { font-size:12px; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; color:var(--t2); }
+      .colhead .cn { font-size:11px; font-weight:700; color:var(--t3); background:var(--g1); border:1px solid var(--border-subtle); border-radius:100px; padding:1px 8px; }
+      .colbody { display:flex; flex-direction:column; gap:10px; border-radius:20px; padding:10px; min-height:120px; background:rgba(255,255,255,0.02); border:1px solid var(--border-subtle); }
+      .card { border-radius:16px; padding:12px 13px; background:var(--g1); border:1px solid var(--border-subtle); box-shadow:inset 0 1px 0 rgba(255,255,255,0.2); cursor:grab; }
+      .card.drag { outline:1px dashed rgba(255,255,255,0.35); opacity:0.85; }
+      .ctop { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+      .pri { width:7px; height:7px; border-radius:50%; flex:0 0 auto; background:var(--t3); }
+      .pri.critical { background:var(--crit); } .pri.high { background:var(--high); } .pri.medium { background:var(--t2); }
+      .code { font-size:10px; font-weight:700; color:var(--t4); letter-spacing:0.04em; }
+      .blocked { margin-left:auto; font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:var(--crit); background:rgba(255,69,58,0.14); border:1px solid rgba(255,69,58,0.3); border-radius:100px; padding:2px 7px; display:inline-flex; align-items:center; gap:4px; }
+      .ttl { font-size:13.5px; font-weight:600; line-height:1.35; letter-spacing:-0.01em; }
+      .sub { font-size:11px; color:var(--t3); margin-top:6px; display:flex; align-items:center; gap:8px; }
+      .sub .chip { display:inline-flex; align-items:center; gap:4px; }
+      .av { width:22px; height:22px; border-radius:7px; background:var(--g2); display:grid; place-items:center; font-size:9.5px; font-weight:700; box-shadow:inset 0 1px 0 rgba(255,255,255,0.2); }
+      .meta { margin-left:auto; display:flex; align-items:center; gap:9px; color:var(--t3); }
+      .add { margin-top:2px; padding:9px; border-radius:12px; border:1px dashed var(--border); background:transparent; color:var(--t3); font-size:12px; font-weight:600; cursor:pointer; text-align:center; }
+      .note { text-align:center; color:var(--t3); font-size:11.5px; margin:26px auto 0; max-width:720px; line-height:1.6; }
+      code { color:var(--t2); }
+      svg { stroke:currentColor; }
+    </style>
+  </head>
+  <body>
+    <div class="aura"></div>
+    <div class="eyebrow">Project · Tasks</div>
+    <h1>Task Board</h1>
+
+    <div class="board">
+      <div class="col">
+        <div class="colhead"><span class="ct">Backlog</span><span class="cn">2</span></div>
+        <div class="colbody">
+          <div class="card"><div class="ctop"><span class="pri medium"></span><span class="code">Medium</span></div><div class="ttl">Source tiling supplier quotes</div><div class="sub"><span class="chip"><span class="av">—</span></span><span class="meta"><span>4h</span></span></div></div>
+          <div class="card"><div class="ctop"><span class="pri low"></span><span class="code">Low</span></div><div class="ttl">Final client walkthrough checklist</div><div class="sub"><span class="meta"><span>2h</span></span></div></div>
+          <div class="add">＋ Add task</div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="colhead"><span class="ct">To Do</span><span class="cn">2</span></div>
+        <div class="colbody">
+          <div class="card"><div class="ctop"><span class="pri high"></span><span class="code">High</span><span class="blocked"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke-width="2.4"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>Blocked</span></div><div class="ttl">Install kitchen cabinets</div><div class="sub"><span class="chip"><span class="av">AD</span></span><span class="meta"><span>↳ 3</span><span>16h</span></span></div></div>
+          <div class="card"><div class="ctop"><span class="pri medium"></span><span class="code">Medium</span></div><div class="ttl">Order countertop stone</div><div class="sub"><span class="chip"><span class="av">MP</span></span><span class="meta"><span>3h</span></span></div></div>
+          <div class="add">＋ Add task</div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="colhead"><span class="ct">In Progress</span><span class="cn">1</span></div>
+        <div class="colbody">
+          <div class="card drag"><div class="ctop"><span class="pri critical"></span><span class="code">Critical</span></div><div class="ttl">Rough-in electrical & plumbing</div><div class="sub"><span class="chip"><span class="av">EV</span></span><span class="meta"><span>12 / 20h</span></span></div></div>
+          <div class="add">＋ Add task</div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="colhead"><span class="ct">Review</span><span class="cn">1</span></div>
+        <div class="colbody">
+          <div class="card"><div class="ctop"><span class="pri high"></span><span class="code">High</span></div><div class="ttl">Demolition sign-off</div><div class="sub"><span class="chip"><span class="av">MP</span></span><span class="meta"><span>6 / 6h</span></span></div></div>
+          <div class="add">＋ Add task</div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="colhead"><span class="ct">Done</span><span class="cn">1</span></div>
+        <div class="colbody">
+          <div class="card"><div class="ctop"><span class="pri medium"></span><span class="code">Medium</span></div><div class="ttl">Site protection & setup</div><div class="sub"><span class="chip"><span class="av">RG</span></span><span class="meta"><span>4 / 4h</span></span></div></div>
+          <div class="add">＋ Add task</div>
+        </div>
+      </div>
+    </div>
+
+    <p class="note">
+      Liquid Glass preview · Phase 6.2 Tasks. Drag-and-drop Kanban across the
+      lifecycle (Backlog → To Do → In Progress → Review → Done). Cards show a
+      priority dot, assignee, estimated / actual hours, subtask count (↳), and a
+      red <strong>Blocked</strong> badge when a task's dependency isn't finished —
+      dragging a blocked card into an active column is rejected by the API
+      (409 TASK_BLOCKED). Backed by <code>project_tasks</code> +
+      <code>/api/projects/[id]/tasks</code>. Pure black · monochrome · SF-symbol
+      lock icon.
+    </p>
+  </body>
+</html>

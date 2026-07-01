@@ -519,6 +519,22 @@ export function ProjectDetailClient({ id }: ProjectDetailClientProps) {
           >
             View full budget & EVA ›
           </Link>
+          <Link
+            href={`/projects/${id}/tasks`}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 5,
+              marginTop: 12,
+              marginLeft: 16,
+              fontSize: 12,
+              fontWeight: 600,
+              color: "var(--prv-text-2)",
+              textDecoration: "none",
+            }}
+          >
+            Open task board ›
+          </Link>
         </div>
       </div>
 

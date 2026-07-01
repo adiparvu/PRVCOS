@@ -17,6 +17,8 @@ export * from "./projects"
 export * from "./project-allocations"
 // Phase 6.4: Project Budgets — category breakdown + Earned Value Analysis
 export * from "./project-budgets"
+// Phase 6.2: Project Tasks — Kanban lifecycle, subtasks, dependencies, hours
+export * from "./project-tasks"
 // Sprint 06: Finance (Products, Orders, Invoices)
 export * from "./finance"
 // Sprint 06: Document Management

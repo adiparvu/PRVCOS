@@ -35,6 +35,7 @@ import type { FinanceReport } from "@/app/api/finance/reports/route"
 import type { ProjectAllocation } from "@/app/api/projects/[id]/allocations/route"
 import type { WorkloadRow, WorkloadSummary } from "@/app/api/resources/workload/route"
 import type { BudgetLine, BudgetResponse } from "@/app/api/projects/[id]/budget/route"
+import type { TaskSummary } from "@/app/api/projects/[id]/tasks/route"
 
 const LIMIT = 50
 
@@ -1454,5 +1455,102 @@ export function useDeleteBudgetLine(projectId: string) {
     onSettled: () => {
       void qc.invalidateQueries({ queryKey: ["project-budget", projectId] })
     },
+  })
+}
+
+// ── Project Tasks / Kanban (6.2) ───────────────────────────────────────────────
+
+export type { TaskSummary }
+
+export type ProjectTaskStatus = "backlog" | "todo" | "in_progress" | "review" | "done" | "cancelled"
+
+export interface CreateTaskInput {
+  title: string
+  description?: string | null
+  status?: ProjectTaskStatus
+  priority?: "low" | "medium" | "high" | "critical"
+  assigneeId?: string | null
+  dueDate?: string | null
+  estimatedHours?: number | null
+  parentTaskId?: string | null
+  dependsOnTaskId?: string | null
+  orderIndex?: number
+}
+
+export interface UpdateTaskInput {
+  taskId: string
+  patch: Partial<{
+    title: string
+    description: string | null
+    status: ProjectTaskStatus
+    priority: "low" | "medium" | "high" | "critical"
+    assigneeId: string | null
+    dueDate: string | null
+    estimatedHours: number | null
+    actualHours: number | null
+    dependsOnTaskId: string | null
+    orderIndex: number
+  }>
+}
+
+export function useProjectTasks(projectId: string | null, status?: string | null) {
+  return useQuery({
+    queryKey: ["project-tasks", projectId, status ?? "all"],
+    enabled: !!projectId,
+    queryFn: () =>
+      fetch(buildUrl(`/api/projects/${projectId}/tasks`, { status })).then(
+        (r) => r.json() as Promise<{ tasks: TaskSummary[] }>
+      ),
+  })
+}
+
+export function useCreateTask(projectId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: CreateTaskInput) => {
+      const res = await fetch(`/api/projects/${projectId}/tasks`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      })
+      if (!res.ok) throw new Error("Failed to create task")
+      return res.json() as Promise<{ id: string }>
+    },
+    onSettled: () => void qc.invalidateQueries({ queryKey: ["project-tasks", projectId] }),
+  })
+}
+
+// Returns a typed error carrying the "TASK_BLOCKED" code so the board can
+// surface a dependency conflict rather than a generic failure.
+export function useUpdateTask(projectId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ taskId, patch }: UpdateTaskInput) => {
+      const res = await fetch(`/api/projects/${projectId}/tasks/${taskId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patch),
+      })
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { code?: string; error?: string }
+        const err = new Error(body.error ?? "Failed to update task") as Error & { code?: string }
+        err.code = body.code
+        throw err
+      }
+      return res.json() as Promise<{ id: string; status: string }>
+    },
+    onSettled: () => void qc.invalidateQueries({ queryKey: ["project-tasks", projectId] }),
+  })
+}
+
+export function useDeleteTask(projectId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (taskId: string) => {
+      const res = await fetch(`/api/projects/${projectId}/tasks/${taskId}`, { method: "DELETE" })
+      if (!res.ok) throw new Error("Failed to delete task")
+      return res.json() as Promise<{ removed: number }>
+    },
+    onSettled: () => void qc.invalidateQueries({ queryKey: ["project-tasks", projectId] }),
   })
 }
