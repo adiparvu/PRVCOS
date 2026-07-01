@@ -415,6 +415,7 @@ const SHELLS: Record<string, ShellConfig> = {
       { id: "analytics", label: "Analytics", href: "/analytics", icon: <AnalyticsIcon /> },
       { id: "finance", label: "Finance", href: "/finance", icon: <FinanceIcon /> },
       { id: "operations", label: "Operations", href: "/operations", icon: <OperationsIcon /> },
+      { id: "commerce", label: "Commerce", href: "/commerce", icon: <CommerceIcon /> },
       { id: "people", label: "People", href: "/people", icon: <PeopleIcon /> },
       {
         id: "intelligence",
