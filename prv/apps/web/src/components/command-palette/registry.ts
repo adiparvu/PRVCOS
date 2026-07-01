@@ -72,6 +72,34 @@ const BASE: CommandEntry[] = [
     keywords: ["docs", "wiki", "help"],
     href: "/knowledge",
   },
+  {
+    id: "nav.crm",
+    label: "CRM & Leads",
+    section: "Navigation",
+    keywords: ["crm", "leads", "pipeline", "sales", "contacts", "deals"],
+    href: "/crm",
+  },
+  {
+    id: "nav.clients",
+    label: "Clients",
+    section: "Navigation",
+    keywords: ["clients", "customers", "accounts"],
+    href: "/clients",
+  },
+  {
+    id: "nav.attendance",
+    label: "Attendance",
+    section: "Navigation",
+    keywords: ["attendance", "clock", "presence", "time", "check-in"],
+    href: "/attendance",
+  },
+  {
+    id: "nav.approvals",
+    label: "Approvals",
+    section: "Navigation",
+    keywords: ["approvals", "requests", "sign-off", "authorize"],
+    href: "/approvals",
+  },
 ]
 
 const MANAGER_CMDS: CommandEntry[] = [
