@@ -15,6 +15,8 @@ export * from "./suppliers"
 export * from "./projects"
 // Phase 6.3: Project Resource Allocations — employee % allocation + utilization
 export * from "./project-allocations"
+// Phase 6.4: Project Budgets — category breakdown + Earned Value Analysis
+export * from "./project-budgets"
 // Sprint 06: Finance (Products, Orders, Invoices)
 export * from "./finance"
 // Sprint 06: Document Management

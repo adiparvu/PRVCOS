@@ -504,6 +504,21 @@ export function ProjectDetailClient({ id }: ProjectDetailClientProps) {
           >
             {budgetState.label}
           </p>
+          <Link
+            href={`/projects/${id}/budget`}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 5,
+              marginTop: 12,
+              fontSize: 12,
+              fontWeight: 600,
+              color: "var(--prv-text-2)",
+              textDecoration: "none",
+            }}
+          >
+            View full budget & EVA ›
+          </Link>
         </div>
       </div>
 

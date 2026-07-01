@@ -34,6 +34,7 @@ import type { Insight, Report, StoreKpi, IntelligenceMeta } from "@/app/api/inte
 import type { FinanceReport } from "@/app/api/finance/reports/route"
 import type { ProjectAllocation } from "@/app/api/projects/[id]/allocations/route"
 import type { WorkloadRow, WorkloadSummary } from "@/app/api/resources/workload/route"
+import type { BudgetLine, BudgetResponse } from "@/app/api/projects/[id]/budget/route"
 
 const LIMIT = 50
 
@@ -1394,6 +1395,64 @@ export function useDeleteAllocation(projectId: string) {
     onSettled: () => {
       void qc.invalidateQueries({ queryKey: ["project-allocations", projectId] })
       void qc.invalidateQueries({ queryKey: ["resources-workload"] })
+    },
+  })
+}
+
+// ── Project Budgets & Earned Value Analysis (6.4) ──────────────────────────────
+
+export type { BudgetLine, BudgetResponse }
+
+export type BudgetCategory = "labor" | "materials" | "equipment" | "overhead" | "contingency"
+
+export interface BudgetLineInput {
+  category: BudgetCategory
+  plannedAmount?: number
+  committedAmount?: number
+  actualAmount?: number
+  notes?: string | null
+}
+
+export function useProjectBudget(projectId: string | null) {
+  return useQuery({
+    queryKey: ["project-budget", projectId],
+    enabled: !!projectId,
+    queryFn: () =>
+      fetch(`/api/projects/${projectId}/budget`).then((r) => r.json() as Promise<BudgetResponse>),
+  })
+}
+
+export function useUpsertBudgetLine(projectId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: BudgetLineInput) => {
+      const res = await fetch(`/api/projects/${projectId}/budget`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      })
+      if (!res.ok) throw new Error("Failed to save budget line")
+      return res.json() as Promise<{ id: string }>
+    },
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: ["project-budget", projectId] })
+    },
+  })
+}
+
+export function useDeleteBudgetLine(projectId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (category: BudgetCategory) => {
+      const res = await fetch(
+        `/api/projects/${projectId}/budget?category=${encodeURIComponent(category)}`,
+        { method: "DELETE" }
+      )
+      if (!res.ok) throw new Error("Failed to remove budget line")
+      return res.json() as Promise<{ removed: number }>
+    },
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: ["project-budget", projectId] })
     },
   })
 }
