@@ -45,6 +45,8 @@ import type { Holiday } from "@/app/api/workforce/holidays/route"
 import type { ContractSummary, ContractMeta } from "@/app/api/contracts/route"
 import type { ComplianceDoc, ComplianceMeta } from "@/app/api/compliance/documents/route"
 import type { PayrollItem, PayrollItemsTotals } from "@/app/api/payroll/[id]/items/route"
+import type { RequisitionSummary, RequisitionMeta } from "@/app/api/recruitment/requisitions/route"
+import type { Candidate } from "@/app/api/recruitment/candidates/route"
 
 const LIMIT = 50
 
@@ -2118,6 +2120,131 @@ export function useDeletePayrollItem(runId: string) {
     onSettled: () => {
       void qc.invalidateQueries({ queryKey: ["payroll-items", runId] })
       void qc.invalidateQueries({ queryKey: ["payroll", runId] })
+    },
+  })
+}
+
+// ── Recruitment (8.3) ──────────────────────────────────────────────────────────
+
+export type { RequisitionSummary, RequisitionMeta, Candidate }
+
+export type CandidateStage =
+  | "sourcing"
+  | "screening"
+  | "phone_screen"
+  | "interview"
+  | "assessment"
+  | "offer"
+  | "hired"
+  | "rejected"
+
+export interface RequisitionInput {
+  title: string
+  departmentId?: string | null
+  employmentType?: "permanent" | "fixed_term" | "contractor" | "intern"
+  headcount?: number
+  hiringManagerId?: string | null
+  location?: string | null
+  description?: string | null
+}
+
+export interface CandidateInput {
+  requisitionId: string
+  fullName: string
+  email?: string | null
+  phone?: string | null
+  source?: string | null
+  stage?: CandidateStage
+  rating?: number | null
+  notes?: string | null
+}
+
+export function useRequisitions() {
+  return useQuery({
+    queryKey: ["requisitions"],
+    queryFn: () =>
+      fetch("/api/recruitment/requisitions").then(
+        (r) => r.json() as Promise<{ requisitions: RequisitionSummary[]; meta: RequisitionMeta }>
+      ),
+  })
+}
+
+export function useCreateRequisition() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: RequisitionInput) => {
+      const res = await fetch("/api/recruitment/requisitions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      })
+      if (!res.ok) throw new Error("Failed to open requisition")
+      return res.json() as Promise<{ id: string }>
+    },
+    onSettled: () => void qc.invalidateQueries({ queryKey: ["requisitions"] }),
+  })
+}
+
+export function useCandidates(requisitionId: string | null) {
+  return useQuery({
+    queryKey: ["candidates", requisitionId],
+    enabled: !!requisitionId,
+    queryFn: () =>
+      fetch(`/api/recruitment/candidates?requisitionId=${requisitionId}`).then(
+        (r) => r.json() as Promise<{ candidates: Candidate[] }>
+      ),
+  })
+}
+
+export function useCreateCandidate(requisitionId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: CandidateInput) => {
+      const res = await fetch("/api/recruitment/candidates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      })
+      if (!res.ok) throw new Error("Failed to add candidate")
+      return res.json() as Promise<{ id: string }>
+    },
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: ["candidates", requisitionId] })
+      void qc.invalidateQueries({ queryKey: ["requisitions"] })
+    },
+  })
+}
+
+export function useUpdateCandidate(requisitionId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, patch }: { id: string; patch: Record<string, unknown> }) => {
+      const res = await fetch(`/api/recruitment/candidates/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patch),
+      })
+      if (!res.ok) throw new Error("Failed to update candidate")
+      return res.json() as Promise<{ id: string; stage: string }>
+    },
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: ["candidates", requisitionId] })
+      void qc.invalidateQueries({ queryKey: ["requisitions"] })
+    },
+  })
+}
+
+export function useDeleteCandidate(requisitionId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/recruitment/candidates/${id}`, { method: "DELETE" })
+      if (!res.ok) throw new Error("Failed to delete candidate")
+      return res.json() as Promise<{ removed: number }>
+    },
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: ["candidates", requisitionId] })
+      void qc.invalidateQueries({ queryKey: ["requisitions"] })
     },
   })
 }

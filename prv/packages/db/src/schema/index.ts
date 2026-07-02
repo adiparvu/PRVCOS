@@ -53,6 +53,8 @@ export * from "./performance"
 export * from "./holidays"
 // Phase 8.1: Employment Contracts — lifecycle, versioning, expiry
 export * from "./employment"
+// Phase 8.3: Recruitment — job requisitions + candidate pipeline
+export * from "./recruitment"
 // Phase 8.5: HR Compliance — typed employee documents + expiry tracking
 export * from "./compliance"
 // Sprint 12: Procurement — purchase orders

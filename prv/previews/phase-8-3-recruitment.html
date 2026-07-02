@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PRV · Recruitment — Liquid Glass Preview</title>
+    <style>
+      :root {
+        --g1: rgba(255,255,255,0.06); --g2: rgba(255,255,255,0.10);
+        --t1: rgba(255,255,255,0.95); --t2: rgba(255,255,255,0.65); --t3: rgba(255,255,255,0.35); --t4: rgba(255,255,255,0.22);
+        --border: rgba(255,255,255,0.12); --border-subtle: rgba(255,255,255,0.08);
+        --green: rgba(48,209,88,0.9);
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+      }
+      * { box-sizing:border-box; margin:0; padding:0; }
+      body { background:#000; color:var(--t1); min-height:100vh; -webkit-font-smoothing:antialiased; padding:40px 20px 80px; }
+      .aura { position:fixed; inset:0; z-index:-1; background:radial-gradient(1200px 500px at 50% -8%, rgba(255,255,255,0.06), transparent 60%); }
+      .wrap { max-width:960px; margin:0 auto; }
+      .eyebrow { font-size:12px; font-weight:600; letter-spacing:0.14em; text-transform:uppercase; color:var(--t3); }
+      h1 { font-size:26px; font-weight:680; letter-spacing:-0.02em; margin:3px 0 4px; }
+      .sub { font-size:13px; color:var(--t2); margin-bottom:22px; }
+      .glass { background:var(--g1); border:1px solid var(--border-subtle); box-shadow:inset 0 1px 0 rgba(255,255,255,0.22); }
+      .req { border-radius:18px; padding:14px 16px; display:flex; align-items:center; gap:13px; margin-bottom:22px; }
+      .req .n { font-size:15px; font-weight:680; }
+      .req .m { font-size:11.5px; color:var(--t3); margin-top:2px; }
+      .req .pill { margin-left:auto; font-size:11px; font-weight:700; color:var(--t2); background:var(--g1); border:1px solid var(--border-subtle); border-radius:100px; padding:4px 11px; }
+      .board { display:flex; gap:12px; overflow-x:auto; padding-bottom:8px; }
+      .col { flex:0 0 200px; }
+      .colhead { display:flex; align-items:center; gap:7px; padding:0 4px 10px; }
+      .ct { font-size:11px; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; color:var(--t2); }
+      .cn { font-size:10.5px; font-weight:700; color:var(--t3); background:var(--g1); border:1px solid var(--border-subtle); border-radius:100px; padding:1px 7px; }
+      .colbody { display:flex; flex-direction:column; gap:9px; border-radius:18px; padding:9px; min-height:100px; background:rgba(255,255,255,0.02); border:1px solid var(--border-subtle); }
+      .card { border-radius:14px; padding:11px 12px; background:var(--g1); border:1px solid var(--border-subtle); box-shadow:inset 0 1px 0 rgba(255,255,255,0.18); cursor:grab; }
+      .cname { font-size:13px; font-weight:640; letter-spacing:-0.01em; }
+      .cmeta { font-size:10.5px; color:var(--t3); margin-top:5px; display:flex; align-items:center; gap:7px; }
+      .stars { color:var(--t2); letter-spacing:1px; }
+      .src { border:1px solid var(--border-subtle); border-radius:100px; padding:1px 7px; }
+      .hired { border-color:rgba(48,209,88,0.3); }
+      .note { text-align:center; color:var(--t3); font-size:11.5px; margin:26px auto 0; max-width:720px; line-height:1.6; }
+      code { color:var(--t2); }
+    </style>
+  </head>
+  <body>
+    <div class="aura"></div>
+    <div class="wrap">
+      <div class="eyebrow">People · Recruitment</div>
+      <h1>Site Electrician</h1>
+      <div class="sub">PRV Renovations · Permanent · 2 openings · Bucharest</div>
+
+      <div class="req glass">
+        <div><div class="n">Pipeline</div><div class="m">14 candidates · 11 active · hire rate 67%</div></div>
+        <span class="pill">Open</span>
+      </div>
+
+      <div class="board">
+        <div class="col">
+          <div class="colhead"><span class="ct">Sourcing</span><span class="cn">3</span></div>
+          <div class="colbody">
+            <div class="card"><div class="cname">Ionuț Marin</div><div class="cmeta"><span class="src">LinkedIn</span></div></div>
+            <div class="card"><div class="cname">Cristina Radu</div><div class="cmeta"><span class="src">Referral</span></div></div>
+          </div>
+        </div>
+        <div class="col">
+          <div class="colhead"><span class="ct">Screening</span><span class="cn">2</span></div>
+          <div class="colbody">
+            <div class="card"><div class="cname">Vlad Popescu</div><div class="cmeta"><span class="stars">★★★☆☆</span><span class="src">eJobs</span></div></div>
+          </div>
+        </div>
+        <div class="col">
+          <div class="colhead"><span class="ct">Interview</span><span class="cn">2</span></div>
+          <div class="colbody">
+            <div class="card"><div class="cname">Ana-Maria Ene</div><div class="cmeta"><span class="stars">★★★★☆</span></div></div>
+            <div class="card"><div class="cname">Sorin Dan</div><div class="cmeta"><span class="stars">★★★★☆</span></div></div>
+          </div>
+        </div>
+        <div class="col">
+          <div class="colhead"><span class="ct">Assessment</span><span class="cn">1</span></div>
+          <div class="colbody">
+            <div class="card"><div class="cname">Bogdan Ilie</div><div class="cmeta"><span class="stars">★★★★★</span></div></div>
+          </div>
+        </div>
+        <div class="col">
+          <div class="colhead"><span class="ct">Offer</span><span class="cn">1</span></div>
+          <div class="colbody">
+            <div class="card"><div class="cname">George Toma</div><div class="cmeta"><span class="stars">★★★★★</span></div></div>
+          </div>
+        </div>
+        <div class="col">
+          <div class="colhead"><span class="ct">Hired</span><span class="cn">2</span></div>
+          <div class="colbody">
+            <div class="card hired"><div class="cname">Elena Dinu</div><div class="cmeta"><span class="stars">★★★★★</span></div></div>
+          </div>
+        </div>
+      </div>
+
+      <p class="note">
+        Liquid Glass preview · Phase 8.3 Recruitment. Job requisitions with a
+        live candidate pipeline — drag candidates across stages (Sourcing →
+        Screening → Phone → Interview → Assessment → Offer → Hired / Rejected),
+        each card showing source + star rating. The requisition rolls up a funnel
+        (active / hired / hire-rate). Backed by <code>job_requisitions</code> +
+        <code>candidates</code> + <code>/api/recruitment/*</code>. Pure black ·
+        monochrome.
+      </p>
+    </div>
+  </body>
+</html>

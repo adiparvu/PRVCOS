@@ -124,6 +124,22 @@ const BASE: CommandEntry[] = [
     href: "/people/compliance",
   },
   {
+    id: "nav.recruitment",
+    label: "Recruitment",
+    section: "Navigation",
+    keywords: [
+      "recruitment",
+      "hiring",
+      "candidates",
+      "jobs",
+      "requisition",
+      "pipeline",
+      "ats",
+      "interview",
+    ],
+    href: "/recruitment",
+  },
+  {
     id: "nav.schedule",
     label: "Schedule",
     section: "Navigation",
