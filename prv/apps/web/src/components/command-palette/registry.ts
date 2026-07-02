@@ -91,6 +91,23 @@ const BASE: CommandEntry[] = [
     href: "/people/holidays",
   },
   {
+    id: "nav.contracts",
+    label: "Employment Contracts",
+    section: "Navigation",
+    keywords: [
+      "contract",
+      "employment",
+      "hr",
+      "salary",
+      "hire",
+      "fixed-term",
+      "expiry",
+      "renewal",
+      "terminate",
+    ],
+    href: "/people/contracts",
+  },
+  {
     id: "nav.schedule",
     label: "Schedule",
     section: "Navigation",

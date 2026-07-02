@@ -49,6 +49,8 @@ export * from "./equipment"
 export * from "./performance"
 // Phase 7.3: Public Holidays — per-company non-working-day calendar
 export * from "./holidays"
+// Phase 8.1: Employment Contracts — lifecycle, versioning, expiry
+export * from "./employment"
 // Sprint 12: Procurement — purchase orders
 export * from "./procurement"
 // Sprint 12: Approvals — cross-module approval requests

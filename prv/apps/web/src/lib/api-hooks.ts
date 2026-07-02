@@ -42,6 +42,7 @@ import type { LeaveBalanceSummary } from "@/app/api/workforce/leave/balances/rou
 import type { EquipmentAssignment, EquipmentMeta } from "@/app/api/workforce/equipment/route"
 import type { PerformanceRow, PerformanceSummary } from "@/app/api/workforce/performance/route"
 import type { Holiday } from "@/app/api/workforce/holidays/route"
+import type { ContractSummary, ContractMeta } from "@/app/api/contracts/route"
 
 const LIMIT = 50
 
@@ -1905,5 +1906,78 @@ export function useDeleteHoliday() {
       return res.json() as Promise<{ removed: number }>
     },
     onSettled: () => void qc.invalidateQueries({ queryKey: ["holidays"] }),
+  })
+}
+
+// ── Employment Contracts (8.1) ─────────────────────────────────────────────────
+
+export type { ContractSummary, ContractMeta }
+
+export interface CreateContractInput {
+  userId: string
+  type?: "permanent" | "fixed_term" | "contractor" | "intern"
+  status?: "draft" | "active"
+  roleTitle: string
+  startDate: string
+  endDate?: string | null
+  salaryAmount?: number | null
+  salaryCurrency?: string
+  payPeriod?: "hourly" | "monthly" | "annual"
+  noticePeriodDays?: number | null
+  terms?: string | null
+  supersedesId?: string | null
+}
+
+export function useContracts(userId?: string | null, status?: string | null) {
+  return useQuery({
+    queryKey: ["contracts", userId ?? "all", status ?? "all"],
+    queryFn: () =>
+      fetch(buildUrl("/api/contracts", { userId, status })).then(
+        (r) => r.json() as Promise<{ contracts: ContractSummary[]; meta: ContractMeta }>
+      ),
+  })
+}
+
+export function useCreateContract() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: CreateContractInput) => {
+      const res = await fetch("/api/contracts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      })
+      if (!res.ok) throw new Error("Failed to create contract")
+      return res.json() as Promise<{ id: string; version: number }>
+    },
+    onSettled: () => void qc.invalidateQueries({ queryKey: ["contracts"] }),
+  })
+}
+
+export function useUpdateContract() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, patch }: { id: string; patch: Record<string, unknown> }) => {
+      const res = await fetch(`/api/contracts/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patch),
+      })
+      if (!res.ok) throw new Error("Failed to update contract")
+      return res.json() as Promise<{ id: string; status: string }>
+    },
+    onSettled: () => void qc.invalidateQueries({ queryKey: ["contracts"] }),
+  })
+}
+
+export function useDeleteContract() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/contracts/${id}`, { method: "DELETE" })
+      if (!res.ok) throw new Error("Failed to delete contract")
+      return res.json() as Promise<{ removed: number }>
+    },
+    onSettled: () => void qc.invalidateQueries({ queryKey: ["contracts"] }),
   })
 }
