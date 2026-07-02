@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PRV · Promotions — Liquid Glass Preview</title>
+    <style>
+      :root {
+        --g1: rgba(255,255,255,0.06); --g2: rgba(255,255,255,0.10);
+        --t1: rgba(255,255,255,0.95); --t2: rgba(255,255,255,0.65); --t3: rgba(255,255,255,0.35); --t4: rgba(255,255,255,0.22);
+        --border: rgba(255,255,255,0.12); --border-subtle: rgba(255,255,255,0.08);
+        --green: rgba(48,209,88,0.9); --amber: rgba(255,159,10,0.95);
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+      }
+      * { box-sizing:border-box; margin:0; padding:0; }
+      body { background:#000; color:var(--t1); min-height:100vh; -webkit-font-smoothing:antialiased; padding:40px 16px 80px; }
+      .aura { position:fixed; inset:0; z-index:-1; background:radial-gradient(1100px 480px at 50% -8%, rgba(255,255,255,0.06), transparent 60%); }
+      .wrap { max-width:640px; margin:0 auto; }
+      .eyebrow { font-size:12px; font-weight:600; letter-spacing:0.14em; text-transform:uppercase; color:var(--t3); }
+      h1 { font-size:26px; font-weight:680; letter-spacing:-0.02em; margin:3px 0 22px; }
+      .glass { background:var(--g1); border:1px solid var(--border-subtle); box-shadow:inset 0 1px 0 rgba(255,255,255,0.22); }
+      .strip { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:22px; }
+      .stat { border-radius:18px; padding:14px 16px; }
+      .stat .k { font-size:11px; font-weight:600; letter-spacing:0.04em; text-transform:uppercase; color:var(--t3); }
+      .stat .v { font-size:26px; font-weight:700; letter-spacing:-0.02em; margin-top:6px; }
+      .label { font-size:11px; font-weight:600; letter-spacing:0.16em; text-transform:uppercase; color:var(--t3); margin:0 4px 12px; }
+      .list { border-radius:22px; overflow:hidden; }
+      .row { display:flex; align-items:center; gap:13px; padding:14px 16px; border-bottom:1px solid var(--border-subtle); }
+      .row:last-child { border-bottom:0; }
+      .disc { width:52px; height:52px; border-radius:14px; background:var(--g2); display:flex; flex-direction:column; align-items:center; justify-content:center; flex:0 0 auto; box-shadow:inset 0 1px 0 rgba(255,255,255,0.2); }
+      .disc .n { font-size:18px; font-weight:720; letter-spacing:-0.02em; line-height:1; }
+      .disc .u { font-size:8.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--t3); margin-top:2px; }
+      .meta { flex:1; min-width:0; }
+      .name { font-size:14px; font-weight:640; letter-spacing:-0.01em; }
+      .sub { font-size:11.5px; color:var(--t3); margin-top:3px; display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+      .code { font-family:'SF Mono', monospace; font-weight:700; color:var(--t2); border:1px dashed var(--border); border-radius:6px; padding:1px 7px; }
+      .auto { font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:var(--t3); border:1px solid var(--border-subtle); border-radius:100px; padding:2px 7px; }
+      .badge { font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; border-radius:100px; padding:3px 9px; flex:0 0 auto; }
+      .b-live { color:var(--green); background:rgba(48,209,88,0.12); border:1px solid rgba(48,209,88,0.26); }
+      .b-paused { color:var(--amber); background:rgba(255,159,10,0.14); border:1px solid rgba(255,159,10,0.28); }
+      .b-draft { color:var(--t2); border:1px solid var(--border); }
+      .usage { font-size:10.5px; color:var(--t4); margin-top:4px; }
+      .note { text-align:center; color:var(--t3); font-size:11.5px; margin:24px auto 0; line-height:1.6; }
+      code { color:var(--t2); }
+    </style>
+  </head>
+  <body>
+    <div class="aura"></div>
+    <div class="wrap">
+      <div class="eyebrow">Commerce · Promotions</div>
+      <h1>Promotions</h1>
+
+      <div class="strip">
+        <div class="stat glass"><div class="k">Total</div><div class="v">7</div></div>
+        <div class="stat glass"><div class="k">Active</div><div class="v">4</div></div>
+        <div class="stat glass"><div class="k">Redeemable now</div><div class="v">3</div></div>
+      </div>
+
+      <div class="label">Promotions</div>
+      <div class="list glass">
+        <div class="row">
+          <div class="disc"><span class="n">15%</span><span class="u">Off</span></div>
+          <div class="meta"><div class="name">Spring Sale</div><div class="sub"><span class="code">SPRING15</span><span>min €200</span></div><div class="usage">42 / 500 redeemed · ends 31 May</div></div>
+          <span class="badge b-live">Live</span>
+        </div>
+        <div class="row">
+          <div class="disc"><span class="n">€50</span><span class="u">Off</span></div>
+          <div class="meta"><div class="name">New customer welcome</div><div class="sub"><span class="code">WELCOME50</span><span>min €300</span></div><div class="usage">128 redeemed · no cap</div></div>
+          <span class="badge b-live">Live</span>
+        </div>
+        <div class="row">
+          <div class="disc"><span class="n">Free</span><span class="u">Ship</span></div>
+          <div class="meta"><div class="name">Free delivery weekend</div><div class="sub"><span class="auto">Auto-apply</span><span>min €150</span></div><div class="usage">Auto-applied at checkout</div></div>
+          <span class="badge b-live">Live</span>
+        </div>
+        <div class="row">
+          <div class="disc"><span class="n">10%</span><span class="u">Off</span></div>
+          <div class="meta"><div class="name">Trade partner rate</div><div class="sub"><span class="code">TRADE10</span></div><div class="usage">Paused</div></div>
+          <span class="badge b-paused">Paused</span>
+        </div>
+      </div>
+
+      <p class="note">
+        Liquid Glass preview · Phase 9.5 Promotions. Discount rules —
+        percentage · fixed amount · free shipping — as coupon codes or
+        auto-apply, with a validity window, minimum spend, and usage caps. A
+        validate endpoint checks a code against a subtotal and returns the
+        computed discount. Backed by <code>promotions</code> +
+        <code>/api/shop/promotions/*</code>. Pure black · monochrome.
+      </p>
+    </div>
+  </body>
+</html>

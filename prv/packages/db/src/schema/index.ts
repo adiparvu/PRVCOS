@@ -27,6 +27,8 @@ export * from "./project-activity"
 export * from "./finance"
 // Phase 9.2: Inventory — multi-location stock levels + movement log
 export * from "./inventory"
+// Phase 9.5: Promotions — discount rules + coupon codes
+export * from "./promotions"
 // Sprint 06: Document Management
 export * from "./documents"
 // Sprint 06: Fleet & Tool Management

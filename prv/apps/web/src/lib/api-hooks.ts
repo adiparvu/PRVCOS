@@ -51,6 +51,7 @@ import type { ReviewCycleSummary } from "@/app/api/reviews/cycles/route"
 import type { ReviewSummary } from "@/app/api/reviews/route"
 import type { StockLevelRow, InventoryMeta } from "@/app/api/inventory/route"
 import type { StockMovementRow } from "@/app/api/inventory/movements/route"
+import type { PromotionSummary, PromotionMeta } from "@/app/api/shop/promotions/route"
 
 const LIMIT = 50
 
@@ -2424,6 +2425,100 @@ export function useRecordMovement() {
     onSettled: () => {
       void qc.invalidateQueries({ queryKey: ["inventory"] })
       void qc.invalidateQueries({ queryKey: ["stock-movements"] })
+    },
+  })
+}
+
+// ── Promotions & Coupons (9.5) ─────────────────────────────────────────────────
+
+export type { PromotionSummary, PromotionMeta }
+
+export interface PromotionInput {
+  name: string
+  description?: string | null
+  type?: "percentage" | "fixed_amount" | "free_shipping"
+  scope?: "order" | "product" | "category"
+  value: number
+  minSubtotal?: number
+  code?: string | null
+  status?: "draft" | "active"
+  startsAt?: string | null
+  endsAt?: string | null
+  usageLimit?: number | null
+  autoApply?: boolean
+}
+
+export interface CouponValidation {
+  valid: boolean
+  reason?: string
+  discount?: number
+  promotion?: { id: string; name: string; type: string; value: number }
+}
+
+export function usePromotions() {
+  return useQuery({
+    queryKey: ["promotions"],
+    queryFn: () =>
+      fetch("/api/shop/promotions").then(
+        (r) => r.json() as Promise<{ promotions: PromotionSummary[]; meta: PromotionMeta }>
+      ),
+  })
+}
+
+export function useCreatePromotion() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: PromotionInput) => {
+      const res = await fetch("/api/shop/promotions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      })
+      if (!res.ok) throw new Error("Failed to create promotion")
+      return res.json() as Promise<{ id: string }>
+    },
+    onSettled: () => void qc.invalidateQueries({ queryKey: ["promotions"] }),
+  })
+}
+
+export function useUpdatePromotion() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, patch }: { id: string; patch: Record<string, unknown> }) => {
+      const res = await fetch(`/api/shop/promotions/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patch),
+      })
+      if (!res.ok) throw new Error("Failed to update promotion")
+      return res.json() as Promise<{ id: string; status: string }>
+    },
+    onSettled: () => void qc.invalidateQueries({ queryKey: ["promotions"] }),
+  })
+}
+
+export function useDeletePromotion() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/shop/promotions/${id}`, { method: "DELETE" })
+      if (!res.ok) throw new Error("Failed to delete promotion")
+      return res.json() as Promise<{ removed: number }>
+    },
+    onSettled: () => void qc.invalidateQueries({ queryKey: ["promotions"] }),
+  })
+}
+
+export function useValidateCoupon() {
+  return useMutation({
+    mutationFn: async ({ code, subtotal }: { code: string; subtotal: number }) => {
+      const res = await fetch("/api/shop/promotions/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code, subtotal }),
+      })
+      if (!res.ok) throw new Error("Failed to validate coupon")
+      return res.json() as Promise<CouponValidation>
     },
   })
 }

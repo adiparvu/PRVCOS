@@ -192,6 +192,13 @@ const BASE: CommandEntry[] = [
     href: "/commerce/inventory",
   },
   {
+    id: "nav.promotions",
+    label: "Promotions",
+    section: "Navigation",
+    keywords: ["promotions", "coupons", "discount", "voucher", "promo code", "sale", "offer"],
+    href: "/commerce/promotions",
+  },
+  {
     id: "nav.intelligence",
     label: "Intelligence & Analytics",
     section: "Navigation",
