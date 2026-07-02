@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PRV · Performance Reviews — Liquid Glass Preview</title>
+    <style>
+      :root {
+        --g1: rgba(255,255,255,0.06); --g2: rgba(255,255,255,0.10);
+        --t1: rgba(255,255,255,0.95); --t2: rgba(255,255,255,0.65); --t3: rgba(255,255,255,0.35); --t4: rgba(255,255,255,0.22);
+        --border: rgba(255,255,255,0.12); --border-subtle: rgba(255,255,255,0.08);
+        --green: rgba(48,209,88,0.9);
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+      }
+      * { box-sizing:border-box; margin:0; padding:0; }
+      body { background:#000; color:var(--t1); min-height:100vh; -webkit-font-smoothing:antialiased; padding:40px 16px 80px; }
+      .aura { position:fixed; inset:0; z-index:-1; background:radial-gradient(1100px 480px at 50% -8%, rgba(255,255,255,0.06), transparent 60%); }
+      .wrap { max-width:620px; margin:0 auto; }
+      .eyebrow { font-size:12px; font-weight:600; letter-spacing:0.14em; text-transform:uppercase; color:var(--t3); }
+      h1 { font-size:26px; font-weight:680; letter-spacing:-0.02em; margin:3px 0 22px; }
+      .glass { background:var(--g1); border:1px solid var(--border-subtle); box-shadow:inset 0 1px 0 rgba(255,255,255,0.22); }
+      .cycle { border-radius:20px; padding:16px 18px; margin-bottom:14px; }
+      .ctop { display:flex; align-items:center; gap:10px; }
+      .cn { font-size:15px; font-weight:680; }
+      .cc { font-size:11.5px; color:var(--t3); margin-top:2px; }
+      .pill { margin-left:auto; font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; border-radius:100px; padding:3px 9px; color:var(--green); background:rgba(48,209,88,0.12); border:1px solid rgba(48,209,88,0.26); }
+      .bar { height:8px; border-radius:100px; background:rgba(255,255,255,0.08); margin-top:13px; overflow:hidden; }
+      .bar .f { height:100%; border-radius:100px; background:rgba(255,255,255,0.8); }
+      .prog { font-size:11px; color:var(--t3); margin-top:8px; display:flex; gap:12px; }
+      /* reviews within a cycle */
+      .label { font-size:11px; font-weight:600; letter-spacing:0.16em; text-transform:uppercase; color:var(--t3); margin:22px 4px 12px; }
+      .list { border-radius:20px; overflow:hidden; }
+      .rev { display:flex; align-items:center; gap:13px; padding:13px 16px; border-bottom:1px solid var(--border-subtle); }
+      .rev:last-child { border-bottom:0; }
+      .av { width:34px; height:34px; border-radius:10px; background:var(--g2); display:grid; place-items:center; font-size:12px; font-weight:700; flex:0 0 auto; box-shadow:inset 0 1px 0 rgba(255,255,255,0.2); }
+      .meta { flex:1; min-width:0; }
+      .name { font-size:13.5px; font-weight:640; }
+      /* stepper */
+      .steps { display:flex; align-items:center; gap:5px; margin-top:5px; }
+      .step { width:22px; height:5px; border-radius:100px; background:rgba(255,255,255,0.10); }
+      .step.done { background:rgba(255,255,255,0.75); }
+      .stage { font-size:10.5px; color:var(--t3); }
+      .adv { font-size:11px; font-weight:600; color:var(--t2); background:var(--g1); border:1px solid var(--border); border-radius:100px; padding:4px 11px; }
+      .done-badge { font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:var(--green); }
+      .note { text-align:center; color:var(--t3); font-size:11.5px; margin:24px auto 0; line-height:1.6; }
+      code { color:var(--t2); }
+    </style>
+  </head>
+  <body>
+    <div class="aura"></div>
+    <div class="wrap">
+      <div class="eyebrow">People · HR</div>
+      <h1>Performance Reviews</h1>
+
+      <div class="cycle glass">
+        <div class="ctop">
+          <div><div class="cn">2026 Annual Review</div><div class="cc">Annual · 1 Jan – 31 Dec 2026 · due 15 Jan</div></div>
+          <span class="pill">Active</span>
+        </div>
+        <div class="bar"><div class="f" style="width:58%"></div></div>
+        <div class="prog"><span>58% complete</span><span>2 of 5 signed off</span></div>
+      </div>
+
+      <div class="label">Reviews · this cycle</div>
+      <div class="list glass">
+        <div class="rev">
+          <div class="av">EV</div>
+          <div class="meta"><div class="name">Elena Vasile</div><div class="steps"><span class="step done"></span><span class="step done"></span><span class="step done"></span><span class="step done"></span></div></div>
+          <span class="done-badge">Signed off · ★★★★★</span>
+        </div>
+        <div class="rev">
+          <div class="av">AD</div>
+          <div class="meta"><div class="name">Andrei Dinu</div><div class="steps"><span class="step done"></span><span class="step done"></span><span class="step done"></span><span class="step"></span></div><div class="stage" style="margin-top:4px">HR review</div></div>
+          <button class="adv">Advance ›</button>
+        </div>
+        <div class="rev">
+          <div class="av">MP</div>
+          <div class="meta"><div class="name">Maria Pop</div><div class="steps"><span class="step done"></span><span class="step done"></span><span class="step"></span><span class="step"></span></div><div class="stage" style="margin-top:4px">Manager review</div></div>
+          <button class="adv">Advance ›</button>
+        </div>
+        <div class="rev">
+          <div class="av">RG</div>
+          <div class="meta"><div class="name">Radu Gheorghe</div><div class="steps"><span class="step done"></span><span class="step"></span><span class="step"></span><span class="step"></span></div><div class="stage" style="margin-top:4px">Self review</div></div>
+          <button class="adv">Advance ›</button>
+        </div>
+      </div>
+
+      <p class="note">
+        Liquid Glass preview · Phase 8.4 Reviews. Review cycles (annual /
+        semi-annual / quarterly) with a per-employee workflow — Self → Manager →
+        HR → Sign-off — each stage capturing a 1–5 rating + comments and the
+        overall rating stamped at sign-off. The cycle rolls up a completion
+        progress bar. Backed by <code>review_cycles</code> + <code>reviews</code>
+        + <code>/api/reviews/*</code>. Pure black · monochrome.
+      </p>
+    </div>
+  </body>
+</html>

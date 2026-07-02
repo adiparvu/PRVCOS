@@ -55,6 +55,8 @@ export * from "./holidays"
 export * from "./employment"
 // Phase 8.3: Recruitment — job requisitions + candidate pipeline
 export * from "./recruitment"
+// Phase 8.4: Performance Reviews — cycles + self/manager/HR/signoff workflow
+export * from "./reviews"
 // Phase 8.5: HR Compliance — typed employee documents + expiry tracking
 export * from "./compliance"
 // Sprint 12: Procurement — purchase orders

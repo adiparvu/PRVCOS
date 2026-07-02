@@ -140,6 +140,21 @@ const BASE: CommandEntry[] = [
     href: "/recruitment",
   },
   {
+    id: "nav.reviews",
+    label: "Performance Reviews",
+    section: "Navigation",
+    keywords: [
+      "reviews",
+      "appraisal",
+      "performance review",
+      "cycle",
+      "self review",
+      "sign-off",
+      "goals",
+    ],
+    href: "/people/reviews",
+  },
+  {
     id: "nav.schedule",
     label: "Schedule",
     section: "Navigation",

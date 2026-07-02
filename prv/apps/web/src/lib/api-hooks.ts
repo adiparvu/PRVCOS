@@ -47,6 +47,8 @@ import type { ComplianceDoc, ComplianceMeta } from "@/app/api/compliance/documen
 import type { PayrollItem, PayrollItemsTotals } from "@/app/api/payroll/[id]/items/route"
 import type { RequisitionSummary, RequisitionMeta } from "@/app/api/recruitment/requisitions/route"
 import type { Candidate } from "@/app/api/recruitment/candidates/route"
+import type { ReviewCycleSummary } from "@/app/api/reviews/cycles/route"
+import type { ReviewSummary } from "@/app/api/reviews/route"
 
 const LIMIT = 50
 
@@ -2245,6 +2247,101 @@ export function useDeleteCandidate(requisitionId: string) {
     onSettled: () => {
       void qc.invalidateQueries({ queryKey: ["candidates", requisitionId] })
       void qc.invalidateQueries({ queryKey: ["requisitions"] })
+    },
+  })
+}
+
+// ── Performance Reviews (8.4) ──────────────────────────────────────────────────
+
+export type { ReviewCycleSummary, ReviewSummary }
+
+export interface ReviewCycleInput {
+  name: string
+  cadence?: "annual" | "semi_annual" | "quarterly"
+  periodStart?: string | null
+  periodEnd?: string | null
+  dueDate?: string | null
+}
+
+export function useReviewCycles() {
+  return useQuery({
+    queryKey: ["review-cycles"],
+    queryFn: () =>
+      fetch("/api/reviews/cycles").then(
+        (r) => r.json() as Promise<{ cycles: ReviewCycleSummary[] }>
+      ),
+  })
+}
+
+export function useCreateReviewCycle() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: ReviewCycleInput) => {
+      const res = await fetch("/api/reviews/cycles", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      })
+      if (!res.ok) throw new Error("Failed to open cycle")
+      return res.json() as Promise<{ id: string }>
+    },
+    onSettled: () => void qc.invalidateQueries({ queryKey: ["review-cycles"] }),
+  })
+}
+
+export function useReviews(cycleId: string | null) {
+  return useQuery({
+    queryKey: ["reviews", cycleId],
+    enabled: !!cycleId,
+    queryFn: () =>
+      fetch(`/api/reviews?cycleId=${cycleId}`).then(
+        (r) => r.json() as Promise<{ reviews: ReviewSummary[] }>
+      ),
+  })
+}
+
+export function useCreateReview(cycleId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: { userId: string; reviewerId?: string | null }) => {
+      const res = await fetch("/api/reviews", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cycleId, ...input }),
+      })
+      if (!res.ok) throw new Error("Failed to add employee to cycle")
+      return res.json() as Promise<{ id: string }>
+    },
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: ["reviews", cycleId] })
+      void qc.invalidateQueries({ queryKey: ["review-cycles"] })
+    },
+  })
+}
+
+export function useAdvanceReview(cycleId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({
+      id,
+      rating,
+      comments,
+    }: {
+      id: string
+      rating?: number | null
+      comments?: string | null
+    }) => {
+      const res = await fetch(`/api/reviews/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "advance", rating, comments }),
+      })
+      if (!res.ok) throw new Error("Failed to advance review")
+      return res.json() as Promise<{ id: string; stage: string }>
+    },
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: ["reviews", cycleId] })
+      void qc.invalidateQueries({ queryKey: ["review-cycles"] })
     },
   })
 }
