@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PRV · HR Compliance — Liquid Glass Preview</title>
+    <style>
+      :root {
+        --g1: rgba(255,255,255,0.06); --g2: rgba(255,255,255,0.10);
+        --t1: rgba(255,255,255,0.95); --t2: rgba(255,255,255,0.65); --t3: rgba(255,255,255,0.35); --t4: rgba(255,255,255,0.22);
+        --border: rgba(255,255,255,0.12); --border-subtle: rgba(255,255,255,0.08);
+        --amber: rgba(255,159,10,0.95); --red: rgba(255,69,58,0.9); --green: rgba(48,209,88,0.9);
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+      }
+      * { box-sizing:border-box; margin:0; padding:0; }
+      body { background:#000; color:var(--t1); min-height:100vh; -webkit-font-smoothing:antialiased; padding:40px 16px 80px; }
+      .aura { position:fixed; inset:0; z-index:-1; background:radial-gradient(1100px 480px at 50% -8%, rgba(255,255,255,0.06), transparent 60%); }
+      .wrap { max-width:680px; margin:0 auto; }
+      .eyebrow { font-size:12px; font-weight:600; letter-spacing:0.14em; text-transform:uppercase; color:var(--t3); }
+      h1 { font-size:26px; font-weight:680; letter-spacing:-0.02em; margin:3px 0 22px; }
+      .glass { background:var(--g1); border:1px solid var(--border-subtle); box-shadow:inset 0 1px 0 rgba(255,255,255,0.22); }
+      /* Compliance meter */
+      .meter { border-radius:22px; padding:20px 22px; margin-bottom:20px; display:flex; align-items:center; gap:22px; }
+      .ring { position:relative; width:104px; height:104px; flex:0 0 auto; }
+      .ring svg { transform:rotate(-90deg); }
+      .ring .v { position:absolute; inset:0; display:grid; place-items:center; font-size:26px; font-weight:720; letter-spacing:-0.02em; }
+      .mstats { flex:1; display:grid; grid-template-columns:repeat(2,1fr); gap:10px 18px; }
+      .ms .k { font-size:11px; font-weight:600; letter-spacing:0.04em; text-transform:uppercase; color:var(--t3); }
+      .ms .n { font-size:20px; font-weight:700; margin-top:3px; }
+      .ms .n.warn { color:var(--amber); } .ms .n.bad { color:var(--red); }
+      .label { font-size:11px; font-weight:600; letter-spacing:0.16em; text-transform:uppercase; color:var(--t3); margin:0 4px 12px; }
+      .list { border-radius:22px; overflow:hidden; }
+      .row { display:flex; align-items:center; gap:13px; padding:14px 16px; border-bottom:1px solid var(--border-subtle); }
+      .row:last-child { border-bottom:0; }
+      .ic { width:40px; height:40px; border-radius:12px; background:var(--g2); display:grid; place-items:center; flex:0 0 auto; box-shadow:inset 0 1px 0 rgba(255,255,255,0.2); color:var(--t2); }
+      .ic svg { width:19px; height:19px; stroke:currentColor; fill:none; stroke-width:1.7; }
+      .meta { flex:1; min-width:0; }
+      .name { font-size:14px; font-weight:640; letter-spacing:-0.01em; }
+      .sub { font-size:11.5px; color:var(--t3); margin-top:3px; display:flex; gap:10px; flex-wrap:wrap; }
+      .type { font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.04em; color:var(--t4); border:1px solid var(--border-subtle); border-radius:5px; padding:2px 6px; }
+      .exp { font-size:11px; margin-top:5px; }
+      .right { text-align:right; flex:0 0 auto; }
+      .badge { font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; border-radius:100px; padding:3px 9px; }
+      .b-ok { color:var(--green); background:rgba(48,209,88,0.12); border:1px solid rgba(48,209,88,0.26); }
+      .b-warn { color:var(--amber); background:rgba(255,159,10,0.14); border:1px solid rgba(255,159,10,0.28); }
+      .b-bad { color:var(--red); background:rgba(255,69,58,0.14); border:1px solid rgba(255,69,58,0.3); }
+      .b-pend { color:var(--t2); border:1px solid var(--border); }
+      .note { text-align:center; color:var(--t3); font-size:11.5px; margin:24px auto 0; line-height:1.6; }
+      code { color:var(--t2); }
+    </style>
+  </head>
+  <body>
+    <div class="aura"></div>
+    <div class="wrap">
+      <div class="eyebrow">People · HR</div>
+      <h1>Compliance</h1>
+
+      <div class="meter glass">
+        <div class="ring">
+          <svg width="104" height="104" viewBox="0 0 104 104">
+            <circle cx="52" cy="52" r="44" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="9" />
+            <circle cx="52" cy="52" r="44" fill="none" stroke="rgba(48,209,88,0.9)" stroke-width="9" stroke-linecap="round" stroke-dasharray="276.5" stroke-dashoffset="52" />
+          </svg>
+          <div class="v">81%</div>
+        </div>
+        <div class="mstats">
+          <div class="ms"><div class="k">Compliant</div><div class="n">39 / 48</div></div>
+          <div class="ms"><div class="k">Pending review</div><div class="n">5</div></div>
+          <div class="ms"><div class="k">Expiring ≤30d</div><div class="n warn">3</div></div>
+          <div class="ms"><div class="k">Expired</div><div class="n bad">1</div></div>
+        </div>
+      </div>
+
+      <div class="label">Documents · worst first</div>
+      <div class="list glass">
+        <div class="row">
+          <div class="ic"><svg viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/><path d="M4 9h16M9 20V9"/></svg></div>
+          <div class="meta"><div class="name">Andrei Dinu · Driving Licence</div><div class="sub"><span class="type">Driving licence</span><span>No. B-4471</span></div><div class="exp" style="color:var(--red)">Expired 6 days ago</div></div>
+          <div class="right"><span class="badge b-bad">Expired</span></div>
+        </div>
+        <div class="row">
+          <div class="ic"><svg viewBox="0 0 24 24"><path d="M2 7h20v10H2z"/><path d="M6 7V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2"/></svg></div>
+          <div class="meta"><div class="name">Ana Ilie · Work Permit</div><div class="sub"><span class="type">Work permit</span><span>No. WP-2291</span></div><div class="exp" style="color:var(--amber)">Expires in 18 days</div></div>
+          <div class="right"><span class="badge b-warn">18d left</span></div>
+        </div>
+        <div class="row">
+          <div class="ic"><svg viewBox="0 0 24 24"><path d="M12 2l3 3-3 3-3-3 3-3ZM4 22a8 8 0 0 1 16 0"/></svg></div>
+          <div class="meta"><div class="name">Radu Gheorghe · First-Aid Cert</div><div class="sub"><span class="type">Certification</span></div><div class="exp" style="color:var(--t3)">Awaiting HR verification</div></div>
+          <div class="right"><span class="badge b-pend">Pending</span></div>
+        </div>
+        <div class="row">
+          <div class="ic"><svg viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/><path d="M9 12l2 2 4-4"/></svg></div>
+          <div class="meta"><div class="name">Elena Vasile · Passport</div><div class="sub"><span class="type">Passport</span><span>Verified · valid to 2031</span></div></div>
+          <div class="right"><span class="badge b-ok">Compliant</span></div>
+        </div>
+      </div>
+
+      <p class="note">
+        Liquid Glass preview · Phase 8.5 HR Compliance. Typed employee documents
+        (passport / visa / licence / permit / cert) with a verification workflow
+        (pending → verified / rejected) and expiry tracking — flagged
+        <span style="color:var(--amber)">expiring ≤30d</span> /
+        <span style="color:var(--red)">expired</span>, a % compliant meter, and a
+        renewal action. Backed by <code>employee_documents</code> +
+        <code>/api/compliance/documents</code>. Pure black · monochrome.
+      </p>
+    </div>
+  </body>
+</html>

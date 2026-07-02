@@ -108,6 +108,22 @@ const BASE: CommandEntry[] = [
     href: "/people/contracts",
   },
   {
+    id: "nav.compliance",
+    label: "HR Compliance",
+    section: "Navigation",
+    keywords: [
+      "compliance",
+      "documents",
+      "passport",
+      "visa",
+      "certification",
+      "right to work",
+      "expiry",
+      "verify",
+    ],
+    href: "/people/compliance",
+  },
+  {
     id: "nav.schedule",
     label: "Schedule",
     section: "Navigation",

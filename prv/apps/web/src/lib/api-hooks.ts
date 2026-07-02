@@ -43,6 +43,7 @@ import type { EquipmentAssignment, EquipmentMeta } from "@/app/api/workforce/equ
 import type { PerformanceRow, PerformanceSummary } from "@/app/api/workforce/performance/route"
 import type { Holiday } from "@/app/api/workforce/holidays/route"
 import type { ContractSummary, ContractMeta } from "@/app/api/contracts/route"
+import type { ComplianceDoc, ComplianceMeta } from "@/app/api/compliance/documents/route"
 
 const LIMIT = 50
 
@@ -1979,5 +1980,82 @@ export function useDeleteContract() {
       return res.json() as Promise<{ removed: number }>
     },
     onSettled: () => void qc.invalidateQueries({ queryKey: ["contracts"] }),
+  })
+}
+
+// ── HR Compliance Documents (8.5) ──────────────────────────────────────────────
+
+export type { ComplianceDoc, ComplianceMeta }
+
+export interface ComplianceDocInput {
+  userId: string
+  docType?:
+    | "passport"
+    | "visa"
+    | "id_card"
+    | "driving_license"
+    | "work_permit"
+    | "certification"
+    | "medical"
+    | "other"
+  title: string
+  reference?: string | null
+  issuedDate?: string | null
+  expiryDate?: string | null
+  status?: "pending" | "verified" | "rejected"
+  notes?: string | null
+}
+
+export function useComplianceDocuments(userId?: string | null, docType?: string | null) {
+  return useQuery({
+    queryKey: ["compliance", userId ?? "all", docType ?? "all"],
+    queryFn: () =>
+      fetch(buildUrl("/api/compliance/documents", { userId, docType })).then(
+        (r) => r.json() as Promise<{ documents: ComplianceDoc[]; meta: ComplianceMeta }>
+      ),
+  })
+}
+
+export function useAddComplianceDoc() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: ComplianceDocInput) => {
+      const res = await fetch("/api/compliance/documents", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      })
+      if (!res.ok) throw new Error("Failed to add document")
+      return res.json() as Promise<{ id: string }>
+    },
+    onSettled: () => void qc.invalidateQueries({ queryKey: ["compliance"] }),
+  })
+}
+
+export function useUpdateComplianceDoc() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, patch }: { id: string; patch: Record<string, unknown> }) => {
+      const res = await fetch(`/api/compliance/documents/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patch),
+      })
+      if (!res.ok) throw new Error("Failed to update document")
+      return res.json() as Promise<{ id: string; status: string }>
+    },
+    onSettled: () => void qc.invalidateQueries({ queryKey: ["compliance"] }),
+  })
+}
+
+export function useDeleteComplianceDoc() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/compliance/documents/${id}`, { method: "DELETE" })
+      if (!res.ok) throw new Error("Failed to delete document")
+      return res.json() as Promise<{ removed: number }>
+    },
+    onSettled: () => void qc.invalidateQueries({ queryKey: ["compliance"] }),
   })
 }
