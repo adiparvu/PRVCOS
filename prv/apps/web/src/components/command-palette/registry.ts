@@ -84,6 +84,13 @@ const BASE: CommandEntry[] = [
     href: "/people/performance",
   },
   {
+    id: "nav.holidays",
+    label: "Public Holidays",
+    section: "Navigation",
+    keywords: ["holidays", "public holiday", "calendar", "bank holiday", "non-working", "days off"],
+    href: "/people/holidays",
+  },
+  {
     id: "nav.schedule",
     label: "Schedule",
     section: "Navigation",

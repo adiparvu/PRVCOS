@@ -41,6 +41,7 @@ import type { ActivityEntry } from "@/app/api/projects/[id]/activity/route"
 import type { LeaveBalanceSummary } from "@/app/api/workforce/leave/balances/route"
 import type { EquipmentAssignment, EquipmentMeta } from "@/app/api/workforce/equipment/route"
 import type { PerformanceRow, PerformanceSummary } from "@/app/api/workforce/performance/route"
+import type { Holiday } from "@/app/api/workforce/holidays/route"
 
 const LIMIT = 50
 
@@ -1854,5 +1855,55 @@ export function useRatePerformance() {
       return res.json() as Promise<{ id: string }>
     },
     onSettled: () => void qc.invalidateQueries({ queryKey: ["performance"] }),
+  })
+}
+
+// ── Public Holidays (7.3) ──────────────────────────────────────────────────────
+
+export type { Holiday }
+
+export interface HolidayInput {
+  name: string
+  date: string
+  country?: string
+  region?: string | null
+  isRecurring?: boolean
+}
+
+export function usePublicHolidays(year?: number | null, country?: string | null) {
+  return useQuery({
+    queryKey: ["holidays", year ?? "current", country ?? "all"],
+    queryFn: () =>
+      fetch(
+        buildUrl("/api/workforce/holidays", { year: year ? String(year) : undefined, country })
+      ).then((r) => r.json() as Promise<{ holidays: Holiday[]; year: number; count: number }>),
+  })
+}
+
+export function useAddHoliday() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: HolidayInput) => {
+      const res = await fetch("/api/workforce/holidays", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      })
+      if (!res.ok) throw new Error("Failed to add holiday")
+      return res.json() as Promise<{ id: string }>
+    },
+    onSettled: () => void qc.invalidateQueries({ queryKey: ["holidays"] }),
+  })
+}
+
+export function useDeleteHoliday() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/workforce/holidays/${id}`, { method: "DELETE" })
+      if (!res.ok) throw new Error("Failed to delete holiday")
+      return res.json() as Promise<{ removed: number }>
+    },
+    onSettled: () => void qc.invalidateQueries({ queryKey: ["holidays"] }),
   })
 }

@@ -47,6 +47,8 @@ export * from "./workforce"
 export * from "./equipment"
 // Phase 7.5: Performance — manager ratings feeding the metrics dashboard
 export * from "./performance"
+// Phase 7.3: Public Holidays — per-company non-working-day calendar
+export * from "./holidays"
 // Sprint 12: Procurement — purchase orders
 export * from "./procurement"
 // Sprint 12: Approvals — cross-module approval requests
