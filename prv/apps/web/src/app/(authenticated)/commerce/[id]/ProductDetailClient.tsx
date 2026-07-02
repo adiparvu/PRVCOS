@@ -557,6 +557,22 @@ export function ProductDetailClient({ id }: { id: string }) {
         >
           Manage variants ›
         </a>
+        <a
+          href={`/commerce/${id}/suppliers`}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 5,
+            marginBottom: 12,
+            marginLeft: 16,
+            fontSize: 12,
+            fontWeight: 600,
+            color: "rgba(255,255,255,0.6)",
+            textDecoration: "none",
+          }}
+        >
+          Sourcing ›
+        </a>
 
         {/* Price row */}
         <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 12 }}>

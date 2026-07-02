@@ -53,6 +53,7 @@ import type { StockLevelRow, InventoryMeta } from "@/app/api/inventory/route"
 import type { StockMovementRow } from "@/app/api/inventory/movements/route"
 import type { PromotionSummary, PromotionMeta } from "@/app/api/shop/promotions/route"
 import type { ProductVariant } from "@/app/api/shop/products/[id]/variants/route"
+import type { ProductSupplierLink } from "@/app/api/shop/products/[id]/suppliers/route"
 
 const LIMIT = 50
 
@@ -2596,5 +2597,89 @@ export function useDeleteVariant(productId: string) {
       return res.json() as Promise<{ removed: number }>
     },
     onSettled: () => void qc.invalidateQueries({ queryKey: ["product-variants", productId] }),
+  })
+}
+
+// ── Product Suppliers / Sourcing (9.4) ─────────────────────────────────────────
+
+export type { ProductSupplierLink }
+
+export interface SupplierOption {
+  id: string
+  name: string
+}
+
+export interface SupplierLinkInput {
+  supplierId: string
+  supplierSku?: string | null
+  cost?: number | null
+  leadTimeDays?: number | null
+  minOrderQty?: number | null
+  isPreferred?: boolean
+}
+
+export function useSupplierOptions() {
+  return useQuery({
+    queryKey: ["supplier-options"],
+    queryFn: () =>
+      fetch("/api/suppliers").then((r) => r.json() as Promise<{ suppliers: SupplierOption[] }>),
+    staleTime: 60_000,
+  })
+}
+
+export function useProductSuppliers(productId: string | null) {
+  return useQuery({
+    queryKey: ["product-suppliers", productId],
+    enabled: !!productId,
+    queryFn: () =>
+      fetch(`/api/shop/products/${productId}/suppliers`).then(
+        (r) => r.json() as Promise<{ links: ProductSupplierLink[] }>
+      ),
+  })
+}
+
+export function useLinkSupplier(productId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: SupplierLinkInput) => {
+      const res = await fetch(`/api/shop/products/${productId}/suppliers`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      })
+      if (!res.ok) throw new Error("Failed to link supplier")
+      return res.json() as Promise<{ id: string }>
+    },
+    onSettled: () => void qc.invalidateQueries({ queryKey: ["product-suppliers", productId] }),
+  })
+}
+
+export function useUpdateProductSupplier(productId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, patch }: { id: string; patch: Record<string, unknown> }) => {
+      const res = await fetch(`/api/shop/products/${productId}/suppliers/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patch),
+      })
+      if (!res.ok) throw new Error("Failed to update link")
+      return res.json() as Promise<{ id: string }>
+    },
+    onSettled: () => void qc.invalidateQueries({ queryKey: ["product-suppliers", productId] }),
+  })
+}
+
+export function useUnlinkSupplier(productId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/shop/products/${productId}/suppliers/${id}`, {
+        method: "DELETE",
+      })
+      if (!res.ok) throw new Error("Failed to unlink supplier")
+      return res.json() as Promise<{ removed: number }>
+    },
+    onSettled: () => void qc.invalidateQueries({ queryKey: ["product-suppliers", productId] }),
   })
 }

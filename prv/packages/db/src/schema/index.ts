@@ -31,6 +31,8 @@ export * from "./inventory"
 export * from "./promotions"
 // Phase 9.1: Product Variants — option axes, per-variant SKU/price/stock
 export * from "./product-variants"
+// Phase 9.4: Product↔Supplier links — sourcing, cost, lead time, preferred
+export * from "./product-suppliers"
 // Sprint 06: Document Management
 export * from "./documents"
 // Sprint 06: Fleet & Tool Management
