@@ -54,6 +54,7 @@ import type { StockMovementRow } from "@/app/api/inventory/movements/route"
 import type { PromotionSummary, PromotionMeta } from "@/app/api/shop/promotions/route"
 import type { ProductVariant } from "@/app/api/shop/products/[id]/variants/route"
 import type { ProductSupplierLink } from "@/app/api/shop/products/[id]/suppliers/route"
+import type { ReturnSummary, ReturnsMeta } from "@/app/api/shop/returns/route"
 
 const LIMIT = 50
 
@@ -2681,5 +2682,82 @@ export function useUnlinkSupplier(productId: string) {
       return res.json() as Promise<{ removed: number }>
     },
     onSettled: () => void qc.invalidateQueries({ queryKey: ["product-suppliers", productId] }),
+  })
+}
+
+// ── Order Returns / Refunds (9.3) ──────────────────────────────────────────────
+
+export type { ReturnSummary, ReturnsMeta }
+
+export interface OrderOption {
+  id: string
+  ref: string
+}
+
+export interface ReturnItemInput {
+  productId?: string | null
+  name: string
+  quantity: number
+  unitPrice: number
+}
+
+export interface CreateReturnInput {
+  reason?: "damaged" | "wrong_item" | "defective" | "not_needed" | "other"
+  restock?: boolean
+  notes?: string | null
+  items: ReturnItemInput[]
+}
+
+export function useOrderOptions() {
+  return useQuery({
+    queryKey: ["order-options"],
+    queryFn: () =>
+      fetch("/api/shop/orders").then((r) => r.json() as Promise<{ orders: OrderOption[] }>),
+    staleTime: 30_000,
+  })
+}
+
+export function useReturns() {
+  return useQuery({
+    queryKey: ["returns"],
+    queryFn: () =>
+      fetch("/api/shop/returns").then(
+        (r) => r.json() as Promise<{ returns: ReturnSummary[]; meta: ReturnsMeta }>
+      ),
+  })
+}
+
+export function useCreateReturn(orderId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: CreateReturnInput) => {
+      const res = await fetch(`/api/shop/orders/${orderId}/returns`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      })
+      if (!res.ok) throw new Error("Failed to open return")
+      return res.json() as Promise<{ id: string; returnNumber: string; refund: number }>
+    },
+    onSettled: () => void qc.invalidateQueries({ queryKey: ["returns"] }),
+  })
+}
+
+export function useUpdateReturn() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      const res = await fetch(`/api/shop/returns/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      })
+      if (!res.ok) {
+        const b = (await res.json().catch(() => ({}))) as { error?: string }
+        throw new Error(b.error ?? "Failed to update return")
+      }
+      return res.json() as Promise<{ id: string; status: string }>
+    },
+    onSettled: () => void qc.invalidateQueries({ queryKey: ["returns"] }),
   })
 }

@@ -199,6 +199,13 @@ const BASE: CommandEntry[] = [
     href: "/commerce/promotions",
   },
   {
+    id: "nav.returns",
+    label: "Returns & Refunds",
+    section: "Navigation",
+    keywords: ["returns", "refund", "rma", "credit", "order return", "refunds"],
+    href: "/commerce/returns",
+  },
+  {
     id: "nav.intelligence",
     label: "Intelligence & Analytics",
     section: "Navigation",

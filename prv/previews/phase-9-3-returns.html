@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PRV · Returns & Refunds — Liquid Glass Preview</title>
+    <style>
+      :root {
+        --g1: rgba(255,255,255,0.06); --g2: rgba(255,255,255,0.10);
+        --t1: rgba(255,255,255,0.95); --t2: rgba(255,255,255,0.65); --t3: rgba(255,255,255,0.35); --t4: rgba(255,255,255,0.22);
+        --border: rgba(255,255,255,0.12); --border-subtle: rgba(255,255,255,0.08);
+        --green: rgba(48,209,88,0.9); --amber: rgba(255,159,10,0.95); --red: rgba(255,69,58,0.9);
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+      }
+      * { box-sizing:border-box; margin:0; padding:0; }
+      body { background:#000; color:var(--t1); min-height:100vh; -webkit-font-smoothing:antialiased; padding:40px 16px 80px; }
+      .aura { position:fixed; inset:0; z-index:-1; background:radial-gradient(1100px 480px at 50% -8%, rgba(255,255,255,0.06), transparent 60%); }
+      .wrap { max-width:640px; margin:0 auto; }
+      .eyebrow { font-size:12px; font-weight:600; letter-spacing:0.14em; text-transform:uppercase; color:var(--t3); }
+      h1 { font-size:26px; font-weight:680; letter-spacing:-0.02em; margin:3px 0 22px; }
+      .glass { background:var(--g1); border:1px solid var(--border-subtle); box-shadow:inset 0 1px 0 rgba(255,255,255,0.22); }
+      .strip { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:22px; }
+      .stat { border-radius:18px; padding:14px 16px; }
+      .stat .k { font-size:11px; font-weight:600; letter-spacing:0.04em; text-transform:uppercase; color:var(--t3); }
+      .stat .v { font-size:26px; font-weight:700; letter-spacing:-0.02em; margin-top:6px; }
+      .label { font-size:11px; font-weight:600; letter-spacing:0.16em; text-transform:uppercase; color:var(--t3); margin:0 4px 12px; }
+      .list { border-radius:22px; overflow:hidden; }
+      .row { display:flex; align-items:center; gap:13px; padding:14px 16px; border-bottom:1px solid var(--border-subtle); }
+      .row:last-child { border-bottom:0; }
+      .meta { flex:1; min-width:0; }
+      .name { font-size:14px; font-weight:640; letter-spacing:-0.01em; }
+      .sub { font-size:11.5px; color:var(--t3); margin-top:3px; display:flex; gap:10px; flex-wrap:wrap; }
+      .rn { font-family:'SF Mono', monospace; font-weight:700; color:var(--t2); }
+      .steps { display:flex; align-items:center; gap:5px; margin-top:6px; }
+      .step { width:26px; height:5px; border-radius:100px; background:rgba(255,255,255,0.10); }
+      .step.done { background:rgba(255,255,255,0.75); }
+      .amount { font-size:14px; font-weight:700; text-align:right; font-variant-numeric:tabular-nums; }
+      .adv { font-size:11px; font-weight:600; color:var(--t2); background:var(--g1); border:1px solid var(--border); border-radius:100px; padding:4px 11px; margin-top:6px; }
+      .badge { font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; border-radius:100px; padding:3px 9px; }
+      .b-done { color:var(--green); background:rgba(48,209,88,0.12); border:1px solid rgba(48,209,88,0.26); }
+      .b-rej { color:var(--red); background:rgba(255,69,58,0.14); border:1px solid rgba(255,69,58,0.3); }
+      .note { text-align:center; color:var(--t3); font-size:11.5px; margin:24px auto 0; line-height:1.6; }
+      code { color:var(--t2); }
+    </style>
+  </head>
+  <body>
+    <div class="aura"></div>
+    <div class="wrap">
+      <div class="eyebrow">Commerce · Returns</div>
+      <h1>Returns & Refunds</h1>
+
+      <div class="strip">
+        <div class="stat glass"><div class="k">Open</div><div class="v">3</div></div>
+        <div class="stat glass"><div class="k">Refunded</div><div class="v">18</div></div>
+        <div class="stat glass"><div class="k">Refunded €</div><div class="v">2,140</div></div>
+      </div>
+
+      <div class="label">Returns · newest first</div>
+      <div class="list glass">
+        <div class="row">
+          <div class="meta"><div class="name">Damaged in transit</div><div class="sub"><span class="rn">RET-8KQ2</span><span>Order SO-2041</span></div><div class="steps"><span class="step done"></span><span class="step done"></span><span class="step"></span><span class="step"></span></div></div>
+          <div><div class="amount">€64</div><button class="adv">Receive ›</button></div>
+        </div>
+        <div class="row">
+          <div class="meta"><div class="name">Wrong item shipped</div><div class="sub"><span class="rn">RET-8KP9</span><span>Order SO-2039</span></div><div class="steps"><span class="step done"></span><span class="step"></span><span class="step"></span><span class="step"></span></div></div>
+          <div><div class="amount">€120</div><button class="adv">Approve ›</button></div>
+        </div>
+        <div class="row">
+          <div class="meta"><div class="name">Defective unit</div><div class="sub"><span class="rn">RET-8JX4</span><span>Order SO-2020</span></div></div>
+          <div><div class="amount">€45</div><span class="badge b-done">Refunded</span></div>
+        </div>
+        <div class="row">
+          <div class="meta"><div class="name">No longer needed</div><div class="sub"><span class="rn">RET-8HB1</span><span>Order SO-2015</span></div></div>
+          <div><div class="amount">€0</div><span class="badge b-rej">Rejected</span></div>
+        </div>
+      </div>
+
+      <p class="note">
+        Liquid Glass preview · Phase 9.3 Returns & Refunds. Open a return against
+        an order with its returned line items — the refund is derived from the
+        lines — then advance it through Requested → Approved → Received →
+        Refunded (or Reject), with restock control. Backed by
+        <code>order_returns</code> + <code>order_return_items</code> +
+        <code>/api/shop/returns</code>. Pure black · monochrome.
+      </p>
+    </div>
+  </body>
+</html>

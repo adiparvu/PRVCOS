@@ -33,6 +33,8 @@ export * from "./promotions"
 export * from "./product-variants"
 // Phase 9.4: Product↔Supplier links — sourcing, cost, lead time, preferred
 export * from "./product-suppliers"
+// Phase 9.3: Order Returns — returns/refunds workflow + return items
+export * from "./returns"
 // Sprint 06: Document Management
 export * from "./documents"
 // Sprint 06: Fleet & Tool Management
