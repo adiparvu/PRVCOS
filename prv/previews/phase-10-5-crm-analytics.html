@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CRM · Sales Analytics — Preview</title>
+<style>
+  :root{
+    --g1:rgba(255,255,255,.06); --g2:rgba(255,255,255,.10); --g3:rgba(255,255,255,.16);
+    --t1:rgba(255,255,255,.95); --t2:rgba(255,255,255,.65); --t3:rgba(255,255,255,.35); --t4:rgba(255,255,255,.15);
+    --bd:rgba(255,255,255,.12); --bds:rgba(255,255,255,.07); --shine:inset 0 1px 0 rgba(255,255,255,.22);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#000;color:var(--t1);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",sans-serif;
+    padding:40px 28px 80px;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1120px;margin:0 auto}
+  .head{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:26px;gap:20px;flex-wrap:wrap}
+  h1{font-size:30px;font-weight:640;letter-spacing:-.02em}
+  .sub{color:var(--t3);font-size:13.5px;margin-top:6px}
+  .seg{display:flex;gap:4px;background:var(--g1);border:1px solid var(--bd);border-radius:100px;padding:4px;box-shadow:var(--shine)}
+  .seg button{border:0;background:transparent;color:var(--t2);font:inherit;font-size:12.5px;padding:7px 15px;border-radius:100px;cursor:pointer}
+  .seg button.on{background:var(--g3);color:var(--t1);box-shadow:var(--shine)}
+  .grid{display:grid;gap:16px}
+  .kpis{grid-template-columns:repeat(4,1fr);margin-bottom:16px}
+  @media(max-width:820px){.kpis{grid-template-columns:repeat(2,1fr)}}
+  .card{background:var(--g1);border:1px solid var(--bd);border-radius:22px;padding:20px 22px;box-shadow:var(--shine),0 24px 64px rgba(0,0,0,.5);backdrop-filter:blur(32px)}
+  .kpi .lbl{color:var(--t3);font-size:11.5px;text-transform:uppercase;letter-spacing:.08em;font-weight:560}
+  .kpi .val{font-size:30px;font-weight:660;letter-spacing:-.02em;margin-top:12px}
+  .kpi .val small{font-size:15px;color:var(--t3);font-weight:500;margin-left:2px}
+  .kpi .foot{color:var(--t2);font-size:12px;margin-top:8px;display:flex;align-items:center;gap:6px}
+  .dot{width:6px;height:6px;border-radius:50%;background:var(--t2);display:inline-block}
+  .cols{grid-template-columns:1.35fr 1fr}
+  @media(max-width:820px){.cols{grid-template-columns:1fr}}
+  .ct{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+  .ct h2{font-size:15px;font-weight:600}
+  .ct .meta{color:var(--t3);font-size:12px}
+  /* funnel */
+  .funnel{display:flex;flex-direction:column;gap:10px}
+  .fr{display:grid;grid-template-columns:96px 1fr auto;align-items:center;gap:14px}
+  .fr .name{color:var(--t2);font-size:12.5px;text-transform:capitalize}
+  .bar{height:30px;border-radius:9px;background:var(--g2);border:1px solid var(--bds);position:relative;overflow:hidden}
+  .bar > i{position:absolute;inset:0;width:var(--w);background:linear-gradient(90deg,rgba(255,255,255,.22),rgba(255,255,255,.10));border-right:1px solid rgba(255,255,255,.28)}
+  .fr .n{font-variant-numeric:tabular-nums;font-size:13px;color:var(--t1);min-width:74px;text-align:right}
+  .fr .n b{font-weight:620}.fr .n span{color:var(--t3);font-size:11.5px}
+  .won i{background:linear-gradient(90deg,rgba(255,255,255,.34),rgba(255,255,255,.16))}
+  .lost i{background:repeating-linear-gradient(45deg,rgba(255,255,255,.10),rgba(255,255,255,.10) 6px,rgba(255,255,255,.04) 6px,rgba(255,255,255,.04) 12px)}
+  /* source */
+  .src{display:flex;flex-direction:column;gap:14px}
+  .srow{display:flex;flex-direction:column;gap:7px}
+  .srow .top{display:flex;justify-content:space-between;font-size:12.5px}
+  .srow .top .s{color:var(--t2);text-transform:capitalize}
+  .srow .top .v{color:var(--t1);font-variant-numeric:tabular-nums}
+  .track{height:7px;border-radius:100px;background:var(--g2);overflow:hidden}
+  .track > i{display:block;height:100%;border-radius:100px;background:linear-gradient(90deg,rgba(255,255,255,.30),rgba(255,255,255,.14))}
+  /* velocity */
+  .spark{display:flex;align-items:flex-end;gap:10px;height:120px;padding-top:10px}
+  .spark .b{flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;height:100%;justify-content:flex-end}
+  .spark .b > i{width:100%;max-width:34px;border-radius:8px 8px 3px 3px;background:linear-gradient(180deg,rgba(255,255,255,.26),rgba(255,255,255,.08));box-shadow:var(--shine)}
+  .spark .b .wl{color:var(--t3);font-size:10.5px}
+  .spark .b .wc{color:var(--t2);font-size:11px;font-variant-numeric:tabular-nums}
+  /* reps */
+  .reps{display:flex;flex-direction:column;gap:2px}
+  .rep{display:flex;align-items:center;gap:13px;padding:11px 6px;border-bottom:1px solid var(--bds)}
+  .rep:last-child{border-bottom:0}
+  .av{width:34px;height:34px;border-radius:50%;background:var(--g3);border:1px solid var(--bd);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;box-shadow:var(--shine)}
+  .rep .nm{flex:1;font-size:13px}
+  .rep .nm span{display:block;color:var(--t3);font-size:11px;margin-top:2px}
+  .rep .amt{font-size:13.5px;font-weight:600;font-variant-numeric:tabular-nums}
+  .rk{color:var(--t3);font-size:12px;width:16px;text-align:center}
+  .note{margin-top:26px;color:var(--t3);font-size:12px;line-height:1.7;border-top:1px solid var(--bds);padding-top:16px}
+  .note b{color:var(--t2);font-weight:560}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <div>
+      <h1>Sales Analytics</h1>
+      <div class="sub">CRM · pipeline performance across every lead source and rep</div>
+    </div>
+    <div class="seg"><button>7d</button><button class="on">30d</button><button>QTD</button><button>YTD</button></div>
+  </div>
+
+  <div class="grid kpis">
+    <div class="card kpi"><div class="lbl">Weighted pipeline</div><div class="val">€184.2k</div><div class="foot"><span class="dot"></span>€342.0k unweighted</div></div>
+    <div class="card kpi"><div class="lbl">Win rate</div><div class="val">61.5<small>%</small></div><div class="foot"><span class="dot"></span>16 won · 10 lost</div></div>
+    <div class="card kpi"><div class="lbl">Avg deal size</div><div class="val">€8.4k</div><div class="foot"><span class="dot"></span>over 16 won deals</div></div>
+    <div class="card kpi"><div class="lbl">Avg sales cycle</div><div class="val">18.3<small>d</small></div><div class="foot"><span class="dot"></span>new → closed</div></div>
+  </div>
+
+  <div class="grid cols">
+    <div class="card">
+      <div class="ct"><h2>Conversion funnel</h2><div class="meta">42 leads total</div></div>
+      <div class="funnel">
+        <div class="fr"><div class="name">New</div><div class="bar"><i style="--w:100%"></i></div><div class="n"><b>14</b> · <span>€96k</span></div></div>
+        <div class="fr"><div class="name">Contacted</div><div class="bar"><i style="--w:78%"></i></div><div class="n"><b>11</b> · <span>€82k</span></div></div>
+        <div class="fr"><div class="name">Qualified</div><div class="bar"><i style="--w:57%"></i></div><div class="n"><b>8</b> · <span>€71k</span></div></div>
+        <div class="fr"><div class="name">Proposal</div><div class="bar"><i style="--w:36%"></i></div><div class="n"><b>5</b> · <span>€54k</span></div></div>
+        <div class="fr"><div class="name">Negotiation</div><div class="bar"><i style="--w:21%"></i></div><div class="n"><b>3</b> · <span>€39k</span></div></div>
+        <div class="fr won"><div class="name">Won</div><div class="bar"><i style="--w:66%"></i></div><div class="n"><b>16</b> · <span>€134k</span></div></div>
+        <div class="fr lost"><div class="name">Lost</div><div class="bar"><i style="--w:41%"></i></div><div class="n"><b>10</b> · <span>€71k</span></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="ct"><h2>Revenue by source</h2><div class="meta">won value</div></div>
+      <div class="src">
+        <div class="srow"><div class="top"><span class="s">Referral</span><span class="v">€48.0k</span></div><div class="track"><i style="width:100%"></i></div></div>
+        <div class="srow"><div class="top"><span class="s">Website</span><span class="v">€36.5k</span></div><div class="track"><i style="width:76%"></i></div></div>
+        <div class="srow"><div class="top"><span class="s">Partner</span><span class="v">€24.0k</span></div><div class="track"><i style="width:50%"></i></div></div>
+        <div class="srow"><div class="top"><span class="s">Event</span><span class="v">€14.5k</span></div><div class="track"><i style="width:30%"></i></div></div>
+        <div class="srow"><div class="top"><span class="s">Social</span><span class="v">€8.0k</span></div><div class="track"><i style="width:17%"></i></div></div>
+        <div class="srow"><div class="top"><span class="s">Cold call</span><span class="v">€3.0k</span></div><div class="track"><i style="width:6%"></i></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid cols" style="margin-top:16px">
+    <div class="card">
+      <div class="ct"><h2>Lead velocity</h2><div class="meta">new leads / week</div></div>
+      <div class="spark">
+        <div class="b"><i style="height:32%"></i><span class="wc">4</span><span class="wl">May 12</span></div>
+        <div class="b"><i style="height:50%"></i><span class="wc">6</span><span class="wl">May 19</span></div>
+        <div class="b"><i style="height:42%"></i><span class="wc">5</span><span class="wl">May 26</span></div>
+        <div class="b"><i style="height:67%"></i><span class="wc">8</span><span class="wl">Jun 02</span></div>
+        <div class="b"><i style="height:58%"></i><span class="wc">7</span><span class="wl">Jun 09</span></div>
+        <div class="b"><i style="height:83%"></i><span class="wc">10</span><span class="wl">Jun 16</span></div>
+        <div class="b"><i style="height:75%"></i><span class="wc">9</span><span class="wl">Jun 23</span></div>
+        <div class="b"><i style="height:100%"></i><span class="wc">12</span><span class="wl">Jun 30</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="ct"><h2>Top performers</h2><div class="meta">by won value</div></div>
+      <div class="reps">
+        <div class="rep"><div class="rk">1</div><div class="av">AI</div><div class="nm">Andrei Ionescu<span>7 deals won</span></div><div class="amt">€62.4k</div></div>
+        <div class="rep"><div class="rk">2</div><div class="av">MP</div><div class="nm">Maria Popescu<span>5 deals won</span></div><div class="amt">€41.0k</div></div>
+        <div class="rep"><div class="rk">3</div><div class="av">VD</div><div class="nm">Vlad Dumitru<span>3 deals won</span></div><div class="amt">€22.8k</div></div>
+        <div class="rep"><div class="rk">4</div><div class="av">—</div><div class="nm">Unassigned<span>1 deal won</span></div><div class="amt">€7.8k</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note">
+    <b>What this is:</b> Phase 10.5 — CRM / Sales Analytics. Read-only dashboard at <b>/crm/analytics</b>, reachable via ⌘K.
+    Every figure is computed from the live lead pipeline (leads = <b>clients</b> with stage/source/value in metadata): weighted &amp; raw
+    pipeline value, win rate, avg deal size, avg sales-cycle days, the conversion funnel, revenue by source, an 8-week lead-velocity
+    trend, and a top-reps leaderboard. <b>Weighted pipeline</b> applies a per-stage close probability (new 10% → negotiation 80%).
+    No schema changes, no write paths — pure aggregation over existing data.
+  </div>
+</div>
+</body>
+</html>

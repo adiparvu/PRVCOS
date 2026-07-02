@@ -6,6 +6,7 @@ import type { Expense, FinanceMeta, PlRow } from "@/app/api/finance/expenses/rou
 import type { QuoteSummary } from "@/app/api/crm/quotes/route"
 import type { ClientSummary } from "@/app/api/crm/clients/route"
 import type { Lead } from "@/app/api/crm/leads/route"
+import type { CrmAnalytics } from "@/app/api/crm/analytics/route"
 import type { ProjectSummary } from "@/app/api/projects/route"
 import type { PayrollRun, PayrollMeta } from "@/app/api/payroll/route"
 import type { POSummary, ProcurementMeta } from "@/app/api/procurement/route"
@@ -2759,5 +2760,16 @@ export function useUpdateReturn() {
       return res.json() as Promise<{ id: string; status: string }>
     },
     onSettled: () => void qc.invalidateQueries({ queryKey: ["returns"] }),
+  })
+}
+
+export function useCrmAnalytics() {
+  return useQuery({
+    queryKey: ["crm-analytics"],
+    queryFn: async () => {
+      const res = await fetch("/api/crm/analytics")
+      if (!res.ok) throw new Error("Failed to load CRM analytics")
+      return res.json() as Promise<CrmAnalytics>
+    },
   })
 }
