@@ -40,6 +40,7 @@ import type { RiskSummary, RiskRegisterMeta } from "@/app/api/projects/[id]/risk
 import type { ActivityEntry } from "@/app/api/projects/[id]/activity/route"
 import type { LeaveBalanceSummary } from "@/app/api/workforce/leave/balances/route"
 import type { EquipmentAssignment, EquipmentMeta } from "@/app/api/workforce/equipment/route"
+import type { PerformanceRow, PerformanceSummary } from "@/app/api/workforce/performance/route"
 
 const LIMIT = 50
 
@@ -1812,5 +1813,46 @@ export function useDeleteEquipment() {
       return res.json() as Promise<{ removed: number }>
     },
     onSettled: () => void qc.invalidateQueries({ queryKey: ["equipment"] }),
+  })
+}
+
+// ── Performance (7.5) ──────────────────────────────────────────────────────────
+
+export type { PerformanceRow, PerformanceSummary }
+
+export function usePerformance(from?: string | null, to?: string | null) {
+  return useQuery({
+    queryKey: ["performance", from ?? "d", to ?? "d"],
+    queryFn: () =>
+      fetch(buildUrl("/api/workforce/performance", { from, to })).then(
+        (r) =>
+          r.json() as Promise<{
+            rows: PerformanceRow[]
+            summary: PerformanceSummary
+            range: { from: string; to: string }
+          }>
+      ),
+    staleTime: 60_000,
+  })
+}
+
+export function useRatePerformance() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: {
+      userId: string
+      period: string
+      rating: number
+      note?: string | null
+    }) => {
+      const res = await fetch("/api/workforce/performance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      })
+      if (!res.ok) throw new Error("Failed to save rating")
+      return res.json() as Promise<{ id: string }>
+    },
+    onSettled: () => void qc.invalidateQueries({ queryKey: ["performance"] }),
   })
 }
