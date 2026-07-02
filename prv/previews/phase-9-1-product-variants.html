@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PRV · Product Variants — Liquid Glass Preview</title>
+    <style>
+      :root {
+        --g1: rgba(255,255,255,0.06); --g2: rgba(255,255,255,0.10);
+        --t1: rgba(255,255,255,0.95); --t2: rgba(255,255,255,0.65); --t3: rgba(255,255,255,0.35); --t4: rgba(255,255,255,0.22);
+        --border: rgba(255,255,255,0.12); --border-subtle: rgba(255,255,255,0.08);
+        --red: rgba(255,69,58,0.9); --amber: rgba(255,159,10,0.95);
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+      }
+      * { box-sizing:border-box; margin:0; padding:0; }
+      body { background:#000; color:var(--t1); min-height:100vh; -webkit-font-smoothing:antialiased; padding:40px 16px 80px; }
+      .aura { position:fixed; inset:0; z-index:-1; background:radial-gradient(1100px 480px at 50% -8%, rgba(255,255,255,0.06), transparent 60%); }
+      .wrap { max-width:640px; margin:0 auto; }
+      .eyebrow { font-size:12px; font-weight:600; letter-spacing:0.14em; text-transform:uppercase; color:var(--t3); }
+      h1 { font-size:26px; font-weight:680; letter-spacing:-0.02em; margin:3px 0 4px; }
+      .sub { font-size:13px; color:var(--t2); margin-bottom:20px; }
+      .glass { background:var(--g1); border:1px solid var(--border-subtle); box-shadow:inset 0 1px 0 rgba(255,255,255,0.22); }
+      /* axes */
+      .axes { display:flex; gap:18px; flex-wrap:wrap; border-radius:18px; padding:14px 16px; margin-bottom:20px; }
+      .axis .k { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--t3); margin-bottom:7px; }
+      .chips { display:flex; gap:6px; flex-wrap:wrap; }
+      .chip { font-size:11.5px; font-weight:600; color:var(--t2); background:var(--g1); border:1px solid var(--border-subtle); border-radius:100px; padding:3px 10px; }
+      .range { margin-left:auto; text-align:right; }
+      .range .k { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--t3); }
+      .range .v { font-size:15px; font-weight:700; margin-top:4px; }
+      .label { font-size:11px; font-weight:600; letter-spacing:0.16em; text-transform:uppercase; color:var(--t3); margin:0 4px 12px; }
+      .list { border-radius:22px; overflow:hidden; }
+      .row { display:flex; align-items:center; gap:13px; padding:13px 16px; border-bottom:1px solid var(--border-subtle); }
+      .row:last-child { border-bottom:0; }
+      .meta { flex:1; min-width:0; }
+      .name { font-size:14px; font-weight:640; letter-spacing:-0.01em; }
+      .vsub { font-size:11.5px; color:var(--t3); margin-top:3px; display:flex; gap:10px; }
+      .sku { font-family:'SF Mono', monospace; }
+      .price { font-size:14px; font-weight:700; text-align:right; font-variant-numeric:tabular-nums; }
+      .stock { font-size:10.5px; text-align:right; margin-top:2px; color:var(--t4); }
+      .stock.out { color:var(--red); } .stock.low { color:var(--amber); }
+      .note { text-align:center; color:var(--t3); font-size:11.5px; margin:24px auto 0; line-height:1.6; }
+      code { color:var(--t2); }
+    </style>
+  </head>
+  <body>
+    <div class="aura"></div>
+    <div class="wrap">
+      <div class="eyebrow">Commerce · Product</div>
+      <h1>Site work jacket</h1>
+      <div class="sub">SKU · JCK-BASE · 6 variants</div>
+
+      <div class="axes glass">
+        <div class="axis"><div class="k">Colour</div><div class="chips"><span class="chip">Black</span><span class="chip">Hi-vis</span></div></div>
+        <div class="axis"><div class="k">Size</div><div class="chips"><span class="chip">S</span><span class="chip">M</span><span class="chip">L</span></div></div>
+        <div class="range"><div class="k">Price range</div><div class="v">€45 – €52</div></div>
+      </div>
+
+      <div class="label">Variants</div>
+      <div class="list glass">
+        <div class="row">
+          <div class="meta"><div class="name">Black · M</div><div class="vsub"><span class="sku">JCK-BLK-M</span></div></div>
+          <div><div class="price">€45</div><div class="stock">28 in stock</div></div>
+        </div>
+        <div class="row">
+          <div class="meta"><div class="name">Black · L</div><div class="vsub"><span class="sku">JCK-BLK-L</span></div></div>
+          <div><div class="price">€45</div><div class="stock low">4 left</div></div>
+        </div>
+        <div class="row">
+          <div class="meta"><div class="name">Hi-vis · M</div><div class="vsub"><span class="sku">JCK-HIV-M</span></div></div>
+          <div><div class="price">€52</div><div class="stock">15 in stock</div></div>
+        </div>
+        <div class="row">
+          <div class="meta"><div class="name">Hi-vis · L</div><div class="vsub"><span class="sku">JCK-HIV-L</span></div></div>
+          <div><div class="price">€52</div><div class="stock out">Out</div></div>
+        </div>
+      </div>
+
+      <p class="note">
+        Liquid Glass preview · Phase 9.1 Product Variants. Each product can carry
+        variants along option axes (colour · size · material), with a per-variant
+        SKU, optional price override, and its own stock. The header rolls up the
+        distinct axes and the price range. Backed by <code>product_variants</code>
+        + <code>/api/shop/products/[id]/variants</code>. Pure black · monochrome.
+      </p>
+    </div>
+  </body>
+</html>

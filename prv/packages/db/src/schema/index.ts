@@ -29,6 +29,8 @@ export * from "./finance"
 export * from "./inventory"
 // Phase 9.5: Promotions — discount rules + coupon codes
 export * from "./promotions"
+// Phase 9.1: Product Variants — option axes, per-variant SKU/price/stock
+export * from "./product-variants"
 // Sprint 06: Document Management
 export * from "./documents"
 // Sprint 06: Fleet & Tool Management

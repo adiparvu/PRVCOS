@@ -52,6 +52,7 @@ import type { ReviewSummary } from "@/app/api/reviews/route"
 import type { StockLevelRow, InventoryMeta } from "@/app/api/inventory/route"
 import type { StockMovementRow } from "@/app/api/inventory/movements/route"
 import type { PromotionSummary, PromotionMeta } from "@/app/api/shop/promotions/route"
+import type { ProductVariant } from "@/app/api/shop/products/[id]/variants/route"
 
 const LIMIT = 50
 
@@ -2520,5 +2521,80 @@ export function useValidateCoupon() {
       if (!res.ok) throw new Error("Failed to validate coupon")
       return res.json() as Promise<CouponValidation>
     },
+  })
+}
+
+// ── Product Variants (9.1) ─────────────────────────────────────────────────────
+
+export type { ProductVariant }
+
+export interface VariantInput {
+  name: string
+  sku?: string | null
+  barcode?: string | null
+  options?: Record<string, string>
+  price?: number | null
+  stockQuantity?: number
+}
+
+export function useProductVariants(productId: string | null) {
+  return useQuery({
+    queryKey: ["product-variants", productId],
+    enabled: !!productId,
+    queryFn: () =>
+      fetch(`/api/shop/products/${productId}/variants`).then(
+        (r) =>
+          r.json() as Promise<{
+            variants: ProductVariant[]
+            axes: Record<string, string[]>
+            priceRange: { min: number; max: number } | null
+          }>
+      ),
+  })
+}
+
+export function useCreateVariant(productId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: VariantInput) => {
+      const res = await fetch(`/api/shop/products/${productId}/variants`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      })
+      if (!res.ok) throw new Error("Failed to add variant")
+      return res.json() as Promise<{ id: string }>
+    },
+    onSettled: () => void qc.invalidateQueries({ queryKey: ["product-variants", productId] }),
+  })
+}
+
+export function useUpdateVariant(productId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, patch }: { id: string; patch: Record<string, unknown> }) => {
+      const res = await fetch(`/api/shop/products/${productId}/variants/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patch),
+      })
+      if (!res.ok) throw new Error("Failed to update variant")
+      return res.json() as Promise<{ id: string }>
+    },
+    onSettled: () => void qc.invalidateQueries({ queryKey: ["product-variants", productId] }),
+  })
+}
+
+export function useDeleteVariant(productId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/shop/products/${productId}/variants/${id}`, {
+        method: "DELETE",
+      })
+      if (!res.ok) throw new Error("Failed to delete variant")
+      return res.json() as Promise<{ removed: number }>
+    },
+    onSettled: () => void qc.invalidateQueries({ queryKey: ["product-variants", productId] }),
   })
 }

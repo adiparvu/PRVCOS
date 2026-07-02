@@ -542,6 +542,22 @@ export function ProductDetailClient({ id }: { id: string }) {
           {product.name}
         </h1>
 
+        <a
+          href={`/commerce/${id}/variants`}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 5,
+            marginBottom: 12,
+            fontSize: 12,
+            fontWeight: 600,
+            color: "rgba(255,255,255,0.6)",
+            textDecoration: "none",
+          }}
+        >
+          Manage variants ›
+        </a>
+
         {/* Price row */}
         <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 12 }}>
           <span
