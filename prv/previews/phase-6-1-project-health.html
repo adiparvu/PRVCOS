@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PRV · Project Health — Liquid Glass Preview</title>
+    <style>
+      :root {
+        --g1: rgba(255,255,255,0.06); --g2: rgba(255,255,255,0.10);
+        --t1: rgba(255,255,255,0.95); --t2: rgba(255,255,255,0.65); --t3: rgba(255,255,255,0.35); --t4: rgba(255,255,255,0.22);
+        --border: rgba(255,255,255,0.12); --border-subtle: rgba(255,255,255,0.08);
+        --amber: rgba(255,159,10,0.95); --red: rgba(255,69,58,0.9); --green: rgba(48,209,88,0.9);
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+      }
+      * { box-sizing:border-box; margin:0; padding:0; }
+      body { background:#000; color:var(--t1); min-height:100vh; -webkit-font-smoothing:antialiased; padding:40px 16px 80px; }
+      .aura { position:fixed; inset:0; z-index:-1; background:radial-gradient(1100px 480px at 50% -8%, rgba(255,255,255,0.06), transparent 60%); }
+      .wrap { max-width:560px; margin:0 auto; }
+      .eyebrow { font-size:12px; font-weight:600; letter-spacing:0.14em; text-transform:uppercase; color:var(--t3); }
+      h1 { font-size:26px; font-weight:680; letter-spacing:-0.02em; margin:3px 0 4px; }
+      .meta-row { display:flex; gap:8px; margin:14px 0 22px; flex-wrap:wrap; }
+      .chip { font-size:11px; font-weight:600; padding:5px 11px; border-radius:100px; background:var(--g1); border:1px solid var(--border-subtle); color:var(--t2); display:inline-flex; align-items:center; gap:6px; }
+      .chip .dot { width:6px; height:6px; border-radius:50%; }
+      .card { border-radius:24px; padding:22px; background:var(--g1); border:1px solid var(--border-subtle); box-shadow:inset 0 1px 0 rgba(255,255,255,0.22); }
+      .gauge { display:flex; align-items:center; gap:22px; }
+      .ring { position:relative; width:132px; height:132px; flex:0 0 auto; }
+      .ring svg { transform:rotate(-90deg); }
+      .ring .val { position:absolute; inset:0; display:grid; place-items:center; flex-direction:column; }
+      .ring .num { font-size:38px; font-weight:720; letter-spacing:-0.03em; line-height:1; }
+      .ring .lbl { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--amber); margin-top:4px; }
+      .bd { flex:1; display:flex; flex-direction:column; gap:12px; }
+      .brow .top { display:flex; justify-content:space-between; font-size:12px; margin-bottom:5px; }
+      .brow .top .k { color:var(--t2); font-weight:600; }
+      .brow .top .v { color:var(--t3); font-variant-numeric:tabular-nums; }
+      .bar { height:7px; border-radius:100px; background:rgba(255,255,255,0.08); overflow:hidden; }
+      .bar .f { height:100%; border-radius:100px; background:rgba(255,255,255,0.8); }
+      .note { text-align:center; color:var(--t3); font-size:11.5px; margin:24px auto 0; line-height:1.6; }
+      code { color:var(--t2); }
+    </style>
+  </head>
+  <body>
+    <div class="aura"></div>
+    <div class="wrap">
+      <div class="eyebrow">Project · Health</div>
+      <h1>Kitchen Reno — Ionescu</h1>
+      <div class="meta-row">
+        <span class="chip"><span class="dot" style="background:var(--amber)"></span>High priority</span>
+        <span class="chip">Renovation</span>
+        <span class="chip">PM · Elena Vasile</span>
+        <span class="chip">Director · Maria Pop</span>
+      </div>
+
+      <div class="card">
+        <div class="gauge">
+          <div class="ring">
+            <svg width="132" height="132" viewBox="0 0 132 132">
+              <circle cx="66" cy="66" r="58" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="10" />
+              <circle cx="66" cy="66" r="58" fill="none" stroke="rgba(255,159,10,0.95)" stroke-width="10"
+                stroke-linecap="round" stroke-dasharray="364.4" stroke-dashoffset="102" />
+            </svg>
+            <div class="val"><div class="num">72</div><div class="lbl">At risk</div></div>
+          </div>
+          <div class="bd">
+            <div class="brow">
+              <div class="top"><span class="k">Budget</span><span class="v">65 · amber</span></div>
+              <div class="bar"><div class="f" style="width:65%; background:var(--amber)"></div></div>
+            </div>
+            <div class="brow">
+              <div class="top"><span class="k">Progress</span><span class="v">88 · on track</span></div>
+              <div class="bar"><div class="f" style="width:88%"></div></div>
+            </div>
+            <div class="brow">
+              <div class="top"><span class="k">Risk</span><span class="v">58 · 1 critical</span></div>
+              <div class="bar"><div class="f" style="width:58%; background:var(--red)"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p class="note">
+        Liquid Glass preview · Phase 6.1 Project Health. A computed 0–100 score
+        blending <strong>budget</strong> (spend vs plan), <strong>progress</strong>
+        (tasks done vs schedule elapsed) and <strong>risk</strong> (open
+        critical/high), banded healthy / at-risk / critical (arc turns
+        <span style="color:var(--amber)">amber</span> /
+        <span style="color:var(--red)">red</span> as it degrades). Plus the newly
+        added type · priority · project-manager · director fields. Backed by the
+        extended <code>projects</code> table + <code>/api/projects/[id]/health</code>.
+        Pure black · monochrome.
+      </p>
+    </div>
+  </body>
+</html>

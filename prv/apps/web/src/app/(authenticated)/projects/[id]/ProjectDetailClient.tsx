@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 import Link from "next/link"
+import { ProjectHealthCard } from "@/components/projects/ProjectHealthCard"
 import { useSheetStack } from "@prv/ui"
 import type { ProjectDetail } from "@/app/api/projects/[id]/route"
 
@@ -396,6 +397,9 @@ export function ProjectDetailClient({ id }: ProjectDetailClientProps) {
       </div>
 
       {/* Budget ring */}
+      <SectionLabel>Health</SectionLabel>
+      <ProjectHealthCard projectId={id} />
+
       <SectionLabel>Budget</SectionLabel>
       <div
         style={{

@@ -35,6 +35,16 @@ export const projectMemberRoleEnum = pgEnum("project_member_role", [
   "observer",
 ])
 
+export const projectTypeEnum = pgEnum("project_type", [
+  "renovation",
+  "installation",
+  "maintenance",
+  "consultation",
+  "other",
+])
+
+export const projectPriorityEnum = pgEnum("project_priority", ["critical", "high", "medium", "low"])
+
 export const projects = pgTable(
   "projects",
   {
@@ -50,13 +60,30 @@ export const projects = pgTable(
     code: varchar("code", { length: 50 }),
     description: text("description"),
     status: projectStatusEnum("status").notNull().default("draft"),
+    type: projectTypeEnum("type").notNull().default("renovation"),
+    priority: projectPriorityEnum("priority").notNull().default("medium"),
+
+    projectManagerId: uuid("project_manager_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    projectDirectorId: uuid("project_director_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
 
     budget: numeric("budget", { precision: 12, scale: 2 }),
+    approvedBudget: numeric("approved_budget", { precision: 12, scale: 2 }),
+    spentBudget: numeric("spent_budget", { precision: 12, scale: 2 }),
     currency: varchar("currency", { length: 3 }).notNull().default("RON"),
 
     startDate: date("start_date"),
     dueDate: date("due_date"),
+    actualStartDate: date("actual_start_date"),
+    actualEndDate: date("actual_end_date"),
     completedAt: timestamp("completed_at", { withTimezone: true }),
+
+    // Cached 0–100 health score (computed from budget EVA, task progress, risk
+    // severity and schedule); refreshed by GET /api/projects/[id]/health.
+    healthScore: integer("health_score"),
 
     tags: jsonb("tags").notNull().default([]),
     metadata: jsonb("metadata").notNull().default({}),
@@ -71,6 +98,7 @@ export const projects = pgTable(
     index("projects_client_id_idx").on(table.clientId),
     index("projects_owner_id_idx").on(table.ownerId),
     index("projects_status_idx").on(table.status),
+    index("projects_manager_id_idx").on(table.projectManagerId),
   ]
 )
 

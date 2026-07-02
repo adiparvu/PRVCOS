@@ -1675,3 +1675,32 @@ export function usePostProjectComment(projectId: string) {
     onSettled: () => void qc.invalidateQueries({ queryKey: ["project-activity", projectId] }),
   })
 }
+
+// ── Project Health Score (6.1) ─────────────────────────────────────────────────
+
+export type ProjectHealthBand = "healthy" | "at_risk" | "critical"
+
+export interface ProjectHealth {
+  score: number
+  band: ProjectHealthBand
+  breakdown: { budget: number; progress: number; risk: number }
+  inputs: {
+    taskCompletion: number
+    totalTasks: number
+    doneTasks: number
+    budgetBand: "green" | "amber" | "red" | null
+    openCriticalRisks: number
+    openHighRisks: number
+    scheduleFraction: number
+  }
+}
+
+export function useProjectHealth(projectId: string | null) {
+  return useQuery({
+    queryKey: ["project-health", projectId],
+    enabled: !!projectId,
+    queryFn: () =>
+      fetch(`/api/projects/${projectId}/health`).then((r) => r.json() as Promise<ProjectHealth>),
+    staleTime: 60_000,
+  })
+}
