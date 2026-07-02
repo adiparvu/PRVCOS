@@ -2850,3 +2850,18 @@ export function useDeleteCrmActivity() {
     onSettled: () => void qc.invalidateQueries({ queryKey: ["crm-activities"] }),
   })
 }
+
+export function useConvertLead() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/crm/leads/${id}/convert`, { method: "POST" })
+      if (!res.ok) throw new Error("Failed to convert lead")
+      return res.json() as Promise<{ id: string; name: string }>
+    },
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: ["leads"] })
+      void qc.invalidateQueries({ queryKey: ["clients"] })
+    },
+  })
+}

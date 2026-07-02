@@ -3,7 +3,7 @@ import { useRouter } from "next/navigation"
 
 import { useState } from "react"
 import Link from "next/link"
-import { useLeads } from "@/lib/api-hooks"
+import { useLeads, useConvertLead } from "@/lib/api-hooks"
 import {
   GlassKanban,
   GlassSegmentedControl,
@@ -330,6 +330,7 @@ export function LeadPipelineClient() {
   const [synced, setSynced] = useState(false)
   const [pipeline, setPipeline] = useState<KanbanColumn[]>(() => buildPipelineCols([]))
   const { data: leadsData } = useLeads()
+  const convertLead = useConvertLead()
 
   // Seed local board state from the query once, then leave it under local
   // control so drag-and-drop / conversions are not clobbered by refetches.
@@ -362,6 +363,7 @@ export function LeadPipelineClient() {
   }
 
   function handleConvert(leadId: string) {
+    convertLead.mutate(leadId)
     setConverted((prev) => new Set([...prev, leadId]))
     setLeads((prev) => prev.map((l) => (l.id === leadId ? { ...l, stage: "won" } : l)))
     setPipeline(buildPipelineCols(leads.map((l) => (l.id === leadId ? { ...l, stage: "won" } : l))))
