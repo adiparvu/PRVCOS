@@ -28,11 +28,39 @@ interface Client {
   status: ClientStatus
   projects: number
   nps: number | null
+  health: { score: number; band: string }
   openQuotes: number
   since: string
 }
 
 // ── Static display config ─────────────────────────────────────────────────────
+
+const HEALTH_BADGE: Record<string, { label: string; bg: string; color: string; bd: string }> = {
+  vip: {
+    label: "VIP",
+    bg: "rgba(255,255,255,0.14)",
+    color: "rgba(255,255,255,0.95)",
+    bd: "rgba(255,255,255,0.24)",
+  },
+  healthy: {
+    label: "Healthy",
+    bg: "rgba(255,255,255,0.07)",
+    color: "rgba(255,255,255,0.7)",
+    bd: "rgba(255,255,255,0.14)",
+  },
+  at_risk: {
+    label: "At risk",
+    bg: "rgba(255,176,64,0.12)",
+    color: "rgba(255,190,90,0.92)",
+    bd: "rgba(255,176,64,0.3)",
+  },
+  dormant: {
+    label: "Dormant",
+    bg: "rgba(255,176,64,0.06)",
+    color: "rgba(255,190,90,0.6)",
+    bd: "rgba(255,176,64,0.18)",
+  },
+}
 
 const FILTER_ITEMS: SegmentItem[] = [
   { id: "all", label: "All" },
@@ -107,6 +135,7 @@ function mapClient(c: ClientSummary): Client {
     status: c.status,
     projects: c.activeProjects,
     nps: c.nps,
+    health: c.health,
     openQuotes: c.openQuotes,
     since: c.since,
   }
@@ -530,6 +559,18 @@ export function CRMWorkspace() {
                         {client.openQuotes} quote{client.openQuotes !== 1 ? "s" : ""}
                       </Link>
                     )}
+                    {(() => {
+                      const h = HEALTH_BADGE[client.health.band]
+                      return h ? (
+                        <span
+                          title={`Health score ${client.health.score}/100`}
+                          className="text-[10px] font-semibold px-2 py-0.5 rounded-[6px]"
+                          style={{ background: h.bg, color: h.color, border: `1px solid ${h.bd}` }}
+                        >
+                          {h.label}
+                        </span>
+                      ) : null
+                    })()}
                     <span
                       className="text-[10px] font-semibold px-2 py-0.5 rounded-[6px]"
                       style={{ background: s.bg, color: s.color }}

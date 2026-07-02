@@ -630,17 +630,19 @@ export function ClientDetailClient({ id }: ClientDetailClientProps) {
 
   const s = STATUS_CONFIG[client.status]
   const unpaid = client.totalInvoiced - client.totalPaid
-  const npsColor =
-    client.nps === null
-      ? "rgba(255,255,255,0.35)"
-      : client.nps >= 8
-        ? "#5affa0"
-        : client.nps >= 6
-          ? "#ffcc44"
-          : "#ff6b6b"
   const activeProjects = client.projects.filter(
     (p) => p.status === "active" || p.status === "review" || p.status === "planning"
   )
+  const HEALTH_LABEL: Record<string, string> = {
+    vip: "VIP",
+    healthy: "Sănătos",
+    at_risk: "În risc",
+    dormant: "Inactiv",
+  }
+  const healthColor =
+    client.health.band === "vip" || client.health.band === "healthy"
+      ? "rgba(255,255,255,0.92)"
+      : "rgba(255,190,90,0.92)"
 
   return (
     <div style={{ padding: "56px 16px 112px", maxWidth: 640, margin: "0 auto" }}>
@@ -809,9 +811,9 @@ export function ClientDetailClient({ id }: ClientDetailClientProps) {
               color: unpaid > 0 ? "#ff6b6b" : "#5affa0",
             },
             {
-              v: client.nps !== null ? String(client.nps) : "—",
-              l: "NPS",
-              color: npsColor,
+              v: `${client.health.score}`,
+              l: HEALTH_LABEL[client.health.band] ?? "Health",
+              color: healthColor,
             },
           ].map(({ v, l, color }) => (
             <div

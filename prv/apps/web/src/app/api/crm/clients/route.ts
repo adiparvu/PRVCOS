@@ -4,9 +4,22 @@ import type { GateContext } from "@prv/auth"
 import { writeAuditLog } from "@prv/auth"
 import { z } from "zod"
 import { db } from "@prv/db"
-import { clients, invoices, projects } from "@prv/db/schema"
-import { and, count, desc, eq, inArray, isNotNull, isNull, lt, notInArray, sum } from "drizzle-orm"
+import { clients, invoices, projects, crmActivities } from "@prv/db/schema"
+import {
+  and,
+  count,
+  desc,
+  eq,
+  inArray,
+  isNotNull,
+  isNull,
+  lt,
+  max,
+  notInArray,
+  sum,
+} from "drizzle-orm"
 import { upsertDocument } from "@prv/search"
+import { computeHealthScore, type HealthBand } from "@/lib/customer-health"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -23,6 +36,7 @@ export interface ClientSummary {
   activeProjects: number
   openQuotes: number
   nps: number | null
+  health: { score: number; band: HealthBand }
   since: string
 }
 
@@ -87,7 +101,7 @@ export const GET = withGates(
     const clientIds = clientRows.map((c) => c.id)
 
     // 2. LTV (paid invoices), active project counts, and open quote counts — parallel
-    const [ltvRows, projectRows, openQuoteRows] = await Promise.all([
+    const [ltvRows, projectRows, openQuoteRows, activityRows] = await Promise.all([
       db
         .select({ clientId: invoices.clientId, total: sum(invoices.total) })
         .from(invoices)
@@ -129,7 +143,27 @@ export const GET = withGates(
           )
         )
         .groupBy(invoices.clientId),
+
+      db
+        .select({
+          clientId: crmActivities.clientId,
+          cnt: count(),
+          lastAt: max(crmActivities.createdAt),
+        })
+        .from(crmActivities)
+        .where(
+          and(
+            eq(crmActivities.companyId, ctx.session.companyId),
+            inArray(crmActivities.clientId, clientIds)
+          )
+        )
+        .groupBy(crmActivities.clientId),
     ])
+
+    const activityByClient = new Map<string, { cnt: number; lastAt: Date | null }>()
+    for (const row of activityRows) {
+      if (row.clientId) activityByClient.set(row.clientId, { cnt: row.cnt, lastAt: row.lastAt })
+    }
 
     const ltvByClient = new Map<string, number>()
     for (const row of ltvRows) {
@@ -150,6 +184,19 @@ export const GET = withGates(
     const result: ClientSummary[] = clientRows
       .map((c) => {
         const ltv = ltvByClient.get(c.id) ?? 0
+        const activeProjects = activeProjectsByClient.get(c.id) ?? 0
+        const openQuotes = openQuotesByClient.get(c.id) ?? 0
+        const activity = activityByClient.get(c.id)
+        const daysSinceLastTouch = activity?.lastAt
+          ? Math.floor((Date.now() - new Date(activity.lastAt).getTime()) / 86_400_000)
+          : null
+        const health = computeHealthScore({
+          ltv,
+          activeProjects,
+          openQuotes,
+          recentActivityCount: activity?.cnt ?? 0,
+          daysSinceLastTouch,
+        })
         return {
           id: c.id,
           initials: initials(c.name),
@@ -157,9 +204,10 @@ export const GET = withGates(
           location: c.city ?? "—",
           status: toApiStatus(c.status, ltv),
           ltv,
-          activeProjects: activeProjectsByClient.get(c.id) ?? 0,
-          openQuotes: openQuotesByClient.get(c.id) ?? 0,
+          activeProjects,
+          openQuotes,
           nps: null,
+          health: { score: health.score, band: health.band },
           since: new Date(c.createdAt).getFullYear().toString(),
         }
       })

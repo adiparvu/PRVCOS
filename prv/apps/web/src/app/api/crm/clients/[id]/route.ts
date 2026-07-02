@@ -3,10 +3,19 @@ import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
 import { writeAuditLog } from "@prv/auth"
 import { db } from "@prv/db"
-import { clients, clientContacts, users, projects, invoices, auditLogs } from "@prv/db/schema"
-import { and, count, desc, eq, inArray, isNull, sum } from "drizzle-orm"
+import {
+  clients,
+  clientContacts,
+  users,
+  projects,
+  invoices,
+  auditLogs,
+  crmActivities,
+} from "@prv/db/schema"
+import { and, count, desc, eq, inArray, isNull, max, sum } from "drizzle-orm"
 import { z } from "zod"
 import type { ClientSummary, ClientStatus } from "../route"
+import { computeHealthScore } from "@/lib/customer-health"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -141,104 +150,114 @@ export const GET = withGates(
 
     const { companyId } = ctx.session
 
-    const [clientRows, contactRows, invoiceRows, projectRows, openQuotesCountRow, activityRows] =
-      await Promise.all([
-        db
-          .select({
-            id: clients.id,
-            name: clients.name,
-            email: clients.email,
-            phone: clients.phone,
-            vatNumber: clients.vatNumber,
-            address: clients.address,
-            city: clients.city,
-            status: clients.status,
-            createdAt: clients.createdAt,
-            assignedFirstName: users.firstName,
-            assignedLastName: users.lastName,
-          })
-          .from(clients)
-          .leftJoin(users, eq(clients.assignedUserId, users.id))
-          .where(
-            and(eq(clients.id, id), eq(clients.companyId, companyId), isNull(clients.deletedAt))
+    const [
+      clientRows,
+      contactRows,
+      invoiceRows,
+      projectRows,
+      openQuotesCountRow,
+      activityRows,
+      crmActivityAgg,
+    ] = await Promise.all([
+      db
+        .select({
+          id: clients.id,
+          name: clients.name,
+          email: clients.email,
+          phone: clients.phone,
+          vatNumber: clients.vatNumber,
+          address: clients.address,
+          city: clients.city,
+          status: clients.status,
+          createdAt: clients.createdAt,
+          assignedFirstName: users.firstName,
+          assignedLastName: users.lastName,
+        })
+        .from(clients)
+        .leftJoin(users, eq(clients.assignedUserId, users.id))
+        .where(and(eq(clients.id, id), eq(clients.companyId, companyId), isNull(clients.deletedAt)))
+        .limit(1),
+
+      db
+        .select({
+          firstName: clientContacts.firstName,
+          lastName: clientContacts.lastName,
+          isPrimary: clientContacts.isPrimary,
+        })
+        .from(clientContacts)
+        .where(eq(clientContacts.clientId, id))
+        .orderBy(desc(clientContacts.isPrimary))
+        .limit(5),
+
+      db
+        .select({
+          id: invoices.id,
+          invoiceNumber: invoices.invoiceNumber,
+          total: invoices.total,
+          status: invoices.status,
+          projectId: invoices.projectId,
+        })
+        .from(invoices)
+        .where(
+          and(
+            eq(invoices.clientId, id),
+            eq(invoices.companyId, companyId),
+            isNull(invoices.deletedAt)
           )
-          .limit(1),
+        )
+        .orderBy(desc(invoices.createdAt))
+        .limit(20),
 
-        db
-          .select({
-            firstName: clientContacts.firstName,
-            lastName: clientContacts.lastName,
-            isPrimary: clientContacts.isPrimary,
-          })
-          .from(clientContacts)
-          .where(eq(clientContacts.clientId, id))
-          .orderBy(desc(clientContacts.isPrimary))
-          .limit(5),
-
-        db
-          .select({
-            id: invoices.id,
-            invoiceNumber: invoices.invoiceNumber,
-            total: invoices.total,
-            status: invoices.status,
-            projectId: invoices.projectId,
-          })
-          .from(invoices)
-          .where(
-            and(
-              eq(invoices.clientId, id),
-              eq(invoices.companyId, companyId),
-              isNull(invoices.deletedAt)
-            )
+      db
+        .select({
+          id: projects.id,
+          name: projects.name,
+          status: projects.status,
+          budget: projects.budget,
+          dueDate: projects.dueDate,
+          metadata: projects.metadata,
+        })
+        .from(projects)
+        .where(
+          and(
+            eq(projects.clientId, id),
+            eq(projects.companyId, companyId),
+            isNull(projects.deletedAt)
           )
-          .orderBy(desc(invoices.createdAt))
-          .limit(20),
+        )
+        .orderBy(desc(projects.createdAt))
+        .limit(20),
 
-        db
-          .select({
-            id: projects.id,
-            name: projects.name,
-            status: projects.status,
-            budget: projects.budget,
-            dueDate: projects.dueDate,
-            metadata: projects.metadata,
-          })
-          .from(projects)
-          .where(
-            and(
-              eq(projects.clientId, id),
-              eq(projects.companyId, companyId),
-              isNull(projects.deletedAt)
-            )
+      db
+        .select({ cnt: count() })
+        .from(invoices)
+        .where(
+          and(
+            eq(invoices.clientId, id),
+            eq(invoices.companyId, companyId),
+            inArray(invoices.status, ["draft", "sent"]),
+            isNull(invoices.deletedAt)
           )
-          .orderBy(desc(projects.createdAt))
-          .limit(20),
+        ),
 
-        db
-          .select({ cnt: count() })
-          .from(invoices)
-          .where(
-            and(
-              eq(invoices.clientId, id),
-              eq(invoices.companyId, companyId),
-              inArray(invoices.status, ["draft", "sent"]),
-              isNull(invoices.deletedAt)
-            )
-          ),
-
-        db
-          .select({ id: auditLogs.id, action: auditLogs.action, createdAt: auditLogs.createdAt })
-          .from(auditLogs)
-          .where(
-            and(
-              eq(auditLogs.companyId, companyId),
-              eq(auditLogs.entityId, id),
-              eq(auditLogs.entityType, "client")
-            )
+      db
+        .select({ id: auditLogs.id, action: auditLogs.action, createdAt: auditLogs.createdAt })
+        .from(auditLogs)
+        .where(
+          and(
+            eq(auditLogs.companyId, companyId),
+            eq(auditLogs.entityId, id),
+            eq(auditLogs.entityType, "client")
           )
-          .orderBy(desc(auditLogs.createdAt))
-          .limit(10),
-      ])
+        )
+        .orderBy(desc(auditLogs.createdAt))
+        .limit(10),
+
+      db
+        .select({ cnt: count(), lastAt: max(crmActivities.createdAt) })
+        .from(crmActivities)
+        .where(and(eq(crmActivities.companyId, companyId), eq(crmActivities.clientId, id))),
+    ])
 
     const row = clientRows[0]
     if (!row) return NextResponse.json({ error: "Not found" }, { status: 404 })
@@ -294,6 +313,19 @@ export const GET = withGates(
       }
     })
 
+    const activeProjectsCount = linkedProjects.filter((p) => p.status === "active").length
+    const lastActivityAt = crmActivityAgg[0]?.lastAt ?? null
+    const daysSinceLastTouch = lastActivityAt
+      ? Math.floor((Date.now() - new Date(lastActivityAt).getTime()) / 86_400_000)
+      : null
+    const health = computeHealthScore({
+      ltv: totalInvoiced,
+      activeProjects: activeProjectsCount,
+      openQuotes: openQuotesCount,
+      recentActivityCount: crmActivityAgg[0]?.cnt ?? 0,
+      daysSinceLastTouch,
+    })
+
     const detail: ClientDetail = {
       id: row.id,
       initials: initials(row.name),
@@ -301,9 +333,10 @@ export const GET = withGates(
       location: row.city ?? "—",
       status: apiStatus,
       ltv: totalInvoiced,
-      activeProjects: linkedProjects.filter((p) => p.status === "active").length,
+      activeProjects: activeProjectsCount,
       openQuotes: openQuotesCount,
       nps: null,
+      health: { score: health.score, band: health.band },
       since: String(new Date(row.createdAt).getFullYear()),
       phone: row.phone ?? "—",
       email: row.email ?? "—",
