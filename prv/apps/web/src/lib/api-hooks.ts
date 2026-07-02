@@ -49,6 +49,8 @@ import type { RequisitionSummary, RequisitionMeta } from "@/app/api/recruitment/
 import type { Candidate } from "@/app/api/recruitment/candidates/route"
 import type { ReviewCycleSummary } from "@/app/api/reviews/cycles/route"
 import type { ReviewSummary } from "@/app/api/reviews/route"
+import type { StockLevelRow, InventoryMeta } from "@/app/api/inventory/route"
+import type { StockMovementRow } from "@/app/api/inventory/movements/route"
 
 const LIMIT = 50
 
@@ -2342,6 +2344,86 @@ export function useAdvanceReview(cycleId: string) {
     onSettled: () => {
       void qc.invalidateQueries({ queryKey: ["reviews", cycleId] })
       void qc.invalidateQueries({ queryKey: ["review-cycles"] })
+    },
+  })
+}
+
+// ── Inventory (9.2) ────────────────────────────────────────────────────────────
+
+export type { StockLevelRow, InventoryMeta, StockMovementRow }
+
+export interface StoreOption {
+  id: string
+  name: string
+}
+export interface ProductOption {
+  id: string
+  sku: string
+  name: string
+}
+
+export interface MovementInput {
+  productId: string
+  storeId: string
+  type: "receive" | "sale" | "adjust" | "writeoff" | "return" | "count"
+  quantity: number
+  minimum?: number
+  reorderPoint?: number | null
+  reason?: string | null
+}
+
+export function useStoreOptions() {
+  return useQuery({
+    queryKey: ["store-options"],
+    queryFn: () => fetch("/api/stores").then((r) => r.json() as Promise<{ stores: StoreOption[] }>),
+    staleTime: 60_000,
+  })
+}
+
+export function useProductOptions() {
+  return useQuery({
+    queryKey: ["product-options"],
+    queryFn: () =>
+      fetch("/api/shop/products").then((r) => r.json() as Promise<{ products: ProductOption[] }>),
+    staleTime: 60_000,
+  })
+}
+
+export function useInventory(storeId?: string | null, status?: string | null) {
+  return useQuery({
+    queryKey: ["inventory", storeId ?? "all", status ?? "all"],
+    queryFn: () =>
+      fetch(buildUrl("/api/inventory", { storeId, status })).then(
+        (r) => r.json() as Promise<{ levels: StockLevelRow[]; meta: InventoryMeta }>
+      ),
+  })
+}
+
+export function useStockMovements(productId?: string | null, storeId?: string | null) {
+  return useQuery({
+    queryKey: ["stock-movements", productId ?? "all", storeId ?? "all"],
+    queryFn: () =>
+      fetch(buildUrl("/api/inventory/movements", { productId, storeId })).then(
+        (r) => r.json() as Promise<{ movements: StockMovementRow[] }>
+      ),
+  })
+}
+
+export function useRecordMovement() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: MovementInput) => {
+      const res = await fetch("/api/inventory/movements", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      })
+      if (!res.ok) throw new Error("Failed to record movement")
+      return res.json() as Promise<{ id: string; delta: number; balanceAfter: number }>
+    },
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: ["inventory"] })
+      void qc.invalidateQueries({ queryKey: ["stock-movements"] })
     },
   })
 }

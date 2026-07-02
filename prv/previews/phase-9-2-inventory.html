@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PRV · Inventory — Liquid Glass Preview</title>
+    <style>
+      :root {
+        --g1: rgba(255,255,255,0.06); --g2: rgba(255,255,255,0.10);
+        --t1: rgba(255,255,255,0.95); --t2: rgba(255,255,255,0.65); --t3: rgba(255,255,255,0.35); --t4: rgba(255,255,255,0.22);
+        --border: rgba(255,255,255,0.12); --border-subtle: rgba(255,255,255,0.08);
+        --amber: rgba(255,159,10,0.95); --red: rgba(255,69,58,0.9); --green: rgba(48,209,88,0.9);
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+      }
+      * { box-sizing:border-box; margin:0; padding:0; }
+      body { background:#000; color:var(--t1); min-height:100vh; -webkit-font-smoothing:antialiased; padding:40px 16px 80px; }
+      .aura { position:fixed; inset:0; z-index:-1; background:radial-gradient(1100px 480px at 50% -8%, rgba(255,255,255,0.06), transparent 60%); }
+      .wrap { max-width:720px; margin:0 auto; }
+      .eyebrow { font-size:12px; font-weight:600; letter-spacing:0.14em; text-transform:uppercase; color:var(--t3); }
+      h1 { font-size:26px; font-weight:680; letter-spacing:-0.02em; margin:3px 0 22px; }
+      .glass { background:var(--g1); border:1px solid var(--border-subtle); box-shadow:inset 0 1px 0 rgba(255,255,255,0.22); }
+      .strip { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:22px; }
+      .stat { border-radius:18px; padding:14px 16px; }
+      .stat .k { font-size:11px; font-weight:600; letter-spacing:0.04em; text-transform:uppercase; color:var(--t3); }
+      .stat .v { font-size:26px; font-weight:700; letter-spacing:-0.02em; margin-top:6px; }
+      .stat .v.warn { color:var(--amber); } .stat .v.bad { color:var(--red); }
+      .label { font-size:11px; font-weight:600; letter-spacing:0.16em; text-transform:uppercase; color:var(--t3); margin:0 4px 12px; }
+      .list { border-radius:22px; overflow:hidden; }
+      .row { display:flex; align-items:center; gap:13px; padding:13px 16px; border-bottom:1px solid var(--border-subtle); }
+      .row:last-child { border-bottom:0; }
+      .meta { flex:1; min-width:0; }
+      .name { font-size:14px; font-weight:640; letter-spacing:-0.01em; }
+      .sub { font-size:11.5px; color:var(--t3); margin-top:3px; display:flex; gap:10px; }
+      .sku { font-family:'SF Mono', monospace; }
+      .qty { font-size:16px; font-weight:720; font-variant-numeric:tabular-nums; text-align:right; }
+      .min { font-size:10.5px; color:var(--t4); text-align:right; margin-top:2px; }
+      .badge { font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; border-radius:100px; padding:3px 9px; flex:0 0 auto; }
+      .b-ok { color:var(--green); border:1px solid rgba(48,209,88,0.26); }
+      .b-low { color:var(--amber); background:rgba(255,159,10,0.14); border:1px solid rgba(255,159,10,0.28); }
+      .b-reorder { color:var(--amber); background:rgba(255,159,10,0.2); border:1px solid rgba(255,159,10,0.34); }
+      .b-out { color:var(--red); background:rgba(255,69,58,0.14); border:1px solid rgba(255,69,58,0.3); }
+      /* movements */
+      .mv { display:flex; align-items:center; gap:12px; padding:11px 16px; border-bottom:1px solid var(--border-subtle); font-size:12.5px; }
+      .mv:last-child { border-bottom:0; }
+      .mtype { font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:var(--t3); border:1px solid var(--border-subtle); border-radius:5px; padding:2px 7px; flex:0 0 auto; }
+      .mv .mn { flex:1; color:var(--t2); }
+      .delta { font-variant-numeric:tabular-nums; font-weight:700; }
+      .delta.pos { color:var(--green); } .delta.neg { color:var(--red); }
+      .bal { color:var(--t3); font-variant-numeric:tabular-nums; }
+      .note { text-align:center; color:var(--t3); font-size:11.5px; margin:24px auto 0; line-height:1.6; }
+      code { color:var(--t2); }
+    </style>
+  </head>
+  <body>
+    <div class="aura"></div>
+    <div class="wrap">
+      <div class="eyebrow">Commerce · Inventory</div>
+      <h1>Stock Levels</h1>
+
+      <div class="strip">
+        <div class="stat glass"><div class="k">SKUs</div><div class="v">248</div></div>
+        <div class="stat glass"><div class="k">Reorder</div><div class="v warn">6</div></div>
+        <div class="stat glass"><div class="k">Low</div><div class="v warn">11</div></div>
+        <div class="stat glass"><div class="k">Out</div><div class="v bad">3</div></div>
+      </div>
+
+      <div class="label">Levels · Bucharest Warehouse · worst first</div>
+      <div class="list glass">
+        <div class="row">
+          <div class="meta"><div class="name">Bosch GBH 2-26 SDS drill</div><div class="sub"><span class="sku">SKU · BSH-2226</span></div></div>
+          <div><div class="qty" style="color:var(--red)">0</div><div class="min">min 4</div></div>
+          <span class="badge b-out">Out</span>
+        </div>
+        <div class="row">
+          <div class="meta"><div class="name">Knauf plasterboard 12.5mm</div><div class="sub"><span class="sku">SKU · KNF-125</span></div></div>
+          <div><div class="qty">18</div><div class="min">reorder 20</div></div>
+          <span class="badge b-reorder">Reorder</span>
+        </div>
+        <div class="row">
+          <div class="meta"><div class="name">Sika sealant 300ml</div><div class="sub"><span class="sku">SKU · SIK-300</span></div></div>
+          <div><div class="qty">9</div><div class="min">min 10</div></div>
+          <span class="badge b-low">Low</span>
+        </div>
+        <div class="row">
+          <div class="meta"><div class="name">Makita 18V battery 5Ah</div><div class="sub"><span class="sku">SKU · MK-5AH</span></div></div>
+          <div><div class="qty">42</div><div class="min">min 8</div></div>
+          <span class="badge b-ok">OK</span>
+        </div>
+      </div>
+
+      <div class="label" style="margin-top:22px">Recent movements</div>
+      <div class="list glass">
+        <div class="mv"><span class="mtype">Receive</span><span class="mn">Knauf plasterboard · +40 from PO-1183</span><span class="delta pos">+40</span><span class="bal">→ 58</span></div>
+        <div class="mv"><span class="mtype">Sale</span><span class="mn">Makita battery · order SO-2041</span><span class="delta neg">−6</span><span class="bal">→ 42</span></div>
+        <div class="mv"><span class="mtype">Write-off</span><span class="mn">Sika sealant · damaged in transit</span><span class="delta neg">−3</span><span class="bal">→ 9</span></div>
+        <div class="mv"><span class="mtype">Count</span><span class="mn">Bosch drill · stock-take correction</span><span class="delta neg">−1</span><span class="bal">→ 0</span></div>
+      </div>
+
+      <p class="note">
+        Liquid Glass preview · Phase 9.2 Inventory. Per-location stock levels
+        banded <span style="color:var(--green)">OK</span> /
+        <span style="color:var(--amber)">low / reorder</span> /
+        <span style="color:var(--red)">out</span>, plus an append-only movement
+        log (receive · sale · adjust · write-off · return · stock-take count) —
+        every change recorded with a signed delta + resulting balance. Backed by
+        <code>stock_levels</code> + <code>stock_movements</code> +
+        <code>/api/inventory/*</code>. Pure black · monochrome.
+      </p>
+    </div>
+  </body>
+</html>

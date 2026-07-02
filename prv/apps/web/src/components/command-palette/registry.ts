@@ -176,6 +176,22 @@ const BASE: CommandEntry[] = [
     href: "/commerce",
   },
   {
+    id: "nav.inventory",
+    label: "Inventory",
+    section: "Navigation",
+    keywords: [
+      "inventory",
+      "stock",
+      "stock levels",
+      "warehouse",
+      "movements",
+      "reorder",
+      "low stock",
+      "stock take",
+    ],
+    href: "/commerce/inventory",
+  },
+  {
     id: "nav.intelligence",
     label: "Intelligence & Analytics",
     section: "Navigation",

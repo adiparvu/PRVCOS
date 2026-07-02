@@ -25,6 +25,8 @@ export * from "./project-risks"
 export * from "./project-activity"
 // Sprint 06: Finance (Products, Orders, Invoices)
 export * from "./finance"
+// Phase 9.2: Inventory — multi-location stock levels + movement log
+export * from "./inventory"
 // Sprint 06: Document Management
 export * from "./documents"
 // Sprint 06: Fleet & Tool Management
