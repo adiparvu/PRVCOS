@@ -43,6 +43,8 @@ export * from "./rbac"
 export * from "./groups"
 // Sprint 12: Workforce — attendance, leave, shifts, payroll, tasks
 export * from "./workforce"
+// Phase 7.6: Equipment Assignments — lightweight employee↔equipment tracking
+export * from "./equipment"
 // Sprint 12: Procurement — purchase orders
 export * from "./procurement"
 // Sprint 12: Approvals — cross-module approval requests

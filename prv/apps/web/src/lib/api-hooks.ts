@@ -39,6 +39,7 @@ import type { TaskSummary } from "@/app/api/projects/[id]/tasks/route"
 import type { RiskSummary, RiskRegisterMeta } from "@/app/api/projects/[id]/risks/route"
 import type { ActivityEntry } from "@/app/api/projects/[id]/activity/route"
 import type { LeaveBalanceSummary } from "@/app/api/workforce/leave/balances/route"
+import type { EquipmentAssignment, EquipmentMeta } from "@/app/api/workforce/equipment/route"
 
 const LIMIT = 50
 
@@ -1742,5 +1743,74 @@ export function useUpsertLeaveBalance() {
       return res.json() as Promise<{ id: string }>
     },
     onSettled: () => void qc.invalidateQueries({ queryKey: ["leave-balances"] }),
+  })
+}
+
+// ── Equipment Assignments (7.6) ────────────────────────────────────────────────
+
+export type { EquipmentAssignment, EquipmentMeta }
+
+export interface AssignEquipmentInput {
+  userId: string
+  equipmentType: string
+  label?: string | null
+  serialNumber?: string | null
+  assignedDate: string
+  expectedReturnDate?: string | null
+  condition?: "new" | "good" | "fair" | "poor" | "damaged"
+  notes?: string | null
+}
+
+export function useEquipmentAssignments(userId?: string | null, status?: string | null) {
+  return useQuery({
+    queryKey: ["equipment", userId ?? "all", status ?? "all"],
+    queryFn: () =>
+      fetch(buildUrl("/api/workforce/equipment", { userId, status })).then(
+        (r) => r.json() as Promise<{ items: EquipmentAssignment[]; meta: EquipmentMeta }>
+      ),
+  })
+}
+
+export function useAssignEquipment() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: AssignEquipmentInput) => {
+      const res = await fetch("/api/workforce/equipment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      })
+      if (!res.ok) throw new Error("Failed to assign equipment")
+      return res.json() as Promise<{ id: string }>
+    },
+    onSettled: () => void qc.invalidateQueries({ queryKey: ["equipment"] }),
+  })
+}
+
+export function useUpdateEquipment() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, patch }: { id: string; patch: Record<string, unknown> }) => {
+      const res = await fetch(`/api/workforce/equipment/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patch),
+      })
+      if (!res.ok) throw new Error("Failed to update equipment")
+      return res.json() as Promise<{ id: string; status: string }>
+    },
+    onSettled: () => void qc.invalidateQueries({ queryKey: ["equipment"] }),
+  })
+}
+
+export function useDeleteEquipment() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/workforce/equipment/${id}`, { method: "DELETE" })
+      if (!res.ok) throw new Error("Failed to delete equipment")
+      return res.json() as Promise<{ removed: number }>
+    },
+    onSettled: () => void qc.invalidateQueries({ queryKey: ["equipment"] }),
   })
 }

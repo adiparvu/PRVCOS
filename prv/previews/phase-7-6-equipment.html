@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PRV · Equipment Assignments — Liquid Glass Preview</title>
+    <style>
+      :root {
+        --g1: rgba(255,255,255,0.06); --g2: rgba(255,255,255,0.10);
+        --t1: rgba(255,255,255,0.95); --t2: rgba(255,255,255,0.65); --t3: rgba(255,255,255,0.35); --t4: rgba(255,255,255,0.22);
+        --border: rgba(255,255,255,0.12); --border-subtle: rgba(255,255,255,0.08);
+        --amber: rgba(255,159,10,0.95); --red: rgba(255,69,58,0.9); --green: rgba(48,209,88,0.9);
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+      }
+      * { box-sizing:border-box; margin:0; padding:0; }
+      body { background:#000; color:var(--t1); min-height:100vh; -webkit-font-smoothing:antialiased; padding:40px 16px 80px; }
+      .aura { position:fixed; inset:0; z-index:-1; background:radial-gradient(1100px 480px at 50% -8%, rgba(255,255,255,0.06), transparent 60%); }
+      .wrap { max-width:680px; margin:0 auto; }
+      .eyebrow { font-size:12px; font-weight:600; letter-spacing:0.14em; text-transform:uppercase; color:var(--t3); }
+      h1 { font-size:26px; font-weight:680; letter-spacing:-0.02em; margin:3px 0 22px; }
+      .glass { background:var(--g1); border:1px solid var(--border-subtle); box-shadow:inset 0 1px 0 rgba(255,255,255,0.22); }
+      .strip { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:22px; }
+      .stat { border-radius:18px; padding:14px 16px; }
+      .stat .k { font-size:11px; font-weight:600; letter-spacing:0.04em; text-transform:uppercase; color:var(--t3); }
+      .stat .v { font-size:26px; font-weight:700; letter-spacing:-0.02em; margin-top:6px; }
+      .stat .v.warn { color:var(--amber); }
+      .label { font-size:11px; font-weight:600; letter-spacing:0.16em; text-transform:uppercase; color:var(--t3); margin:0 4px 12px; }
+      .list { border-radius:22px; overflow:hidden; }
+      .row { display:flex; align-items:center; gap:13px; padding:14px 16px; border-bottom:1px solid var(--border-subtle); }
+      .row:last-child { border-bottom:0; }
+      .ic { width:40px; height:40px; border-radius:12px; background:var(--g2); display:grid; place-items:center; flex:0 0 auto; box-shadow:inset 0 1px 0 rgba(255,255,255,0.2); }
+      .ic svg { width:19px; height:19px; stroke:var(--t2); fill:none; stroke-width:1.7; }
+      .meta { flex:1; min-width:0; }
+      .name { font-size:14px; font-weight:640; letter-spacing:-0.01em; }
+      .sub { font-size:11.5px; color:var(--t3); margin-top:3px; display:flex; gap:10px; flex-wrap:wrap; }
+      .sub .sn { font-family:'SF Mono', monospace; }
+      .right { text-align:right; flex:0 0 auto; }
+      .badge { font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; border-radius:100px; padding:3px 9px; display:inline-block; }
+      .b-assigned { color:var(--t2); border:1px solid var(--border); }
+      .b-overdue { color:var(--amber); background:rgba(255,159,10,0.14); border:1px solid rgba(255,159,10,0.28); }
+      .b-returned { color:var(--green); background:rgba(48,209,88,0.12); border:1px solid rgba(48,209,88,0.26); }
+      .dates { font-size:11px; color:var(--t3); margin-top:5px; }
+      .cond { font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.04em; color:var(--t4); border:1px solid var(--border-subtle); border-radius:5px; padding:2px 6px; }
+      .note { text-align:center; color:var(--t3); font-size:11.5px; margin:24px auto 0; line-height:1.6; }
+      code { color:var(--t2); }
+    </style>
+  </head>
+  <body>
+    <div class="aura"></div>
+    <div class="wrap">
+      <div class="eyebrow">People · Equipment</div>
+      <h1>Equipment Assignments</h1>
+
+      <div class="strip">
+        <div class="stat glass"><div class="k">Total</div><div class="v">6</div></div>
+        <div class="stat glass"><div class="k">Out now</div><div class="v">4</div></div>
+        <div class="stat glass"><div class="k">Overdue</div><div class="v warn">1</div></div>
+        <div class="stat glass"><div class="k">Returned</div><div class="v">2</div></div>
+      </div>
+
+      <div class="label">Register</div>
+      <div class="list glass">
+        <div class="row">
+          <div class="ic"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76Z"/></svg></div>
+          <div class="meta"><div class="name">Hilti TE 6-A22 hammer drill</div><div class="sub"><span>Andrei Dinu</span><span class="sn">SN · 4471-A22</span><span class="cond">Good</span></div><div class="dates">Assigned 12 Jun → due 30 Jun</div></div>
+          <div class="right"><span class="badge b-overdue">Overdue</span></div>
+        </div>
+        <div class="row">
+          <div class="ic"><svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div>
+          <div class="meta"><div class="name">Dell Latitude 5540 laptop</div><div class="sub"><span>Elena Vasile</span><span class="sn">SN · DL-5540-7781</span><span class="cond">New</span></div><div class="dates">Assigned 3 Feb → no return date</div></div>
+          <div class="right"><span class="badge b-assigned">Assigned</span></div>
+        </div>
+        <div class="row">
+          <div class="ic"><svg viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7Z"/><circle cx="12" cy="9" r="2.5"/></svg></div>
+          <div class="meta"><div class="name">Site radio · Motorola T82</div><div class="sub"><span>Radu Gheorghe</span><span class="sn">SN · MOT-T82-19</span><span class="cond">Fair</span></div><div class="dates">Assigned 1 May → due 1 Aug</div></div>
+          <div class="right"><span class="badge b-assigned">Assigned</span></div>
+        </div>
+        <div class="row">
+          <div class="ic"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76Z"/></svg></div>
+          <div class="meta"><div class="name">Makita circular saw</div><div class="sub"><span>Maria Pop</span><span class="sn">SN · MK-CS-2231</span><span class="cond">Good</span></div><div class="dates">Assigned 10 Apr → returned 28 May</div></div>
+          <div class="right"><span class="badge b-returned">Returned</span></div>
+        </div>
+      </div>
+
+      <p class="note">
+        Liquid Glass preview · Phase 7.6 Equipment Assignment. Lightweight
+        employee↔equipment register (ahead of the full Phase 22 asset system):
+        type · serial · condition, assigned → expected-return dates, with an
+        <span style="color:var(--amber)">overdue</span> flag when still out past
+        its due date and a one-tap <strong>return</strong>. Backed by
+        <code>equipment_assignments</code> +
+        <code>/api/workforce/equipment</code>. Pure black · monochrome ·
+        SF-symbol icons.
+      </p>
+    </div>
+  </body>
+</html>

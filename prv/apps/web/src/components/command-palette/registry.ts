@@ -61,6 +61,13 @@ const BASE: CommandEntry[] = [
     href: "/people",
   },
   {
+    id: "nav.equipment",
+    label: "Equipment Assignments",
+    section: "Navigation",
+    keywords: ["equipment", "asset", "gear", "tools", "assignment", "serial", "checkout", "return"],
+    href: "/people/equipment",
+  },
+  {
     id: "nav.schedule",
     label: "Schedule",
     section: "Navigation",
