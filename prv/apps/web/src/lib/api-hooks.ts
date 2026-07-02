@@ -44,6 +44,7 @@ import type { PerformanceRow, PerformanceSummary } from "@/app/api/workforce/per
 import type { Holiday } from "@/app/api/workforce/holidays/route"
 import type { ContractSummary, ContractMeta } from "@/app/api/contracts/route"
 import type { ComplianceDoc, ComplianceMeta } from "@/app/api/compliance/documents/route"
+import type { PayrollItem, PayrollItemsTotals } from "@/app/api/payroll/[id]/items/route"
 
 const LIMIT = 50
 
@@ -2057,5 +2058,66 @@ export function useDeleteComplianceDoc() {
       return res.json() as Promise<{ removed: number }>
     },
     onSettled: () => void qc.invalidateQueries({ queryKey: ["compliance"] }),
+  })
+}
+
+// ── Payroll Line Items / Payslips (8.2) ────────────────────────────────────────
+
+export type { PayrollItem, PayrollItemsTotals }
+
+export interface PayrollItemInput {
+  userId: string
+  baseAmount?: number
+  overtimeHours?: number
+  overtimeAmount?: number
+  bonusAmount?: number
+  allowanceAmount?: number
+  deductionAmount?: number
+  currency?: string
+  notes?: string | null
+}
+
+export function usePayrollItems(runId: string | null) {
+  return useQuery({
+    queryKey: ["payroll-items", runId],
+    enabled: !!runId,
+    queryFn: () =>
+      fetch(`/api/payroll/${runId}/items`).then(
+        (r) => r.json() as Promise<{ items: PayrollItem[]; totals: PayrollItemsTotals }>
+      ),
+  })
+}
+
+export function useUpsertPayrollItem(runId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: PayrollItemInput) => {
+      const res = await fetch(`/api/payroll/${runId}/items`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      })
+      if (!res.ok) throw new Error("Failed to save payslip line")
+      return res.json() as Promise<{ id: string; gross: number; net: number }>
+    },
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: ["payroll-items", runId] })
+      void qc.invalidateQueries({ queryKey: ["payroll", runId] })
+    },
+  })
+}
+
+export function useDeletePayrollItem(runId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (itemId: string) => {
+      const res = await fetch(`/api/payroll/${runId}/items/${itemId}`, { method: "DELETE" })
+      if (!res.ok) throw new Error("Failed to delete payslip line")
+      return res.json() as Promise<{ removed: number }>
+    },
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: ["payroll-items", runId] })
+      void qc.invalidateQueries({ queryKey: ["payroll", runId] })
+    },
   })
 }

@@ -3,8 +3,8 @@ import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
 import { writeAuditLog } from "@prv/auth"
 import { db } from "@prv/db"
-import { payrollRuns } from "@prv/db/schema"
-import { and, eq } from "drizzle-orm"
+import { payrollRuns, payrollItems, users } from "@prv/db/schema"
+import { and, eq, desc } from "drizzle-orm"
 import { z } from "zod"
 import type { PayrollRunStatus, PayrollRunType } from "../route"
 
@@ -117,6 +117,68 @@ export const GET = withGates(
     const periodStart = String(row.periodStart).slice(0, 10)
     const periodEnd = String(row.periodEnd).slice(0, 10)
 
+    // Line items drive the cost breakdown + the top-earner list.
+    const itemRows = await db
+      .select({
+        userId: payrollItems.userId,
+        baseAmount: payrollItems.baseAmount,
+        overtimeAmount: payrollItems.overtimeAmount,
+        bonusAmount: payrollItems.bonusAmount,
+        allowanceAmount: payrollItems.allowanceAmount,
+        deductionAmount: payrollItems.deductionAmount,
+        netAmount: payrollItems.netAmount,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        jobTitle: users.jobTitle,
+      })
+      .from(payrollItems)
+      .leftJoin(users, eq(payrollItems.userId, users.id))
+      .where(eq(payrollItems.runId, id))
+      .orderBy(desc(payrollItems.netAmount))
+
+    const num = (v: string | null) => {
+      const x = Number(v ?? 0)
+      return Number.isFinite(x) ? x : 0
+    }
+    const sum = (pick: (r: (typeof itemRows)[number]) => string | null) =>
+      Math.round(itemRows.reduce((a, r) => a + num(pick(r)), 0) * 100) / 100
+
+    const breakdown: CostEntry[] = itemRows.length
+      ? [
+          { label: "Base", amount: sum((r) => r.baseAmount), color: null, isTotal: false },
+          { label: "Overtime", amount: sum((r) => r.overtimeAmount), color: null, isTotal: false },
+          { label: "Bonuses", amount: sum((r) => r.bonusAmount), color: null, isTotal: false },
+          {
+            label: "Allowances",
+            amount: sum((r) => r.allowanceAmount),
+            color: null,
+            isTotal: false,
+          },
+          {
+            label: "Deductions",
+            amount: -sum((r) => r.deductionAmount),
+            color: null,
+            isTotal: false,
+          },
+          { label: "Net pay", amount: sum((r) => r.netAmount), color: null, isTotal: true },
+        ]
+      : []
+
+    const topEmployees: TopEmployee[] = itemRows.slice(0, 5).map((r) => {
+      const name = r.firstName ? `${r.firstName} ${r.lastName}`.trim() : "—"
+      const parts = name.split(/\s+/)
+      return {
+        id: r.userId,
+        initials: ((parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "")).toUpperCase() || "?",
+        name,
+        role: r.jobTitle ?? "",
+        net: num(r.netAmount),
+        hasOT: num(r.overtimeAmount) > 0,
+        avatarBg: "var(--prv-g2)",
+        avatarColor: "var(--prv-text-1)",
+      }
+    })
+
     return NextResponse.json({
       run: {
         id: row.id,
@@ -130,6 +192,8 @@ export const GET = withGates(
         status: row.status as PayrollRunStatus,
         type: row.type as PayrollRunType,
         notes: row.notes ?? null,
+        breakdown,
+        topEmployees,
       },
     })
   }

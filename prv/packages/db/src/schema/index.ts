@@ -43,6 +43,8 @@ export * from "./rbac"
 export * from "./groups"
 // Sprint 12: Workforce — attendance, leave, shifts, payroll, tasks
 export * from "./workforce"
+// Phase 8.2: Payroll line items — per-employee payslips feeding run totals
+export * from "./payroll-items"
 // Phase 7.6: Equipment Assignments — lightweight employee↔equipment tracking
 export * from "./equipment"
 // Phase 7.5: Performance — manager ratings feeding the metrics dashboard

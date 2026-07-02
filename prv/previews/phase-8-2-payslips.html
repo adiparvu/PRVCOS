@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PRV · Payslips — Liquid Glass Preview</title>
+    <style>
+      :root {
+        --g1: rgba(255,255,255,0.06); --g2: rgba(255,255,255,0.10);
+        --t1: rgba(255,255,255,0.95); --t2: rgba(255,255,255,0.65); --t3: rgba(255,255,255,0.35); --t4: rgba(255,255,255,0.22);
+        --border: rgba(255,255,255,0.12); --border-subtle: rgba(255,255,255,0.08);
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+      }
+      * { box-sizing:border-box; margin:0; padding:0; }
+      body { background:#000; color:var(--t1); min-height:100vh; -webkit-font-smoothing:antialiased; padding:40px 16px 80px; }
+      .aura { position:fixed; inset:0; z-index:-1; background:radial-gradient(1100px 480px at 50% -8%, rgba(255,255,255,0.06), transparent 60%); }
+      .wrap { max-width:680px; margin:0 auto; }
+      .eyebrow { font-size:12px; font-weight:600; letter-spacing:0.14em; text-transform:uppercase; color:var(--t3); }
+      h1 { font-size:26px; font-weight:680; letter-spacing:-0.02em; margin:3px 0 4px; }
+      .sub { font-size:13px; color:var(--t2); margin-bottom:22px; }
+      .glass { background:var(--g1); border:1px solid var(--border-subtle); box-shadow:inset 0 1px 0 rgba(255,255,255,0.22); }
+      /* Totals bar */
+      .totals { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:22px; }
+      .t { border-radius:18px; padding:14px 16px; }
+      .t .k { font-size:11px; font-weight:600; letter-spacing:0.04em; text-transform:uppercase; color:var(--t3); }
+      .t .v { font-size:22px; font-weight:700; letter-spacing:-0.02em; margin-top:6px; font-variant-numeric:tabular-nums; }
+      .label { font-size:11px; font-weight:600; letter-spacing:0.16em; text-transform:uppercase; color:var(--t3); margin:0 4px 12px; }
+      .list { border-radius:22px; overflow:hidden; }
+      .head, .row { display:grid; grid-template-columns:1.7fr 0.8fr 0.8fr 0.8fr 0.9fr; gap:8px; align-items:center; }
+      .head > div { font-size:9.5px; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; color:var(--t3); padding:11px 8px; }
+      .head > div:first-child { padding-left:16px; }
+      .head > div:not(:first-child), .amt { text-align:right; }
+      .row { padding:12px 16px 12px 0; border-bottom:1px solid var(--border-subtle); }
+      .row:last-child { border-bottom:0; }
+      .who { display:flex; align-items:center; gap:11px; padding-left:16px; min-width:0; }
+      .av { width:32px; height:32px; border-radius:9px; background:var(--g2); display:grid; place-items:center; font-size:11px; font-weight:700; flex:0 0 auto; box-shadow:inset 0 1px 0 rgba(255,255,255,0.2); }
+      .who .n { font-size:13.5px; font-weight:640; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+      .who .r { font-size:11px; color:var(--t3); }
+      .amt { font-size:13px; font-variant-numeric:tabular-nums; color:var(--t2); padding-right:2px; }
+      .amt.net { color:var(--t1); font-weight:700; }
+      .amt.ded { color:var(--t3); }
+      .ot { font-size:9px; font-weight:700; color:var(--t4); border:1px solid var(--border-subtle); border-radius:100px; padding:1px 6px; margin-left:6px; }
+      .note { text-align:center; color:var(--t3); font-size:11.5px; margin:24px auto 0; line-height:1.6; }
+      code { color:var(--t2); }
+    </style>
+  </head>
+  <body>
+    <div class="aura"></div>
+    <div class="wrap">
+      <div class="eyebrow">Payroll · Payslips</div>
+      <h1>June 2026 · Monthly</h1>
+      <div class="sub">PR-2026-06 · 5 employees · 1–30 Jun</div>
+
+      <div class="totals">
+        <div class="t glass"><div class="k">Gross</div><div class="v">€18,240</div></div>
+        <div class="t glass"><div class="k">Overtime</div><div class="v">€1,180</div></div>
+        <div class="t glass"><div class="k">Deductions</div><div class="v">€4,590</div></div>
+        <div class="t glass"><div class="k">Net pay</div><div class="v">€13,650</div></div>
+      </div>
+
+      <div class="label">Payslip lines</div>
+      <div class="list glass">
+        <div class="head"><div>Employee</div><div>Base</div><div>OT</div><div>Deduct</div><div>Net</div></div>
+        <div class="row">
+          <div class="who"><span class="av">EV</span><span style="min-width:0"><span class="n">Elena Vasile</span><br /><span class="r">Project Manager</span></span></div>
+          <div class="amt">€4,200</div><div class="amt">€0</div><div class="amt ded">−€1,050</div><div class="amt net">€3,150</div>
+        </div>
+        <div class="row">
+          <div class="who"><span class="av">AD</span><span style="min-width:0"><span class="n">Andrei Dinu<span class="ot">OT</span></span><br /><span class="r">Lead Electrician</span></span></div>
+          <div class="amt">€3,600</div><div class="amt">€480</div><div class="amt ded">−€980</div><div class="amt net">€3,100</div>
+        </div>
+        <div class="row">
+          <div class="who"><span class="av">MP</span><span style="min-width:0"><span class="n">Maria Pop</span><br /><span class="r">Site Supervisor</span></span></div>
+          <div class="amt">€3,100</div><div class="amt">€0</div><div class="amt ded">−€760</div><div class="amt net">€2,340</div>
+        </div>
+        <div class="row">
+          <div class="who"><span class="av">RG</span><span style="min-width:0"><span class="n">Radu Gheorghe<span class="ot">OT</span></span><br /><span class="r">Carpenter</span></span></div>
+          <div class="amt">€2,400</div><div class="amt">€700</div><div class="amt ded">−€820</div><div class="amt net">€2,280</div>
+        </div>
+      </div>
+
+      <p class="note">
+        Liquid Glass preview · Phase 8.2 Payroll line items. One payslip line per
+        employee — base + overtime + bonus + allowance = gross, minus deductions
+        = net — with the run header totals (gross / net / employee count)
+        <strong>derived</strong> from the lines and the run detail's cost
+        breakdown + top earners now populated from real data. Backed by
+        <code>payroll_items</code> + <code>/api/payroll/[id]/items</code>. Pure
+        black · monochrome.
+      </p>
+    </div>
+  </body>
+</html>
