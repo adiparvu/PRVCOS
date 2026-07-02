@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PRV · Leave Balances — Liquid Glass Preview</title>
+    <style>
+      :root {
+        --g1: rgba(255,255,255,0.06); --g2: rgba(255,255,255,0.10);
+        --t1: rgba(255,255,255,0.95); --t2: rgba(255,255,255,0.65); --t3: rgba(255,255,255,0.35); --t4: rgba(255,255,255,0.22);
+        --border: rgba(255,255,255,0.12); --border-subtle: rgba(255,255,255,0.08);
+        --amber: rgba(255,159,10,0.95); --red: rgba(255,69,58,0.9);
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+      }
+      * { box-sizing:border-box; margin:0; padding:0; }
+      body { background:#000; color:var(--t1); min-height:100vh; -webkit-font-smoothing:antialiased; padding:40px 16px 80px; }
+      .aura { position:fixed; inset:0; z-index:-1; background:radial-gradient(1100px 480px at 50% -8%, rgba(255,255,255,0.06), transparent 60%); }
+      .wrap { max-width:620px; margin:0 auto; }
+      .eyebrow { font-size:12px; font-weight:600; letter-spacing:0.14em; text-transform:uppercase; color:var(--t3); }
+      h1 { font-size:26px; font-weight:680; letter-spacing:-0.02em; margin:3px 0 4px; }
+      .who { font-size:13px; color:var(--t2); margin-bottom:22px; }
+      .grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+      .card { border-radius:20px; padding:18px; background:var(--g1); border:1px solid var(--border-subtle); box-shadow:inset 0 1px 0 rgba(255,255,255,0.22); }
+      .ctop { display:flex; align-items:baseline; justify-content:space-between; margin-bottom:4px; }
+      .type { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--t3); }
+      .accr { font-size:10.5px; color:var(--t4); }
+      .avail { font-size:34px; font-weight:720; letter-spacing:-0.03em; }
+      .avail .u { font-size:14px; font-weight:600; color:var(--t3); margin-left:4px; }
+      .breakdown { display:flex; gap:14px; margin-top:12px; font-size:11.5px; color:var(--t3); }
+      .breakdown b { color:var(--t2); font-weight:640; }
+      .bar { height:8px; border-radius:100px; background:rgba(255,255,255,0.08); margin-top:12px; overflow:hidden; display:flex; }
+      .bar .used { height:100%; background:rgba(255,255,255,0.85); }
+      .bar .pending { height:100%; background:rgba(255,159,10,0.7); }
+      .legend { display:flex; gap:14px; margin-top:9px; font-size:10.5px; color:var(--t3); }
+      .legend span { display:inline-flex; align-items:center; gap:5px; }
+      .sw { width:8px; height:8px; border-radius:2px; }
+      .note { text-align:center; color:var(--t3); font-size:11.5px; margin:24px auto 0; line-height:1.6; }
+      code { color:var(--t2); }
+    </style>
+  </head>
+  <body>
+    <div class="aura"></div>
+    <div class="wrap">
+      <div class="eyebrow">People · Leave</div>
+      <h1>Leave Balances</h1>
+      <div class="who">Elena Vasile · 2026</div>
+
+      <div class="grid">
+        <div class="card">
+          <div class="ctop"><span class="type">Annual</span><span class="accr">+1.75/mo accrual</span></div>
+          <div class="avail">12.5<span class="u">days left</span></div>
+          <div class="bar"><div class="used" style="width:52%"></div><div class="pending" style="width:12%"></div></div>
+          <div class="legend"><span><span class="sw" style="background:rgba(255,255,255,0.85)"></span>Used 11.5</span><span><span class="sw" style="background:rgba(255,159,10,0.7)"></span>Pending 2.5</span></div>
+          <div class="breakdown"><span>Entitlement <b>21</b></span><span>Carried <b>5</b></span></div>
+        </div>
+        <div class="card">
+          <div class="ctop"><span class="type">Medical</span><span class="accr">no accrual</span></div>
+          <div class="avail">7.0<span class="u">days left</span></div>
+          <div class="bar"><div class="used" style="width:30%"></div></div>
+          <div class="legend"><span><span class="sw" style="background:rgba(255,255,255,0.85)"></span>Used 3</span></div>
+          <div class="breakdown"><span>Entitlement <b>10</b></span><span>Carried <b>0</b></span></div>
+        </div>
+        <div class="card">
+          <div class="ctop"><span class="type">Unpaid</span><span class="accr">on request</span></div>
+          <div class="avail" style="color:var(--t2)">—</div>
+          <div class="breakdown" style="margin-top:16px"><span>Used <b>2</b> this year</span></div>
+        </div>
+        <div class="card" style="border-style:dashed; display:flex; align-items:center; justify-content:center; color:var(--t3); font-size:13px; font-weight:600;">
+          ＋ Set an entitlement
+        </div>
+      </div>
+
+      <p class="note">
+        Liquid Glass preview · Phase 7.3 Leave Balances. Per employee, per leave
+        type, per year: entitlement + carried-over − used − pending =
+        <strong>available</strong>, with optional monthly <strong>accrual</strong>.
+        Replaces the hard-coded <code>leaveBalance: 0</code> in the time-off view.
+        Backed by <code>leave_balances</code> +
+        <code>/api/workforce/leave/balances</code> (managers set entitlements).
+        Pure black · monochrome (pending shown amber).
+      </p>
+    </div>
+  </body>
+</html>

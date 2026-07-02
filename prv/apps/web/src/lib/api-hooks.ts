@@ -38,6 +38,7 @@ import type { BudgetLine, BudgetResponse } from "@/app/api/projects/[id]/budget/
 import type { TaskSummary } from "@/app/api/projects/[id]/tasks/route"
 import type { RiskSummary, RiskRegisterMeta } from "@/app/api/projects/[id]/risks/route"
 import type { ActivityEntry } from "@/app/api/projects/[id]/activity/route"
+import type { LeaveBalanceSummary } from "@/app/api/workforce/leave/balances/route"
 
 const LIMIT = 50
 
@@ -1702,5 +1703,44 @@ export function useProjectHealth(projectId: string | null) {
     queryFn: () =>
       fetch(`/api/projects/${projectId}/health`).then((r) => r.json() as Promise<ProjectHealth>),
     staleTime: 60_000,
+  })
+}
+
+// ── Leave Balances (7.3) ───────────────────────────────────────────────────────
+
+export type { LeaveBalanceSummary }
+
+export interface LeaveBalanceInput {
+  userId: string
+  type: "annual" | "medical" | "unpaid" | "other"
+  year: number
+  entitlementDays: number
+  carriedOverDays?: number
+  accrualDaysPerMonth?: number | null
+}
+
+export function useLeaveBalances(userId?: string | null, year?: number | null) {
+  return useQuery({
+    queryKey: ["leave-balances", userId ?? "self", year ?? "current"],
+    queryFn: () =>
+      fetch(
+        buildUrl("/api/workforce/leave/balances", { userId, year: year ? String(year) : undefined })
+      ).then((r) => r.json() as Promise<{ balances: LeaveBalanceSummary[]; year: number }>),
+  })
+}
+
+export function useUpsertLeaveBalance() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: LeaveBalanceInput) => {
+      const res = await fetch("/api/workforce/leave/balances", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      })
+      if (!res.ok) throw new Error("Failed to save balance")
+      return res.json() as Promise<{ id: string }>
+    },
+    onSettled: () => void qc.invalidateQueries({ queryKey: ["leave-balances"] }),
   })
 }

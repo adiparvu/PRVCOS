@@ -312,3 +312,43 @@ export const tasksRelations = relations(tasks, ({ one }) => ({
   store: one(stores, { fields: [tasks.storeId], references: [stores.id] }),
   assignee: one(users, { fields: [tasks.assigneeUserId], references: [users.id] }),
 }))
+
+// ─── Leave Balances (roadmap 7.3) ────────────────────────────────────────────
+// One row per (user, leave type, year). Tracks the annual entitlement, any days
+// carried over from the prior year, an optional monthly accrual rate, and the
+// running used / pending tallies. Available = entitlement + carriedOver − used
+// − pending (see lib/leave-balance.ts). Company-scoped.
+
+export const leaveBalances = pgTable(
+  "leave_balances",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    type: leaveTypeEnum("type").notNull().default("annual"),
+    year: integer("year").notNull(),
+    entitlementDays: numeric("entitlement_days", { precision: 6, scale: 2 }).notNull().default("0"),
+    carriedOverDays: numeric("carried_over_days", { precision: 6, scale: 2 })
+      .notNull()
+      .default("0"),
+    accrualDaysPerMonth: numeric("accrual_days_per_month", { precision: 5, scale: 2 }),
+    usedDays: numeric("used_days", { precision: 6, scale: 2 }).notNull().default("0"),
+    pendingDays: numeric("pending_days", { precision: 6, scale: 2 }).notNull().default("0"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    unique("leave_balances_user_type_year_unique").on(table.userId, table.type, table.year),
+    index("leave_balances_company_id_idx").on(table.companyId),
+    index("leave_balances_user_id_idx").on(table.userId),
+  ]
+)
+
+export const leaveBalancesRelations = relations(leaveBalances, ({ one }) => ({
+  company: one(companies, { fields: [leaveBalances.companyId], references: [companies.id] }),
+  user: one(users, { fields: [leaveBalances.userId], references: [users.id] }),
+}))
