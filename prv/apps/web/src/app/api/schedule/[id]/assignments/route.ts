@@ -5,7 +5,8 @@ import { writeAuditLog } from "@prv/auth"
 import { z } from "zod"
 import { db } from "@prv/db"
 import { shiftAssignments, shifts, users } from "@prv/db/schema"
-import { and, asc, count, eq, isNull } from "drizzle-orm"
+import { and, asc, count, eq, isNull, ne } from "drizzle-orm"
+import { findConflict } from "@/lib/shift-overlap"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -105,6 +106,38 @@ export const POST = withGates(
 
     if (shift.totalSlots !== null && (countRow?.cnt ?? 0) >= shift.totalSlots)
       return NextResponse.json({ error: "Shift is already at full capacity" }, { status: 409 })
+
+    // Conflict detection: the employee's other shifts on the same date must not
+    // overlap this one's time window (double-booking).
+    const sameDayShifts = await db
+      .select({
+        id: shifts.id,
+        title: shifts.title,
+        startTime: shifts.startTime,
+        endTime: shifts.endTime,
+      })
+      .from(shiftAssignments)
+      .innerJoin(shifts, eq(shiftAssignments.shiftId, shifts.id))
+      .where(
+        and(
+          eq(shiftAssignments.userId, parsed.data.userId),
+          eq(shifts.companyId, companyId),
+          eq(shifts.date, shift.date),
+          ne(shifts.id, sid),
+          isNull(shifts.deletedAt)
+        )
+      )
+
+    const conflict = findConflict(shift.startTime, shift.endTime, sameDayShifts)
+    if (conflict)
+      return NextResponse.json(
+        {
+          error: `Double-booked: overlaps "${conflict.title ?? "another shift"}" (${conflict.startTime}\u2013${conflict.endTime})`,
+          code: "SHIFT_CONFLICT",
+          conflict,
+        },
+        { status: 409 }
+      )
 
     const [assignment] = await db
       .insert(shiftAssignments)
