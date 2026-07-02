@@ -7,6 +7,7 @@ import type { QuoteSummary } from "@/app/api/crm/quotes/route"
 import type { ClientSummary } from "@/app/api/crm/clients/route"
 import type { Lead } from "@/app/api/crm/leads/route"
 import type { CrmAnalytics } from "@/app/api/crm/analytics/route"
+import type { CrmActivityRow, CrmActivitiesMeta } from "@/app/api/crm/activities/route"
 import type { ProjectSummary } from "@/app/api/projects/route"
 import type { PayrollRun, PayrollMeta } from "@/app/api/payroll/route"
 import type { POSummary, ProcurementMeta } from "@/app/api/procurement/route"
@@ -2771,5 +2772,81 @@ export function useCrmAnalytics() {
       if (!res.ok) throw new Error("Failed to load CRM analytics")
       return res.json() as Promise<CrmAnalytics>
     },
+  })
+}
+
+export interface CrmActivitiesResponse {
+  activities: CrmActivityRow[]
+  meta: CrmActivitiesMeta
+}
+
+export function useCrmActivities(clientId?: string) {
+  return useQuery({
+    queryKey: ["crm-activities", clientId ?? "all"],
+    queryFn: async () => {
+      const res = await fetch(buildUrl("/api/crm/activities", { clientId: clientId ?? null }))
+      if (!res.ok) throw new Error("Failed to load activities")
+      return res.json() as Promise<CrmActivitiesResponse>
+    },
+  })
+}
+
+export function useCreateCrmActivity() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: {
+      clientId: string
+      type: string
+      subject: string
+      notes?: string | null
+      dueAt?: string | null
+    }) => {
+      const res = await fetch("/api/crm/activities", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      })
+      if (!res.ok) throw new Error("Failed to create activity")
+      return res.json() as Promise<{ id: string }>
+    },
+    onSettled: () => void qc.invalidateQueries({ queryKey: ["crm-activities"] }),
+  })
+}
+
+export function useUpdateCrmActivity() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({
+      id,
+      ...body
+    }: {
+      id: string
+      completed?: boolean
+      outcome?: string | null
+      subject?: string
+      notes?: string | null
+      dueAt?: string | null
+    }) => {
+      const res = await fetch(`/api/crm/activities/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      })
+      if (!res.ok) throw new Error("Failed to update activity")
+      return res.json() as Promise<{ id: string; completedAt: string | null }>
+    },
+    onSettled: () => void qc.invalidateQueries({ queryKey: ["crm-activities"] }),
+  })
+}
+
+export function useDeleteCrmActivity() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/crm/activities/${id}`, { method: "DELETE" })
+      if (!res.ok) throw new Error("Failed to delete activity")
+      return res.json() as Promise<{ id: string }>
+    },
+    onSettled: () => void qc.invalidateQueries({ queryKey: ["crm-activities"] }),
   })
 }

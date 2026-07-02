@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>CRM · Activities — Preview</title>
+<style>
+:root{--g1:rgba(255,255,255,.06);--g2:rgba(255,255,255,.10);--g3:rgba(255,255,255,.16);
+--t1:rgba(255,255,255,.95);--t2:rgba(255,255,255,.65);--t3:rgba(255,255,255,.35);--t4:rgba(255,255,255,.15);
+--bd:rgba(255,255,255,.12);--bds:rgba(255,255,255,.07);--shine:inset 0 1px 0 rgba(255,255,255,.22);
+--amber:rgba(255,190,90,.92);--amberbg:rgba(255,176,64,.12);--amberbd:rgba(255,176,64,.32)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#000;color:var(--t1);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",sans-serif;padding:40px 24px 80px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:960px;margin:0 auto}
+h1{font-size:29px;font-weight:640;letter-spacing:-.02em}
+.sub{color:var(--t3);font-size:13.5px;margin-top:6px}
+.strip{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:24px 0}
+.tile{background:var(--g1);border:1px solid var(--bd);border-radius:18px;padding:15px 17px;box-shadow:var(--shine)}
+.tile .l{color:var(--t3);font-size:11px;text-transform:uppercase;letter-spacing:.07em;font-weight:560}
+.tile .v{font-size:25px;font-weight:680;margin-top:8px;letter-spacing:-.02em}
+.tile.warn .v{color:var(--amber)}
+.card{background:var(--g1);border:1px solid var(--bd);border-radius:22px;padding:20px;box-shadow:var(--shine),0 24px 64px rgba(0,0,0,.5);margin-bottom:20px}
+.form{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form .full{grid-column:1/-1}
+label{display:block;color:var(--t3);font-size:11px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+input,select,.fake{width:100%;background:var(--g2);border:1px solid var(--bd);border-radius:12px;color:var(--t1);font:inherit;font-size:13px;padding:10px 12px}
+.chips{display:flex;flex-wrap:wrap;gap:7px}
+.chip{border:1px solid var(--bd);background:var(--g1);color:var(--t2);border-radius:100px;padding:7px 13px;font-size:12px;cursor:pointer}
+.chip.on{background:var(--g3);color:var(--t1);box-shadow:var(--shine)}
+.cta{grid-column:1/-1;display:flex;justify-content:flex-end;margin-top:4px}
+.btn{background:#fff;color:#000;border:0;border-radius:12px;font:inherit;font-weight:600;font-size:13px;padding:10px 20px;cursor:pointer}
+.sec{color:var(--t3);font-size:11.5px;text-transform:uppercase;letter-spacing:.08em;margin:22px 4px 10px;font-weight:600}
+.act{display:flex;gap:14px;align-items:flex-start;padding:14px 16px;border:1px solid var(--bd);background:var(--g1);border-radius:16px;margin-bottom:10px;box-shadow:var(--shine)}
+.act.overdue{border-color:var(--amberbd);background:var(--amberbg)}
+.act.done{opacity:.62}
+.gl{width:38px;height:38px;flex:none;border-radius:11px;background:var(--g2);border:1px solid var(--bds);display:flex;align-items:center;justify-content:center;font-size:17px}
+.act.overdue .gl{border-color:var(--amberbd)}
+.body{flex:1;min-width:0}
+.tp{display:flex;align-items:center;gap:9px}
+.tp .subj{font-size:14px;font-weight:560}
+.tp .type{color:var(--t3);font-size:11px;text-transform:uppercase;letter-spacing:.05em;border:1px solid var(--bd);border-radius:6px;padding:2px 6px}
+.who{color:var(--t2);font-size:12px;margin-top:5px}
+.note{color:var(--t3);font-size:12.5px;margin-top:7px;line-height:1.5}
+.out{color:var(--t2);font-size:12.5px;margin-top:7px;line-height:1.5;border-left:2px solid var(--bds);padding-left:10px}
+.meta{display:flex;flex-direction:column;align-items:flex-end;gap:9px;flex:none}
+.due{font-size:12px;color:var(--t2);font-variant-numeric:tabular-nums;white-space:nowrap}
+.due.od{color:var(--amber);font-weight:560}
+.done-b{border:1px solid var(--bd);background:var(--g2);color:var(--t1);border-radius:9px;font:inherit;font-size:11.5px;padding:6px 11px;cursor:pointer;box-shadow:var(--shine)}
+.check{color:var(--t3);font-size:12px}
+.foot{color:var(--t3);font-size:12px;line-height:1.7;border-top:1px solid var(--bds);padding-top:16px;margin-top:26px}
+.foot b{color:var(--t2);font-weight:560}
+</style></head>
+<body><div class="wrap">
+<h1>Activities</h1>
+<div class="sub">CRM · every call, meeting, follow-up and task across your leads &amp; customers</div>
+
+<div class="strip">
+  <div class="tile"><div class="l">Total</div><div class="v">34</div></div>
+  <div class="tile"><div class="l">Open</div><div class="v">12</div></div>
+  <div class="tile warn"><div class="l">Overdue</div><div class="v">3</div></div>
+  <div class="tile"><div class="l">Done</div><div class="v">22</div></div>
+</div>
+
+<div class="card">
+  <div class="form">
+    <div><label>Lead / Customer</label><div class="fake" style="color:var(--t2)">Popescu Construct SRL ▾</div></div>
+    <div><label>Due</label><div class="fake" style="color:var(--t2)">2026-07-05 · 10:00</div></div>
+    <div class="full"><label>Type</label><div class="chips">
+      <span class="chip on">📞 Call</span><span class="chip">✉️ Email</span><span class="chip">👥 Meeting</span>
+      <span class="chip">🖥️ Demo</span><span class="chip">📄 Proposal</span><span class="chip">↻ Follow-up</span>
+      <span class="chip">📝 Note</span><span class="chip">☑︎ Task</span></div></div>
+    <div class="full"><label>Subject</label><input value="Follow up on kitchen renovation quote" /></div>
+    <div class="full"><label>Notes</label><input placeholder="Optional details…" /></div>
+    <div class="cta"><button class="btn">Log activity</button></div>
+  </div>
+</div>
+
+<div class="sec">Overdue</div>
+<div class="act overdue">
+  <div class="gl">📞</div>
+  <div class="body"><div class="tp"><span class="subj">Call about revised timeline</span><span class="type">Call</span></div>
+    <div class="who">Ionescu Design SRL · Andrei Ionescu</div>
+    <div class="note">Client asked for a callback after reviewing the amended scope.</div></div>
+  <div class="meta"><span class="due od">2 days overdue</span><button class="done-b">Mark done</button></div>
+</div>
+<div class="act overdue">
+  <div class="gl">↻</div>
+  <div class="body"><div class="tp"><span class="subj">Send updated proposal PDF</span><span class="type">Follow-up</span></div>
+    <div class="who">Popescu Construct SRL · Maria Popescu</div></div>
+  <div class="meta"><span class="due od">Due yesterday</span><button class="done-b">Mark done</button></div>
+</div>
+
+<div class="sec">Scheduled</div>
+<div class="act">
+  <div class="gl">👥</div>
+  <div class="body"><div class="tp"><span class="subj">On-site measurement meeting</span><span class="type">Meeting</span></div>
+    <div class="who">Vlad Dumitru · new lead</div>
+    <div class="note">Bring tile samples and the bathroom catalogue.</div></div>
+  <div class="meta"><span class="due">Jul 5 · 10:00</span><button class="done-b">Mark done</button></div>
+</div>
+<div class="act">
+  <div class="gl">🖥️</div>
+  <div class="body"><div class="tp"><span class="subj">Product demo — smart lighting</span><span class="type">Demo</span></div>
+    <div class="who">Green Homes SA</div></div>
+  <div class="meta"><span class="due">Jul 8 · 14:30</span><button class="done-b">Mark done</button></div>
+</div>
+
+<div class="sec">Completed</div>
+<div class="act done">
+  <div class="gl">✉️</div>
+  <div class="body"><div class="tp"><span class="subj">Emailed initial estimate</span><span class="type">Email</span></div>
+    <div class="who">Popescu Construct SRL · Maria Popescu</div>
+    <div class="out">Outcome: Client acknowledged, wants a call next week to discuss materials.</div></div>
+  <div class="meta"><span class="check">✓ Jun 28</span></div>
+</div>
+<div class="act done">
+  <div class="gl">📝</div>
+  <div class="body"><div class="tp"><span class="subj">Logged walk-in enquiry</span><span class="type">Note</span></div>
+    <div class="who">Vlad Dumitru</div></div>
+  <div class="meta"><span class="check">✓ Jun 26</span></div>
+</div>
+
+<div class="foot"><b>What this is:</b> Phase 10.4 — CRM Activities. A standalone timeline at <b>/crm/activities</b> (⌘K:
+"Activities"), plus a new <b>crm_activities</b> table. Log or schedule calls, emails, meetings, demos, proposals,
+follow-ups, notes and tasks against any lead or customer. Activities derive three states — <b>overdue</b> (past due,
+not done, flagged amber), <b>scheduled</b>, and <b>done</b> (with a recorded outcome). The summary strip counts open /
+overdue / done. Amber is used strictly as an overdue status signal, per the design system.</div>
+</div></body></html>

@@ -35,6 +35,8 @@ export * from "./product-variants"
 export * from "./product-suppliers"
 // Phase 9.3: Order Returns — returns/refunds workflow + return items
 export * from "./returns"
+// Phase 10.4: CRM Activities — calls/meetings/tasks timeline per lead/customer
+export * from "./crm-activities"
 // Sprint 06: Document Management
 export * from "./documents"
 // Sprint 06: Fleet & Tool Management

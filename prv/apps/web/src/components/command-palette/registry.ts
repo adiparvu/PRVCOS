@@ -234,6 +234,22 @@ const BASE: CommandEntry[] = [
     href: "/crm/analytics",
   },
   {
+    id: "nav.crm-activities",
+    label: "CRM Activities",
+    section: "Navigation",
+    keywords: [
+      "activities",
+      "calls",
+      "meetings",
+      "follow-up",
+      "tasks",
+      "crm",
+      "timeline",
+      "touchpoints",
+    ],
+    href: "/crm/activities",
+  },
+  {
     id: "nav.clients",
     label: "Clients",
     section: "Navigation",
