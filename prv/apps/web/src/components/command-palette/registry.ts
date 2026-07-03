@@ -313,6 +313,22 @@ const MANAGER_CMDS: CommandEntry[] = [
 
 const FINANCE_CMDS: CommandEntry[] = [
   {
+    id: "finance.forecast",
+    label: "Forecast",
+    section: "Finance",
+    keywords: [
+      "forecast",
+      "projection",
+      "p&l",
+      "pnl",
+      "break-even",
+      "scenario",
+      "run rate",
+      "cash",
+    ],
+    href: "/finance/forecast",
+  },
+  {
     id: "finance.report",
     label: "Monthly Report",
     section: "Finance",

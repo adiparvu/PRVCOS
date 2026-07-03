@@ -9,6 +9,7 @@ import type { Lead } from "@/app/api/crm/leads/route"
 import type { CrmAnalytics } from "@/app/api/crm/analytics/route"
 import type { CrmActivityRow, CrmActivitiesMeta } from "@/app/api/crm/activities/route"
 import type { PayableRow, PayablesResponse } from "@/app/api/finance/payables/route"
+import type { FinanceForecastResponse } from "@/app/api/finance/forecast/route"
 import type { ProjectSummary } from "@/app/api/projects/route"
 import type { PayrollRun, PayrollMeta } from "@/app/api/payroll/route"
 import type { POSummary, ProcurementMeta } from "@/app/api/procurement/route"
@@ -2930,5 +2931,18 @@ export function useUpdatePayable() {
       return res.json() as Promise<{ id: string; status: string; paidAmount: number }>
     },
     onSettled: () => void qc.invalidateQueries({ queryKey: ["payables"] }),
+  })
+}
+
+export type { FinanceForecastResponse } from "@/app/api/finance/forecast/route"
+
+export function useFinanceForecast() {
+  return useQuery({
+    queryKey: ["finance-forecast"],
+    queryFn: async () => {
+      const res = await fetch("/api/finance/forecast")
+      if (!res.ok) throw new Error("Failed to load forecast")
+      return res.json() as Promise<FinanceForecastResponse>
+    },
   })
 }

@@ -1,0 +1,78 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Finance · Forecast — Preview</title>
+<style>
+:root{--g1:rgba(255,255,255,.06);--g2:rgba(255,255,255,.10);--g3:rgba(255,255,255,.16);
+--t1:rgba(255,255,255,.95);--t2:rgba(255,255,255,.65);--t3:rgba(255,255,255,.35);
+--bd:rgba(255,255,255,.12);--bds:rgba(255,255,255,.07);--shine:inset 0 1px 0 rgba(255,255,255,.22);
+--amber:rgba(255,190,90,.92)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#000;color:var(--t1);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",sans-serif;padding:40px 24px 80px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1040px;margin:0 auto}
+.head{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap}
+h1{font-size:29px;font-weight:640;letter-spacing:-.02em}.sub{color:var(--t3);font-size:13.5px;margin-top:6px}
+.seg{display:flex;gap:4px;background:var(--g1);border:1px solid var(--bd);border-radius:100px;padding:4px;box-shadow:var(--shine)}
+.seg button{border:0;background:transparent;color:var(--t2);font:inherit;font-size:12.5px;padding:7px 15px;border-radius:100px;cursor:pointer}
+.seg button.on{background:var(--g3);color:var(--t1);box-shadow:var(--shine)}
+.k{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:24px 0}
+@media(max-width:820px){.k{grid-template-columns:repeat(2,1fr)}}
+.tile{background:var(--g1);border:1px solid var(--bd);border-radius:18px;padding:15px 17px;box-shadow:var(--shine)}
+.tile .l{color:var(--t3);font-size:11px;text-transform:uppercase;letter-spacing:.07em;font-weight:560}
+.tile .v{font-size:23px;font-weight:680;margin-top:8px;letter-spacing:-.02em}
+.card{background:var(--g1);border:1px solid var(--bd);border-radius:22px;padding:20px;box-shadow:var(--shine),0 24px 64px rgba(0,0,0,.5);margin-bottom:16px}
+.ct{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}.ct h2{font-size:15px;font-weight:600}.ct .m{color:var(--t3);font-size:12px}
+.chart{display:flex;align-items:flex-end;gap:8px;height:180px;border-bottom:1px solid var(--bds);padding-bottom:2px}
+.mo{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:6px;height:100%}
+.stk{width:100%;max-width:40px;display:flex;flex-direction:column;justify-content:flex-end;height:100%;gap:2px}
+.rev{border-radius:6px 6px 0 0;background:linear-gradient(180deg,rgba(255,255,255,.30),rgba(255,255,255,.12));box-shadow:var(--shine)}
+.exp{border-radius:0 0 6px 6px;background:repeating-linear-gradient(45deg,rgba(255,255,255,.10),rgba(255,255,255,.10) 5px,rgba(255,255,255,.04) 5px,rgba(255,255,255,.04) 10px)}
+.mo .ml{color:var(--t3);font-size:10.5px}
+.leg{display:flex;gap:16px;margin-top:14px;font-size:12px;color:var(--t2)}
+.sw{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.scn{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.sc{border:1px solid var(--bd);border-radius:16px;padding:16px;background:var(--g1);box-shadow:var(--shine)}
+.sc .n{font-size:12px;color:var(--t3);text-transform:uppercase;letter-spacing:.06em}
+.sc .p{font-size:22px;font-weight:700;margin-top:10px;letter-spacing:-.02em}
+.sc .p.neg{color:var(--amber)}
+.sc .r{color:var(--t2);font-size:12px;margin-top:8px;display:flex;justify-content:space-between}
+.foot{color:var(--t3);font-size:12px;line-height:1.7;border-top:1px solid var(--bds);padding-top:16px;margin-top:26px}.foot b{color:var(--t2);font-weight:560}
+</style></head><body><div class="wrap">
+<div class="head"><div><h1>Forecast</h1><div class="sub">Finance · forward P&amp;L from run-rate + weighted pipeline</div></div>
+<div class="seg"><button>3 mo</button><button class="on">6 mo</button><button>12 mo</button></div></div>
+
+<div class="k">
+  <div class="tile"><div class="l">Revenue run-rate</div><div class="v">€62.0k<span style="font-size:13px;color:var(--t3)">/mo</span></div></div>
+  <div class="tile"><div class="l">Weighted pipeline</div><div class="v">€184.2k</div></div>
+  <div class="tile"><div class="l">Expense run-rate</div><div class="v">€48.5k<span style="font-size:13px;color:var(--t3)">/mo</span></div></div>
+  <div class="tile"><div class="l">Break-even</div><div class="v">Month 1</div></div>
+</div>
+
+<div class="card">
+  <div class="ct"><h2>Projected P&amp;L · base case</h2><div class="m">revenue vs expenses</div></div>
+  <div class="chart">
+    <div class="mo"><div class="stk"><div class="rev" style="height:64%"></div><div class="exp" style="height:36%"></div></div><div class="ml">M1</div></div>
+    <div class="mo"><div class="stk"><div class="rev" style="height:64%"></div><div class="exp" style="height:36%"></div></div><div class="ml">M2</div></div>
+    <div class="mo"><div class="stk"><div class="rev" style="height:64%"></div><div class="exp" style="height:36%"></div></div><div class="ml">M3</div></div>
+    <div class="mo"><div class="stk"><div class="rev" style="height:48%"></div><div class="exp" style="height:36%"></div></div><div class="ml">M4</div></div>
+    <div class="mo"><div class="stk"><div class="rev" style="height:48%"></div><div class="exp" style="height:36%"></div></div><div class="ml">M5</div></div>
+    <div class="mo"><div class="stk"><div class="rev" style="height:48%"></div><div class="exp" style="height:36%"></div></div><div class="ml">M6</div></div>
+  </div>
+  <div class="leg"><span><span class="sw" style="background:rgba(255,255,255,.3)"></span>Revenue (run-rate + pipeline M1–M3)</span>
+  <span><span class="sw" style="background:rgba(255,255,255,.1)"></span>Expenses</span></div>
+</div>
+
+<div class="card">
+  <div class="ct"><h2>Scenarios · 6 months</h2><div class="m">net profit</div></div>
+  <div class="scn">
+    <div class="sc"><div class="n">Conservative</div><div class="p">€96.4k</div><div class="r"><span>Rev €387k</span><span>Break-even M1</span></div></div>
+    <div class="sc"><div class="n">Base</div><div class="p">€135.2k</div><div class="r"><span>Rev €426k</span><span>Break-even M1</span></div></div>
+    <div class="sc"><div class="n">Optimistic</div><div class="p">€174.0k</div><div class="r"><span>Rev €465k</span><span>Break-even M1</span></div></div>
+  </div>
+</div>
+
+<div class="foot"><b>What this is:</b> Phase 11.5 — Financial Forecasts. Read-only dashboard at <b>/finance/forecast</b> (⌘K:
+"Forecast"). A pure helper projects a forward P&amp;L from three live inputs — the trailing <b>revenue run-rate</b> (paid
+invoices), the <b>weighted sales pipeline</b> (reusing the CRM stage-probability model, spread across its first months),
+and the <b>expense run-rate</b> (approved/paid expenses) — producing per-month revenue/expense/net, a <b>break-even</b>
+month, and <b>conservative / base / optimistic</b> scenarios over 3 / 6 / 12 months. No schema changes, no writes — pure
+aggregation of existing finance + CRM data.</div>
+</div></body></html>
