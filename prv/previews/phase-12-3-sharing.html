@@ -1,0 +1,97 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Documents · Sharing — Preview</title>
+<style>
+:root{--g1:rgba(255,255,255,.06);--g2:rgba(255,255,255,.10);--g3:rgba(255,255,255,.16);
+--t1:rgba(255,255,255,.95);--t2:rgba(255,255,255,.65);--t3:rgba(255,255,255,.35);
+--bd:rgba(255,255,255,.12);--bds:rgba(255,255,255,.07);--shine:inset 0 1px 0 rgba(255,255,255,.22);
+--amber:rgba(255,190,90,.92)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#000;color:var(--t1);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",sans-serif;padding:40px 24px 80px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:920px;margin:0 auto}
+h1{font-size:29px;font-weight:640;letter-spacing:-.02em}.sub{color:var(--t3);font-size:13.5px;margin-top:6px}
+.pick{margin:22px 0}
+.fake{background:var(--g2);border:1px solid var(--bd);border-radius:12px;color:var(--t1);font-size:13.5px;padding:12px 14px}
+.strip{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:18px 0}
+.tile{background:var(--g1);border:1px solid var(--bd);border-radius:18px;padding:14px 16px;box-shadow:var(--shine)}
+.tile .l{color:var(--t3);font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;font-weight:560}
+.tile .v{font-size:22px;font-weight:680;margin-top:8px}
+.card{background:var(--g1);border:1px solid var(--bd);border-radius:22px;padding:20px;box-shadow:var(--shine),0 24px 64px rgba(0,0,0,.5);margin-bottom:18px}
+.ct{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}.ct h2{font-size:15px;font-weight:600}.ct .m{color:var(--t3);font-size:12px}
+.form{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+label{display:block;color:var(--t3);font-size:11px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+input,select{width:100%;background:var(--g2);border:1px solid var(--bd);border-radius:12px;color:var(--t1);font:inherit;font-size:13px;padding:10px 12px}
+.seg{display:inline-flex;gap:4px;background:var(--g2);border:1px solid var(--bd);border-radius:100px;padding:3px}
+.seg span{font-size:12px;color:var(--t2);padding:6px 12px;border-radius:100px}.seg span.on{background:var(--g3);color:var(--t1);box-shadow:var(--shine)}
+.cta{grid-column:1/-1;display:flex;justify-content:flex-end}
+.btn{background:#fff;color:#000;border:0;border-radius:12px;font:inherit;font-weight:600;font-size:13px;padding:10px 20px;cursor:pointer}
+.row{display:grid;grid-template-columns:auto 1fr auto auto;gap:14px;align-items:center;padding:13px 15px;border:1px solid var(--bd);background:var(--g1);border-radius:14px;margin-bottom:9px;box-shadow:var(--shine)}
+.row.rev{opacity:.55}
+.ic{width:34px;height:34px;border-radius:10px;background:var(--g2);border:1px solid var(--bds);display:flex;align-items:center;justify-content:center;font-size:15px}
+.who{font-size:13.5px;font-weight:560}.meta{color:var(--t3);font-size:12px;margin-top:3px}
+.badge{font-size:10px;text-transform:uppercase;letter-spacing:.04em;border:1px solid var(--bd);border-radius:6px;padding:3px 8px;color:var(--t2);white-space:nowrap}
+.badge.exp{color:var(--amber);border-color:rgba(255,176,64,.32);background:rgba(255,176,64,.12)}
+.badge.rev{color:var(--t3)}
+.mini{border:1px solid var(--bd);background:var(--g2);color:var(--t1);border-radius:9px;font:inherit;font-size:11.5px;padding:6px 10px;cursor:pointer;box-shadow:var(--shine)}
+.link{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;color:var(--t2)}
+.foot{color:var(--t3);font-size:12px;line-height:1.7;border-top:1px solid var(--bds);padding-top:16px;margin-top:26px}.foot b{color:var(--t2);font-weight:560}
+</style></head><body><div class="wrap">
+<h1>Sharing</h1>
+<div class="sub">Documents · internal &amp; external access, secure links, revoke</div>
+
+<div class="pick"><label>Document</label><div class="fake">Contract — Popescu Construct framework ▾</div></div>
+
+<div class="strip">
+  <div class="tile"><div class="l">Shares</div><div class="v">5</div></div>
+  <div class="tile"><div class="l">Active</div><div class="v">3</div></div>
+  <div class="tile"><div class="l">External links</div><div class="v">2</div></div>
+  <div class="tile"><div class="l">Revoked</div><div class="v">1</div></div>
+</div>
+
+<div class="card">
+  <div class="ct"><h2>New share</h2></div>
+  <div class="form">
+    <div style="grid-column:1/-1"><label>Scope</label><div class="seg"><span class="on">Internal user</span><span>External link</span></div></div>
+    <div><label>User</label><div class="fake" style="padding:10px 12px;font-size:13px;color:var(--t2)">Maria Popescu ▾</div></div>
+    <div><label>Permission</label><div class="fake" style="padding:10px 12px;font-size:13px;color:var(--t2)">View only ▾</div></div>
+    <div><label>Expires</label><input value="2026-08-01"/></div>
+    <div><label>Password</label><div class="seg" style="margin-top:2px"><span>Off</span><span class="on">On</span></div></div>
+    <div class="cta"><button class="btn">Create share</button></div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="ct"><h2>Shares</h2><div class="m">newest first</div></div>
+  <div class="row">
+    <div class="ic">👤</div>
+    <div><div class="who">Maria Popescu</div><div class="meta">Internal · view · no expiry</div></div>
+    <span class="badge">Active</span>
+    <button class="mini">Revoke</button>
+  </div>
+  <div class="row">
+    <div class="ic">🔗</div>
+    <div><div class="who">External link · 🔒 password</div><div class="meta link">/share/8Kd2…q9Zr · download · 14 views · exp Aug 1</div></div>
+    <span class="badge">Active</span>
+    <button class="mini">Revoke</button>
+  </div>
+  <div class="row">
+    <div class="ic">🔗</div>
+    <div><div class="who">External link</div><div class="meta link">/share/Lm0…4pQ · view · expired Jun 20</div></div>
+    <span class="badge exp">Expired</span>
+    <button class="mini">Revoke</button>
+  </div>
+  <div class="row rev">
+    <div class="ic">👤</div>
+    <div><div class="who">Andrei Ionescu</div><div class="meta">Internal · edit</div></div>
+    <span class="badge rev">Revoked</span>
+    <span></span>
+  </div>
+</div>
+
+<div class="foot"><b>What this is:</b> Phase 12.3 — Document Sharing. Management page at <b>/documents/shares</b> (⌘K: "Document
+Sharing"). Two new tables — <b>document_shares</b> + <b>document_share_access_log</b>. Create an <b>internal</b> share
+(to a user) or an <b>external</b> secure link (unguessable token, optional expiry &amp; password), with a permission level
+(view / download / edit / manage). Every external link view is recorded (count + last-accessed + IP). A pure helper
+derives each share's status (active / expired / revoked). The public resolver <b>GET /api/share/[token]</b> returns the
+document to a recipient and returns <b>410</b> once revoked or expired. No files are moved — links reference the existing
+document. Amber marks an expired link, per the design system.</div>
+</div></body></html>

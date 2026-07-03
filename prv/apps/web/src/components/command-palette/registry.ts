@@ -140,6 +140,22 @@ const BASE: CommandEntry[] = [
     href: "/documents/retention",
   },
   {
+    id: "nav.document-sharing",
+    label: "Document Sharing",
+    section: "Navigation",
+    keywords: [
+      "sharing",
+      "share",
+      "documents",
+      "link",
+      "external",
+      "access",
+      "permission",
+      "revoke",
+    ],
+    href: "/documents/shares",
+  },
+  {
     id: "nav.recruitment",
     label: "Recruitment",
     section: "Navigation",

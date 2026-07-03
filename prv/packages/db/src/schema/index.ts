@@ -39,6 +39,8 @@ export * from "./returns"
 export * from "./crm-activities"
 // Phase 11.6: Accounts Payable — supplier invoices + aging
 export * from "./supplier-invoices"
+// Phase 12.3: Document Sharing — internal/external share links + access log
+export * from "./document-shares"
 // Sprint 06: Document Management
 export * from "./documents"
 // Sprint 06: Fleet & Tool Management

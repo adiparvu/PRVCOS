@@ -11,6 +11,7 @@ import type { CrmActivityRow, CrmActivitiesMeta } from "@/app/api/crm/activities
 import type { PayableRow, PayablesResponse } from "@/app/api/finance/payables/route"
 import type { FinanceForecastResponse } from "@/app/api/finance/forecast/route"
 import type { RetentionResponse } from "@/app/api/documents/retention/route"
+import type { SharesResponse } from "@/app/api/documents/[id]/shares/route"
 import type { ProjectSummary } from "@/app/api/projects/route"
 import type { PayrollRun, PayrollMeta } from "@/app/api/payroll/route"
 import type { POSummary, ProcurementMeta } from "@/app/api/procurement/route"
@@ -3002,5 +3003,56 @@ export function useToggleLegalHold() {
       return res.json() as Promise<{ id: string; legalHold: boolean }>
     },
     onSettled: () => void qc.invalidateQueries({ queryKey: ["document-retention"] }),
+  })
+}
+
+export type { SharesResponse } from "@/app/api/documents/[id]/shares/route"
+
+export function useDocumentShares(documentId: string | null) {
+  return useQuery({
+    queryKey: ["document-shares", documentId],
+    enabled: !!documentId,
+    queryFn: async () => {
+      const res = await fetch(`/api/documents/${documentId}/shares`)
+      if (!res.ok) throw new Error("Failed to load shares")
+      return res.json() as Promise<SharesResponse>
+    },
+  })
+}
+
+export function useCreateShare(documentId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: {
+      scope: "internal" | "external"
+      permission: string
+      granteeUserId?: string
+      passwordProtected?: boolean
+      expiresAt?: string | null
+      note?: string | null
+    }) => {
+      const res = await fetch(`/api/documents/${documentId}/shares`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      })
+      if (!res.ok) throw new Error("Failed to create share")
+      return res.json() as Promise<{ id: string; token: string | null }>
+    },
+    onSettled: () => void qc.invalidateQueries({ queryKey: ["document-shares", documentId] }),
+  })
+}
+
+export function useRevokeShare(documentId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (shareId: string) => {
+      const res = await fetch(`/api/documents/${documentId}/shares/${shareId}`, {
+        method: "DELETE",
+      })
+      if (!res.ok) throw new Error("Failed to revoke share")
+      return res.json() as Promise<{ id: string }>
+    },
+    onSettled: () => void qc.invalidateQueries({ queryKey: ["document-shares", documentId] }),
   })
 }
