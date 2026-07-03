@@ -6,8 +6,10 @@ import {
   timestamp,
   boolean,
   jsonb,
+  integer,
   pgEnum,
   index,
+  unique,
 } from "drizzle-orm/pg-core"
 import { relations } from "drizzle-orm"
 import { companies } from "./companies"
@@ -59,6 +61,11 @@ export const documents = pgTable(
 
     isPublic: boolean("is_public").notNull().default(false),
     expiresAt: timestamp("expires_at", { withTimezone: true }),
+
+    // Legal hold blocks retention archival / GDPR erasure while litigation or an
+    // investigation is active (Phase 12.5).
+    legalHold: boolean("legal_hold").notNull().default(false),
+    legalHoldReason: text("legal_hold_reason"),
 
     tags: jsonb("tags").notNull().default([]),
     metadata: jsonb("metadata").notNull().default({}),
@@ -112,3 +119,30 @@ export const documentSignaturesRelations = relations(documentSignatures, ({ one 
   }),
   user: one(users, { fields: [documentSignatures.userId], references: [users.id] }),
 }))
+
+// Retention policies (Phase 12.5) — per document type, how long a document is
+// kept and whether it is auto-archived once it passes its effective expiry.
+export const retentionPolicies = pgTable(
+  "retention_policies",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id, { onDelete: "cascade" }),
+    documentType: documentTypeEnum("document_type").notNull(),
+    retentionMonths: integer("retention_months").notNull().default(60),
+    autoArchive: boolean("auto_archive").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    unique("retention_policies_company_type_unique").on(table.companyId, table.documentType),
+    index("retention_policies_company_id_idx").on(table.companyId),
+  ]
+)
+
+export const retentionPoliciesRelations = relations(retentionPolicies, ({ one }) => ({
+  company: one(companies, { fields: [retentionPolicies.companyId], references: [companies.id] }),
+}))
+
+export type RetentionPolicy = typeof retentionPolicies.$inferSelect

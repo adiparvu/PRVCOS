@@ -124,6 +124,22 @@ const BASE: CommandEntry[] = [
     href: "/people/compliance",
   },
   {
+    id: "nav.document-retention",
+    label: "Document Retention",
+    section: "Navigation",
+    keywords: [
+      "retention",
+      "documents",
+      "expiry",
+      "archive",
+      "legal hold",
+      "gdpr",
+      "records",
+      "vault",
+    ],
+    href: "/documents/retention",
+  },
+  {
     id: "nav.recruitment",
     label: "Recruitment",
     section: "Navigation",

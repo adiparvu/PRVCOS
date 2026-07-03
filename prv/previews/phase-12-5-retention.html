@@ -1,0 +1,96 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Documents · Retention — Preview</title>
+<style>
+:root{--g1:rgba(255,255,255,.06);--g2:rgba(255,255,255,.10);--g3:rgba(255,255,255,.16);
+--t1:rgba(255,255,255,.95);--t2:rgba(255,255,255,.65);--t3:rgba(255,255,255,.35);
+--bd:rgba(255,255,255,.12);--bds:rgba(255,255,255,.07);--shine:inset 0 1px 0 rgba(255,255,255,.22);
+--amber:rgba(255,190,90,.92);--amberbg:rgba(255,176,64,.12);--amberbd:rgba(255,176,64,.32);
+--red:rgba(255,120,110,.92);--redbg:rgba(255,90,80,.12);--redbd:rgba(255,90,80,.3)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#000;color:var(--t1);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",sans-serif;padding:40px 24px 80px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1000px;margin:0 auto}
+h1{font-size:29px;font-weight:640;letter-spacing:-.02em}.sub{color:var(--t3);font-size:13.5px;margin-top:6px}
+.strip{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin:24px 0}
+@media(max-width:820px){.strip{grid-template-columns:repeat(2,1fr)}}
+.tile{background:var(--g1);border:1px solid var(--bd);border-radius:18px;padding:14px 16px;box-shadow:var(--shine)}
+.tile .l{color:var(--t3);font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;font-weight:560}
+.tile .v{font-size:23px;font-weight:680;margin-top:8px}
+.tile.red .v{color:var(--red)}.tile.amber .v{color:var(--amber)}
+.card{background:var(--g1);border:1px solid var(--bd);border-radius:22px;padding:20px;box-shadow:var(--shine),0 24px 64px rgba(0,0,0,.5);margin-bottom:18px}
+.ct{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}.ct h2{font-size:15px;font-weight:600}.ct .m{color:var(--t3);font-size:12px}
+.row{display:grid;grid-template-columns:1fr auto auto auto;gap:14px;align-items:center;padding:12px 15px;border:1px solid var(--bd);background:var(--g1);border-radius:14px;margin-bottom:8px;box-shadow:var(--shine)}
+.row.exp{border-color:var(--redbd);background:var(--redbg)}
+.row.appr{border-color:var(--amberbd);background:var(--amberbg)}
+.row.hold{opacity:.72}
+.row .ti{font-size:14px;font-weight:560}.row .meta{color:var(--t3);font-size:12px;margin-top:3px}
+.exp-d{font-size:12px;text-align:right;white-space:nowrap;color:var(--t2)}
+.exp-d.r{color:var(--red);font-weight:560}.exp-d.a{color:var(--amber);font-weight:560}
+.badge{font-size:10px;text-transform:uppercase;letter-spacing:.04em;border:1px solid var(--bd);border-radius:6px;padding:3px 8px;white-space:nowrap}
+.badge.hold{color:var(--t2)}.badge.arch{color:var(--amber);border-color:var(--amberbd);background:var(--amberbg)}
+.mini{border:1px solid var(--bd);background:var(--g2);color:var(--t1);border-radius:9px;font:inherit;font-size:11.5px;padding:6px 10px;cursor:pointer;box-shadow:var(--shine)}
+.pol{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:center;padding:9px 4px;border-bottom:1px solid var(--bds)}
+.pol:last-child{border-bottom:0}.pol .n{font-size:13px;text-transform:capitalize}.pol .y{color:var(--t2);font-size:12.5px;font-variant-numeric:tabular-nums}
+.tog{font-size:11px;color:var(--t2);border:1px solid var(--bd);border-radius:100px;padding:4px 10px}
+.foot{color:var(--t3);font-size:12px;line-height:1.7;border-top:1px solid var(--bds);padding-top:16px;margin-top:26px}.foot b{color:var(--t2);font-weight:560}
+</style></head><body><div class="wrap">
+<h1>Retention</h1>
+<div class="sub">Documents · expiry, auto-archive eligibility &amp; legal holds</div>
+
+<div class="strip">
+  <div class="tile"><div class="l">Total</div><div class="v">128</div></div>
+  <div class="tile red"><div class="l">Expired</div><div class="v">6</div></div>
+  <div class="tile amber"><div class="l">Approaching</div><div class="v">11</div></div>
+  <div class="tile"><div class="l">On hold</div><div class="v">3</div></div>
+  <div class="tile amber"><div class="l">Auto-archive</div><div class="v">4</div></div>
+</div>
+
+<div class="card">
+  <div class="ct"><h2>Attention needed</h2><div class="m">most urgent first</div></div>
+  <div class="row exp">
+    <div><div class="ti">Contract — Dedeman framework 2018</div><div class="meta">contract · retention 7y · expired</div></div>
+    <div class="exp-d r">42 days ago</div>
+    <span class="badge arch">Auto-archive</span>
+    <button class="mini">Legal hold</button>
+  </div>
+  <div class="row exp">
+    <div><div class="ti">Invoice batch — Q1 2018</div><div class="meta">invoice_doc · retention 7y · expired</div></div>
+    <div class="exp-d r">8 days ago</div>
+    <span class="badge arch">Auto-archive</span>
+    <button class="mini">Legal hold</button>
+  </div>
+  <div class="row appr">
+    <div><div class="ti">Site safety report — Ploiești</div><div class="meta">report · retention 5y</div></div>
+    <div class="exp-d a">in 9 days</div>
+    <span class="badge">Approaching</span>
+    <button class="mini">Legal hold</button>
+  </div>
+  <div class="row appr">
+    <div><div class="ti">Specification — HVAC rev C</div><div class="meta">specification · retention 5y</div></div>
+    <div class="exp-d a">in 24 days</div>
+    <span class="badge">Approaching</span>
+    <button class="mini">Legal hold</button>
+  </div>
+  <div class="row hold">
+    <div><div class="ti">Employment contract — litigation #2244</div><div class="meta">contract · on hold — dispute pending</div></div>
+    <div class="exp-d">held</div>
+    <span class="badge hold">On hold</span>
+    <button class="mini">Release</button>
+  </div>
+</div>
+
+<div class="card">
+  <div class="ct"><h2>Retention policies</h2><div class="m">per document type</div></div>
+  <div class="pol"><span class="n">Contract</span><span class="y">84 months</span><span class="tog">Auto-archive ✓</span></div>
+  <div class="pol"><span class="n">Invoice doc</span><span class="y">84 months</span><span class="tog">Auto-archive ✓</span></div>
+  <div class="pol"><span class="n">Certificate</span><span class="y">120 months</span><span class="tog">Auto-archive ✓</span></div>
+  <div class="pol"><span class="n">Report</span><span class="y">60 months</span><span class="tog">Auto-archive ✓</span></div>
+  <div class="pol"><span class="n">Photo</span><span class="y">36 months</span><span class="tog">Manual</span></div>
+</div>
+
+<div class="foot"><b>What this is:</b> Phase 12.5 — Document Retention &amp; Expiry Intelligence. Dashboard at
+<b>/documents/retention</b> (⌘K: "Retention"). A pure helper computes each document's <b>effective expiry</b> (explicit
+expiry, else created-date + the type's retention months), a band (expired / approaching-30 / approaching-14 / active /
+on-hold), and <b>auto-archive</b> + <b>GDPR-erasure</b> eligibility. Per-type <b>retention_policies</b> (new table)
+override the statutory defaults. A <b>legal hold</b> (new columns on documents) exempts a document from all archival and
+erasure. Red = expired, amber = approaching, per the design system. No file storage touched — pure metadata + workflow.</div>
+</div></body></html>

@@ -10,6 +10,7 @@ import type { CrmAnalytics } from "@/app/api/crm/analytics/route"
 import type { CrmActivityRow, CrmActivitiesMeta } from "@/app/api/crm/activities/route"
 import type { PayableRow, PayablesResponse } from "@/app/api/finance/payables/route"
 import type { FinanceForecastResponse } from "@/app/api/finance/forecast/route"
+import type { RetentionResponse } from "@/app/api/documents/retention/route"
 import type { ProjectSummary } from "@/app/api/projects/route"
 import type { PayrollRun, PayrollMeta } from "@/app/api/payroll/route"
 import type { POSummary, ProcurementMeta } from "@/app/api/procurement/route"
@@ -2944,5 +2945,62 @@ export function useFinanceForecast() {
       if (!res.ok) throw new Error("Failed to load forecast")
       return res.json() as Promise<FinanceForecastResponse>
     },
+  })
+}
+
+export type { RetentionResponse } from "@/app/api/documents/retention/route"
+
+export function useDocumentRetention() {
+  return useQuery({
+    queryKey: ["document-retention"],
+    queryFn: async () => {
+      const res = await fetch("/api/documents/retention")
+      if (!res.ok) throw new Error("Failed to load retention")
+      return res.json() as Promise<RetentionResponse>
+    },
+  })
+}
+
+export function useUpsertRetentionPolicy() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: {
+      documentType: string
+      retentionMonths: number
+      autoArchive: boolean
+    }) => {
+      const res = await fetch("/api/documents/retention", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      })
+      if (!res.ok) throw new Error("Failed to save policy")
+      return res.json() as Promise<{ ok: boolean; documentType: string }>
+    },
+    onSettled: () => void qc.invalidateQueries({ queryKey: ["document-retention"] }),
+  })
+}
+
+export function useToggleLegalHold() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({
+      id,
+      hold,
+      reason,
+    }: {
+      id: string
+      hold: boolean
+      reason?: string | null
+    }) => {
+      const res = await fetch(`/api/documents/${id}/legal-hold`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ hold, reason: reason ?? null }),
+      })
+      if (!res.ok) throw new Error("Failed to update legal hold")
+      return res.json() as Promise<{ id: string; legalHold: boolean }>
+    },
+    onSettled: () => void qc.invalidateQueries({ queryKey: ["document-retention"] }),
   })
 }
