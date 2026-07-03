@@ -336,6 +336,13 @@ const FINANCE_CMDS: CommandEntry[] = [
     href: "/finance/invoices",
   },
   {
+    id: "finance.payables",
+    label: "Accounts Payable",
+    section: "Finance",
+    keywords: ["payables", "supplier invoices", "bills", "ap", "aging", "outflow", "vendor"],
+    href: "/finance/payables",
+  },
+  {
     id: "finance.payroll",
     label: "Payroll",
     section: "Finance",

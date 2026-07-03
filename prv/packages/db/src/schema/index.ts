@@ -37,6 +37,8 @@ export * from "./product-suppliers"
 export * from "./returns"
 // Phase 10.4: CRM Activities — calls/meetings/tasks timeline per lead/customer
 export * from "./crm-activities"
+// Phase 11.6: Accounts Payable — supplier invoices + aging
+export * from "./supplier-invoices"
 // Sprint 06: Document Management
 export * from "./documents"
 // Sprint 06: Fleet & Tool Management

@@ -8,6 +8,7 @@ import type { ClientSummary } from "@/app/api/crm/clients/route"
 import type { Lead } from "@/app/api/crm/leads/route"
 import type { CrmAnalytics } from "@/app/api/crm/analytics/route"
 import type { CrmActivityRow, CrmActivitiesMeta } from "@/app/api/crm/activities/route"
+import type { PayableRow, PayablesResponse } from "@/app/api/finance/payables/route"
 import type { ProjectSummary } from "@/app/api/projects/route"
 import type { PayrollRun, PayrollMeta } from "@/app/api/payroll/route"
 import type { POSummary, ProcurementMeta } from "@/app/api/procurement/route"
@@ -2863,5 +2864,71 @@ export function useConvertLead() {
       void qc.invalidateQueries({ queryKey: ["leads"] })
       void qc.invalidateQueries({ queryKey: ["clients"] })
     },
+  })
+}
+
+export type { PayableRow, PayablesResponse } from "@/app/api/finance/payables/route"
+
+export function usePayables() {
+  return useQuery({
+    queryKey: ["payables"],
+    queryFn: async () => {
+      const res = await fetch("/api/finance/payables")
+      if (!res.ok) throw new Error("Failed to load payables")
+      return res.json() as Promise<PayablesResponse>
+    },
+  })
+}
+
+export function useCreatePayable() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: {
+      supplierId?: string | null
+      invoiceNumber: string
+      dueDate: string
+      issueDate?: string | null
+      amount: number
+      taxAmount?: number
+      currency?: string
+      notes?: string | null
+    }) => {
+      const res = await fetch("/api/finance/payables", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      })
+      if (!res.ok) throw new Error("Failed to record payable")
+      return res.json() as Promise<{ id: string }>
+    },
+    onSettled: () => void qc.invalidateQueries({ queryKey: ["payables"] }),
+  })
+}
+
+export function useUpdatePayable() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({
+      id,
+      ...body
+    }: {
+      id: string
+      action: "schedule" | "pay" | "cancel"
+      scheduledDate?: string
+      amount?: number
+      paidDate?: string
+    }) => {
+      const res = await fetch(`/api/finance/payables/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      })
+      if (!res.ok) {
+        const b = (await res.json().catch(() => ({}))) as { error?: string }
+        throw new Error(b.error ?? "Failed to update payable")
+      }
+      return res.json() as Promise<{ id: string; status: string; paidAmount: number }>
+    },
+    onSettled: () => void qc.invalidateQueries({ queryKey: ["payables"] }),
   })
 }
