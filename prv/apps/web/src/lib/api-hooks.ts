@@ -3098,3 +3098,57 @@ export function useAcknowledgeAnnouncement() {
     onSettled: () => void qc.invalidateQueries({ queryKey: ["announcement-receipts"] }),
   })
 }
+
+export function useEditChannelMessage(channelId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ messageId, content }: { messageId: string; content: string }) => {
+      const res = await fetch(`/api/communications/channels/${channelId}/messages/${messageId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "edit", content }),
+      })
+      if (!res.ok) throw new Error("Failed to edit message")
+      return res.json() as Promise<{ id: string; edited: boolean }>
+    },
+    onSettled: () => void qc.invalidateQueries({ queryKey: ["comms"] }),
+  })
+}
+
+export function useReactChannelMessage(channelId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({
+      messageId,
+      emoji,
+      op,
+    }: {
+      messageId: string
+      emoji: string
+      op: "add" | "remove"
+    }) => {
+      const res = await fetch(`/api/communications/channels/${channelId}/messages/${messageId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "react", emoji, op }),
+      })
+      if (!res.ok) throw new Error("Failed to react")
+      return res.json() as Promise<{ id: string; reactions: Record<string, number> }>
+    },
+    onSettled: () => void qc.invalidateQueries({ queryKey: ["comms"] }),
+  })
+}
+
+export function useDeleteChannelMessage(channelId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (messageId: string) => {
+      const res = await fetch(`/api/communications/channels/${channelId}/messages/${messageId}`, {
+        method: "DELETE",
+      })
+      if (!res.ok) throw new Error("Failed to delete message")
+      return res.json() as Promise<{ id: string; deleted: boolean }>
+    },
+    onSettled: () => void qc.invalidateQueries({ queryKey: ["comms"] }),
+  })
+}
