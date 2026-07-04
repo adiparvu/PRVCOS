@@ -12,6 +12,7 @@ import type { PayableRow, PayablesResponse } from "@/app/api/finance/payables/ro
 import type { FinanceForecastResponse } from "@/app/api/finance/forecast/route"
 import type { RetentionResponse } from "@/app/api/documents/retention/route"
 import type { SharesResponse } from "@/app/api/documents/[id]/shares/route"
+import type { MentionsResponse } from "@/app/api/communications/mentions/route"
 import type { ProjectSummary } from "@/app/api/projects/route"
 import type { PayrollRun, PayrollMeta } from "@/app/api/payroll/route"
 import type { POSummary, ProcurementMeta } from "@/app/api/procurement/route"
@@ -3054,5 +3055,18 @@ export function useRevokeShare(documentId: string) {
       return res.json() as Promise<{ id: string }>
     },
     onSettled: () => void qc.invalidateQueries({ queryKey: ["document-shares", documentId] }),
+  })
+}
+
+export type { MentionsResponse } from "@/app/api/communications/mentions/route"
+
+export function useMentions() {
+  return useQuery({
+    queryKey: ["mentions"],
+    queryFn: async () => {
+      const res = await fetch("/api/communications/mentions")
+      if (!res.ok) throw new Error("Failed to load mentions")
+      return res.json() as Promise<MentionsResponse>
+    },
   })
 }

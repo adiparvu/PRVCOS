@@ -1,0 +1,61 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Communications · Mentions — Preview</title>
+<style>
+:root{--g1:rgba(255,255,255,.06);--g2:rgba(255,255,255,.10);--g3:rgba(255,255,255,.16);
+--t1:rgba(255,255,255,.95);--t2:rgba(255,255,255,.65);--t3:rgba(255,255,255,.35);
+--bd:rgba(255,255,255,.12);--bds:rgba(255,255,255,.07);--shine:inset 0 1px 0 rgba(255,255,255,.22)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#000;color:var(--t1);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",sans-serif;padding:40px 24px 80px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:760px;margin:0 auto}
+h1{font-size:29px;font-weight:640;letter-spacing:-.02em}.sub{color:var(--t3);font-size:13.5px;margin-top:6px}
+.strip{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:24px 0}
+.tile{background:var(--g1);border:1px solid var(--bd);border-radius:18px;padding:14px 16px;box-shadow:var(--shine)}
+.tile .l{color:var(--t3);font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;font-weight:560}
+.tile .v{font-size:23px;font-weight:680;margin-top:8px}
+.m{display:flex;gap:13px;align-items:flex-start;padding:14px 16px;border:1px solid var(--bd);background:var(--g1);border-radius:16px;margin-bottom:10px;box-shadow:var(--shine);cursor:pointer}
+.av{width:38px;height:38px;flex:none;border-radius:50%;background:var(--g3);border:1px solid var(--bd);display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:600;box-shadow:var(--shine)}
+.body{flex:1;min-width:0}
+.top{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.who{font-size:13.5px;font-weight:600}
+.ch{font-size:12px;color:var(--t3)}.ch b{color:var(--t2);font-weight:560}
+.when{margin-left:auto;color:var(--t3);font-size:11.5px;white-space:nowrap}
+.txt{color:var(--t2);font-size:13px;margin-top:6px;line-height:1.5}
+.txt .at{color:var(--t1);font-weight:600}
+.foot{color:var(--t3);font-size:12px;line-height:1.7;border-top:1px solid var(--bds);padding-top:16px;margin-top:26px}.foot b{color:var(--t2);font-weight:560}
+</style></head><body><div class="wrap">
+<h1>Mentions</h1>
+<div class="sub">Communications · every message that @-mentions you, in one place</div>
+
+<div class="strip">
+  <div class="tile"><div class="l">Total</div><div class="v">18</div></div>
+  <div class="tile"><div class="l">Today</div><div class="v">3</div></div>
+  <div class="tile"><div class="l">This week</div><div class="v">9</div></div>
+</div>
+
+<div class="m">
+  <div class="av">AI</div>
+  <div class="body"><div class="top"><span class="who">Andrei Ionescu</span><span class="ch">in <b>#renovari-cluj</b></span><span class="when">12 min</span></div>
+  <div class="txt"><span class="at">@you</span> poți să confirmi programarea pentru măsurători mâine dimineață?</div></div>
+</div>
+<div class="m">
+  <div class="av">MP</div>
+  <div class="body"><div class="top"><span class="who">Maria Popescu</span><span class="ch">in <b>#finance</b></span><span class="when">2h</span></div>
+  <div class="txt">Am nevoie de aprobarea ta pe factura Dedeman, <span class="at">@you</span> — e urgentă.</div></div>
+</div>
+<div class="m">
+  <div class="av">VD</div>
+  <div class="body"><div class="top"><span class="who">Vlad Dumitru</span><span class="ch">in <b>#proiect-green-homes</b></span><span class="when">Ieri</span></div>
+  <div class="txt"><span class="at">@you</span> <span class="at">@echipa</span> ședință de kickoff joi la 10:00, sala mare.</div></div>
+</div>
+<div class="m">
+  <div class="av">—</div>
+  <div class="body"><div class="top"><span class="who">Sistem</span><span class="ch">in <b>#anunturi</b></span><span class="when">3 zile</span></div>
+  <div class="txt">Reminder pentru <span class="at">@you</span>: raportul de siguranță expiră săptămâna aceasta.</div></div>
+</div>
+
+<div class="foot"><b>What this is:</b> Phase 13.3 — Mentions Log. A standalone view at <b>/communications/mentions</b> (⌘K:
+"Mentions"). Aggregates every channel message where you're in <b>mentionedUserIds</b> (already written on each message),
+newest first, with author + channel + a snippet and the <b>@you</b> highlighted. A pure helper parses <b>@handles</b> from
+text, resolves them against the member directory, and buckets your mentions into total / today / this-week. Read-only,
+company-scoped — no new writes, no changes to existing message routes.</div>
+</div></body></html>

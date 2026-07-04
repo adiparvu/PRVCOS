@@ -156,6 +156,13 @@ const BASE: CommandEntry[] = [
     href: "/documents/shares",
   },
   {
+    id: "nav.mentions",
+    label: "Mentions",
+    section: "Navigation",
+    keywords: ["mentions", "@", "communications", "messages", "notifications", "tagged"],
+    href: "/communications/mentions",
+  },
+  {
     id: "nav.recruitment",
     label: "Recruitment",
     section: "Navigation",
