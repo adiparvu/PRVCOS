@@ -13,6 +13,7 @@ import type { FinanceForecastResponse } from "@/app/api/finance/forecast/route"
 import type { RetentionResponse } from "@/app/api/documents/retention/route"
 import type { SharesResponse } from "@/app/api/documents/[id]/shares/route"
 import type { MentionsResponse } from "@/app/api/communications/mentions/route"
+import type { ReceiptsResponse } from "@/app/api/communications/announcements/receipts/route"
 import type { ProjectSummary } from "@/app/api/projects/route"
 import type { PayrollRun, PayrollMeta } from "@/app/api/payroll/route"
 import type { POSummary, ProcurementMeta } from "@/app/api/procurement/route"
@@ -3068,5 +3069,32 @@ export function useMentions() {
       if (!res.ok) throw new Error("Failed to load mentions")
       return res.json() as Promise<MentionsResponse>
     },
+  })
+}
+
+export type { ReceiptsResponse } from "@/app/api/communications/announcements/receipts/route"
+
+export function useAnnouncementReceipts() {
+  return useQuery({
+    queryKey: ["announcement-receipts"],
+    queryFn: async () => {
+      const res = await fetch("/api/communications/announcements/receipts")
+      if (!res.ok) throw new Error("Failed to load receipts")
+      return res.json() as Promise<ReceiptsResponse>
+    },
+  })
+}
+
+export function useAcknowledgeAnnouncement() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/communications/announcements/${id}/acknowledge`, {
+        method: "POST",
+      })
+      if (!res.ok) throw new Error("Failed to acknowledge")
+      return res.json() as Promise<{ ok: boolean; acknowledged: boolean }>
+    },
+    onSettled: () => void qc.invalidateQueries({ queryKey: ["announcement-receipts"] }),
   })
 }

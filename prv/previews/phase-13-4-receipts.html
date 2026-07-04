@@ -1,0 +1,70 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Announcements · Receipts — Preview</title>
+<style>
+:root{--g1:rgba(255,255,255,.06);--g2:rgba(255,255,255,.10);--g3:rgba(255,255,255,.16);
+--t1:rgba(255,255,255,.95);--t2:rgba(255,255,255,.65);--t3:rgba(255,255,255,.35);
+--bd:rgba(255,255,255,.12);--bds:rgba(255,255,255,.07);--shine:inset 0 1px 0 rgba(255,255,255,.22);
+--amber:rgba(255,190,90,.92);--amberbd:rgba(255,176,64,.32);--red:rgba(255,120,110,.92);--redbd:rgba(255,90,80,.3);--redbg:rgba(255,90,80,.12)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#000;color:var(--t1);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",sans-serif;padding:40px 24px 80px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:840px;margin:0 auto}
+h1{font-size:29px;font-weight:640;letter-spacing:-.02em}.sub{color:var(--t3);font-size:13.5px;margin-top:6px}
+.strip{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:24px 0}
+.tile{background:var(--g1);border:1px solid var(--bd);border-radius:18px;padding:14px 16px;box-shadow:var(--shine)}
+.tile .l{color:var(--t3);font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;font-weight:560}
+.tile .v{font-size:23px;font-weight:680;margin-top:8px}.tile.amber .v{color:var(--amber)}.tile.red .v{color:var(--red)}
+.card{border:1px solid var(--bd);background:var(--g1);border-radius:18px;padding:16px 18px;margin-bottom:11px;box-shadow:var(--shine)}
+.top{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.ti{font-size:14.5px;font-weight:600;flex:1;min-width:0}
+.pri{font-size:10px;text-transform:uppercase;letter-spacing:.05em;border-radius:6px;padding:3px 8px;border:1px solid var(--bd);color:var(--t2)}
+.pri.imp{color:var(--amber);border-color:var(--amberbd);background:rgba(255,176,64,.1)}
+.pri.crit{color:var(--red);border-color:var(--redbd);background:var(--redbg)}
+.meta{color:var(--t3);font-size:11.5px;white-space:nowrap}
+.bars{display:flex;flex-direction:column;gap:9px}
+.bar{display:grid;grid-template-columns:64px 1fr auto;align-items:center;gap:12px}
+.bar .k{color:var(--t3);font-size:11.5px}
+.track{height:8px;border-radius:100px;background:var(--g2);overflow:hidden}
+.track>i{display:block;height:100%;border-radius:100px;background:linear-gradient(90deg,rgba(255,255,255,.32),rgba(255,255,255,.14))}
+.bar.ack .track>i{background:linear-gradient(90deg,rgba(255,176,64,.4),rgba(255,176,64,.16))}
+.bar .n{font-size:11.5px;color:var(--t2);font-variant-numeric:tabular-nums;min-width:96px;text-align:right}
+.exp{color:var(--amber);font-size:11px;margin-top:10px}
+.foot{color:var(--t3);font-size:12px;line-height:1.7;border-top:1px solid var(--bds);padding-top:16px;margin-top:26px}.foot b{color:var(--t2);font-weight:560}
+</style></head><body><div class="wrap">
+<h1>Announcement receipts</h1>
+<div class="sub">Communications · who has read &amp; acknowledged each announcement</div>
+
+<div class="strip">
+  <div class="tile"><div class="l">Announcements</div><div class="v">14</div></div>
+  <div class="tile amber"><div class="l">Needs ack</div><div class="v">3</div></div>
+  <div class="tile red"><div class="l">Critical live</div><div class="v">1</div></div>
+</div>
+
+<div class="card">
+  <div class="top"><span class="ti">Program de lucru actualizat — sărbători</span><span class="pri crit">Critical</span><span class="meta">all · 3 zile</span></div>
+  <div class="bars">
+    <div class="bar"><span class="k">Read</span><div class="track"><i style="width:86%"></i></div><span class="n">86% · 121/140</span></div>
+    <div class="bar ack"><span class="k">Ack</span><div class="track"><i style="width:64%"></i></div><span class="n">64% · 90/140</span></div>
+  </div>
+</div>
+<div class="card">
+  <div class="top"><span class="ti">Politică nouă de siguranță pe șantier</span><span class="pri imp">Important</span><span class="meta">employees · 1 săpt</span></div>
+  <div class="bars">
+    <div class="bar"><span class="k">Read</span><div class="track"><i style="width:72%"></i></div><span class="n">72% · 79/110</span></div>
+    <div class="bar ack"><span class="k">Ack</span><div class="track"><i style="width:41%"></i></div><span class="n">41% · 45/110</span></div>
+  </div>
+  <div class="exp">⚠︎ Expires in 4 days</div>
+</div>
+<div class="card">
+  <div class="top"><span class="ti">Newsletter intern — iulie</span><span class="pri">Info</span><span class="meta">all · 2 săpt</span></div>
+  <div class="bars">
+    <div class="bar"><span class="k">Read</span><div class="track"><i style="width:58%"></i></div><span class="n">58% · 81/140</span></div>
+  </div>
+</div>
+
+<div class="foot"><b>What this is:</b> Phase 13.4 — Announcement Read-Receipts &amp; Acknowledgment. Dashboard at
+<b>/communications/announcements/receipts</b> (⌘K: "Announcement Receipts"). Announcements now carry a <b>priority</b>
+(Info / Important / Critical), an optional <b>acknowledgment-required</b> flag and an <b>expiry</b>. A pure helper computes
+read % and ack % against the audience and the outstanding unread/unacked counts, plus a lifecycle (scheduled / active /
+expired). A new <b>announcement_acknowledgments</b> table + <b>POST .../[id]/acknowledge</b> records an explicit
+acknowledgment (idempotent), distinct from a passive read. Amber = important, red = critical, per the design system.</div>
+</div></body></html>

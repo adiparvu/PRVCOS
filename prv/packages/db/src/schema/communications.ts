@@ -31,6 +31,12 @@ export const announcementAudienceEnum = pgEnum("announcement_audience", [
   "team",
 ])
 
+export const announcementPriorityEnum = pgEnum("announcement_priority", [
+  "info",
+  "important",
+  "critical",
+])
+
 // ─── Chat Channels ────────────────────────────────────────────────────────────
 
 export const chatChannels = pgTable(
@@ -241,6 +247,12 @@ export const announcements = pgTable(
     isPinned: boolean("is_pinned").notNull().default(false),
     sendEmail: boolean("send_email").notNull().default(false),
 
+    // Phase 13.4: priority, acknowledgment requirement, and expiry auto-archive.
+    priority: announcementPriorityEnum("priority").notNull().default("info"),
+    acknowledgmentRequired: boolean("acknowledgment_required").notNull().default(false),
+    ackCount: integer("ack_count").notNull().default(0),
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
+
     publishedAt: timestamp("published_at", { withTimezone: true }),
     scheduledAt: timestamp("scheduled_at", { withTimezone: true }),
 
@@ -284,6 +296,32 @@ export const announcementReads = pgTable(
     index("announcement_reads_company_id_idx").on(table.companyId),
   ]
 )
+
+// ─── Announcement Acknowledgments ─────────────────────────────────────────────
+
+export const announcementAcknowledgments = pgTable(
+  "announcement_acknowledgments",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    announcementId: uuid("announcement_id")
+      .notNull()
+      .references(() => announcements.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id, { onDelete: "cascade" }),
+    acknowledgedAt: timestamp("acknowledged_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    unique("announcement_acknowledgments_unique").on(table.announcementId, table.userId),
+    index("announcement_acknowledgments_announcement_id_idx").on(table.announcementId),
+    index("announcement_acknowledgments_user_id_idx").on(table.userId),
+  ]
+)
+
+export type AnnouncementAcknowledgment = typeof announcementAcknowledgments.$inferSelect
 
 // ─── Relations ────────────────────────────────────────────────────────────────
 

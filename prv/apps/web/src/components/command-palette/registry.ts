@@ -163,6 +163,21 @@ const BASE: CommandEntry[] = [
     href: "/communications/mentions",
   },
   {
+    id: "nav.announcement-receipts",
+    label: "Announcement Receipts",
+    section: "Navigation",
+    keywords: [
+      "announcements",
+      "receipts",
+      "read",
+      "acknowledge",
+      "ack",
+      "communications",
+      "compliance",
+    ],
+    href: "/communications/announcements/receipts",
+  },
+  {
     id: "nav.recruitment",
     label: "Recruitment",
     section: "Navigation",
