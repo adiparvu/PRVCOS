@@ -16,6 +16,7 @@ import type { MentionsResponse } from "@/app/api/communications/mentions/route"
 import type { ReceiptsResponse } from "@/app/api/communications/announcements/receipts/route"
 import type { DigestResponse } from "@/app/api/notifications/digest/route"
 import type { QuietStatusResponse } from "@/app/api/notifications/quiet-status/route"
+import type { TrendsResponse } from "@/app/api/analytics/trends/route"
 import type { ProjectSummary } from "@/app/api/projects/route"
 import type { PayrollRun, PayrollMeta } from "@/app/api/payroll/route"
 import type { POSummary, ProcurementMeta } from "@/app/api/procurement/route"
@@ -3200,5 +3201,18 @@ export function useQuietStatus() {
       return res.json() as Promise<QuietStatusResponse>
     },
     staleTime: 60_000,
+  })
+}
+
+export type { TrendsResponse } from "@/app/api/analytics/trends/route"
+
+export function useKpiTrends() {
+  return useQuery({
+    queryKey: ["kpi-trends"],
+    queryFn: async () => {
+      const res = await fetch("/api/analytics/trends")
+      if (!res.ok) throw new Error("Failed to load KPI trends")
+      return res.json() as Promise<TrendsResponse>
+    },
   })
 }

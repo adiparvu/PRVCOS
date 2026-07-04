@@ -1,0 +1,52 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Analytics · KPI Trends — Preview</title>
+<style>
+:root{--g1:rgba(255,255,255,.06);--g2:rgba(255,255,255,.10);--g3:rgba(255,255,255,.16);
+--t1:rgba(255,255,255,.95);--t2:rgba(255,255,255,.65);--t3:rgba(255,255,255,.35);
+--bd:rgba(255,255,255,.12);--bds:rgba(255,255,255,.07);--shine:inset 0 1px 0 rgba(255,255,255,.22);
+--fav:rgba(255,255,255,.9);--warn:rgba(255,190,90,.92)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#000;color:var(--t1);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",sans-serif;padding:40px 24px 80px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1040px;margin:0 auto}
+h1{font-size:29px;font-weight:640;letter-spacing:-.02em}.sub{color:var(--t3);font-size:13.5px;margin-top:6px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:24px}
+@media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}}
+.card{background:var(--g1);border:1px solid var(--bd);border-radius:20px;padding:18px;box-shadow:var(--shine),0 24px 64px rgba(0,0,0,.5)}
+.lbl{color:var(--t3);font-size:11px;text-transform:uppercase;letter-spacing:.06em;font-weight:560}
+.val{font-size:25px;font-weight:680;margin-top:10px;letter-spacing:-.02em}
+.delta{font-size:12.5px;margin-top:6px;display:flex;align-items:center;gap:5px}
+.delta.up{color:var(--fav)}.delta.down{color:var(--warn)}.delta.flat{color:var(--t3)}
+.spark{margin-top:14px;height:40px;width:100%}
+.spark polyline{fill:none;stroke:rgba(255,255,255,.5);stroke-width:2;vector-effect:non-scaling-stroke}
+.card.pos .spark polyline{stroke:rgba(255,255,255,.6)}
+.card.neg .spark polyline{stroke:var(--warn)}
+.foot{color:var(--t3);font-size:12px;line-height:1.7;border-top:1px solid var(--bds);padding-top:16px;margin-top:26px}.foot b{color:var(--t2);font-weight:560}
+</style></head><body><div class="wrap">
+<h1>KPI trends</h1>
+<div class="sub">Analytics · last 30 days · period-over-period comparison</div>
+
+<div class="grid">
+  <div class="card pos"><div class="lbl">Revenue (month)</div><div class="val">€142.6k</div><div class="delta up">▲ 12.4% vs start</div>
+  <svg class="spark" viewBox="0 0 100 40" preserveAspectRatio="none"><polyline points="0,32 14,30 28,26 42,27 56,20 70,16 84,12 100,8"/></svg></div>
+  <div class="card pos"><div class="lbl">Gross profit</div><div class="val">€58.9k</div><div class="delta up">▲ 8.1%</div>
+  <svg class="spark" viewBox="0 0 100 40" preserveAspectRatio="none"><polyline points="0,28 14,29 28,24 42,25 56,22 70,19 84,17 100,14"/></svg></div>
+  <div class="card pos"><div class="lbl">Pipeline value</div><div class="val">€184.2k</div><div class="delta up">▲ 21.0%</div>
+  <svg class="spark" viewBox="0 0 100 40" preserveAspectRatio="none"><polyline points="0,34 14,30 28,31 42,24 56,22 70,18 84,14 100,9"/></svg></div>
+  <div class="card pos"><div class="lbl">Overdue AR</div><div class="val">€12.3k</div><div class="delta up">▼ 18.5% (good)</div>
+  <svg class="spark" viewBox="0 0 100 40" preserveAspectRatio="none"><polyline points="0,10 14,12 28,14 42,18 56,20 70,24 84,28 100,30"/></svg></div>
+  <div class="card pos"><div class="lbl">Active projects</div><div class="val">27</div><div class="delta up">▲ 3</div>
+  <svg class="spark" viewBox="0 0 100 40" preserveAspectRatio="none"><polyline points="0,26 14,26 28,24 42,22 56,22 70,20 84,18 100,17"/></svg></div>
+  <div class="card neg"><div class="lbl">Active leads</div><div class="val">42</div><div class="delta down">▼ 6.7%</div>
+  <svg class="spark" viewBox="0 0 100 40" preserveAspectRatio="none"><polyline points="0,14 14,16 28,15 42,20 56,22 70,21 84,26 100,25"/></svg></div>
+  <div class="card flat"><div class="lbl">Headcount</div><div class="val">140</div><div class="delta flat">— no change</div>
+  <svg class="spark" viewBox="0 0 100 40" preserveAspectRatio="none"><polyline points="0,20 14,20 28,20 42,20 56,20 70,20 84,20 100,20" style="stroke:rgba(255,255,255,.3)"/></svg></div>
+  <div class="card pos"><div class="lbl">Health score</div><div class="val">78</div><div class="delta up">▲ 5</div>
+  <svg class="spark" viewBox="0 0 100 40" preserveAspectRatio="none"><polyline points="0,24 14,22 28,23 42,20 56,18 70,16 84,15 100,12"/></svg></div>
+</div>
+
+<div class="foot"><b>What this is:</b> Phase 15.6 — KPI Trends &amp; Period Comparison. Dashboard at <b>/analytics/trends</b>
+(⌘K: "KPI Trends"). A pure helper turns the last 30 <b>daily KPI snapshots</b> into per-metric trends: current value,
+value at the start of the window, signed <b>delta %</b>, direction, whether the move is <b>favourable</b> (e.g. overdue AR
+going down is good), and a sparkline. Favourable moves stay neutral (white); unfavourable moves are amber — per the monochrome + amber-status design
+system. Read-only over existing snapshots; no new writes.</div>
+</div></body></html>

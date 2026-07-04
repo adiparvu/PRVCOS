@@ -185,6 +185,13 @@ const BASE: CommandEntry[] = [
     href: "/notifications/digest",
   },
   {
+    id: "nav.kpi-trends",
+    label: "KPI Trends",
+    section: "Navigation",
+    keywords: ["trends", "kpi", "analytics", "sparkline", "comparison", "period", "metrics"],
+    href: "/analytics/trends",
+  },
+  {
     id: "nav.recruitment",
     label: "Recruitment",
     section: "Navigation",
