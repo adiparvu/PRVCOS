@@ -199,6 +199,13 @@ const BASE: CommandEntry[] = [
     href: "/analytics/anomalies",
   },
   {
+    id: "nav.company-health",
+    label: "Company Health",
+    section: "Navigation",
+    keywords: ["company health", "composite", "index", "analytics", "score", "executive", "ceo"],
+    href: "/analytics/health",
+  },
+  {
     id: "nav.recruitment",
     label: "Recruitment",
     section: "Navigation",

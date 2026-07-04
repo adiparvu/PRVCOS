@@ -1,0 +1,57 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Analytics · Company Health — Preview</title>
+<style>
+:root{--g1:rgba(255,255,255,.06);--g2:rgba(255,255,255,.10);--g3:rgba(255,255,255,.16);
+--t1:rgba(255,255,255,.95);--t2:rgba(255,255,255,.65);--t3:rgba(255,255,255,.35);
+--bd:rgba(255,255,255,.12);--bds:rgba(255,255,255,.07);--shine:inset 0 1px 0 rgba(255,255,255,.22);--amber:rgba(255,190,90,.92)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#000;color:var(--t1);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",sans-serif;padding:40px 24px 80px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:720px;margin:0 auto}
+h1{font-size:29px;font-weight:640;letter-spacing:-.02em}.sub{color:var(--t3);font-size:13.5px;margin-top:6px}
+.hero{display:flex;align-items:center;gap:28px;background:var(--g1);border:1px solid var(--bd);border-radius:24px;padding:26px;box-shadow:var(--shine),0 24px 64px rgba(0,0,0,.5);margin:24px 0}
+.gauge{position:relative;width:140px;height:140px;flex:none}
+.gauge svg{transform:rotate(-90deg)}
+.gauge .num{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.gauge .num b{font-size:38px;font-weight:720;letter-spacing:-.02em}
+.gauge .num span{font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;margin-top:2px}
+.heroinfo .band{font-size:18px;font-weight:640}
+.heroinfo .desc{color:var(--t2);font-size:13px;margin-top:8px;line-height:1.5}
+.domain{display:grid;grid-template-columns:110px 1fr auto;align-items:center;gap:14px;padding:14px 4px;border-bottom:1px solid var(--bds)}
+.domain:last-child{border-bottom:0}
+.dn{font-size:13.5px;font-weight:560}.dn small{display:block;color:var(--t3);font-size:11.5px;font-weight:400;margin-top:2px}
+.track{height:9px;border-radius:100px;background:var(--g2);overflow:hidden}
+.track>i{display:block;height:100%;border-radius:100px;background:linear-gradient(90deg,rgba(255,255,255,.34),rgba(255,255,255,.16))}
+.track.low>i{background:linear-gradient(90deg,rgba(255,176,64,.4),rgba(255,176,64,.16))}
+.ds{font-size:15px;font-weight:680;font-variant-numeric:tabular-nums;min-width:34px;text-align:right}
+.ds.low{color:var(--amber)}
+.foot{color:var(--t3);font-size:12px;line-height:1.7;border-top:1px solid var(--bds);padding-top:16px;margin-top:26px}.foot b{color:var(--t2);font-weight:560}
+</style></head><body><div class="wrap">
+<h1>Company health</h1>
+<div class="sub">Analytics · composite index across finance, projects, people &amp; sales · 2026-07-03</div>
+
+<div class="hero">
+  <div class="gauge">
+    <svg width="140" height="140" viewBox="0 0 140 140">
+      <circle cx="70" cy="70" r="60" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="12"/>
+      <circle cx="70" cy="70" r="60" fill="none" stroke="rgba(255,255,255,.85)" stroke-width="12" stroke-linecap="round"
+        stroke-dasharray="377" stroke-dashoffset="102"/>
+    </svg>
+    <div class="num"><b>73</b><span>Healthy</span></div>
+  </div>
+  <div class="heroinfo">
+    <div class="band">Healthy company</div>
+    <div class="desc">Strong finance and attendance carry the index; sales pipeline coverage is the main drag this week.</div>
+  </div>
+</div>
+
+<div class="domain"><div class="dn">Finance<small>28% margin · 88% AR health</small></div><div class="track"><i style="width:74%"></i></div><div class="ds">74</div></div>
+<div class="domain"><div class="dn">Projects<small>142/180 tasks done</small></div><div class="track"><i style="width:79%"></i></div><div class="ds">79</div></div>
+<div class="domain"><div class="dn">People<small>128/140 present</small></div><div class="track"><i style="width:91%"></i></div><div class="ds">91</div></div>
+<div class="domain"><div class="dn">Sales<small>41% coverage · 42 leads</small></div><div class="track low"><i style="width:48%"></i></div><div class="ds low">48</div></div>
+
+<div class="foot"><b>What this is:</b> Phase 15.6 — Company Health Score. A read-only view at <b>/analytics/health</b> (⌘K:
+"Company Health"). A pure helper blends four <b>bounded per-domain sub-scores</b> from the latest daily snapshot into a
+0–100 composite: <b>Finance</b> (profit margin + AR health), <b>Projects</b> (task completion), <b>People</b> (attendance),
+<b>Sales</b> (pipeline coverage + lead activity). Bands: excellent ≥ 80, healthy ≥ 60, watch ≥ 40, at-risk below.
+Sub-scores under 60 are flagged amber. Read-only over existing snapshots — no new writes.</div>
+</div></body></html>

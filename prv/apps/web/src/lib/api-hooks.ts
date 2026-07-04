@@ -18,6 +18,7 @@ import type { DigestResponse } from "@/app/api/notifications/digest/route"
 import type { QuietStatusResponse } from "@/app/api/notifications/quiet-status/route"
 import type { TrendsResponse } from "@/app/api/analytics/trends/route"
 import type { AnomaliesResponse } from "@/app/api/analytics/anomalies/route"
+import type { CompanyHealthResponse } from "@/app/api/analytics/company-health/route"
 import type { ProjectSummary } from "@/app/api/projects/route"
 import type { PayrollRun, PayrollMeta } from "@/app/api/payroll/route"
 import type { POSummary, ProcurementMeta } from "@/app/api/procurement/route"
@@ -3227,6 +3228,19 @@ export function useAnomalies() {
       const res = await fetch("/api/analytics/anomalies")
       if (!res.ok) throw new Error("Failed to load anomalies")
       return res.json() as Promise<AnomaliesResponse>
+    },
+  })
+}
+
+export type { CompanyHealthResponse } from "@/app/api/analytics/company-health/route"
+
+export function useCompanyHealth() {
+  return useQuery({
+    queryKey: ["company-health"],
+    queryFn: async () => {
+      const res = await fetch("/api/analytics/company-health")
+      if (!res.ok) throw new Error("Failed to load company health")
+      return res.json() as Promise<CompanyHealthResponse>
     },
   })
 }
