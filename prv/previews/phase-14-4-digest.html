@@ -1,0 +1,59 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Notifications · Digest — Preview</title>
+<style>
+:root{--g1:rgba(255,255,255,.06);--g2:rgba(255,255,255,.10);--g3:rgba(255,255,255,.16);
+--t1:rgba(255,255,255,.95);--t2:rgba(255,255,255,.65);--t3:rgba(255,255,255,.35);
+--bd:rgba(255,255,255,.12);--bds:rgba(255,255,255,.07);--shine:inset 0 1px 0 rgba(255,255,255,.22);--amber:rgba(255,190,90,.92)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#000;color:var(--t1);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",sans-serif;padding:40px 24px 80px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:720px;margin:0 auto}
+.head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+h1{font-size:29px;font-weight:640;letter-spacing:-.02em}.sub{color:var(--t3);font-size:13.5px;margin-top:6px}
+.btn{border:1px solid var(--bd);background:var(--g2);color:var(--t1);border-radius:11px;font:inherit;font-size:12.5px;padding:9px 15px;cursor:pointer;box-shadow:var(--shine)}
+.sumcard{background:var(--g1);border:1px solid var(--bd);border-radius:20px;padding:18px 20px;box-shadow:var(--shine);margin:22px 0}
+.sumcard .big{font-size:15px;font-weight:560;line-height:1.5}
+.sumcard .ar{margin-top:10px;color:var(--amber);font-size:12.5px}
+.grp{margin-bottom:22px}
+.gh{display:flex;align-items:center;gap:9px;margin:0 4px 10px}
+.gh .ic{width:26px;height:26px;border-radius:8px;background:var(--g2);border:1px solid var(--bds);display:flex;align-items:center;justify-content:center;font-size:13px}
+.gh .lbl{font-size:12.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--t2);font-weight:600}
+.gh .cnt{color:var(--t3);font-size:12px}
+.n{display:flex;gap:12px;align-items:flex-start;padding:13px 15px;border:1px solid var(--bd);background:var(--g1);border-radius:14px;margin-bottom:8px;box-shadow:var(--shine)}
+.dot{width:7px;height:7px;border-radius:50%;margin-top:6px;flex:none;background:var(--t3)}
+.dot.ar{background:var(--amber)}
+.body{flex:1;min-width:0}
+.ti{font-size:13.5px;font-weight:560}
+.bd{color:var(--t3);font-size:12.5px;margin-top:3px;line-height:1.45}
+.when{color:var(--t3);font-size:11px;white-space:nowrap;margin-top:2px}
+.foot{color:var(--t3);font-size:12px;line-height:1.7;border-top:1px solid var(--bds);padding-top:16px;margin-top:26px}.foot b{color:var(--t2);font-weight:560}
+</style></head><body><div class="wrap">
+<div class="head"><div><h1>Daily digest</h1><div class="sub">Notifications · your last 24 hours, grouped by module</div></div>
+<button class="btn">Mark all read</button></div>
+
+<div class="sumcard"><div class="big">6 tasks · 3 invoices · 2 approvals · 1 leave request</div>
+<div class="ar">⚠︎ 2 need action</div></div>
+
+<div class="grp">
+  <div class="gh"><span class="ic">☑︎</span><span class="lbl">Tasks</span><span class="cnt">· 6</span></div>
+  <div class="n"><span class="dot ar"></span><div class="body"><div class="ti">You were assigned „Montaj gresie baie"</div><div class="bd">Andrei Ionescu · #renovari-cluj</div></div><span class="when">2h</span></div>
+  <div class="n"><span class="dot"></span><div class="body"><div class="ti">Task „Comandă materiale" marcat complet</div></div><span class="when">4h</span></div>
+  <div class="n"><span class="dot"></span><div class="body"><div class="ti">Comentariu nou pe „Finisaje living"</div></div><span class="when">7h</span></div>
+</div>
+
+<div class="grp">
+  <div class="gh"><span class="ic">€</span><span class="lbl">Invoices</span><span class="cnt">· 3</span></div>
+  <div class="n"><span class="dot ar"></span><div class="body"><div class="ti">Factura DED-4471 este scadentă azi</div><div class="bd">€14,756 · Dedeman SA</div></div><span class="when">1h</span></div>
+  <div class="n"><span class="dot"></span><div class="body"><div class="ti">Plată înregistrată — INV-2201</div></div><span class="when">9h</span></div>
+</div>
+
+<div class="grp">
+  <div class="gh"><span class="ic">✓</span><span class="lbl">Approvals</span><span class="cnt">· 2</span></div>
+  <div class="n"><span class="dot"></span><div class="body"><div class="ti">Concediul tău a fost aprobat</div><div class="bd">3 zile · 12–14 iulie</div></div><span class="when">11h</span></div>
+</div>
+
+<div class="foot"><b>What this is:</b> Phase 14.4 — Notification Digest. A read-only view at <b>/notifications/digest</b> (⌘K:
+"Notification Digest"). A pure helper groups your <b>unread, non-dismissed</b> notifications from the last 24h by source
+module (entityType), builds a one-line summary („6 tasks · 3 invoices · …"), counts how many <b>need action</b>, and
+orders groups by size. „Mark all read" uses the existing bulk endpoint. Amber marks action-required items, per the design
+system. No new writes — pure aggregation over existing notifications; the scheduled email delivery is a later job.</div>
+</div></body></html>

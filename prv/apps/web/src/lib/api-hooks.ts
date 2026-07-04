@@ -14,6 +14,7 @@ import type { RetentionResponse } from "@/app/api/documents/retention/route"
 import type { SharesResponse } from "@/app/api/documents/[id]/shares/route"
 import type { MentionsResponse } from "@/app/api/communications/mentions/route"
 import type { ReceiptsResponse } from "@/app/api/communications/announcements/receipts/route"
+import type { DigestResponse } from "@/app/api/notifications/digest/route"
 import type { ProjectSummary } from "@/app/api/projects/route"
 import type { PayrollRun, PayrollMeta } from "@/app/api/payroll/route"
 import type { POSummary, ProcurementMeta } from "@/app/api/procurement/route"
@@ -3150,5 +3151,37 @@ export function useDeleteChannelMessage(channelId: string) {
       return res.json() as Promise<{ id: string; deleted: boolean }>
     },
     onSettled: () => void qc.invalidateQueries({ queryKey: ["comms"] }),
+  })
+}
+
+export type { DigestResponse } from "@/app/api/notifications/digest/route"
+
+export function useNotificationDigest() {
+  return useQuery({
+    queryKey: ["notification-digest"],
+    queryFn: async () => {
+      const res = await fetch("/api/notifications/digest")
+      if (!res.ok) throw new Error("Failed to load digest")
+      return res.json() as Promise<DigestResponse>
+    },
+  })
+}
+
+export function useMarkAllNotificationsRead() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/notifications/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ operation: "mark_all_read" }),
+      })
+      if (!res.ok) throw new Error("Failed to mark all read")
+      return res.json() as Promise<unknown>
+    },
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: ["notification-digest"] })
+      void qc.invalidateQueries({ queryKey: ["notifications"] })
+    },
   })
 }

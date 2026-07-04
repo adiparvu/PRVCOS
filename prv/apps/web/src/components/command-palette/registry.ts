@@ -178,6 +178,13 @@ const BASE: CommandEntry[] = [
     href: "/communications/announcements/receipts",
   },
   {
+    id: "nav.notification-digest",
+    label: "Notification Digest",
+    section: "Navigation",
+    keywords: ["digest", "notifications", "daily", "summary", "unread", "inbox"],
+    href: "/notifications/digest",
+  },
+  {
     id: "nav.recruitment",
     label: "Recruitment",
     section: "Navigation",
