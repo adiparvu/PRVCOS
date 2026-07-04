@@ -15,6 +15,7 @@ import type { SharesResponse } from "@/app/api/documents/[id]/shares/route"
 import type { MentionsResponse } from "@/app/api/communications/mentions/route"
 import type { ReceiptsResponse } from "@/app/api/communications/announcements/receipts/route"
 import type { DigestResponse } from "@/app/api/notifications/digest/route"
+import type { QuietStatusResponse } from "@/app/api/notifications/quiet-status/route"
 import type { ProjectSummary } from "@/app/api/projects/route"
 import type { PayrollRun, PayrollMeta } from "@/app/api/payroll/route"
 import type { POSummary, ProcurementMeta } from "@/app/api/procurement/route"
@@ -3183,5 +3184,21 @@ export function useMarkAllNotificationsRead() {
       void qc.invalidateQueries({ queryKey: ["notification-digest"] })
       void qc.invalidateQueries({ queryKey: ["notifications"] })
     },
+  })
+}
+
+export type { QuietStatusResponse } from "@/app/api/notifications/quiet-status/route"
+
+export function useQuietStatus() {
+  return useQuery({
+    queryKey: ["notification-quiet-status"],
+    queryFn: async () => {
+      const now = new Date()
+      const hhmm = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`
+      const res = await fetch(`/api/notifications/quiet-status?now=${encodeURIComponent(hhmm)}`)
+      if (!res.ok) throw new Error("Failed to load quiet status")
+      return res.json() as Promise<QuietStatusResponse>
+    },
+    staleTime: 60_000,
   })
 }
