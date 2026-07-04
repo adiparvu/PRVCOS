@@ -192,6 +192,13 @@ const BASE: CommandEntry[] = [
     href: "/analytics/trends",
   },
   {
+    id: "nav.anomaly-feed",
+    label: "Anomaly Feed",
+    section: "Navigation",
+    keywords: ["anomaly", "anomalies", "alerts", "analytics", "spike", "drop", "unusual", "kpi"],
+    href: "/analytics/anomalies",
+  },
+  {
     id: "nav.recruitment",
     label: "Recruitment",
     section: "Navigation",

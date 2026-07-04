@@ -17,6 +17,7 @@ import type { ReceiptsResponse } from "@/app/api/communications/announcements/re
 import type { DigestResponse } from "@/app/api/notifications/digest/route"
 import type { QuietStatusResponse } from "@/app/api/notifications/quiet-status/route"
 import type { TrendsResponse } from "@/app/api/analytics/trends/route"
+import type { AnomaliesResponse } from "@/app/api/analytics/anomalies/route"
 import type { ProjectSummary } from "@/app/api/projects/route"
 import type { PayrollRun, PayrollMeta } from "@/app/api/payroll/route"
 import type { POSummary, ProcurementMeta } from "@/app/api/procurement/route"
@@ -3213,6 +3214,19 @@ export function useKpiTrends() {
       const res = await fetch("/api/analytics/trends")
       if (!res.ok) throw new Error("Failed to load KPI trends")
       return res.json() as Promise<TrendsResponse>
+    },
+  })
+}
+
+export type { AnomaliesResponse } from "@/app/api/analytics/anomalies/route"
+
+export function useAnomalies() {
+  return useQuery({
+    queryKey: ["kpi-anomalies"],
+    queryFn: async () => {
+      const res = await fetch("/api/analytics/anomalies")
+      if (!res.ok) throw new Error("Failed to load anomalies")
+      return res.json() as Promise<AnomaliesResponse>
     },
   })
 }
