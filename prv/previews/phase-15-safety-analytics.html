@@ -1,0 +1,71 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Analytics · Safety — Preview</title>
+<style>
+:root{--g1:rgba(255,255,255,.06);--g2:rgba(255,255,255,.10);--g3:rgba(255,255,255,.16);
+--t1:rgba(255,255,255,.95);--t2:rgba(255,255,255,.65);--t3:rgba(255,255,255,.35);
+--bd:rgba(255,255,255,.12);--bds:rgba(255,255,255,.07);--shine:inset 0 1px 0 rgba(255,255,255,.22);
+--amber:rgba(255,190,90,.92);--red:rgba(255,105,97,.95)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#000;color:var(--t1);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",sans-serif;padding:40px 24px 80px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:860px;margin:0 auto}
+h1{font-size:29px;font-weight:640;letter-spacing:-.02em}.sub{color:var(--t3);font-size:13.5px;margin-top:6px}
+.strip{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:24px 0}
+.tile{background:var(--g1);border:1px solid var(--bd);border-radius:18px;padding:15px 17px;box-shadow:var(--shine)}
+.tile .l{color:var(--t3);font-size:11px;text-transform:uppercase;letter-spacing:.07em;font-weight:560}
+.tile .v{font-size:24px;font-weight:680;margin-top:8px;letter-spacing:-.02em}
+.tile .v small{font-size:13px;color:var(--t3);font-weight:560}
+.tile.amber .v{color:var(--amber)}.tile.red .v{color:var(--red)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.card{background:var(--g1);border:1px solid var(--bd);border-radius:22px;padding:18px 20px;box-shadow:var(--shine),0 24px 64px rgba(0,0,0,.5)}
+.card h2{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);font-weight:560;margin-bottom:14px}
+.sev{display:flex;align-items:center;gap:10px;margin:10px 0}
+.sev .nm{width:74px;font-size:13px;color:var(--t2)}
+.bar{flex:1;height:8px;border-radius:99px;background:var(--g3);overflow:hidden}
+.bar span{display:block;height:100%;border-radius:99px;background:rgba(255,255,255,.5)}
+.sev.crit .bar span{background:var(--red)}.sev.high .bar span{background:var(--amber)}
+.sev .n{width:22px;text-align:right;font-size:13px;font-variant-numeric:tabular-nums}
+.row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--bds);font-size:13.5px}
+.row:last-child{border-bottom:0}.row .n{color:var(--t2);font-variant-numeric:tabular-nums}
+.riskband{display:inline-block;font-size:10px;text-transform:uppercase;letter-spacing:.05em;border-radius:6px;padding:3px 9px;margin-top:8px}
+.riskband.crit{color:var(--red);border:1px solid rgba(255,105,97,.36);background:rgba(255,105,97,.12)}
+.foot{color:var(--t3);font-size:12px;line-height:1.7;border-top:1px solid var(--bds);padding-top:16px;margin-top:26px}.foot b{color:var(--t2);font-weight:560}
+</style></head><body><div class="wrap">
+<h1>Safety Analytics</h1>
+<div class="sub">Analytics · safety domain · incident intelligence</div>
+
+<div class="strip">
+  <div class="tile"><div class="l">Incidents</div><div class="v">37</div></div>
+  <div class="tile amber"><div class="l">Open</div><div class="v">6</div></div>
+  <div class="tile red"><div class="l">Risk index</div><div class="v">44 <span class="riskband crit">Critical</span></div></div>
+  <div class="tile red"><div class="l">Injuries</div><div class="v">9</div></div>
+</div>
+
+<div class="grid2">
+  <div class="card">
+    <h2>Severity mix</h2>
+    <div class="sev"><div class="nm">Critical</div><div class="bar"><span style="width:14%"></span></div><div class="n">2</div></div>
+    <div class="sev high"><div class="nm">High</div><div class="bar"><span style="width:41%"></span></div><div class="n">6</div></div>
+    <div class="sev"><div class="nm">Medium</div><div class="bar"><span style="width:68%"></span></div><div class="n">10</div></div>
+    <div class="sev"><div class="nm">Low</div><div class="bar"><span style="width:100%"></span></div><div class="n">19</div></div>
+    <div style="margin-top:16px;display:flex;gap:24px">
+      <div><div style="color:var(--t3);font-size:11px;text-transform:uppercase;letter-spacing:.06em">Resolution rate</div><div style="font-size:20px;font-weight:660;margin-top:5px">84%</div></div>
+      <div><div style="color:var(--t3);font-size:11px;text-transform:uppercase;letter-spacing:.06em">Mean time to resolve</div><div style="font-size:20px;font-weight:660;margin-top:5px">6.2 <small style="font-size:12px;color:var(--t3)">days</small></div></div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>By type</h2>
+    <div class="row"><div>Near miss</div><div class="n">13</div></div>
+    <div class="row"><div>Hazard</div><div class="n">9</div></div>
+    <div class="row"><div>Accident</div><div class="n">7</div></div>
+    <div class="row"><div>Property damage</div><div class="n">5</div></div>
+    <div class="row"><div>Environmental</div><div class="n">2</div></div>
+    <div class="row"><div>Security</div><div class="n">1</div></div>
+  </div>
+</div>
+
+<div class="foot"><b>What this is:</b> Phase 15 — Safety Analytics (safety-domain BI). A read-only view at <b>/analytics/safety</b>
+(⌘K: "Safety Analytics"). Aggregates the <b>safety incident log</b> into headline counts (total, open, injuries), a
+<b>severity-weighted risk index</b> over open incidents (low ×1, medium ×3, high ×7, critical ×15) with a band —
+<b>critical</b> (red) if any open critical, <b>elevated</b> (amber) if any open high, else stable — plus a severity mix,
+a type breakdown, resolution rate and <b>mean time to resolve</b>. Read-only aggregation over existing incident data.</div>
+</div></body></html>

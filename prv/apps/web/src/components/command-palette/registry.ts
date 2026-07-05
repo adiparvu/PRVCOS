@@ -254,6 +254,22 @@ const BASE: CommandEntry[] = [
     href: "/analytics/inventory-efficiency",
   },
   {
+    id: "nav.safety-analytics",
+    label: "Safety Analytics",
+    section: "Navigation",
+    keywords: [
+      "safety analytics",
+      "incidents",
+      "risk index",
+      "injuries",
+      "hazard",
+      "hse",
+      "bi",
+      "analytics",
+    ],
+    href: "/analytics/safety",
+  },
+  {
     id: "nav.recruitment",
     label: "Recruitment",
     section: "Navigation",
