@@ -238,6 +238,22 @@ const BASE: CommandEntry[] = [
     href: "/analytics/employee-roi",
   },
   {
+    id: "nav.inventory-efficiency",
+    label: "Inventory Efficiency",
+    section: "Navigation",
+    keywords: [
+      "inventory efficiency",
+      "turnover",
+      "dead stock",
+      "days on hand",
+      "stock",
+      "procurement",
+      "bi",
+      "analytics",
+    ],
+    href: "/analytics/inventory-efficiency",
+  },
+  {
     id: "nav.recruitment",
     label: "Recruitment",
     section: "Navigation",

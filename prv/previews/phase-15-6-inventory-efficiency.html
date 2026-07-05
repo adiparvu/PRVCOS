@@ -1,0 +1,54 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Analytics · Inventory Efficiency — Preview</title>
+<style>
+:root{--g1:rgba(255,255,255,.06);--g2:rgba(255,255,255,.10);--g3:rgba(255,255,255,.16);
+--t1:rgba(255,255,255,.95);--t2:rgba(255,255,255,.65);--t3:rgba(255,255,255,.35);
+--bd:rgba(255,255,255,.12);--bds:rgba(255,255,255,.07);--shine:inset 0 1px 0 rgba(255,255,255,.22);
+--amber:rgba(255,190,90,.92);--red:rgba(255,105,97,.95)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#000;color:var(--t1);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",sans-serif;padding:40px 24px 80px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:860px;margin:0 auto}
+h1{font-size:29px;font-weight:640;letter-spacing:-.02em}.sub{color:var(--t3);font-size:13.5px;margin-top:6px}
+.strip{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:24px 0}
+.tile{background:var(--g1);border:1px solid var(--bd);border-radius:18px;padding:15px 17px;box-shadow:var(--shine)}
+.tile .l{color:var(--t3);font-size:11px;text-transform:uppercase;letter-spacing:.07em;font-weight:560}
+.tile .v{font-size:24px;font-weight:680;margin-top:8px;letter-spacing:-.02em}
+.tile.amber .v{color:var(--amber)}.tile.red .v{color:var(--red)}
+.card{background:var(--g1);border:1px solid var(--bd);border-radius:22px;padding:8px 8px 4px;box-shadow:var(--shine),0 24px 64px rgba(0,0,0,.5)}
+.hd,.row{display:grid;grid-template-columns:1.5fr .8fr .8fr .8fr .8fr auto;gap:10px;align-items:center;padding:12px 14px}
+.hd{color:var(--t3);font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;font-weight:560;border-bottom:1px solid var(--bds)}
+.row{border-bottom:1px solid var(--bds)}.row:last-child{border-bottom:0}
+.nm{font-size:13.5px;font-weight:560}
+.num{font-size:13px;font-variant-numeric:tabular-nums;text-align:right}
+.badge{font-size:10px;text-transform:uppercase;letter-spacing:.04em;border-radius:6px;padding:3px 8px;border:1px solid var(--bd);color:var(--t3);white-space:nowrap;text-align:center}
+.badge.fast{color:var(--t1);border-color:rgba(255,255,255,.28);background:var(--g3)}
+.badge.slow{color:var(--amber);border-color:rgba(255,176,64,.32);background:rgba(255,176,64,.1)}
+.badge.dead{color:var(--red);border-color:rgba(255,105,97,.36);background:rgba(255,105,97,.12)}
+.foot{color:var(--t3);font-size:12px;line-height:1.7;border-top:1px solid var(--bds);padding-top:16px;margin-top:26px}.foot b{color:var(--t2);font-weight:560}
+</style></head><body><div class="wrap">
+<h1>Inventory Efficiency</h1>
+<div class="sub">Analytics · cross-module BI · procurement cost vs turnover · last 90 days</div>
+
+<div class="strip">
+  <div class="tile"><div class="l">Inventory value</div><div class="v">€128k</div></div>
+  <div class="tile"><div class="l">Turnover</div><div class="v">4.2×</div></div>
+  <div class="tile red"><div class="l">Dead stock</div><div class="v">€21k</div></div>
+  <div class="tile amber"><div class="l">Slow movers</div><div class="v">3</div></div>
+</div>
+
+<div class="card">
+  <div class="hd"><div>Product</div><div class="num">Stock €</div><div class="num">Sold</div><div class="num">Turns/yr</div><div class="num">Days on hand</div><div>Movement</div></div>
+  <div class="row"><div class="nm">Grohe mixer tap</div><div class="num">€1.9k</div><div class="num">124</div><div class="num">9.8×</div><div class="num">37</div><span class="badge fast">Fast</span></div>
+  <div class="row"><div class="nm">Ceramic tile 60×60</div><div class="num">€6.4k</div><div class="num">310</div><div class="num">6.1×</div><div class="num">60</div><span class="badge fast">Fast</span></div>
+  <div class="row"><div class="nm">Oak laminate plank</div><div class="num">€8.2k</div><div class="num">88</div><div class="num">3.4×</div><div class="num">107</div><span class="badge">Healthy</span></div>
+  <div class="row"><div class="nm">LED panel 40W</div><div class="num">€4.7k</div><div class="num">19</div><div class="num">1.3×</div><div class="num">281</div><span class="badge slow">Slow</span></div>
+  <div class="row"><div class="nm">Marble worktop slab</div><div class="num">€12.8k</div><div class="num">0</div><div class="num">—</div><div class="num">—</div><span class="badge dead">Dead</span></div>
+  <div class="row"><div class="nm">Brass door handle set</div><div class="num">€8.3k</div><div class="num">0</div><div class="num">—</div><div class="num">—</div><span class="badge dead">Dead</span></div>
+</div>
+
+<div class="foot"><b>What this is:</b> Phase 15.6 — Inventory Efficiency (cross-module BI). A read-only view at <b>/analytics/inventory-efficiency</b>
+(⌘K: "Inventory Efficiency"). Joins each product's <b>procurement cost</b> (Finance, cost price × on-hand) with its <b>sell-through</b>
+(Shop, "sale" stock movements over the window) to derive an <b>annualized turnover</b> and <b>days-on-hand</b>. Ranked worst-first by
+tied-up capital. Bands: <b>dead</b> = stock on hand with zero sales (red — frozen capital), <b>slow</b> = &lt;2 turns/yr (amber),
+<b>healthy</b> = 2–6, <b>fast</b> = ≥6. Read-only aggregation over existing stock-movement + product data.</div>
+</div></body></html>

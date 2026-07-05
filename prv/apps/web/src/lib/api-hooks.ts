@@ -21,6 +21,7 @@ import type { AnomaliesResponse } from "@/app/api/analytics/anomalies/route"
 import type { CompanyHealthResponse } from "@/app/api/analytics/company-health/route"
 import type { ProjectProfitabilityResponse } from "@/app/api/analytics/project-profitability/route"
 import type { EmployeeRoiResponse } from "@/app/api/analytics/employee-roi/route"
+import type { InventoryEfficiencyResponse } from "@/app/api/analytics/inventory-efficiency/route"
 import type { ProjectSummary } from "@/app/api/projects/route"
 import type { PayrollRun, PayrollMeta } from "@/app/api/payroll/route"
 import type { POSummary, ProcurementMeta } from "@/app/api/procurement/route"
@@ -3269,6 +3270,19 @@ export function useEmployeeRoi() {
       const res = await fetch("/api/analytics/employee-roi")
       if (!res.ok) throw new Error("Failed to load employee ROI")
       return res.json() as Promise<EmployeeRoiResponse>
+    },
+  })
+}
+
+export type { InventoryEfficiencyResponse } from "@/app/api/analytics/inventory-efficiency/route"
+
+export function useInventoryEfficiency() {
+  return useQuery({
+    queryKey: ["inventory-efficiency"],
+    queryFn: async () => {
+      const res = await fetch("/api/analytics/inventory-efficiency")
+      if (!res.ok) throw new Error("Failed to load inventory efficiency")
+      return res.json() as Promise<InventoryEfficiencyResponse>
     },
   })
 }
