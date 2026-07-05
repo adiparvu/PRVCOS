@@ -222,6 +222,22 @@ const BASE: CommandEntry[] = [
     href: "/analytics/project-profitability",
   },
   {
+    id: "nav.employee-roi",
+    label: "Employee ROI",
+    section: "Navigation",
+    keywords: [
+      "employee roi",
+      "roi",
+      "cost per task",
+      "productivity",
+      "payroll",
+      "output",
+      "bi",
+      "analytics",
+    ],
+    href: "/analytics/employee-roi",
+  },
+  {
     id: "nav.recruitment",
     label: "Recruitment",
     section: "Navigation",

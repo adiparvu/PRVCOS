@@ -1,0 +1,52 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Analytics · Employee ROI — Preview</title>
+<style>
+:root{--g1:rgba(255,255,255,.06);--g2:rgba(255,255,255,.10);--g3:rgba(255,255,255,.16);
+--t1:rgba(255,255,255,.95);--t2:rgba(255,255,255,.65);--t3:rgba(255,255,255,.35);
+--bd:rgba(255,255,255,.12);--bds:rgba(255,255,255,.07);--shine:inset 0 1px 0 rgba(255,255,255,.22);--amber:rgba(255,190,90,.92)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#000;color:var(--t1);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",sans-serif;padding:40px 24px 80px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:840px;margin:0 auto}
+h1{font-size:29px;font-weight:640;letter-spacing:-.02em}.sub{color:var(--t3);font-size:13.5px;margin-top:6px}
+.strip{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:24px 0}
+.tile{background:var(--g1);border:1px solid var(--bd);border-radius:18px;padding:15px 17px;box-shadow:var(--shine)}
+.tile .l{color:var(--t3);font-size:11px;text-transform:uppercase;letter-spacing:.07em;font-weight:560}
+.tile .v{font-size:24px;font-weight:680;margin-top:8px;letter-spacing:-.02em}.tile.amber .v{color:var(--amber)}
+.card{background:var(--g1);border:1px solid var(--bd);border-radius:22px;padding:8px 8px 4px;box-shadow:var(--shine),0 24px 64px rgba(0,0,0,.5)}
+.hd,.row{display:grid;grid-template-columns:auto 1.4fr 1fr 1fr 1fr auto;gap:10px;align-items:center;padding:12px 14px}
+.hd{color:var(--t3);font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;font-weight:560;border-bottom:1px solid var(--bds)}
+.row{border-bottom:1px solid var(--bds)}.row:last-child{border-bottom:0}
+.av{width:32px;height:32px;border-radius:50%;background:var(--g3);border:1px solid var(--bd);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;box-shadow:var(--shine)}
+.nm{font-size:13.5px;font-weight:560}
+.num{font-size:13px;font-variant-numeric:tabular-nums;text-align:right}
+.badge{font-size:10px;text-transform:uppercase;letter-spacing:.04em;border-radius:6px;padding:3px 8px;border:1px solid var(--bd);color:var(--t3);white-space:nowrap;text-align:center}
+.badge.high{color:var(--t1);border-color:rgba(255,255,255,.28);background:var(--g3)}
+.badge.low{color:var(--amber);border-color:rgba(255,176,64,.32);background:rgba(255,176,64,.1)}
+.badge.none{color:var(--amber);border-color:rgba(255,176,64,.32);background:rgba(255,176,64,.06)}
+.foot{color:var(--t3);font-size:12px;line-height:1.7;border-top:1px solid var(--bds);padding-top:16px;margin-top:26px}.foot b{color:var(--t2);font-weight:560}
+</style></head><body><div class="wrap">
+<h1>Employee ROI</h1>
+<div class="sub">Analytics · cross-module BI · payroll cost vs completed tasks</div>
+
+<div class="strip">
+  <div class="tile"><div class="l">Payroll cost</div><div class="v">€184k</div></div>
+  <div class="tile"><div class="l">Tasks done</div><div class="v">312</div></div>
+  <div class="tile"><div class="l">Avg cost/task</div><div class="v">€590</div></div>
+  <div class="tile amber"><div class="l">No output</div><div class="v">1</div></div>
+</div>
+
+<div class="card">
+  <div class="hd"><div></div><div>Employee</div><div class="num">Cost</div><div class="num">Tasks</div><div class="num">Cost/task</div><div>Output</div></div>
+  <div class="row"><div class="av">AI</div><div class="nm">Andrei Ionescu</div><div class="num">€4.2k</div><div class="num">14</div><div class="num">€300</div><span class="badge high">High</span></div>
+  <div class="row"><div class="av">MP</div><div class="nm">Maria Popescu</div><div class="num">€4.8k</div><div class="num">11</div><div class="num">€436</div><span class="badge">Steady</span></div>
+  <div class="row"><div class="av">VD</div><div class="nm">Vlad Dumitru</div><div class="num">€5.1k</div><div class="num">9</div><div class="num">€567</div><span class="badge">Steady</span></div>
+  <div class="row"><div class="av">RG</div><div class="nm">Radu Georgescu</div><div class="num">€5.6k</div><div class="num">6</div><div class="num">€933</div><span class="badge low">Low</span></div>
+  <div class="row"><div class="av">IN</div><div class="nm">Ioana Nedelcu</div><div class="num">€3.9k</div><div class="num">0</div><div class="num">—</div><span class="badge none">No output</span></div>
+</div>
+
+<div class="foot"><b>What this is:</b> Phase 15.6 — Employee ROI (cross-module BI). A read-only view at <b>/analytics/employee-roi</b>
+(⌘K: "Employee ROI"). Joins each employee's <b>payroll cost</b> (HR, gross paid) with their <b>completed project tasks</b>
+(Projects) to derive a <b>cost-per-task</b> — a proxy for delivery per euro — ranked cheapest first. Bands compare each
+person to the team average: <b>high</b> ≤ 75% of average cost/task, <b>low</b> ≥ 125% (amber), else steady; <b>no output</b>
+flags anyone paid with zero completed tasks (amber). Read-only aggregation over existing payroll + task data.</div>
+</div></body></html>

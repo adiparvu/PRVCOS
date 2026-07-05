@@ -20,6 +20,7 @@ import type { TrendsResponse } from "@/app/api/analytics/trends/route"
 import type { AnomaliesResponse } from "@/app/api/analytics/anomalies/route"
 import type { CompanyHealthResponse } from "@/app/api/analytics/company-health/route"
 import type { ProjectProfitabilityResponse } from "@/app/api/analytics/project-profitability/route"
+import type { EmployeeRoiResponse } from "@/app/api/analytics/employee-roi/route"
 import type { ProjectSummary } from "@/app/api/projects/route"
 import type { PayrollRun, PayrollMeta } from "@/app/api/payroll/route"
 import type { POSummary, ProcurementMeta } from "@/app/api/procurement/route"
@@ -3255,6 +3256,19 @@ export function useProjectProfitability() {
       const res = await fetch("/api/analytics/project-profitability")
       if (!res.ok) throw new Error("Failed to load project profitability")
       return res.json() as Promise<ProjectProfitabilityResponse>
+    },
+  })
+}
+
+export type { EmployeeRoiResponse } from "@/app/api/analytics/employee-roi/route"
+
+export function useEmployeeRoi() {
+  return useQuery({
+    queryKey: ["employee-roi"],
+    queryFn: async () => {
+      const res = await fetch("/api/analytics/employee-roi")
+      if (!res.ok) throw new Error("Failed to load employee ROI")
+      return res.json() as Promise<EmployeeRoiResponse>
     },
   })
 }
