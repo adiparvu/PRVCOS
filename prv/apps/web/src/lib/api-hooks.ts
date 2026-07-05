@@ -23,6 +23,7 @@ import type { ProjectProfitabilityResponse } from "@/app/api/analytics/project-p
 import type { EmployeeRoiResponse } from "@/app/api/analytics/employee-roi/route"
 import type { InventoryEfficiencyResponse } from "@/app/api/analytics/inventory-efficiency/route"
 import type { SafetyAnalyticsResponse } from "@/app/api/analytics/safety/route"
+import type { AttendanceAnalyticsResponse } from "@/app/api/analytics/attendance/route"
 import type { ProjectSummary } from "@/app/api/projects/route"
 import type { PayrollRun, PayrollMeta } from "@/app/api/payroll/route"
 import type { POSummary, ProcurementMeta } from "@/app/api/procurement/route"
@@ -3297,6 +3298,19 @@ export function useSafetyAnalytics() {
       const res = await fetch("/api/analytics/safety")
       if (!res.ok) throw new Error("Failed to load safety analytics")
       return res.json() as Promise<SafetyAnalyticsResponse>
+    },
+  })
+}
+
+export type { AttendanceAnalyticsResponse } from "@/app/api/analytics/attendance/route"
+
+export function useAttendanceAnalytics() {
+  return useQuery({
+    queryKey: ["attendance-analytics"],
+    queryFn: async () => {
+      const res = await fetch("/api/analytics/attendance")
+      if (!res.ok) throw new Error("Failed to load attendance analytics")
+      return res.json() as Promise<AttendanceAnalyticsResponse>
     },
   })
 }

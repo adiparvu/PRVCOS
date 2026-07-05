@@ -270,6 +270,22 @@ const BASE: CommandEntry[] = [
     href: "/analytics/safety",
   },
   {
+    id: "nav.attendance-analytics",
+    label: "Attendance Analytics",
+    section: "Navigation",
+    keywords: [
+      "attendance analytics",
+      "punctuality",
+      "absenteeism",
+      "workforce",
+      "late",
+      "presence",
+      "bi",
+      "analytics",
+    ],
+    href: "/analytics/attendance",
+  },
+  {
     id: "nav.recruitment",
     label: "Recruitment",
     section: "Navigation",

@@ -1,0 +1,67 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Analytics · Attendance — Preview</title>
+<style>
+:root{--g1:rgba(255,255,255,.06);--g2:rgba(255,255,255,.10);--g3:rgba(255,255,255,.16);
+--t1:rgba(255,255,255,.95);--t2:rgba(255,255,255,.65);--t3:rgba(255,255,255,.35);
+--bd:rgba(255,255,255,.12);--bds:rgba(255,255,255,.07);--shine:inset 0 1px 0 rgba(255,255,255,.22);
+--amber:rgba(255,190,90,.92);--red:rgba(255,105,97,.95)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#000;color:var(--t1);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",sans-serif;padding:40px 24px 80px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:860px;margin:0 auto}
+h1{font-size:29px;font-weight:640;letter-spacing:-.02em}.sub{color:var(--t3);font-size:13.5px;margin-top:6px}
+.strip{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:24px 0}
+.tile{background:var(--g1);border:1px solid var(--bd);border-radius:18px;padding:15px 17px;box-shadow:var(--shine)}
+.tile .l{color:var(--t3);font-size:11px;text-transform:uppercase;letter-spacing:.07em;font-weight:560}
+.tile .v{font-size:24px;font-weight:680;margin-top:8px;letter-spacing:-.02em}.tile .v small{font-size:13px;color:var(--t3);font-weight:560}
+.tile.amber .v{color:var(--amber)}.tile.red .v{color:var(--red)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.card{background:var(--g1);border:1px solid var(--bd);border-radius:22px;padding:18px 20px;box-shadow:var(--shine),0 24px 64px rgba(0,0,0,.5)}
+.card h2{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);font-weight:560;margin-bottom:14px}
+.sev{display:flex;align-items:center;gap:10px;margin:10px 0}
+.sev .nm{width:86px;font-size:13px;color:var(--t2)}
+.bar{flex:1;height:8px;border-radius:99px;background:var(--g3);overflow:hidden}
+.bar span{display:block;height:100%;border-radius:99px;background:rgba(255,255,255,.5)}
+.sev.absent .bar span{background:var(--red)}.sev.late .bar span{background:var(--amber)}
+.sev .n{width:26px;text-align:right;font-size:13px;font-variant-numeric:tabular-nums}
+.row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--bds);font-size:13.5px}
+.row:last-child{border-bottom:0}
+.who{display:flex;align-items:center;gap:10px}
+.av{width:30px;height:30px;border-radius:50%;background:var(--g3);border:1px solid var(--bd);display:flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:600;box-shadow:var(--shine)}
+.badge{font-size:10px;text-transform:uppercase;letter-spacing:.04em;border-radius:6px;padding:3px 8px}
+.badge.watch{color:var(--amber);border:1px solid rgba(255,176,64,.32);background:rgba(255,176,64,.1)}
+.badge.poor{color:var(--red);border:1px solid rgba(255,105,97,.36);background:rgba(255,105,97,.12)}
+.foot{color:var(--t3);font-size:12px;line-height:1.7;border-top:1px solid var(--bds);padding-top:16px;margin-top:26px}.foot b{color:var(--t2);font-weight:560}
+</style></head><body><div class="wrap">
+<h1>Attendance Analytics</h1>
+<div class="sub">Analytics · workforce domain · attendance &amp; punctuality</div>
+
+<div class="strip">
+  <div class="tile"><div class="l">Attendance</div><div class="v">92.4%</div></div>
+  <div class="tile"><div class="l">Punctuality</div><div class="v">88.1%</div></div>
+  <div class="tile amber"><div class="l">Absenteeism</div><div class="v">7.6%</div></div>
+  <div class="tile amber"><div class="l">Avg late</div><div class="v">14 <small>min</small></div></div>
+</div>
+
+<div class="grid2">
+  <div class="card">
+    <h2>Status mix</h2>
+    <div class="sev"><div class="nm">Present</div><div class="bar"><span style="width:100%"></span></div><div class="n">312</div></div>
+    <div class="sev late"><div class="nm">Late</div><div class="bar"><span style="width:14%"></span></div><div class="n">42</div></div>
+    <div class="sev absent"><div class="nm">Absent</div><div class="bar"><span style="width:9%"></span></div><div class="n">29</div></div>
+    <div class="sev"><div class="nm">On leave</div><div class="bar"><span style="width:6%"></span></div><div class="n">18</div></div>
+  </div>
+  <div class="card">
+    <h2>Watchlist</h2>
+    <div class="row"><div class="who"><div class="av">VD</div><div>Vlad Dumitru</div></div><div style="display:flex;gap:12px;align-items:center"><span style="color:var(--t3);font-size:12px">76%</span><span class="badge poor">Poor</span></div></div>
+    <div class="row"><div class="who"><div class="av">RG</div><div>Radu Georgescu</div></div><div style="display:flex;gap:12px;align-items:center"><span style="color:var(--t3);font-size:12px">81%</span><span class="badge poor">Poor</span></div></div>
+    <div class="row"><div class="who"><div class="av">MP</div><div>Maria Popescu</div></div><div style="display:flex;gap:12px;align-items:center"><span style="color:var(--t3);font-size:12px">89%</span><span class="badge watch">Watch</span></div></div>
+    <div class="row"><div class="who"><div class="av">IN</div><div>Ioana Nedelcu</div></div><div style="display:flex;gap:12px;align-items:center"><span style="color:var(--t3);font-size:12px">92%</span><span class="badge watch">Watch</span></div></div>
+  </div>
+</div>
+
+<div class="foot"><b>What this is:</b> Phase 15 — Attendance Analytics (workforce-domain BI). A read-only view at <b>/analytics/attendance</b>
+(⌘K: "Attendance Analytics"). Aggregates the <b>attendance record log</b> into <b>attendance rate</b> (days worked ÷ days scheduled,
+excluding approved leave), <b>punctuality</b> (on-time ÷ showed-up), <b>absenteeism</b>, and average lateness, plus a status mix and a
+<b>per-employee watchlist</b> — anyone under 95% attendance, worst first: <b>watch</b> 85–95% (amber), <b>poor</b> &lt;85% (red).
+Read-only aggregation over existing attendance data.</div>
+</div></body></html>
