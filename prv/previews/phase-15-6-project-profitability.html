@@ -1,0 +1,53 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Analytics · Project Profitability — Preview</title>
+<style>
+:root{--g1:rgba(255,255,255,.06);--g2:rgba(255,255,255,.10);--g3:rgba(255,255,255,.16);
+--t1:rgba(255,255,255,.95);--t2:rgba(255,255,255,.65);--t3:rgba(255,255,255,.35);
+--bd:rgba(255,255,255,.12);--bds:rgba(255,255,255,.07);--shine:inset 0 1px 0 rgba(255,255,255,.22);
+--amber:rgba(255,190,90,.92);--red:rgba(255,120,110,.92);--redbd:rgba(255,90,80,.3);--redbg:rgba(255,90,80,.12)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#000;color:var(--t1);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",sans-serif;padding:40px 24px 80px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:880px;margin:0 auto}
+h1{font-size:29px;font-weight:640;letter-spacing:-.02em}.sub{color:var(--t3);font-size:13.5px;margin-top:6px}
+.strip{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:24px 0}
+.tile{background:var(--g1);border:1px solid var(--bd);border-radius:18px;padding:15px 17px;box-shadow:var(--shine)}
+.tile .l{color:var(--t3);font-size:11px;text-transform:uppercase;letter-spacing:.07em;font-weight:560}
+.tile .v{font-size:24px;font-weight:680;margin-top:8px;letter-spacing:-.02em}
+.tile.red .v{color:var(--red)}
+.card{background:var(--g1);border:1px solid var(--bd);border-radius:22px;padding:8px 8px 4px;box-shadow:var(--shine),0 24px 64px rgba(0,0,0,.5)}
+.hd,.row{display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr auto;gap:10px;align-items:center;padding:12px 14px}
+.hd{color:var(--t3);font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;font-weight:560;border-bottom:1px solid var(--bds)}
+.row{border-bottom:1px solid var(--bds)}.row:last-child{border-bottom:0}
+.nm{font-size:13.5px;font-weight:560}.nm small{display:block;color:var(--t3);font-size:11px;margin-top:2px}
+.num{font-size:13px;font-variant-numeric:tabular-nums;text-align:right}
+.profit.pos{color:var(--t1);font-weight:620}.profit.neg{color:var(--red);font-weight:620}
+.badge{font-size:10px;text-transform:uppercase;letter-spacing:.04em;border-radius:6px;padding:3px 8px;border:1px solid var(--bd);color:var(--t3);white-space:nowrap;text-align:center}
+.badge.loss{color:var(--red);border-color:var(--redbd);background:var(--redbg)}
+.badge.thin{color:var(--amber);border-color:rgba(255,176,64,.32);background:rgba(255,176,64,.1)}
+.foot{color:var(--t3);font-size:12px;line-height:1.7;border-top:1px solid var(--bds);padding-top:16px;margin-top:26px}.foot b{color:var(--t2);font-weight:560}
+</style></head><body><div class="wrap">
+<h1>Project profitability</h1>
+<div class="sub">Analytics · cross-module BI · paid-invoice revenue vs spent budget</div>
+
+<div class="strip">
+  <div class="tile"><div class="l">Portfolio revenue</div><div class="v">€486k</div></div>
+  <div class="tile"><div class="l">Portfolio profit</div><div class="v">€92k</div></div>
+  <div class="tile"><div class="l">Margin</div><div class="v">18.9%</div></div>
+  <div class="tile red"><div class="l">Loss-making</div><div class="v">2</div></div>
+</div>
+
+<div class="card">
+  <div class="hd"><div>Project</div><div class="num">Revenue</div><div class="num">Cost</div><div class="num">Profit</div><div>Status</div></div>
+  <div class="row"><div class="nm">Renovare vilă Cluj<small>budget 78% used</small></div><div class="num">€142k</div><div class="num">€96k</div><div class="num profit pos">+€46k</div><span class="badge">32% margin</span></div>
+  <div class="row"><div class="nm">Amenajare birou Green Homes<small>budget 71% used</small></div><div class="num">€118k</div><div class="num">€88k</div><div class="num profit pos">+€30k</div><span class="badge">25% margin</span></div>
+  <div class="row"><div class="nm">Reabilitare fațadă Ploiești<small>budget 96% used</small></div><div class="num">€90k</div><div class="num">€84k</div><div class="num profit pos">+€6k</div><span class="badge thin">7% margin</span></div>
+  <div class="row"><div class="nm">Instalații hală Brico<small>budget 118% used</small></div><div class="num">€76k</div><div class="num">€90k</div><div class="num profit neg">−€14k</div><span class="badge loss">Loss</span></div>
+  <div class="row"><div class="nm">Mentenanță Popescu SRL<small>budget 104% used</small></div><div class="num">€60k</div><div class="num">€76k</div><div class="num profit neg">−€16k</div><span class="badge loss">Loss</span></div>
+</div>
+
+<div class="foot"><b>What this is:</b> Phase 15.6 — Project Profitability (cross-module BI). A read-only view at
+<b>/analytics/project-profitability</b> (⌘K: "Project Profitability"). Joins each project's <b>paid-invoice revenue</b>
+(Finance) with its <b>spent budget</b> (Projects) to compute profit and margin %, ranked most-profitable first, with a
+portfolio roll-up. Bands: profitable (≥10% margin), thin (amber, &lt;10%), loss (red, negative). Read-only aggregation
+over existing data — no new writes.</div>
+</div></body></html>

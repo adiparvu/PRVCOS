@@ -206,6 +206,22 @@ const BASE: CommandEntry[] = [
     href: "/analytics/health",
   },
   {
+    id: "nav.project-profitability",
+    label: "Project Profitability",
+    section: "Navigation",
+    keywords: [
+      "profitability",
+      "project",
+      "margin",
+      "revenue",
+      "cost",
+      "bi",
+      "analytics",
+      "portfolio",
+    ],
+    href: "/analytics/project-profitability",
+  },
+  {
     id: "nav.recruitment",
     label: "Recruitment",
     section: "Navigation",
