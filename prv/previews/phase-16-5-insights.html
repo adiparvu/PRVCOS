@@ -1,0 +1,52 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Command Center · Insights — Preview</title>
+<style>
+:root{--g1:rgba(255,255,255,.06);--g2:rgba(255,255,255,.10);--g3:rgba(255,255,255,.16);
+--t1:rgba(255,255,255,.95);--t2:rgba(255,255,255,.65);--t3:rgba(255,255,255,.35);
+--bd:rgba(255,255,255,.12);--bds:rgba(255,255,255,.07);--shine:inset 0 1px 0 rgba(255,255,255,.22);
+--amber:rgba(255,190,90,.92);--red:rgba(255,105,97,.95)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#000;color:var(--t1);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",sans-serif;padding:40px 24px 80px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:820px;margin:0 auto}
+h1{font-size:29px;font-weight:640;letter-spacing:-.02em}.sub{color:var(--t3);font-size:13.5px;margin-top:6px}
+.strip{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:24px 0}
+.tile{background:var(--g1);border:1px solid var(--bd);border-radius:18px;padding:15px 17px;box-shadow:var(--shine)}
+.tile .l{color:var(--t3);font-size:11px;text-transform:uppercase;letter-spacing:.07em;font-weight:560}
+.tile .v{font-size:24px;font-weight:680;margin-top:8px;letter-spacing:-.02em}
+.tile.amber .v{color:var(--amber)}.tile.red .v{color:var(--red)}
+.list{display:flex;flex-direction:column;gap:10px;margin-top:6px}
+.ins{display:flex;gap:14px;align-items:flex-start;background:var(--g1);border:1px solid var(--bd);border-radius:16px;padding:15px 17px;box-shadow:var(--shine);cursor:pointer;transition:border-color .2s;text-decoration:none;color:inherit}
+.ins:hover{border-color:rgba(255,255,255,.24)}
+.rail{width:3px;align-self:stretch;border-radius:99px;background:var(--t3);flex-shrink:0}
+.ins.crit .rail{background:var(--red)}.ins.warn .rail{background:var(--amber)}
+.ins .bd h3{font-size:14px;font-weight:600}
+.ins .bd p{color:var(--t3);font-size:12.5px;margin-top:3px;line-height:1.5}
+.sev{font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;border-radius:5px;padding:2px 8px;border:1px solid var(--bd);color:var(--t3);margin-left:auto;flex-shrink:0;white-space:nowrap}
+.sev.crit{color:var(--red);border-color:rgba(255,105,97,.36);background:rgba(255,105,97,.12)}
+.sev.warn{color:var(--amber);border-color:rgba(255,176,64,.32);background:rgba(255,176,64,.1)}
+.arw{color:var(--t3);font-size:15px;flex-shrink:0;align-self:center}
+.foot{color:var(--t3);font-size:12px;line-height:1.7;border-top:1px solid var(--bds);padding-top:16px;margin-top:26px}.foot b{color:var(--t2);font-weight:560}
+</style></head><body><div class="wrap">
+<h1>Insights</h1>
+<div class="sub">Command Center · rule-based · what needs your attention</div>
+
+<div class="strip">
+  <div class="tile"><div class="l">Insights</div><div class="v">6</div></div>
+  <div class="tile red"><div class="l">Critical</div><div class="v">3</div></div>
+  <div class="tile amber"><div class="l">Warnings</div><div class="v">3</div></div>
+</div>
+
+<div class="list">
+  <a class="ins crit"><span class="rail"></span><div class="bd"><h3>Marble worktop slab at stockout risk</h3><p>Below reorder point — order 64 units.</p></div><span class="sev crit">Critical</span><span class="arw">›</span></a>
+  <a class="ins crit"><span class="rail"></span><div class="bd"><h3>Safety: 6 open incidents, risk 44</h3><p>2 recorded injuries — open critical incident.</p></div><span class="sev crit">Critical</span><span class="arw">›</span></a>
+  <a class="ins crit"><span class="rail"></span><div class="bd"><h3>Overdue AR moved +18%</h3><p>Unusual unfavourable swing.</p></div><span class="sev crit">Critical</span><span class="arw">›</span></a>
+  <a class="ins warn"><span class="rail"></span><div class="bd"><h3>Office Fit-out is 8% over budget</h3><p>Budget usage at 108% — review recommended.</p></div><span class="sev warn">Warning</span><span class="arw">›</span></a>
+  <a class="ins warn"><span class="rail"></span><div class="bd"><h3>Office Fit-out is loss-making</h3><p>Profit -€16.0k at -17.8% margin.</p></div><span class="sev warn">Warning</span><span class="arw">›</span></a>
+  <a class="ins warn"><span class="rail"></span><div class="bd"><h3>Vlad Dumitru attendance at 76%</h3><p>Below the 85% attendance floor.</p></div><span class="sev warn">Warning</span><span class="arw">›</span></a>
+</div>
+
+<div class="foot"><b>What this is:</b> Phase 16.5 — Command Center Insights. A read-only view at <b>/command-center/insights</b> (⌘K: "Insights").
+A <b>rule-based engine</b> scans the analytics already built and emits ranked, actionable insight cards — over-budget &amp; loss-making
+projects, stockout risks, open critical safety, unusual KPI swings, and attendance cliffs — each a <b>drill-down link</b> to its source.
+Critical (red) first, then warnings (amber). This is the threshold-based precursor that Phase 17 will replace with Claude-powered analysis.</div>
+</div></body></html>
