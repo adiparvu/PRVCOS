@@ -1,0 +1,53 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Analytics · Demand Forecast — Preview</title>
+<style>
+:root{--g1:rgba(255,255,255,.06);--g2:rgba(255,255,255,.10);--g3:rgba(255,255,255,.16);
+--t1:rgba(255,255,255,.95);--t2:rgba(255,255,255,.65);--t3:rgba(255,255,255,.35);
+--bd:rgba(255,255,255,.12);--bds:rgba(255,255,255,.07);--shine:inset 0 1px 0 rgba(255,255,255,.22);
+--amber:rgba(255,190,90,.92);--red:rgba(255,105,97,.95)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#000;color:var(--t1);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",sans-serif;padding:40px 24px 80px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto}
+h1{font-size:29px;font-weight:640;letter-spacing:-.02em}.sub{color:var(--t3);font-size:13.5px;margin-top:6px}
+.strip{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:24px 0}
+.tile{background:var(--g1);border:1px solid var(--bd);border-radius:18px;padding:15px 17px;box-shadow:var(--shine)}
+.tile .l{color:var(--t3);font-size:11px;text-transform:uppercase;letter-spacing:.07em;font-weight:560}
+.tile .v{font-size:24px;font-weight:680;margin-top:8px;letter-spacing:-.02em}
+.tile.amber .v{color:var(--amber)}.tile.red .v{color:var(--red)}
+.card{background:var(--g1);border:1px solid var(--bd);border-radius:22px;padding:8px 8px 4px;box-shadow:var(--shine),0 24px 64px rgba(0,0,0,.5)}
+.hd,.row{display:grid;grid-template-columns:1.5fr .7fr .8fr .9fr .9fr auto;gap:10px;align-items:center;padding:12px 14px}
+.hd{color:var(--t3);font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;font-weight:560;border-bottom:1px solid var(--bds)}
+.row{border-bottom:1px solid var(--bds)}.row:last-child{border-bottom:0}
+.nm{font-size:13.5px;font-weight:560}
+.num{font-size:13px;font-variant-numeric:tabular-nums;text-align:right}
+.badge{font-size:10px;text-transform:uppercase;letter-spacing:.04em;border-radius:6px;padding:3px 8px;border:1px solid var(--bd);color:var(--t3);white-space:nowrap;text-align:center}
+.badge.crit{color:var(--red);border-color:rgba(255,105,97,.36);background:rgba(255,105,97,.12)}
+.badge.reorder{color:var(--amber);border-color:rgba(255,176,64,.32);background:rgba(255,176,64,.1)}
+.badge.over{color:var(--t2);border-color:rgba(255,255,255,.2);background:var(--g3)}
+.foot{color:var(--t3);font-size:12px;line-height:1.7;border-top:1px solid var(--bds);padding-top:16px;margin-top:26px}.foot b{color:var(--t2);font-weight:560}
+</style></head><body><div class="wrap">
+<h1>Demand Forecast</h1>
+<div class="sub">Analytics · inventory demand &amp; reorder plan · 30-day horizon · 90-day velocity</div>
+
+<div class="strip">
+  <div class="tile red"><div class="l">Stockout risk</div><div class="v">2</div></div>
+  <div class="tile amber"><div class="l">To reorder</div><div class="v">3</div></div>
+  <div class="tile"><div class="l">Suggested units</div><div class="v">640</div></div>
+  <div class="tile"><div class="l">Reorder value</div><div class="v">€18.4k</div></div>
+</div>
+
+<div class="card">
+  <div class="hd"><div>Product</div><div class="num">Stock</div><div class="num">Velocity</div><div class="num">Days cover</div><div class="num">Order qty</div><div>Plan</div></div>
+  <div class="row"><div class="nm">Grohe mixer tap</div><div class="num">6</div><div class="num">1.4/d</div><div class="num">4.3</div><div class="num">58</div><span class="badge crit">Critical</span></div>
+  <div class="row"><div class="nm">Ceramic tile 60×60</div><div class="num">40</div><div class="num">3.4/d</div><div class="num">11.8</div><div class="num">120</div><span class="badge crit">Critical</span></div>
+  <div class="row"><div class="nm">LED panel 40W</div><div class="num">85</div><div class="num">3.1/d</div><div class="num">27.4</div><div class="num">45</div><span class="badge reorder">Reorder</span></div>
+  <div class="row"><div class="nm">Oak laminate plank</div><div class="num">210</div><div class="num">0.9/d</div><div class="num">233</div><div class="num">—</div><span class="badge over">Overstock</span></div>
+  <div class="row"><div class="nm">Brass door handle</div><div class="num">140</div><div class="num">1.6/d</div><div class="num">87.5</div><div class="num">—</div><span class="badge">Healthy</span></div>
+</div>
+
+<div class="foot"><b>What this is:</b> Phase 15.5 — Inventory Demand Forecast. A read-only view at <b>/analytics/demand-forecast</b>
+(⌘K: "Demand Forecast"). Estimates each product's <b>daily velocity</b> from the trailing 90-day sale movements, then projects
+<b>days of cover</b> and expected demand over a 30-day horizon. Plans: <b>critical</b> (red) — at/below reorder point or &lt;7 days
+cover; <b>reorder</b> (amber) — runs out within the horizon; <b>overstock</b> — &gt;180 days cover or no sales; else healthy.
+<b>Suggested order qty</b> restores cover to the horizon plus the reorder buffer. Read-only aggregation over existing stock data.</div>
+</div></body></html>

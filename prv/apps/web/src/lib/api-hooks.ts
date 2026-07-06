@@ -24,6 +24,7 @@ import type { EmployeeRoiResponse } from "@/app/api/analytics/employee-roi/route
 import type { InventoryEfficiencyResponse } from "@/app/api/analytics/inventory-efficiency/route"
 import type { SafetyAnalyticsResponse } from "@/app/api/analytics/safety/route"
 import type { AttendanceAnalyticsResponse } from "@/app/api/analytics/attendance/route"
+import type { DemandForecastResponse } from "@/app/api/analytics/demand-forecast/route"
 import type { ProjectSummary } from "@/app/api/projects/route"
 import type { PayrollRun, PayrollMeta } from "@/app/api/payroll/route"
 import type { POSummary, ProcurementMeta } from "@/app/api/procurement/route"
@@ -3311,6 +3312,19 @@ export function useAttendanceAnalytics() {
       const res = await fetch("/api/analytics/attendance")
       if (!res.ok) throw new Error("Failed to load attendance analytics")
       return res.json() as Promise<AttendanceAnalyticsResponse>
+    },
+  })
+}
+
+export type { DemandForecastResponse } from "@/app/api/analytics/demand-forecast/route"
+
+export function useDemandForecast() {
+  return useQuery({
+    queryKey: ["demand-forecast"],
+    queryFn: async () => {
+      const res = await fetch("/api/analytics/demand-forecast")
+      if (!res.ok) throw new Error("Failed to load demand forecast")
+      return res.json() as Promise<DemandForecastResponse>
     },
   })
 }

@@ -286,6 +286,22 @@ const BASE: CommandEntry[] = [
     href: "/analytics/attendance",
   },
   {
+    id: "nav.demand-forecast",
+    label: "Demand Forecast",
+    section: "Navigation",
+    keywords: [
+      "demand forecast",
+      "reorder",
+      "stockout",
+      "replenishment",
+      "velocity",
+      "procurement",
+      "inventory",
+      "analytics",
+    ],
+    href: "/analytics/demand-forecast",
+  },
+  {
     id: "nav.recruitment",
     label: "Recruitment",
     section: "Navigation",
