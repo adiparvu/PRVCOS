@@ -1,0 +1,51 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Command Center · Executive Cockpit — Preview</title>
+<style>
+:root{--g1:rgba(255,255,255,.06);--g2:rgba(255,255,255,.10);--g3:rgba(255,255,255,.16);
+--t1:rgba(255,255,255,.95);--t2:rgba(255,255,255,.65);--t3:rgba(255,255,255,.35);
+--bd:rgba(255,255,255,.12);--bds:rgba(255,255,255,.07);--shine:inset 0 1px 0 rgba(255,255,255,.22);
+--amber:rgba(255,190,90,.92);--red:rgba(255,105,97,.95);--up:rgba(255,255,255,.92)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#000;color:var(--t1);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",sans-serif;padding:40px 24px 80px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:940px;margin:0 auto}
+h1{font-size:29px;font-weight:640;letter-spacing:-.02em}.sub{color:var(--t3);font-size:13.5px;margin-top:6px}
+.banner{margin:20px 0 6px;background:var(--g1);border:1px solid var(--bd);border-radius:18px;padding:16px 20px;box-shadow:var(--shine);display:flex;align-items:center;gap:14px}
+.dot{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.85);box-shadow:0 0 12px rgba(255,255,255,.35)}
+.dot.amber{background:var(--amber);box-shadow:0 0 12px var(--amber)}.dot.red{background:var(--red);box-shadow:0 0 12px var(--red)}
+.banner .st{font-size:15px;font-weight:620}.banner .br{color:var(--t2);font-size:13px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:16px}
+.panel{background:var(--g1);border:1px solid var(--bd);border-radius:20px;padding:16px 17px;box-shadow:var(--shine),0 24px 64px rgba(0,0,0,.4);min-height:118px;display:flex;flex-direction:column;gap:4px;cursor:pointer;transition:border-color .2s}
+.panel:hover{border-color:rgba(255,255,255,.24)}
+.panel .l{color:var(--t3);font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;font-weight:560;display:flex;align-items:center;gap:6px}
+.panel .v{font-size:26px;font-weight:700;letter-spacing:-.02em;margin-top:4px}
+.panel .s{color:var(--t2);font-size:12px;margin-top:auto}
+.panel .v small{font-size:13px;color:var(--t3);font-weight:560}
+.chip{font-size:9.5px;text-transform:uppercase;letter-spacing:.04em;border-radius:5px;padding:2px 7px;border:1px solid var(--bd);color:var(--t3);margin-left:auto}
+.chip.amber{color:var(--amber);border-color:rgba(255,176,64,.32);background:rgba(255,176,64,.1)}
+.chip.red{color:var(--red);border-color:rgba(255,105,97,.36);background:rgba(255,105,97,.12)}
+.chip.good{color:var(--t1);border-color:rgba(255,255,255,.28);background:var(--g3)}
+.up{color:var(--t1)}.down{color:var(--amber)}
+.foot{color:var(--t3);font-size:12px;line-height:1.7;border-top:1px solid var(--bds);padding-top:16px;margin-top:26px}.foot b{color:var(--t2);font-weight:560}
+</style></head><body><div class="wrap">
+<h1>Command Center</h1>
+<div class="sub">Executive Cockpit · everything at a glance · read-only</div>
+
+<div class="banner"><span class="dot amber"></span><div><div class="st">Watch</div><div class="br">Company health 78/100, with 1 critical alert and 2 stockout risks.</div></div></div>
+
+<div class="grid">
+  <div class="panel"><div class="l">Company Health <span class="chip good">Good</span></div><div class="v">78<small>/100</small></div><div class="s">Composite · 4 domains</div></div>
+  <div class="panel"><div class="l">Revenue Pulse</div><div class="v up">€48.2k</div><div class="s"><span class="up">▲ 6.4%</span> vs start of window</div></div>
+  <div class="panel"><div class="l">Operations</div><div class="v">12</div><div class="s">Active projects · 2 loss-making</div></div>
+  <div class="panel"><div class="l">Financial</div><div class="v">€214k</div><div class="s">Portfolio profit · 22.1% margin</div></div>
+  <div class="panel"><div class="l">Workforce <span class="chip amber">Watch</span></div><div class="v">92.4<small>%</small></div><div class="s">Attendance · 3 on watchlist</div></div>
+  <div class="panel"><div class="l">Safety <span class="chip red">Critical</span></div><div class="v">6</div><div class="s">Open incidents · risk 44</div></div>
+  <div class="panel"><div class="l">Alert Triage <span class="chip red">1</span></div><div class="v">4</div><div class="s">Anomalies · 1 critical</div></div>
+  <div class="panel"><div class="l">Inventory <span class="chip red">2</span></div><div class="v">2</div><div class="s">Stockout risk · 3 to reorder</div></div>
+</div>
+
+<div class="foot"><b>What this is:</b> Phase 16.1 — Executive Cockpit. A read-only Command Center at <b>/command-center</b> (⌘K: "Command Center")
+realising the CEO 60-Second Rule. Eight live panels compose the analytics already built — Company Health, Revenue Pulse (KPI trend),
+Operations &amp; Financial (project profitability), Workforce (attendance), Safety, Alert Triage (anomaly feed) and Inventory risk (demand
+forecast) — each a <b>drill-down link</b> to its source dashboard. A posture banner + one-line executive briefing summarise the whole company;
+amber/red chips flag only what needs attention. No data entry — read &amp; navigate only.</div>
+</div></body></html>

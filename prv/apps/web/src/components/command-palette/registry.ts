@@ -309,6 +309,22 @@ const BASE: CommandEntry[] = [
     href: "/analytics/reports",
   },
   {
+    id: "nav.command-center",
+    label: "Command Center",
+    section: "Navigation",
+    keywords: [
+      "command center",
+      "executive cockpit",
+      "ceo",
+      "overview",
+      "cockpit",
+      "60 second",
+      "dashboard",
+      "briefing",
+    ],
+    href: "/command-center",
+  },
+  {
     id: "nav.recruitment",
     label: "Recruitment",
     section: "Navigation",
