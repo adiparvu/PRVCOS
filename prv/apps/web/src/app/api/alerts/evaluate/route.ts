@@ -2,12 +2,32 @@ import { withGates } from "@/lib/with-gates"
 import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
 import { db } from "@prv/db"
-import { alerts, kpiDailySnapshots } from "@prv/db/schema"
-import { and, desc, eq, inArray, ne } from "drizzle-orm"
+import {
+  alerts,
+  approvalRequests,
+  kpiDailySnapshots,
+  safetyIncidents,
+  stockLevels,
+} from "@prv/db/schema"
+import {
+  and,
+  count,
+  countDistinct,
+  desc,
+  eq,
+  gt,
+  inArray,
+  isNotNull,
+  lt,
+  ne,
+  sql,
+} from "drizzle-orm"
 import { evaluateAlertRules, type AlertRuleInput } from "@prv/ai-engine/alert-rules"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
+
+const APPROVAL_STALE_MS = 48 * 3_600_000
 
 function num(v: unknown): number {
   const n = Number(v ?? 0)
@@ -15,8 +35,9 @@ function num(v: unknown): number {
 }
 
 // POST /api/alerts/evaluate — run the automated-trigger rules over the latest
-// KPI snapshots and persist any newly-triggered alerts. An alert is skipped
-// when a still-open alert already exists for the same rule (deduped by source).
+// KPI snapshots plus live safety / inventory / approval signals, and persist any
+// newly-triggered alerts. An alert is skipped when a still-open alert already
+// exists for the same rule (deduped by source).
 export const POST = withGates(
   { action: "alerts.create", endpointClass: "api_write" },
   async (_req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
@@ -38,27 +59,58 @@ export const POST = withGates(
     const current = rows[0]
     const previous = rows[1]
 
-    if (!current) {
-      return NextResponse.json({ evaluated: 0, created: [], skipped: [] })
-    }
+    // Live cross-module signals (independent of the nightly snapshot).
+    const safetyRows = await db
+      .select({ n: count() })
+      .from(safetyIncidents)
+      .where(
+        and(
+          eq(safetyIncidents.companyId, companyId),
+          eq(safetyIncidents.severity, "critical"),
+          inArray(safetyIncidents.status, ["open", "under_investigation"])
+        )
+      )
+    const stockoutRows = await db
+      .select({ n: countDistinct(stockLevels.productId) })
+      .from(stockLevels)
+      .where(
+        and(
+          eq(stockLevels.companyId, companyId),
+          isNotNull(stockLevels.reorderPoint),
+          gt(stockLevels.reorderPoint, 0),
+          sql`${stockLevels.quantity} <= ${stockLevels.reorderPoint}`
+        )
+      )
+    const approvalRows = await db
+      .select({ n: count() })
+      .from(approvalRequests)
+      .where(
+        and(
+          eq(approvalRequests.companyId, companyId),
+          eq(approvalRequests.status, "pending"),
+          lt(approvalRequests.createdAt, new Date(Date.now() - APPROVAL_STALE_MS))
+        )
+      )
 
     const prevRevenue = previous ? num(previous.revenueMonth) : 0
     const revenueDeltaPct =
       previous && prevRevenue > 0
-        ? ((num(current.revenueMonth) - prevRevenue) / prevRevenue) * 100
+        ? ((num(current?.revenueMonth) - prevRevenue) / prevRevenue) * 100
         : null
     const attendanceRatePct =
-      current.headcount > 0 ? (num(current.presentToday) / current.headcount) * 100 : null
+      current && current.headcount > 0
+        ? (num(current.presentToday) / current.headcount) * 100
+        : null
 
     const input: AlertRuleInput = {
       revenueDeltaPct,
       cashPosition: null, // not tracked in the daily snapshot yet
       cashThreshold: 0,
       attendanceRatePct,
-      openCriticalSafety: 0, // wired from the safety module in a later pass
-      stockoutRisk: 0,
-      overdueApprovalsOver48h: 0,
-      healthScore: num(current.healthScore),
+      openCriticalSafety: num(safetyRows[0]?.n),
+      stockoutRisk: num(stockoutRows[0]?.n),
+      overdueApprovalsOver48h: num(approvalRows[0]?.n),
+      healthScore: current ? num(current.healthScore) : 100,
     }
 
     const specs = evaluateAlertRules(input)

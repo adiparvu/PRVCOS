@@ -1,10 +1,13 @@
 import { inngest } from "../../client"
 import { evaluateAlertRules, type AlertRuleInput } from "@prv/ai-engine/alert-rules"
 
+const APPROVAL_STALE_MS = 48 * 3_600_000
+
 // Autonomous alert evaluation (roadmap 16.4). Every 6 hours, run the alert
-// rules engine per company over the latest KPI snapshots and persist any newly
-// triggered alerts, deduped by rule source against still-open alerts. This is
-// the scheduled counterpart to POST /api/alerts/evaluate.
+// rules engine per company over the latest KPI snapshots plus live safety /
+// inventory / approval signals, and persist any newly triggered alerts, deduped
+// by rule source against still-open alerts. Scheduled counterpart to
+// POST /api/alerts/evaluate.
 export const evaluateAlertsFunction = inngest.createFunction(
   {
     id: "prv-evaluate-alerts",
@@ -26,8 +29,10 @@ export const evaluateAlertsFunction = inngest.createFunction(
 
     const created = await step.run("evaluate-and-persist", async () => {
       const { db } = await import("@prv/db")
-      const { alerts, kpiDailySnapshots } = await import("@prv/db/schema")
-      const { and, desc, eq, inArray, ne } = await import("drizzle-orm")
+      const { alerts, approvalRequests, kpiDailySnapshots, safetyIncidents, stockLevels } =
+        await import("@prv/db/schema")
+      const { and, count, countDistinct, desc, eq, gt, inArray, isNotNull, lt, ne, sql } =
+        await import("drizzle-orm")
 
       const num = (v: unknown): number => {
         const n = Number(v ?? 0)
@@ -52,26 +57,59 @@ export const evaluateAlertsFunction = inngest.createFunction(
           .limit(2)
 
         const current = rows[0]
-        if (!current) continue
         const previous = rows[1]
+
+        const safetyRows = await db
+          .select({ n: count() })
+          .from(safetyIncidents)
+          .where(
+            and(
+              eq(safetyIncidents.companyId, cid),
+              eq(safetyIncidents.severity, "critical"),
+              inArray(safetyIncidents.status, ["open", "under_investigation"])
+            )
+          )
+        const stockoutRows = await db
+          .select({ n: countDistinct(stockLevels.productId) })
+          .from(stockLevels)
+          .where(
+            and(
+              eq(stockLevels.companyId, cid),
+              isNotNull(stockLevels.reorderPoint),
+              gt(stockLevels.reorderPoint, 0),
+              sql`${stockLevels.quantity} <= ${stockLevels.reorderPoint}`
+            )
+          )
+        const approvalRows = await db
+          .select({ n: count() })
+          .from(approvalRequests)
+          .where(
+            and(
+              eq(approvalRequests.companyId, cid),
+              eq(approvalRequests.status, "pending"),
+              lt(approvalRequests.createdAt, new Date(Date.now() - APPROVAL_STALE_MS))
+            )
+          )
 
         const prevRevenue = previous ? num(previous.revenueMonth) : 0
         const revenueDeltaPct =
           previous && prevRevenue > 0
-            ? ((num(current.revenueMonth) - prevRevenue) / prevRevenue) * 100
+            ? ((num(current?.revenueMonth) - prevRevenue) / prevRevenue) * 100
             : null
         const attendanceRatePct =
-          current.headcount > 0 ? (num(current.presentToday) / current.headcount) * 100 : null
+          current && current.headcount > 0
+            ? (num(current.presentToday) / current.headcount) * 100
+            : null
 
         const input: AlertRuleInput = {
           revenueDeltaPct,
           cashPosition: null,
           cashThreshold: 0,
           attendanceRatePct,
-          openCriticalSafety: 0,
-          stockoutRisk: 0,
-          overdueApprovalsOver48h: 0,
-          healthScore: num(current.healthScore),
+          openCriticalSafety: num(safetyRows[0]?.n),
+          stockoutRisk: num(stockoutRows[0]?.n),
+          overdueApprovalsOver48h: num(approvalRows[0]?.n),
+          healthScore: current ? num(current.healthScore) : 100,
         }
 
         const specs = evaluateAlertRules(input)

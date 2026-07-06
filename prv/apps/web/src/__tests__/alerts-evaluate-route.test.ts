@@ -20,16 +20,36 @@ const mockDb = {
     inserted.push(rows as unknown[])
     return Promise.resolve()
   }),
+  // count queries terminate at .where(), which awaits the thenable db
   then: (resolve: (v: unknown[]) => void) => resolve(nextSelect()),
 }
 vi.mock("@prv/db", () => ({ db: mockDb }))
 vi.mock("@prv/db/schema", () => {
   const col = () => new Proxy({}, { get: () => ({}) })
-  return { alerts: col(), kpiDailySnapshots: col() }
+  return {
+    alerts: col(),
+    approvalRequests: col(),
+    kpiDailySnapshots: col(),
+    safetyIncidents: col(),
+    stockLevels: col(),
+  }
 })
 vi.mock("drizzle-orm", async (importOriginal) => {
   const actual = await importOriginal<typeof import("drizzle-orm")>()
-  return { ...actual, and: vi.fn(), desc: vi.fn(), eq: vi.fn(), inArray: vi.fn(), ne: vi.fn() }
+  return {
+    ...actual,
+    and: vi.fn(),
+    count: vi.fn(),
+    countDistinct: vi.fn(),
+    desc: vi.fn(),
+    eq: vi.fn(),
+    gt: vi.fn(),
+    inArray: vi.fn(),
+    isNotNull: vi.fn(),
+    lt: vi.fn(),
+    ne: vi.fn(),
+    sql: vi.fn(),
+  }
 })
 
 const ctx = {
@@ -61,29 +81,39 @@ function reset() {
 describe("POST /api/alerts/evaluate", () => {
   beforeEach(reset)
 
-  it("creates alerts for triggered rules and dedupes against open ones", async () => {
-    // snapshots (newest → oldest): revenue dropped 100k→70k (-30% → L2),
-    // attendance 6/10 = 60% (< 70 → L2), health 40 (< 50 → L3)
+  it("triggers snapshot + live signal rules and dedupes against open alerts", async () => {
+    // query order: snapshot, safety, stockout, approvals, open-alerts
     selectQueue.push([
-      { revenueMonth: "70000", headcount: 10, presentToday: 6, healthScore: 40 },
+      { revenueMonth: "70000", headcount: 10, presentToday: 6, healthScore: 40 }, // -30%, 60%, health 40
       { revenueMonth: "100000", headcount: 10, presentToday: 9, healthScore: 80 },
     ])
-    // an open alert already exists for the attendance rule → should be skipped
-    selectQueue.push([{ source: "rule:attendance_cliff" }])
+    selectQueue.push([{ n: 1 }]) // openCriticalSafety → L3
+    selectQueue.push([{ n: 2 }]) // stockoutRisk → L3
+    selectQueue.push([{ n: 3 }]) // overdueApprovals → L2
+    selectQueue.push([{ source: "rule:attendance_cliff" }]) // already open → skipped
 
     const { POST } = await import("@/app/api/alerts/evaluate/route")
     const res = await POST(rq(), ctx)
     expect(res.status).toBe(200)
     const body = await res.json()
-    expect(body.evaluated).toBe(3)
-    expect(body.created).toContain("revenue_drop")
-    expect(body.created).toContain("health_critical")
+    // revenue_drop, attendance_cliff, health_critical, safety_incident,
+    // inventory_stockout, approvals_stale = 6 rules evaluated
+    expect(body.evaluated).toBe(6)
+    expect(body.created).toEqual(
+      expect.arrayContaining([
+        "revenue_drop",
+        "health_critical",
+        "safety_incident",
+        "inventory_stockout",
+        "approvals_stale",
+      ])
+    )
     expect(body.skipped).toContain("attendance_cliff")
-    // one insert call with the two fresh alerts
     expect(inserted).toHaveLength(1)
-    expect(inserted[0]).toHaveLength(2)
+    expect(inserted[0]).toHaveLength(5)
     const sources = (inserted[0] as { source: string }[]).map((r) => r.source)
-    expect(sources).toEqual(expect.arrayContaining(["rule:revenue_drop", "rule:health_critical"]))
+    expect(sources).toContain("rule:safety_incident")
+    expect(sources).toContain("rule:inventory_stockout")
   })
 
   it("returns an empty result when no rules trigger", async () => {
@@ -91,6 +121,9 @@ describe("POST /api/alerts/evaluate", () => {
       { revenueMonth: "100000", headcount: 10, presentToday: 10, healthScore: 90 },
       { revenueMonth: "100000", headcount: 10, presentToday: 10, healthScore: 90 },
     ])
+    selectQueue.push([{ n: 0 }]) // safety
+    selectQueue.push([{ n: 0 }]) // stockout
+    selectQueue.push([{ n: 0 }]) // approvals
     const { POST } = await import("@/app/api/alerts/evaluate/route")
     const body = await (await POST(rq(), ctx)).json()
     expect(body.evaluated).toBe(0)
@@ -98,11 +131,16 @@ describe("POST /api/alerts/evaluate", () => {
     expect(inserted).toHaveLength(0)
   })
 
-  it("handles a company with no snapshots", async () => {
-    selectQueue.push([])
+  it("handles a company with no snapshots but still checks live signals", async () => {
+    selectQueue.push([]) // no snapshots
+    selectQueue.push([{ n: 1 }]) // safety incident open → still triggers
+    selectQueue.push([{ n: 0 }]) // stockout
+    selectQueue.push([{ n: 0 }]) // approvals
+    selectQueue.push([]) // no open alerts
     const { POST } = await import("@/app/api/alerts/evaluate/route")
     const body = await (await POST(rq(), ctx)).json()
-    expect(body.evaluated).toBe(0)
-    expect(inserted).toHaveLength(0)
+    expect(body.evaluated).toBe(1)
+    expect(body.created).toEqual(["safety_incident"])
+    expect(inserted).toHaveLength(1)
   })
 })
