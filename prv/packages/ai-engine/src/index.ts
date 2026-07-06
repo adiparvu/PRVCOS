@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk"
+import { redactPii } from "./pii"
 import { eq, asc, desc, and, isNull, sql } from "drizzle-orm"
 
 const MODEL = "claude-sonnet-4-6"
@@ -152,9 +153,9 @@ export function buildAnthropicMessages(
 ): Anthropic.MessageParam[] {
   const msgs: Anthropic.MessageParam[] = history.slice(-MAX_HISTORY).map((m) => ({
     role: m.role,
-    content: m.content,
+    content: redactPii(m.content),
   }))
-  msgs.push({ role: "user", content: newMessage })
+  msgs.push({ role: "user", content: redactPii(newMessage) })
   return msgs
 }
 
@@ -753,7 +754,7 @@ export async function buildReportQuery(
       model: MODEL,
       max_tokens: 512,
       system: AGENT_SYSTEM_PROMPTS.report_builder,
-      messages: [{ role: "user", content: description }],
+      messages: [{ role: "user", content: redactPii(description) }],
     })
     const text = msg.content[0]?.type === "text" ? msg.content[0].text : ""
     const jsonMatch = text.match(/\{[\s\S]*\}/)

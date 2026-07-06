@@ -4,7 +4,8 @@
   "private": true,
   "exports": {
     ".": "./src/index.ts",
-    "./alert-rules": "./src/alert-rules.ts"
+    "./alert-rules": "./src/alert-rules.ts",
+    "./pii": "./src/pii.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
