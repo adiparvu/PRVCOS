@@ -1,0 +1,37 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Group · Company Health Breakdown — Preview</title>
+<style>
+:root{--g1:rgba(255,255,255,.06);--g2:rgba(255,255,255,.12);--t1:rgba(255,255,255,.95);--t3:rgba(255,255,255,.35);
+--bds:rgba(255,255,255,.09);--amber:rgba(255,190,90,.92);--red:rgba(255,105,97,.95)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#000;color:var(--t1);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif;padding:40px 20px 80px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:440px;margin:0 auto}
+.lbl{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--t3);font-weight:560;margin:22px 4px 10px}
+.card{border-radius:22px;overflow:hidden;background:var(--g1);border:1px solid var(--bds)}
+.row{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--bds)}
+.row:last-child{border-bottom:0}
+.av{width:36px;height:36px;border-radius:12px;background:var(--g2);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0}
+.nm{flex:1;min-width:0}
+.nm .n{font-size:14px;font-weight:600}
+.nm .b{font-size:11.5px;color:var(--t3);margin-top:2px;text-transform:capitalize}
+.sc{text-align:right;flex-shrink:0}
+.sc .v{font-size:16px;font-weight:700}.sc .v small{font-size:11px;color:var(--t3);font-weight:600}
+.sc .d{font-size:11px;font-weight:600;color:var(--t3);margin-top:2px}
+.crit .v{color:var(--red)}.att .v{color:var(--amber)}
+.hdr{display:flex;justify-content:space-between;align-items:baseline;margin:0 4px 4px}
+.hdr .avg{font-size:13px;color:var(--t3)}
+.foot{color:var(--t3);font-size:12px;line-height:1.7;border-top:1px solid var(--bds);padding-top:16px;margin-top:26px}.foot b{color:rgba(255,255,255,.6);font-weight:560}
+</style></head><body><div class="wrap">
+<div class="hdr"><div class="lbl" style="margin:0">Per-Company Health · Composite Score</div></div>
+<div class="lbl" style="margin-top:2px">Group average 71 · Good</div>
+<div class="card">
+  <div class="row att"><div class="av">PS</div><div class="nm"><div class="n">PRV Shop</div><div class="b">attention</div></div><div class="sc"><div class="v">58<small> /100</small></div><div class="d">▼ 6 pts</div></div></div>
+  <div class="row"><div class="av">PR</div><div class="nm"><div class="n">PRV Renovations</div><div class="b">good</div></div><div class="sc"><div class="v">84<small> /100</small></div><div class="d">▲ 3 pts</div></div></div>
+  <div class="row"><div class="av">PP</div><div class="nm"><div class="n">PRV Projects</div><div class="b">excellent</div></div><div class="sc"><div class="v">92<small> /100</small></div><div class="d">▲ 1 pts</div></div></div>
+  <div class="row"><div class="av">NC</div><div class="nm"><div class="n">New Co</div><div class="b">no data</div></div><div class="sc"><div class="v" style="color:var(--t3)">–</div></div></div>
+</div>
+<div class="foot"><b>What this is:</b> Phase 16.2 — per-company Company Health breakdown, added to the CEO Group Rollup workspace.
+Each member company shows its composite health score, movement vs the previous daily snapshot (▲/▼ pts), and an executive band
+(excellent / good / <span style="color:var(--amber)">attention</span> / <span style="color:var(--red)">critical</span>), worst-first,
+with the group average up top. Data via the group-scoped <b>/api/groups/[id]/health</b>. Monochrome + amber/red status only.</div>
+</div></body></html>

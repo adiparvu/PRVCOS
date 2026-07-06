@@ -1256,6 +1256,20 @@ export function useGroupRollup(groupId: string | null, period = "qtd") {
   })
 }
 
+export type { GroupHealthResponse } from "@/app/api/groups/[groupId]/health/route"
+
+export function useGroupHealth(groupId: string | null) {
+  return useQuery({
+    queryKey: ["group-health", groupId],
+    enabled: !!groupId,
+    queryFn: () =>
+      fetch(`/api/groups/${groupId}/health`).then(
+        (r) =>
+          r.json() as Promise<import("@/app/api/groups/[groupId]/health/route").GroupHealthResponse>
+      ),
+  })
+}
+
 export interface GroupMember {
   companyId: string
   companyName: string

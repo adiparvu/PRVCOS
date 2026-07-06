@@ -5,7 +5,7 @@ import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { useQueryClient } from "@tanstack/react-query"
 import { GlassStatCard, GlassAreaChart } from "@prv/ui"
-import { useGroups, useGroupRollup } from "@/lib/api-hooks"
+import { useGroups, useGroupRollup, useGroupHealth } from "@/lib/api-hooks"
 import { eurK } from "@/lib/metrics-helpers"
 import { CreateGroupSheet } from "./CreateGroupSheet"
 
@@ -59,6 +59,8 @@ export function GroupRollupWorkspace() {
 
   const [period, setPeriod] = useState("qtd")
   const { data, isLoading } = useGroupRollup(groupId, period)
+  const { data: healthData } = useGroupHealth(groupId)
+  const healthCompanies = healthData?.companies ?? []
   const kpis = data?.kpis
   const breakdown = data?.breakdown ?? []
   const trend = data?.trend ?? { labels: [], revenue: [] }
@@ -275,6 +277,67 @@ export function GroupRollupWorkspace() {
                 </div>
               </div>
             ))}
+          </div>
+        </>
+      )}
+
+      {/* Per-company Company Health breakdown */}
+      {healthCompanies.length > 0 && (
+        <>
+          <Label>Per-Company Health · Composite Score</Label>
+          <div
+            className="rounded-[22px] overflow-hidden"
+            style={{ background: g1, border: `1px solid ${bds}` }}
+          >
+            {healthCompanies.map((c, i) => {
+              const tone =
+                c.band === "critical"
+                  ? "rgba(255,105,97,0.95)"
+                  : c.band === "attention"
+                    ? "rgba(255,190,90,0.92)"
+                    : t1
+              const arrow = c.trend === "up" ? "\u25B2" : c.trend === "down" ? "\u25BC" : "\u2013"
+              return (
+                <div
+                  key={c.companyId}
+                  className="flex items-center gap-3 px-4 py-3.5"
+                  style={{
+                    borderBottom: i < healthCompanies.length - 1 ? `1px solid ${bds}` : "none",
+                  }}
+                >
+                  <div
+                    className="w-9 h-9 rounded-[12px] flex items-center justify-center flex-shrink-0 text-[13px] font-bold"
+                    style={{ background: g2, color: t1 }}
+                  >
+                    {initials(c.name)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[14px] font-semibold truncate" style={{ color: t1 }}>
+                      {c.name}
+                    </div>
+                    <div className="text-[11.5px] mt-0.5 capitalize" style={{ color: t3 }}>
+                      {c.band ?? "no data"}
+                    </div>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <div className="text-[16px] font-bold" style={{ color: tone }}>
+                      {c.score ?? "\u2013"}
+                      {c.score !== null && (
+                        <span className="text-[11px] font-semibold" style={{ color: t3 }}>
+                          {" "}
+                          /100
+                        </span>
+                      )}
+                    </div>
+                    {c.delta !== 0 && (
+                      <div className="text-[11px] font-semibold mt-0.5" style={{ color: t3 }}>
+                        {arrow} {Math.abs(c.delta)} pts
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
           </div>
         </>
       )}
