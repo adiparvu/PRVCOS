@@ -25,6 +25,7 @@ import type { InventoryEfficiencyResponse } from "@/app/api/analytics/inventory-
 import type { SafetyAnalyticsResponse } from "@/app/api/analytics/safety/route"
 import type { AttendanceAnalyticsResponse } from "@/app/api/analytics/attendance/route"
 import type { DemandForecastResponse } from "@/app/api/analytics/demand-forecast/route"
+import type { ModuleStatusResponse } from "@/app/api/command-center/module-status/route"
 import type { ProjectSummary } from "@/app/api/projects/route"
 import type { PayrollRun, PayrollMeta } from "@/app/api/payroll/route"
 import type { POSummary, ProcurementMeta } from "@/app/api/procurement/route"
@@ -3325,6 +3326,19 @@ export function useDemandForecast() {
       const res = await fetch("/api/analytics/demand-forecast")
       if (!res.ok) throw new Error("Failed to load demand forecast")
       return res.json() as Promise<DemandForecastResponse>
+    },
+  })
+}
+
+export type { ModuleStatusResponse } from "@/app/api/command-center/module-status/route"
+
+export function useModuleStatus() {
+  return useQuery({
+    queryKey: ["module-status"],
+    queryFn: async () => {
+      const res = await fetch("/api/command-center/module-status")
+      if (!res.ok) throw new Error("Failed to load module status")
+      return res.json() as Promise<ModuleStatusResponse>
     },
   })
 }

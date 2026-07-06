@@ -341,6 +341,21 @@ const BASE: CommandEntry[] = [
     href: "/command-center/insights",
   },
   {
+    id: "nav.module-status",
+    label: "Module Status",
+    section: "Navigation",
+    keywords: [
+      "module status",
+      "universal dashboard",
+      "operational",
+      "modules",
+      "health",
+      "activity",
+      "command center",
+    ],
+    href: "/command-center/modules",
+  },
+  {
     id: "nav.recruitment",
     label: "Recruitment",
     section: "Navigation",

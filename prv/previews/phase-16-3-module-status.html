@@ -1,0 +1,57 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Command Center · Module Status — Preview</title>
+<style>
+:root{--g1:rgba(255,255,255,.06);--g2:rgba(255,255,255,.10);--g3:rgba(255,255,255,.16);
+--t1:rgba(255,255,255,.95);--t2:rgba(255,255,255,.65);--t3:rgba(255,255,255,.35);
+--bd:rgba(255,255,255,.12);--bds:rgba(255,255,255,.07);--shine:inset 0 1px 0 rgba(255,255,255,.22);
+--amber:rgba(255,190,90,.92);--red:rgba(255,105,97,.95)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#000;color:var(--t1);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",sans-serif;padding:40px 24px 80px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto}
+h1{font-size:29px;font-weight:640;letter-spacing:-.02em}.sub{color:var(--t3);font-size:13.5px;margin-top:6px}
+.strip{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:24px 0}
+.tile{background:var(--g1);border:1px solid var(--bd);border-radius:18px;padding:15px 17px;box-shadow:var(--shine)}
+.tile .l{color:var(--t3);font-size:11px;text-transform:uppercase;letter-spacing:.07em;font-weight:560}
+.tile .v{font-size:24px;font-weight:680;margin-top:8px;letter-spacing:-.02em}
+.tile.red .v{color:var(--red)}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.mod{background:var(--g1);border:1px solid var(--bd);border-radius:18px;padding:16px 17px;box-shadow:var(--shine);cursor:pointer;transition:border-color .2s;text-decoration:none;color:inherit;display:flex;flex-direction:column;gap:8px;min-height:104px}
+.mod:hover{border-color:rgba(255,255,255,.24)}
+.mrow{display:flex;align-items:center;gap:9px}
+.dot{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.32);flex-shrink:0}
+.mod.active .dot{background:rgba(255,255,255,.85);box-shadow:0 0 9px rgba(255,255,255,.4)}
+.mod.alert .dot{background:var(--red);box-shadow:0 0 10px var(--red)}
+.mod .nm{font-size:14.5px;font-weight:600}
+.mod .st{margin-left:auto;font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--t3)}
+.mod.alert .st{color:var(--red)}
+.mod .meta{color:var(--t3);font-size:12px;margin-top:auto;display:flex;gap:12px}
+.mod .meta b{color:var(--t2);font-weight:560}
+.mod .meta .fail{color:var(--red)}
+.foot{color:var(--t3);font-size:12px;line-height:1.7;border-top:1px solid var(--bds);padding-top:16px;margin-top:26px}.foot b{color:var(--t2);font-weight:560}
+</style></head><body><div class="wrap">
+<h1>Module Status</h1>
+<div class="sub">Command Center · operational health · last 24 hours</div>
+
+<div class="strip">
+  <div class="tile"><div class="l">Active modules</div><div class="v">5<span style="font-size:13px;color:var(--t3)">/8</span></div></div>
+  <div class="tile"><div class="l">Events (24h)</div><div class="v">1,284</div></div>
+  <div class="tile red"><div class="l">Access failures</div><div class="v">3</div></div>
+</div>
+
+<div class="grid">
+  <a class="mod alert"><div class="mrow"><span class="dot"></span><span class="nm">Shop</span><span class="st">Alert</span></div><div class="meta"><span><b>412</b> events</span><span class="fail"><b>3</b> failures</span></div></a>
+  <a class="mod active"><div class="mrow"><span class="dot"></span><span class="nm">Finance</span><span class="st">Active</span></div><div class="meta"><span><b>318</b> events</span><span>2m ago</span></div></a>
+  <a class="mod active"><div class="mrow"><span class="dot"></span><span class="nm">Projects</span><span class="st">Active</span></div><div class="meta"><span><b>256</b> events</span><span>6m ago</span></div></a>
+  <a class="mod active"><div class="mrow"><span class="dot"></span><span class="nm">Workforce</span><span class="st">Active</span></div><div class="meta"><span><b>190</b> events</span><span>11m ago</span></div></a>
+  <a class="mod active"><div class="mrow"><span class="dot"></span><span class="nm">CRM</span><span class="st">Active</span></div><div class="meta"><span><b>108</b> events</span><span>19m ago</span></div></a>
+  <a class="mod"><div class="mrow"><span class="dot"></span><span class="nm">Safety</span><span class="st">Idle</span></div><div class="meta"><span>No activity</span></div></a>
+  <a class="mod"><div class="mrow"><span class="dot"></span><span class="nm">Documents</span><span class="st">Idle</span></div><div class="meta"><span>No activity</span></div></a>
+  <a class="mod"><div class="mrow"><span class="dot"></span><span class="nm">Command Center</span><span class="st">Idle</span></div><div class="meta"><span>No activity</span></div></a>
+</div>
+
+<div class="foot"><b>What this is:</b> Phase 16.3 — Module Status (Universal Dashboard). A read-only board at <b>/command-center/modules</b>
+(⌘K: "Module Status"). Each tile shows a module's <b>operational health</b> from the last 24h of the audit log — event volume, most-recent
+activity, and any <b>access-control (gate) failures</b>. States: <b>alert</b> (red) any gate failure, <b>active</b> recent events,
+<b>idle</b> no activity. Every module is always listed (idle when quiet) so it's genuine operational health, not a fabricated score. Each
+tile drills into its module.</div>
+</div></body></html>
