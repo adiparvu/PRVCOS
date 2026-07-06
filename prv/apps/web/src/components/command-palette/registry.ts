@@ -341,6 +341,20 @@ const BASE: CommandEntry[] = [
     href: "/command-center/insights",
   },
   {
+    id: "nav.daily-briefing",
+    label: "Daily Briefing",
+    section: "Navigation",
+    keywords: [
+      "daily briefing",
+      "morning brief",
+      "ceo briefing",
+      "executive summary",
+      "command center",
+      "digest",
+    ],
+    href: "/command-center/briefing",
+  },
+  {
     id: "nav.module-status",
     label: "Module Status",
     section: "Navigation",

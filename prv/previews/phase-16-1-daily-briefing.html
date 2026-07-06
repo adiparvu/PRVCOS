@@ -1,0 +1,54 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Command Center · Daily Briefing — Preview</title>
+<style>
+:root{--g1:rgba(255,255,255,.06);--g2:rgba(255,255,255,.10);--g3:rgba(255,255,255,.16);
+--t1:rgba(255,255,255,.95);--t2:rgba(255,255,255,.65);--t3:rgba(255,255,255,.35);
+--bd:rgba(255,255,255,.12);--bds:rgba(255,255,255,.07);--shine:inset 0 1px 0 rgba(255,255,255,.22);
+--amber:rgba(255,190,90,.92);--red:rgba(255,105,97,.95)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#000;color:var(--t1);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif;padding:40px 24px 80px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:680px;margin:0 auto}
+.date{color:var(--t3);font-size:12px;text-transform:uppercase;letter-spacing:.08em;font-weight:560}
+h1{font-size:28px;font-weight:640;letter-spacing:-.02em;margin-top:6px}
+.head{display:flex;gap:13px;align-items:flex-start;background:var(--g1);border:1px solid var(--bd);border-radius:20px;padding:18px 20px;box-shadow:var(--shine);margin:20px 0 8px}
+.dot{width:11px;height:11px;border-radius:50%;margin-top:5px;flex-shrink:0;background:var(--amber);box-shadow:0 0 12px var(--amber)}
+.head p{font-size:16px;font-weight:560;line-height:1.45}
+.sec{margin-top:22px}
+.sec h2{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--t3);font-weight:600;margin:0 4px 10px}
+.card{background:var(--g1);border:1px solid var(--bd);border-radius:18px;box-shadow:var(--shine);overflow:hidden}
+.li{display:flex;gap:11px;padding:13px 18px;border-bottom:1px solid var(--bds);font-size:14px;line-height:1.45;color:var(--t2)}
+.li:last-child{border-bottom:0}
+.li::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--t3);margin-top:8px;flex-shrink:0}
+.li.warn::before{background:var(--amber)}.li.crit::before{background:var(--red)}
+.foot{color:var(--t3);font-size:12px;line-height:1.7;border-top:1px solid var(--bds);padding-top:16px;margin-top:30px}.foot b{color:var(--t2);font-weight:560}
+</style></head><body><div class="wrap">
+<div class="date">Monday · 6 July 2026 · Morning brief</div>
+<h1>Daily Briefing</h1>
+
+<div class="head"><span class="dot"></span><p>Company health 78/100 — a few things worth a look.</p></div>
+
+<div class="sec"><h2>Money</h2><div class="card">
+  <div class="li">Revenue is up 6% versus the previous period.</div>
+  <div class="li">Portfolio profit stands at €214.0k on a 22.1% margin.</div>
+</div></div>
+
+<div class="sec"><h2>Operations</h2><div class="card">
+  <div class="li">12 active projects in flight.</div>
+  <div class="li warn">2 projects are currently loss-making.</div>
+</div></div>
+
+<div class="sec"><h2>People</h2><div class="card">
+  <div class="li">Attendance is running at 92.4%.</div>
+  <div class="li warn">3 employees are below the attendance threshold.</div>
+</div></div>
+
+<div class="sec"><h2>Risk</h2><div class="card">
+  <div class="li crit">1 critical alert needs triage.</div>
+  <div class="li warn">2 products are at stockout risk.</div>
+</div></div>
+
+<div class="foot"><b>What this is:</b> Phase 16.1 (AI Briefing panel) / 17.4 — CEO Daily Briefing, rule-based. A read-only morning brief at
+<b>/command-center/briefing</b> (⌘K: "Daily Briefing"). Composes the executive signals already built into a posture headline plus themed
+<b>Money / Operations / People / Risk</b> sections in plain language; amber/red bullets flag what needs attention. This is the deterministic
+precursor the Phase 17 AI briefing will replace with Claude-authored prose.</div>
+</div></body></html>
