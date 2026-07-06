@@ -1,0 +1,36 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Analytics · Reports Export — Preview</title>
+<style>
+:root{--g1:rgba(255,255,255,.06);--g2:rgba(255,255,255,.10);--g3:rgba(255,255,255,.16);
+--t1:rgba(255,255,255,.95);--t2:rgba(255,255,255,.65);--t3:rgba(255,255,255,.35);
+--bd:rgba(255,255,255,.12);--bds:rgba(255,255,255,.07);--shine:inset 0 1px 0 rgba(255,255,255,.22)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#000;color:var(--t1);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",sans-serif;padding:40px 24px 80px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:860px;margin:0 auto}
+h1{font-size:29px;font-weight:640;letter-spacing:-.02em}.sub{color:var(--t3);font-size:13.5px;margin-top:6px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:26px}
+.card{background:var(--g1);border:1px solid var(--bd);border-radius:20px;padding:18px 20px;box-shadow:var(--shine),0 24px 64px rgba(0,0,0,.4);display:flex;flex-direction:column;gap:6px}
+.card .ic{width:34px;height:34px;border-radius:10px;background:var(--g3);border:1px solid var(--bd);display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:var(--shine);margin-bottom:6px}
+.card h2{font-size:15px;font-weight:600}
+.card p{color:var(--t3);font-size:12.5px;line-height:1.5;flex:1}
+.card .cols{color:var(--t3);font-size:11px;margin-top:2px}
+.btn{margin-top:12px;align-self:flex-start;display:inline-flex;align-items:center;gap:7px;background:#fff;color:#000;border:0;border-radius:10px;padding:8px 14px;font-size:12.5px;font-weight:600;cursor:pointer;box-shadow:var(--shine)}
+.foot{color:var(--t3);font-size:12px;line-height:1.7;border-top:1px solid var(--bds);padding-top:16px;margin-top:26px}.foot b{color:var(--t2);font-weight:560}
+</style></head><body><div class="wrap">
+<h1>Reports</h1>
+<div class="sub">Analytics · export any dataset as CSV</div>
+
+<div class="grid">
+  <div class="card"><div class="ic">◷</div><h2>Employee ROI</h2><p>Payroll cost vs completed tasks, cost-per-task and output band, per employee.</p><div class="cols">6 columns</div><button class="btn">⭳ Download CSV</button></div>
+  <div class="card"><div class="ic">▤</div><h2>Inventory Efficiency</h2><p>On-hand value, sell-through, turnover and days-on-hand per product.</p><div class="cols">8 columns</div><button class="btn">⭳ Download CSV</button></div>
+  <div class="card"><div class="ic">◱</div><h2>Demand Forecast</h2><p>Velocity, days of cover and suggested reorder quantity/value per product.</p><div class="cols">9 columns</div><button class="btn">⭳ Download CSV</button></div>
+  <div class="card"><div class="ic">◈</div><h2>Project Profitability</h2><p>Revenue, cost, profit, margin and budget usage per project.</p><div class="cols">7 columns</div><button class="btn">⭳ Download CSV</button></div>
+  <div class="card"><div class="ic">⚠</div><h2>Safety — by type</h2><p>Incident counts broken down by incident type.</p><div class="cols">2 columns</div><button class="btn">⭳ Download CSV</button></div>
+  <div class="card"><div class="ic">◔</div><h2>Attendance Watchlist</h2><p>Employees under 95% attendance — scheduled days, absences, rate and band.</p><div class="cols">7 columns</div><button class="btn">⭳ Download CSV</button></div>
+</div>
+
+<div class="foot"><b>What this is:</b> Phase 15.4 — Reports / CSV export. A read-only hub at <b>/analytics/reports</b> (⌘K: "Reports").
+Each card downloads the current live dataset from its analytics endpoint and serializes it to a <b>CSV file</b> (RFC-4180 quoting,
+Excel-friendly) entirely in the browser — no new server surface. Satisfies the Phase 15 exit criterion "create and export a custom
+report." The white download button is the one inverted-for-CTA accent permitted by the design system; everything else stays monochrome glass.</div>
+</div></body></html>
