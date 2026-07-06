@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { evaluateAlertRules, type AlertRuleInput } from "@/lib/alert-rules"
+import { evaluateAlertRules, type AlertRuleInput } from "../alert-rules"
 
 const quiet: AlertRuleInput = {
   revenueDeltaPct: 0,

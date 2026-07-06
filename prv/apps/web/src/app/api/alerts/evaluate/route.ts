@@ -4,7 +4,7 @@ import type { GateContext } from "@prv/auth"
 import { db } from "@prv/db"
 import { alerts, kpiDailySnapshots } from "@prv/db/schema"
 import { and, desc, eq, inArray, ne } from "drizzle-orm"
-import { evaluateAlertRules, type AlertRuleInput } from "@/lib/alert-rules"
+import { evaluateAlertRules, type AlertRuleInput } from "@prv/ai-engine/alert-rules"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
