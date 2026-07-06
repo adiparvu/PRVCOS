@@ -93,6 +93,10 @@ export function SafetyMetricsClient() {
   const byLocation = data?.byLocation ?? []
   const maxLoc = Math.max(1, ...byLocation.map((l) => l.count))
   const insp = data?.inspections
+  const trend = data?.trend
+  const trendMonths = trend?.months ?? []
+  const maxMonth = Math.max(1, ...trendMonths.map((m) => m.count))
+  const mom = trend?.momChangePct ?? null
 
   return (
     <div style={{ maxWidth: 860, margin: "0 auto", padding: "36px 24px 80px" }}>
@@ -154,6 +158,65 @@ export function SafetyMetricsClient() {
       {isLoading && <div style={{ color: "var(--prv-text-3)", fontSize: 14 }}>Loading…</div>}
 
       <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        {trendMonths.length > 0 && (
+          <SectionCard title="Incident trend · recordable by month">
+            <div
+              style={{
+                display: "flex",
+                alignItems: "flex-end",
+                gap: 10,
+                height: 120,
+                marginTop: 8,
+              }}
+            >
+              {trendMonths.map((m) => (
+                <div
+                  key={m.month}
+                  style={{
+                    flex: 1,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: 6,
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 12,
+                      color: "var(--prv-text-2)",
+                      fontVariantNumeric: "tabular-nums",
+                    }}
+                  >
+                    {m.count}
+                  </div>
+                  <div
+                    style={{
+                      width: "100%",
+                      height: `${Math.max(4, (m.count / maxMonth) * 88)}px`,
+                      borderRadius: 8,
+                      background: "rgba(255,255,255,0.35)",
+                    }}
+                  />
+                  <div style={{ fontSize: 11, color: "var(--prv-text-3)" }}>{m.label}</div>
+                </div>
+              ))}
+            </div>
+            {mom !== null && (
+              <div style={{ marginTop: 12, fontSize: 12.5, color: "var(--prv-text-3)" }}>
+                Month over month:{" "}
+                <span
+                  style={{
+                    fontWeight: 600,
+                    color: mom > 0 ? "rgba(255,190,90,0.92)" : "var(--prv-text-2)",
+                  }}
+                >
+                  {mom > 0 ? "▲" : mom < 0 ? "▼" : "–"} {Math.abs(mom)}%
+                </span>
+              </div>
+            )}
+          </SectionCard>
+        )}
+
         {byLocation.length > 0 && (
           <SectionCard title="High-risk locations · recordable incident density">
             {byLocation.map((l, i) => (

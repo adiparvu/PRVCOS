@@ -97,6 +97,9 @@ describe("GET /api/analytics/safety-metrics", () => {
     expect(body.inspections.upcoming).toBe(1)
     expect(body.inspections.complianceRatePct).toBe(66.7)
     expect(body.inspections.avgScorePct).toBe(90)
+    // incident trend: 6 month buckets, recordable incidents placed by month
+    expect(body.trend.months).toHaveLength(6)
+    expect(body.trend.months.reduce((a: number, m: { count: number }) => a + m.count, 0)).toBe(3)
   })
 
   it("handles a company with no incidents or inspections", async () => {
@@ -108,5 +111,6 @@ describe("GET /api/analytics/safety-metrics", () => {
     expect(body.daysSinceLastIncident).toBeNull()
     expect(body.inspections.total).toBe(0)
     expect(body.inspections.complianceRatePct).toBeNull()
+    expect(body.trend.months).toHaveLength(6)
   })
 })

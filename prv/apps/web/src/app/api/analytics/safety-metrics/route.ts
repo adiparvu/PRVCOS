@@ -10,15 +10,19 @@ import {
   type InspectionCompliance,
   type InspectionStatus,
 } from "@/lib/inspection-compliance"
+import { computeIncidentTrend, type IncidentTrend } from "@/lib/incident-trend"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
 
-export type SafetyMetricsResponse = SafetyMetrics & { inspections: InspectionCompliance }
+export type SafetyMetricsResponse = SafetyMetrics & {
+  inspections: InspectionCompliance
+  trend: IncidentTrend
+}
 
 // GET /api/analytics/safety-metrics — safety-officer KPIs: days since last
-// incident, 30-day count, recordable/near-miss split, high-risk locations, and
-// inspection compliance.
+// incident, 30-day count, recordable/near-miss split, high-risk locations,
+// inspection compliance, and the month-over-month incident trend.
 export const GET = withGates(
   { action: "analytics.kpis.read", endpointClass: "api_read" },
   async (_req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
@@ -46,14 +50,14 @@ export const GET = withGates(
     ])
 
     const now = Date.now()
-    const metrics = computeSafetyMetrics(
-      incidentRows.map((r) => ({
-        type: r.type as string,
-        incidentAt: r.incidentAt.toISOString(),
-        location: r.location,
-      })),
-      now
-    )
+    const incidents = incidentRows.map((r) => ({
+      type: r.type as string,
+      incidentAt: r.incidentAt.toISOString(),
+      location: r.location,
+    }))
+
+    const metrics = computeSafetyMetrics(incidents, now)
+    const trend = computeIncidentTrend(incidents, now, 6)
     const inspections = computeInspectionCompliance(
       inspectionRows.map((r) => ({
         status: r.status as InspectionStatus,
@@ -65,6 +69,6 @@ export const GET = withGates(
       now
     )
 
-    return NextResponse.json({ ...metrics, inspections })
+    return NextResponse.json({ ...metrics, inspections, trend })
   }
 )
