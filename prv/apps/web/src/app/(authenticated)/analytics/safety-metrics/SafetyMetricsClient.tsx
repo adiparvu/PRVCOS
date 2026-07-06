@@ -6,11 +6,14 @@ function Tile({
   label,
   value,
   suffix,
+  tone,
 }: {
   label: string
   value: React.ReactNode
   suffix?: string
+  tone?: "amber" | "red"
 }) {
+  const positive = typeof value === "number" ? value > 0 : true
   return (
     <div
       style={{
@@ -32,7 +35,20 @@ function Tile({
       >
         {label}
       </div>
-      <div style={{ fontSize: 23, fontWeight: 680, marginTop: 8, letterSpacing: "-0.02em" }}>
+      <div
+        style={{
+          fontSize: 23,
+          fontWeight: 680,
+          marginTop: 8,
+          letterSpacing: "-0.02em",
+          color:
+            tone === "red" && positive
+              ? "rgba(255,105,97,0.95)"
+              : tone === "amber" && positive
+                ? "rgba(255,190,90,0.92)"
+                : undefined,
+        }}
+      >
         {value}
         {suffix && (
           <span style={{ fontSize: 13, color: "var(--prv-text-3)", fontWeight: 560 }}>
@@ -44,10 +60,39 @@ function Tile({
   )
 }
 
+function SectionCard({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div
+      style={{
+        background: "var(--prv-g1)",
+        border: "1px solid var(--prv-border)",
+        borderRadius: 22,
+        padding: "18px 20px",
+        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.2)",
+      }}
+    >
+      <h2
+        style={{
+          fontSize: 12,
+          textTransform: "uppercase",
+          letterSpacing: "0.06em",
+          color: "var(--prv-text-3)",
+          fontWeight: 560,
+          marginBottom: 6,
+        }}
+      >
+        {title}
+      </h2>
+      {children}
+    </div>
+  )
+}
+
 export function SafetyMetricsClient() {
   const { data, isLoading } = useSafetyMetrics()
   const byLocation = data?.byLocation ?? []
   const maxLoc = Math.max(1, ...byLocation.map((l) => l.count))
+  const insp = data?.inspections
 
   return (
     <div style={{ maxWidth: 860, margin: "0 auto", padding: "36px 24px 80px" }}>
@@ -108,86 +153,98 @@ export function SafetyMetricsClient() {
 
       {isLoading && <div style={{ color: "var(--prv-text-3)", fontSize: 14 }}>Loading…</div>}
 
-      {byLocation.length > 0 && (
-        <div
-          style={{
-            background: "var(--prv-g1)",
-            border: "1px solid var(--prv-border)",
-            borderRadius: 22,
-            padding: "18px 20px",
-            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.2)",
-          }}
-        >
-          <h2
-            style={{
-              fontSize: 12,
-              textTransform: "uppercase",
-              letterSpacing: "0.06em",
-              color: "var(--prv-text-3)",
-              fontWeight: 560,
-              marginBottom: 6,
-            }}
-          >
-            High-risk locations · recordable incident density
-          </h2>
-          {byLocation.map((l, i) => (
-            <div
-              key={l.location}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 12,
-                padding: "11px 0",
-                borderBottom:
-                  i < byLocation.length - 1 ? "1px solid var(--prv-border-subtle)" : "none",
-                fontSize: 13.5,
-              }}
-            >
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        {byLocation.length > 0 && (
+          <SectionCard title="High-risk locations · recordable incident density">
+            {byLocation.map((l, i) => (
               <div
+                key={l.location}
                 style={{
-                  color: "var(--prv-text-3)",
-                  width: 20,
-                  fontVariantNumeric: "tabular-nums",
-                }}
-              >
-                {i + 1}
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>{l.location}</div>
-              <div
-                style={{
-                  width: 120,
-                  height: 7,
-                  borderRadius: 99,
-                  background: "var(--prv-g3)",
-                  overflow: "hidden",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                  padding: "11px 0",
+                  borderBottom:
+                    i < byLocation.length - 1 ? "1px solid var(--prv-border-subtle)" : "none",
+                  fontSize: 13.5,
                 }}
               >
                 <div
                   style={{
-                    height: "100%",
-                    borderRadius: 99,
-                    background: "rgba(255,105,97,0.95)",
-                    width: `${Math.max(8, (l.count / maxLoc) * 100)}%`,
+                    color: "var(--prv-text-3)",
+                    width: 20,
+                    fontVariantNumeric: "tabular-nums",
                   }}
-                />
+                >
+                  {i + 1}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>{l.location}</div>
+                <div
+                  style={{
+                    width: 120,
+                    height: 7,
+                    borderRadius: 99,
+                    background: "var(--prv-g3)",
+                    overflow: "hidden",
+                  }}
+                >
+                  <div
+                    style={{
+                      height: "100%",
+                      borderRadius: 99,
+                      background: "rgba(255,105,97,0.95)",
+                      width: `${Math.max(8, (l.count / maxLoc) * 100)}%`,
+                    }}
+                  />
+                </div>
+                <div
+                  style={{
+                    width: 26,
+                    textAlign: "right",
+                    fontVariantNumeric: "tabular-nums",
+                    fontWeight: 600,
+                  }}
+                >
+                  {l.count}
+                </div>
               </div>
-              <div
-                style={{
-                  width: 26,
-                  textAlign: "right",
-                  fontVariantNumeric: "tabular-nums",
-                  fontWeight: 600,
-                }}
-              >
-                {l.count}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </SectionCard>
+        )}
 
-      {!isLoading && (data?.total ?? 0) === 0 && (
-        <div style={{ color: "var(--prv-text-3)", fontSize: 14 }}>No incidents recorded.</div>
+        {insp && insp.total > 0 && (
+          <SectionCard title="Inspection compliance · completed on schedule">
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>
+              <Tile
+                label="Compliance"
+                value={insp.complianceRatePct ?? "—"}
+                suffix={insp.complianceRatePct != null ? "%" : undefined}
+                tone={
+                  insp.complianceRatePct != null && insp.complianceRatePct < 80
+                    ? "amber"
+                    : undefined
+                }
+              />
+              <Tile
+                label="Overdue"
+                value={insp.overdue}
+                tone={insp.overdue > 0 ? "red" : undefined}
+              />
+              <Tile label="Upcoming" value={insp.upcoming} />
+              <Tile
+                label="Avg score"
+                value={insp.avgScorePct ?? "—"}
+                suffix={insp.avgScorePct != null ? "%" : undefined}
+              />
+            </div>
+          </SectionCard>
+        )}
+      </div>
+
+      {!isLoading && (data?.total ?? 0) === 0 && (insp?.total ?? 0) === 0 && (
+        <div style={{ color: "var(--prv-text-3)", fontSize: 14, marginTop: 8 }}>
+          No incidents or inspections recorded.
+        </div>
       )}
     </div>
   )
