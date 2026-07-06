@@ -3318,6 +3318,21 @@ export function useSafetyAnalytics() {
   })
 }
 
+export type { SafetyMetricsResponse } from "@/app/api/analytics/safety-metrics/route"
+
+export function useSafetyMetrics() {
+  return useQuery({
+    queryKey: ["safety-metrics"],
+    queryFn: async () => {
+      const res = await fetch("/api/analytics/safety-metrics")
+      if (!res.ok) throw new Error("Failed to load safety metrics")
+      return res.json() as Promise<
+        import("@/app/api/analytics/safety-metrics/route").SafetyMetricsResponse
+      >
+    },
+  })
+}
+
 export type { AttendanceAnalyticsResponse } from "@/app/api/analytics/attendance/route"
 
 export function useAttendanceAnalytics() {

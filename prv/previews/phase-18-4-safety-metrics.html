@@ -1,0 +1,54 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Analytics · Safety Metrics — Preview</title>
+<style>
+:root{--g1:rgba(255,255,255,.06);--g2:rgba(255,255,255,.10);--g3:rgba(255,255,255,.16);
+--t1:rgba(255,255,255,.95);--t2:rgba(255,255,255,.65);--t3:rgba(255,255,255,.35);
+--bd:rgba(255,255,255,.12);--bds:rgba(255,255,255,.07);--shine:inset 0 1px 0 rgba(255,255,255,.22);
+--amber:rgba(255,190,90,.92);--red:rgba(255,105,97,.95)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#000;color:var(--t1);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif;padding:40px 24px 80px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:860px;margin:0 auto}
+h1{font-size:29px;font-weight:640;letter-spacing:-.02em}.sub{color:var(--t3);font-size:13.5px;margin-top:6px}
+.hero{margin:22px 0 16px;background:var(--g1);border:1px solid var(--bd);border-radius:22px;padding:26px 24px;box-shadow:var(--shine),0 24px 64px rgba(0,0,0,.5);text-align:center}
+.hero .n{font-size:58px;font-weight:720;letter-spacing:-.03em;line-height:1}
+.hero .l{color:var(--t3);font-size:12px;text-transform:uppercase;letter-spacing:.08em;font-weight:560;margin-top:10px}
+.strip{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px}
+.tile{background:var(--g1);border:1px solid var(--bd);border-radius:18px;padding:15px 17px;box-shadow:var(--shine)}
+.tile .l{color:var(--t3);font-size:11px;text-transform:uppercase;letter-spacing:.07em;font-weight:560}
+.tile .v{font-size:23px;font-weight:680;margin-top:8px;letter-spacing:-.02em}
+.tile .v small{font-size:13px;color:var(--t3);font-weight:560}
+.card{background:var(--g1);border:1px solid var(--bd);border-radius:22px;padding:18px 20px;box-shadow:var(--shine)}
+.card h2{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);font-weight:560;margin-bottom:6px}
+.row{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--bds);font-size:13.5px}
+.row:last-child{border-bottom:0}.row .r{color:var(--t3);width:20px;font-variant-numeric:tabular-nums}
+.row .nm{flex:1}.bar{width:120px;height:7px;border-radius:99px;background:var(--g3);overflow:hidden}
+.bar span{display:block;height:100%;background:var(--red);border-radius:99px}
+.row .c{width:26px;text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.foot{color:var(--t3);font-size:12px;line-height:1.7;border-top:1px solid var(--bds);padding-top:16px;margin-top:26px}.foot b{color:var(--t2);font-weight:560}
+</style></head><body><div class="wrap">
+<h1>Safety Metrics</h1>
+<div class="sub">Analytics · safety domain · officer KPIs</div>
+
+<div class="hero"><div class="n">37</div><div class="l">Days since last recordable incident</div></div>
+
+<div class="strip">
+  <div class="tile"><div class="l">Last 30 days</div><div class="v">4</div></div>
+  <div class="tile"><div class="l">Recordable</div><div class="v">18</div></div>
+  <div class="tile"><div class="l">Near misses</div><div class="v">21</div></div>
+  <div class="tile"><div class="l">Near-miss ratio</div><div class="v">53.8<small>%</small></div></div>
+</div>
+
+<div class="card">
+  <h2>High-risk locations · recordable incident density</h2>
+  <div class="row"><div class="r">1</div><div class="nm">Warehouse B — Loading Bay</div><div class="bar"><span style="width:100%"></span></div><div class="c">7</div></div>
+  <div class="row"><div class="r">2</div><div class="nm">Site A — Roof Level</div><div class="bar"><span style="width:71%"></span></div><div class="c">5</div></div>
+  <div class="row"><div class="r">3</div><div class="nm">Workshop</div><div class="bar"><span style="width:43%"></span></div><div class="c">3</div></div>
+  <div class="row"><div class="r">4</div><div class="nm">Unspecified</div><div class="bar"><span style="width:29%"></span></div><div class="c">2</div></div>
+</div>
+
+<div class="foot"><b>What this is:</b> Phase 18.4 — Safety Metrics dashboard. A read-only board at <b>/analytics/safety-metrics</b> (⌘K: "Safety Metrics").
+Officer KPIs derived from the incident log: the prominent <b>days-since-last-incident</b> streak (near-misses and hazards don't reset it),
+incidents in the last 30 days, the recordable vs near-miss split with the <b>near-miss ratio</b> (higher = healthier reporting), and
+<b>high-risk locations</b> by recordable incident density. TRIR/LTIR are intentionally left out — they require hours-worked data the platform
+doesn't yet capture, and a fabricated rate would mislead.</div>
+</div></body></html>

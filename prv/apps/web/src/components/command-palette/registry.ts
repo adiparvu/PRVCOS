@@ -270,6 +270,21 @@ const BASE: CommandEntry[] = [
     href: "/analytics/safety",
   },
   {
+    id: "nav.safety-metrics",
+    label: "Safety Metrics",
+    section: "Navigation",
+    keywords: [
+      "safety metrics",
+      "days since incident",
+      "near miss",
+      "high risk locations",
+      "trir",
+      "safety kpi",
+      "analytics",
+    ],
+    href: "/analytics/safety-metrics",
+  },
+  {
     id: "nav.attendance-analytics",
     label: "Attendance Analytics",
     section: "Navigation",
