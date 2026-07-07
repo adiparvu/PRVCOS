@@ -116,6 +116,11 @@ const GROUPS: Group[] = [
         label: "Recruitment Funnel",
         description: "Hiring pipeline by stage with conversion.",
       },
+      {
+        href: "/analytics/payroll-cost",
+        label: "Payroll Cost",
+        description: "Gross/net payroll cost by type with a trend.",
+      },
     ],
   },
   {

@@ -3483,6 +3483,21 @@ export function useOrderAnalytics() {
   })
 }
 
+export type { PayrollCostResponse } from "@/app/api/analytics/payroll-cost/route"
+
+export function usePayrollCost() {
+  return useQuery({
+    queryKey: ["payroll-cost"],
+    queryFn: async () => {
+      const res = await fetch("/api/analytics/payroll-cost")
+      if (!res.ok) throw new Error("Failed to load payroll cost")
+      return res.json() as Promise<
+        import("@/app/api/analytics/payroll-cost/route").PayrollCostResponse
+      >
+    },
+  })
+}
+
 export type { AttendanceAnalyticsResponse } from "@/app/api/analytics/attendance/route"
 
 export function useAttendanceAnalytics() {

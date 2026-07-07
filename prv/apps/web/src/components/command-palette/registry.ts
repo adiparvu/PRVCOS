@@ -423,6 +423,22 @@ const BASE: CommandEntry[] = [
     href: "/analytics/order-analytics",
   },
   {
+    id: "nav.payroll-cost",
+    label: "Payroll Cost",
+    section: "Navigation",
+    keywords: [
+      "payroll cost",
+      "payroll",
+      "salaries",
+      "gross net",
+      "deductions",
+      "people",
+      "finance",
+      "analytics",
+    ],
+    href: "/analytics/payroll-cost",
+  },
+  {
     id: "nav.learning-completion",
     label: "Learning Completion",
     section: "Navigation",
