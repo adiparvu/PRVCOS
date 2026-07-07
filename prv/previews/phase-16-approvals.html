@@ -1,0 +1,61 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Analytics · Approvals — Preview</title>
+<style>
+:root{--g1:rgba(255,255,255,.06);--g2:rgba(255,255,255,.10);--g3:rgba(255,255,255,.16);
+--t1:rgba(255,255,255,.95);--t2:rgba(255,255,255,.65);--t3:rgba(255,255,255,.35);
+--bd:rgba(255,255,255,.12);--bds:rgba(255,255,255,.07);--shine:inset 0 1px 0 rgba(255,255,255,.22);--amber:rgba(255,190,90,.92);--red:rgba(255,105,97,.95)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#000;color:var(--t1);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif;padding:40px 24px 80px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:840px;margin:0 auto}
+h1{font-size:29px;font-weight:640;letter-spacing:-.02em}.sub{color:var(--t3);font-size:13.5px;margin-top:6px}
+.strip{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:24px 0}
+.tile{background:var(--g1);border:1px solid var(--bd);border-radius:18px;padding:15px 17px;box-shadow:var(--shine)}
+.tile .l{color:var(--t3);font-size:11px;text-transform:uppercase;letter-spacing:.07em;font-weight:560}
+.tile .v{font-size:22px;font-weight:680;margin-top:8px;letter-spacing:-.02em}.tile .v small{font-size:13px;color:var(--t3);font-weight:560}
+.tile.red .v{color:var(--red)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.card{background:var(--g1);border:1px solid var(--bd);border-radius:22px;padding:18px 20px;box-shadow:var(--shine)}
+.card h2{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);font-weight:560;margin-bottom:14px}
+.srow{display:flex;align-items:center;gap:10px;margin:9px 0}
+.srow .nm{width:82px;font-size:13px;color:var(--t2);text-transform:capitalize}
+.bar{flex:1;height:8px;border-radius:99px;background:var(--g3);overflow:hidden}.bar span{display:block;height:100%;border-radius:99px;background:rgba(255,255,255,.5)}
+.srow.urgent .bar span{background:var(--red)}.srow.expired .bar span{background:var(--amber)}
+.srow .n{width:24px;text-align:right;font-size:13px;font-variant-numeric:tabular-nums}
+.trow{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--bds);font-size:13.5px;text-transform:capitalize}
+.trow:last-child{border-bottom:0}.trow .r{color:var(--t3);font-variant-numeric:tabular-nums}
+.foot{color:var(--t3);font-size:12px;line-height:1.7;border-top:1px solid var(--bds);padding-top:16px;margin-top:26px}.foot b{color:var(--t2);font-weight:560}
+</style></head><body><div class="wrap">
+<h1>Approvals</h1>
+<div class="sub">Analytics · operations · approval queue</div>
+
+<div class="strip">
+  <div class="tile"><div class="l">Open</div><div class="v">23</div></div>
+  <div class="tile red"><div class="l">Stale &gt; 48h</div><div class="v">6</div></div>
+  <div class="tile"><div class="l">Approval rate</div><div class="v">86<small>%</small></div></div>
+  <div class="tile"><div class="l">Avg decision</div><div class="v">18.4 <small>h</small></div></div>
+</div>
+
+<div class="grid2">
+  <div class="card">
+    <h2>Status mix</h2>
+    <div class="srow"><div class="nm">Approved</div><div class="bar"><span style="width:100%"></span></div><div class="n">142</div></div>
+    <div class="srow"><div class="nm">Pending</div><div class="bar"><span style="width:12%"></span></div><div class="n">17</div></div>
+    <div class="srow urgent"><div class="nm">Urgent</div><div class="bar"><span style="width:4%"></span></div><div class="n">6</div></div>
+    <div class="srow"><div class="nm">Rejected</div><div class="bar"><span style="width:16%"></span></div><div class="n">23</div></div>
+    <div class="srow expired"><div class="nm">Expired</div><div class="bar"><span style="width:6%"></span></div><div class="n">8</div></div>
+  </div>
+  <div class="card">
+    <h2>By type</h2>
+    <div class="trow"><div>Purchase</div><div class="r">78</div></div>
+    <div class="trow"><div>Expense</div><div class="r">54</div></div>
+    <div class="trow"><div>Leave</div><div class="r">41</div></div>
+    <div class="trow"><div>Overtime</div><div class="r">17</div></div>
+    <div class="trow"><div>Contract</div><div class="r">6</div></div>
+  </div>
+</div>
+
+<div class="foot"><b>What this is:</b> Phase 16 — Approvals. A read-only board at <b>/analytics/approvals</b> (⌘K: "Approvals").
+Turns the approval request ledger into queue health: the <b>open</b> backlog and how much is <b>stale</b> (&gt;48h, red), the <b>approval rate</b>
+over decided requests, the <b>average decision time</b>, the status mix (urgent in red, expired in amber), and a by-type breakdown. Monochrome
+with amber/red status signals.</div>
+</div></body></html>

@@ -3513,6 +3513,21 @@ export function useTaskDelivery() {
   })
 }
 
+export type { ApprovalAnalyticsResponse } from "@/app/api/analytics/approvals/route"
+
+export function useApprovalAnalytics() {
+  return useQuery({
+    queryKey: ["approval-analytics"],
+    queryFn: async () => {
+      const res = await fetch("/api/analytics/approvals")
+      if (!res.ok) throw new Error("Failed to load approvals analytics")
+      return res.json() as Promise<
+        import("@/app/api/analytics/approvals/route").ApprovalAnalyticsResponse
+      >
+    },
+  })
+}
+
 export type { AttendanceAnalyticsResponse } from "@/app/api/analytics/attendance/route"
 
 export function useAttendanceAnalytics() {

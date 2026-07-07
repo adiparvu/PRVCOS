@@ -71,6 +71,11 @@ const GROUPS: Group[] = [
         label: "Expense Breakdown",
         description: "Committed spend by category with a monthly trend.",
       },
+      {
+        href: "/analytics/approvals",
+        label: "Approvals",
+        description: "Approval queue health, rate and decision time.",
+      },
     ],
   },
   {

@@ -455,6 +455,21 @@ const BASE: CommandEntry[] = [
     href: "/analytics/task-delivery",
   },
   {
+    id: "nav.approvals-analytics",
+    label: "Approvals",
+    section: "Navigation",
+    keywords: [
+      "approvals analytics",
+      "approval queue",
+      "pending approvals",
+      "decision time",
+      "sign off",
+      "operations",
+      "analytics",
+    ],
+    href: "/analytics/approvals",
+  },
+  {
     id: "nav.learning-completion",
     label: "Learning Completion",
     section: "Navigation",
