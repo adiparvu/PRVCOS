@@ -376,6 +376,20 @@ const BASE: CommandEntry[] = [
     href: "/analytics/learning-completion",
   },
   {
+    id: "nav.analytics-directory",
+    label: "Analytics Directory",
+    section: "Navigation",
+    keywords: [
+      "analytics directory",
+      "all analytics",
+      "dashboards",
+      "reports index",
+      "hub",
+      "catalog",
+    ],
+    href: "/analytics/directory",
+  },
+  {
     id: "nav.attendance-analytics",
     label: "Attendance Analytics",
     section: "Navigation",
