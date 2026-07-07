@@ -1,0 +1,63 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Analytics · Task Delivery — Preview</title>
+<style>
+:root{--g1:rgba(255,255,255,.06);--g2:rgba(255,255,255,.10);--g3:rgba(255,255,255,.16);
+--t1:rgba(255,255,255,.95);--t2:rgba(255,255,255,.65);--t3:rgba(255,255,255,.35);
+--bd:rgba(255,255,255,.12);--bds:rgba(255,255,255,.07);--shine:inset 0 1px 0 rgba(255,255,255,.22);--amber:rgba(255,190,90,.92);--red:rgba(255,105,97,.95)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#000;color:var(--t1);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif;padding:40px 24px 80px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:840px;margin:0 auto}
+h1{font-size:29px;font-weight:640;letter-spacing:-.02em}.sub{color:var(--t3);font-size:13.5px;margin-top:6px}
+.strip{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:24px 0}
+.tile{background:var(--g1);border:1px solid var(--bd);border-radius:18px;padding:15px 17px;box-shadow:var(--shine)}
+.tile .l{color:var(--t3);font-size:11px;text-transform:uppercase;letter-spacing:.07em;font-weight:560}
+.tile .v{font-size:22px;font-weight:680;margin-top:8px;letter-spacing:-.02em}.tile .v small{font-size:13px;color:var(--t3);font-weight:560}
+.tile.red .v{color:var(--red)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.card{background:var(--g1);border:1px solid var(--bd);border-radius:22px;padding:18px 20px;box-shadow:var(--shine)}
+.card h2{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);font-weight:560;margin-bottom:14px}
+.srow{display:flex;align-items:center;gap:10px;margin:9px 0}
+.srow .nm{width:96px;font-size:13px;color:var(--t2);text-transform:capitalize}
+.bar{flex:1;height:8px;border-radius:99px;background:var(--g3);overflow:hidden}.bar span{display:block;height:100%;border-radius:99px;background:rgba(255,255,255,.5)}
+.srow .n{width:24px;text-align:right;font-size:13px;font-variant-numeric:tabular-nums}
+.prow{display:flex;align-items:center;gap:10px;margin:11px 0}
+.prow .nm{width:70px;font-size:13px;color:var(--t2);text-transform:capitalize}
+.pill{margin-left:auto;font-size:12.5px;font-variant-numeric:tabular-nums}
+.pbar{flex:1;height:8px;border-radius:99px;background:var(--g3);overflow:hidden}.pbar span{display:block;height:100%;border-radius:99px;background:var(--amber)}
+.prow.critical .pbar span{background:var(--red)}
+.foot{color:var(--t3);font-size:12px;line-height:1.7;border-top:1px solid var(--bds);padding-top:16px;margin-top:26px}.foot b{color:var(--t2);font-weight:560}
+</style></head><body><div class="wrap">
+<h1>Task Delivery</h1>
+<div class="sub">Analytics · projects · execution health</div>
+
+<div class="strip">
+  <div class="tile"><div class="l">Completion</div><div class="v">64<small>%</small></div></div>
+  <div class="tile"><div class="l">On-time</div><div class="v">81<small>%</small></div></div>
+  <div class="tile red"><div class="l">Overdue</div><div class="v">17</div></div>
+  <div class="tile"><div class="l">Open tasks</div><div class="v">92</div></div>
+</div>
+
+<div class="grid2">
+  <div class="card">
+    <h2>Status mix</h2>
+    <div class="srow"><div class="nm">Done</div><div class="bar"><span style="width:100%"></span></div><div class="n">168</div></div>
+    <div class="srow"><div class="nm">In progress</div><div class="bar"><span style="width:26%"></span></div><div class="n">44</div></div>
+    <div class="srow"><div class="nm">Todo</div><div class="bar"><span style="width:18%"></span></div><div class="n">31</div></div>
+    <div class="srow"><div class="nm">Review</div><div class="bar"><span style="width:10%"></span></div><div class="n">17</div></div>
+    <div class="srow"><div class="nm">Backlog</div><div class="bar"><span style="width:14%"></span></div><div class="n">24</div></div>
+    <div class="srow"><div class="nm">Cancelled</div><div class="bar"><span style="width:5%"></span></div><div class="n">9</div></div>
+  </div>
+  <div class="card">
+    <h2>Open work by priority</h2>
+    <div class="prow critical"><div class="nm">Critical</div><div class="pbar"><span style="width:100%"></span></div><span class="pill">6 / 9</span></div>
+    <div class="prow"><div class="nm">High</div><div class="pbar"><span style="width:74%"></span></div><span class="pill">28 / 44</span></div>
+    <div class="prow"><div class="nm">Medium</div><div class="pbar"><span style="width:52%"></span></div><span class="pill">41 / 132</span></div>
+    <div class="prow"><div class="nm">Low</div><div class="pbar"><span style="width:24%"></span></div><span class="pill">17 / 108</span></div>
+  </div>
+</div>
+
+<div class="foot"><b>What this is:</b> Phase 6.2 — Task Delivery. A read-only board at <b>/analytics/task-delivery</b> (⌘K: "Task Delivery").
+Turns the project task board into an execution-health view: the <b>completion rate</b> (done ÷ non-cancelled), the <b>on-time rate</b>
+(completed by their due date), the <b>overdue</b> backlog, open task count, the status mix, and open work <b>by priority</b> (critical in red,
+open / total). Monochrome; amber/red flag priority and overdue risk.</div>
+</div></body></html>

@@ -3498,6 +3498,21 @@ export function usePayrollCost() {
   })
 }
 
+export type { TaskDeliveryResponse } from "@/app/api/analytics/task-delivery/route"
+
+export function useTaskDelivery() {
+  return useQuery({
+    queryKey: ["task-delivery"],
+    queryFn: async () => {
+      const res = await fetch("/api/analytics/task-delivery")
+      if (!res.ok) throw new Error("Failed to load task delivery")
+      return res.json() as Promise<
+        import("@/app/api/analytics/task-delivery/route").TaskDeliveryResponse
+      >
+    },
+  })
+}
+
 export type { AttendanceAnalyticsResponse } from "@/app/api/analytics/attendance/route"
 
 export function useAttendanceAnalytics() {

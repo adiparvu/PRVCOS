@@ -57,11 +57,6 @@ const GROUPS: Group[] = [
         description: "Unusual day-over-day KPI moves.",
       },
       {
-        href: "/analytics/project-profitability",
-        label: "Project Profitability",
-        description: "Revenue, cost, margin and budget per project.",
-      },
-      {
         href: "/analytics/employee-roi",
         label: "Employee ROI",
         description: "Payroll cost vs completed output.",
@@ -75,6 +70,21 @@ const GROUPS: Group[] = [
         href: "/analytics/expense-breakdown",
         label: "Expense Breakdown",
         description: "Committed spend by category with a monthly trend.",
+      },
+    ],
+  },
+  {
+    title: "Projects",
+    entries: [
+      {
+        href: "/analytics/project-profitability",
+        label: "Project Profitability",
+        description: "Revenue, cost, margin and budget per project.",
+      },
+      {
+        href: "/analytics/task-delivery",
+        label: "Task Delivery",
+        description: "Completion, on-time and overdue task health.",
       },
     ],
   },

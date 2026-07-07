@@ -439,6 +439,22 @@ const BASE: CommandEntry[] = [
     href: "/analytics/payroll-cost",
   },
   {
+    id: "nav.task-delivery",
+    label: "Task Delivery",
+    section: "Navigation",
+    keywords: [
+      "task delivery",
+      "project tasks",
+      "completion",
+      "overdue",
+      "on time",
+      "execution",
+      "projects",
+      "analytics",
+    ],
+    href: "/analytics/task-delivery",
+  },
+  {
     id: "nav.learning-completion",
     label: "Learning Completion",
     section: "Navigation",
