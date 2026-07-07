@@ -1,0 +1,64 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Analytics · Recruitment Funnel — Preview</title>
+<style>
+:root{--g1:rgba(255,255,255,.06);--g2:rgba(255,255,255,.10);--g3:rgba(255,255,255,.16);
+--t1:rgba(255,255,255,.95);--t2:rgba(255,255,255,.65);--t3:rgba(255,255,255,.35);
+--bd:rgba(255,255,255,.12);--bds:rgba(255,255,255,.07);--shine:inset 0 1px 0 rgba(255,255,255,.22)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#000;color:var(--t1);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif;padding:40px 24px 80px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:840px;margin:0 auto}
+h1{font-size:29px;font-weight:640;letter-spacing:-.02em}.sub{color:var(--t3);font-size:13.5px;margin-top:6px}
+.strip{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:24px 0}
+.tile{background:var(--g1);border:1px solid var(--bd);border-radius:18px;padding:15px 17px;box-shadow:var(--shine)}
+.tile .l{color:var(--t3);font-size:11px;text-transform:uppercase;letter-spacing:.07em;font-weight:560}
+.tile .v{font-size:23px;font-weight:680;margin-top:8px;letter-spacing:-.02em}.tile .v small{font-size:13px;color:var(--t3);font-weight:560}
+.grid2{display:grid;grid-template-columns:1.4fr 1fr;gap:16px}
+.card{background:var(--g1);border:1px solid var(--bd);border-radius:22px;padding:18px 20px;box-shadow:var(--shine)}
+.card h2{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);font-weight:560;margin-bottom:14px}
+.stg{margin:11px 0}
+.stgrow{display:flex;align-items:center;gap:10px;margin-bottom:5px}
+.stg .nm{width:110px;font-size:13px;color:var(--t2)}
+.stg .n{margin-left:auto;font-size:13px;font-variant-numeric:tabular-nums;font-weight:600}
+.stg .cv{font-size:11px;color:var(--t3);width:46px;text-align:right}
+.fbar{height:26px;border-radius:8px;background:rgba(255,255,255,.4);display:flex;align-items:center;justify-content:flex-end;padding-right:8px;font-size:11px;color:#000;font-weight:700}
+.row{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--bds);font-size:13.5px}
+.row:last-child{border-bottom:0}.row .r{color:var(--t3);font-variant-numeric:tabular-nums}
+.foot{color:var(--t3);font-size:12px;line-height:1.7;border-top:1px solid var(--bds);padding-top:16px;margin-top:26px}.foot b{color:var(--t2);font-weight:560}
+</style></head><body><div class="wrap">
+<h1>Recruitment Funnel</h1>
+<div class="sub">Analytics · people · hiring pipeline</div>
+
+<div class="strip">
+  <div class="tile"><div class="l">Active</div><div class="v">46</div></div>
+  <div class="tile"><div class="l">Hired</div><div class="v">8</div></div>
+  <div class="tile"><div class="l">Rejected</div><div class="v">31</div></div>
+  <div class="tile"><div class="l">Conversion</div><div class="v">14.8<small>%</small></div></div>
+</div>
+
+<div class="grid2">
+  <div class="card">
+    <h2>Funnel · reached each stage</h2>
+    <div class="stg"><div class="stgrow"><div class="nm">Sourcing</div><div class="cv">100%</div><div class="n">54</div></div><div class="fbar" style="width:100%">54</div></div>
+    <div class="stg"><div class="stgrow"><div class="nm">Screening</div><div class="cv">78%</div><div class="n">42</div></div><div class="fbar" style="width:78%">42</div></div>
+    <div class="stg"><div class="stgrow"><div class="nm">Phone screen</div><div class="cv">71%</div><div class="n">30</div></div><div class="fbar" style="width:56%">30</div></div>
+    <div class="stg"><div class="stgrow"><div class="nm">Interview</div><div class="cv">70%</div><div class="n">21</div></div><div class="fbar" style="width:39%">21</div></div>
+    <div class="stg"><div class="stgrow"><div class="nm">Assessment</div><div class="cv">62%</div><div class="n">13</div></div><div class="fbar" style="width:24%">13</div></div>
+    <div class="stg"><div class="stgrow"><div class="nm">Offer</div><div class="cv">77%</div><div class="n">10</div></div><div class="fbar" style="width:19%">10</div></div>
+    <div class="stg"><div class="stgrow"><div class="nm">Hired</div><div class="cv">80%</div><div class="n">8</div></div><div class="fbar" style="width:15%">8</div></div>
+  </div>
+  <div class="card">
+    <h2>By source</h2>
+    <div class="row"><div>LinkedIn</div><div class="r">28</div></div>
+    <div class="row"><div>Referral</div><div class="r">19</div></div>
+    <div class="row"><div>Job board</div><div class="r">17</div></div>
+    <div class="row"><div>Agency</div><div class="r">11</div></div>
+    <div class="row"><div>Website</div><div class="r">9</div></div>
+    <div class="row"><div>Unknown</div><div class="r">1</div></div>
+  </div>
+</div>
+
+<div class="foot"><b>What this is:</b> Phase 8.3 — Recruitment Funnel. A read-only board at <b>/analytics/recruitment-funnel</b> (⌘K: "Recruitment Funnel").
+Because each candidate carries its current stage, "reached" a stage means at that stage or beyond — so the counts descend into a proper funnel
+with the <b>stage-to-stage conversion</b> shown per row, plus active/hired/rejected totals, the <b>overall conversion</b> (hired ÷ entered) and a
+<b>by-source</b> breakdown. Rejected candidates are excluded from the funnel but reported. Monochrome throughout.</div>
+</div></body></html>

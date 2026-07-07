@@ -101,6 +101,11 @@ const GROUPS: Group[] = [
         label: "Learning Completion",
         description: "Course completion rate and per-course breakdown.",
       },
+      {
+        href: "/analytics/recruitment-funnel",
+        label: "Recruitment Funnel",
+        description: "Hiring pipeline by stage with conversion.",
+      },
     ],
   },
   {

@@ -376,6 +376,22 @@ const BASE: CommandEntry[] = [
     href: "/analytics/expense-breakdown",
   },
   {
+    id: "nav.recruitment-funnel",
+    label: "Recruitment Funnel",
+    section: "Navigation",
+    keywords: [
+      "recruitment funnel",
+      "hiring",
+      "candidates",
+      "pipeline",
+      "conversion",
+      "ats",
+      "people",
+      "analytics",
+    ],
+    href: "/analytics/recruitment-funnel",
+  },
+  {
     id: "nav.learning-completion",
     label: "Learning Completion",
     section: "Navigation",

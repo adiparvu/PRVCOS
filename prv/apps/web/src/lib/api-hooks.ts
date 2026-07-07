@@ -3438,6 +3438,21 @@ export function useExpenseBreakdown() {
   })
 }
 
+export type { RecruitmentFunnelResponse } from "@/app/api/analytics/recruitment-funnel/route"
+
+export function useRecruitmentFunnel() {
+  return useQuery({
+    queryKey: ["recruitment-funnel"],
+    queryFn: async () => {
+      const res = await fetch("/api/analytics/recruitment-funnel")
+      if (!res.ok) throw new Error("Failed to load recruitment funnel")
+      return res.json() as Promise<
+        import("@/app/api/analytics/recruitment-funnel/route").RecruitmentFunnelResponse
+      >
+    },
+  })
+}
+
 export type { AttendanceAnalyticsResponse } from "@/app/api/analytics/attendance/route"
 
 export function useAttendanceAnalytics() {
