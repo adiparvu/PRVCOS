@@ -285,6 +285,21 @@ const BASE: CommandEntry[] = [
     href: "/analytics/safety-metrics",
   },
   {
+    id: "nav.safety-training",
+    label: "Training Compliance",
+    section: "Navigation",
+    keywords: [
+      "training compliance",
+      "certification",
+      "safety training",
+      "expiry",
+      "certificates",
+      "renewal",
+      "analytics",
+    ],
+    href: "/analytics/safety-training",
+  },
+  {
     id: "nav.attendance-analytics",
     label: "Attendance Analytics",
     section: "Navigation",
