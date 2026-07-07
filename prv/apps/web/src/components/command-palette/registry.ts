@@ -346,6 +346,21 @@ const BASE: CommandEntry[] = [
     href: "/analytics/fleet-utilization",
   },
   {
+    id: "nav.supplier-spend",
+    label: "Supplier Spend",
+    section: "Navigation",
+    keywords: [
+      "supplier spend",
+      "payables",
+      "procurement",
+      "vendors",
+      "overdue",
+      "outstanding",
+      "analytics",
+    ],
+    href: "/analytics/supplier-spend",
+  },
+  {
     id: "nav.attendance-analytics",
     label: "Attendance Analytics",
     section: "Navigation",

@@ -1,0 +1,49 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Analytics · Supplier Spend — Preview</title>
+<style>
+:root{--g1:rgba(255,255,255,.06);--g2:rgba(255,255,255,.10);--g3:rgba(255,255,255,.16);
+--t1:rgba(255,255,255,.95);--t2:rgba(255,255,255,.65);--t3:rgba(255,255,255,.35);
+--bd:rgba(255,255,255,.12);--bds:rgba(255,255,255,.07);--shine:inset 0 1px 0 rgba(255,255,255,.22);
+--amber:rgba(255,190,90,.92);--red:rgba(255,105,97,.95)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#000;color:var(--t1);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif;padding:40px 24px 80px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:840px;margin:0 auto}
+h1{font-size:29px;font-weight:640;letter-spacing:-.02em}.sub{color:var(--t3);font-size:13.5px;margin-top:6px}
+.strip{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:24px 0}
+.tile{background:var(--g1);border:1px solid var(--bd);border-radius:18px;padding:15px 17px;box-shadow:var(--shine)}
+.tile .l{color:var(--t3);font-size:11px;text-transform:uppercase;letter-spacing:.07em;font-weight:560}
+.tile .v{font-size:22px;font-weight:680;margin-top:8px;letter-spacing:-.02em}
+.tile.amber .v{color:var(--amber)}.tile.red .v{color:var(--red)}
+.card{background:var(--g1);border:1px solid var(--bd);border-radius:22px;padding:8px 8px 4px;box-shadow:var(--shine)}
+.hd,.row{display:grid;grid-template-columns:1.6fr .9fr .9fr .9fr;gap:10px;align-items:center;padding:12px 16px}
+.hd{color:var(--t3);font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;font-weight:560;border-bottom:1px solid var(--bds)}
+.row{border-bottom:1px solid var(--bds)}.row:last-child{border-bottom:0}
+.nm{font-size:13.5px;font-weight:560}.nm small{display:block;color:var(--t3);font-size:11px;font-weight:400;margin-top:2px}
+.num{font-size:13px;font-variant-numeric:tabular-nums;text-align:right}
+.num.over{color:var(--red);font-weight:600}
+.foot{color:var(--t3);font-size:12px;line-height:1.7;border-top:1px solid var(--bds);padding-top:16px;margin-top:26px}.foot b{color:var(--t2);font-weight:560}
+</style></head><body><div class="wrap">
+<h1>Supplier Spend</h1>
+<div class="sub">Analytics · supplier management · spend &amp; payables</div>
+
+<div class="strip">
+  <div class="tile"><div class="l">Total spend</div><div class="v">€248.6k</div></div>
+  <div class="tile amber"><div class="l">Outstanding</div><div class="v">€52.1k</div></div>
+  <div class="tile red"><div class="l">Overdue</div><div class="v">€14.3k</div></div>
+  <div class="tile"><div class="l">Suppliers</div><div class="v">12</div></div>
+</div>
+
+<div class="card">
+  <div class="hd"><div>Supplier</div><div class="num">Spend</div><div class="num">Outstanding</div><div class="num">Overdue</div></div>
+  <div class="row"><div class="nm">Ambient Build Supplies<small>14 invoices</small></div><div class="num">€82.4k</div><div class="num">€18.2k</div><div class="num over">€7.1k</div></div>
+  <div class="row"><div class="nm">Nordic Timber Co<small>9 invoices</small></div><div class="num">€61.9k</div><div class="num">€12.0k</div><div class="num">€0</div></div>
+  <div class="row"><div class="nm">ProTools Distribution<small>11 invoices</small></div><div class="num">€44.2k</div><div class="num">€9.4k</div><div class="num over">€4.2k</div></div>
+  <div class="row"><div class="nm">Sanitare Plus<small>6 invoices</small></div><div class="num">€31.8k</div><div class="num">€7.5k</div><div class="num over">€3.0k</div></div>
+  <div class="row"><div class="nm">Unassigned<small>3 invoices</small></div><div class="num">€28.3k</div><div class="num">€5.0k</div><div class="num">€0</div></div>
+</div>
+
+<div class="foot"><b>What this is:</b> Phase 21 — Supplier Spend &amp; Payables. A read-only board at <b>/analytics/supplier-spend</b> (⌘K: "Supplier Spend").
+Rolls the supplier-invoice ledger up per supplier into <b>committed spend</b> (invoiced, excluding cancelled), the unpaid <b>outstanding</b>
+balance, and <b>overdue payables</b> (unpaid past due date), ranked by spend with overdue amounts flagged red. On-time payment metrics are
+omitted — the payable schema has no paid-at timestamp, so a computed on-time rate would be guessed, not measured.</div>
+</div></body></html>

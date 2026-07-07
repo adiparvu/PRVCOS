@@ -3393,6 +3393,21 @@ export function useFleetUtilization() {
   })
 }
 
+export type { SupplierSpendResponse } from "@/app/api/analytics/supplier-spend/route"
+
+export function useSupplierSpend() {
+  return useQuery({
+    queryKey: ["supplier-spend"],
+    queryFn: async () => {
+      const res = await fetch("/api/analytics/supplier-spend")
+      if (!res.ok) throw new Error("Failed to load supplier spend")
+      return res.json() as Promise<
+        import("@/app/api/analytics/supplier-spend/route").SupplierSpendResponse
+      >
+    },
+  })
+}
+
 export type { AttendanceAnalyticsResponse } from "@/app/api/analytics/attendance/route"
 
 export function useAttendanceAnalytics() {
