@@ -3453,6 +3453,21 @@ export function useRecruitmentFunnel() {
   })
 }
 
+export type { DocumentStorageResponse } from "@/app/api/analytics/document-storage/route"
+
+export function useDocumentStorage() {
+  return useQuery({
+    queryKey: ["document-storage"],
+    queryFn: async () => {
+      const res = await fetch("/api/analytics/document-storage")
+      if (!res.ok) throw new Error("Failed to load document storage")
+      return res.json() as Promise<
+        import("@/app/api/analytics/document-storage/route").DocumentStorageResponse
+      >
+    },
+  })
+}
+
 export type { AttendanceAnalyticsResponse } from "@/app/api/analytics/attendance/route"
 
 export function useAttendanceAnalytics() {

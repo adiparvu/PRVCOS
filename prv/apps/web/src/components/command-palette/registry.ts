@@ -392,6 +392,21 @@ const BASE: CommandEntry[] = [
     href: "/analytics/recruitment-funnel",
   },
   {
+    id: "nav.document-storage",
+    label: "Document Storage",
+    section: "Navigation",
+    keywords: [
+      "document storage",
+      "documents",
+      "library",
+      "file size",
+      "legal hold",
+      "storage",
+      "analytics",
+    ],
+    href: "/analytics/document-storage",
+  },
+  {
     id: "nav.learning-completion",
     label: "Learning Completion",
     section: "Navigation",

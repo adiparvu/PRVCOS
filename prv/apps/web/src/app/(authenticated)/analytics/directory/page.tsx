@@ -158,6 +158,16 @@ const GROUPS: Group[] = [
       },
     ],
   },
+  {
+    title: "Documents",
+    entries: [
+      {
+        href: "/analytics/document-storage",
+        label: "Document Storage",
+        description: "Library size by type with status and governance.",
+      },
+    ],
+  },
 ]
 
 const TOTAL = GROUPS.reduce((n, g) => n + g.entries.length, 0)
