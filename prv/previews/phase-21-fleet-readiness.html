@@ -1,0 +1,52 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Analytics · Fleet Readiness — Preview</title>
+<style>
+:root{--g1:rgba(255,255,255,.06);--g2:rgba(255,255,255,.10);--g3:rgba(255,255,255,.16);
+--t1:rgba(255,255,255,.95);--t2:rgba(255,255,255,.65);--t3:rgba(255,255,255,.35);
+--bd:rgba(255,255,255,.12);--bds:rgba(255,255,255,.07);--shine:inset 0 1px 0 rgba(255,255,255,.22);
+--amber:rgba(255,190,90,.92);--red:rgba(255,105,97,.95)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#000;color:var(--t1);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif;padding:40px 24px 80px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:820px;margin:0 auto}
+h1{font-size:29px;font-weight:640;letter-spacing:-.02em}.sub{color:var(--t3);font-size:13.5px;margin-top:6px}
+.strip{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:24px 0}
+.tile{background:var(--g1);border:1px solid var(--bd);border-radius:18px;padding:15px 17px;box-shadow:var(--shine)}
+.tile .l{color:var(--t3);font-size:11px;text-transform:uppercase;letter-spacing:.07em;font-weight:560}
+.tile .v{font-size:24px;font-weight:680;margin-top:8px;letter-spacing:-.02em}.tile .v small{font-size:13px;color:var(--t3);font-weight:560}
+.tile.amber .v{color:var(--amber)}.tile.red .v{color:var(--red)}
+.card{background:var(--g1);border:1px solid var(--bd);border-radius:22px;overflow:hidden;box-shadow:var(--shine)}
+.row{display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--bds)}
+.row:last-child{border-bottom:0}
+.rail{width:3px;align-self:stretch;border-radius:99px;flex-shrink:0;background:var(--amber)}
+.row.grounded .rail{background:var(--red)}
+.bd{flex:1;min-width:0}.bd .n{font-size:14px;font-weight:600}
+.reasons{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.chip{font-size:10.5px;color:var(--t2);border:1px solid var(--bd);background:var(--g3);border-radius:6px;padding:2px 8px}
+.chip.r{color:var(--red);border-color:rgba(255,105,97,.32);background:rgba(255,105,97,.1)}
+.chip.a{color:var(--amber);border-color:rgba(255,176,64,.3);background:rgba(255,176,64,.1)}
+.st{font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--t3);flex-shrink:0;text-align:right}
+.row.grounded .st{color:var(--red)}
+.foot{color:var(--t3);font-size:12px;line-height:1.7;border-top:1px solid var(--bds);padding-top:16px;margin-top:26px}.foot b{color:var(--t2);font-weight:560}
+</style></head><body><div class="wrap">
+<h1>Fleet Readiness</h1>
+<div class="sub">Analytics · fleet management · operating fleet</div>
+
+<div class="strip">
+  <div class="tile"><div class="l">Readiness</div><div class="v">64<small>%</small></div></div>
+  <div class="tile red"><div class="l">Grounded</div><div class="v">3</div></div>
+  <div class="tile amber"><div class="l">Service due</div><div class="v">4</div></div>
+  <div class="tile amber"><div class="l">Compliance</div><div class="v">2</div></div>
+</div>
+
+<div class="card">
+  <div class="row grounded"><span class="rail"></span><div class="bd"><div class="n">VW Caddy · B-102-PRV</div><div class="reasons"><span class="chip r">In maintenance</span></div></div><div class="st">Grounded</div></div>
+  <div class="row grounded"><span class="rail"></span><div class="bd"><div class="n">Ford Transit · B-114-PRV</div><div class="reasons"><span class="chip r">Insurance expired</span><span class="chip a">Service overdue</span></div></div><div class="st">Grounded</div></div>
+  <div class="row"><span class="rail"></span><div class="bd"><div class="n">Dacia Duster · B-201-PRV</div><div class="reasons"><span class="chip a">Service in 500 km</span><span class="chip a">Low fuel</span></div></div><div class="st">Attention</div></div>
+  <div class="row"><span class="rail"></span><div class="bd"><div class="n">Renault Master · B-233-PRV</div><div class="reasons"><span class="chip a">ITP expires in 12d</span></div></div><div class="st">Attention</div></div>
+</div>
+
+<div class="foot"><b>What this is:</b> Phase 21 — Fleet Readiness. A read-only board at <b>/analytics/fleet-readiness</b> (⌘K: "Fleet Readiness").
+Each operating vehicle (active or in maintenance) is <b>ready</b>, needs <b>attention</b> (amber), or is <b>grounded</b> (red) based on
+service intervals (mileage vs the next-service odometer), <b>insurance/ITP expiry</b>, maintenance status, and fuel level — with a fleet
+readiness rate and a reasoned attention list, grounded first. Retired/sold vehicles are excluded from the operating fleet.</div>
+</div></body></html>

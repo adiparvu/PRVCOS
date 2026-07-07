@@ -300,6 +300,22 @@ const BASE: CommandEntry[] = [
     href: "/analytics/safety-training",
   },
   {
+    id: "nav.fleet-readiness",
+    label: "Fleet Readiness",
+    section: "Navigation",
+    keywords: [
+      "fleet readiness",
+      "vehicles",
+      "service due",
+      "insurance",
+      "itp",
+      "maintenance",
+      "fleet",
+      "analytics",
+    ],
+    href: "/analytics/fleet-readiness",
+  },
+  {
     id: "nav.attendance-analytics",
     label: "Attendance Analytics",
     section: "Navigation",

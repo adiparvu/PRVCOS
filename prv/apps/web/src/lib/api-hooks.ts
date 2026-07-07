@@ -3348,6 +3348,21 @@ export function useSafetyTraining() {
   })
 }
 
+export type { FleetReadinessResponse } from "@/app/api/analytics/fleet-readiness/route"
+
+export function useFleetReadiness() {
+  return useQuery({
+    queryKey: ["fleet-readiness"],
+    queryFn: async () => {
+      const res = await fetch("/api/analytics/fleet-readiness")
+      if (!res.ok) throw new Error("Failed to load fleet readiness")
+      return res.json() as Promise<
+        import("@/app/api/analytics/fleet-readiness/route").FleetReadinessResponse
+      >
+    },
+  })
+}
+
 export type { AttendanceAnalyticsResponse } from "@/app/api/analytics/attendance/route"
 
 export function useAttendanceAnalytics() {
