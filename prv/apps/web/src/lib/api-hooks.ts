@@ -3408,6 +3408,21 @@ export function useSupplierSpend() {
   })
 }
 
+export type { LearningCompletionResponse } from "@/app/api/analytics/learning-completion/route"
+
+export function useLearningCompletion() {
+  return useQuery({
+    queryKey: ["learning-completion"],
+    queryFn: async () => {
+      const res = await fetch("/api/analytics/learning-completion")
+      if (!res.ok) throw new Error("Failed to load learning completion")
+      return res.json() as Promise<
+        import("@/app/api/analytics/learning-completion/route").LearningCompletionResponse
+      >
+    },
+  })
+}
+
 export type { AttendanceAnalyticsResponse } from "@/app/api/analytics/attendance/route"
 
 export function useAttendanceAnalytics() {

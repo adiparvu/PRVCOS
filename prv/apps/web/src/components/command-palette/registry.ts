@@ -361,6 +361,21 @@ const BASE: CommandEntry[] = [
     href: "/analytics/supplier-spend",
   },
   {
+    id: "nav.learning-completion",
+    label: "Learning Completion",
+    section: "Navigation",
+    keywords: [
+      "learning completion",
+      "courses",
+      "training",
+      "enrollment",
+      "progress",
+      "learning center",
+      "analytics",
+    ],
+    href: "/analytics/learning-completion",
+  },
+  {
     id: "nav.attendance-analytics",
     label: "Attendance Analytics",
     section: "Navigation",

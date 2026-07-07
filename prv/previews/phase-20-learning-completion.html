@@ -1,0 +1,60 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Analytics · Learning Completion — Preview</title>
+<style>
+:root{--g1:rgba(255,255,255,.06);--g2:rgba(255,255,255,.10);--g3:rgba(255,255,255,.16);
+--t1:rgba(255,255,255,.95);--t2:rgba(255,255,255,.65);--t3:rgba(255,255,255,.35);
+--bd:rgba(255,255,255,.12);--bds:rgba(255,255,255,.07);--shine:inset 0 1px 0 rgba(255,255,255,.22);--amber:rgba(255,190,90,.92)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#000;color:var(--t1);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif;padding:40px 24px 80px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:840px;margin:0 auto}
+h1{font-size:29px;font-weight:640;letter-spacing:-.02em}.sub{color:var(--t3);font-size:13.5px;margin-top:6px}
+.strip{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:24px 0}
+.tile{background:var(--g1);border:1px solid var(--bd);border-radius:18px;padding:15px 17px;box-shadow:var(--shine)}
+.tile .l{color:var(--t3);font-size:11px;text-transform:uppercase;letter-spacing:.07em;font-weight:560}
+.tile .v{font-size:23px;font-weight:680;margin-top:8px;letter-spacing:-.02em}.tile .v small{font-size:13px;color:var(--t3);font-weight:560}
+.card{background:var(--g1);border:1px solid var(--bd);border-radius:22px;padding:18px 20px;box-shadow:var(--shine);margin-bottom:16px}
+.card h2{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);font-weight:560;margin-bottom:14px}
+.sev{display:flex;align-items:center;gap:10px;margin:10px 0}
+.sev .nm{width:96px;font-size:13px;color:var(--t2)}
+.bar{flex:1;height:8px;border-radius:99px;background:var(--g3);overflow:hidden}.bar span{display:block;height:100%;border-radius:99px;background:rgba(255,255,255,.5)}
+.sev .n{width:22px;text-align:right;font-size:13px;font-variant-numeric:tabular-nums}
+.cardt{background:var(--g1);border:1px solid var(--bd);border-radius:22px;padding:8px 8px 4px;box-shadow:var(--shine)}
+.hd,.row{display:grid;grid-template-columns:1.8fr .8fr .9fr .9fr;gap:10px;align-items:center;padding:12px 16px}
+.hd{color:var(--t3);font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;font-weight:560;border-bottom:1px solid var(--bds)}
+.row{border-bottom:1px solid var(--bds)}.row:last-child{border-bottom:0}
+.nm2{font-size:13.5px;font-weight:560}.num{font-size:13px;font-variant-numeric:tabular-nums;text-align:right}
+.pill{display:inline-block;min-width:44px;text-align:center;font-size:12px;font-variant-numeric:tabular-nums;border:1px solid var(--bd);border-radius:99px;padding:2px 8px}
+.foot{color:var(--t3);font-size:12px;line-height:1.7;border-top:1px solid var(--bds);padding-top:16px;margin-top:26px}.foot b{color:var(--t2);font-weight:560}
+</style></head><body><div class="wrap">
+<h1>Learning Completion</h1>
+<div class="sub">Analytics · learning center · course completion</div>
+
+<div class="strip">
+  <div class="tile"><div class="l">Completion</div><div class="v">58<small>%</small></div></div>
+  <div class="tile"><div class="l">Avg progress</div><div class="v">71<small>%</small></div></div>
+  <div class="tile"><div class="l">In progress</div><div class="v">34</div></div>
+  <div class="tile"><div class="l">Enrollments</div><div class="v">142</div></div>
+</div>
+
+<div class="card">
+  <h2>Status mix</h2>
+  <div class="sev"><div class="nm">Completed</div><div class="bar"><span style="width:100%"></span></div><div class="n">82</div></div>
+  <div class="sev"><div class="nm">In progress</div><div class="bar"><span style="width:41%"></span></div><div class="n">34</div></div>
+  <div class="sev"><div class="nm">New</div><div class="bar"><span style="width:24%"></span></div><div class="n">20</div></div>
+  <div class="sev"><div class="nm">Saved</div><div class="bar"><span style="width:7%"></span></div><div class="n">6</div></div>
+</div>
+
+<div class="cardt">
+  <div class="hd"><div>Course</div><div class="num">Enrolled</div><div class="num">Completion</div><div class="num">Avg progress</div></div>
+  <div class="row"><div class="nm2">Health &amp; Safety Induction</div><div class="num">48</div><div class="num"><span class="pill">75%</span></div><div class="num">84%</div></div>
+  <div class="row"><div class="nm2">Working at Height</div><div class="num">31</div><div class="num"><span class="pill">61%</span></div><div class="num">72%</div></div>
+  <div class="row"><div class="nm2">Customer Service Basics</div><div class="num">28</div><div class="num"><span class="pill">50%</span></div><div class="num">63%</div></div>
+  <div class="row"><div class="nm2">Advanced Estimating</div><div class="num">19</div><div class="num"><span class="pill">32%</span></div><div class="num">48%</div></div>
+  <div class="row"><div class="nm2">Fleet &amp; Tools SOP</div><div class="num">16</div><div class="num"><span class="pill">44%</span></div><div class="num">55%</div></div>
+</div>
+
+<div class="foot"><b>What this is:</b> Phase 20 — Learning Completion. A read-only board at <b>/analytics/learning-completion</b> (⌘K: "Learning Completion").
+Rolls course enrollments into the <b>completion rate</b> and average progress, a <b>status mix</b> (completed / in progress / new / saved),
+and a <b>per-course breakdown</b> — enrolled count, completion rate, and average progress — ranked by enrolment, so a training lead sees which
+courses land and which stall. Monochrome throughout.</div>
+</div></body></html>
