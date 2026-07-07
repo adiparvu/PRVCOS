@@ -1,0 +1,66 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Analytics · Expense Breakdown — Preview</title>
+<style>
+:root{--g1:rgba(255,255,255,.06);--g2:rgba(255,255,255,.10);--g3:rgba(255,255,255,.16);
+--t1:rgba(255,255,255,.95);--t2:rgba(255,255,255,.65);--t3:rgba(255,255,255,.35);
+--bd:rgba(255,255,255,.12);--bds:rgba(255,255,255,.07);--shine:inset 0 1px 0 rgba(255,255,255,.22);--amber:rgba(255,190,90,.92)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#000;color:var(--t1);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif;padding:40px 24px 80px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:860px;margin:0 auto}
+h1{font-size:29px;font-weight:640;letter-spacing:-.02em}.sub{color:var(--t3);font-size:13.5px;margin-top:6px}
+.strip{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:24px 0}
+.tile{background:var(--g1);border:1px solid var(--bd);border-radius:18px;padding:15px 17px;box-shadow:var(--shine)}
+.tile .l{color:var(--t3);font-size:11px;text-transform:uppercase;letter-spacing:.07em;font-weight:560}
+.tile .v{font-size:22px;font-weight:680;margin-top:8px;letter-spacing:-.02em}.tile.amber .v{color:var(--amber)}
+.grid2{display:grid;grid-template-columns:1.2fr 1fr;gap:16px}
+.card{background:var(--g1);border:1px solid var(--bd);border-radius:22px;padding:18px 20px;box-shadow:var(--shine)}
+.card h2{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);font-weight:560;margin-bottom:14px}
+.sev{display:flex;align-items:center;gap:10px;margin:9px 0}
+.sev .nm{width:100px;font-size:13px;color:var(--t2);text-transform:capitalize}
+.bar{flex:1;height:8px;border-radius:99px;background:var(--g3);overflow:hidden}.bar span{display:block;height:100%;border-radius:99px;background:rgba(255,255,255,.5)}
+.sev .n{width:56px;text-align:right;font-size:12.5px;font-variant-numeric:tabular-nums}
+.bars{display:flex;align-items:flex-end;gap:10px;height:130px;margin-top:6px}
+.col{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px}
+.col .v{font-size:11px;color:var(--t2)}.col .b{width:100%;border-radius:8px;background:rgba(255,255,255,.35)}.col .m{font-size:11px;color:var(--t3)}
+.mom{margin-top:12px;font-size:12.5px;color:var(--t3)}.mom b{color:var(--amber)}
+.foot{color:var(--t3);font-size:12px;line-height:1.7;border-top:1px solid var(--bds);padding-top:16px;margin-top:26px}.foot b{color:var(--t2);font-weight:560}
+</style></head><body><div class="wrap">
+<h1>Expense Breakdown</h1>
+<div class="sub">Analytics · finance · committed spend</div>
+
+<div class="strip">
+  <div class="tile"><div class="l">Committed spend</div><div class="v">€184.2k</div></div>
+  <div class="tile"><div class="l">Paid</div><div class="v">€142.8k</div></div>
+  <div class="tile amber"><div class="l">Pending approval</div><div class="v">€11.6k</div></div>
+  <div class="tile"><div class="l">Expenses</div><div class="v">238</div></div>
+</div>
+
+<div class="grid2">
+  <div class="card">
+    <h2>By category</h2>
+    <div class="sev"><div class="nm">Materials</div><div class="bar"><span style="width:100%"></span></div><div class="n">€68.4k</div></div>
+    <div class="sev"><div class="nm">Salaries</div><div class="bar"><span style="width:71%"></span></div><div class="n">€48.6k</div></div>
+    <div class="sev"><div class="nm">Labor</div><div class="bar"><span style="width:38%"></span></div><div class="n">€26.0k</div></div>
+    <div class="sev"><div class="nm">Equipment</div><div class="bar"><span style="width:22%"></span></div><div class="n">€15.1k</div></div>
+    <div class="sev"><div class="nm">Transport</div><div class="bar"><span style="width:14%"></span></div><div class="n">€9.4k</div></div>
+    <div class="sev"><div class="nm">Utilities</div><div class="bar"><span style="width:9%"></span></div><div class="n">€6.2k</div></div>
+  </div>
+  <div class="card">
+    <h2>Spend trend · monthly</h2>
+    <div class="bars">
+      <div class="col"><div class="v">24k</div><div class="b" style="height:52%"></div><div class="m">Feb</div></div>
+      <div class="col"><div class="v">28k</div><div class="b" style="height:61%"></div><div class="m">Mar</div></div>
+      <div class="col"><div class="v">26k</div><div class="b" style="height:57%"></div><div class="m">Apr</div></div>
+      <div class="col"><div class="v">31k</div><div class="b" style="height:67%"></div><div class="m">May</div></div>
+      <div class="col"><div class="v">34k</div><div class="b" style="height:74%"></div><div class="m">Jun</div></div>
+      <div class="col"><div class="v">41k</div><div class="b" style="height:100%"></div><div class="m">Jul</div></div>
+    </div>
+    <div class="mom">Month over month: <b>▲ 20.6%</b></div>
+  </div>
+</div>
+
+<div class="foot"><b>What this is:</b> Phase 11 — Expense Breakdown. A read-only board at <b>/analytics/expense-breakdown</b> (⌘K: "Expense Breakdown").
+Rolls the expense ledger into <b>committed spend</b> (approved + paid), the paid vs <b>pending-approval</b> split, a <b>per-category</b>
+breakdown, and a 6-month <b>spend trend</b> with the month-over-month change (a rising trend flagged amber). Draft and rejected expenses are
+excluded — they are not commitments. Monochrome; amber only for the pending/rising signals.</div>
+</div></body></html>

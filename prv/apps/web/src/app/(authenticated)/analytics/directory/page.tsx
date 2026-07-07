@@ -81,6 +81,11 @@ const GROUPS: Group[] = [
         label: "Reports",
         description: "Export any analytics dataset as CSV.",
       },
+      {
+        href: "/analytics/expense-breakdown",
+        label: "Expense Breakdown",
+        description: "Committed spend by category with a monthly trend.",
+      },
     ],
   },
   {

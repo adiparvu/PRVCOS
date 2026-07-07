@@ -361,6 +361,21 @@ const BASE: CommandEntry[] = [
     href: "/analytics/supplier-spend",
   },
   {
+    id: "nav.expense-breakdown",
+    label: "Expense Breakdown",
+    section: "Navigation",
+    keywords: [
+      "expense breakdown",
+      "expenses",
+      "spend by category",
+      "cost",
+      "finance",
+      "budget",
+      "analytics",
+    ],
+    href: "/analytics/expense-breakdown",
+  },
+  {
     id: "nav.learning-completion",
     label: "Learning Completion",
     section: "Navigation",

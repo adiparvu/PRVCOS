@@ -3423,6 +3423,21 @@ export function useLearningCompletion() {
   })
 }
 
+export type { ExpenseBreakdownResponse } from "@/app/api/analytics/expense-breakdown/route"
+
+export function useExpenseBreakdown() {
+  return useQuery({
+    queryKey: ["expense-breakdown"],
+    queryFn: async () => {
+      const res = await fetch("/api/analytics/expense-breakdown")
+      if (!res.ok) throw new Error("Failed to load expense breakdown")
+      return res.json() as Promise<
+        import("@/app/api/analytics/expense-breakdown/route").ExpenseBreakdownResponse
+      >
+    },
+  })
+}
+
 export type { AttendanceAnalyticsResponse } from "@/app/api/analytics/attendance/route"
 
 export function useAttendanceAnalytics() {
