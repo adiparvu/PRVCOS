@@ -1,0 +1,48 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Analytics · Fleet Utilization — Preview</title>
+<style>
+:root{--g1:rgba(255,255,255,.06);--g2:rgba(255,255,255,.10);--g3:rgba(255,255,255,.16);
+--t1:rgba(255,255,255,.95);--t2:rgba(255,255,255,.65);--t3:rgba(255,255,255,.35);
+--bd:rgba(255,255,255,.12);--bds:rgba(255,255,255,.07);--shine:inset 0 1px 0 rgba(255,255,255,.22)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#000;color:var(--t1);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif;padding:40px 24px 80px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:820px;margin:0 auto}
+h1{font-size:29px;font-weight:640;letter-spacing:-.02em}.sub{color:var(--t3);font-size:13.5px;margin-top:6px}
+.strip{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:24px 0}
+.tile{background:var(--g1);border:1px solid var(--bd);border-radius:18px;padding:15px 17px;box-shadow:var(--shine)}
+.tile .l{color:var(--t3);font-size:11px;text-transform:uppercase;letter-spacing:.07em;font-weight:560}
+.tile .v{font-size:24px;font-weight:680;margin-top:8px;letter-spacing:-.02em}.tile .v small{font-size:13px;color:var(--t3);font-weight:560}
+.card{background:var(--g1);border:1px solid var(--bd);border-radius:22px;padding:8px 8px 4px;box-shadow:var(--shine)}
+.hd{display:grid;grid-template-columns:1.6fr 1fr .8fr auto;gap:10px;padding:12px 16px;color:var(--t3);font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;font-weight:560;border-bottom:1px solid var(--bds)}
+.row{display:grid;grid-template-columns:1.6fr 1fr .8fr auto;gap:10px;align-items:center;padding:13px 16px;border-bottom:1px solid var(--bds)}
+.row:last-child{border-bottom:0}
+.row .nm{font-size:13.5px;font-weight:560}
+.num{font-size:13px;font-variant-numeric:tabular-nums;text-align:right}
+.bar{height:6px;border-radius:99px;background:var(--g3);overflow:hidden;margin-top:6px}
+.bar span{display:block;height:100%;border-radius:99px;background:rgba(255,255,255,.55)}
+.foot{color:var(--t3);font-size:12px;line-height:1.7;border-top:1px solid var(--bds);padding-top:16px;margin-top:26px}.foot b{color:var(--t2);font-weight:560}
+</style></head><body><div class="wrap">
+<h1>Fleet Utilization</h1>
+<div class="sub">Analytics · fleet management · last 30 days</div>
+
+<div class="strip">
+  <div class="tile"><div class="l">Total distance</div><div class="v">12,840 <small>km</small></div></div>
+  <div class="tile"><div class="l">Active vehicles</div><div class="v">7<small>/9</small></div></div>
+  <div class="tile"><div class="l">Avg / vehicle</div><div class="v">1,834 <small>km</small></div></div>
+  <div class="tile"><div class="l">Avg / day</div><div class="v">428 <small>km</small></div></div>
+</div>
+
+<div class="card">
+  <div class="hd"><div>Vehicle</div><div class="num">Distance</div><div class="num">Days</div><div>&nbsp;</div></div>
+  <div class="row"><div><div class="nm">Ford Transit · B-114</div><div class="bar"><span style="width:100%"></span></div></div><div class="num">3,120 km</div><div class="num">26</div><div></div></div>
+  <div class="row"><div><div class="nm">VW Caddy · B-102</div><div class="bar"><span style="width:74%"></span></div></div><div class="num">2,310 km</div><div class="num">24</div><div></div></div>
+  <div class="row"><div><div class="nm">Renault Master · B-233</div><div class="bar"><span style="width:58%"></span></div></div><div class="num">1,820 km</div><div class="num">22</div><div></div></div>
+  <div class="row"><div><div class="nm">Dacia Duster · B-201</div><div class="bar"><span style="width:40%"></span></div></div><div class="num">1,250 km</div><div class="num">19</div><div></div></div>
+  <div class="row"><div><div class="nm">Ford Ranger · B-140</div><div class="bar"><span style="width:12%"></span></div></div><div class="num">380 km</div><div class="num">6</div><div></div></div>
+</div>
+
+<div class="foot"><b>What this is:</b> Phase 21 — Fleet Utilization. A read-only board at <b>/analytics/fleet-utilization</b> (⌘K: "Fleet Utilization").
+From the last 30 days of daily odometer logs it derives <b>km driven per vehicle</b> (latest − earliest reading) and the days each was
+logged, plus fleet totals — total distance, active vehicles, average per vehicle and per day — with a top-movers ranking. Monochrome; a
+vehicle needs two readings to show distance.</div>
+</div></body></html>

@@ -3378,6 +3378,21 @@ export function useToolInventory() {
   })
 }
 
+export type { FleetUtilizationResponse } from "@/app/api/analytics/fleet-utilization/route"
+
+export function useFleetUtilization() {
+  return useQuery({
+    queryKey: ["fleet-utilization"],
+    queryFn: async () => {
+      const res = await fetch("/api/analytics/fleet-utilization")
+      if (!res.ok) throw new Error("Failed to load fleet utilization")
+      return res.json() as Promise<
+        import("@/app/api/analytics/fleet-utilization/route").FleetUtilizationResponse
+      >
+    },
+  })
+}
+
 export type { AttendanceAnalyticsResponse } from "@/app/api/analytics/attendance/route"
 
 export function useAttendanceAnalytics() {

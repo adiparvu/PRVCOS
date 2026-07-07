@@ -331,6 +331,21 @@ const BASE: CommandEntry[] = [
     href: "/analytics/tool-inventory",
   },
   {
+    id: "nav.fleet-utilization",
+    label: "Fleet Utilization",
+    section: "Navigation",
+    keywords: [
+      "fleet utilization",
+      "mileage",
+      "km driven",
+      "odometer",
+      "vehicle usage",
+      "fleet",
+      "analytics",
+    ],
+    href: "/analytics/fleet-utilization",
+  },
+  {
     id: "nav.attendance-analytics",
     label: "Attendance Analytics",
     section: "Navigation",
