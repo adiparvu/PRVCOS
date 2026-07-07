@@ -3363,6 +3363,21 @@ export function useFleetReadiness() {
   })
 }
 
+export type { ToolInventoryResponse } from "@/app/api/analytics/tool-inventory/route"
+
+export function useToolInventory() {
+  return useQuery({
+    queryKey: ["tool-inventory"],
+    queryFn: async () => {
+      const res = await fetch("/api/analytics/tool-inventory")
+      if (!res.ok) throw new Error("Failed to load tool inventory")
+      return res.json() as Promise<
+        import("@/app/api/analytics/tool-inventory/route").ToolInventoryResponse
+      >
+    },
+  })
+}
+
 export type { AttendanceAnalyticsResponse } from "@/app/api/analytics/attendance/route"
 
 export function useAttendanceAnalytics() {

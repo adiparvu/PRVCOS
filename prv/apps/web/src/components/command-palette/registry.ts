@@ -316,6 +316,21 @@ const BASE: CommandEntry[] = [
     href: "/analytics/fleet-readiness",
   },
   {
+    id: "nav.tool-inventory",
+    label: "Tool Inventory",
+    section: "Navigation",
+    keywords: [
+      "tool inventory",
+      "tools",
+      "availability",
+      "utilization",
+      "lost tools",
+      "equipment",
+      "analytics",
+    ],
+    href: "/analytics/tool-inventory",
+  },
+  {
     id: "nav.attendance-analytics",
     label: "Attendance Analytics",
     section: "Navigation",
