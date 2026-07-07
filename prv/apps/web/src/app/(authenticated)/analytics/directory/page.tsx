@@ -67,16 +67,6 @@ const GROUPS: Group[] = [
         description: "Payroll cost vs completed output.",
       },
       {
-        href: "/analytics/inventory-efficiency",
-        label: "Inventory Efficiency",
-        description: "Turnover, days-on-hand, dead stock.",
-      },
-      {
-        href: "/analytics/demand-forecast",
-        label: "Demand Forecast",
-        description: "Reorder plan from sale velocity.",
-      },
-      {
         href: "/analytics/reports",
         label: "Reports",
         description: "Export any analytics dataset as CSV.",
@@ -85,6 +75,26 @@ const GROUPS: Group[] = [
         href: "/analytics/expense-breakdown",
         label: "Expense Breakdown",
         description: "Committed spend by category with a monthly trend.",
+      },
+    ],
+  },
+  {
+    title: "Shop",
+    entries: [
+      {
+        href: "/analytics/order-analytics",
+        label: "Order Analytics",
+        description: "Order volume, revenue, AOV and fulfillment.",
+      },
+      {
+        href: "/analytics/inventory-efficiency",
+        label: "Inventory Efficiency",
+        description: "Turnover, days-on-hand, dead stock.",
+      },
+      {
+        href: "/analytics/demand-forecast",
+        label: "Demand Forecast",
+        description: "Reorder plan from sale velocity.",
       },
     ],
   },

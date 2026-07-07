@@ -3468,6 +3468,21 @@ export function useDocumentStorage() {
   })
 }
 
+export type { OrderAnalyticsResponse } from "@/app/api/analytics/order-analytics/route"
+
+export function useOrderAnalytics() {
+  return useQuery({
+    queryKey: ["order-analytics"],
+    queryFn: async () => {
+      const res = await fetch("/api/analytics/order-analytics")
+      if (!res.ok) throw new Error("Failed to load order analytics")
+      return res.json() as Promise<
+        import("@/app/api/analytics/order-analytics/route").OrderAnalyticsResponse
+      >
+    },
+  })
+}
+
 export type { AttendanceAnalyticsResponse } from "@/app/api/analytics/attendance/route"
 
 export function useAttendanceAnalytics() {

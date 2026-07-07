@@ -407,6 +407,22 @@ const BASE: CommandEntry[] = [
     href: "/analytics/document-storage",
   },
   {
+    id: "nav.order-analytics",
+    label: "Order Analytics",
+    section: "Navigation",
+    keywords: [
+      "order analytics",
+      "orders",
+      "sales",
+      "fulfillment",
+      "aov",
+      "revenue",
+      "shop",
+      "analytics",
+    ],
+    href: "/analytics/order-analytics",
+  },
+  {
     id: "nav.learning-completion",
     label: "Learning Completion",
     section: "Navigation",
