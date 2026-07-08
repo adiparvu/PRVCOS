@@ -174,13 +174,18 @@ function AlertRow({
   alert,
   onAcknowledge,
   onResolve,
+  onAssign,
+  people,
 }: {
   alert: Alert
   onAcknowledge: (id: string) => void
   onResolve: (id: string, note?: string) => void
+  onAssign: (id: string, userId: string) => void
+  people: { id: string; firstName: string; lastName: string }[]
 }) {
   const cfg = SEVERITY_CONFIG[alert.severity]
   const [resolving, setResolving] = useState(false)
+  const [assigning, setAssigning] = useState(false)
   const [note, setNote] = useState("")
 
   return (
@@ -271,7 +276,7 @@ function AlertRow({
       </div>
 
       {/* Actions — only for open/acknowledged */}
-      {alert.status !== "resolved" && !resolving && (
+      {alert.status !== "resolved" && !resolving && !assigning && (
         <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
           {alert.status === "open" && (
             <button
@@ -312,6 +317,73 @@ function AlertRow({
           >
             <IconCheck />
             Rezolvă
+          </button>
+          <button
+            onClick={() => setAssigning(true)}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 4,
+              padding: "5px 10px",
+              background: "rgba(255,255,255,0.07)",
+              border: "1px solid rgba(255,255,255,0.12)",
+              borderRadius: 8,
+              color: "rgba(255,255,255,0.60)",
+              fontSize: 11,
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            Alocă
+          </button>
+        </div>
+      )}
+      {alert.status !== "resolved" && assigning && (
+        <div style={{ marginTop: 10 }}>
+          <select
+            defaultValue=""
+            onChange={(e) => {
+              if (e.target.value) {
+                onAssign(alert.id, e.target.value)
+                setAssigning(false)
+              }
+            }}
+            style={{
+              width: "100%",
+              background: "rgba(255,255,255,0.04)",
+              border: "1px solid rgba(255,255,255,0.12)",
+              borderRadius: 8,
+              padding: "8px 10px",
+              color: "rgba(255,255,255,0.85)",
+              fontSize: 12,
+              fontFamily: "inherit",
+              appearance: "none",
+              marginBottom: 8,
+            }}
+          >
+            <option value="" style={{ background: "#111" }}>
+              Alege o persoană…
+            </option>
+            {people.map((p) => (
+              <option key={p.id} value={p.id} style={{ background: "#111" }}>
+                {p.firstName} {p.lastName}
+              </option>
+            ))}
+          </select>
+          <button
+            onClick={() => setAssigning(false)}
+            style={{
+              padding: "5px 12px",
+              background: "rgba(255,255,255,0.07)",
+              border: "1px solid rgba(255,255,255,0.12)",
+              borderRadius: 8,
+              color: "rgba(255,255,255,0.60)",
+              fontSize: 11,
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            Anulează
           </button>
         </div>
       )}
@@ -399,6 +471,16 @@ export function AlertsClient() {
   })
   const alertList = data?.alerts ?? []
 
+  const { data: peopleData } = useQuery({
+    queryKey: ["people", "picker"],
+    queryFn: () =>
+      fetch("/api/people?limit=200").then(
+        (r) =>
+          r.json() as Promise<{ members: { id: string; firstName: string; lastName: string }[] }>
+      ),
+  })
+  const people = peopleData?.members ?? []
+
   const handleAcknowledge = useCallback(
     async (id: string) => {
       await fetch(`/api/alerts/${id}`, {
@@ -435,6 +517,26 @@ export function AlertsClient() {
                   : prev.alerts.map((a) =>
                       a.id === id ? { ...a, status: "resolved" as AlertStatus } : a
                     ),
+            }
+          : prev
+      )
+    },
+    [queryClient, tab]
+  )
+
+  const handleAssign = useCallback(
+    async (id: string, userId: string) => {
+      await fetch(`/api/alerts/${id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "assign", assignedToId: userId }),
+      })
+      queryClient.setQueryData<{ alerts: Alert[] }>(["alerts", tab], (prev) =>
+        prev
+          ? {
+              alerts: prev.alerts.map((a) =>
+                a.id === id ? { ...a, status: "assigned" as AlertStatus, assignedToId: userId } : a
+              ),
             }
           : prev
       )
@@ -587,6 +689,8 @@ export function AlertsClient() {
                 alert={alert}
                 onAcknowledge={handleAcknowledge}
                 onResolve={handleResolve}
+                onAssign={handleAssign}
+                people={people}
               />
             ))}
         </>
