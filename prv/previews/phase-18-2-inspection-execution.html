@@ -1,0 +1,70 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Safety · Inspection Execution — Preview</title>
+<style>
+:root{--t1:rgba(255,255,255,.92);--t2:rgba(255,255,255,.75);--t3:rgba(255,255,255,.45);--t4:rgba(255,255,255,.35);
+--bd:rgba(255,255,255,.12);--bds:rgba(255,255,255,.06);--amber:rgba(255,159,10,.95);--blue:rgba(100,180,255,.9);--green:rgba(48,209,88,.95);--red:rgba(255,69,58,.95)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#000;color:var(--t1);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif;padding:32px 16px 120px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:680px;margin:0 auto}
+.crumb{display:flex;align-items:center;gap:12px;margin-bottom:24px;font-size:13px}.crumb a{color:var(--t3);text-decoration:none}.crumb .s{color:rgba(255,255,255,.2)}.crumb .c{color:var(--t2)}
+.card{background:rgba(255,255,255,.06);border:1px solid var(--bd);border-radius:20px;box-shadow:0 24px 64px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.22);backdrop-filter:blur(32px) saturate(180%);padding:20px 16px;margin-bottom:12px}
+.hd{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:16px}
+.hd h1{font-size:20px;font-weight:700;letter-spacing:-.4px}
+.pill{font-size:11px;font-weight:600;background:rgba(255,255,255,.06);border:1px solid var(--bd);border-radius:100px;padding:3px 10px;white-space:nowrap;color:var(--blue)}
+.f{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--bds);font-size:13px}.f:last-child{border-bottom:0}.f .l{color:var(--t3);min-width:120px}.f .v{color:var(--t1);text-align:right}
+.lbl{font-size:12px;font-weight:600;color:var(--t4);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px}
+.steps{display:flex;gap:8px;margin-bottom:18px}
+.step{flex:1;text-align:center;font-size:11px;font-weight:600;padding:8px 4px;border-radius:10px;border:1px solid var(--bd);background:rgba(255,255,255,.04);color:var(--t3);text-transform:capitalize}
+.step.active{background:rgba(100,180,255,.14);border-color:rgba(100,180,255,.4);color:var(--blue)}
+.step.done{color:var(--green);border-color:rgba(48,209,88,.3)}
+select,input,textarea{width:100%;background:rgba(255,255,255,.04);border:1px solid var(--bd);border-radius:12px;padding:11px 12px;color:var(--t1);font-size:13.5px;font-family:inherit;margin-bottom:14px}
+textarea{line-height:1.5;resize:vertical;min-height:70px}
+.scorerow{display:flex;gap:12px}.scorerow>div{flex:1}
+.scorebar{height:8px;border-radius:99px;background:rgba(255,255,255,.1);overflow:hidden;margin:2px 0 16px}.scorebar span{display:block;height:100%;border-radius:99px;background:var(--green)}
+.row{display:flex;gap:10px;align-items:center;margin-top:4px}
+.btn{background:#fff;color:#000;border:0;border-radius:10px;padding:10px 18px;font-size:13px;font-weight:600;cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,.3)}
+.btn.ghost{background:rgba(255,255,255,.06);color:var(--t1);border:1px solid var(--bd)}
+.hint{font-size:12px;color:var(--t3)}
+.foot{color:var(--t3);font-size:12px;line-height:1.7;border-top:1px solid var(--bds);padding-top:16px;margin-top:26px}.foot b{color:var(--t2);font-weight:560}
+</style></head><body><div class="wrap">
+<div class="crumb"><a href="#">← Safety</a><span class="s">/</span><span class="c">Inspection</span></div>
+
+<div class="card">
+  <div class="hd"><h1>Monthly scaffold inspection — Site A</h1><span class="pill">in progress</span></div>
+  <div class="f"><span class="l">Scheduled</span><span class="v">6 Jul 2026</span></div>
+  <div class="f"><span class="l">Next due</span><span class="v">6 Aug 2026</span></div>
+  <div class="f"><span class="l">Project</span><span class="v">Riverside Tower — Phase 2</span></div>
+  <div class="f"><span class="l">Assigned to</span><span class="v">Radu Ionescu</span></div>
+</div>
+
+<div class="card">
+  <div class="lbl">Execution</div>
+  <div class="steps">
+    <div class="step done">Scheduled</div>
+    <div class="step active">In progress</div>
+    <div class="step">Completed</div>
+  </div>
+
+  <div class="lbl">Assigned inspector</div>
+  <select><option>Radu Ionescu</option><option>Ana Popescu</option><option>Unassigned</option></select>
+
+  <div class="lbl">Score</div>
+  <div class="scorerow"><div><input value="42" /></div><div style="display:flex;align-items:center;color:var(--t3);font-size:16px">/</div><div><input value="50" /></div></div>
+  <div class="scorebar"><span style="width:84%"></span></div>
+
+  <div class="lbl">Notes</div>
+  <textarea>All ties and base plates checked. Two guard-rail clips replaced on the north face; minor housekeeping flagged to the site team.</textarea>
+
+  <div class="row">
+    <button class="btn ghost">Save progress</button>
+    <button class="btn">Complete inspection</button>
+    <span class="hint">Completing stamps the completion date and the compliance score.</span>
+  </div>
+</div>
+
+<div class="foot"><b>What this is:</b> Phase 18.2 — Inspection execution. Builds the missing detail page at <b>/safety/inspections/[id]</b>
+(the Safety dashboard already links here, so those links are currently dead). Read view shows schedule, next-due, project and assignee; the
+<b>Execution panel</b> steps the status (scheduled → in progress → completed), assigns an inspector (from <b>/api/people</b>), records the
+<b>score / max score</b> with a live compliance bar, and captures <b>notes</b> — all saved via the existing gated PATCH. "Complete inspection"
+stamps the completion date. Liquid-Glass throughout.</div>
+</div></body></html>
