@@ -10,6 +10,7 @@ interface Incident {
   type: string
   severity: string
   status: string
+  assignedTo: string | null
   location: string | null
   incidentAt: string
   injuriesCount: number
@@ -112,6 +113,14 @@ export function IncidentDetailClient({ id }: { id: string }) {
     queryFn: () => fetch(`/api/safety/incidents/${id}`).then((r) => r.json()),
   })
   const incident = data?.incident
+
+  const { data: peopleData } = useQuery<{
+    members: { id: string; firstName: string; lastName: string }[]
+  }>({
+    queryKey: ["people", "picker"],
+    queryFn: () => fetch("/api/people?limit=200").then((r) => r.json()),
+  })
+  const people = peopleData?.members ?? []
 
   // Draft overrides the server value while editing; cleared after a save so the
   // fields reflect refetched server truth. Avoids seeding state in an effect.
@@ -292,6 +301,34 @@ export function IncidentDetailClient({ id }: { id: string }) {
           {/* Investigation workflow */}
           <div style={glassCard}>
             <p style={labelStyle}>Investigation</p>
+
+            <p style={labelStyle}>Assigned investigator</p>
+            <select
+              value={incident.assignedTo ?? ""}
+              disabled={mutation.isPending || isClosed}
+              onChange={(e) => mutation.mutate({ assignedTo: e.target.value || null })}
+              style={{
+                width: "100%",
+                background: "rgba(255,255,255,0.04)",
+                border: "1px solid rgba(255,255,255,0.12)",
+                borderRadius: 12,
+                padding: "11px 12px",
+                color: "rgba(255,255,255,0.92)",
+                fontSize: 13.5,
+                fontFamily: "inherit",
+                marginBottom: 18,
+                appearance: "none",
+              }}
+            >
+              <option value="" style={{ background: "#111" }}>
+                Unassigned
+              </option>
+              {people.map((p) => (
+                <option key={p.id} value={p.id} style={{ background: "#111" }}>
+                  {p.firstName} {p.lastName}
+                </option>
+              ))}
+            </select>
 
             <div style={{ display: "flex", gap: 8, marginBottom: 18 }}>
               {STATUS_FLOW.map((s, i) => {
