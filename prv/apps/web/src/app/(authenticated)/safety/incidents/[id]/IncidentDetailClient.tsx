@@ -1,9 +1,10 @@
 "use client"
 
-import { useQuery } from "@tanstack/react-query"
+import { useState } from "react"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import Link from "next/link"
 
-interface IncidentDetail {
+interface Incident {
   id: string
   title: string
   type: string
@@ -11,11 +12,20 @@ interface IncidentDetail {
   status: string
   location: string | null
   incidentAt: string
-  reportedBy: string | null
   injuriesCount: number
   description: string | null
-  actionsTaken: string | null
-  createdAt: string
+  rootCause: string | null
+  correctiveActions: string | null
+  closedAt: string | null
+}
+interface Person {
+  id: string
+  name: string
+}
+interface IncidentResponse {
+  incident: Incident
+  reporter: Person | null
+  assignee: Person | null
 }
 
 const SEVERITY_COLORS: Record<string, string> = {
@@ -24,12 +34,20 @@ const SEVERITY_COLORS: Record<string, string> = {
   medium: "rgba(255,255,255,.65)",
   low: "rgba(255,255,255,.35)",
 }
-
 const STATUS_COLORS: Record<string, string> = {
   open: "rgba(255,159,10,.95)",
   under_investigation: "rgba(100,180,255,.9)",
   resolved: "rgba(48,209,88,.95)",
   closed: "rgba(255,255,255,.45)",
+}
+
+const STATUS_FLOW = ["open", "under_investigation", "resolved", "closed"] as const
+type Status = (typeof STATUS_FLOW)[number]
+const STATUS_LABEL: Record<Status, string> = {
+  open: "Open",
+  under_investigation: "Under investigation",
+  resolved: "Resolved",
+  closed: "Closed",
 }
 
 const glassCard: React.CSSProperties = {
@@ -42,6 +60,15 @@ const glassCard: React.CSSProperties = {
   WebkitBackdropFilter: "blur(32px) saturate(180%)",
   padding: "20px 16px",
   marginBottom: 12,
+}
+
+const labelStyle: React.CSSProperties = {
+  fontSize: 12,
+  fontWeight: 600,
+  color: "rgba(255,255,255,0.35)",
+  textTransform: "uppercase",
+  letterSpacing: "0.08em",
+  marginBottom: 10,
 }
 
 function Field({ label, value }: { label: string; value: React.ReactNode }) {
@@ -63,13 +90,55 @@ function Field({ label, value }: { label: string; value: React.ReactNode }) {
   )
 }
 
+const textareaStyle: React.CSSProperties = {
+  width: "100%",
+  background: "rgba(255,255,255,0.04)",
+  border: "1px solid rgba(255,255,255,0.12)",
+  borderRadius: 12,
+  padding: 12,
+  color: "rgba(255,255,255,0.92)",
+  fontSize: 13.5,
+  fontFamily: "inherit",
+  lineHeight: 1.5,
+  resize: "vertical",
+  minHeight: 76,
+  marginBottom: 14,
+}
+
 export function IncidentDetailClient({ id }: { id: string }) {
-  const { data, isLoading, error } = useQuery<{ incident: IncidentDetail }>({
+  const queryClient = useQueryClient()
+  const { data, isLoading, error } = useQuery<IncidentResponse>({
     queryKey: ["incident", id],
     queryFn: () => fetch(`/api/safety/incidents/${id}`).then((r) => r.json()),
   })
-
   const incident = data?.incident
+
+  // Draft overrides the server value while editing; cleared after a save so the
+  // fields reflect refetched server truth. Avoids seeding state in an effect.
+  const [draftRoot, setDraftRoot] = useState<string | null>(null)
+  const [draftCorrective, setDraftCorrective] = useState<string | null>(null)
+  const rootCause = draftRoot ?? incident?.rootCause ?? ""
+  const correctiveActions = draftCorrective ?? incident?.correctiveActions ?? ""
+
+  const mutation = useMutation({
+    mutationFn: (payload: Record<string, unknown>) =>
+      fetch(`/api/safety/incidents/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      }).then(async (r) => {
+        if (!r.ok) throw new Error("Update failed")
+        return r.json()
+      }),
+    onSuccess: () => {
+      setDraftRoot(null)
+      setDraftCorrective(null)
+      void queryClient.invalidateQueries({ queryKey: ["incident", id] })
+    },
+  })
+
+  const isClosed = incident?.status === "closed"
+  const currentIndex = incident ? STATUS_FLOW.indexOf(incident.status as Status) : -1
 
   return (
     <div
@@ -186,27 +255,27 @@ export function IncidentDetailClient({ id }: { id: string }) {
               })}
             />
             <Field label="Location" value={incident.location} />
-            <Field label="Reported by" value={incident.reportedBy} />
+            <Field label="Reported by" value={data?.reporter?.name} />
+            <Field label="Assigned to" value={data?.assignee?.name} />
             <Field
               label="Injuries"
               value={incident.injuriesCount > 0 ? `${incident.injuriesCount} reported` : "None"}
             />
+            {incident.closedAt && (
+              <Field
+                label="Closed"
+                value={new Date(incident.closedAt).toLocaleDateString("en-GB", {
+                  day: "numeric",
+                  month: "short",
+                  year: "numeric",
+                })}
+              />
+            )}
           </div>
 
           {incident.description && (
             <div style={glassCard}>
-              <p
-                style={{
-                  fontSize: 12,
-                  fontWeight: 600,
-                  color: "rgba(255,255,255,0.35)",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.08em",
-                  marginBottom: 10,
-                }}
-              >
-                Description
-              </p>
+              <p style={labelStyle}>Description</p>
               <p
                 style={{
                   fontSize: 14,
@@ -220,32 +289,93 @@ export function IncidentDetailClient({ id }: { id: string }) {
             </div>
           )}
 
-          {incident.actionsTaken && (
-            <div style={glassCard}>
-              <p
-                style={{
-                  fontSize: 12,
-                  fontWeight: 600,
-                  color: "rgba(255,255,255,0.35)",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.08em",
-                  marginBottom: 10,
-                }}
-              >
-                Actions Taken
-              </p>
-              <p
-                style={{
-                  fontSize: 14,
-                  color: "rgba(255,255,255,0.75)",
-                  lineHeight: 1.6,
-                  margin: 0,
-                }}
-              >
-                {incident.actionsTaken}
-              </p>
+          {/* Investigation workflow */}
+          <div style={glassCard}>
+            <p style={labelStyle}>Investigation</p>
+
+            <div style={{ display: "flex", gap: 8, marginBottom: 18 }}>
+              {STATUS_FLOW.map((s, i) => {
+                const isActive = i === currentIndex
+                const isDone = currentIndex > i
+                const color = isActive
+                  ? "rgba(100,180,255,.9)"
+                  : isDone
+                    ? "rgba(48,209,88,.95)"
+                    : "rgba(255,255,255,0.45)"
+                return (
+                  <button
+                    key={s}
+                    type="button"
+                    disabled={mutation.isPending || s === incident.status}
+                    onClick={() => mutation.mutate({ status: s })}
+                    style={{
+                      flex: 1,
+                      textAlign: "center",
+                      fontSize: 11,
+                      fontWeight: 600,
+                      padding: "8px 4px",
+                      borderRadius: 10,
+                      border: `1px solid ${isActive ? "rgba(100,180,255,.4)" : isDone ? "rgba(48,209,88,.3)" : "rgba(255,255,255,0.12)"}`,
+                      background: isActive ? "rgba(100,180,255,.14)" : "rgba(255,255,255,0.04)",
+                      color,
+                      cursor: s === incident.status ? "default" : "pointer",
+                    }}
+                  >
+                    {STATUS_LABEL[s]}
+                  </button>
+                )
+              })}
             </div>
-          )}
+
+            <p style={labelStyle}>Root cause</p>
+            <textarea
+              style={textareaStyle}
+              placeholder="What caused the incident? Contributing factors…"
+              value={rootCause}
+              onChange={(e) => setDraftRoot(e.target.value)}
+              disabled={isClosed}
+            />
+
+            <p style={labelStyle}>Corrective actions</p>
+            <textarea
+              style={textareaStyle}
+              placeholder="What actions will prevent recurrence?"
+              value={correctiveActions}
+              onChange={(e) => setDraftCorrective(e.target.value)}
+              disabled={isClosed}
+            />
+
+            <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+              <button
+                type="button"
+                disabled={mutation.isPending || isClosed}
+                onClick={() => mutation.mutate({ rootCause, correctiveActions })}
+                style={{
+                  background: isClosed ? "rgba(255,255,255,0.1)" : "#fff",
+                  color: isClosed ? "rgba(255,255,255,0.4)" : "#000",
+                  border: 0,
+                  borderRadius: 10,
+                  padding: "10px 18px",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: mutation.isPending || isClosed ? "default" : "pointer",
+                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.3)",
+                }}
+              >
+                {mutation.isPending ? "Saving…" : "Save investigation"}
+              </button>
+              <span style={{ fontSize: 12, color: "rgba(255,255,255,0.45)" }}>
+                {isClosed
+                  ? "This incident is closed."
+                  : "Setting status to Closed stamps who closed it and when."}
+              </span>
+            </div>
+            {mutation.isError && (
+              <p style={{ fontSize: 12, color: "rgba(255,69,58,.9)", marginTop: 10 }}>
+                Could not save — please try again.
+              </p>
+            )}
+          </div>
         </>
       )}
     </div>

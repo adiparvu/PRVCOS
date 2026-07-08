@@ -1,0 +1,66 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Safety · Incident Investigation — Preview</title>
+<style>
+:root{--t1:rgba(255,255,255,.92);--t2:rgba(255,255,255,.75);--t3:rgba(255,255,255,.45);--t4:rgba(255,255,255,.35);
+--bd:rgba(255,255,255,.12);--bds:rgba(255,255,255,.06);--amber:rgba(255,159,10,.95);--blue:rgba(100,180,255,.9);--green:rgba(48,209,88,.95)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#000;color:var(--t1);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif;padding:32px 16px 120px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:680px;margin:0 auto}
+.crumb{display:flex;align-items:center;gap:12px;margin-bottom:24px;font-size:13px}.crumb a{color:var(--t3);text-decoration:none}.crumb .s{color:rgba(255,255,255,.2)}.crumb .c{color:var(--t2)}
+.card{background:rgba(255,255,255,.06);border:1px solid var(--bd);border-radius:20px;box-shadow:0 24px 64px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.22);backdrop-filter:blur(32px) saturate(180%);padding:20px 16px;margin-bottom:12px}
+.hd{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:16px}
+.hd h1{font-size:20px;font-weight:700;letter-spacing:-.4px}
+.pill{font-size:11px;font-weight:600;background:rgba(255,255,255,.06);border:1px solid var(--bd);border-radius:100px;padding:3px 10px;white-space:nowrap;color:var(--blue)}
+.f{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--bds);font-size:13px}.f:last-child{border-bottom:0}.f .l{color:var(--t3);min-width:120px}.f .v{color:var(--t1);text-align:right}
+.lbl{font-size:12px;font-weight:600;color:var(--t4);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px}
+.steps{display:flex;gap:8px;margin-bottom:18px}
+.step{flex:1;text-align:center;font-size:11px;font-weight:600;padding:8px 4px;border-radius:10px;border:1px solid var(--bd);background:rgba(255,255,255,.04);color:var(--t3);cursor:pointer;text-transform:capitalize}
+.step.active{background:rgba(100,180,255,.14);border-color:rgba(100,180,255,.4);color:var(--blue)}
+.step.done{color:var(--green);border-color:rgba(48,209,88,.3)}
+textarea{width:100%;background:rgba(255,255,255,.04);border:1px solid var(--bd);border-radius:12px;padding:12px;color:var(--t1);font-size:13.5px;font-family:inherit;line-height:1.5;resize:vertical;min-height:76px;margin-bottom:14px}
+textarea::placeholder{color:var(--t4)}
+.row{display:flex;gap:10px;align-items:center;margin-top:4px}
+.btn{background:#fff;color:#000;border:0;border-radius:10px;padding:10px 18px;font-size:13px;font-weight:600;cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,.3)}
+.btn.ghost{background:rgba(255,255,255,.06);color:var(--t1);border:1px solid var(--bd)}
+.hint{font-size:12px;color:var(--t3)}
+.banner{display:flex;align-items:center;gap:10px;background:rgba(48,209,88,.1);border:1px solid rgba(48,209,88,.28);border-radius:12px;padding:11px 14px;font-size:13px;color:var(--green);margin-bottom:14px}
+.foot{color:var(--t3);font-size:12px;line-height:1.7;border-top:1px solid var(--bds);padding-top:16px;margin-top:26px}.foot b{color:var(--t2);font-weight:560}
+</style></head><body><div class="wrap">
+<div class="crumb"><a href="#">← Safety</a><span class="s">/</span><span class="c">Incident Detail</span></div>
+
+<div class="card">
+  <div class="hd"><h1>Ladder slip — Warehouse B loading bay</h1><span class="pill">under investigation</span></div>
+  <div class="f"><span class="l">Type</span><span class="v">accident</span></div>
+  <div class="f"><span class="l">Severity</span><span class="v" style="color:var(--amber);font-weight:600">High</span></div>
+  <div class="f"><span class="l">Date</span><span class="v">6 Jul 2026, 09:14</span></div>
+  <div class="f"><span class="l">Location</span><span class="v">Warehouse B — Loading Bay</span></div>
+  <div class="f"><span class="l">Reported by</span><span class="v">Ana Popescu</span></div>
+  <div class="f"><span class="l">Assigned to</span><span class="v">Radu Ionescu</span></div>
+  <div class="f"><span class="l">Injuries</span><span class="v">1 reported</span></div>
+</div>
+
+<div class="card">
+  <div class="lbl">Investigation</div>
+  <div class="steps">
+    <div class="step done">Open</div>
+    <div class="step active">Under investigation</div>
+    <div class="step">Resolved</div>
+    <div class="step">Closed</div>
+  </div>
+  <div class="lbl">Root cause</div>
+  <textarea placeholder="What caused the incident? Contributing factors…">Ladder footing was on wet concrete near the wash-down area; no anti-slip mat in place and the ladder was not secured.</textarea>
+  <div class="lbl">Corrective actions</div>
+  <textarea placeholder="What actions will prevent recurrence?">Install anti-slip matting and a ladder-securing point in the bay; add wet-floor signage; brief the loading team at the next toolbox talk.</textarea>
+  <div class="row">
+    <button class="btn">Save investigation</button>
+    <button class="btn ghost">Mark resolved</button>
+    <span class="hint">Setting status to Closed stamps who closed it and when.</span>
+  </div>
+</div>
+
+<div class="foot"><b>What this is:</b> Phase 18.1 — Incident investigation workflow. Adds the missing write UI to the incident detail page
+(<b>/safety/incidents/[id]</b>). The read view is corrected to the real API shape (reporter/assignee names, root cause, corrective actions,
+closed-by). A new <b>Investigation panel</b> lets a safety officer step the status (open → under investigation → resolved → closed), edit the
+<b>root cause</b> and <b>corrective actions</b>, and save — all wired to the existing gated PATCH endpoint with optimistic refetch. Closing an
+incident stamps closedAt/closedBy server-side. Liquid-Glass throughout.</div>
+</div></body></html>
