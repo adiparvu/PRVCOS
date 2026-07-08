@@ -177,9 +177,11 @@ function AlertRow({
 }: {
   alert: Alert
   onAcknowledge: (id: string) => void
-  onResolve: (id: string) => void
+  onResolve: (id: string, note?: string) => void
 }) {
   const cfg = SEVERITY_CONFIG[alert.severity]
+  const [resolving, setResolving] = useState(false)
+  const [note, setNote] = useState("")
 
   return (
     <div
@@ -269,7 +271,7 @@ function AlertRow({
       </div>
 
       {/* Actions — only for open/acknowledged */}
-      {alert.status !== "resolved" && (
+      {alert.status !== "resolved" && !resolving && (
         <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
           {alert.status === "open" && (
             <button
@@ -293,7 +295,7 @@ function AlertRow({
             </button>
           )}
           <button
-            onClick={() => onResolve(alert.id)}
+            onClick={() => setResolving(true)}
             style={{
               display: "flex",
               alignItems: "center",
@@ -311,6 +313,68 @@ function AlertRow({
             <IconCheck />
             Rezolvă
           </button>
+        </div>
+      )}
+      {alert.status !== "resolved" && resolving && (
+        <div style={{ marginTop: 10 }}>
+          <textarea
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="Notă de rezolvare (opțional)"
+            style={{
+              width: "100%",
+              background: "rgba(255,255,255,0.04)",
+              border: "1px solid rgba(255,255,255,0.12)",
+              borderRadius: 8,
+              padding: "8px 10px",
+              color: "rgba(255,255,255,0.85)",
+              fontSize: 12,
+              fontFamily: "inherit",
+              lineHeight: 1.5,
+              resize: "vertical",
+              minHeight: 54,
+              marginBottom: 8,
+            }}
+          />
+          <div style={{ display: "flex", gap: 6 }}>
+            <button
+              onClick={() => {
+                onResolve(alert.id, note.trim() || undefined)
+                setResolving(false)
+                setNote("")
+              }}
+              style={{
+                padding: "5px 12px",
+                background: "rgba(255,255,255,0.92)",
+                border: 0,
+                borderRadius: 8,
+                color: "#000",
+                fontSize: 11,
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              Confirmă rezolvarea
+            </button>
+            <button
+              onClick={() => {
+                setResolving(false)
+                setNote("")
+              }}
+              style={{
+                padding: "5px 12px",
+                background: "rgba(255,255,255,0.07)",
+                border: "1px solid rgba(255,255,255,0.12)",
+                borderRadius: 8,
+                color: "rgba(255,255,255,0.60)",
+                fontSize: 11,
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              Anulează
+            </button>
+          </div>
         </div>
       )}
     </div>
@@ -356,11 +420,11 @@ export function AlertsClient() {
   )
 
   const handleResolve = useCallback(
-    async (id: string) => {
+    async (id: string, note?: string) => {
       await fetch(`/api/alerts/${id}`, {
         method: "PATCH",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ action: "resolve" }),
+        body: JSON.stringify({ action: "resolve", resolutionNote: note }),
       })
       queryClient.setQueryData<{ alerts: Alert[] }>(["alerts", tab], (prev) =>
         prev
