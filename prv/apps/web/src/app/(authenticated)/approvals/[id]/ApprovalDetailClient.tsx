@@ -1,5 +1,7 @@
 "use client"
 
+import { useState } from "react"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useApprovalDetail } from "@/lib/api-hooks"
 import Link from "next/link"
 import { useSheetStack } from "@prv/ui"
@@ -275,11 +277,115 @@ function SectionLabel({ children }: { children: string }) {
 
 // ── Main component ────────────────────────────────────────────────────────────
 
+function RejectForm({
+  onSubmit,
+  onCancel,
+  pending,
+}: {
+  onSubmit: (reason: string) => void
+  onCancel: () => void
+  pending: boolean
+}) {
+  const [reason, setReason] = useState("")
+  return (
+    <div style={{ padding: "8px 16px 40px", display: "flex", flexDirection: "column", gap: 12 }}>
+      <textarea
+        value={reason}
+        onChange={(e) => setReason(e.target.value)}
+        placeholder="Reason for rejection…"
+        style={{
+          width: "100%",
+          background: "rgba(255,255,255,0.04)",
+          border: "1px solid rgba(255,255,255,0.12)",
+          borderRadius: 12,
+          padding: 12,
+          color: "rgba(255,255,255,0.92)",
+          fontSize: 13.5,
+          fontFamily: "inherit",
+          lineHeight: 1.5,
+          resize: "vertical",
+          minHeight: 90,
+        }}
+      />
+      <div style={{ display: "flex", gap: 8 }}>
+        <button
+          type="button"
+          disabled={pending}
+          onClick={() => onSubmit(reason.trim())}
+          style={{
+            padding: "10px 18px",
+            background: "rgba(255,69,58,0.92)",
+            border: 0,
+            borderRadius: 10,
+            color: "#fff",
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: pending ? "default" : "pointer",
+          }}
+        >
+          Confirm rejection
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          style={{
+            padding: "10px 18px",
+            background: "rgba(255,255,255,0.07)",
+            border: "1px solid rgba(255,255,255,0.12)",
+            borderRadius: 10,
+            color: "rgba(255,255,255,0.75)",
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: "pointer",
+          }}
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export function ApprovalDetailClient({ id }: ApprovalDetailClientProps) {
   const { data: approvalData, isError } = useApprovalDetail(id)
   const approval = approvalData?.approval ?? null
   const error = isError
   const { openSheet } = useSheetStack()
+  const queryClient = useQueryClient()
+
+  const decisionMutation = useMutation({
+    mutationFn: (payload: Record<string, unknown>) =>
+      fetch(`/api/approvals/${id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(payload),
+      }).then(async (r) => {
+        if (!r.ok) throw new Error("Decision failed")
+        return r.json()
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["approval-detail", id] })
+      void queryClient.invalidateQueries({ queryKey: ["approvals"] })
+    },
+  })
+
+  const openReject = () => {
+    openSheet({
+      snapPoints: ["mid"],
+      defaultSnap: "mid",
+      title: "Reject Approval",
+      render: (onClose) => (
+        <RejectForm
+          pending={decisionMutation.isPending}
+          onCancel={onClose}
+          onSubmit={(reason) => {
+            decisionMutation.mutate({ action: "reject", comment: reason || undefined })
+            onClose()
+          }}
+        />
+      ),
+    })
+  }
 
   const handleFAB = () => {
     if (!approval) return
@@ -313,7 +419,10 @@ export function ApprovalDetailClient({ id }: ApprovalDetailClientProps) {
               }
               label="Approve"
               sub="Send to next level"
-              onClick={onClose}
+              onClick={() => {
+                decisionMutation.mutate({ action: "approve" })
+                onClose()
+              }}
             />
           )}
           {isPending && (
@@ -335,7 +444,10 @@ export function ApprovalDetailClient({ id }: ApprovalDetailClientProps) {
               }
               label="Reject"
               sub="Return with reason"
-              onClick={onClose}
+              onClick={() => {
+                onClose()
+                openReject()
+              }}
             />
           )}
           <SheetBtn
