@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { usePurchaseOrderDetail } from "@/lib/api-hooks"
 import Link from "next/link"
 import { useSheetStack } from "@prv/ui"
@@ -96,7 +97,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }
 
 // ── Sheet button helper ───────────────────────────────────────────────────────
 
-type SheetColor = "blue" | "green" | "red" | "white"
+type SheetColor = "blue" | "green" | "red" | "white" | "amber"
 
 function SheetBtn({
   color,
@@ -116,18 +117,21 @@ function SheetBtn({
     green: { background: "rgba(48,209,88,.12)", border: "1px solid rgba(48,209,88,.2)" },
     red: { background: "rgba(255,69,58,.10)", border: "1px solid rgba(255,69,58,.2)" },
     white: { background: "rgba(255,255,255,.06)", border: "1px solid rgba(255,255,255,.09)" },
+    amber: { background: "rgba(255,159,10,.12)", border: "1px solid rgba(255,159,10,.22)" },
   }
   const labelColor: Record<SheetColor, string> = {
     blue: "rgba(10,132,255,.9)",
     green: "rgba(48,209,88,.95)",
     red: "rgba(255,69,58,.95)",
     white: "var(--prv-text-1)",
+    amber: "rgba(255,159,10,.95)",
   }
   const iconBg: Record<SheetColor, string> = {
     blue: "rgba(10,132,255,.2)",
     green: "rgba(48,209,88,.15)",
     red: "rgba(255,69,58,.15)",
     white: "rgba(255,255,255,.08)",
+    amber: "rgba(255,159,10,.18)",
   }
   return (
     <button
@@ -170,16 +174,126 @@ function SheetBtn({
 
 // ── Main component ────────────────────────────────────────────────────────────
 
+function RejectReasonSheet({
+  onSubmit,
+  onCancel,
+  pending,
+}: {
+  onSubmit: (reason: string) => void
+  onCancel: () => void
+  pending: boolean
+}) {
+  const [reason, setReason] = useState("")
+  return (
+    <div style={{ padding: "8px 16px 40px", display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={{ fontSize: 12, color: "var(--prv-text-3)", lineHeight: 1.5, padding: "0 2px" }}>
+        Add a reason. It is recorded on the PO and in the audit log.
+      </div>
+      <textarea
+        value={reason}
+        onChange={(e) => setReason(e.target.value)}
+        placeholder="Reason for rejection…"
+        style={{
+          width: "100%",
+          boxSizing: "border-box",
+          background: "rgba(255,255,255,0.04)",
+          border: "1px solid rgba(255,255,255,0.12)",
+          borderRadius: 12,
+          padding: 12,
+          color: "rgba(255,255,255,0.92)",
+          fontSize: 13.5,
+          fontFamily: "inherit",
+          lineHeight: 1.5,
+          resize: "vertical",
+          minHeight: 80,
+        }}
+      />
+      <div style={{ display: "flex", gap: 8 }}>
+        <button
+          type="button"
+          disabled={pending}
+          onClick={() => onSubmit(reason.trim())}
+          style={{
+            padding: "10px 18px",
+            background: "rgba(255,69,58,0.92)",
+            border: 0,
+            borderRadius: 10,
+            color: "#fff",
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: pending ? "default" : "pointer",
+          }}
+        >
+          Confirm rejection
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          style={{
+            padding: "10px 18px",
+            background: "rgba(255,255,255,0.07)",
+            border: "1px solid rgba(255,255,255,0.12)",
+            borderRadius: 10,
+            color: "rgba(255,255,255,0.75)",
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: "pointer",
+          }}
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export function PurchaseOrderDetailClient({ id }: PurchaseOrderDetailClientProps) {
   const { data: orderData, isError } = usePurchaseOrderDetail(id)
   const order = orderData?.order ?? null
   const error = isError
   const [now] = useState(() => Date.now())
   const { openSheet } = useSheetStack()
+  const queryClient = useQueryClient()
+
+  const poMutation = useMutation({
+    mutationFn: (payload: { action: string; notes?: string }) =>
+      fetch(`/api/procurement/${id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(payload),
+      }).then(async (r) => {
+        if (!r.ok) throw new Error("Action failed")
+        return r.json()
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["purchase-order-detail", id] })
+      void queryClient.invalidateQueries({ queryKey: ["procurement"] })
+    },
+  })
+
+  const openReject = () => {
+    openSheet({
+      snapPoints: ["mid"],
+      defaultSnap: "mid",
+      title: "Reject Purchase Order",
+      render: (onClose) => (
+        <RejectReasonSheet
+          pending={poMutation.isPending}
+          onCancel={onClose}
+          onSubmit={(reason) => {
+            poMutation.mutate({ action: "reject", notes: reason || undefined })
+            onClose()
+          }}
+        />
+      ),
+    })
+  }
 
   const handleFAB = () => {
     if (!order) return
     const isPending = order.status === "Pending"
+    const isDraft = order.status === "Draft"
+    const canReceive = order.status === "Approved" || order.status === "In Transit"
     openSheet({
       snapPoints: ["mid", "full"],
       defaultSnap: "mid",
@@ -207,7 +321,10 @@ export function PurchaseOrderDetailClient({ id }: PurchaseOrderDetailClientProps
               }
               label="Approve Comanda"
               sub="Trimite spre procesare"
-              onClick={onClose}
+              onClick={() => {
+                poMutation.mutate({ action: "approve" })
+                onClose()
+              }}
             />
           )}
           {isPending && (
@@ -230,7 +347,63 @@ export function PurchaseOrderDetailClient({ id }: PurchaseOrderDetailClientProps
               }
               label="Reject"
               sub="Request changes or cancel"
-              onClick={onClose}
+              onClick={() => {
+                onClose()
+                openReject()
+              }}
+            />
+          )}
+          {isDraft && (
+            <SheetBtn
+              color="white"
+              icon={
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="rgba(255,255,255,.9)"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <line x1="22" y1="2" x2="11" y2="13" />
+                  <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                </svg>
+              }
+              label="Submit for approval"
+              sub="Trimite comanda spre aprobare"
+              onClick={() => {
+                poMutation.mutate({ action: "submit" })
+                onClose()
+              }}
+            />
+          )}
+          {canReceive && (
+            <SheetBtn
+              color="amber"
+              icon={
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="rgba(255,159,10,.9)"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                  <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+                  <line x1="12" y1="22.08" x2="12" y2="12" />
+                </svg>
+              }
+              label="Mark received"
+              sub="Confirmă recepția mărfii"
+              onClick={() => {
+                poMutation.mutate({ action: "mark_received" })
+                onClose()
+              }}
             />
           )}
           <SheetBtn
@@ -391,6 +564,8 @@ export function PurchaseOrderDetailClient({ id }: PurchaseOrderDetailClientProps
     bg: "var(--prv-border-subtle)",
   }
   const isPending = order.status === "Pending"
+  const isDraft = order.status === "Draft"
+  const canReceive = order.status === "Approved" || order.status === "In Transit"
   const itemsTotal = order.items.reduce((s, item) => s + item.price, 0)
   const neededByDate = order.neededBy ? new Date(order.neededBy) : null
   const isUrgent =
@@ -799,10 +974,12 @@ export function PurchaseOrderDetailClient({ id }: PurchaseOrderDetailClientProps
         </div>
       </div>
 
-      {/* Approve / Reject CTAs — only for Pending */}
+      {/* Lifecycle CTAs — status-appropriate */}
       {isPending && (
         <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
           <button
+            onClick={openReject}
+            disabled={poMutation.isPending}
             style={{
               flex: 1,
               padding: 14,
@@ -812,12 +989,14 @@ export function PurchaseOrderDetailClient({ id }: PurchaseOrderDetailClientProps
               color: "rgba(255,69,58,.95)",
               fontSize: 14,
               fontWeight: 700,
-              cursor: "pointer",
+              cursor: poMutation.isPending ? "default" : "pointer",
             }}
           >
             Reject
           </button>
           <button
+            onClick={() => poMutation.mutate({ action: "approve" })}
+            disabled={poMutation.isPending}
             style={{
               flex: 2,
               padding: 14,
@@ -827,12 +1006,52 @@ export function PurchaseOrderDetailClient({ id }: PurchaseOrderDetailClientProps
               color: "#000",
               fontSize: 14,
               fontWeight: 700,
-              cursor: "pointer",
+              cursor: poMutation.isPending ? "default" : "pointer",
             }}
           >
-            Approve Comanda
+            {poMutation.isPending ? "Se procesează…" : "Approve Comanda"}
           </button>
         </div>
+      )}
+      {isDraft && (
+        <button
+          onClick={() => poMutation.mutate({ action: "submit" })}
+          disabled={poMutation.isPending}
+          style={{
+            width: "100%",
+            padding: 14,
+            borderRadius: 14,
+            background: "#fff",
+            border: "none",
+            color: "#000",
+            fontSize: 14,
+            fontWeight: 700,
+            cursor: poMutation.isPending ? "default" : "pointer",
+            marginBottom: 14,
+          }}
+        >
+          {poMutation.isPending ? "Se procesează…" : "Submit for approval"}
+        </button>
+      )}
+      {canReceive && (
+        <button
+          onClick={() => poMutation.mutate({ action: "mark_received" })}
+          disabled={poMutation.isPending}
+          style={{
+            width: "100%",
+            padding: 14,
+            borderRadius: 14,
+            background: "rgba(255,159,10,.9)",
+            border: "none",
+            color: "#000",
+            fontSize: 14,
+            fontWeight: 700,
+            cursor: poMutation.isPending ? "default" : "pointer",
+            marginBottom: 14,
+          }}
+        >
+          {poMutation.isPending ? "Se procesează…" : "Mark received"}
+        </button>
       )}
 
       {/* Activity */}
