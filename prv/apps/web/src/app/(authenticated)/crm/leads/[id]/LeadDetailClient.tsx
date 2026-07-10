@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import Link from "next/link"
 import type { LeadDetail, LeadActivity } from "@/app/api/crm/leads/[id]/route"
 import type { LeadStage, LeadSource } from "@/app/api/crm/leads/route"
@@ -302,13 +302,34 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 export function LeadDetailClient({ id }: { id: string }) {
   const [lead, setLead] = useState<LeadDetail | null>(null)
   const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
 
-  useEffect(() => {
-    fetch(`/api/crm/leads/${id}`)
+  const loadLead = useCallback(() => {
+    return fetch(`/api/crm/leads/${id}`)
       .then((r) => r.json())
       .then((d) => setLead(d.lead ?? null))
-      .finally(() => setLoading(false))
   }, [id])
+
+  useEffect(() => {
+    loadLead().finally(() => setLoading(false))
+  }, [loadLead])
+
+  const patchStage = useCallback(
+    (stage: LeadStage) => {
+      setSaving(true)
+      fetch(`/api/crm/leads/${id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ stage }),
+      })
+        .then(async (r) => {
+          if (!r.ok) throw new Error("Stage update failed")
+          await loadLead()
+        })
+        .finally(() => setSaving(false))
+    },
+    [id, loadLead]
+  )
 
   if (loading) return <Skeleton />
   if (!lead)
@@ -324,6 +345,8 @@ export function LeadDetailClient({ id }: { id: string }) {
   const sc = scoreColor(lead.score)
   const stageIdx = STAGE_INDEX[lead.stage]
   const isTerminal = lead.stage === "won" || lead.stage === "lost"
+  // Linear pipeline advance — never auto-jumps to "lost" (that is an explicit action).
+  const nextStage = !isTerminal ? STAGES[stageIdx + 1] : null
 
   return (
     <div className="px-4 pt-14 pb-28 max-w-2xl mx-auto">
@@ -775,8 +798,10 @@ export function LeadDetailClient({ id }: { id: string }) {
           <IconFile />
           <span style={{ fontSize: 11, fontWeight: 600 }}>Create quote</span>
         </Link>
-        {!isTerminal && (
+        {!isTerminal && nextStage && (
           <button
+            onClick={() => patchStage(nextStage.id)}
+            disabled={saving}
             style={{
               padding: "11px",
               borderRadius: 12,
@@ -786,15 +811,40 @@ export function LeadDetailClient({ id }: { id: string }) {
               flexDirection: "column",
               alignItems: "center",
               gap: 5,
-              cursor: "pointer",
+              cursor: saving ? "default" : "pointer",
+              opacity: saving ? 0.6 : 1,
               color: "#000",
             }}
           >
             <IconArrow />
-            <span style={{ fontSize: 11, fontWeight: 700 }}>Advance stage</span>
+            <span style={{ fontSize: 11, fontWeight: 700 }}>
+              {saving ? "Se salvează…" : `Advance → ${nextStage.label}`}
+            </span>
           </button>
         )}
       </div>
+
+      {!isTerminal && (
+        <button
+          onClick={() => patchStage("lost")}
+          disabled={saving}
+          style={{
+            marginTop: 8,
+            width: "100%",
+            padding: "11px",
+            borderRadius: 12,
+            background: "rgba(255,69,58,0.10)",
+            border: "1px solid rgba(255,69,58,0.22)",
+            color: "rgba(255,69,58,0.95)",
+            fontSize: 12,
+            fontWeight: 700,
+            cursor: saving ? "default" : "pointer",
+            opacity: saving ? 0.6 : 1,
+          }}
+        >
+          Mark as lost
+        </button>
+      )}
     </div>
   )
 }
