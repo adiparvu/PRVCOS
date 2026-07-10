@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import type { LeadDetail, LeadActivity } from "@/app/api/crm/leads/[id]/route"
 import type { LeadStage, LeadSource } from "@/app/api/crm/leads/route"
 
@@ -303,6 +304,7 @@ export function LeadDetailClient({ id }: { id: string }) {
   const [lead, setLead] = useState<LeadDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const router = useRouter()
 
   const loadLead = useCallback(() => {
     return fetch(`/api/crm/leads/${id}`)
@@ -330,6 +332,18 @@ export function LeadDetailClient({ id }: { id: string }) {
     },
     [id, loadLead]
   )
+
+  const convertLead = useCallback(() => {
+    setSaving(true)
+    fetch(`/api/crm/leads/${id}/convert`, { method: "POST" })
+      .then((r) => {
+        if (!r.ok) throw new Error("Convert failed")
+        // The lead row is now an active customer — the lead GET filters prospects
+        // only, so route to the client profile instead of refetching the lead.
+        router.push(`/crm/clients/${id}`)
+      })
+      .catch(() => setSaving(false))
+  }, [id, router])
 
   if (loading) return <Skeleton />
   if (!lead)
@@ -843,6 +857,28 @@ export function LeadDetailClient({ id }: { id: string }) {
           }}
         >
           Mark as lost
+        </button>
+      )}
+
+      {lead.stage === "won" && (
+        <button
+          onClick={convertLead}
+          disabled={saving}
+          style={{
+            marginTop: 8,
+            width: "100%",
+            padding: 13,
+            borderRadius: 12,
+            background: "rgba(255,255,255,0.92)",
+            border: "none",
+            color: "#000",
+            fontSize: 13,
+            fontWeight: 700,
+            cursor: saving ? "default" : "pointer",
+            opacity: saving ? 0.6 : 1,
+          }}
+        >
+          {saving ? "Se convertește…" : "Convert to client →"}
         </button>
       )}
     </div>
