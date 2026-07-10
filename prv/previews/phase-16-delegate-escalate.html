@@ -1,0 +1,45 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Delegate / Escalate</title>
+<style>
+  body{margin:0;background:#000;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',sans-serif;color:#fff;-webkit-font-smoothing:antialiased;padding:40px;display:flex;gap:28px;flex-wrap:wrap;justify-content:center}
+  .sheet{width:360px;background:rgba(28,28,30,0.72);backdrop-filter:blur(48px) saturate(180%);border:1px solid rgba(255,255,255,0.12);border-radius:32px 32px 0 0;box-shadow:0 -8px 40px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.18);overflow:hidden}
+  .grab{width:36px;height:5px;border-radius:3px;background:rgba(255,255,255,.22);margin:10px auto 4px}
+  .title{font-size:16px;font-weight:640;letter-spacing:-.01em;padding:8px 20px 4px;text-align:center}
+  .body{padding:8px 16px 32px;display:flex;flex-direction:column;gap:12px}
+  label{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.4);font-weight:600}
+  select,textarea{width:100%;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:12px;color:rgba(255,255,255,.92);font-size:13.5px;font-family:inherit}
+  .row{display:flex;gap:8px}
+  .btn{padding:10px 18px;border:0;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;flex:1}
+  .primary{background:rgba(255,255,255,.92);color:#000}
+  .amber{background:rgba(255,159,10,.92);color:#000}
+  .ghost{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.75)}
+  .note{font-size:12px;color:rgba(255,255,255,.4);line-height:1.5;padding:0 4px}
+  h4{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:rgba(255,255,255,.35);margin:0 0 10px;text-align:center}
+</style></head><body>
+  <div>
+    <h4>Delegate</h4>
+    <div class="sheet">
+      <div class="grab"></div>
+      <div class="title">Delegate Approval</div>
+      <div class="body">
+        <div class="note">Transfer this approval to another approver. They become responsible for the decision.</div>
+        <label>Delegate to</label>
+        <select><option>Select an approver…</option><option>Andrei Ionescu · Regional Manager</option><option>Maria Popescu · Company Owner</option></select>
+        <div class="row">
+          <button class="btn amber">Confirm delegation</button>
+          <button class="btn ghost">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div>
+    <h4>Escalate (direct action — no sheet)</h4>
+    <div class="sheet">
+      <div class="grab"></div>
+      <div class="title">Escalate Approval</div>
+      <div class="body">
+        <div class="note">Escalate raises this request to the next authority level immediately. Fires on tap from the action sheet — same as Approve, no extra form.</div>
+        <div class="row"><button class="btn amber">Escalate now</button></div>
+      </div>
+    </div>
+  </div>
+</body></html>

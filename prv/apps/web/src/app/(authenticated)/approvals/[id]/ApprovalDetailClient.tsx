@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useApprovalDetail } from "@/lib/api-hooks"
 import Link from "next/link"
 import { useSheetStack } from "@prv/ui"
@@ -346,6 +346,90 @@ function RejectForm({
   )
 }
 
+function DelegateForm({
+  onSubmit,
+  onCancel,
+  pending,
+}: {
+  onSubmit: (userId: string) => void
+  onCancel: () => void
+  pending: boolean
+}) {
+  const [userId, setUserId] = useState("")
+  const { data: peopleData } = useQuery<{
+    members: { id: string; firstName: string; lastName: string; role: string }[]
+  }>({
+    queryKey: ["people", "picker"],
+    queryFn: () => fetch("/api/people?limit=200").then((r) => r.json()),
+  })
+  const people = peopleData?.members ?? []
+  return (
+    <div style={{ padding: "8px 16px 40px", display: "flex", flexDirection: "column", gap: 12 }}>
+      <div
+        style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", lineHeight: 1.5, padding: "0 2px" }}
+      >
+        Transfer this approval to another approver. They become responsible for the decision.
+      </div>
+      <select
+        value={userId}
+        onChange={(e) => setUserId(e.target.value)}
+        style={{
+          width: "100%",
+          background: "rgba(255,255,255,0.04)",
+          border: "1px solid rgba(255,255,255,0.12)",
+          borderRadius: 12,
+          padding: 12,
+          color: "rgba(255,255,255,0.92)",
+          fontSize: 13.5,
+          fontFamily: "inherit",
+        }}
+      >
+        <option value="">Select an approver…</option>
+        {people.map((m) => (
+          <option key={m.id} value={m.id}>
+            {m.firstName} {m.lastName} · {m.role}
+          </option>
+        ))}
+      </select>
+      <div style={{ display: "flex", gap: 8 }}>
+        <button
+          type="button"
+          disabled={pending || !userId}
+          onClick={() => onSubmit(userId)}
+          style={{
+            padding: "10px 18px",
+            background: userId ? "rgba(255,159,10,0.92)" : "rgba(255,255,255,0.07)",
+            border: 0,
+            borderRadius: 10,
+            color: userId ? "#000" : "rgba(255,255,255,0.4)",
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: pending || !userId ? "default" : "pointer",
+          }}
+        >
+          Confirm delegation
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          style={{
+            padding: "10px 18px",
+            background: "rgba(255,255,255,0.07)",
+            border: "1px solid rgba(255,255,255,0.12)",
+            borderRadius: 10,
+            color: "rgba(255,255,255,0.75)",
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: "pointer",
+          }}
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export function ApprovalDetailClient({ id }: ApprovalDetailClientProps) {
   const { data: approvalData, isError } = useApprovalDetail(id)
   const approval = approvalData?.approval ?? null
@@ -380,6 +464,24 @@ export function ApprovalDetailClient({ id }: ApprovalDetailClientProps) {
           onCancel={onClose}
           onSubmit={(reason) => {
             decisionMutation.mutate({ action: "reject", comment: reason || undefined })
+            onClose()
+          }}
+        />
+      ),
+    })
+  }
+
+  const openDelegate = () => {
+    openSheet({
+      snapPoints: ["mid"],
+      defaultSnap: "mid",
+      title: "Delegate Approval",
+      render: (onClose) => (
+        <DelegateForm
+          pending={decisionMutation.isPending}
+          onCancel={onClose}
+          onSubmit={(userId) => {
+            decisionMutation.mutate({ action: "delegate", delegateToUserId: userId })
             onClose()
           }}
         />
@@ -471,8 +573,37 @@ export function ApprovalDetailClient({ id }: ApprovalDetailClientProps) {
             }
             label="Delegate"
             sub="Transfer to another approver"
-            onClick={onClose}
+            onClick={() => {
+              onClose()
+              openDelegate()
+            }}
           />
+          {isPending && (
+            <SheetBtn
+              color="amber"
+              icon={
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="rgba(255,159,10,.9)"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <line x1="12" y1="19" x2="12" y2="5" />
+                  <polyline points="5 12 12 5 19 12" />
+                </svg>
+              }
+              label="Escalate"
+              sub="Raise to next authority level"
+              onClick={() => {
+                decisionMutation.mutate({ action: "escalate" })
+                onClose()
+              }}
+            />
+          )}
           <SheetBtn
             color="white"
             icon={
