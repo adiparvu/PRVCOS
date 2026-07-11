@@ -112,6 +112,114 @@ function InfoRow({
   )
 }
 
+function RequestSignatureForm({
+  onSubmit,
+  onCancel,
+  pending,
+}: {
+  onSubmit: (signer: { userId: string; signerName: string; signerEmail: string }) => void
+  onCancel: () => void
+  pending: boolean
+}) {
+  const [userId, setUserId] = useState("")
+  const { data: peopleData } = useQuery<{
+    members: { id: string; fullName: string; email: string; role: string }[]
+  }>({
+    queryKey: ["people", "picker"],
+    queryFn: () => fetch("/api/people?limit=200").then((r) => r.json()),
+  })
+  const people = peopleData?.members ?? []
+  const selected = people.find((m) => m.id === userId)
+  return (
+    <div style={{ padding: "12px 18px 40px", display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={{ fontSize: 12, color: "var(--prv-text-3)", lineHeight: 1.5 }}>
+        Choose who should sign this document. They receive a signature request tied to their
+        account.
+      </div>
+      <select
+        value={userId}
+        onChange={(e) => setUserId(e.target.value)}
+        style={{
+          width: "100%",
+          boxSizing: "border-box",
+          background: "rgba(255,255,255,0.04)",
+          border: "1px solid rgba(255,255,255,0.12)",
+          borderRadius: 12,
+          padding: 12,
+          color: "rgba(255,255,255,0.92)",
+          fontSize: 13.5,
+          fontFamily: "inherit",
+        }}
+      >
+        <option value="">Select a signer…</option>
+        {people.map((m) => (
+          <option key={m.id} value={m.id}>
+            {m.fullName} · {m.role}
+          </option>
+        ))}
+      </select>
+      {selected && (
+        <div
+          style={{
+            background: "rgba(255,255,255,0.04)",
+            border: "1px solid rgba(255,255,255,0.09)",
+            borderRadius: 12,
+            padding: "11px 13px",
+            fontSize: 12.5,
+            color: "var(--prv-text-3)",
+          }}
+        >
+          Signer: <b style={{ color: "rgba(255,255,255,0.85)" }}>{selected.fullName}</b> ·{" "}
+          {selected.email}
+        </div>
+      )}
+      <div style={{ display: "flex", gap: 8, marginTop: 2 }}>
+        <button
+          type="button"
+          disabled={pending || !selected}
+          onClick={() =>
+            selected &&
+            onSubmit({
+              userId: selected.id,
+              signerName: selected.fullName,
+              signerEmail: selected.email,
+            })
+          }
+          style={{
+            flex: 1,
+            background: selected ? "rgba(48,209,88,0.85)" : "rgba(255,255,255,0.07)",
+            color: selected ? "#00220c" : "rgba(255,255,255,0.4)",
+            border: "none",
+            borderRadius: 11,
+            padding: 12,
+            fontSize: 13.5,
+            fontWeight: 700,
+            cursor: pending || !selected ? "default" : "pointer",
+          }}
+        >
+          {pending ? "Sending…" : "Send request"}
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          style={{
+            background: "rgba(255,255,255,0.07)",
+            border: "1px solid rgba(255,255,255,0.12)",
+            color: "rgba(255,255,255,0.75)",
+            borderRadius: 11,
+            padding: "12px 20px",
+            fontSize: 13.5,
+            fontWeight: 600,
+            cursor: "pointer",
+          }}
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  )
+}
+
 type SharePermission = "view" | "download" | "edit" | "manage"
 
 function ShareForm({
@@ -267,6 +375,7 @@ export function DocumentDetailClient({ id }: { id: string }) {
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
   const [sharing, setSharing] = useState(false)
+  const [signingReq, setSigningReq] = useState(false)
 
   const loadDoc = useCallback(() => {
     return fetch(`/api/documents/${id}`)
@@ -329,6 +438,34 @@ export function DocumentDetailClient({ id }: { id: string }) {
     })
   }, [id, openSheet, sharing])
 
+  const openSignature = useCallback(() => {
+    openSheet({
+      snapPoints: ["mid"],
+      defaultSnap: "mid",
+      title: "Request Signature",
+      render: (onClose) => (
+        <RequestSignatureForm
+          pending={signingReq}
+          onCancel={onClose}
+          onSubmit={(signer) => {
+            setSigningReq(true)
+            fetch(`/api/documents/${id}/signatures`, {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify(signer),
+            })
+              .then(async (r) => {
+                if (!r.ok) throw new Error("Signature request failed")
+                await loadDoc()
+                onClose()
+              })
+              .finally(() => setSigningReq(false))
+          }}
+        />
+      ),
+    })
+  }, [id, openSheet, signingReq, loadDoc])
+
   function openFab() {
     if (!doc) return
     const isSigable = doc.status === "pending" || doc.status === "draft"
@@ -340,7 +477,10 @@ export function DocumentDetailClient({ id }: { id: string }) {
         <div style={{ padding: "0 16px 24px", display: "flex", flexDirection: "column", gap: 8 }}>
           {isSigable && (
             <button
-              onClick={onClose}
+              onClick={() => {
+                onClose()
+                openSignature()
+              }}
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -380,10 +520,10 @@ export function DocumentDetailClient({ id }: { id: string }) {
               </div>
               <div>
                 <p style={{ fontSize: 15, fontWeight: 600, color: green, margin: 0 }}>
-                  Sign Document
+                  Request Signature
                 </p>
                 <p style={{ fontSize: 12, color: t3, margin: "2px 0 0" }}>
-                  Electronic signature with Face ID
+                  Send a signature request to a signer
                 </p>
               </div>
             </button>

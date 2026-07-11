@@ -1,0 +1,35 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Request Signature</title>
+<style>
+  body{margin:0;background:#000;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',sans-serif;color:#fff;-webkit-font-smoothing:antialiased;padding:40px;display:flex;gap:26px;flex-wrap:wrap;justify-content:center;align-items:flex-start}
+  .col{width:340px}
+  h4{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:rgba(255,255,255,.35);margin:0 0 12px 2px;font-weight:600}
+  .row{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:14px;background:rgba(48,209,88,0.10);border:1px solid rgba(48,209,88,0.2)}
+  .ic{width:36px;height:36px;border-radius:10px;background:rgba(48,209,88,0.18);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+  .lbl{font-size:15px;font-weight:600;color:rgba(48,209,88,.95)}
+  .sub{font-size:12px;color:rgba(255,255,255,.4);margin-top:2px}
+  .sheet{background:rgba(28,28,30,0.72);backdrop-filter:blur(48px);border:1px solid rgba(255,255,255,0.12);border-radius:28px;box-shadow:inset 0 1px 0 rgba(255,255,255,.16);overflow:hidden}
+  .grab{width:36px;height:5px;border-radius:3px;background:rgba(255,255,255,.22);margin:10px auto 4px}
+  .title{font-size:16px;font-weight:640;padding:8px 20px 2px;text-align:center}
+  .body{padding:12px 18px 30px;display:flex;flex-direction:column;gap:12px}
+  select{width:100%;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:12px;color:rgba(255,255,255,.92);font-size:13.5px;font-family:inherit}
+  .card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:12px;padding:11px 13px;font-size:12.5px;color:rgba(255,255,255,.55)}
+  .btns{display:flex;gap:8px;margin-top:2px}
+  .go{flex:1;background:rgba(48,209,88,.85);color:#00220c;border:none;border-radius:11px;padding:12px;font-size:13.5px;font-weight:700}
+  .cancel{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.75);border-radius:11px;padding:12px 20px;font-size:13.5px;font-weight:600}
+  .hint{font-size:12px;color:rgba(255,255,255,.4);line-height:1.5}
+</style></head><body>
+  <div class="col"><h4>Action row — relabeled</h4>
+    <div class="row"><div class="ic">✍</div><div><div class="lbl">Request Signature</div><div class="sub">Send a signature request to a signer</div></div></div>
+  </div>
+  <div class="col"><h4>Request sheet</h4>
+    <div class="sheet"><div class="grab"></div>
+      <div class="title">Request Signature</div>
+      <div class="body">
+        <div class="hint">Choose who should sign this document. They receive a signature request tied to their account.</div>
+        <select><option>Select a signer…</option><option>Maria Popescu · Company Owner</option><option>Andrei Ionescu · Site Lead</option></select>
+        <div class="card">Signer: <b style="color:rgba(255,255,255,.85)">Maria Popescu</b> · maria.popescu@prv.ro</div>
+        <div class="btns"><button class="go">Send request</button><button class="cancel">Cancel</button></div>
+      </div>
+    </div>
+  </div>
+</body></html>
