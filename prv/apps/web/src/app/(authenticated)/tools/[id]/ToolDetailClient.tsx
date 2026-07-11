@@ -1,5 +1,7 @@
 "use client"
 
+import { useState } from "react"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useToolDetail } from "@/lib/api-hooks"
 import Link from "next/link"
 import { useSheetStack } from "@prv/ui"
@@ -216,11 +218,130 @@ function SectionLabel({ children }: { children: string }) {
 
 // ── Main component ────────────────────────────────────────────────────────────
 
+function AssignForm({
+  onSubmit,
+  onCancel,
+  pending,
+}: {
+  onSubmit: (userId: string) => void
+  onCancel: () => void
+  pending: boolean
+}) {
+  const [userId, setUserId] = useState("")
+  const { data: peopleData } = useQuery<{
+    members: { id: string; firstName: string; lastName: string; role: string }[]
+  }>({
+    queryKey: ["people", "picker"],
+    queryFn: () => fetch("/api/people?limit=200").then((r) => r.json()),
+  })
+  const people = peopleData?.members ?? []
+  return (
+    <div style={{ padding: "12px 16px 40px", display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={{ fontSize: 12, color: "var(--prv-text-3)", lineHeight: 1.5, padding: "0 2px" }}>
+        Assign this tool to an employee. It moves to In Use under their name.
+      </div>
+      <select
+        value={userId}
+        onChange={(e) => setUserId(e.target.value)}
+        style={{
+          width: "100%",
+          boxSizing: "border-box",
+          background: "rgba(255,255,255,0.04)",
+          border: "1px solid rgba(255,255,255,0.12)",
+          borderRadius: 12,
+          padding: 12,
+          color: "rgba(255,255,255,0.92)",
+          fontSize: 13.5,
+          fontFamily: "inherit",
+        }}
+      >
+        <option value="">Select an employee…</option>
+        {people.map((m) => (
+          <option key={m.id} value={m.id}>
+            {m.firstName} {m.lastName} · {m.role}
+          </option>
+        ))}
+      </select>
+      <div style={{ display: "flex", gap: 8 }}>
+        <button
+          type="button"
+          disabled={pending || !userId}
+          onClick={() => onSubmit(userId)}
+          style={{
+            padding: "10px 18px",
+            background: userId ? "rgba(10,132,255,0.9)" : "rgba(255,255,255,0.07)",
+            border: 0,
+            borderRadius: 10,
+            color: userId ? "#fff" : "rgba(255,255,255,0.4)",
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: pending || !userId ? "default" : "pointer",
+          }}
+        >
+          Assign tool
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          style={{
+            padding: "10px 18px",
+            background: "rgba(255,255,255,0.07)",
+            border: "1px solid rgba(255,255,255,0.12)",
+            borderRadius: 10,
+            color: "rgba(255,255,255,0.75)",
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: "pointer",
+          }}
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export function ToolDetailClient({ id }: ToolDetailClientProps) {
   const { data: toolData, isError } = useToolDetail(id)
   const tool = toolData?.tool ?? null
   const error = isError
   const { openSheet } = useSheetStack()
+  const queryClient = useQueryClient()
+
+  const toolMutation = useMutation({
+    mutationFn: (payload: Record<string, unknown>) =>
+      fetch(`/api/tools/${id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(payload),
+      }).then(async (r) => {
+        if (!r.ok) throw new Error("Action failed")
+        return r.json()
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["tool-detail", id] })
+      void queryClient.invalidateQueries({ queryKey: ["tools"] })
+      void queryClient.invalidateQueries({ queryKey: ["tool-inventory"] })
+    },
+  })
+
+  const openAssign = () => {
+    openSheet({
+      snapPoints: ["mid"],
+      defaultSnap: "mid",
+      title: "Assign Tool",
+      render: (onClose) => (
+        <AssignForm
+          pending={toolMutation.isPending}
+          onCancel={onClose}
+          onSubmit={(userId) => {
+            toolMutation.mutate({ status: "in_use", assignedUserId: userId })
+            onClose()
+          }}
+        />
+      ),
+    })
+  }
 
   const handleFAB = () => {
     if (!tool) return
@@ -256,7 +377,10 @@ export function ToolDetailClient({ id }: ToolDetailClientProps) {
             }
             label="Assign"
             sub={isInUse ? `Assigned: ${tool.assignedTo ?? "—"}` : "Assign to an employee"}
-            onClick={onClose}
+            onClick={() => {
+              onClose()
+              openAssign()
+            }}
           />
           <SheetBtn
             color="amber"
@@ -276,7 +400,10 @@ export function ToolDetailClient({ id }: ToolDetailClientProps) {
             }
             label="Trimite la Service"
             sub={hasOverdue ? "Overdue maintenance detected" : "Schedule service"}
-            onClick={onClose}
+            onClick={() => {
+              toolMutation.mutate({ status: "maintenance", assignedUserId: null })
+              onClose()
+            }}
           />
           {isInUse && (
             <SheetBtn
@@ -297,7 +424,10 @@ export function ToolDetailClient({ id }: ToolDetailClientProps) {
               }
               label="Mark Returned"
               sub={`Retur de la ${tool.assignedTo ?? "—"}`}
-              onClick={onClose}
+              onClick={() => {
+                toolMutation.mutate({ status: "available", assignedUserId: null })
+                onClose()
+              }}
             />
           )}
           <SheetBtn
@@ -340,7 +470,10 @@ export function ToolDetailClient({ id }: ToolDetailClientProps) {
             }
             label="Mark Missing"
             sub="Lost or stolen tool"
-            onClick={onClose}
+            onClick={() => {
+              toolMutation.mutate({ status: "lost", assignedUserId: null })
+              onClose()
+            }}
           />
         </div>
       ),
