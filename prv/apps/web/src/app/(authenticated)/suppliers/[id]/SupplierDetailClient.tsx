@@ -1,5 +1,6 @@
 "use client"
 
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 import Link from "next/link"
 import { useSheetStack } from "@prv/ui"
 import { useSupplierScorecard, useSupplierDetail } from "@/lib/api-hooks"
@@ -399,11 +400,104 @@ function LoadingSkeleton() {
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 
+type StatusTone = "green" | "amber" | "red"
+
+function StatusActionButton({
+  label,
+  tone,
+  icon,
+  onClick,
+  disabled,
+}: {
+  label: string
+  tone: StatusTone
+  icon: React.ReactNode
+  onClick: () => void
+  disabled: boolean
+}) {
+  const palette: Record<StatusTone, { bg: string; border: string; fg: string; iconBg: string }> = {
+    green: {
+      bg: "rgba(48,209,88,0.10)",
+      border: "rgba(48,209,88,0.20)",
+      fg: "rgba(48,209,88,0.95)",
+      iconBg: "rgba(48,209,88,0.16)",
+    },
+    amber: {
+      bg: "rgba(255,159,10,0.10)",
+      border: "rgba(255,159,10,0.20)",
+      fg: "rgba(255,159,10,0.95)",
+      iconBg: "rgba(255,159,10,0.16)",
+    },
+    red: {
+      bg: "rgba(255,69,58,0.10)",
+      border: "rgba(255,69,58,0.20)",
+      fg: "rgba(255,69,58,0.95)",
+      iconBg: "rgba(255,69,58,0.16)",
+    },
+  }
+  const c = palette[tone]
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+        padding: "14px 16px",
+        borderRadius: 14,
+        background: c.bg,
+        border: `1px solid ${c.border}`,
+        color: c.fg,
+        fontSize: 15,
+        fontWeight: 600,
+        cursor: disabled ? "default" : "pointer",
+        opacity: disabled ? 0.6 : 1,
+        textAlign: "left",
+        width: "100%",
+      }}
+    >
+      <div
+        style={{
+          width: 32,
+          height: 32,
+          borderRadius: 9,
+          background: c.iconBg,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flexShrink: 0,
+        }}
+      >
+        {icon}
+      </div>
+      {label}
+    </button>
+  )
+}
+
 export function SupplierDetailClient({ id }: SupplierDetailClientProps) {
   const { data, isError, isLoading: loading } = useSupplierDetail(id)
   const supplier = data?.supplier ?? null
   const error = isError ? "Failed to load supplier." : null
   const { openSheet } = useSheetStack()
+  const queryClient = useQueryClient()
+
+  const statusMutation = useMutation({
+    mutationFn: (status: "active" | "inactive" | "pending" | "blacklisted") =>
+      fetch(`/api/suppliers/${id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ status }),
+      }).then(async (r) => {
+        if (!r.ok) throw new Error("Status update failed")
+        return r.json()
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["supplier-detail", id] })
+      void queryClient.invalidateQueries({ queryKey: ["suppliers"] })
+    },
+  })
   const scorecard = useSupplierScorecard(id)
 
   function openActions() {
@@ -488,6 +582,121 @@ export function SupplierDetailClient({ id }: SupplierDetailClientProps) {
               Email
             </a>
           </div>
+          {/* Vendor status transitions */}
+          {(() => {
+            type Act = {
+              label: string
+              to: "active" | "inactive" | "blacklisted"
+              tone: StatusTone
+              icon: React.ReactNode
+            }
+            const iconCheck = (
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            )
+            const iconPause = (
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <line x1="10" y1="15" x2="10" y2="9" />
+                <line x1="14" y1="15" x2="14" y2="9" />
+                <circle cx="12" cy="12" r="10" />
+              </svg>
+            )
+            const iconBlock = (
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+              </svg>
+            )
+            const iconRefresh = (
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <polyline points="23 4 23 10 17 10" />
+                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+              </svg>
+            )
+            const acts: Act[] =
+              supplier.status === "pending"
+                ? [
+                    { label: "Approve supplier", to: "active", tone: "green", icon: iconCheck },
+                    { label: "Reject", to: "blacklisted", tone: "red", icon: iconBlock },
+                  ]
+                : supplier.status === "active"
+                  ? [
+                      { label: "Suspend", to: "inactive", tone: "amber", icon: iconPause },
+                      { label: "Blacklist", to: "blacklisted", tone: "red", icon: iconBlock },
+                    ]
+                  : supplier.status === "inactive"
+                    ? [{ label: "Reactivate", to: "active", tone: "green", icon: iconCheck }]
+                    : supplier.status === "at_risk"
+                      ? [{ label: "Reinstate", to: "active", tone: "green", icon: iconRefresh }]
+                      : []
+            if (acts.length === 0) return null
+            return (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <p
+                  style={{
+                    fontSize: 10,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.06em",
+                    color: "var(--prv-text-3)",
+                    fontWeight: 600,
+                    margin: "4px 2px 0",
+                  }}
+                >
+                  Vendor status
+                </p>
+                {acts.map((a) => (
+                  <StatusActionButton
+                    key={a.to + a.label}
+                    label={a.label}
+                    tone={a.tone}
+                    icon={a.icon}
+                    disabled={statusMutation.isPending}
+                    onClick={() => {
+                      statusMutation.mutate(a.to)
+                      onClose()
+                    }}
+                  />
+                ))}
+              </div>
+            )
+          })()}
           {/* New order */}
           <button
             onClick={onClose}

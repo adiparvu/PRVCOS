@@ -1,0 +1,37 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Vendor Status</title>
+<style>
+  body{margin:0;background:#000;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',sans-serif;color:#fff;-webkit-font-smoothing:antialiased;padding:34px;display:flex;gap:20px;flex-wrap:wrap;justify-content:center;align-items:flex-start}
+  .col{width:250px}
+  h4{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:rgba(255,255,255,.35);margin:0 0 10px 2px;font-weight:600;display:flex;gap:8px;align-items:center}
+  .pill{font-size:10px;font-weight:700;padding:3px 8px;border-radius:7px}
+  .p-active{background:rgba(48,209,88,.14);color:rgba(48,209,88,.95)}
+  .p-pending{background:rgba(255,159,10,.14);color:rgba(255,159,10,.95)}
+  .p-inactive{background:rgba(255,255,255,.10);color:rgba(255,255,255,.6)}
+  .p-risk{background:rgba(255,107,107,.14);color:#ff6b6b}
+  .grp{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:16px;padding:8px}
+  .lab{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.3);margin:6px 8px 8px;font-weight:600}
+  .btn{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:12px;font-size:14px;font-weight:600;margin:4px 0;text-align:left;border:1px solid transparent}
+  .ic{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+  .green{background:rgba(48,209,88,.10);border-color:rgba(48,209,88,.2);color:rgba(48,209,88,.95)} .green .ic{background:rgba(48,209,88,.16)}
+  .amber{background:rgba(255,159,10,.10);border-color:rgba(255,159,10,.2);color:rgba(255,159,10,.95)} .amber .ic{background:rgba(255,159,10,.16)}
+  .red{background:rgba(255,69,58,.10);border-color:rgba(255,69,58,.2);color:rgba(255,69,58,.95)} .red .ic{background:rgba(255,69,58,.16)}
+</style></head><body>
+  <div class="col"><h4>Pending <span class="pill p-pending">Pending</span></h4>
+    <div class="grp"><div class="lab">Vendor status</div>
+      <div class="btn green"><div class="ic">✓</div>Approve supplier</div>
+      <div class="btn red"><div class="ic">⦸</div>Reject</div>
+    </div></div>
+  <div class="col"><h4>Active <span class="pill p-active">Active</span></h4>
+    <div class="grp"><div class="lab">Vendor status</div>
+      <div class="btn amber"><div class="ic">⏸</div>Suspend</div>
+      <div class="btn red"><div class="ic">⛔</div>Blacklist</div>
+    </div></div>
+  <div class="col"><h4>Inactive <span class="pill p-inactive">Inactive</span></h4>
+    <div class="grp"><div class="lab">Vendor status</div>
+      <div class="btn green"><div class="ic">✓</div>Reactivate</div>
+    </div></div>
+  <div class="col"><h4>At risk <span class="pill p-risk">At risk</span></h4>
+    <div class="grp"><div class="lab">Vendor status</div>
+      <div class="btn green"><div class="ic">↻</div>Reinstate</div>
+    </div></div>
+</body></html>
