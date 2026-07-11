@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
+import { useQuery } from "@tanstack/react-query"
 import { useRouter } from "next/navigation"
 import { useSheetStack } from "@prv/ui"
 import type { DocumentDetail } from "@/app/api/documents/[id]/route"
@@ -111,12 +112,161 @@ function InfoRow({
   )
 }
 
+type SharePermission = "view" | "download" | "edit" | "manage"
+
+function ShareForm({
+  onSubmit,
+  onCancel,
+  pending,
+}: {
+  onSubmit: (granteeUserId: string, permission: SharePermission) => void
+  onCancel: () => void
+  pending: boolean
+}) {
+  const [userId, setUserId] = useState("")
+  const [permission, setPermission] = useState<SharePermission>("view")
+  const { data: peopleData } = useQuery<{
+    members: { id: string; firstName: string; lastName: string; role: string }[]
+  }>({
+    queryKey: ["people", "picker"],
+    queryFn: () => fetch("/api/people?limit=200").then((r) => r.json()),
+  })
+  const people = peopleData?.members ?? []
+  const perms: SharePermission[] = ["view", "download", "edit", "manage"]
+  const permLabel: Record<SharePermission, string> = {
+    view: "View",
+    download: "Download",
+    edit: "Edit",
+    manage: "Manage",
+  }
+  return (
+    <div style={{ padding: "12px 18px 40px", display: "flex", flexDirection: "column", gap: 14 }}>
+      <div style={{ fontSize: 12, color: "var(--prv-text-3)", lineHeight: 1.5 }}>
+        Grant a colleague access to this document. They will find it in their shared documents.
+      </div>
+      <div>
+        <span
+          style={{
+            fontSize: 11,
+            textTransform: "uppercase",
+            letterSpacing: "0.06em",
+            color: "var(--prv-text-3)",
+            fontWeight: 600,
+            display: "block",
+            marginBottom: 6,
+          }}
+        >
+          Share with
+        </span>
+        <select
+          value={userId}
+          onChange={(e) => setUserId(e.target.value)}
+          style={{
+            width: "100%",
+            boxSizing: "border-box",
+            background: "rgba(255,255,255,0.04)",
+            border: "1px solid rgba(255,255,255,0.12)",
+            borderRadius: 12,
+            padding: 12,
+            color: "rgba(255,255,255,0.92)",
+            fontSize: 13.5,
+            fontFamily: "inherit",
+          }}
+        >
+          <option value="">Select a colleague…</option>
+          {people.map((m) => (
+            <option key={m.id} value={m.id}>
+              {m.firstName} {m.lastName} · {m.role}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div>
+        <span
+          style={{
+            fontSize: 11,
+            textTransform: "uppercase",
+            letterSpacing: "0.06em",
+            color: "var(--prv-text-3)",
+            fontWeight: 600,
+            display: "block",
+            marginBottom: 6,
+          }}
+        >
+          Permission
+        </span>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          {perms.map((perm) => (
+            <button
+              key={perm}
+              type="button"
+              onClick={() => setPermission(perm)}
+              style={{
+                padding: "8px 14px",
+                borderRadius: 10,
+                fontSize: 12.5,
+                fontWeight: 600,
+                border:
+                  permission === perm
+                    ? "1px solid transparent"
+                    : "1px solid rgba(255,255,255,0.12)",
+                background: permission === perm ? "rgba(10,132,255,0.9)" : "rgba(255,255,255,0.05)",
+                color: permission === perm ? "#fff" : "rgba(255,255,255,0.7)",
+                cursor: "pointer",
+              }}
+            >
+              {permLabel[perm]}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+        <button
+          type="button"
+          disabled={pending || !userId}
+          onClick={() => onSubmit(userId, permission)}
+          style={{
+            flex: 1,
+            background: userId ? "rgba(10,132,255,0.9)" : "rgba(255,255,255,0.07)",
+            color: userId ? "#fff" : "rgba(255,255,255,0.4)",
+            border: "none",
+            borderRadius: 11,
+            padding: 12,
+            fontSize: 13.5,
+            fontWeight: 700,
+            cursor: pending || !userId ? "default" : "pointer",
+          }}
+        >
+          {pending ? "Sharing…" : "Share"}
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          style={{
+            background: "rgba(255,255,255,0.07)",
+            border: "1px solid rgba(255,255,255,0.12)",
+            color: "rgba(255,255,255,0.75)",
+            borderRadius: 11,
+            padding: "12px 20px",
+            fontSize: 13.5,
+            fontWeight: 600,
+            cursor: "pointer",
+          }}
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export function DocumentDetailClient({ id }: { id: string }) {
   const router = useRouter()
   const { openSheet } = useSheetStack()
   const [doc, setDoc] = useState<DocumentDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
+  const [sharing, setSharing] = useState(false)
 
   const loadDoc = useCallback(() => {
     return fetch(`/api/documents/${id}`)
@@ -151,6 +301,33 @@ export function DocumentDetailClient({ id }: { id: string }) {
       })
       .catch(() => setBusy(false))
   }, [id, router])
+
+  const openShare = useCallback(() => {
+    openSheet({
+      snapPoints: ["mid"],
+      defaultSnap: "mid",
+      title: "Share Document",
+      render: (onClose) => (
+        <ShareForm
+          pending={sharing}
+          onCancel={onClose}
+          onSubmit={(granteeUserId, permission) => {
+            setSharing(true)
+            fetch(`/api/documents/${id}/shares`, {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({ scope: "internal", granteeUserId, permission }),
+            })
+              .then((r) => {
+                if (!r.ok) throw new Error("Share failed")
+                onClose()
+              })
+              .finally(() => setSharing(false))
+          }}
+        />
+      ),
+    })
+  }, [id, openSheet, sharing])
 
   function openFab() {
     if (!doc) return
@@ -212,7 +389,10 @@ export function DocumentDetailClient({ id }: { id: string }) {
             </button>
           )}
           <button
-            onClick={onClose}
+            onClick={() => {
+              onClose()
+              openShare()
+            }}
             style={{
               display: "flex",
               alignItems: "center",
