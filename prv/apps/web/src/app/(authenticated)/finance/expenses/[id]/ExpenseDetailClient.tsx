@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import Link from "next/link"
 import type { ExpenseDetail, ApprovalStep } from "@/app/api/finance/expenses/[id]/route"
 
@@ -601,8 +601,10 @@ export function ExpenseDetailClient({ id }: { id: string }) {
     Record<string, "approved" | "pending" | "locked" | "rejected">
   >({})
 
-  useEffect(() => {
-    fetch(`/api/finance/expenses/${id}`)
+  const [submitting, setSubmitting] = useState(false)
+
+  const loadDetail = useCallback(() => {
+    return fetch(`/api/finance/expenses/${id}`)
       .then((r) => r.json())
       .then((data: ExpenseDetail) => {
         setDetail(data)
@@ -612,25 +614,57 @@ export function ExpenseDetailClient({ id }: { id: string }) {
         })
         setStepStatuses(initial)
       })
-      .finally(() => setLoading(false))
   }, [id])
 
+  useEffect(() => {
+    loadDetail().finally(() => setLoading(false))
+  }, [loadDetail])
+
+  // Persist a terminal decision to the single-status expense record, then
+  // refetch so the derived approval chain reflects server truth.
+  const persistStatus = useCallback(
+    (status: "approved" | "rejected") => {
+      setSubmitting(true)
+      fetch(`/api/finance/expenses/${id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ status }),
+      })
+        .then(async (r) => {
+          if (!r.ok) throw new Error("Decision failed")
+          await loadDetail()
+        })
+        .finally(() => setSubmitting(false))
+    },
+    [id, loadDetail]
+  )
+
   const handleApprove = (stepId: string) => {
+    if (submitting) return
+    const steps = detail?.approvalSteps ?? []
+    const stepIndex = steps.findIndex((s) => s.id === stepId)
+    const isFinalStep = stepIndex === steps.length - 1
+    if (isFinalStep) {
+      // Final sign-off — persist the approved status for the whole expense.
+      persistStatus("approved")
+      return
+    }
+    // Intermediate sign-off — advance the local chain to the next reviewer.
     setStepStatuses((prev) => {
       const next = { ...prev, [stepId]: "approved" as const }
-      if (detail) {
-        const stepIndex = detail.approvalSteps.findIndex((s) => s.id === stepId)
-        const nextStep = detail.approvalSteps[stepIndex + 1]
-        if (nextStep && next[nextStep.id] === "locked") {
-          next[nextStep.id] = "pending"
-        }
+      const nextStep = steps[stepIndex + 1]
+      if (nextStep && next[nextStep.id] === "locked") {
+        next[nextStep.id] = "pending"
       }
       return next
     })
   }
 
   const handleReject = (stepId: string) => {
+    if (submitting) return
+    // A rejection at any level rejects the expense.
     setStepStatuses((prev) => ({ ...prev, [stepId]: "rejected" as const }))
+    persistStatus("rejected")
   }
 
   const amberColor = "rgba(255,159,10,.95)"
