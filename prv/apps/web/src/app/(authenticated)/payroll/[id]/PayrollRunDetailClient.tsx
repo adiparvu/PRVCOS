@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { useSheetStack } from "@prv/ui"
 import type { PayrollRunDetail } from "@/app/api/payroll/[id]/route"
@@ -105,19 +105,46 @@ export function PayrollRunDetailClient({ id }: { id: string }) {
   const { openSheet } = useSheetStack()
   const [run, setRun] = useState<PayrollRunDetail | null>(null)
   const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
+
+  const loadRun = useCallback(() => {
+    return fetch(`/api/payroll/${id}`)
+      .then((r) => r.json())
+      .then((data: PayrollRunDetail) => setRun(data))
+  }, [id])
 
   useEffect(() => {
-    fetch(`/api/payroll/${id}`)
-      .then((r) => r.json())
-      .then((data: PayrollRunDetail) => {
-        setRun(data)
-        setLoading(false)
+    loadRun().finally(() => setLoading(false))
+  }, [loadRun])
+
+  const runAction = useCallback(
+    (action: "start_processing" | "mark_done") => {
+      setSubmitting(true)
+      fetch(`/api/payroll/${id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action }),
       })
-  }, [id])
+        .then(async (r) => {
+          if (!r.ok) throw new Error("Action failed")
+          await loadRun()
+        })
+        .finally(() => setSubmitting(false))
+    },
+    [id, loadRun]
+  )
 
   function openFab() {
     if (!run) return
     const isActionable = run.status === "processing" || run.status === "pending"
+    const isPending = run.status === "pending"
+    const primaryAction: "start_processing" | "mark_done" = isPending
+      ? "start_processing"
+      : "mark_done"
+    const primaryLabel = isPending ? "Start Processing" : "Approve Run"
+    const primarySub = isPending
+      ? "Begin processing this payroll run"
+      : "Trigger payment for all employees"
     openSheet({
       snapPoints: ["mid", "full"],
       defaultSnap: "mid",
@@ -126,7 +153,11 @@ export function PayrollRunDetailClient({ id }: { id: string }) {
         <div style={{ padding: "0 16px 24px", display: "flex", flexDirection: "column", gap: 8 }}>
           {isActionable && (
             <button
-              onClick={onClose}
+              disabled={submitting}
+              onClick={() => {
+                runAction(primaryAction)
+                onClose()
+              }}
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -135,7 +166,8 @@ export function PayrollRunDetailClient({ id }: { id: string }) {
                 borderRadius: 14,
                 background: "rgba(48,209,88,0.10)",
                 border: "1px solid rgba(48,209,88,0.2)",
-                cursor: "pointer",
+                cursor: submitting ? "default" : "pointer",
+                opacity: submitting ? 0.6 : 1,
                 textAlign: "left",
               }}
             >
@@ -166,11 +198,9 @@ export function PayrollRunDetailClient({ id }: { id: string }) {
               </div>
               <div>
                 <p style={{ fontSize: 15, fontWeight: 600, color: green, margin: 0 }}>
-                  Approve Run
+                  {primaryLabel}
                 </p>
-                <p style={{ fontSize: 12, color: t3, margin: "2px 0 0" }}>
-                  Trigger payment for all employees
-                </p>
+                <p style={{ fontSize: 12, color: t3, margin: "2px 0 0" }}>{primarySub}</p>
               </div>
             </button>
           )}
