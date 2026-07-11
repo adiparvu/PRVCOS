@@ -77,6 +77,7 @@ export interface ClientDetail extends ClientSummary {
   invoices: LinkedInvoice[]
   projects: LinkedProject[]
   activities: ClientActivity[]
+  owner: string | null
 }
 
 const VIP_LTV_THRESHOLD = 30_000
@@ -349,6 +350,9 @@ export const GET = withGates(
       invoices: linkedInvoices,
       projects: linkedProjects,
       activities,
+      owner: row.assignedFirstName
+        ? `${row.assignedFirstName} ${row.assignedLastName ?? ""}`.trim()
+        : null,
     }
 
     return NextResponse.json({ client: detail })

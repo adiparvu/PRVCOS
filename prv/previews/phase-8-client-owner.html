@@ -1,0 +1,34 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Client Owner</title>
+<style>
+  body{margin:0;background:#000;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',sans-serif;color:#fff;-webkit-font-smoothing:antialiased;padding:36px;display:flex;gap:26px;flex-wrap:wrap;justify-content:center;align-items:flex-start}
+  .col{width:344px}
+  h4{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:rgba(255,255,255,.35);margin:0 0 12px 2px;font-weight:600}
+  .sheet{background:rgba(28,28,30,0.72);backdrop-filter:blur(48px);border:1px solid rgba(255,255,255,0.12);border-radius:24px;box-shadow:inset 0 1px 0 rgba(255,255,255,.16);overflow:hidden;padding:10px}
+  .btn{display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:14px;margin:6px 0;background:var(--g,rgba(255,255,255,.06));border:1px solid rgba(255,255,255,.09);font-size:15px;font-weight:600}
+  .ic{width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;background:rgba(126,184,255,.14)}
+  .sub{font-size:12px;color:rgba(255,255,255,.4);margin-top:2px;font-weight:400}
+  .blue{color:#7eb8ff;background:rgba(126,184,255,.12);border-color:rgba(126,184,255,.22)}
+  .body{padding:12px 14px 22px;display:flex;flex-direction:column;gap:12px}
+  select{width:100%;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:12px;color:rgba(255,255,255,.92);font-size:13.5px;font-family:inherit}
+  .btns{display:flex;gap:8px}
+  .confirm{background:rgba(126,184,255,.9);color:#00224a;border:none;border-radius:10px;padding:10px 18px;font-size:13px;font-weight:700}
+  .cancel{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.75);border-radius:10px;padding:10px 18px;font-size:13px;font-weight:600}
+</style></head><body>
+  <div class="col"><h4>Action sheet — new item</h4>
+    <div class="sheet">
+      <div class="btn blue"><div class="ic">＋</div><div>Assign account manager<div class="sub">Current: Maria Popescu</div></div></div>
+      <div class="btn"><div class="ic" style="background:rgba(255,255,255,.08)">▤</div><div>New Quote</div></div>
+      <div class="btn"><div class="ic" style="background:rgba(255,255,255,.08)">€</div><div>New Invoice</div></div>
+      <div class="btn"><div class="ic" style="background:rgba(255,255,255,.08)">✎</div><div>Edit Client</div></div>
+    </div>
+  </div>
+  <div class="col"><h4>Assign → people picker</h4>
+    <div class="sheet" style="border-radius:24px">
+      <div class="body">
+        <div style="font-size:12px;color:rgba(255,255,255,.4);line-height:1.5">Assign the account manager responsible for this client relationship.</div>
+        <select><option>Select an account manager…</option><option>Maria Popescu · Sales Lead</option><option>Andrei Ionescu · Account Exec</option></select>
+        <div class="btns"><button class="confirm">Assign</button><button class="cancel">Cancel</button></div>
+      </div>
+    </div>
+  </div>
+</body></html>

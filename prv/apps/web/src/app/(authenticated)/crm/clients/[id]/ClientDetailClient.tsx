@@ -1,5 +1,7 @@
 "use client"
 
+import { useState } from "react"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useClientDetail } from "@/lib/api-hooks"
 import Link from "next/link"
 import { useSheetStack } from "@prv/ui"
@@ -353,11 +355,129 @@ function LoadingSkeleton() {
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 
+function AssignManagerForm({
+  onSubmit,
+  onCancel,
+  pending,
+}: {
+  onSubmit: (userId: string) => void
+  onCancel: () => void
+  pending: boolean
+}) {
+  const [userId, setUserId] = useState("")
+  const { data: peopleData } = useQuery<{
+    members: { id: string; firstName: string; lastName: string; role: string }[]
+  }>({
+    queryKey: ["people", "picker"],
+    queryFn: () => fetch("/api/people?limit=200").then((r) => r.json()),
+  })
+  const people = peopleData?.members ?? []
+  return (
+    <div style={{ padding: "12px 16px 40px", display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={{ fontSize: 12, color: "var(--prv-text-3)", lineHeight: 1.5, padding: "0 2px" }}>
+        Assign the account manager responsible for this client relationship.
+      </div>
+      <select
+        value={userId}
+        onChange={(e) => setUserId(e.target.value)}
+        style={{
+          width: "100%",
+          boxSizing: "border-box",
+          background: "rgba(255,255,255,0.04)",
+          border: "1px solid rgba(255,255,255,0.12)",
+          borderRadius: 12,
+          padding: 12,
+          color: "rgba(255,255,255,0.92)",
+          fontSize: 13.5,
+          fontFamily: "inherit",
+        }}
+      >
+        <option value="">Select an account manager…</option>
+        {people.map((m) => (
+          <option key={m.id} value={m.id}>
+            {m.firstName} {m.lastName} · {m.role}
+          </option>
+        ))}
+      </select>
+      <div style={{ display: "flex", gap: 8 }}>
+        <button
+          type="button"
+          disabled={pending || !userId}
+          onClick={() => onSubmit(userId)}
+          style={{
+            padding: "10px 18px",
+            background: userId ? "rgba(126,184,255,0.9)" : "rgba(255,255,255,0.07)",
+            border: 0,
+            borderRadius: 10,
+            color: userId ? "#00224a" : "rgba(255,255,255,0.4)",
+            fontSize: 13,
+            fontWeight: 700,
+            cursor: pending || !userId ? "default" : "pointer",
+          }}
+        >
+          Assign
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          style={{
+            padding: "10px 18px",
+            background: "rgba(255,255,255,0.07)",
+            border: "1px solid rgba(255,255,255,0.12)",
+            borderRadius: 10,
+            color: "rgba(255,255,255,0.75)",
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: "pointer",
+          }}
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export function ClientDetailClient({ id }: ClientDetailClientProps) {
   const { data, isError, isLoading: loading } = useClientDetail(id)
   const client = data?.client ?? null
   const error = isError ? "Failed to load client." : null
   const { openSheet } = useSheetStack()
+  const queryClient = useQueryClient()
+
+  const assignMutation = useMutation({
+    mutationFn: (assignedUserId: string) =>
+      fetch(`/api/crm/clients/${id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ assignedUserId }),
+      }).then(async (r) => {
+        if (!r.ok) throw new Error("Assign failed")
+        return r.json()
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["client-detail", id] })
+      void queryClient.invalidateQueries({ queryKey: ["clients"] })
+    },
+  })
+
+  const openAssignManager = () => {
+    openSheet({
+      snapPoints: ["mid"],
+      defaultSnap: "mid",
+      title: "Assign Account Manager",
+      render: (onClose) => (
+        <AssignManagerForm
+          pending={assignMutation.isPending}
+          onCancel={onClose}
+          onSubmit={(userId) => {
+            assignMutation.mutate(userId)
+            onClose()
+          }}
+        />
+      ),
+    })
+  }
 
   function openActions() {
     if (!client) return
@@ -423,6 +543,65 @@ export function ClientDetailClient({ id }: ClientDetailClientProps) {
               Email
             </a>
           </div>
+          {/* Assign account manager */}
+          <button
+            onClick={() => {
+              onClose()
+              openAssignManager()
+            }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              padding: "14px 16px",
+              borderRadius: 14,
+              background: "rgba(126,184,255,0.12)",
+              border: "1px solid rgba(126,184,255,0.22)",
+              color: "#7eb8ff",
+              fontSize: 15,
+              fontWeight: 600,
+              cursor: "pointer",
+              textAlign: "left",
+              width: "100%",
+            }}
+          >
+            <div
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: 9,
+                background: "rgba(126,184,255,0.14)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
+            >
+              <svg
+                width="17"
+                height="17"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#7eb8ff"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <line x1="19" y1="8" x2="19" y2="14" />
+                <line x1="22" y1="11" x2="16" y2="11" />
+              </svg>
+            </div>
+            <div>
+              Assign account manager
+              <div
+                style={{ fontSize: 12, color: "var(--prv-text-3)", fontWeight: 400, marginTop: 2 }}
+              >
+                {client.owner ? `Current: ${client.owner}` : "No manager assigned"}
+              </div>
+            </div>
+          </button>
           {/* New quote */}
           <button
             onClick={onClose}
