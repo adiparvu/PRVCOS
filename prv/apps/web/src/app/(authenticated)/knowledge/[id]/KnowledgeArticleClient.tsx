@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { useSheetStack } from "@prv/ui"
 import type { KnowledgeArticleDetail } from "@/app/api/knowledge/[id]/route"
@@ -173,15 +173,45 @@ export function KnowledgeArticleClient({ id }: { id: string }) {
   const [checklist, setChecklist] = useState<KnowledgeArticleDetail["checklist"]>(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    fetch(`/api/knowledge/${id}`)
+  const [busy, setBusy] = useState(false)
+
+  const loadArticle = useCallback(() => {
+    return fetch(`/api/knowledge/${id}`)
       .then((r) => r.json())
       .then((data: KnowledgeArticleDetail) => {
         setArticle(data)
         setChecklist(data.checklist)
-        setLoading(false)
       })
   }, [id])
+
+  useEffect(() => {
+    loadArticle().finally(() => setLoading(false))
+  }, [loadArticle])
+
+  const togglePin = useCallback(() => {
+    if (!article) return
+    setBusy(true)
+    fetch(`/api/knowledge/${id}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ isPinned: !article.isPinned }),
+    })
+      .then(async (r) => {
+        if (!r.ok) throw new Error("Pin failed")
+        await loadArticle()
+      })
+      .finally(() => setBusy(false))
+  }, [article, id, loadArticle])
+
+  const archiveArticle = useCallback(() => {
+    setBusy(true)
+    fetch(`/api/knowledge/${id}`, { method: "DELETE" })
+      .then((r) => {
+        if (!r.ok) throw new Error("Archive failed")
+        router.push("/knowledge")
+      })
+      .catch(() => setBusy(false))
+  }, [id, router])
 
   function toggleCheck(itemId: string) {
     setChecklist((prev) =>
@@ -197,6 +227,31 @@ export function KnowledgeArticleClient({ id }: { id: string }) {
       render: (onClose) => (
         <div style={{ padding: "0 16px 24px", display: "flex", flexDirection: "column", gap: 8 }}>
           {[
+            {
+              label: article?.isPinned ? "Unpin article" : "Pin article",
+              sub: article?.isPinned
+                ? "Remove from the pinned shelf"
+                : "Keep this article at the top",
+              iconBg: "rgba(255,159,10,0.18)",
+              rowBg: "rgba(255,159,10,0.10)",
+              rowBorder: "rgba(255,159,10,0.2)",
+              color: amber,
+              icon: (
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="rgba(255,159,10,0.9)"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <line x1="12" y1="17" x2="12" y2="22" />
+                  <path d="M5 17h14l-1.7-3.4a2 2 0 0 1-.3-1V5a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7.6a2 2 0 0 1-.3 1L5 17z" />
+                </svg>
+              ),
+            },
             {
               label: "Save to Favorites",
               sub: "Quick access from your profile",
@@ -319,7 +374,12 @@ export function KnowledgeArticleClient({ id }: { id: string }) {
           ].map((btn) => (
             <button
               key={btn.label}
-              onClick={onClose}
+              disabled={busy}
+              onClick={() => {
+                onClose()
+                if (btn.label === "Archive") archiveArticle()
+                else if (btn.label === "Pin article" || btn.label === "Unpin article") togglePin()
+              }}
               style={{
                 display: "flex",
                 alignItems: "center",
