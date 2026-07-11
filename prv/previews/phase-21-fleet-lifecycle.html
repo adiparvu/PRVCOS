@@ -1,0 +1,47 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Vehicle Lifecycle</title>
+<style>
+  body{margin:0;background:#000;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',sans-serif;color:#fff;-webkit-font-smoothing:antialiased;padding:36px;display:flex;gap:26px;flex-wrap:wrap;justify-content:center;align-items:flex-start}
+  .col{width:344px}
+  h4{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:rgba(255,255,255,.35);margin:0 0 12px 2px;font-weight:600}
+  .sheet{background:rgba(28,28,30,0.72);backdrop-filter:blur(48px);border:1px solid rgba(255,255,255,0.12);border-radius:24px;box-shadow:inset 0 1px 0 rgba(255,255,255,.16);overflow:hidden;padding:8px}
+  .row{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:14px;margin:4px;background:rgba(255,255,255,.04)}
+  .ic{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+  .lbl{font-size:15px;font-weight:600}
+  .sub{font-size:12px;color:rgba(255,255,255,.4);margin-top:2px}
+  .amber .ic{background:rgba(255,159,10,.18)} .amber .lbl{color:rgba(255,159,10,.95)}
+  .blue .ic{background:rgba(10,132,255,.2)} .blue .lbl{color:rgba(10,132,255,.9)}
+  .green .ic{background:rgba(48,209,88,.16)} .green .lbl{color:rgba(48,209,88,.95)}
+  .red .ic{background:rgba(255,69,58,.15)} .red .lbl{color:rgba(255,69,58,.95)}
+  .white .ic{background:rgba(255,255,255,.08)} .white .lbl{color:rgba(255,255,255,.92)}
+  .tag{font-size:10px;color:rgba(255,255,255,.3);margin:10px 6px 2px;text-transform:uppercase;letter-spacing:.06em}
+  .body{padding:12px 14px 22px;display:flex;flex-direction:column;gap:12px}
+  select{width:100%;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:12px;color:rgba(255,255,255,.92);font-size:13.5px;font-family:inherit}
+  .btns{display:flex;gap:8px}
+  .confirm{background:rgba(10,132,255,.9);color:#fff;border:none;border-radius:10px;padding:10px 18px;font-size:13px;font-weight:600}
+  .cancel{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.75);border-radius:10px;padding:10px 18px;font-size:13px;font-weight:600}
+</style></head><body>
+  <div class="col">
+    <h4>Action sheet — status-aware</h4>
+    <div class="sheet">
+      <div class="tag">Always</div>
+      <div class="row amber"><div class="ic">🔧</div><div><div class="lbl">Schedule Service</div><div class="sub">Move to maintenance</div></div></div>
+      <div class="row blue"><div class="ic">＋</div><div><div class="lbl">Assign Driver</div><div class="sub">Current driver: Andrei I.</div></div></div>
+      <div class="tag">When a driver is set</div>
+      <div class="row white"><div class="ic">⤺</div><div><div class="lbl">Release Driver</div><div class="sub">Unassign Andrei I.</div></div></div>
+      <div class="tag">When in Service / Unavailable</div>
+      <div class="row green"><div class="ic">✓</div><div><div class="lbl">Return to Active</div><div class="sub">Put the vehicle back on the road</div></div></div>
+      <div class="tag">Always</div>
+      <div class="row red"><div class="ic">⦸</div><div><div class="lbl">Mark Unavailable</div><div class="sub">Avarie, blocat sau retras</div></div></div>
+    </div>
+  </div>
+  <div class="col">
+    <h4>Assign Driver → people picker</h4>
+    <div class="sheet" style="border-radius:24px">
+      <div class="body">
+        <div style="font-size:12px;color:rgba(255,255,255,.4);line-height:1.5">Assign a driver to this vehicle. With a driver and active status it shows as <b>Active</b>.</div>
+        <select><option>Select a driver…</option><option>Andrei Ionescu · Driver</option><option>Ion Marin · Foreman</option></select>
+        <div class="btns"><button class="confirm">Assign driver</button><button class="cancel">Cancel</button></div>
+      </div>
+    </div>
+  </div>
+</body></html>

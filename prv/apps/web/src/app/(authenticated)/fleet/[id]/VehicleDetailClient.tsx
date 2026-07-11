@@ -1,5 +1,7 @@
 "use client"
 
+import { useState } from "react"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import Link from "next/link"
 import { useSheetStack } from "@prv/ui"
 import { useVehicleDetail } from "@/lib/api-hooks"
@@ -85,7 +87,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }
 
 // ── Sheet button helper ───────────────────────────────────────────────────────
 
-type SheetColor = "amber" | "blue" | "red" | "white"
+type SheetColor = "amber" | "blue" | "red" | "white" | "green"
 
 function SheetBtn({
   color,
@@ -105,18 +107,21 @@ function SheetBtn({
     blue: { background: "rgba(10,132,255,.15)", border: "1px solid rgba(10,132,255,.25)" },
     red: { background: "rgba(255,69,58,.10)", border: "1px solid rgba(255,69,58,.2)" },
     white: { background: "rgba(255,255,255,.06)", border: "1px solid rgba(255,255,255,.09)" },
+    green: { background: "rgba(48,209,88,.12)", border: "1px solid rgba(48,209,88,.2)" },
   }
   const labelColor: Record<SheetColor, string> = {
     amber: "rgba(255,159,10,.95)",
     blue: "rgba(10,132,255,.9)",
     red: "rgba(255,69,58,.95)",
     white: "var(--prv-text-1)",
+    green: "rgba(48,209,88,.95)",
   }
   const iconBg: Record<SheetColor, string> = {
     amber: "rgba(255,159,10,.18)",
     blue: "rgba(10,132,255,.2)",
     red: "rgba(255,69,58,.15)",
     white: "rgba(255,255,255,.08)",
+    green: "rgba(48,209,88,.15)",
   }
   return (
     <button
@@ -159,11 +164,130 @@ function SheetBtn({
 
 // ── Main component ────────────────────────────────────────────────────────────
 
+function AssignDriverForm({
+  onSubmit,
+  onCancel,
+  pending,
+}: {
+  onSubmit: (userId: string) => void
+  onCancel: () => void
+  pending: boolean
+}) {
+  const [userId, setUserId] = useState("")
+  const { data: peopleData } = useQuery<{
+    members: { id: string; firstName: string; lastName: string; role: string }[]
+  }>({
+    queryKey: ["people", "picker"],
+    queryFn: () => fetch("/api/people?limit=200").then((r) => r.json()),
+  })
+  const people = peopleData?.members ?? []
+  return (
+    <div style={{ padding: "12px 16px 40px", display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={{ fontSize: 12, color: "var(--prv-text-3)", lineHeight: 1.5, padding: "0 2px" }}>
+        Assign a driver to this vehicle. With a driver and active status it shows as Active.
+      </div>
+      <select
+        value={userId}
+        onChange={(e) => setUserId(e.target.value)}
+        style={{
+          width: "100%",
+          boxSizing: "border-box",
+          background: "rgba(255,255,255,0.04)",
+          border: "1px solid rgba(255,255,255,0.12)",
+          borderRadius: 12,
+          padding: 12,
+          color: "rgba(255,255,255,0.92)",
+          fontSize: 13.5,
+          fontFamily: "inherit",
+        }}
+      >
+        <option value="">Select a driver…</option>
+        {people.map((m) => (
+          <option key={m.id} value={m.id}>
+            {m.firstName} {m.lastName} · {m.role}
+          </option>
+        ))}
+      </select>
+      <div style={{ display: "flex", gap: 8 }}>
+        <button
+          type="button"
+          disabled={pending || !userId}
+          onClick={() => onSubmit(userId)}
+          style={{
+            padding: "10px 18px",
+            background: userId ? "rgba(10,132,255,0.9)" : "rgba(255,255,255,0.07)",
+            border: 0,
+            borderRadius: 10,
+            color: userId ? "#fff" : "rgba(255,255,255,0.4)",
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: pending || !userId ? "default" : "pointer",
+          }}
+        >
+          Assign driver
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          style={{
+            padding: "10px 18px",
+            background: "rgba(255,255,255,0.07)",
+            border: "1px solid rgba(255,255,255,0.12)",
+            borderRadius: 10,
+            color: "rgba(255,255,255,0.75)",
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: "pointer",
+          }}
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export function VehicleDetailClient({ id }: VehicleDetailClientProps) {
   const { data, isError } = useVehicleDetail(id)
   const vehicle = data?.vehicle ?? null
   const error = isError
   const { openSheet } = useSheetStack()
+  const queryClient = useQueryClient()
+
+  const fleetMutation = useMutation({
+    mutationFn: (payload: Record<string, unknown>) =>
+      fetch(`/api/fleet/${id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(payload),
+      }).then(async (r) => {
+        if (!r.ok) throw new Error("Action failed")
+        return r.json()
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["vehicle-detail", id] })
+      void queryClient.invalidateQueries({ queryKey: ["fleet"] })
+      void queryClient.invalidateQueries({ queryKey: ["fleet-readiness"] })
+    },
+  })
+
+  const openAssignDriver = () => {
+    openSheet({
+      snapPoints: ["mid"],
+      defaultSnap: "mid",
+      title: "Assign Driver",
+      render: (onClose) => (
+        <AssignDriverForm
+          pending={fleetMutation.isPending}
+          onCancel={onClose}
+          onSubmit={(userId) => {
+            fleetMutation.mutate({ assignedUserId: userId })
+            onClose()
+          }}
+        />
+      ),
+    })
+  }
 
   const handleFAB = () => {
     if (!vehicle) return
@@ -175,6 +299,8 @@ export function VehicleDetailClient({ id }: VehicleDetailClientProps) {
         const hasDueSoon = vehicle.maintenance.some(
           (m) => m.status === "Due Soon" || m.status === "Overdue"
         )
+        const canReactivate = vehicle.status === "Service" || vehicle.status === "Unavailable"
+        const hasDriver = !!vehicle.driver
         return (
           <div
             style={{ padding: "8px 16px 40px", display: "flex", flexDirection: "column", gap: 10 }}
@@ -197,7 +323,10 @@ export function VehicleDetailClient({ id }: VehicleDetailClientProps) {
               }
               label="Schedule Service"
               sub={hasDueSoon ? "Overdue maintenance detected" : "Schedule service"}
-              onClick={onClose}
+              onClick={() => {
+                fleetMutation.mutate({ status: "maintenance" })
+                onClose()
+              }}
             />
             <SheetBtn
               color="blue"
@@ -220,8 +349,62 @@ export function VehicleDetailClient({ id }: VehicleDetailClientProps) {
               }
               label="Assign Driver"
               sub={vehicle.driver ? `Current driver: ${vehicle.driver}` : "No driver assigned"}
-              onClick={onClose}
+              onClick={() => {
+                onClose()
+                openAssignDriver()
+              }}
             />
+            {hasDriver && (
+              <SheetBtn
+                color="white"
+                icon={
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="rgba(255,255,255,.7)"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <polyline points="9 14 4 9 9 4" />
+                    <path d="M20 20v-7a4 4 0 0 0-4-4H4" />
+                  </svg>
+                }
+                label="Release Driver"
+                sub={`Unassign ${vehicle.driver}`}
+                onClick={() => {
+                  fleetMutation.mutate({ assignedUserId: null })
+                  onClose()
+                }}
+              />
+            )}
+            {canReactivate && (
+              <SheetBtn
+                color="green"
+                icon={
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="rgba(48,209,88,.9)"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                }
+                label="Return to Active"
+                sub="Put the vehicle back on the road"
+                onClick={() => {
+                  fleetMutation.mutate({ status: "active" })
+                  onClose()
+                }}
+              />
+            )}
             <SheetBtn
               color="white"
               icon={
@@ -282,7 +465,10 @@ export function VehicleDetailClient({ id }: VehicleDetailClientProps) {
               }
               label="Mark Unavailable"
               sub="Avarie, blocat sau retras"
-              onClick={onClose}
+              onClick={() => {
+                fleetMutation.mutate({ status: "retired" })
+                onClose()
+              }}
             />
           </div>
         )
