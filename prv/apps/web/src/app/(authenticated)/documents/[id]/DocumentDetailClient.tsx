@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { useSheetStack } from "@prv/ui"
 import type { DocumentDetail } from "@/app/api/documents/[id]/route"
@@ -116,15 +116,41 @@ export function DocumentDetailClient({ id }: { id: string }) {
   const { openSheet } = useSheetStack()
   const [doc, setDoc] = useState<DocumentDetail | null>(null)
   const [loading, setLoading] = useState(true)
+  const [busy, setBusy] = useState(false)
+
+  const loadDoc = useCallback(() => {
+    return fetch(`/api/documents/${id}`)
+      .then((r) => r.json())
+      .then((data: DocumentDetail) => setDoc(data))
+  }, [id])
 
   useEffect(() => {
-    fetch(`/api/documents/${id}`)
-      .then((r) => r.json())
-      .then((data: DocumentDetail) => {
-        setDoc(data)
-        setLoading(false)
+    loadDoc().finally(() => setLoading(false))
+  }, [loadDoc])
+
+  const archiveDoc = useCallback(() => {
+    setBusy(true)
+    fetch(`/api/documents/${id}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ status: "archived" }),
+    })
+      .then(async (r) => {
+        if (!r.ok) throw new Error("Archive failed")
+        await loadDoc()
       })
-  }, [id])
+      .finally(() => setBusy(false))
+  }, [id, loadDoc])
+
+  const deleteDoc = useCallback(() => {
+    setBusy(true)
+    fetch(`/api/documents/${id}`, { method: "DELETE" })
+      .then((r) => {
+        if (!r.ok) throw new Error("Delete failed")
+        router.push("/documents")
+      })
+      .catch(() => setBusy(false))
+  }, [id, router])
 
   function openFab() {
     if (!doc) return
@@ -291,7 +317,11 @@ export function DocumentDetailClient({ id }: { id: string }) {
             </div>
           </button>
           <button
-            onClick={onClose}
+            disabled={busy}
+            onClick={() => {
+              onClose()
+              archiveDoc()
+            }}
             style={{
               display: "flex",
               alignItems: "center",
@@ -300,7 +330,8 @@ export function DocumentDetailClient({ id }: { id: string }) {
               borderRadius: 14,
               background: "rgba(255,159,10,0.08)",
               border: "1px solid rgba(255,159,10,0.18)",
-              cursor: "pointer",
+              cursor: busy ? "default" : "pointer",
+              opacity: busy ? 0.6 : 1,
               textAlign: "left",
             }}
           >
@@ -339,7 +370,11 @@ export function DocumentDetailClient({ id }: { id: string }) {
             </div>
           </button>
           <button
-            onClick={onClose}
+            disabled={busy}
+            onClick={() => {
+              onClose()
+              deleteDoc()
+            }}
             style={{
               display: "flex",
               alignItems: "center",
@@ -348,7 +383,8 @@ export function DocumentDetailClient({ id }: { id: string }) {
               borderRadius: 14,
               background: "rgba(255,69,58,0.07)",
               border: "1px solid rgba(255,69,58,0.15)",
-              cursor: "pointer",
+              cursor: busy ? "default" : "pointer",
+              opacity: busy ? 0.6 : 1,
               textAlign: "left",
             }}
           >
