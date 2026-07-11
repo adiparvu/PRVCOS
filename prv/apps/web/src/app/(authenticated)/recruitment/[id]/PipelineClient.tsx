@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react"
 import Link from "next/link"
+import { useSheetStack } from "@prv/ui"
 import {
   useCandidates,
   useCreateCandidate,
@@ -35,6 +36,75 @@ export function PipelineClient({ requisitionId }: { requisitionId: string }) {
 
   const candidates = useMemo(() => data?.candidates ?? [], [data])
   const [dragId, setDragId] = useState<string | null>(null)
+  const { openSheet } = useSheetStack()
+
+  function openMove(c: Candidate) {
+    openSheet({
+      snapPoints: ["mid", "full"],
+      defaultSnap: "mid",
+      title: `Move ${c.fullName}`,
+      render: (onClose) => (
+        <div style={{ padding: "0 14px 26px", display: "flex", flexDirection: "column", gap: 6 }}>
+          <p
+            style={{
+              fontSize: 12,
+              color: "var(--prv-text-3)",
+              textAlign: "center",
+              margin: "0 0 8px",
+            }}
+          >
+            Currently in {COLUMNS.find((col) => col.stage === c.stage)?.label ?? c.stage}
+          </p>
+          {COLUMNS.map((col) => {
+            const isCurrent = col.stage === c.stage
+            const dot =
+              col.stage === "hired"
+                ? "rgba(48,209,88,0.9)"
+                : col.stage === "rejected"
+                  ? "rgba(255,69,58,0.85)"
+                  : "rgba(255,255,255,0.4)"
+            return (
+              <button
+                key={col.stage}
+                disabled={isCurrent}
+                onClick={() => {
+                  update.mutate({ id: c.id, patch: { stage: col.stage } })
+                  onClose()
+                }}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  padding: "12px 14px",
+                  borderRadius: 12,
+                  background: "rgba(255,255,255,0.05)",
+                  border: "1px solid var(--prv-border-subtle)",
+                  color: "var(--prv-text-1)",
+                  fontSize: 14,
+                  fontWeight: 600,
+                  textAlign: "left",
+                  cursor: isCurrent ? "default" : "pointer",
+                  opacity: isCurrent ? 0.4 : 1,
+                }}
+              >
+                <span
+                  style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: "50%",
+                    background: dot,
+                    flexShrink: 0,
+                  }}
+                />
+                {col.label}
+                {isCurrent ? " · current" : ""}
+              </button>
+            )
+          })}
+        </div>
+      ),
+    })
+  }
   const [overCol, setOverCol] = useState<CandidateStage | null>(null)
   const [addingIn, setAddingIn] = useState<CandidateStage | null>(null)
   const [draftName, setDraftName] = useState("")
@@ -160,6 +230,7 @@ export function PipelineClient({ requisitionId }: { requisitionId: string }) {
                         setOverCol(null)
                       }}
                       onDelete={() => del.mutate(c.id)}
+                      onMove={() => openMove(c)}
                     />
                   ))}
                   {addingIn === col.stage ? (
@@ -223,12 +294,14 @@ function Card({
   onDragStart,
   onDragEnd,
   onDelete,
+  onMove,
 }: {
   c: Candidate
   dragging: boolean
   onDragStart: () => void
   onDragEnd: () => void
   onDelete: () => void
+  onMove: () => void
 }) {
   return (
     <div
@@ -260,6 +333,37 @@ function Card({
         >
           {c.fullName}
         </span>
+        <button
+          onClick={onMove}
+          aria-label="Move candidate to another stage"
+          style={{
+            width: 20,
+            height: 20,
+            borderRadius: 6,
+            border: "1px solid var(--prv-border-subtle)",
+            background: "transparent",
+            color: "var(--prv-text-3)",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+          }}
+        >
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <line x1="5" y1="12" x2="19" y2="12" />
+            <polyline points="12 5 19 12 12 19" />
+          </svg>
+        </button>
         <button
           onClick={onDelete}
           aria-label="Remove candidate"
