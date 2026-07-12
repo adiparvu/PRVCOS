@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
-import { useSheetStack } from "@prv/ui"
+import { useSheetStack, useToast } from "@prv/ui"
 import type { PayrollRunDetail } from "@/app/api/payroll/[id]/route"
 
 const g1 = "var(--prv-g1)"
@@ -103,6 +103,7 @@ function InfoRow({
 export function PayrollRunDetailClient({ id }: { id: string }) {
   const router = useRouter()
   const { openSheet } = useSheetStack()
+  const { toast } = useToast()
   const [run, setRun] = useState<PayrollRunDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
@@ -129,9 +130,10 @@ export function PayrollRunDetailClient({ id }: { id: string }) {
           if (!r.ok) throw new Error("Action failed")
           await loadRun()
         })
+        .catch(() => toast.error("Couldn't update run", "Please try again."))
         .finally(() => setSubmitting(false))
     },
-    [id, loadRun]
+    [id, loadRun, toast]
   )
 
   function openFab() {

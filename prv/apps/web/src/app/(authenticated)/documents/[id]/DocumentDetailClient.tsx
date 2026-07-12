@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { useRouter } from "next/navigation"
-import { useSheetStack } from "@prv/ui"
+import { useSheetStack, useToast } from "@prv/ui"
 import type { DocumentDetail } from "@/app/api/documents/[id]/route"
 
 const g1 = "var(--prv-g1)"
@@ -651,6 +651,7 @@ function ShareForm({
 export function DocumentDetailClient({ id }: { id: string }) {
   const router = useRouter()
   const { openSheet } = useSheetStack()
+  const { toast } = useToast()
   const [doc, setDoc] = useState<DocumentDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
@@ -676,8 +677,9 @@ export function DocumentDetailClient({ id }: { id: string }) {
         if (!r.ok) throw new Error("Archive failed")
         await loadDoc()
       })
+      .catch(() => toast.error("Couldn't archive", "Please try again."))
       .finally(() => setBusy(false))
-  }, [id, loadDoc])
+  }, [id, loadDoc, toast])
 
   const deleteDoc = useCallback(() => {
     setBusy(true)
@@ -686,8 +688,11 @@ export function DocumentDetailClient({ id }: { id: string }) {
         if (!r.ok) throw new Error("Delete failed")
         router.push("/documents")
       })
-      .catch(() => setBusy(false))
-  }, [id, router])
+      .catch(() => {
+        setBusy(false)
+        toast.error("Couldn't delete", "Please try again.")
+      })
+  }, [id, router, toast])
 
   const openLinkResult = useCallback(
     (token: string) => {
@@ -754,17 +759,22 @@ export function DocumentDetailClient({ id }: { id: string }) {
               method: "POST",
               headers: { "content-type": "application/json" },
               body: JSON.stringify(body),
-            }).then(async (r) => {
-              if (!r.ok) throw new Error("Share failed")
-              const data = (await r.json()) as { token?: string | null }
-              onClose()
-              if (isExternal && data.token) openLinkResult(data.token)
             })
+              .then(async (r) => {
+                if (!r.ok) throw new Error("Share failed")
+                const data = (await r.json()) as { token?: string | null }
+                onClose()
+                if (isExternal && data.token) openLinkResult(data.token)
+              })
+              .catch((e) => {
+                toast.error("Couldn't share", e instanceof Error ? e.message : undefined)
+                throw e
+              })
           }
         />
       ),
     })
-  }, [id, openSheet, openLinkResult])
+  }, [id, openSheet, openLinkResult, toast])
 
   const openEditDocument = useCallback(() => {
     if (!doc) return
@@ -785,15 +795,20 @@ export function DocumentDetailClient({ id }: { id: string }) {
               method: "PATCH",
               headers: { "content-type": "application/json" },
               body: JSON.stringify(patch),
-            }).then(async (r) => {
-              if (!r.ok) throw new Error("Save failed")
-              await loadDoc()
             })
+              .then(async (r) => {
+                if (!r.ok) throw new Error("Save failed")
+                await loadDoc()
+              })
+              .catch((e) => {
+                toast.error("Couldn't save", e instanceof Error ? e.message : undefined)
+                throw e
+              })
           }
         />
       ),
     })
-  }, [id, openSheet, doc, loadDoc])
+  }, [id, openSheet, doc, loadDoc, toast])
 
   const openSignature = useCallback(() => {
     openSheet({
@@ -808,16 +823,24 @@ export function DocumentDetailClient({ id }: { id: string }) {
               method: "POST",
               headers: { "content-type": "application/json" },
               body: JSON.stringify(signer),
-            }).then(async (r) => {
-              if (!r.ok) throw new Error("Signature request failed")
-              await loadDoc()
-              onClose()
             })
+              .then(async (r) => {
+                if (!r.ok) throw new Error("Signature request failed")
+                await loadDoc()
+                onClose()
+              })
+              .catch((e) => {
+                toast.error(
+                  "Couldn't request signature",
+                  e instanceof Error ? e.message : undefined
+                )
+                throw e
+              })
           }
         />
       ),
     })
-  }, [id, openSheet, loadDoc])
+  }, [id, openSheet, loadDoc, toast])
 
   function openFab() {
     if (!doc) return

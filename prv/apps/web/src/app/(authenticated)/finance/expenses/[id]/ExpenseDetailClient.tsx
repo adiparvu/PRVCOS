@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
+import { useToast } from "@prv/ui"
 import Link from "next/link"
 import type { ExpenseDetail, ApprovalStep } from "@/app/api/finance/expenses/[id]/route"
 
@@ -594,6 +595,7 @@ function SectionCard({ title, children }: { title: string; children: React.React
 // ── Main Component ────────────────────────────────────────────────────────────
 
 export function ExpenseDetailClient({ id }: { id: string }) {
+  const { toast } = useToast()
   const [detail, setDetail] = useState<ExpenseDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [fabOpen, setFabOpen] = useState(false)
@@ -634,9 +636,10 @@ export function ExpenseDetailClient({ id }: { id: string }) {
           if (!r.ok) throw new Error("Decision failed")
           await loadDetail()
         })
+        .catch(() => toast.error("Couldn't save decision", "Please try again."))
         .finally(() => setSubmitting(false))
     },
-    [id, loadDetail]
+    [id, loadDetail, toast]
   )
 
   const handleApprove = (stepId: string) => {

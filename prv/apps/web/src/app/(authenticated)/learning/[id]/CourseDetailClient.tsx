@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
+import { useToast } from "@prv/ui"
 import Link from "next/link"
 import type { CourseDetail, CourseModule } from "@/app/api/learning/[id]/route"
 import type { CourseStatus, CourseCategory } from "@/app/api/learning/route"
@@ -1069,6 +1070,7 @@ export function CourseDetailClient({ id }: { id: string }) {
   const [activeTab, setActiveTab] = useState<TabId>("modules")
   const [openLesson, setOpenLesson] = useState<LessonItem | null>(null)
   const queryClient = useQueryClient()
+  const { toast } = useToast()
 
   const { data: lessonsData, isLoading: lessonsLoading } = useQuery({
     queryKey: ["course-lessons", id],
@@ -1103,8 +1105,9 @@ export function CourseDetailClient({ id }: { id: string }) {
         if (!r.ok) throw new Error("Enroll failed")
         await loadCourse()
       })
+      .catch(() => toast.error("Couldn't enrol", "Please try again."))
       .finally(() => setEnrolling(false))
-  }, [id, loadCourse])
+  }, [id, loadCourse, toast])
 
   function handleLessonComplete(lessonId: string) {
     queryClient.setQueryData<{ lessons: LessonItem[] }>(["course-lessons", id], (prev) =>

@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useClientDetail } from "@/lib/api-hooks"
 import Link from "next/link"
-import { useSheetStack } from "@prv/ui"
+import { useSheetStack, useToast } from "@prv/ui"
 import type { ClientDetail, ClientActivityType } from "@/app/api/crm/clients/[id]/route"
 
 interface ClientDetailClientProps {
@@ -650,6 +650,7 @@ export function ClientDetailClient({ id }: ClientDetailClientProps) {
   const error = isError ? "Failed to load client." : null
   const { openSheet } = useSheetStack()
   const queryClient = useQueryClient()
+  const { toast } = useToast()
 
   const assignMutation = useMutation({
     mutationFn: (assignedUserId: string) =>
@@ -673,11 +674,16 @@ export function ClientDetailClient({ id }: ClientDetailClientProps) {
       method: "PATCH",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(patch),
-    }).then(async (r) => {
-      if (!r.ok) throw new Error("Save failed")
-      void queryClient.invalidateQueries({ queryKey: ["client-detail", id] })
-      void queryClient.invalidateQueries({ queryKey: ["clients"] })
     })
+      .then(async (r) => {
+        if (!r.ok) throw new Error("Save failed")
+        void queryClient.invalidateQueries({ queryKey: ["client-detail", id] })
+        void queryClient.invalidateQueries({ queryKey: ["clients"] })
+      })
+      .catch((e) => {
+        toast.error("Couldn't save client", e instanceof Error ? e.message : undefined)
+        throw e
+      })
 
   const openAssignManager = () => {
     openSheet({

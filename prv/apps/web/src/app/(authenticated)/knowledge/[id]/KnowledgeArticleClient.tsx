@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
-import { useSheetStack } from "@prv/ui"
+import { useSheetStack, useToast } from "@prv/ui"
 import type { KnowledgeArticleDetail } from "@/app/api/knowledge/[id]/route"
 import type { ArticleType } from "@/app/api/knowledge/route"
 import Link from "next/link"
@@ -169,6 +169,7 @@ function SectionCard({
 export function KnowledgeArticleClient({ id }: { id: string }) {
   const router = useRouter()
   const { openSheet } = useSheetStack()
+  const { toast } = useToast()
   const [article, setArticle] = useState<KnowledgeArticleDetail | null>(null)
   const [checklist, setChecklist] = useState<KnowledgeArticleDetail["checklist"]>(null)
   const [loading, setLoading] = useState(true)
@@ -200,8 +201,9 @@ export function KnowledgeArticleClient({ id }: { id: string }) {
         if (!r.ok) throw new Error("Pin failed")
         await loadArticle()
       })
+      .catch(() => toast.error("Couldn't update pin", "Please try again."))
       .finally(() => setBusy(false))
-  }, [article, id, loadArticle])
+  }, [article, id, loadArticle, toast])
 
   const archiveArticle = useCallback(() => {
     setBusy(true)
@@ -210,8 +212,11 @@ export function KnowledgeArticleClient({ id }: { id: string }) {
         if (!r.ok) throw new Error("Archive failed")
         router.push("/knowledge")
       })
-      .catch(() => setBusy(false))
-  }, [id, router])
+      .catch(() => {
+        setBusy(false)
+        toast.error("Couldn't archive", "Please try again.")
+      })
+  }, [id, router, toast])
 
   function toggleCheck(itemId: string) {
     setChecklist((prev) =>

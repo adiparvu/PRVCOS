@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { useToast } from "@prv/ui"
 import type { LeadDetail, LeadActivity } from "@/app/api/crm/leads/[id]/route"
 import type { LeadStage, LeadSource } from "@/app/api/crm/leads/route"
 
@@ -549,6 +550,7 @@ export function LeadDetailClient({ id }: { id: string }) {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const router = useRouter()
+  const { toast } = useToast()
 
   const loadLead = useCallback(() => {
     return fetch(`/api/crm/leads/${id}`)
@@ -572,9 +574,10 @@ export function LeadDetailClient({ id }: { id: string }) {
           if (!r.ok) throw new Error("Stage update failed")
           await loadLead()
         })
+        .catch(() => toast.error("Couldn't move stage", "Please try again."))
         .finally(() => setSaving(false))
     },
-    [id, loadLead]
+    [id, loadLead, toast]
   )
 
   const convertLead = useCallback(() => {
@@ -586,8 +589,11 @@ export function LeadDetailClient({ id }: { id: string }) {
         // only, so route to the client profile instead of refetching the lead.
         router.push(`/crm/clients/${id}`)
       })
-      .catch(() => setSaving(false))
-  }, [id, router])
+      .catch(() => {
+        setSaving(false)
+        toast.error("Couldn't convert lead", "Please try again.")
+      })
+  }, [id, router, toast])
 
   const [editing, setEditing] = useState(false)
   const saveLead = useCallback(
@@ -596,11 +602,16 @@ export function LeadDetailClient({ id }: { id: string }) {
         method: "PATCH",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(patch),
-      }).then(async (r) => {
-        if (!r.ok) throw new Error("Save failed")
-        await loadLead()
-      }),
-    [id, loadLead]
+      })
+        .then(async (r) => {
+          if (!r.ok) throw new Error("Save failed")
+          await loadLead()
+        })
+        .catch((e) => {
+          toast.error("Couldn't save lead", e instanceof Error ? e.message : undefined)
+          throw e
+        }),
+    [id, loadLead, toast]
   )
 
   if (loading) return <Skeleton />
