@@ -112,6 +112,167 @@ function InfoRow({
   )
 }
 
+function EditDocumentForm({
+  initial,
+  onSubmit,
+  onCancel,
+}: {
+  initial: { description: string | null; expiresAtISO: string | null; isPublic: boolean }
+  onSubmit: (patch: Record<string, unknown>) => Promise<void>
+  onCancel: () => void
+}) {
+  const [description, setDescription] = useState(initial.description ?? "")
+  const [expiry, setExpiry] = useState(initial.expiresAtISO ?? "")
+  const [isPublic, setIsPublic] = useState(initial.isPublic)
+  const [busy, setBusy] = useState(false)
+  const submitting = useRef(false)
+
+  function save() {
+    if (submitting.current) return
+    submitting.current = true
+    setBusy(true)
+    const patch: Record<string, unknown> = {
+      description: description.trim(),
+      isPublic,
+      expiresAt: expiry ? new Date(expiry).toISOString() : null,
+    }
+    onSubmit(patch)
+      .then(() => onCancel())
+      .finally(() => {
+        submitting.current = false
+        setBusy(false)
+      })
+  }
+
+  const labelStyle: React.CSSProperties = {
+    fontSize: 11,
+    textTransform: "uppercase",
+    letterSpacing: "0.06em",
+    color: "var(--prv-text-3)",
+    fontWeight: 600,
+    display: "block",
+    marginBottom: 6,
+  }
+  const inputStyle: React.CSSProperties = {
+    width: "100%",
+    boxSizing: "border-box",
+    background: "rgba(255,255,255,0.04)",
+    border: "1px solid rgba(255,255,255,0.12)",
+    borderRadius: 11,
+    padding: 11,
+    color: "rgba(255,255,255,0.92)",
+    fontSize: 14,
+    fontFamily: "inherit",
+  }
+
+  return (
+    <div style={{ padding: "12px 18px 40px", display: "flex", flexDirection: "column", gap: 14 }}>
+      <div>
+        <span style={labelStyle}>Description</span>
+        <textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="What this document is…"
+          style={{ ...inputStyle, minHeight: 74, resize: "vertical", lineHeight: 1.5 }}
+        />
+      </div>
+      <div>
+        <span style={labelStyle}>Expiry date</span>
+        <input
+          type="date"
+          value={expiry}
+          onChange={(e) => setExpiry(e.target.value)}
+          style={inputStyle}
+        />
+      </div>
+      <button
+        type="button"
+        onClick={() => setIsPublic((v) => !v)}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          background: "transparent",
+          border: "none",
+          padding: 0,
+          cursor: "pointer",
+          textAlign: "left",
+        }}
+      >
+        <span>
+          <span style={{ fontSize: 14, color: "rgba(255,255,255,0.85)" }}>Public link access</span>
+          <span
+            style={{ display: "block", fontSize: 11.5, color: "var(--prv-text-3)", marginTop: 2 }}
+          >
+            Anyone with a share link can open it
+          </span>
+        </span>
+        <span
+          style={{
+            width: 46,
+            height: 27,
+            borderRadius: 100,
+            background: isPublic ? "rgba(48,209,88,0.9)" : "rgba(255,255,255,0.15)",
+            position: "relative",
+            flexShrink: 0,
+            transition: "background 0.2s",
+          }}
+        >
+          <span
+            style={{
+              position: "absolute",
+              top: 2,
+              left: isPublic ? 21 : 2,
+              width: 23,
+              height: 23,
+              borderRadius: "50%",
+              background: "#fff",
+              transition: "left 0.2s",
+            }}
+          />
+        </span>
+      </button>
+      <div style={{ display: "flex", gap: 8, marginTop: 2 }}>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={save}
+          style={{
+            flex: 1,
+            background: "#fff",
+            color: "#000",
+            border: "none",
+            borderRadius: 11,
+            padding: 12,
+            fontSize: 13.5,
+            fontWeight: 700,
+            cursor: busy ? "default" : "pointer",
+            opacity: busy ? 0.6 : 1,
+          }}
+        >
+          {busy ? "Saving…" : "Save changes"}
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          style={{
+            background: "rgba(255,255,255,0.07)",
+            border: "1px solid rgba(255,255,255,0.12)",
+            color: "rgba(255,255,255,0.75)",
+            borderRadius: 11,
+            padding: "12px 20px",
+            fontSize: 13.5,
+            fontWeight: 600,
+            cursor: "pointer",
+          }}
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  )
+}
+
 function RequestSignatureForm({
   onSubmit,
   onCancel,
@@ -605,6 +766,35 @@ export function DocumentDetailClient({ id }: { id: string }) {
     })
   }, [id, openSheet, openLinkResult])
 
+  const openEditDocument = useCallback(() => {
+    if (!doc) return
+    openSheet({
+      snapPoints: ["mid", "full"],
+      defaultSnap: "mid",
+      title: "Edit Document",
+      render: (onClose) => (
+        <EditDocumentForm
+          initial={{
+            description: doc.description,
+            expiresAtISO: doc.expiresAtISO,
+            isPublic: doc.isPublic,
+          }}
+          onCancel={onClose}
+          onSubmit={(patch) =>
+            fetch(`/api/documents/${id}`, {
+              method: "PATCH",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify(patch),
+            }).then(async (r) => {
+              if (!r.ok) throw new Error("Save failed")
+              await loadDoc()
+            })
+          }
+        />
+      ),
+    })
+  }, [id, openSheet, doc, loadDoc])
+
   const openSignature = useCallback(() => {
     openSheet({
       snapPoints: ["mid"],
@@ -741,6 +931,65 @@ export function DocumentDetailClient({ id }: { id: string }) {
               <p style={{ fontSize: 15, fontWeight: 600, color: blue, margin: 0 }}>Share</p>
               <p style={{ fontSize: 12, color: t3, margin: "2px 0 0" }}>
                 Trimite unui coleg sau client
+              </p>
+            </div>
+          </button>
+          <button
+            onClick={() => {
+              onClose()
+              openEditDocument()
+            }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 14,
+              padding: "14px 16px",
+              borderRadius: 14,
+              background: "rgba(255,255,255,0.04)",
+              border: "1px solid rgba(255,255,255,0.09)",
+              cursor: "pointer",
+              textAlign: "left",
+            }}
+          >
+            <div
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 10,
+                background: "rgba(255,255,255,0.10)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="rgba(255,255,255,0.7)"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+              </svg>
+            </div>
+            <div>
+              <p
+                style={{
+                  fontSize: 15,
+                  fontWeight: 600,
+                  color: "rgba(255,255,255,0.85)",
+                  margin: 0,
+                }}
+              >
+                Edit details
+              </p>
+              <p style={{ fontSize: 12, color: t3, margin: "2px 0 0" }}>
+                Description, expiry, visibility
               </p>
             </div>
           </button>

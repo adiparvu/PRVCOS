@@ -32,6 +32,9 @@ export interface DocumentDetail {
   status: DocStatus
   project: string | null
   expiresAt: string | null
+  expiresAtISO: string | null
+  description: string | null
+  isPublic: boolean
   version: string | null
   pages: number | null
   signedBy: string | null
@@ -121,6 +124,8 @@ export const GET = withGates(
           mimeType: documents.mimeType,
           type: documents.type,
           status: documents.status,
+          description: documents.description,
+          isPublic: documents.isPublic,
           expiresAt: documents.expiresAt,
           createdAt: documents.createdAt,
           authorFirstName: users.firstName,
@@ -190,6 +195,9 @@ export const GET = withGates(
       status: apiStatus,
       project: row.projectName ?? null,
       expiresAt: row.expiresAt ? fmtDate(row.expiresAt) : null,
+      expiresAtISO: row.expiresAt ? row.expiresAt.toISOString().slice(0, 10) : null,
+      description: row.description ?? null,
+      isPublic: row.isPublic ?? false,
       version: null,
       pages: null,
       signedBy: sig?.signerName ?? null,
