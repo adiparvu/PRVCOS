@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import Link from "next/link"
 import type { CourseDetail, CourseModule } from "@/app/api/learning/[id]/route"
@@ -1080,12 +1080,31 @@ export function CourseDetailClient({ id }: { id: string }) {
   })
   const lessons = lessonsData?.lessons ?? []
 
-  useEffect(() => {
-    fetch(`/api/learning/${id}`)
+  const [enrolling, setEnrolling] = useState(false)
+
+  const loadCourse = useCallback(() => {
+    return fetch(`/api/learning/${id}`)
       .then((r) => r.json())
       .then(setCourse)
-      .finally(() => setLoading(false))
   }, [id])
+
+  useEffect(() => {
+    loadCourse().finally(() => setLoading(false))
+  }, [loadCourse])
+
+  const enroll = useCallback(() => {
+    setEnrolling(true)
+    fetch(`/api/learning/${id}/enroll`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ status: "in_progress" }),
+    })
+      .then(async (r) => {
+        if (!r.ok) throw new Error("Enroll failed")
+        await loadCourse()
+      })
+      .finally(() => setEnrolling(false))
+  }, [id, loadCourse])
 
   function handleLessonComplete(lessonId: string) {
     queryClient.setQueryData<{ lessons: LessonItem[] }>(["course-lessons", id], (prev) =>
@@ -1372,6 +1391,11 @@ export function CourseDetailClient({ id }: { id: string }) {
               Offline
             </button>
             <button
+              disabled={enrolling}
+              onClick={() => {
+                if (course.status === "new" || course.status === "saved") enroll()
+                else setActiveTab("lessons")
+              }}
               style={{
                 flex: 2,
                 padding: 14,
@@ -1381,10 +1405,11 @@ export function CourseDetailClient({ id }: { id: string }) {
                 border: "none",
                 background: "rgba(255,255,255,0.95)",
                 color: "#000",
-                cursor: "pointer",
+                cursor: enrolling ? "default" : "pointer",
+                opacity: enrolling ? 0.6 : 1,
               }}
             >
-              {ctaLabel(course.status, course.currentModule)}
+              {enrolling ? "Enrolling…" : ctaLabel(course.status, course.currentModule)}
             </button>
           </div>
 
