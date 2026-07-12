@@ -33,6 +33,7 @@ const STATUS_PILL: Record<ShiftStatus, { bg: string; color: string; label: strin
   open: { bg: "rgba(255,159,10,.13)", color: "rgba(255,159,10,.95)", label: "Uncovered" },
   draft: { bg: "rgba(255,255,255,.07)", color: "rgba(255,255,255,.45)", label: "Draft" },
   scheduled: { bg: "rgba(10,132,255,.13)", color: "rgba(10,132,255,.9)", label: "Programat" },
+  cancelled: { bg: "rgba(255,69,58,.12)", color: "rgba(255,69,58,.9)", label: "Cancelled" },
 }
 
 const WEEK_DAYS = [

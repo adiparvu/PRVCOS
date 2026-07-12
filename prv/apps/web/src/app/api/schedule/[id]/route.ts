@@ -160,7 +160,7 @@ const patchShiftSchema = z.object({
     .regex(/^\d{2}:\d{2}$/)
     .optional(),
   durationHours: z.number().positive().optional(),
-  status: z.enum(["confirmed", "open", "draft", "scheduled"]).optional(),
+  status: z.enum(["confirmed", "open", "draft", "scheduled", "cancelled"]).optional(),
   totalSlots: z.number().int().positive().optional(),
   projectId: z.string().uuid().nullable().optional(),
 })

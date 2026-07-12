@@ -144,7 +144,13 @@ export const shiftRoleEnum = pgEnum("shift_role", [
   "general",
 ])
 
-export const shiftStatusEnum = pgEnum("shift_status", ["confirmed", "open", "draft", "scheduled"])
+export const shiftStatusEnum = pgEnum("shift_status", [
+  "confirmed",
+  "open",
+  "draft",
+  "scheduled",
+  "cancelled",
+])
 
 export const shifts = pgTable(
   "shifts",

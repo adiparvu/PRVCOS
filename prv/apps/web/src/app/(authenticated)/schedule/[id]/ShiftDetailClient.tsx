@@ -67,6 +67,7 @@ const STATUS_CONFIG: Record<ShiftStatus, { bg: string; color: string; label: str
   open: { bg: "rgba(255,159,10,.13)", color: "rgba(255,159,10,.95)", label: "Uncovered" },
   draft: { bg: "rgba(255,255,255,.07)", color: "rgba(255,255,255,.45)", label: "Draft" },
   scheduled: { bg: "rgba(10,132,255,.13)", color: "rgba(10,132,255,.9)", label: "Programat" },
+  cancelled: { bg: "rgba(255,69,58,.12)", color: "rgba(255,69,58,.9)", label: "Cancelled" },
 }
 
 type SheetColor = "amber" | "blue" | "green" | "red" | "white"
@@ -306,6 +307,7 @@ const SHIFT_STATUS_OPTIONS: { value: ShiftStatus; label: string }[] = [
   { value: "scheduled", label: "Scheduled" },
   { value: "open", label: "Open" },
   { value: "confirmed", label: "Confirmed" },
+  { value: "cancelled", label: "Cancelled" },
 ]
 
 function EditShiftForm({
@@ -857,6 +859,64 @@ export function ShiftDetailClient({ id }: ShiftDetailClientProps) {
     })
   }
 
+  const openCancelShift = () => {
+    if (!shift) return
+    openSheet({
+      snapPoints: ["mid"],
+      defaultSnap: "mid",
+      title: "Cancel Shift",
+      render: (onClose) => (
+        <div
+          style={{ padding: "8px 18px 40px", display: "flex", flexDirection: "column", gap: 14 }}
+        >
+          <p style={{ fontSize: 13.5, color: "var(--prv-text-2)", lineHeight: 1.5, margin: 0 }}>
+            Cancel this shift? It stays on record (crew and attendance are kept) but is marked
+            cancelled and no longer counts as scheduled coverage.
+          </p>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button
+              type="button"
+              disabled={shiftMutation.isPending}
+              onClick={() => {
+                shiftMutation.mutate({ status: "cancelled" })
+                onClose()
+              }}
+              style={{
+                flex: 1,
+                background: "rgba(255,69,58,0.92)",
+                color: "#fff",
+                border: "none",
+                borderRadius: 11,
+                padding: 12,
+                fontSize: 13.5,
+                fontWeight: 700,
+                cursor: shiftMutation.isPending ? "default" : "pointer",
+              }}
+            >
+              Cancel shift
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              style={{
+                background: "rgba(255,255,255,0.07)",
+                border: "1px solid rgba(255,255,255,0.12)",
+                color: "rgba(255,255,255,0.75)",
+                borderRadius: 11,
+                padding: "12px 20px",
+                fontSize: 13.5,
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              Keep shift
+            </button>
+          </div>
+        </div>
+      ),
+    })
+  }
+
   const handleFAB = () => {
     if (!shift) return
     const isOpen = shift.status === "open" || shift.status === "draft"
@@ -984,7 +1044,10 @@ export function ShiftDetailClient({ id }: ShiftDetailClientProps) {
             }
             label="Cancel Shift"
             sub="Notify employees automatically"
-            onClick={onClose}
+            onClick={() => {
+              onClose()
+              openCancelShift()
+            }}
           />
         </div>
       ),

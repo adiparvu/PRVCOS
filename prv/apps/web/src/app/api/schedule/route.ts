@@ -21,7 +21,7 @@ export const runtime = "nodejs"
 
 const LIMIT = 50
 
-export type ShiftStatus = "confirmed" | "open" | "draft" | "scheduled"
+export type ShiftStatus = "confirmed" | "open" | "draft" | "scheduled" | "cancelled"
 export type ShiftRole = "foreman" | "bricklayer" | "electrician" | "finisher" | "welder" | "general"
 
 export interface ShiftAssignee {
