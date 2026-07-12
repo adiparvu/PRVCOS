@@ -34,6 +34,8 @@ export interface ToolDetail {
   site: string | null
   dueBack: null
   location: string | null
+  notes: string | null
+  storeId: string | null
   lastUsed: string | null
   utilisationPct: number
   serviceOverdueDays: number | null
@@ -104,6 +106,7 @@ export const GET = withGates(
           lastServiceAt: tools.lastServiceAt,
           warrantyExpiresAt: tools.warrantyExpiresAt,
           notes: tools.notes,
+          storeId: tools.storeId,
           assignedFirstName: users.firstName,
           assignedLastName: users.lastName,
           storeName: stores.name,
@@ -173,6 +176,8 @@ export const GET = withGates(
       status: apiStatus,
       assignedTo: row.assignedFirstName ? `${row.assignedFirstName} ${row.assignedLastName}` : null,
       site: row.storeName ?? null,
+      notes: row.notes ?? null,
+      storeId: row.storeId ?? null,
       dueBack: null,
       location: row.storeName ?? null,
       lastUsed: row.lastServiceAt ? fmtDate(row.lastServiceAt) : null,

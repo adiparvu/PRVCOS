@@ -218,6 +218,109 @@ function SectionLabel({ children }: { children: string }) {
 
 // ── Main component ────────────────────────────────────────────────────────────
 
+function EditToolForm({
+  initial,
+  onSubmit,
+  onCancel,
+  pending,
+}: {
+  initial: { storeId: string | null; notes: string | null }
+  onSubmit: (patch: { storeId: string | null; notes: string }) => void
+  onCancel: () => void
+  pending: boolean
+}) {
+  const [storeId, setStoreId] = useState(initial.storeId ?? "")
+  const [notes, setNotes] = useState(initial.notes ?? "")
+  const { data: storesData } = useQuery<{ stores: { id: string; name: string }[] }>({
+    queryKey: ["stores", "picker"],
+    queryFn: () => fetch("/api/stores?limit=200").then((r) => r.json()),
+  })
+  const stores = storesData?.stores ?? []
+
+  const labelStyle: React.CSSProperties = {
+    fontSize: 11,
+    textTransform: "uppercase",
+    letterSpacing: "0.06em",
+    color: "var(--prv-text-3)",
+    fontWeight: 600,
+    display: "block",
+    marginBottom: 6,
+  }
+  const inputStyle: React.CSSProperties = {
+    width: "100%",
+    boxSizing: "border-box",
+    background: "rgba(255,255,255,0.04)",
+    border: "1px solid rgba(255,255,255,0.12)",
+    borderRadius: 12,
+    padding: 12,
+    color: "rgba(255,255,255,0.92)",
+    fontSize: 14,
+    fontFamily: "inherit",
+  }
+
+  return (
+    <div style={{ padding: "12px 18px 40px", display: "flex", flexDirection: "column", gap: 14 }}>
+      <div>
+        <span style={labelStyle}>Store / location</span>
+        <select value={storeId} onChange={(e) => setStoreId(e.target.value)} style={inputStyle}>
+          <option value="">Unassigned</option>
+          {stores.map((st) => (
+            <option key={st.id} value={st.id}>
+              {st.name}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div>
+        <span style={labelStyle}>Notes</span>
+        <textarea
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          placeholder="Condition, accessories, remarks…"
+          style={{ ...inputStyle, minHeight: 80, resize: "vertical", lineHeight: 1.5 }}
+        />
+      </div>
+      <div style={{ display: "flex", gap: 8, marginTop: 2 }}>
+        <button
+          type="button"
+          disabled={pending}
+          onClick={() => onSubmit({ storeId: storeId || null, notes: notes.trim() })}
+          style={{
+            flex: 1,
+            background: "#fff",
+            color: "#000",
+            border: "none",
+            borderRadius: 11,
+            padding: 12,
+            fontSize: 13.5,
+            fontWeight: 700,
+            cursor: pending ? "default" : "pointer",
+            opacity: pending ? 0.6 : 1,
+          }}
+        >
+          {pending ? "Saving…" : "Save changes"}
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          style={{
+            background: "rgba(255,255,255,0.07)",
+            border: "1px solid rgba(255,255,255,0.12)",
+            color: "rgba(255,255,255,0.75)",
+            borderRadius: 11,
+            padding: "12px 20px",
+            fontSize: 13.5,
+            fontWeight: 600,
+            cursor: "pointer",
+          }}
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  )
+}
+
 function AssignForm({
   onSubmit,
   onCancel,
@@ -343,6 +446,26 @@ export function ToolDetailClient({ id }: ToolDetailClientProps) {
     })
   }
 
+  const openEditTool = () => {
+    if (!tool) return
+    openSheet({
+      snapPoints: ["mid", "full"],
+      defaultSnap: "mid",
+      title: "Edit Tool",
+      render: (onClose) => (
+        <EditToolForm
+          pending={toolMutation.isPending}
+          initial={{ storeId: tool.storeId, notes: tool.notes }}
+          onCancel={onClose}
+          onSubmit={(patch) => {
+            toolMutation.mutate(patch)
+            onClose()
+          }}
+        />
+      ),
+    })
+  }
+
   const handleFAB = () => {
     if (!tool) return
     const isInUse = tool.status === "In Use"
@@ -448,8 +571,11 @@ export function ToolDetailClient({ id }: ToolDetailClientProps) {
               </svg>
             }
             label="Edit Tool"
-            sub="Details, specifications, value"
-            onClick={onClose}
+            sub="Store & notes"
+            onClick={() => {
+              onClose()
+              openEditTool()
+            }}
           />
           <SheetBtn
             color="red"
