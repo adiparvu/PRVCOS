@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect } from "react"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useRouter } from "next/navigation"
 import { PresenceRing } from "@/components/presence/PresenceRing"
 import { PresenceStatusBadge } from "@/components/presence/PresenceStatusBadge"
@@ -14,8 +15,41 @@ interface ContactDetailSheetProps {
   onClose: () => void
 }
 
+const MAX_PINNED = 6
+
 export function ContactDetailSheet({ member, onClose }: ContactDetailSheetProps) {
   const router = useRouter()
+  const qc = useQueryClient()
+
+  const { data: pinned } = useQuery<{ id: string }[]>({
+    queryKey: ["pinned-contacts"],
+    queryFn: () =>
+      fetch("/api/me/pinned-contacts")
+        .then((r) => (r.ok ? r.json() : { contacts: [] }))
+        .then((d) => d.contacts ?? []),
+    staleTime: 60_000,
+  })
+  const pinnedIds = (pinned ?? []).map((c) => c.id)
+  const isPinned = pinnedIds.includes(member.id)
+  const atCap = pinnedIds.length >= MAX_PINNED && !isPinned
+
+  const pinMutation = useMutation({
+    mutationFn: (ids: string[]) =>
+      fetch("/api/me/pinned-contacts", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ contactIds: ids }),
+      }).then((r) => {
+        if (!r.ok) throw new Error("Pin update failed")
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["pinned-contacts"] }),
+  })
+
+  const togglePin = () => {
+    if (atCap) return
+    const next = isPinned ? pinnedIds.filter((cid) => cid !== member.id) : [...pinnedIds, member.id]
+    pinMutation.mutate(next)
+  }
 
   // Escape key dismissal
   useEffect(() => {
@@ -99,6 +133,39 @@ export function ContactDetailSheet({ member, onClose }: ContactDetailSheetProps)
 
           {/* Quick actions */}
           <ContactActions email={member.email} phone={member.phone} />
+
+          {/* Pin to dashboard */}
+          <button
+            onClick={togglePin}
+            disabled={pinMutation.isPending || atCap}
+            className="w-full py-3 rounded-[16px] text-[14px] font-medium flex items-center justify-center gap-2"
+            style={{
+              background: isPinned ? "rgba(255,159,10,0.12)" : "var(--prv-border-subtle)",
+              border: `1px solid ${isPinned ? "rgba(255,159,10,0.3)" : "var(--prv-border)"}`,
+              color: isPinned ? "rgba(255,159,10,0.95)" : "rgba(255,255,255,0.75)",
+              cursor: pinMutation.isPending || atCap ? "default" : "pointer",
+              opacity: atCap ? 0.5 : 1,
+            }}
+          >
+            <svg
+              width="15"
+              height="15"
+              viewBox="0 0 24 24"
+              fill={isPinned ? "currentColor" : "none"}
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <line x1="12" y1="17" x2="12" y2="22" />
+              <path d="M5 17h14l-1.7-3.4a2 2 0 0 1-.3-1V5a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7.6a2 2 0 0 1-.3 1L5 17z" />
+            </svg>
+            {atCap
+              ? "Dashboard full (6 pinned)"
+              : isPinned
+                ? "Pinned to dashboard"
+                : "Pin to dashboard"}
+          </button>
 
           {/* Contact info */}
           {(member.email || member.phone) && (
