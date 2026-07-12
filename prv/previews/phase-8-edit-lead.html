@@ -1,0 +1,36 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Edit Lead</title>
+<style>
+  body{margin:0;background:#000;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',sans-serif;color:#fff;-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+  .backdrop{position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(8px)}
+  .modal{position:relative;width:400px;max-width:100%;max-height:88vh;overflow:auto;background:rgba(28,28,30,0.86);backdrop-filter:blur(64px) saturate(200%);border:1px solid rgba(255,255,255,0.14);border-radius:28px;box-shadow:0 24px 64px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.2)}
+  .head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 8px}
+  .head h2{font-size:18px;font-weight:680;letter-spacing:-.02em;margin:0}
+  .x{width:28px;height:28px;border-radius:8px;border:1px solid rgba(255,255,255,.12);background:transparent;color:rgba(255,255,255,.6);font-size:14px}
+  .body{padding:8px 20px 22px;display:flex;flex-direction:column;gap:13px}
+  .lab{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.4);font-weight:600;margin-bottom:6px;display:block}
+  .in{width:100%;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:11px;padding:11px;color:rgba(255,255,255,.92);font-size:14px;font-family:inherit}
+  textarea{min-height:64px;resize:vertical;line-height:1.5}
+  .two{display:flex;gap:11px}.two>div{flex:1}
+  .btns{display:flex;gap:8px;margin-top:4px}
+  .go{flex:1;background:#fff;color:#000;border:none;border-radius:11px;padding:12px;font-size:13.5px;font-weight:700}
+  .cancel{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.75);border-radius:11px;padding:12px 20px;font-size:13.5px;font-weight:600}
+</style></head><body>
+  <div class="backdrop"></div>
+  <div class="modal">
+    <div class="head"><h2>Edit Lead</h2><button class="x">✕</button></div>
+    <div class="body">
+      <div><span class="lab">Name</span><input class="in" value="Andrei Popa"></div>
+      <div><span class="lab">Company</span><input class="in" value="Popa Construct SRL"></div>
+      <div class="two">
+        <div><span class="lab">Email</span><input class="in" value="andrei@popaconstruct.ro"></div>
+        <div><span class="lab">Phone</span><input class="in" value="0722 100 200"></div>
+      </div>
+      <div class="two">
+        <div><span class="lab">Source</span><select class="in"><option>Website</option><option selected>Referral</option><option>Cold call</option><option>Social</option><option>Event</option><option>Partner</option></select></div>
+        <div><span class="lab">Est. value (€)</span><input class="in" value="18500"></div>
+      </div>
+      <div><span class="lab">Notes</span><textarea class="in">Wants kitchen + 2 baths. Decision by end of month.</textarea></div>
+      <div class="btns"><button class="go">Save changes</button><button class="cancel">Cancel</button></div>
+    </div>
+  </div>
+</body></html>

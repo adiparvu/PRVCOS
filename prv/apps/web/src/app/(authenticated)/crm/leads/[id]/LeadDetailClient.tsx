@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import type { LeadDetail, LeadActivity } from "@/app/api/crm/leads/[id]/route"
@@ -300,6 +300,242 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
+const SOURCE_OPTIONS: { value: LeadSource; label: string }[] = [
+  { value: "website", label: "Website" },
+  { value: "referral", label: "Referral" },
+  { value: "cold_call", label: "Cold call" },
+  { value: "social", label: "Social" },
+  { value: "event", label: "Event" },
+  { value: "partner", label: "Partner" },
+]
+
+function EditLeadForm({
+  initial,
+  onSave,
+  onClose,
+}: {
+  initial: LeadDetail
+  onSave: (patch: Record<string, unknown>) => Promise<void>
+  onClose: () => void
+}) {
+  const [name, setName] = useState(initial.name ?? "")
+  const [company, setCompany] = useState(initial.company ?? "")
+  const [email, setEmail] = useState(initial.email ?? "")
+  const [phone, setPhone] = useState(initial.phone ?? "")
+  const [source, setSource] = useState<LeadSource>(initial.source)
+  const [value, setValue] = useState(String(initial.estimatedValue ?? 0))
+  const [notes, setNotes] = useState(initial.notes ?? "")
+  const [busy, setBusy] = useState(false)
+  const submitting = useRef(false)
+
+  const valid = name.trim().length > 0
+
+  function save() {
+    if (!valid || submitting.current) return
+    submitting.current = true
+    setBusy(true)
+    const patch: Record<string, unknown> = {
+      name: name.trim(),
+      company: company.trim(),
+      source,
+      estimatedValue: Math.max(0, Number(value) || 0),
+      notes: notes.trim(),
+    }
+    if (email.trim()) patch.email = email.trim()
+    if (phone.trim().length >= 6) patch.phone = phone.trim()
+    onSave(patch)
+      .then(() => onClose())
+      .finally(() => {
+        submitting.current = false
+        setBusy(false)
+      })
+  }
+
+  const labelStyle: React.CSSProperties = {
+    fontSize: 11,
+    textTransform: "uppercase",
+    letterSpacing: "0.06em",
+    color: "rgba(255,255,255,0.4)",
+    fontWeight: 600,
+    display: "block",
+    marginBottom: 6,
+  }
+  const inputStyle: React.CSSProperties = {
+    width: "100%",
+    boxSizing: "border-box",
+    background: "rgba(255,255,255,0.04)",
+    border: "1px solid rgba(255,255,255,0.12)",
+    borderRadius: 11,
+    padding: 11,
+    color: "rgba(255,255,255,0.92)",
+    fontSize: 14,
+    fontFamily: "inherit",
+  }
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 1000,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 20,
+      }}
+    >
+      <div
+        onClick={onClose}
+        style={{
+          position: "absolute",
+          inset: 0,
+          background: "rgba(0,0,0,0.55)",
+          backdropFilter: "blur(8px)",
+        }}
+      />
+      <div
+        style={{
+          position: "relative",
+          width: 400,
+          maxWidth: "100%",
+          maxHeight: "88vh",
+          overflow: "auto",
+          background: "rgba(28,28,30,0.86)",
+          backdropFilter: "blur(64px) saturate(200%)",
+          border: "1px solid rgba(255,255,255,0.14)",
+          borderRadius: 28,
+          boxShadow: "0 24px 64px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.2)",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "16px 20px 8px",
+          }}
+        >
+          <h2 style={{ fontSize: 18, fontWeight: 680, letterSpacing: "-0.02em", margin: 0 }}>
+            Edit Lead
+          </h2>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            style={{
+              width: 28,
+              height: 28,
+              borderRadius: 8,
+              border: "1px solid rgba(255,255,255,0.12)",
+              background: "transparent",
+              color: "rgba(255,255,255,0.6)",
+              fontSize: 14,
+              cursor: "pointer",
+            }}
+          >
+            ✕
+          </button>
+        </div>
+        <div
+          style={{ padding: "8px 20px 22px", display: "flex", flexDirection: "column", gap: 13 }}
+        >
+          <div>
+            <span style={labelStyle}>Name</span>
+            <input value={name} onChange={(e) => setName(e.target.value)} style={inputStyle} />
+          </div>
+          <div>
+            <span style={labelStyle}>Company</span>
+            <input
+              value={company}
+              onChange={(e) => setCompany(e.target.value)}
+              style={inputStyle}
+            />
+          </div>
+          <div style={{ display: "flex", gap: 11 }}>
+            <div style={{ flex: 1 }}>
+              <span style={labelStyle}>Email</span>
+              <input value={email} onChange={(e) => setEmail(e.target.value)} style={inputStyle} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <span style={labelStyle}>Phone</span>
+              <input value={phone} onChange={(e) => setPhone(e.target.value)} style={inputStyle} />
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 11 }}>
+            <div style={{ flex: 1 }}>
+              <span style={labelStyle}>Source</span>
+              <select
+                value={source}
+                onChange={(e) => setSource(e.target.value as LeadSource)}
+                style={inputStyle}
+              >
+                {SOURCE_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div style={{ flex: 1 }}>
+              <span style={labelStyle}>Est. value (€)</span>
+              <input
+                inputMode="numeric"
+                value={value}
+                onChange={(e) => setValue(e.target.value.replace(/[^0-9]/g, ""))}
+                style={inputStyle}
+              />
+            </div>
+          </div>
+          <div>
+            <span style={labelStyle}>Notes</span>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              style={{ ...inputStyle, minHeight: 64, resize: "vertical", lineHeight: 1.5 }}
+            />
+          </div>
+          <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+            <button
+              type="button"
+              disabled={busy || !valid}
+              onClick={save}
+              style={{
+                flex: 1,
+                background: valid ? "#fff" : "rgba(255,255,255,0.07)",
+                color: valid ? "#000" : "rgba(255,255,255,0.4)",
+                border: "none",
+                borderRadius: 11,
+                padding: 12,
+                fontSize: 13.5,
+                fontWeight: 700,
+                cursor: busy || !valid ? "default" : "pointer",
+              }}
+            >
+              {busy ? "Saving…" : "Save changes"}
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              style={{
+                background: "rgba(255,255,255,0.07)",
+                border: "1px solid rgba(255,255,255,0.12)",
+                color: "rgba(255,255,255,0.75)",
+                borderRadius: 11,
+                padding: "12px 20px",
+                fontSize: 13.5,
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function LeadDetailClient({ id }: { id: string }) {
   const [lead, setLead] = useState<LeadDetail | null>(null)
   const [loading, setLoading] = useState(true)
@@ -345,6 +581,20 @@ export function LeadDetailClient({ id }: { id: string }) {
       .catch(() => setSaving(false))
   }, [id, router])
 
+  const [editing, setEditing] = useState(false)
+  const saveLead = useCallback(
+    (patch: Record<string, unknown>) =>
+      fetch(`/api/crm/leads/${id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(patch),
+      }).then(async (r) => {
+        if (!r.ok) throw new Error("Save failed")
+        await loadLead()
+      }),
+    [id, loadLead]
+  )
+
   if (loading) return <Skeleton />
   if (!lead)
     return (
@@ -364,6 +614,9 @@ export function LeadDetailClient({ id }: { id: string }) {
 
   return (
     <div className="px-4 pt-14 pb-28 max-w-2xl mx-auto">
+      {editing && lead && (
+        <EditLeadForm initial={lead} onSave={saveLead} onClose={() => setEditing(false)} />
+      )}
       {/* Nav */}
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
         <Link
@@ -378,6 +631,38 @@ export function LeadDetailClient({ id }: { id: string }) {
           <IconChevronLeft />
         </Link>
         <span style={{ fontSize: 13, color: "rgba(255,255,255,0.40)" }}>CRM · Leads</span>
+        <button
+          type="button"
+          onClick={() => setEditing(true)}
+          aria-label="Edit lead"
+          style={{
+            marginLeft: "auto",
+            width: 30,
+            height: 30,
+            borderRadius: 9,
+            border: "1px solid rgba(255,255,255,0.12)",
+            background: "rgba(255,255,255,0.05)",
+            color: "rgba(255,255,255,0.7)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+          }}
+        >
+          <svg
+            width="15"
+            height="15"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+          </svg>
+        </button>
       </div>
 
       {/* Hero */}
