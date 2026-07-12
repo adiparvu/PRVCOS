@@ -695,6 +695,62 @@ export function DocumentDetailClient({ id }: { id: string }) {
       })
   }, [id, router, toast])
 
+  const confirmDelete = useCallback(() => {
+    openSheet({
+      snapPoints: ["mid"],
+      defaultSnap: "mid",
+      title: "Delete Document",
+      render: (onClose) => (
+        <div
+          style={{ padding: "8px 18px 40px", display: "flex", flexDirection: "column", gap: 14 }}
+        >
+          <p style={{ fontSize: 13.5, color: "var(--prv-text-2)", lineHeight: 1.5, margin: 0 }}>
+            Delete this document? It is removed from the library and its share links stop working.
+            This cannot be undone from here.
+          </p>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button
+              type="button"
+              onClick={() => {
+                onClose()
+                deleteDoc()
+              }}
+              style={{
+                flex: 1,
+                background: "rgba(255,69,58,0.92)",
+                color: "#fff",
+                border: "none",
+                borderRadius: 11,
+                padding: 12,
+                fontSize: 13.5,
+                fontWeight: 700,
+                cursor: "pointer",
+              }}
+            >
+              Delete document
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              style={{
+                background: "rgba(255,255,255,0.07)",
+                border: "1px solid rgba(255,255,255,0.12)",
+                color: "rgba(255,255,255,0.75)",
+                borderRadius: 11,
+                padding: "12px 20px",
+                fontSize: 13.5,
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              Keep
+            </button>
+          </div>
+        </div>
+      ),
+    })
+  }, [openSheet, deleteDoc])
+
   const openLinkResult = useCallback(
     (token: string) => {
       const url = `${window.location.origin}/api/share/${token}`
@@ -1131,7 +1187,7 @@ export function DocumentDetailClient({ id }: { id: string }) {
             disabled={busy}
             onClick={() => {
               onClose()
-              deleteDoc()
+              confirmDelete()
             }}
             style={{
               display: "flex",
