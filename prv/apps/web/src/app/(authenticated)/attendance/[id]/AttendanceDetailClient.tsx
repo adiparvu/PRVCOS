@@ -1,5 +1,7 @@
 "use client"
 
+import { useState } from "react"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useAttendanceDetail } from "@/lib/api-hooks"
 import Link from "next/link"
 import { useSheetStack } from "@prv/ui"
@@ -211,10 +213,161 @@ function fmtMinutes(min: number): string {
   return h > 0 ? `${h}h ${m}m` : `${m}m`
 }
 
+function CorrectAttendanceForm({
+  initial,
+  onSubmit,
+  onCancel,
+  pending,
+}: {
+  initial: { status: AttendanceStatus; lateMinutes: number | null }
+  onSubmit: (patch: Record<string, unknown>) => void
+  onCancel: () => void
+  pending: boolean
+}) {
+  const [status, setStatus] = useState<AttendanceStatus>(initial.status)
+  const [late, setLate] = useState(String(initial.lateMinutes ?? 0))
+  const options: { value: AttendanceStatus; label: string }[] = [
+    { value: "present", label: "Present" },
+    { value: "late", label: "Late" },
+    { value: "absent", label: "Absent" },
+    { value: "leave", label: "Leave" },
+  ]
+  const labelStyle: React.CSSProperties = {
+    fontSize: 11,
+    textTransform: "uppercase",
+    letterSpacing: "0.06em",
+    color: "var(--prv-text-3)",
+    fontWeight: 600,
+    display: "block",
+    marginBottom: 6,
+  }
+  const inputStyle: React.CSSProperties = {
+    width: "100%",
+    boxSizing: "border-box",
+    background: "rgba(255,255,255,0.04)",
+    border: "1px solid rgba(255,255,255,0.12)",
+    borderRadius: 12,
+    padding: 12,
+    color: "rgba(255,255,255,0.92)",
+    fontSize: 14,
+    fontFamily: "inherit",
+  }
+
+  function save() {
+    const patch: Record<string, unknown> = { status }
+    patch.lateMinutes = status === "late" ? Math.min(720, Math.max(0, Number(late) || 0)) : null
+    onSubmit(patch)
+  }
+
+  return (
+    <div style={{ padding: "12px 18px 40px", display: "flex", flexDirection: "column", gap: 14 }}>
+      <div>
+        <span style={labelStyle}>Status</span>
+        <select
+          value={status}
+          onChange={(e) => setStatus(e.target.value as AttendanceStatus)}
+          style={inputStyle}
+        >
+          {options.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+      </div>
+      {status === "late" && (
+        <div>
+          <span style={labelStyle}>Late by (minutes)</span>
+          <input
+            inputMode="numeric"
+            value={late}
+            onChange={(e) => setLate(e.target.value.replace(/[^0-9]/g, ""))}
+            style={inputStyle}
+          />
+        </div>
+      )}
+      <div style={{ display: "flex", gap: 8, marginTop: 2 }}>
+        <button
+          type="button"
+          disabled={pending}
+          onClick={save}
+          style={{
+            flex: 1,
+            background: "#fff",
+            color: "#000",
+            border: "none",
+            borderRadius: 11,
+            padding: 12,
+            fontSize: 13.5,
+            fontWeight: 700,
+            cursor: pending ? "default" : "pointer",
+            opacity: pending ? 0.6 : 1,
+          }}
+        >
+          {pending ? "Saving…" : "Save changes"}
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          style={{
+            background: "rgba(255,255,255,0.07)",
+            border: "1px solid rgba(255,255,255,0.12)",
+            color: "rgba(255,255,255,0.75)",
+            borderRadius: 11,
+            padding: "12px 20px",
+            fontSize: 13.5,
+            fontWeight: 600,
+            cursor: "pointer",
+          }}
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export function AttendanceDetailClient({ id }: AttendanceDetailClientProps) {
   const { data, isLoading: loading } = useAttendanceDetail(id)
   const record = data?.record ?? null
   const { openSheet } = useSheetStack()
+  const queryClient = useQueryClient()
+
+  const attMutation = useMutation({
+    mutationFn: (patch: Record<string, unknown>) =>
+      fetch(`/api/attendance/${id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(patch),
+      }).then(async (r) => {
+        if (!r.ok) throw new Error("Save failed")
+        return r.json()
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["attendance-detail", id] })
+      void queryClient.invalidateQueries({ queryKey: ["attendance"] })
+    },
+  })
+
+  const openCorrect = () => {
+    if (!record) return
+    openSheet({
+      snapPoints: ["mid"],
+      defaultSnap: "mid",
+      title: "Correct Attendance",
+      render: (onClose) => (
+        <CorrectAttendanceForm
+          pending={attMutation.isPending}
+          initial={{ status: record.status, lateMinutes: record.lateMinutes }}
+          onCancel={onClose}
+          onSubmit={(patch) => {
+            attMutation.mutate(patch)
+            onClose()
+          }}
+        />
+      ),
+    })
+  }
 
   const handleFAB = () => {
     if (!record) return
@@ -268,7 +421,10 @@ export function AttendanceDetailClient({ id }: AttendanceDetailClientProps) {
               }
               label="Correct Pontaj"
               sub="Edit hours, breaks, location"
-              onClick={onClose}
+              onClick={() => {
+                onClose()
+                openCorrect()
+              }}
             />
           )}
           <SheetBtn
