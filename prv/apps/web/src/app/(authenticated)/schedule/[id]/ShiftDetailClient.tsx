@@ -4,7 +4,7 @@ import { useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useShiftDetail } from "@/lib/api-hooks"
 import Link from "next/link"
-import { useSheetStack } from "@prv/ui"
+import { useSheetStack, useToast } from "@prv/ui"
 import type { ShiftDetail } from "@/app/api/schedule/[id]/route"
 import type { ShiftRole, ShiftStatus } from "@/app/api/schedule/route"
 
@@ -802,6 +802,7 @@ export function ShiftDetailClient({ id }: ShiftDetailClientProps) {
   const shift = data?.shift ?? null
   const { openSheet } = useSheetStack()
   const queryClient = useQueryClient()
+  const { toast } = useToast()
 
   const shiftMutation = useMutation({
     mutationFn: (patch: Record<string, unknown>) =>
@@ -878,7 +879,10 @@ export function ShiftDetailClient({ id }: ShiftDetailClientProps) {
               type="button"
               disabled={shiftMutation.isPending}
               onClick={() => {
-                shiftMutation.mutate({ status: "cancelled" })
+                shiftMutation.mutate(
+                  { status: "cancelled" },
+                  { onSuccess: () => toast.success("Shift cancelled") }
+                )
                 onClose()
               }}
               style={{

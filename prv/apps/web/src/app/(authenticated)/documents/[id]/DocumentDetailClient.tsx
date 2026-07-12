@@ -686,6 +686,7 @@ export function DocumentDetailClient({ id }: { id: string }) {
     fetch(`/api/documents/${id}`, { method: "DELETE" })
       .then((r) => {
         if (!r.ok) throw new Error("Delete failed")
+        toast.success("Document deleted")
         router.push("/documents")
       })
       .catch(() => {
@@ -765,6 +766,7 @@ export function DocumentDetailClient({ id }: { id: string }) {
                 const data = (await r.json()) as { token?: string | null }
                 onClose()
                 if (isExternal && data.token) openLinkResult(data.token)
+                else toast.success("Document shared")
               })
               .catch((e) => {
                 toast.error("Couldn't share", e instanceof Error ? e.message : undefined)
@@ -828,6 +830,7 @@ export function DocumentDetailClient({ id }: { id: string }) {
                 if (!r.ok) throw new Error("Signature request failed")
                 await loadDoc()
                 onClose()
+                toast.success("Signature requested")
               })
               .catch((e) => {
                 toast.error(

@@ -585,6 +585,7 @@ export function LeadDetailClient({ id }: { id: string }) {
     fetch(`/api/crm/leads/${id}/convert`, { method: "POST" })
       .then((r) => {
         if (!r.ok) throw new Error("Convert failed")
+        toast.success("Lead converted", "Now an active client")
         // The lead row is now an active customer — the lead GET filters prospects
         // only, so route to the client profile instead of refetching the lead.
         router.push(`/crm/clients/${id}`)
