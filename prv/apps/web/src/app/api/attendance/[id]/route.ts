@@ -5,6 +5,7 @@ import { writeAuditLog } from "@prv/auth"
 import { db } from "@prv/db"
 import { attendanceRecords, users, stores } from "@prv/db/schema"
 import { and, eq, gte, lte } from "drizzle-orm"
+import { alias } from "drizzle-orm/pg-core"
 import { z } from "zod"
 import type { AttendanceStatus } from "../route"
 
@@ -54,7 +55,8 @@ export interface AttendanceDetail {
   weekTotalMinutes: number
   weekDays: WeekDay[]
   timeline: ClockEvent[]
-  approvedBy: null
+  approvedBy: string | null
+  approvedAt: string | null
 }
 
 const DAY_LABELS = ["D", "L", "Ma", "Mi", "J", "V", "S"] as const
@@ -66,6 +68,7 @@ export const GET = withGates(
     if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 })
 
     const { companyId } = ctx.session
+    const approver = alias(users, "approver")
 
     const rows = await db
       .select({
@@ -83,9 +86,13 @@ export const GET = withGates(
         lastName: users.lastName,
         jobTitle: users.jobTitle,
         storeName: stores.name,
+        approvedAt: attendanceRecords.approvedAt,
+        approverFirstName: approver.firstName,
+        approverLastName: approver.lastName,
       })
       .from(attendanceRecords)
       .leftJoin(users, eq(attendanceRecords.userId, users.id))
+      .leftJoin(approver, eq(attendanceRecords.approvedByUserId, approver.id))
       .leftJoin(stores, eq(attendanceRecords.storeId, stores.id))
       .where(and(eq(attendanceRecords.id, id), eq(attendanceRecords.companyId, companyId)))
       .limit(1)
@@ -224,7 +231,8 @@ export const GET = withGates(
       weekTotalMinutes,
       weekDays,
       timeline,
-      approvedBy: null,
+      approvedBy: row.approverFirstName ? `${row.approverFirstName} ${row.approverLastName}` : null,
+      approvedAt: row.approvedAt ? row.approvedAt.toISOString() : null,
     }
 
     return NextResponse.json({ record })
@@ -239,6 +247,7 @@ const attendancePatchSchema = z
     clockIn: z.string().datetime({ offset: true }).nullable().optional(),
     clockOut: z.string().datetime({ offset: true }).nullable().optional(),
     lateMinutes: z.number().int().min(0).max(720).nullable().optional(),
+    approve: z.boolean().optional(),
   })
   .refine((d) => Object.values(d).some((v) => v !== undefined), {
     message: "At least one field is required",
@@ -272,7 +281,7 @@ export const PATCH = withGates(
 
     if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 })
 
-    const { status, clockIn, clockOut, lateMinutes } = parsed.data
+    const { status, clockIn, clockOut, lateMinutes, approve } = parsed.data
 
     const [updated] = await db
       .update(attendanceRecords)
@@ -281,6 +290,10 @@ export const PATCH = withGates(
         ...(clockIn !== undefined && { clockIn: clockIn ? new Date(clockIn) : null }),
         ...(clockOut !== undefined && { clockOut: clockOut ? new Date(clockOut) : null }),
         ...(lateMinutes !== undefined && { lateMinutes }),
+        ...(approve !== undefined && {
+          approvedByUserId: approve ? ctx.session.userId : null,
+          approvedAt: approve ? new Date() : null,
+        }),
       })
       .where(and(eq(attendanceRecords.id, id), eq(attendanceRecords.companyId, companyId)))
       .returning({ id: attendanceRecords.id, status: attendanceRecords.status })

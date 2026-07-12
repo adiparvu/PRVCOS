@@ -398,7 +398,10 @@ export function AttendanceDetailClient({ id }: AttendanceDetailClientProps) {
               }
               label="Approve Pontaj"
               sub="Confirmed and sent to payroll"
-              onClick={onClose}
+              onClick={() => {
+                attMutation.mutate({ approve: true })
+                onClose()
+              }}
             />
           )}
           {isActionable && (

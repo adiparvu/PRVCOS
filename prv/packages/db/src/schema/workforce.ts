@@ -121,6 +121,10 @@ export const attendanceRecords = pgTable(
     clockOut: timestamp("clock_out", { withTimezone: true }),
     lateMinutes: integer("late_minutes"),
     gpsVerified: boolean("gps_verified").notNull().default(false),
+    approvedByUserId: uuid("approved_by_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    approvedAt: timestamp("approved_at", { withTimezone: true }),
 
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
