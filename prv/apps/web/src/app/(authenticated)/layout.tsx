@@ -8,6 +8,7 @@ import { AppearanceButton } from "./appearance-button"
 import { SheetStackClient } from "./sheet-stack-client"
 import { CommandPaletteClient } from "./command-palette-client"
 import { QueryProvider } from "./query-provider"
+import { ToastProvider } from "@prv/ui"
 import { SidebarNav } from "./sidebar-nav"
 
 export const dynamic = "force-dynamic"
@@ -49,18 +50,20 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
       <FloatingSearchBar role={session.role} />
 
       {/* Main content — shifts right on md+ to accommodate sidebar */}
-      <QueryProvider>
-        <CommandPaletteClient role={session.role}>
-          <SheetStackClient>
-            <main
-              className="relative z-10 min-h-screen pt-24 pb-32 transition-[padding] duration-300"
-              style={{ paddingLeft: "max(0px, var(--prv-sidebar-w, 0px))" }}
-            >
-              {children}
-            </main>
-          </SheetStackClient>
-        </CommandPaletteClient>
-      </QueryProvider>
+      <ToastProvider>
+        <QueryProvider>
+          <CommandPaletteClient role={session.role}>
+            <SheetStackClient>
+              <main
+                className="relative z-10 min-h-screen pt-24 pb-32 transition-[padding] duration-300"
+                style={{ paddingLeft: "max(0px, var(--prv-sidebar-w, 0px))" }}
+              >
+                {children}
+              </main>
+            </SheetStackClient>
+          </CommandPaletteClient>
+        </QueryProvider>
+      </ToastProvider>
 
       {/* Appearance settings toggle — fixed top-right */}
       <AppearanceButton />
