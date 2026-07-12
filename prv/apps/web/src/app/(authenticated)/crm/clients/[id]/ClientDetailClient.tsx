@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useClientDetail } from "@/lib/api-hooks"
 import Link from "next/link"
@@ -438,6 +438,204 @@ function AssignManagerForm({
   )
 }
 
+function EditClientForm({
+  initial,
+  onSave,
+  onClose,
+}: {
+  initial: ClientDetail
+  onSave: (patch: Record<string, unknown>) => Promise<void>
+  onClose: () => void
+}) {
+  const clean = (v: string | null | undefined) => (!v || v === "—" ? "" : v)
+  const [name, setName] = useState(clean(initial.name))
+  const [email, setEmail] = useState(clean(initial.email))
+  const [phone, setPhone] = useState(clean(initial.phone))
+  const [address, setAddress] = useState(clean(initial.address))
+  const [city, setCity] = useState(clean(initial.location))
+  const [vat, setVat] = useState(clean(initial.cifVat))
+  const [busy, setBusy] = useState(false)
+  const submitting = useRef(false)
+  const valid = name.trim().length > 0
+
+  function save() {
+    if (!valid || submitting.current) return
+    submitting.current = true
+    setBusy(true)
+    const patch: Record<string, unknown> = {
+      name: name.trim(),
+      phone: phone.trim(),
+      address: address.trim(),
+      city: city.trim(),
+      vatNumber: vat.trim(),
+    }
+    if (email.trim()) patch.email = email.trim()
+    onSave(patch)
+      .then(() => onClose())
+      .finally(() => {
+        submitting.current = false
+        setBusy(false)
+      })
+  }
+
+  const labelStyle: React.CSSProperties = {
+    fontSize: 11,
+    textTransform: "uppercase",
+    letterSpacing: "0.06em",
+    color: "rgba(255,255,255,0.4)",
+    fontWeight: 600,
+    display: "block",
+    marginBottom: 6,
+  }
+  const inputStyle: React.CSSProperties = {
+    width: "100%",
+    boxSizing: "border-box",
+    background: "rgba(255,255,255,0.04)",
+    border: "1px solid rgba(255,255,255,0.12)",
+    borderRadius: 11,
+    padding: 11,
+    color: "rgba(255,255,255,0.92)",
+    fontSize: 14,
+    fontFamily: "inherit",
+  }
+  const field = (label: string, val: string, set: (v: string) => void) => (
+    <div>
+      <span style={labelStyle}>{label}</span>
+      <input value={val} onChange={(e) => set(e.target.value)} style={inputStyle} />
+    </div>
+  )
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 1000,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 20,
+      }}
+    >
+      <div
+        onClick={onClose}
+        style={{
+          position: "absolute",
+          inset: 0,
+          background: "rgba(0,0,0,0.55)",
+          backdropFilter: "blur(8px)",
+        }}
+      />
+      <div
+        style={{
+          position: "relative",
+          width: 400,
+          maxWidth: "100%",
+          maxHeight: "88vh",
+          overflow: "auto",
+          background: "rgba(28,28,30,0.86)",
+          backdropFilter: "blur(64px) saturate(200%)",
+          border: "1px solid rgba(255,255,255,0.14)",
+          borderRadius: 28,
+          boxShadow: "0 24px 64px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.2)",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "16px 20px 8px",
+          }}
+        >
+          <h2 style={{ fontSize: 18, fontWeight: 680, letterSpacing: "-0.02em", margin: 0 }}>
+            Edit Client
+          </h2>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            style={{
+              width: 28,
+              height: 28,
+              borderRadius: 8,
+              border: "1px solid rgba(255,255,255,0.12)",
+              background: "transparent",
+              color: "rgba(255,255,255,0.6)",
+              fontSize: 14,
+              cursor: "pointer",
+            }}
+          >
+            ✕
+          </button>
+        </div>
+        <div
+          style={{ padding: "8px 20px 22px", display: "flex", flexDirection: "column", gap: 13 }}
+        >
+          {field("Name", name, setName)}
+          <div style={{ display: "flex", gap: 11 }}>
+            <div style={{ flex: 1 }}>
+              <span style={labelStyle}>Email</span>
+              <input value={email} onChange={(e) => setEmail(e.target.value)} style={inputStyle} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <span style={labelStyle}>Phone</span>
+              <input value={phone} onChange={(e) => setPhone(e.target.value)} style={inputStyle} />
+            </div>
+          </div>
+          {field("Address", address, setAddress)}
+          <div style={{ display: "flex", gap: 11 }}>
+            <div style={{ flex: 1 }}>
+              <span style={labelStyle}>City</span>
+              <input value={city} onChange={(e) => setCity(e.target.value)} style={inputStyle} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <span style={labelStyle}>CIF / VAT</span>
+              <input value={vat} onChange={(e) => setVat(e.target.value)} style={inputStyle} />
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+            <button
+              type="button"
+              disabled={busy || !valid}
+              onClick={save}
+              style={{
+                flex: 1,
+                background: valid ? "#fff" : "rgba(255,255,255,0.07)",
+                color: valid ? "#000" : "rgba(255,255,255,0.4)",
+                border: "none",
+                borderRadius: 11,
+                padding: 12,
+                fontSize: 13.5,
+                fontWeight: 700,
+                cursor: busy || !valid ? "default" : "pointer",
+              }}
+            >
+              {busy ? "Saving…" : "Save changes"}
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              style={{
+                background: "rgba(255,255,255,0.07)",
+                border: "1px solid rgba(255,255,255,0.12)",
+                color: "rgba(255,255,255,0.75)",
+                borderRadius: 11,
+                padding: "12px 20px",
+                fontSize: 13.5,
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function ClientDetailClient({ id }: ClientDetailClientProps) {
   const { data, isError, isLoading: loading } = useClientDetail(id)
   const client = data?.client ?? null
@@ -460,6 +658,18 @@ export function ClientDetailClient({ id }: ClientDetailClientProps) {
       void queryClient.invalidateQueries({ queryKey: ["clients"] })
     },
   })
+
+  const [editing, setEditing] = useState(false)
+  const saveClient = (patch: Record<string, unknown>) =>
+    fetch(`/api/crm/clients/${id}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(patch),
+    }).then(async (r) => {
+      if (!r.ok) throw new Error("Save failed")
+      void queryClient.invalidateQueries({ queryKey: ["client-detail", id] })
+      void queryClient.invalidateQueries({ queryKey: ["clients"] })
+    })
 
   const openAssignManager = () => {
     openSheet({
@@ -670,7 +880,10 @@ export function ClientDetailClient({ id }: ClientDetailClientProps) {
           </button>
           {/* Edit */}
           <button
-            onClick={onClose}
+            onClick={() => {
+              onClose()
+              setEditing(true)
+            }}
             style={{
               display: "flex",
               alignItems: "center",
@@ -825,6 +1038,9 @@ export function ClientDetailClient({ id }: ClientDetailClientProps) {
 
   return (
     <div style={{ padding: "56px 16px 112px", maxWidth: 640, margin: "0 auto" }}>
+      {editing && client && (
+        <EditClientForm initial={client} onSave={saveClient} onClose={() => setEditing(false)} />
+      )}
       {/* Back nav */}
       <Link
         href="/crm/clients"
