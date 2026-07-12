@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useShiftDetail } from "@/lib/api-hooks"
 import Link from "next/link"
 import { useSheetStack } from "@prv/ui"
@@ -469,6 +469,189 @@ function EditShiftForm({
   )
 }
 
+function StaffingSheet({ shiftId }: { shiftId: string }) {
+  const qc = useQueryClient()
+  const { data } = useShiftDetail(shiftId)
+  const shift = data?.shift ?? null
+  const assignees = shift?.assignees ?? []
+  const openSlots = shift?.openSlots ?? 0
+  const totalSlots = shift?.totalSlots ?? 0
+  const filled = totalSlots - openSlots
+  const [userId, setUserId] = useState("")
+
+  const { data: peopleData } = useQuery<{
+    members: { id: string; firstName: string; lastName: string; role: string }[]
+  }>({
+    queryKey: ["people", "picker"],
+    queryFn: () => fetch("/api/people?limit=200").then((r) => r.json()),
+  })
+  const assignedIds = new Set(assignees.map((a) => a.id))
+  const people = (peopleData?.members ?? []).filter((m) => !assignedIds.has(m.id))
+
+  const invalidate = () => {
+    void qc.invalidateQueries({ queryKey: ["shift-detail", shiftId] })
+    void qc.invalidateQueries({ queryKey: ["schedule"] })
+  }
+
+  const assign = useMutation({
+    mutationFn: (uid: string) =>
+      fetch(`/api/schedule/${shiftId}/assignments`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ userId: uid }),
+      }).then((r) => {
+        if (!r.ok) throw new Error("Assign failed")
+        return r.json()
+      }),
+    onSuccess: () => {
+      setUserId("")
+      invalidate()
+    },
+  })
+
+  const unassign = useMutation({
+    mutationFn: (assignmentId: string) =>
+      fetch(`/api/schedule/${shiftId}/assignments/${assignmentId}`, { method: "DELETE" }).then(
+        (r) => {
+          if (!r.ok) throw new Error("Unassign failed")
+        }
+      ),
+    onSuccess: invalidate,
+  })
+
+  const busy = assign.isPending || unassign.isPending
+
+  return (
+    <div style={{ padding: "2px 18px 32px", display: "flex", flexDirection: "column", gap: 8 }}>
+      <p
+        style={{ fontSize: 12, color: "var(--prv-text-3)", textAlign: "center", margin: "0 0 6px" }}
+      >
+        {filled} of {totalSlots} slots filled · {openSlots} open
+      </p>
+      {assignees.map((a) => (
+        <div
+          key={a.assignmentId ?? a.id}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 11,
+            padding: "10px 12px",
+            borderRadius: 12,
+            background: "rgba(255,255,255,0.04)",
+            border: "1px solid rgba(255,255,255,0.09)",
+          }}
+        >
+          <div
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: 9,
+              background: "rgba(255,255,255,0.10)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 12,
+              fontWeight: 700,
+              flexShrink: 0,
+            }}
+          >
+            {a.initials}
+          </div>
+          <span style={{ flex: 1, fontSize: 14, fontWeight: 600 }}>{a.name}</span>
+          {a.assignmentId && (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => unassign.mutate(a.assignmentId as string)}
+              aria-label={`Remove ${a.name}`}
+              style={{
+                width: 26,
+                height: 26,
+                borderRadius: 8,
+                border: "1px solid rgba(255,69,58,0.25)",
+                background: "rgba(255,69,58,0.08)",
+                color: "rgba(255,69,58,0.9)",
+                fontSize: 13,
+                cursor: busy ? "default" : "pointer",
+              }}
+            >
+              ✕
+            </button>
+          )}
+        </div>
+      ))}
+      {assignees.length === 0 && (
+        <p style={{ fontSize: 12.5, color: "var(--prv-text-3)", textAlign: "center", padding: 6 }}>
+          No one assigned yet.
+        </p>
+      )}
+
+      {openSlots > 0 ? (
+        <>
+          <p
+            style={{
+              fontSize: 11,
+              textTransform: "uppercase",
+              letterSpacing: "0.06em",
+              color: "var(--prv-text-3)",
+              fontWeight: 600,
+              margin: "10px 2px 2px",
+            }}
+          >
+            Add employee
+          </p>
+          <div style={{ display: "flex", gap: 8 }}>
+            <select
+              value={userId}
+              onChange={(e) => setUserId(e.target.value)}
+              style={{
+                flex: 1,
+                background: "rgba(255,255,255,0.04)",
+                border: "1px solid rgba(255,255,255,0.12)",
+                borderRadius: 11,
+                padding: 11,
+                color: "rgba(255,255,255,0.92)",
+                fontSize: 13.5,
+                fontFamily: "inherit",
+              }}
+            >
+              <option value="">Select an employee…</option>
+              {people.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.firstName} {m.lastName} · {m.role}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              disabled={busy || !userId}
+              onClick={() => userId && assign.mutate(userId)}
+              style={{
+                background: userId ? "rgba(48,209,88,0.85)" : "rgba(255,255,255,0.07)",
+                color: userId ? "#00220c" : "rgba(255,255,255,0.4)",
+                border: "none",
+                borderRadius: 11,
+                padding: "0 18px",
+                fontSize: 13.5,
+                fontWeight: 700,
+                cursor: busy || !userId ? "default" : "pointer",
+              }}
+            >
+              Add
+            </button>
+          </div>
+        </>
+      ) : (
+        <p
+          style={{ fontSize: 12.5, color: "rgba(48,209,88,0.9)", textAlign: "center", padding: 8 }}
+        >
+          All slots filled.
+        </p>
+      )}
+    </div>
+  )
+}
+
 export function ShiftDetailClient({ id }: ShiftDetailClientProps) {
   const { data, isLoading: loading } = useShiftDetail(id)
   const shift = data?.shift ?? null
@@ -508,6 +691,16 @@ export function ShiftDetailClient({ id }: ShiftDetailClientProps) {
           }}
         />
       ),
+    })
+  }
+
+  const openStaffing = () => {
+    if (!shift) return
+    openSheet({
+      snapPoints: ["mid", "full"],
+      defaultSnap: "mid",
+      title: "Staffing",
+      render: () => <StaffingSheet shiftId={id} />,
     })
   }
 
@@ -563,7 +756,10 @@ export function ShiftDetailClient({ id }: ShiftDetailClientProps) {
               }
               label="Assign Employee"
               sub="Add a person to shift"
-              onClick={onClose}
+              onClick={() => {
+                onClose()
+                openStaffing()
+              }}
             />
           )}
           <SheetBtn

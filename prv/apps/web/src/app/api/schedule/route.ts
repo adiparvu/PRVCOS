@@ -26,6 +26,7 @@ export type ShiftRole = "foreman" | "bricklayer" | "electrician" | "finisher" | 
 
 export interface ShiftAssignee {
   id: string
+  assignmentId?: string
   initials: string
   name: string
 }

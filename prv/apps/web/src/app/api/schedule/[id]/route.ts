@@ -60,6 +60,7 @@ export const GET = withGates(
 
       db
         .select({
+          assignmentId: shiftAssignments.id,
           userId: shiftAssignments.userId,
           firstName: users.firstName,
           lastName: users.lastName,
@@ -74,6 +75,7 @@ export const GET = withGates(
 
     const assignees = assignmentRows.map((a) => ({
       id: a.userId,
+      assignmentId: a.assignmentId,
       initials: a.firstName ? `${a.firstName[0]}${a.lastName![0]}` : "?",
       name: a.firstName ? `${a.firstName} ${a.lastName}` : "—",
     }))
