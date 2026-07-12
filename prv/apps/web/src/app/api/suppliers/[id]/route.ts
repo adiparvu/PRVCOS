@@ -40,6 +40,7 @@ export interface SupplierActivity {
 }
 
 export interface SupplierDetail extends SupplierSummary {
+  lifecycleStatus: "active" | "inactive" | "pending" | "blacklisted"
   contact: string
   phone: string
   email: string
@@ -129,6 +130,9 @@ export const GET = withGates(
       name: row.name,
       category: row.category ?? "General",
       status: uiStatus,
+      lifecycleStatus: (["active", "inactive", "pending", "blacklisted"].includes(row.status)
+        ? row.status
+        : "active") as "active" | "inactive" | "pending" | "blacklisted",
       trustScore: m.trustScore ?? 0,
       onTimeDelivery: m.onTimeDelivery ?? 0,
       rating: m.rating ?? 0,

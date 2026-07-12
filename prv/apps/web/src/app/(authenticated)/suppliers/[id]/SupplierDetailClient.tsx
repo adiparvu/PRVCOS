@@ -650,20 +650,22 @@ export function SupplierDetailClient({ id }: SupplierDetailClientProps) {
                 <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
               </svg>
             )
+            // Gate on the real lifecycle status, not the derived at_risk badge
+            // (which also flags active-but-low-trust vendors).
             const acts: Act[] =
-              supplier.status === "pending"
+              supplier.lifecycleStatus === "pending"
                 ? [
                     { label: "Approve supplier", to: "active", tone: "green", icon: iconCheck },
                     { label: "Reject", to: "blacklisted", tone: "red", icon: iconBlock },
                   ]
-                : supplier.status === "active"
+                : supplier.lifecycleStatus === "active"
                   ? [
                       { label: "Suspend", to: "inactive", tone: "amber", icon: iconPause },
                       { label: "Blacklist", to: "blacklisted", tone: "red", icon: iconBlock },
                     ]
-                  : supplier.status === "inactive"
+                  : supplier.lifecycleStatus === "inactive"
                     ? [{ label: "Reactivate", to: "active", tone: "green", icon: iconCheck }]
-                    : supplier.status === "at_risk"
+                    : supplier.lifecycleStatus === "blacklisted"
                       ? [{ label: "Reinstate", to: "active", tone: "green", icon: iconRefresh }]
                       : []
             if (acts.length === 0) return null
