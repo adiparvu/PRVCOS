@@ -446,6 +446,62 @@ export function ToolDetailClient({ id }: ToolDetailClientProps) {
     })
   }
 
+  const openConfirmMissing = () => {
+    openSheet({
+      snapPoints: ["mid"],
+      defaultSnap: "mid",
+      title: "Mark Missing",
+      render: (onClose) => (
+        <div
+          style={{ padding: "8px 16px 40px", display: "flex", flexDirection: "column", gap: 14 }}
+        >
+          <p style={{ fontSize: 13.5, color: "var(--prv-text-2)", lineHeight: 1.5, margin: 0 }}>
+            Mark this tool as lost or stolen? It is removed from availability and any current holder
+            is unassigned.
+          </p>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button
+              type="button"
+              onClick={() => {
+                toolMutation.mutate({ status: "lost", assignedUserId: null })
+                onClose()
+              }}
+              style={{
+                flex: 1,
+                background: "rgba(255,69,58,0.92)",
+                color: "#fff",
+                border: "none",
+                borderRadius: 11,
+                padding: 12,
+                fontSize: 13.5,
+                fontWeight: 700,
+                cursor: "pointer",
+              }}
+            >
+              Mark missing
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              style={{
+                background: "rgba(255,255,255,0.07)",
+                border: "1px solid rgba(255,255,255,0.12)",
+                color: "rgba(255,255,255,0.75)",
+                borderRadius: 11,
+                padding: "12px 20px",
+                fontSize: 13.5,
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              Keep
+            </button>
+          </div>
+        </div>
+      ),
+    })
+  }
+
   const openEditTool = () => {
     if (!tool) return
     openSheet({
@@ -597,8 +653,8 @@ export function ToolDetailClient({ id }: ToolDetailClientProps) {
             label="Mark Missing"
             sub="Lost or stolen tool"
             onClick={() => {
-              toolMutation.mutate({ status: "lost", assignedUserId: null })
               onClose()
+              openConfirmMissing()
             }}
           />
         </div>

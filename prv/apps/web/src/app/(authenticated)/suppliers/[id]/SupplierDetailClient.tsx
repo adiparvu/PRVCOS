@@ -498,6 +498,61 @@ export function SupplierDetailClient({ id }: SupplierDetailClientProps) {
       void queryClient.invalidateQueries({ queryKey: ["suppliers"] })
     },
   })
+  const openConfirmBlacklist = (label: string) => {
+    openSheet({
+      snapPoints: ["mid"],
+      defaultSnap: "mid",
+      title: label,
+      render: (onClose) => (
+        <div
+          style={{ padding: "8px 20px 40px", display: "flex", flexDirection: "column", gap: 14 }}
+        >
+          <p style={{ fontSize: 13.5, color: "var(--prv-text-2)", lineHeight: 1.5, margin: 0 }}>
+            Blacklist this supplier? They are blocked from new orders until reinstated.
+          </p>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button
+              type="button"
+              onClick={() => {
+                statusMutation.mutate("blacklisted")
+                onClose()
+              }}
+              style={{
+                flex: 1,
+                background: "rgba(255,69,58,0.92)",
+                color: "#fff",
+                border: "none",
+                borderRadius: 11,
+                padding: 12,
+                fontSize: 13.5,
+                fontWeight: 700,
+                cursor: "pointer",
+              }}
+            >
+              {label}
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              style={{
+                background: "rgba(255,255,255,0.07)",
+                border: "1px solid rgba(255,255,255,0.12)",
+                color: "rgba(255,255,255,0.75)",
+                borderRadius: 11,
+                padding: "12px 20px",
+                fontSize: 13.5,
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ),
+    })
+  }
+
   const scorecard = useSupplierScorecard(id)
 
   function openActions() {
@@ -691,8 +746,13 @@ export function SupplierDetailClient({ id }: SupplierDetailClientProps) {
                     icon={a.icon}
                     disabled={statusMutation.isPending}
                     onClick={() => {
-                      statusMutation.mutate(a.to)
-                      onClose()
+                      if (a.to === "blacklisted") {
+                        onClose()
+                        openConfirmBlacklist(a.label)
+                      } else {
+                        statusMutation.mutate(a.to)
+                        onClose()
+                      }
                     }}
                   />
                 ))}

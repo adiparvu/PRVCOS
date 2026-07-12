@@ -597,6 +597,7 @@ export function LeadDetailClient({ id }: { id: string }) {
   }, [id, router, toast])
 
   const [editing, setEditing] = useState(false)
+  const [lostConfirm, setLostConfirm] = useState(false)
   const saveLead = useCallback(
     (patch: Record<string, unknown>) =>
       fetch(`/api/crm/leads/${id}`, {
@@ -1143,27 +1144,67 @@ export function LeadDetailClient({ id }: { id: string }) {
         )}
       </div>
 
-      {!isTerminal && (
-        <button
-          onClick={() => patchStage("lost")}
-          disabled={saving}
-          style={{
-            marginTop: 8,
-            width: "100%",
-            padding: "11px",
-            borderRadius: 12,
-            background: "rgba(255,69,58,0.10)",
-            border: "1px solid rgba(255,69,58,0.22)",
-            color: "rgba(255,69,58,0.95)",
-            fontSize: 12,
-            fontWeight: 700,
-            cursor: saving ? "default" : "pointer",
-            opacity: saving ? 0.6 : 1,
-          }}
-        >
-          Mark as lost
-        </button>
-      )}
+      {!isTerminal &&
+        (lostConfirm ? (
+          <div style={{ marginTop: 8, display: "flex", gap: 8 }}>
+            <button
+              onClick={() => {
+                setLostConfirm(false)
+                patchStage("lost")
+              }}
+              disabled={saving}
+              style={{
+                flex: 1,
+                padding: "11px",
+                borderRadius: 12,
+                background: "rgba(255,69,58,0.92)",
+                border: "none",
+                color: "#fff",
+                fontSize: 12,
+                fontWeight: 700,
+                cursor: saving ? "default" : "pointer",
+                opacity: saving ? 0.6 : 1,
+              }}
+            >
+              Confirm lost
+            </button>
+            <button
+              onClick={() => setLostConfirm(false)}
+              style={{
+                padding: "11px 18px",
+                borderRadius: 12,
+                background: "rgba(255,255,255,0.07)",
+                border: "1px solid rgba(255,255,255,0.12)",
+                color: "rgba(255,255,255,0.75)",
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setLostConfirm(true)}
+            disabled={saving}
+            style={{
+              marginTop: 8,
+              width: "100%",
+              padding: "11px",
+              borderRadius: 12,
+              background: "rgba(255,69,58,0.10)",
+              border: "1px solid rgba(255,69,58,0.22)",
+              color: "rgba(255,69,58,0.95)",
+              fontSize: 12,
+              fontWeight: 700,
+              cursor: saving ? "default" : "pointer",
+              opacity: saving ? 0.6 : 1,
+            }}
+          >
+            Mark as lost
+          </button>
+        ))}
 
       {lead.stage === "won" && (
         <button
