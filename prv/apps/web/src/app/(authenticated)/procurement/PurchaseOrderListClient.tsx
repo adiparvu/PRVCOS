@@ -2,8 +2,9 @@
 import { useRouter } from "next/navigation"
 
 import { useState } from "react"
+import { useQueryClient } from "@tanstack/react-query"
 import Link from "next/link"
-import { useSheetStack } from "@prv/ui"
+import { useSheetStack, useToast } from "@prv/ui"
 import type { POSummary, ProcurementMeta } from "@/app/api/procurement/route"
 import { usePurchaseOrders } from "@/lib/api-hooks"
 
@@ -236,6 +237,54 @@ export function PurchaseOrderListClient() {
   const meta = data?.meta ?? null
   const error = isError
 
+  const { toast } = useToast()
+  const queryClient = useQueryClient()
+  const [selectMode, setSelectMode] = useState(false)
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [bulkBusy, setBulkBusy] = useState(false)
+
+  const toggleSelect = (id: string) =>
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  const exitSelect = () => {
+    setSelectMode(false)
+    setSelected(new Set())
+  }
+  const bulkDecision = (action: "approve" | "reject") => {
+    const ids = [...selected]
+    if (ids.length === 0) return
+    setBulkBusy(true)
+    Promise.allSettled(
+      ids.map((oid) =>
+        fetch(`/api/procurement/${oid}`, {
+          method: "PATCH",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ action }),
+        }).then((r) => {
+          if (!r.ok) throw new Error("failed")
+        })
+      )
+    )
+      .then((results) => {
+        const ok = results.filter((r) => r.status === "fulfilled").length
+        const failed = results.length - ok
+        void queryClient.invalidateQueries({ queryKey: ["procurement"] })
+        ids.forEach((oid) =>
+          queryClient.invalidateQueries({ queryKey: ["purchase-order-detail", oid] })
+        )
+        const verb = action === "approve" ? "approved" : "rejected"
+        if (failed === 0) toast.success(`${ok} ${verb}`)
+        else if (ok === 0) toast.error(`Couldn't ${action} orders`, "Please try again.")
+        else toast.warning(`${ok} ${verb}`, `${failed} could not be processed.`)
+        exitSelect()
+      })
+      .finally(() => setBulkBusy(false))
+  }
+
   const handleNewOrder = () => {
     openSheet({
       snapPoints: ["mid", "full"],
@@ -331,18 +380,38 @@ export function PurchaseOrderListClient() {
             Procurement
           </h1>
         </div>
-        <div
-          style={{
-            padding: "6px 12px",
-            borderRadius: 10,
-            background: "var(--prv-g1)",
-            border: "1px solid var(--prv-border-subtle)",
-            fontSize: 12,
-            fontWeight: 500,
-            color: "var(--prv-text-2)",
-          }}
-        >
-          {new Date().toLocaleDateString("ro-RO", { month: "short", year: "numeric" })}
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          {(orders?.length ?? 0) > 0 && (
+            <button
+              type="button"
+              onClick={() => (selectMode ? exitSelect() : setSelectMode(true))}
+              style={{
+                fontSize: 13,
+                fontWeight: 600,
+                padding: "7px 14px",
+                borderRadius: 100,
+                background: "rgba(255,255,255,0.08)",
+                border: "1px solid rgba(255,255,255,0.14)",
+                color: "rgba(255,255,255,0.8)",
+                cursor: "pointer",
+              }}
+            >
+              {selectMode ? "Cancel" : "Select"}
+            </button>
+          )}
+          <div
+            style={{
+              padding: "6px 12px",
+              borderRadius: 10,
+              background: "var(--prv-g1)",
+              border: "1px solid var(--prv-border-subtle)",
+              fontSize: 12,
+              fontWeight: 500,
+              color: "var(--prv-text-2)",
+            }}
+          >
+            {new Date().toLocaleDateString("ro-RO", { month: "short", year: "numeric" })}
+          </div>
         </div>
       </div>
 
@@ -630,25 +699,49 @@ export function PurchaseOrderListClient() {
               bg: "var(--prv-border-subtle)",
             }
             const isPending = po.status === "Pending"
-            return (
-              <Link
-                key={po.id}
-                href={`/procurement/${po.id}`}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 12,
-                  padding: "14px 16px",
-                  paddingLeft: isPending ? 13 : 16,
-                  borderBottom:
-                    i < orders.length - 1 ? "1px solid var(--prv-border-subtle)" : "none",
-                  textDecoration: "none",
-                  borderLeft: isPending ? "3px solid transparent" : undefined,
-                  borderImage: isPending
-                    ? "linear-gradient(180deg,rgba(255,159,10,.7),rgba(255,159,10,.4)) 1"
-                    : undefined,
-                }}
-              >
+            const selectable = selectMode && isPending
+            const isSel = selected.has(po.id)
+            const rowStyle: React.CSSProperties = {
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+              padding: "14px 16px",
+              paddingLeft: isPending ? 13 : 16,
+              borderBottom: i < orders.length - 1 ? "1px solid var(--prv-border-subtle)" : "none",
+              textDecoration: "none",
+              borderLeft: isPending ? "3px solid transparent" : undefined,
+              borderImage: isPending
+                ? "linear-gradient(180deg,rgba(255,159,10,.7),rgba(255,159,10,.4)) 1"
+                : undefined,
+              cursor: selectMode ? (selectable ? "pointer" : "default") : "pointer",
+              opacity: selectMode && !selectable ? 0.4 : 1,
+              background: "none",
+              border: "none",
+              width: selectMode ? "100%" : undefined,
+              textAlign: "left" as const,
+            }
+            const rowBody = (
+              <>
+                {selectMode && (
+                  <span
+                    style={{
+                      width: 22,
+                      height: 22,
+                      borderRadius: 7,
+                      flexShrink: 0,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      border: isSel ? "2px solid transparent" : "2px solid rgba(255,255,255,0.28)",
+                      background: isSel ? "rgba(255,255,255,0.95)" : "transparent",
+                      color: "#000",
+                      fontSize: 13,
+                      fontWeight: 800,
+                    }}
+                  >
+                    {isSel ? "✓" : ""}
+                  </span>
+                )}
                 <POStatusIcon status={po.status} />
                 <div style={{ flex: 1 }}>
                   <p
@@ -684,6 +777,21 @@ export function PurchaseOrderListClient() {
                     {sc.label}
                   </span>
                 </div>
+              </>
+            )
+            return selectMode ? (
+              <button
+                key={po.id}
+                type="button"
+                disabled={!selectable}
+                onClick={() => selectable && toggleSelect(po.id)}
+                style={rowStyle}
+              >
+                {rowBody}
+              </button>
+            ) : (
+              <Link key={po.id} href={`/procurement/${po.id}`} style={rowStyle}>
+                {rowBody}
               </Link>
             )
           })}
@@ -737,6 +845,79 @@ export function PurchaseOrderListClient() {
       >
         <IconPlus />
       </button>
+
+      {selectMode && selected.size > 0 && (
+        <div
+          style={{
+            position: "fixed",
+            left: 16,
+            right: 16,
+            bottom: 24,
+            zIndex: 70,
+            display: "flex",
+            gap: 10,
+            padding: 12,
+            borderRadius: 18,
+            background: "rgba(28,28,30,0.82)",
+            backdropFilter: "blur(32px) saturate(180%)",
+            WebkitBackdropFilter: "blur(32px) saturate(180%)",
+            border: "1px solid rgba(255,255,255,0.14)",
+            boxShadow: "0 12px 40px rgba(0,0,0,0.6)",
+            maxWidth: 620,
+            margin: "0 auto",
+          }}
+        >
+          <span
+            style={{
+              flex: 1,
+              display: "flex",
+              alignItems: "center",
+              paddingLeft: 8,
+              fontSize: 14,
+              fontWeight: 600,
+              color: "rgba(255,255,255,0.75)",
+            }}
+          >
+            {selected.size} selected
+          </span>
+          <button
+            type="button"
+            disabled={bulkBusy}
+            onClick={() => bulkDecision("reject")}
+            style={{
+              padding: "12px 18px",
+              borderRadius: 12,
+              background: "rgba(255,69,58,0.15)",
+              border: "1px solid rgba(255,69,58,0.28)",
+              color: "rgba(255,69,58,0.95)",
+              fontSize: 13.5,
+              fontWeight: 700,
+              cursor: bulkBusy ? "default" : "pointer",
+              opacity: bulkBusy ? 0.6 : 1,
+            }}
+          >
+            Reject
+          </button>
+          <button
+            type="button"
+            disabled={bulkBusy}
+            onClick={() => bulkDecision("approve")}
+            style={{
+              padding: "12px 22px",
+              borderRadius: 12,
+              background: "#fff",
+              border: "none",
+              color: "#000",
+              fontSize: 13.5,
+              fontWeight: 700,
+              cursor: bulkBusy ? "default" : "pointer",
+              opacity: bulkBusy ? 0.6 : 1,
+            }}
+          >
+            {bulkBusy ? "Working…" : "Approve"}
+          </button>
+        </div>
+      )}
     </div>
   )
 }
