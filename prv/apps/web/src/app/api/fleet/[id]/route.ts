@@ -41,6 +41,7 @@ export interface VehicleDetail {
   fuelPct: number
   kmToday: number
   odometer: number
+  notes: string | null
   nextServiceKm: number
   insurance: string
   itp: string
@@ -224,6 +225,7 @@ export const GET = withGates(
         return 0
       })(),
       odometer: row.mileageKm ?? 0,
+      notes: row.notes ?? null,
       nextServiceKm: row.nextServiceAtKm ?? 0,
       insurance: row.insuranceExpiresAt
         ? `${row.insuranceExpiresAt < new Date() ? "Expired" : "Valid"} · ${fmtDate(row.insuranceExpiresAt)}`

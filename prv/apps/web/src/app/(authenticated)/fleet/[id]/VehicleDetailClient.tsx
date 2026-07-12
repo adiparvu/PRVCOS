@@ -164,6 +164,123 @@ function SheetBtn({
 
 // ── Main component ────────────────────────────────────────────────────────────
 
+function EditVehicleForm({
+  initial,
+  onSubmit,
+  onCancel,
+  pending,
+}: {
+  initial: { odometer: number; fuelPct: number; notes: string | null }
+  onSubmit: (patch: { mileageKm: number; fuelLevelPct: number; notes: string }) => void
+  onCancel: () => void
+  pending: boolean
+}) {
+  const [odometer, setOdometer] = useState(String(initial.odometer))
+  const [fuel, setFuel] = useState(String(initial.fuelPct))
+  const [notes, setNotes] = useState(initial.notes ?? "")
+
+  const odoNum = Math.max(0, Math.round(Number(odometer) || 0))
+  const fuelNum = Math.min(100, Math.max(0, Math.round(Number(fuel) || 0)))
+  const valid =
+    odometer.trim() !== "" &&
+    fuel.trim() !== "" &&
+    !Number.isNaN(Number(odometer)) &&
+    !Number.isNaN(Number(fuel))
+
+  const labelStyle: React.CSSProperties = {
+    fontSize: 11,
+    textTransform: "uppercase",
+    letterSpacing: "0.06em",
+    color: "var(--prv-text-3)",
+    fontWeight: 600,
+    display: "block",
+    marginBottom: 6,
+  }
+  const inputStyle: React.CSSProperties = {
+    width: "100%",
+    boxSizing: "border-box",
+    background: "rgba(255,255,255,0.04)",
+    border: "1px solid rgba(255,255,255,0.12)",
+    borderRadius: 12,
+    padding: 12,
+    color: "rgba(255,255,255,0.92)",
+    fontSize: 14,
+    fontFamily: "inherit",
+  }
+
+  return (
+    <div style={{ padding: "12px 18px 40px", display: "flex", flexDirection: "column", gap: 14 }}>
+      <div style={{ display: "flex", gap: 12 }}>
+        <div style={{ flex: 1 }}>
+          <span style={labelStyle}>Odometer (km)</span>
+          <input
+            inputMode="numeric"
+            value={odometer}
+            onChange={(e) => setOdometer(e.target.value.replace(/[^0-9]/g, ""))}
+            style={inputStyle}
+          />
+        </div>
+        <div style={{ flex: 1 }}>
+          <span style={labelStyle}>Fuel level (%)</span>
+          <input
+            inputMode="numeric"
+            value={fuel}
+            onChange={(e) => setFuel(e.target.value.replace(/[^0-9]/g, ""))}
+            style={inputStyle}
+          />
+        </div>
+      </div>
+      <div>
+        <span style={labelStyle}>Notes</span>
+        <textarea
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          placeholder="Service notes, condition, remarks…"
+          style={{ ...inputStyle, minHeight: 70, resize: "vertical", lineHeight: 1.5 }}
+        />
+      </div>
+      <div style={{ display: "flex", gap: 8, marginTop: 2 }}>
+        <button
+          type="button"
+          disabled={pending || !valid}
+          onClick={() =>
+            onSubmit({ mileageKm: odoNum, fuelLevelPct: fuelNum, notes: notes.trim() })
+          }
+          style={{
+            flex: 1,
+            background: valid ? "#fff" : "rgba(255,255,255,0.07)",
+            color: valid ? "#000" : "rgba(255,255,255,0.4)",
+            border: "none",
+            borderRadius: 11,
+            padding: 12,
+            fontSize: 13.5,
+            fontWeight: 700,
+            cursor: pending || !valid ? "default" : "pointer",
+          }}
+        >
+          {pending ? "Saving…" : "Save changes"}
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          style={{
+            background: "rgba(255,255,255,0.07)",
+            border: "1px solid rgba(255,255,255,0.12)",
+            color: "rgba(255,255,255,0.75)",
+            borderRadius: 11,
+            padding: "12px 20px",
+            fontSize: 13.5,
+            fontWeight: 600,
+            cursor: "pointer",
+          }}
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  )
+}
+
 function AssignDriverForm({
   onSubmit,
   onCancel,
@@ -282,6 +399,26 @@ export function VehicleDetailClient({ id }: VehicleDetailClientProps) {
           onCancel={onClose}
           onSubmit={(userId) => {
             fleetMutation.mutate({ assignedUserId: userId })
+            onClose()
+          }}
+        />
+      ),
+    })
+  }
+
+  const openEditVehicle = () => {
+    if (!vehicle) return
+    openSheet({
+      snapPoints: ["mid", "full"],
+      defaultSnap: "mid",
+      title: "Edit Vehicle",
+      render: (onClose) => (
+        <EditVehicleForm
+          pending={fleetMutation.isPending}
+          initial={{ odometer: vehicle.odometer, fuelPct: vehicle.fuelPct, notes: vehicle.notes }}
+          onCancel={onClose}
+          onSubmit={(patch) => {
+            fleetMutation.mutate(patch)
             onClose()
           }}
         />
@@ -423,8 +560,11 @@ export function VehicleDetailClient({ id }: VehicleDetailClientProps) {
                 </svg>
               }
               label="Edit Vehicle"
-              sub="Data, documents, base"
-              onClick={onClose}
+              sub="Odometer, fuel, notes"
+              onClick={() => {
+                onClose()
+                openEditVehicle()
+              }}
             />
             <SheetBtn
               color="white"
