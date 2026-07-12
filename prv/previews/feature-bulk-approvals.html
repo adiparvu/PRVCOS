@@ -1,0 +1,37 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Bulk Approvals</title>
+<style>
+  body{margin:0;background:#000;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',sans-serif;color:#fff;-webkit-font-smoothing:antialiased;padding:24px;max-width:520px;margin:0 auto}
+  .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+  h1{font-size:26px;font-weight:680;letter-spacing:-.02em;margin:0}
+  .sel{font-size:13px;font-weight:600;padding:8px 14px;border-radius:100px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);color:rgba(255,255,255,.8)}
+  .lab{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:rgba(255,255,255,.35);font-weight:600;margin:16px 2px 8px}
+  .card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:18px;overflow:hidden}
+  .row{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.07)}
+  .row:last-child{border-bottom:none}
+  .ck{width:22px;height:22px;border-radius:7px;border:2px solid rgba(255,255,255,.28);flex-shrink:0;display:flex;align-items:center;justify-content:center}
+  .ck.on{background:rgba(255,255,255,.95);border-color:transparent;color:#000;font-size:13px;font-weight:800}
+  .ic{width:34px;height:34px;border-radius:10px;background:rgba(126,184,255,.14);flex-shrink:0}
+  .mid{flex:1;min-width:0}
+  .t{font-size:14.5px;font-weight:600}
+  .s{font-size:12px;color:rgba(255,255,255,.45);margin-top:2px}
+  .pill{font-size:11px;font-weight:700;padding:3px 9px;border-radius:8px}
+  .p-pending{background:rgba(255,255,255,.1);color:rgba(255,255,255,.6)}
+  .p-urgent{background:rgba(255,159,10,.14);color:rgba(255,159,10,.95)}
+  .bar{position:sticky;bottom:16px;margin-top:20px;display:flex;gap:10px;background:rgba(28,28,30,.82);backdrop-filter:blur(32px);border:1px solid rgba(255,255,255,.14);border-radius:18px;padding:12px;box-shadow:0 12px 40px rgba(0,0,0,.6)}
+  .cnt{flex:1;display:flex;align-items:center;padding-left:8px;font-size:14px;font-weight:600;color:rgba(255,255,255,.75)}
+  .rej{padding:12px 18px;border-radius:12px;background:rgba(255,69,58,.15);border:1px solid rgba(255,69,58,.28);color:rgba(255,69,58,.95);font-size:13.5px;font-weight:700}
+  .app{padding:12px 22px;border-radius:12px;background:#fff;border:none;color:#000;font-size:13.5px;font-weight:700}
+</style></head><body>
+  <div class="top"><h1>Approvals</h1><span class="sel">Cancel</span></div>
+  <div class="lab">Urgent</div>
+  <div class="card">
+    <div class="row"><div class="ck on">✓</div><div class="ic"></div><div class="mid"><div class="t">PO-2041 · €12,400</div><div class="s">Supplier: Ferro SRL</div></div><span class="pill p-urgent">Urgent</span></div>
+  </div>
+  <div class="lab">Pending</div>
+  <div class="card">
+    <div class="row"><div class="ck on">✓</div><div class="ic"></div><div class="mid"><div class="t">Leave request · Andrei I.</div><div class="s">5 days · Aug</div></div><span class="pill p-pending">Pending</span></div>
+    <div class="row"><div class="ck"></div><div class="ic"></div><div class="mid"><div class="t">Expense report · €340</div><div class="s">Travel · Cluj</div></div><span class="pill p-pending">Pending</span></div>
+    <div class="row"><div class="ck on">✓</div><div class="ic"></div><div class="mid"><div class="t">Discount · Order 8821</div><div class="s">15% · client VIP</div></div><span class="pill p-pending">Pending</span></div>
+  </div>
+  <div class="bar"><span class="cnt">3 selected</span><button class="rej">Reject</button><button class="app">Approve</button></div>
+</body></html>

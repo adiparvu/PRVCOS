@@ -2,8 +2,9 @@
 import { useRouter } from "next/navigation"
 
 import { useState } from "react"
+import { useQueryClient } from "@tanstack/react-query"
 import Link from "next/link"
-import { useSheetStack } from "@prv/ui"
+import { useSheetStack, useToast } from "@prv/ui"
 import type { ApprovalSummary, ApprovalsMeta, ApprovalType } from "@/app/api/approvals/route"
 import { useApprovals } from "@/lib/api-hooks"
 
@@ -245,7 +246,19 @@ function SheetBtn({
 
 // ── Approval row ──────────────────────────────────────────────────────────────
 
-function ApprovalRow({ item, isLast }: { item: ApprovalSummary; isLast: boolean }) {
+function ApprovalRow({
+  item,
+  isLast,
+  selectMode = false,
+  selected = false,
+  onToggle,
+}: {
+  item: ApprovalSummary
+  isLast: boolean
+  selectMode?: boolean
+  selected?: boolean
+  onToggle?: (id: string) => void
+}) {
   const tc = TYPE_CONFIG[item.type] ?? {
     label: item.type,
     color: "var(--prv-text-3)",
@@ -264,25 +277,53 @@ function ApprovalRow({ item, isLast }: { item: ApprovalSummary; isLast: boolean 
   const statusBg = isExpired ? "rgba(255,69,58,.12)" : isUrgent ? "rgba(255,159,10,.13)" : tc.bg
   const statusLabel = isExpired ? "Expired" : isUrgent ? "Urgent" : "Pending"
 
-  return (
-    <Link
-      href={`/approvals/${item.id}`}
+  const selectable = selectMode && !isExpired
+  const rowStyle: React.CSSProperties = {
+    display: "flex",
+    alignItems: "center",
+    gap: 11,
+    padding: "13px 15px",
+    paddingLeft: hasBorder ? 12 : 15,
+    borderBottom: isLast ? "none" : "1px solid var(--prv-border-subtle)",
+    textDecoration: "none",
+    borderLeft: hasBorder ? "3px solid transparent" : undefined,
+    borderImage: isExpired
+      ? "linear-gradient(180deg,rgba(255,69,58,.7),rgba(255,69,58,.4)) 1"
+      : isUrgent
+        ? "linear-gradient(180deg,rgba(255,159,10,.7),rgba(255,159,10,.4)) 1"
+        : undefined,
+    cursor: selectMode ? (selectable ? "pointer" : "default") : "pointer",
+    opacity: selectMode && !selectable ? 0.4 : 1,
+    background: "none",
+    border: "none",
+    width: selectMode ? "100%" : undefined,
+    textAlign: "left" as const,
+  }
+
+  const checkbox = selectMode ? (
+    <span
       style={{
+        width: 22,
+        height: 22,
+        borderRadius: 7,
+        flexShrink: 0,
         display: "flex",
         alignItems: "center",
-        gap: 11,
-        padding: "13px 15px",
-        paddingLeft: hasBorder ? 12 : 15,
-        borderBottom: isLast ? "none" : "1px solid var(--prv-border-subtle)",
-        textDecoration: "none",
-        borderLeft: hasBorder ? "3px solid transparent" : undefined,
-        borderImage: isExpired
-          ? "linear-gradient(180deg,rgba(255,69,58,.7),rgba(255,69,58,.4)) 1"
-          : isUrgent
-            ? "linear-gradient(180deg,rgba(255,159,10,.7),rgba(255,159,10,.4)) 1"
-            : undefined,
+        justifyContent: "center",
+        border: selected ? "2px solid transparent" : "2px solid rgba(255,255,255,0.28)",
+        background: selected ? "rgba(255,255,255,0.95)" : "transparent",
+        color: "#000",
+        fontSize: 13,
+        fontWeight: 800,
       }}
     >
+      {selected ? "✓" : ""}
+    </span>
+  ) : null
+
+  const body = (
+    <>
+      {checkbox}
       <TypeIcon type={item.type} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <p
@@ -330,13 +371,41 @@ function ApprovalRow({ item, isLast }: { item: ApprovalSummary; isLast: boolean 
       >
         {statusLabel}
       </span>
+    </>
+  )
+
+  if (selectMode) {
+    return (
+      <button
+        type="button"
+        onClick={() => selectable && onToggle?.(item.id)}
+        disabled={!selectable}
+        style={rowStyle}
+      >
+        {body}
+      </button>
+    )
+  }
+  return (
+    <Link href={`/approvals/${item.id}`} style={rowStyle}>
+      {body}
     </Link>
   )
 }
 
 // ── Section card ──────────────────────────────────────────────────────────────
 
-function SectionCard({ items }: { items: ApprovalSummary[] }) {
+function SectionCard({
+  items,
+  selectMode,
+  selected,
+  onToggle,
+}: {
+  items: ApprovalSummary[]
+  selectMode?: boolean
+  selected?: Set<string>
+  onToggle?: (id: string) => void
+}) {
   return (
     <div
       style={{
@@ -356,7 +425,14 @@ function SectionCard({ items }: { items: ApprovalSummary[] }) {
         }}
       />
       {items.map((item, i) => (
-        <ApprovalRow key={item.id} item={item} isLast={i === items.length - 1} />
+        <ApprovalRow
+          key={item.id}
+          item={item}
+          isLast={i === items.length - 1}
+          selectMode={selectMode}
+          selected={selected?.has(item.id) ?? false}
+          onToggle={onToggle}
+        />
       ))}
     </div>
   )
@@ -368,7 +444,54 @@ export function ApprovalListClient() {
   const router = useRouter()
   const [filter, setFilter] = useState<FilterType>("All")
   const { openSheet } = useSheetStack()
+  const { toast } = useToast()
+  const queryClient = useQueryClient()
+  const [selectMode, setSelectMode] = useState(false)
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [bulkBusy, setBulkBusy] = useState(false)
   const type = FILTER_TO_TYPE[filter]
+
+  const toggleSelect = (id: string) =>
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+
+  const exitSelect = () => {
+    setSelectMode(false)
+    setSelected(new Set())
+  }
+
+  const bulkDecision = (action: "approve" | "reject") => {
+    const ids = [...selected]
+    if (ids.length === 0) return
+    setBulkBusy(true)
+    Promise.allSettled(
+      ids.map((aid) =>
+        fetch(`/api/approvals/${aid}`, {
+          method: "PATCH",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ action }),
+        }).then((r) => {
+          if (!r.ok) throw new Error("failed")
+        })
+      )
+    )
+      .then((results) => {
+        const ok = results.filter((r) => r.status === "fulfilled").length
+        const failed = results.length - ok
+        void queryClient.invalidateQueries({ queryKey: ["approvals"] })
+        ids.forEach((aid) => queryClient.invalidateQueries({ queryKey: ["approval-detail", aid] }))
+        const verb = action === "approve" ? "approved" : "rejected"
+        if (failed === 0) toast.success(`${ok} ${verb}`)
+        else if (ok === 0) toast.error(`Couldn't ${action} approvals`, "Please try again.")
+        else toast.warning(`${ok} ${verb}`, `${failed} could not be processed.`)
+        exitSelect()
+      })
+      .finally(() => setBulkBusy(false))
+  }
   const { data, isError, fetchNextPage, hasNextPage, isFetchingNextPage } = useApprovals(type)
   const approvals = data?.approvals ?? null
   const meta = data?.meta ?? null
@@ -471,25 +594,45 @@ export function ApprovalListClient() {
             Approveri
           </h1>
         </div>
-        {meta && meta.pending > 0 && (
-          <div
-            style={{
-              minWidth: 28,
-              height: 28,
-              padding: "0 8px",
-              borderRadius: 14,
-              background: "rgba(255,69,58,.85)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 13,
-              fontWeight: 700,
-              color: "#fff",
-            }}
-          >
-            {meta.pending}
-          </div>
-        )}
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          {(approvals?.length ?? 0) > 0 && (
+            <button
+              type="button"
+              onClick={() => (selectMode ? exitSelect() : setSelectMode(true))}
+              style={{
+                fontSize: 13,
+                fontWeight: 600,
+                padding: "7px 14px",
+                borderRadius: 100,
+                background: "rgba(255,255,255,0.08)",
+                border: "1px solid rgba(255,255,255,0.14)",
+                color: "rgba(255,255,255,0.8)",
+                cursor: "pointer",
+              }}
+            >
+              {selectMode ? "Cancel" : "Select"}
+            </button>
+          )}
+          {meta && meta.pending > 0 && (
+            <div
+              style={{
+                minWidth: 28,
+                height: 28,
+                padding: "0 8px",
+                borderRadius: 14,
+                background: "rgba(255,69,58,.85)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 13,
+                fontWeight: 700,
+                color: "#fff",
+              }}
+            >
+              {meta.pending}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* KPI strip */}
@@ -680,7 +823,12 @@ export function ApprovalListClient() {
                 Urgent · Expired
               </p>
               <div style={{ marginBottom: 14 }}>
-                <SectionCard items={urgentItems} />
+                <SectionCard
+                  items={urgentItems}
+                  selectMode={selectMode}
+                  selected={selected}
+                  onToggle={toggleSelect}
+                />
               </div>
             </>
           )}
@@ -699,7 +847,12 @@ export function ApprovalListClient() {
               >
                 Pending
               </p>
-              <SectionCard items={pendingItems} />
+              <SectionCard
+                items={pendingItems}
+                selectMode={selectMode}
+                selected={selected}
+                onToggle={toggleSelect}
+              />
             </>
           )}
         </>
@@ -750,6 +903,79 @@ export function ApprovalListClient() {
       >
         <IconPlus />
       </button>
+
+      {selectMode && selected.size > 0 && (
+        <div
+          style={{
+            position: "fixed",
+            left: 16,
+            right: 16,
+            bottom: 24,
+            zIndex: 70,
+            display: "flex",
+            gap: 10,
+            padding: 12,
+            borderRadius: 18,
+            background: "rgba(28,28,30,0.82)",
+            backdropFilter: "blur(32px) saturate(180%)",
+            WebkitBackdropFilter: "blur(32px) saturate(180%)",
+            border: "1px solid rgba(255,255,255,0.14)",
+            boxShadow: "0 12px 40px rgba(0,0,0,0.6)",
+            maxWidth: 620,
+            margin: "0 auto",
+          }}
+        >
+          <span
+            style={{
+              flex: 1,
+              display: "flex",
+              alignItems: "center",
+              paddingLeft: 8,
+              fontSize: 14,
+              fontWeight: 600,
+              color: "rgba(255,255,255,0.75)",
+            }}
+          >
+            {selected.size} selected
+          </span>
+          <button
+            type="button"
+            disabled={bulkBusy}
+            onClick={() => bulkDecision("reject")}
+            style={{
+              padding: "12px 18px",
+              borderRadius: 12,
+              background: "rgba(255,69,58,0.15)",
+              border: "1px solid rgba(255,69,58,0.28)",
+              color: "rgba(255,69,58,0.95)",
+              fontSize: 13.5,
+              fontWeight: 700,
+              cursor: bulkBusy ? "default" : "pointer",
+              opacity: bulkBusy ? 0.6 : 1,
+            }}
+          >
+            Reject
+          </button>
+          <button
+            type="button"
+            disabled={bulkBusy}
+            onClick={() => bulkDecision("approve")}
+            style={{
+              padding: "12px 22px",
+              borderRadius: 12,
+              background: "#fff",
+              border: "none",
+              color: "#000",
+              fontSize: 13.5,
+              fontWeight: 700,
+              cursor: bulkBusy ? "default" : "pointer",
+              opacity: bulkBusy ? 0.6 : 1,
+            }}
+          >
+            {bulkBusy ? "Working…" : "Approve"}
+          </button>
+        </div>
+      )}
     </div>
   )
 }
