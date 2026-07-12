@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { useRouter } from "next/navigation"
 import { useSheetStack } from "@prv/ui"
@@ -115,13 +115,13 @@ function InfoRow({
 function RequestSignatureForm({
   onSubmit,
   onCancel,
-  pending,
 }: {
-  onSubmit: (signer: { userId: string; signerName: string; signerEmail: string }) => void
+  onSubmit: (signer: { userId: string; signerName: string; signerEmail: string }) => Promise<void>
   onCancel: () => void
-  pending: boolean
 }) {
   const [userId, setUserId] = useState("")
+  const [busy, setBusy] = useState(false)
+  const submitting = useRef(false)
   const { data: peopleData } = useQuery<{
     members: { id: string; fullName: string; email: string; role: string }[]
   }>({
@@ -176,15 +176,20 @@ function RequestSignatureForm({
       <div style={{ display: "flex", gap: 8, marginTop: 2 }}>
         <button
           type="button"
-          disabled={pending || !selected}
-          onClick={() =>
-            selected &&
+          disabled={busy || !selected}
+          onClick={() => {
+            if (!selected || submitting.current) return
+            submitting.current = true
+            setBusy(true)
             onSubmit({
               userId: selected.id,
               signerName: selected.fullName,
               signerEmail: selected.email,
+            }).finally(() => {
+              submitting.current = false
+              setBusy(false)
             })
-          }
+          }}
           style={{
             flex: 1,
             background: selected ? "rgba(48,209,88,0.85)" : "rgba(255,255,255,0.07)",
@@ -194,10 +199,10 @@ function RequestSignatureForm({
             padding: 12,
             fontSize: 13.5,
             fontWeight: 700,
-            cursor: pending || !selected ? "default" : "pointer",
+            cursor: busy || !selected ? "default" : "pointer",
           }}
         >
-          {pending ? "Sending…" : "Send request"}
+          {busy ? "Sending…" : "Send request"}
         </button>
         <button
           type="button"
@@ -225,13 +230,13 @@ type SharePermission = "view" | "download" | "edit" | "manage"
 function ShareForm({
   onSubmit,
   onCancel,
-  pending,
 }: {
-  onSubmit: (body: Record<string, unknown>, isExternal: boolean) => void
+  onSubmit: (body: Record<string, unknown>, isExternal: boolean) => Promise<void>
   onCancel: () => void
-  pending: boolean
 }) {
   const [scope, setScope] = useState<"internal" | "external">("internal")
+  const [busy, setBusy] = useState(false)
+  const submitting = useRef(false)
   const [userId, setUserId] = useState("")
   const [permission, setPermission] = useState<SharePermission>("view")
   const [passwordProtected, setPasswordProtected] = useState(false)
@@ -284,17 +289,21 @@ function ShareForm({
   }
 
   function submit() {
-    if (!canSubmit) return
+    if (!canSubmit || submitting.current) return
+    submitting.current = true
+    setBusy(true)
     let expiresAt: string | null = null
     if (expiry !== "never") {
       const days = expiry === "7" ? 7 : 30
       expiresAt = new Date(Date.now() + days * 86_400_000).toISOString()
     }
-    if (isExternal) {
-      onSubmit({ scope: "external", permission, passwordProtected, expiresAt }, true)
-    } else {
-      onSubmit({ scope: "internal", granteeUserId: userId, permission }, false)
-    }
+    const body = isExternal
+      ? { scope: "external", permission, passwordProtected, expiresAt }
+      : { scope: "internal", granteeUserId: userId, permission }
+    onSubmit(body, isExternal).finally(() => {
+      submitting.current = false
+      setBusy(false)
+    })
   }
 
   return (
@@ -441,7 +450,7 @@ function ShareForm({
       <div style={{ display: "flex", gap: 8, marginTop: 2 }}>
         <button
           type="button"
-          disabled={pending || !canSubmit}
+          disabled={busy || !canSubmit}
           onClick={submit}
           style={{
             flex: 1,
@@ -452,10 +461,10 @@ function ShareForm({
             padding: 12,
             fontSize: 13.5,
             fontWeight: 700,
-            cursor: pending || !canSubmit ? "default" : "pointer",
+            cursor: busy || !canSubmit ? "default" : "pointer",
           }}
         >
-          {pending ? "Working…" : isExternal ? "Create link" : "Share"}
+          {busy ? "Working…" : isExternal ? "Create link" : "Share"}
         </button>
         <button
           type="button"
@@ -484,8 +493,6 @@ export function DocumentDetailClient({ id }: { id: string }) {
   const [doc, setDoc] = useState<DocumentDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
-  const [sharing, setSharing] = useState(false)
-  const [signingReq, setSigningReq] = useState(false)
 
   const loadDoc = useCallback(() => {
     return fetch(`/api/documents/${id}`)
@@ -580,27 +587,23 @@ export function DocumentDetailClient({ id }: { id: string }) {
       title: "Share Document",
       render: (onClose) => (
         <ShareForm
-          pending={sharing}
           onCancel={onClose}
-          onSubmit={(body, isExternal) => {
-            setSharing(true)
+          onSubmit={(body, isExternal) =>
             fetch(`/api/documents/${id}/shares`, {
               method: "POST",
               headers: { "content-type": "application/json" },
               body: JSON.stringify(body),
+            }).then(async (r) => {
+              if (!r.ok) throw new Error("Share failed")
+              const data = (await r.json()) as { token?: string | null }
+              onClose()
+              if (isExternal && data.token) openLinkResult(data.token)
             })
-              .then(async (r) => {
-                if (!r.ok) throw new Error("Share failed")
-                const data = (await r.json()) as { token?: string | null }
-                onClose()
-                if (isExternal && data.token) openLinkResult(data.token)
-              })
-              .finally(() => setSharing(false))
-          }}
+          }
         />
       ),
     })
-  }, [id, openSheet, sharing, openLinkResult])
+  }, [id, openSheet, openLinkResult])
 
   const openSignature = useCallback(() => {
     openSheet({
@@ -609,26 +612,22 @@ export function DocumentDetailClient({ id }: { id: string }) {
       title: "Request Signature",
       render: (onClose) => (
         <RequestSignatureForm
-          pending={signingReq}
           onCancel={onClose}
-          onSubmit={(signer) => {
-            setSigningReq(true)
+          onSubmit={(signer) =>
             fetch(`/api/documents/${id}/signatures`, {
               method: "POST",
               headers: { "content-type": "application/json" },
               body: JSON.stringify(signer),
+            }).then(async (r) => {
+              if (!r.ok) throw new Error("Signature request failed")
+              await loadDoc()
+              onClose()
             })
-              .then(async (r) => {
-                if (!r.ok) throw new Error("Signature request failed")
-                await loadDoc()
-                onClose()
-              })
-              .finally(() => setSigningReq(false))
-          }}
+          }
         />
       ),
     })
-  }, [id, openSheet, signingReq, loadDoc])
+  }, [id, openSheet, loadDoc])
 
   function openFab() {
     if (!doc) return
