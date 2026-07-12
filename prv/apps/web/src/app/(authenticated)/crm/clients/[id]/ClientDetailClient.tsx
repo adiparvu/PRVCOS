@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useClientDetail } from "@/lib/api-hooks"
 import Link from "next/link"
@@ -457,6 +457,14 @@ function EditClientForm({
   const [busy, setBusy] = useState(false)
   const submitting = useRef(false)
   const valid = name.trim().length > 0
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose()
+    }
+    window.addEventListener("keydown", onKey)
+    return () => window.removeEventListener("keydown", onKey)
+  }, [onClose])
 
   function save() {
     if (!valid || submitting.current) return

@@ -328,6 +328,14 @@ function EditLeadForm({
   const [busy, setBusy] = useState(false)
   const submitting = useRef(false)
 
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose()
+    }
+    window.addEventListener("keydown", onKey)
+    return () => window.removeEventListener("keydown", onKey)
+  }, [onClose])
+
   const valid = name.trim().length > 0
 
   function save() {
