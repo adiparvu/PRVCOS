@@ -652,6 +652,149 @@ function StaffingSheet({ shiftId }: { shiftId: string }) {
   )
 }
 
+function MarkPresentSheet({ shiftId }: { shiftId: string }) {
+  const qc = useQueryClient()
+  const { data } = useShiftDetail(shiftId)
+  const shift = data?.shift ?? null
+  const assignees = shift?.assignees ?? []
+  const date = shift?.date ?? ""
+  const start = shift?.startTime ?? ""
+  const end = shift?.endTime ?? ""
+  const presentCount = assignees.filter((a) => a.present).length
+
+  const mark = useMutation({
+    mutationFn: (userId: string) => {
+      const body: Record<string, unknown> = { userId, date, status: "present" }
+      if (/^\d{2}:\d{2}$/.test(start)) body.scheduledStart = start
+      if (/^\d{2}:\d{2}$/.test(end)) body.scheduledEnd = end
+      return fetch(`/api/attendance`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body),
+      }).then((r) => {
+        if (!r.ok) throw new Error("Mark failed")
+        return r.json()
+      })
+    },
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ["shift-detail", shiftId] }),
+  })
+
+  const pending = mark.isPending
+  const remaining = assignees.filter((a) => !a.present)
+
+  return (
+    <div style={{ padding: "2px 18px 32px", display: "flex", flexDirection: "column", gap: 8 }}>
+      <p
+        style={{ fontSize: 12, color: "var(--prv-text-3)", textAlign: "center", margin: "0 0 6px" }}
+      >
+        {presentCount} of {assignees.length} present{date ? ` · ${date}` : ""}
+      </p>
+      {assignees.length === 0 && (
+        <p style={{ fontSize: 12.5, color: "var(--prv-text-3)", textAlign: "center", padding: 6 }}>
+          No one assigned to this shift yet.
+        </p>
+      )}
+      {assignees.map((a) => (
+        <div
+          key={a.id}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 11,
+            padding: "10px 12px",
+            borderRadius: 12,
+            background: "rgba(255,255,255,0.04)",
+            border: "1px solid rgba(255,255,255,0.09)",
+          }}
+        >
+          <div
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: 9,
+              background: "rgba(255,255,255,0.10)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 12,
+              fontWeight: 700,
+              flexShrink: 0,
+            }}
+          >
+            {a.initials}
+          </div>
+          <span style={{ flex: 1, fontSize: 14, fontWeight: 600 }}>{a.name}</span>
+          {a.present ? (
+            <span
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 5,
+                color: "rgba(48,209,88,0.95)",
+                fontSize: 12.5,
+                fontWeight: 600,
+              }}
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="rgba(48,209,88,0.95)"
+                strokeWidth="2.4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+              Present
+            </span>
+          ) : (
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => mark.mutate(a.id)}
+              style={{
+                border: "1px solid rgba(255,255,255,0.14)",
+                background: "rgba(255,255,255,0.06)",
+                color: "rgba(255,255,255,0.8)",
+                fontSize: 12.5,
+                fontWeight: 600,
+                borderRadius: 9,
+                padding: "7px 12px",
+                cursor: pending ? "default" : "pointer",
+              }}
+            >
+              Mark present
+            </button>
+          )}
+        </div>
+      ))}
+      {remaining.length > 1 && (
+        <button
+          type="button"
+          disabled={pending}
+          onClick={() => remaining.forEach((a) => mark.mutate(a.id))}
+          style={{
+            marginTop: 8,
+            background: "rgba(48,209,88,0.85)",
+            color: "#00220c",
+            border: "none",
+            borderRadius: 11,
+            padding: 12,
+            fontSize: 13.5,
+            fontWeight: 700,
+            cursor: pending ? "default" : "pointer",
+            opacity: pending ? 0.6 : 1,
+          }}
+        >
+          Mark all present
+        </button>
+      )}
+    </div>
+  )
+}
+
 export function ShiftDetailClient({ id }: ShiftDetailClientProps) {
   const { data, isLoading: loading } = useShiftDetail(id)
   const shift = data?.shift ?? null
@@ -704,6 +847,16 @@ export function ShiftDetailClient({ id }: ShiftDetailClientProps) {
     })
   }
 
+  const openMarkPresent = () => {
+    if (!shift) return
+    openSheet({
+      snapPoints: ["mid", "full"],
+      defaultSnap: "mid",
+      title: "Mark Present",
+      render: () => <MarkPresentSheet shiftId={id} />,
+    })
+  }
+
   const handleFAB = () => {
     if (!shift) return
     const isOpen = shift.status === "open" || shift.status === "draft"
@@ -732,7 +885,10 @@ export function ShiftDetailClient({ id }: ShiftDetailClientProps) {
             }
             label="Mark Present"
             sub="Confirm team attendance"
-            onClick={onClose}
+            onClick={() => {
+              onClose()
+              openMarkPresent()
+            }}
           />
           {isOpen && (
             <SheetBtn

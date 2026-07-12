@@ -40,6 +40,7 @@ const mockDb = {
   orderBy: vi.fn().mockReturnThis(),
   returning: vi.fn().mockResolvedValue([{ id: "new-1" }]),
   onConflictDoUpdate: vi.fn().mockReturnThis(),
+  onConflictDoNothing: vi.fn().mockReturnThis(),
   then: (resolve: (val: unknown[]) => void) => resolve([]),
 }
 
@@ -380,6 +381,24 @@ describe("POST /api/attendance", () => {
     expect(writeAuditLog).toHaveBeenCalledWith(
       expect.objectContaining({ action: "attendance.create" })
     )
+  })
+
+  it("is idempotent: returns 200 when a record already exists for that user/date", async () => {
+    mockDb.returning.mockResolvedValueOnce([])
+    const { POST } = await import("@/app/api/attendance/route")
+    const res = await POST(
+      makeReq("/api/attendance", "POST", {
+        json: async () => ({
+          userId: "00000000-0000-0000-0000-000000000002",
+          date: "2026-06-10",
+          status: "present",
+        }),
+      }),
+      webCtx
+    )
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.existed).toBe(true)
   })
 })
 

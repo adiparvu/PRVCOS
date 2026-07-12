@@ -208,12 +208,15 @@ export const POST = withGates(
       )
     }
 
+    // Idempotent create: (userId, date) is unique, so a repeat mark is a no-op
+    // rather than a 500 — and it never clobbers existing clock-in/late data.
     const [record] = await db
       .insert(attendanceRecords)
       .values({ companyId, ...parsed.data })
+      .onConflictDoNothing()
       .returning({ id: attendanceRecords.id })
 
-    if (!record) return NextResponse.json({ error: "Insert failed" }, { status: 500 })
+    if (!record) return NextResponse.json({ existed: true }, { status: 200 })
 
     void writeAuditLog({
       companyId,

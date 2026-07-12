@@ -29,6 +29,7 @@ export interface ShiftAssignee {
   assignmentId?: string
   initials: string
   name: string
+  present?: boolean
 }
 
 export interface ShiftSummary {

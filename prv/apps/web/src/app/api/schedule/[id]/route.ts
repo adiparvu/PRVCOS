@@ -3,8 +3,8 @@ import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
 import { writeAuditLog } from "@prv/auth"
 import { db } from "@prv/db"
-import { shifts, shiftAssignments, users, projects } from "@prv/db/schema"
-import { and, eq, isNull } from "drizzle-orm"
+import { shifts, shiftAssignments, users, projects, attendanceRecords } from "@prv/db/schema"
+import { and, eq, isNull, inArray } from "drizzle-orm"
 import { z } from "zod"
 import type { ShiftSummary } from "../route"
 
@@ -73,11 +73,30 @@ export const GET = withGates(
     const row = shiftRows[0]
     if (!row) return NextResponse.json({ error: "Not found" }, { status: 404 })
 
+    const assigneeIds = assignmentRows.map((a) => a.userId)
+    const attendanceRows = assigneeIds.length
+      ? await db
+          .select({ userId: attendanceRecords.userId, status: attendanceRecords.status })
+          .from(attendanceRecords)
+          .where(
+            and(
+              eq(attendanceRecords.companyId, companyId),
+              eq(attendanceRecords.date, row.date),
+              inArray(attendanceRecords.userId, assigneeIds)
+            )
+          )
+      : []
+    const presentSet = new Set(
+      attendanceRows
+        .filter((r) => r.status === "present" || r.status === "late")
+        .map((r) => r.userId)
+    )
     const assignees = assignmentRows.map((a) => ({
       id: a.userId,
       assignmentId: a.assignmentId,
       initials: a.firstName ? `${a.firstName[0]}${a.lastName![0]}` : "?",
       name: a.firstName ? `${a.firstName} ${a.lastName}` : "—",
+      present: presentSet.has(a.userId),
     }))
 
     const openSlots = Math.max(0, row.totalSlots - assignees.length)
