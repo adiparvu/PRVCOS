@@ -227,12 +227,15 @@ function ShareForm({
   onCancel,
   pending,
 }: {
-  onSubmit: (granteeUserId: string, permission: SharePermission) => void
+  onSubmit: (body: Record<string, unknown>, isExternal: boolean) => void
   onCancel: () => void
   pending: boolean
 }) {
+  const [scope, setScope] = useState<"internal" | "external">("internal")
   const [userId, setUserId] = useState("")
   const [permission, setPermission] = useState<SharePermission>("view")
+  const [passwordProtected, setPasswordProtected] = useState(false)
+  const [expiry, setExpiry] = useState<"never" | "7" | "30">("never")
   const { data: peopleData } = useQuery<{
     members: { id: string; firstName: string; lastName: string; role: string }[]
   }>({
@@ -247,62 +250,99 @@ function ShareForm({
     edit: "Edit",
     manage: "Manage",
   }
+  const isExternal = scope === "external"
+  const canSubmit = isExternal || !!userId
+
+  const seg = (val: "internal" | "external", label: string) => (
+    <button
+      type="button"
+      onClick={() => setScope(val)}
+      style={{
+        flex: 1,
+        border: "none",
+        background: scope === val ? "rgba(255,255,255,0.14)" : "transparent",
+        color: scope === val ? "#fff" : "rgba(255,255,255,0.6)",
+        fontSize: 13,
+        fontWeight: 600,
+        padding: 9,
+        borderRadius: 9,
+        cursor: "pointer",
+      }}
+    >
+      {label}
+    </button>
+  )
+
+  const labelStyle: React.CSSProperties = {
+    fontSize: 11,
+    textTransform: "uppercase",
+    letterSpacing: "0.06em",
+    color: "var(--prv-text-3)",
+    fontWeight: 600,
+    display: "block",
+    marginBottom: 6,
+  }
+
+  function submit() {
+    if (!canSubmit) return
+    let expiresAt: string | null = null
+    if (expiry !== "never") {
+      const days = expiry === "7" ? 7 : 30
+      expiresAt = new Date(Date.now() + days * 86_400_000).toISOString()
+    }
+    if (isExternal) {
+      onSubmit({ scope: "external", permission, passwordProtected, expiresAt }, true)
+    } else {
+      onSubmit({ scope: "internal", granteeUserId: userId, permission }, false)
+    }
+  }
+
   return (
     <div style={{ padding: "12px 18px 40px", display: "flex", flexDirection: "column", gap: 14 }}>
-      <div style={{ fontSize: 12, color: "var(--prv-text-3)", lineHeight: 1.5 }}>
-        Grant a colleague access to this document. They will find it in their shared documents.
+      <div
+        style={{
+          display: "flex",
+          background: "rgba(255,255,255,0.05)",
+          border: "1px solid rgba(255,255,255,0.1)",
+          borderRadius: 12,
+          padding: 3,
+          gap: 3,
+        }}
+      >
+        {seg("internal", "Person")}
+        {seg("external", "Link")}
       </div>
+
+      {!isExternal && (
+        <div>
+          <span style={labelStyle}>Share with</span>
+          <select
+            value={userId}
+            onChange={(e) => setUserId(e.target.value)}
+            style={{
+              width: "100%",
+              boxSizing: "border-box",
+              background: "rgba(255,255,255,0.04)",
+              border: "1px solid rgba(255,255,255,0.12)",
+              borderRadius: 12,
+              padding: 12,
+              color: "rgba(255,255,255,0.92)",
+              fontSize: 13.5,
+              fontFamily: "inherit",
+            }}
+          >
+            <option value="">Select a colleague…</option>
+            {people.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.firstName} {m.lastName} · {m.role}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
       <div>
-        <span
-          style={{
-            fontSize: 11,
-            textTransform: "uppercase",
-            letterSpacing: "0.06em",
-            color: "var(--prv-text-3)",
-            fontWeight: 600,
-            display: "block",
-            marginBottom: 6,
-          }}
-        >
-          Share with
-        </span>
-        <select
-          value={userId}
-          onChange={(e) => setUserId(e.target.value)}
-          style={{
-            width: "100%",
-            boxSizing: "border-box",
-            background: "rgba(255,255,255,0.04)",
-            border: "1px solid rgba(255,255,255,0.12)",
-            borderRadius: 12,
-            padding: 12,
-            color: "rgba(255,255,255,0.92)",
-            fontSize: 13.5,
-            fontFamily: "inherit",
-          }}
-        >
-          <option value="">Select a colleague…</option>
-          {people.map((m) => (
-            <option key={m.id} value={m.id}>
-              {m.firstName} {m.lastName} · {m.role}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div>
-        <span
-          style={{
-            fontSize: 11,
-            textTransform: "uppercase",
-            letterSpacing: "0.06em",
-            color: "var(--prv-text-3)",
-            fontWeight: 600,
-            display: "block",
-            marginBottom: 6,
-          }}
-        >
-          Permission
-        </span>
+        <span style={labelStyle}>Permission</span>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
           {perms.map((perm) => (
             <button
@@ -328,24 +368,94 @@ function ShareForm({
           ))}
         </div>
       </div>
-      <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+
+      {isExternal && (
+        <>
+          <div>
+            <span style={labelStyle}>Expires</span>
+            <select
+              value={expiry}
+              onChange={(e) => setExpiry(e.target.value as "never" | "7" | "30")}
+              style={{
+                width: "100%",
+                boxSizing: "border-box",
+                background: "rgba(255,255,255,0.04)",
+                border: "1px solid rgba(255,255,255,0.12)",
+                borderRadius: 12,
+                padding: 11,
+                color: "rgba(255,255,255,0.92)",
+                fontSize: 13.5,
+                fontFamily: "inherit",
+              }}
+            >
+              <option value="never">Never</option>
+              <option value="7">In 7 days</option>
+              <option value="30">In 30 days</option>
+            </select>
+          </div>
+          <button
+            type="button"
+            onClick={() => setPasswordProtected((v) => !v)}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              background: "transparent",
+              border: "none",
+              padding: 0,
+              cursor: "pointer",
+              color: "rgba(255,255,255,0.8)",
+              fontSize: 13.5,
+              fontWeight: 500,
+            }}
+          >
+            <span>Password protected</span>
+            <span
+              style={{
+                width: 42,
+                height: 25,
+                borderRadius: 100,
+                background: passwordProtected ? "rgba(10,132,255,0.9)" : "rgba(255,255,255,0.15)",
+                position: "relative",
+                transition: "background 0.2s",
+                flexShrink: 0,
+              }}
+            >
+              <span
+                style={{
+                  position: "absolute",
+                  top: 2,
+                  left: passwordProtected ? 19 : 2,
+                  width: 21,
+                  height: 21,
+                  borderRadius: "50%",
+                  background: "#fff",
+                  transition: "left 0.2s",
+                }}
+              />
+            </span>
+          </button>
+        </>
+      )}
+
+      <div style={{ display: "flex", gap: 8, marginTop: 2 }}>
         <button
           type="button"
-          disabled={pending || !userId}
-          onClick={() => onSubmit(userId, permission)}
+          disabled={pending || !canSubmit}
+          onClick={submit}
           style={{
             flex: 1,
-            background: userId ? "rgba(10,132,255,0.9)" : "rgba(255,255,255,0.07)",
-            color: userId ? "#fff" : "rgba(255,255,255,0.4)",
+            background: canSubmit ? "rgba(10,132,255,0.9)" : "rgba(255,255,255,0.07)",
+            color: canSubmit ? "#fff" : "rgba(255,255,255,0.4)",
             border: "none",
             borderRadius: 11,
             padding: 12,
             fontSize: 13.5,
             fontWeight: 700,
-            cursor: pending || !userId ? "default" : "pointer",
+            cursor: pending || !canSubmit ? "default" : "pointer",
           }}
         >
-          {pending ? "Sharing…" : "Share"}
+          {pending ? "Working…" : isExternal ? "Create link" : "Share"}
         </button>
         <button
           type="button"
@@ -411,6 +521,58 @@ export function DocumentDetailClient({ id }: { id: string }) {
       .catch(() => setBusy(false))
   }, [id, router])
 
+  const openLinkResult = useCallback(
+    (token: string) => {
+      const url = `${window.location.origin}/api/share/${token}`
+      openSheet({
+        snapPoints: ["mid"],
+        defaultSnap: "mid",
+        title: "Share Link Ready",
+        render: () => (
+          <div
+            style={{ padding: "12px 18px 34px", display: "flex", flexDirection: "column", gap: 14 }}
+          >
+            <div style={{ fontSize: 12, color: "var(--prv-text-3)", lineHeight: 1.5 }}>
+              Anyone with this link can open the document per the permission you set.
+            </div>
+            <div
+              style={{
+                background: "rgba(255,255,255,0.04)",
+                border: "1px solid rgba(255,255,255,0.12)",
+                borderRadius: 12,
+                padding: 12,
+                fontSize: 12,
+                color: "rgba(126,184,255,0.95)",
+                wordBreak: "break-all",
+                fontFamily: "ui-monospace, monospace",
+              }}
+            >
+              {url}
+            </div>
+            <button
+              type="button"
+              onClick={() => void navigator.clipboard?.writeText(url)}
+              style={{
+                width: "100%",
+                background: "#fff",
+                color: "#000",
+                border: "none",
+                borderRadius: 11,
+                padding: 12,
+                fontSize: 13.5,
+                fontWeight: 700,
+                cursor: "pointer",
+              }}
+            >
+              Copy link
+            </button>
+          </div>
+        ),
+      })
+    },
+    [openSheet]
+  )
+
   const openShare = useCallback(() => {
     openSheet({
       snapPoints: ["mid"],
@@ -420,23 +582,25 @@ export function DocumentDetailClient({ id }: { id: string }) {
         <ShareForm
           pending={sharing}
           onCancel={onClose}
-          onSubmit={(granteeUserId, permission) => {
+          onSubmit={(body, isExternal) => {
             setSharing(true)
             fetch(`/api/documents/${id}/shares`, {
               method: "POST",
               headers: { "content-type": "application/json" },
-              body: JSON.stringify({ scope: "internal", granteeUserId, permission }),
+              body: JSON.stringify(body),
             })
-              .then((r) => {
+              .then(async (r) => {
                 if (!r.ok) throw new Error("Share failed")
+                const data = (await r.json()) as { token?: string | null }
                 onClose()
+                if (isExternal && data.token) openLinkResult(data.token)
               })
               .finally(() => setSharing(false))
           }}
         />
       ),
     })
-  }, [id, openSheet, sharing])
+  }, [id, openSheet, sharing, openLinkResult])
 
   const openSignature = useCallback(() => {
     openSheet({
