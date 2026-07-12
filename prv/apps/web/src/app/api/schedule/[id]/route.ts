@@ -20,6 +20,7 @@ export interface TimelineEntry {
 }
 
 export interface ShiftDetail extends ShiftSummary {
+  totalSlots: number
   breakMinutes: number
   breakTime: string | null
   hourlyRate: number
@@ -106,6 +107,7 @@ export const GET = withGates(
       status: row.status,
       assignees,
       openSlots,
+      totalSlots: row.totalSlots,
       project: row.projectName ?? null,
       breakMinutes: 30,
       breakTime: null,

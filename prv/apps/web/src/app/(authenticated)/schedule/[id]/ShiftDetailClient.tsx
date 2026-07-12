@@ -1,5 +1,7 @@
 "use client"
 
+import { useState } from "react"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useShiftDetail } from "@/lib/api-hooks"
 import Link from "next/link"
 import { useSheetStack } from "@prv/ui"
@@ -299,10 +301,215 @@ const AVATAR_COLORS = [
   { bg: "rgba(255,69,58,.1)", color: "rgba(255,69,58,.9)" },
 ]
 
+const SHIFT_STATUS_OPTIONS: { value: ShiftStatus; label: string }[] = [
+  { value: "draft", label: "Draft" },
+  { value: "scheduled", label: "Scheduled" },
+  { value: "open", label: "Open" },
+  { value: "confirmed", label: "Confirmed" },
+]
+
+function EditShiftForm({
+  initial,
+  onSubmit,
+  onCancel,
+  pending,
+}: {
+  initial: ShiftDetail
+  onSubmit: (patch: Record<string, unknown>) => void
+  onCancel: () => void
+  pending: boolean
+}) {
+  const [title, setTitle] = useState(initial.title ?? "")
+  const [location, setLocation] = useState(initial.location ?? "")
+  const [date, setDate] = useState(initial.date ?? "")
+  const [slots, setSlots] = useState(String(initial.totalSlots ?? 1))
+  const [start, setStart] = useState(initial.startTime ?? "")
+  const [end, setEnd] = useState(initial.endTime ?? "")
+  const [status, setStatus] = useState<ShiftStatus>(initial.status as ShiftStatus)
+
+  const slotsNum = Math.max(1, Math.round(Number(slots) || 1))
+  const valid = title.trim().length > 0
+
+  const labelStyle: React.CSSProperties = {
+    fontSize: 11,
+    textTransform: "uppercase",
+    letterSpacing: "0.06em",
+    color: "var(--prv-text-3)",
+    fontWeight: 600,
+    display: "block",
+    marginBottom: 6,
+  }
+  const inputStyle: React.CSSProperties = {
+    width: "100%",
+    boxSizing: "border-box",
+    background: "rgba(255,255,255,0.04)",
+    border: "1px solid rgba(255,255,255,0.12)",
+    borderRadius: 11,
+    padding: 11,
+    color: "rgba(255,255,255,0.92)",
+    fontSize: 14,
+    fontFamily: "inherit",
+  }
+
+  function save() {
+    if (!valid) return
+    const patch: Record<string, unknown> = {
+      title: title.trim(),
+      location: location.trim(),
+      totalSlots: slotsNum,
+      status,
+    }
+    if (/^\d{4}-\d{2}-\d{2}$/.test(date)) patch.date = date
+    if (/^\d{2}:\d{2}$/.test(start)) patch.startTime = start
+    if (/^\d{2}:\d{2}$/.test(end)) patch.endTime = end
+    onSubmit(patch)
+  }
+
+  return (
+    <div style={{ padding: "12px 18px 40px", display: "flex", flexDirection: "column", gap: 13 }}>
+      <div>
+        <span style={labelStyle}>Title</span>
+        <input value={title} onChange={(e) => setTitle(e.target.value)} style={inputStyle} />
+      </div>
+      <div>
+        <span style={labelStyle}>Location</span>
+        <input value={location} onChange={(e) => setLocation(e.target.value)} style={inputStyle} />
+      </div>
+      <div style={{ display: "flex", gap: 11 }}>
+        <div style={{ flex: 1 }}>
+          <span style={labelStyle}>Date</span>
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            style={inputStyle}
+          />
+        </div>
+        <div style={{ flex: 1 }}>
+          <span style={labelStyle}>Total slots</span>
+          <input
+            inputMode="numeric"
+            value={slots}
+            onChange={(e) => setSlots(e.target.value.replace(/[^0-9]/g, ""))}
+            style={inputStyle}
+          />
+        </div>
+      </div>
+      <div style={{ display: "flex", gap: 11 }}>
+        <div style={{ flex: 1 }}>
+          <span style={labelStyle}>Start</span>
+          <input
+            type="time"
+            value={start}
+            onChange={(e) => setStart(e.target.value)}
+            style={inputStyle}
+          />
+        </div>
+        <div style={{ flex: 1 }}>
+          <span style={labelStyle}>End</span>
+          <input
+            type="time"
+            value={end}
+            onChange={(e) => setEnd(e.target.value)}
+            style={inputStyle}
+          />
+        </div>
+      </div>
+      <div>
+        <span style={labelStyle}>Status</span>
+        <select
+          value={status}
+          onChange={(e) => setStatus(e.target.value as ShiftStatus)}
+          style={inputStyle}
+        >
+          {SHIFT_STATUS_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div style={{ display: "flex", gap: 8, marginTop: 2 }}>
+        <button
+          type="button"
+          disabled={pending || !valid}
+          onClick={save}
+          style={{
+            flex: 1,
+            background: valid ? "#fff" : "rgba(255,255,255,0.07)",
+            color: valid ? "#000" : "rgba(255,255,255,0.4)",
+            border: "none",
+            borderRadius: 11,
+            padding: 12,
+            fontSize: 13.5,
+            fontWeight: 700,
+            cursor: pending || !valid ? "default" : "pointer",
+          }}
+        >
+          {pending ? "Saving…" : "Save changes"}
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          style={{
+            background: "rgba(255,255,255,0.07)",
+            border: "1px solid rgba(255,255,255,0.12)",
+            color: "rgba(255,255,255,0.75)",
+            borderRadius: 11,
+            padding: "12px 20px",
+            fontSize: 13.5,
+            fontWeight: 600,
+            cursor: "pointer",
+          }}
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export function ShiftDetailClient({ id }: ShiftDetailClientProps) {
   const { data, isLoading: loading } = useShiftDetail(id)
   const shift = data?.shift ?? null
   const { openSheet } = useSheetStack()
+  const queryClient = useQueryClient()
+
+  const shiftMutation = useMutation({
+    mutationFn: (patch: Record<string, unknown>) =>
+      fetch(`/api/schedule/${id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(patch),
+      }).then(async (r) => {
+        if (!r.ok) throw new Error("Save failed")
+        return r.json()
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["shift-detail", id] })
+      void queryClient.invalidateQueries({ queryKey: ["schedule"] })
+    },
+  })
+
+  const openEditShift = () => {
+    if (!shift) return
+    openSheet({
+      snapPoints: ["mid", "full"],
+      defaultSnap: "full",
+      title: "Edit Shift",
+      render: (onClose) => (
+        <EditShiftForm
+          pending={shiftMutation.isPending}
+          initial={shift}
+          onCancel={onClose}
+          onSubmit={(patch) => {
+            shiftMutation.mutate(patch)
+            onClose()
+          }}
+        />
+      ),
+    })
+  }
 
   const handleFAB = () => {
     if (!shift) return
@@ -378,7 +585,10 @@ export function ShiftDetailClient({ id }: ShiftDetailClientProps) {
             }
             label="Edit Shift"
             sub="Edit interval, location, team"
-            onClick={onClose}
+            onClick={() => {
+              onClose()
+              openEditShift()
+            }}
           />
           <SheetBtn
             color="white"
