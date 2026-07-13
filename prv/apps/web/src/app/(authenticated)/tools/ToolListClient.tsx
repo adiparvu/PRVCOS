@@ -2,8 +2,9 @@
 import { useRouter } from "next/navigation"
 
 import { useState } from "react"
+import { useQueryClient } from "@tanstack/react-query"
 import Link from "next/link"
-import { useSheetStack } from "@prv/ui"
+import { useSheetStack, useToast } from "@prv/ui"
 import type { ToolSummary, ToolsMeta } from "@/app/api/tools/route"
 import { useTools } from "@/lib/api-hooks"
 
@@ -267,6 +268,50 @@ export function ToolListClient() {
   const meta: ToolsMeta | null = data?.meta ?? null
   const error = isError
 
+  const { toast } = useToast()
+  const queryClient = useQueryClient()
+  const [selectMode, setSelectMode] = useState(false)
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [bulkBusy, setBulkBusy] = useState(false)
+  const toggleSelect = (id: string) =>
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  const exitSelect = () => {
+    setSelectMode(false)
+    setSelected(new Set())
+  }
+  const bulkService = () => {
+    const ids = [...selected]
+    if (ids.length === 0) return
+    setBulkBusy(true)
+    Promise.allSettled(
+      ids.map((tid) =>
+        fetch(`/api/tools/${tid}`, {
+          method: "PATCH",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ status: "maintenance", assignedUserId: null }),
+        }).then((r) => {
+          if (!r.ok) throw new Error("failed")
+        })
+      )
+    )
+      .then((results) => {
+        const ok = results.filter((r) => r.status === "fulfilled").length
+        const failed = results.length - ok
+        void queryClient.invalidateQueries({ queryKey: ["tools"] })
+        void queryClient.invalidateQueries({ queryKey: ["tool-inventory"] })
+        if (failed === 0) toast.success(`${ok} sent to service`)
+        else if (ok === 0) toast.error("Couldn't send to service", "Please try again.")
+        else toast.warning(`${ok} sent to service`, `${failed} could not be processed.`)
+        exitSelect()
+      })
+      .finally(() => setBulkBusy(false))
+  }
+
   const handleFAB = () => {
     openSheet({
       snapPoints: ["mid", "full"],
@@ -358,21 +403,41 @@ export function ToolListClient() {
             Scule
           </h1>
         </div>
-        {meta && (
-          <div
-            style={{
-              padding: "6px 12px",
-              borderRadius: 10,
-              background: "var(--prv-g1)",
-              border: "1px solid var(--prv-border-subtle)",
-              fontSize: 12,
-              fontWeight: 500,
-              color: "var(--prv-text-2)",
-            }}
-          >
-            {meta.total} scule
-          </div>
-        )}
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          {(tools?.length ?? 0) > 0 && (
+            <button
+              type="button"
+              onClick={() => (selectMode ? exitSelect() : setSelectMode(true))}
+              style={{
+                fontSize: 13,
+                fontWeight: 600,
+                padding: "7px 14px",
+                borderRadius: 100,
+                background: "rgba(255,255,255,0.08)",
+                border: "1px solid rgba(255,255,255,0.14)",
+                color: "rgba(255,255,255,0.8)",
+                cursor: "pointer",
+              }}
+            >
+              {selectMode ? "Cancel" : "Select"}
+            </button>
+          )}
+          {meta && (
+            <div
+              style={{
+                padding: "6px 12px",
+                borderRadius: 10,
+                background: "var(--prv-g1)",
+                border: "1px solid var(--prv-border-subtle)",
+                fontSize: 12,
+                fontWeight: 500,
+                color: "var(--prv-text-2)",
+              }}
+            >
+              {meta.total} scule
+            </div>
+          )}
+        </div>
       </div>
 
       {/* KPI strip */}
@@ -672,27 +737,51 @@ export function ToolListClient() {
             const isService = t.status === "Maintenance"
             const isOverdueHigh =
               isService && t.serviceOverdueDays !== null && t.serviceOverdueDays >= 20
-            return (
-              <Link
-                key={t.id}
-                href={`/tools/${t.id}`}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 12,
-                  padding: "14px 16px",
-                  paddingLeft: isService ? 13 : 16,
-                  borderBottom:
-                    i < tools.length - 1 ? "1px solid var(--prv-border-subtle)" : "none",
-                  textDecoration: "none",
-                  borderLeft: isService ? "3px solid transparent" : undefined,
-                  borderImage: isOverdueHigh
-                    ? "linear-gradient(180deg,rgba(255,69,58,.7),rgba(255,69,58,.4)) 1"
-                    : isService
-                      ? "linear-gradient(180deg,rgba(255,159,10,.7),rgba(255,159,10,.4)) 1"
-                      : undefined,
-                }}
-              >
+            const selectable = selectMode && (t.status === "Available" || t.status === "In Use")
+            const isSel = selected.has(t.id)
+            const rowStyle: React.CSSProperties = {
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+              padding: "14px 16px",
+              paddingLeft: isService ? 13 : 16,
+              borderBottom: i < tools.length - 1 ? "1px solid var(--prv-border-subtle)" : "none",
+              textDecoration: "none",
+              borderLeft: isService ? "3px solid transparent" : undefined,
+              borderImage: isOverdueHigh
+                ? "linear-gradient(180deg,rgba(255,69,58,.7),rgba(255,69,58,.4)) 1"
+                : isService
+                  ? "linear-gradient(180deg,rgba(255,159,10,.7),rgba(255,159,10,.4)) 1"
+                  : undefined,
+              cursor: selectMode ? (selectable ? "pointer" : "default") : "pointer",
+              opacity: selectMode && !selectable ? 0.4 : 1,
+              background: "none",
+              border: "none",
+              width: selectMode ? "100%" : undefined,
+              textAlign: "left" as const,
+            }
+            const rowBody = (
+              <>
+                {selectMode && (
+                  <span
+                    style={{
+                      width: 22,
+                      height: 22,
+                      borderRadius: 7,
+                      flexShrink: 0,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      border: isSel ? "2px solid transparent" : "2px solid rgba(255,255,255,0.28)",
+                      background: isSel ? "rgba(255,255,255,0.95)" : "transparent",
+                      color: "#000",
+                      fontSize: 13,
+                      fontWeight: 800,
+                    }}
+                  >
+                    {isSel ? "✓" : ""}
+                  </span>
+                )}
                 <ToolIcon category={t.category} status={t.status} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <p
@@ -744,6 +833,21 @@ export function ToolListClient() {
                 >
                   {sc.label}
                 </span>
+              </>
+            )
+            return selectMode ? (
+              <button
+                key={t.id}
+                type="button"
+                disabled={!selectable}
+                onClick={() => selectable && toggleSelect(t.id)}
+                style={rowStyle}
+              >
+                {rowBody}
+              </button>
+            ) : (
+              <Link key={t.id} href={`/tools/${t.id}`} style={rowStyle}>
+                {rowBody}
               </Link>
             )
           })}
@@ -795,6 +899,61 @@ export function ToolListClient() {
       >
         <IconPlus />
       </button>
+
+      {selectMode && selected.size > 0 && (
+        <div
+          style={{
+            position: "fixed",
+            left: 16,
+            right: 16,
+            bottom: 24,
+            zIndex: 70,
+            display: "flex",
+            gap: 10,
+            padding: 12,
+            borderRadius: 18,
+            background: "rgba(28,28,30,0.82)",
+            backdropFilter: "blur(32px) saturate(180%)",
+            WebkitBackdropFilter: "blur(32px) saturate(180%)",
+            border: "1px solid rgba(255,255,255,0.14)",
+            boxShadow: "0 12px 40px rgba(0,0,0,0.6)",
+            maxWidth: 620,
+            margin: "0 auto",
+          }}
+        >
+          <span
+            style={{
+              flex: 1,
+              display: "flex",
+              alignItems: "center",
+              paddingLeft: 8,
+              fontSize: 14,
+              fontWeight: 600,
+              color: "rgba(255,255,255,0.75)",
+            }}
+          >
+            {selected.size} selected
+          </span>
+          <button
+            type="button"
+            disabled={bulkBusy}
+            onClick={bulkService}
+            style={{
+              padding: "12px 20px",
+              borderRadius: 12,
+              background: "rgba(255,159,10,0.9)",
+              border: "none",
+              color: "#000",
+              fontSize: 13.5,
+              fontWeight: 700,
+              cursor: bulkBusy ? "default" : "pointer",
+              opacity: bulkBusy ? 0.6 : 1,
+            }}
+          >
+            {bulkBusy ? "Working…" : "Send to service"}
+          </button>
+        </div>
+      )}
     </div>
   )
 }
