@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
+import { useToast } from "@prv/ui"
 import Link from "next/link"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -176,28 +177,38 @@ function AlertRow({
   onResolve,
   onAssign,
   people,
+  selectMode = false,
+  selected = false,
+  onToggle,
 }: {
   alert: Alert
   onAcknowledge: (id: string) => void
   onResolve: (id: string, note?: string) => void
   onAssign: (id: string, userId: string) => void
   people: { id: string; firstName: string; lastName: string }[]
+  selectMode?: boolean
+  selected?: boolean
+  onToggle?: (id: string) => void
 }) {
   const cfg = SEVERITY_CONFIG[alert.severity]
+  const selectable = selectMode && alert.status !== "resolved"
   const [resolving, setResolving] = useState(false)
   const [assigning, setAssigning] = useState(false)
   const [note, setNote] = useState("")
 
   return (
     <div
+      onClick={selectMode ? () => selectable && onToggle?.(alert.id) : undefined}
       style={{
         background: cfg.bg,
-        border: `1px solid ${cfg.border}`,
+        border: `1px solid ${selected ? "rgba(255,255,255,0.5)" : cfg.border}`,
         borderRadius: 16,
         padding: "13px 16px",
         marginBottom: 8,
         position: "relative",
         overflow: "hidden",
+        cursor: selectMode ? (selectable ? "pointer" : "default") : "default",
+        opacity: selectMode && !selectable ? 0.45 : 1,
       }}
     >
       <div
@@ -213,6 +224,27 @@ function AlertRow({
 
       {/* Header row */}
       <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+        {selectMode && (
+          <span
+            style={{
+              width: 22,
+              height: 22,
+              borderRadius: 7,
+              flexShrink: 0,
+              marginTop: 1,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              border: selected ? "2px solid transparent" : "2px solid rgba(255,255,255,0.3)",
+              background: selected ? "rgba(255,255,255,0.95)" : "transparent",
+              color: "#000",
+              fontSize: 13,
+              fontWeight: 800,
+            }}
+          >
+            {selected ? "✓" : ""}
+          </span>
+        )}
         {/* Severity dot */}
         <div
           style={{
@@ -276,7 +308,7 @@ function AlertRow({
       </div>
 
       {/* Actions — only for open/acknowledged */}
-      {alert.status !== "resolved" && !resolving && !assigning && (
+      {!selectMode && alert.status !== "resolved" && !resolving && !assigning && (
         <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
           {alert.status === "open" && (
             <button
@@ -338,7 +370,7 @@ function AlertRow({
           </button>
         </div>
       )}
-      {alert.status !== "resolved" && assigning && (
+      {!selectMode && alert.status !== "resolved" && assigning && (
         <div style={{ marginTop: 10 }}>
           <select
             defaultValue=""
@@ -387,7 +419,7 @@ function AlertRow({
           </button>
         </div>
       )}
-      {alert.status !== "resolved" && resolving && (
+      {!selectMode && alert.status !== "resolved" && resolving && (
         <div style={{ marginTop: 10 }}>
           <textarea
             value={note}
@@ -544,6 +576,57 @@ export function AlertsClient() {
     [queryClient, tab]
   )
 
+  const { toast } = useToast()
+  const [selectMode, setSelectMode] = useState(false)
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [bulkBusy, setBulkBusy] = useState(false)
+
+  const toggleSelect = useCallback(
+    (id: string) =>
+      setSelected((prev) => {
+        const next = new Set(prev)
+        if (next.has(id)) next.delete(id)
+        else next.add(id)
+        return next
+      }),
+    []
+  )
+  const exitSelect = useCallback(() => {
+    setSelectMode(false)
+    setSelected(new Set())
+  }, [])
+
+  const bulkAlert = useCallback(
+    (action: "acknowledge" | "resolve") => {
+      const ids = [...selected]
+      if (ids.length === 0) return
+      setBulkBusy(true)
+      Promise.allSettled(
+        ids.map((aid) =>
+          fetch(`/api/alerts/${aid}`, {
+            method: "PATCH",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ action }),
+          }).then((r) => {
+            if (!r.ok) throw new Error("failed")
+          })
+        )
+      )
+        .then((results) => {
+          const ok = results.filter((r) => r.status === "fulfilled").length
+          const failed = results.length - ok
+          void queryClient.invalidateQueries({ queryKey: ["alerts"] })
+          const verb = action === "acknowledge" ? "acknowledged" : "resolved"
+          if (failed === 0) toast.success(`${ok} ${verb}`)
+          else if (ok === 0) toast.error(`Couldn't ${action} alerts`, "Please try again.")
+          else toast.warning(`${ok} ${verb}`, `${failed} could not be processed.`)
+          exitSelect()
+        })
+        .finally(() => setBulkBusy(false))
+    },
+    [selected, queryClient, toast, exitSelect]
+  )
+
   // Counts by severity for the open alerts
   const criticalCount = alertList.filter(
     (a) =>
@@ -590,6 +673,24 @@ export function AlertsClient() {
           >
             {criticalCount} critic{criticalCount !== 1 ? "e" : "ă"}
           </div>
+        )}
+        {alertList.some((a) => a.status !== "resolved") && (
+          <button
+            type="button"
+            onClick={() => (selectMode ? exitSelect() : setSelectMode(true))}
+            style={{
+              fontSize: 13,
+              fontWeight: 600,
+              padding: "7px 14px",
+              borderRadius: 100,
+              background: "rgba(255,255,255,0.08)",
+              border: "1px solid rgba(255,255,255,0.14)",
+              color: "rgba(255,255,255,0.8)",
+              cursor: "pointer",
+            }}
+          >
+            {selectMode ? "Cancel" : "Select"}
+          </button>
         )}
       </div>
 
@@ -691,9 +792,85 @@ export function AlertsClient() {
                 onResolve={handleResolve}
                 onAssign={handleAssign}
                 people={people}
+                selectMode={selectMode}
+                selected={selected.has(alert.id)}
+                onToggle={toggleSelect}
               />
             ))}
         </>
+      )}
+
+      {selectMode && selected.size > 0 && (
+        <div
+          style={{
+            position: "fixed",
+            left: 16,
+            right: 16,
+            bottom: 24,
+            zIndex: 70,
+            display: "flex",
+            gap: 10,
+            padding: 12,
+            borderRadius: 18,
+            background: "rgba(28,28,30,0.82)",
+            backdropFilter: "blur(32px) saturate(180%)",
+            WebkitBackdropFilter: "blur(32px) saturate(180%)",
+            border: "1px solid rgba(255,255,255,0.14)",
+            boxShadow: "0 12px 40px rgba(0,0,0,0.6)",
+            maxWidth: 620,
+            margin: "0 auto",
+          }}
+        >
+          <span
+            style={{
+              flex: 1,
+              display: "flex",
+              alignItems: "center",
+              paddingLeft: 8,
+              fontSize: 14,
+              fontWeight: 600,
+              color: "rgba(255,255,255,0.75)",
+            }}
+          >
+            {selected.size} selected
+          </span>
+          <button
+            type="button"
+            disabled={bulkBusy}
+            onClick={() => bulkAlert("acknowledge")}
+            style={{
+              padding: "12px 16px",
+              borderRadius: 12,
+              background: "rgba(255,255,255,0.08)",
+              border: "1px solid rgba(255,255,255,0.16)",
+              color: "rgba(255,255,255,0.85)",
+              fontSize: 13.5,
+              fontWeight: 700,
+              cursor: bulkBusy ? "default" : "pointer",
+              opacity: bulkBusy ? 0.6 : 1,
+            }}
+          >
+            Acknowledge
+          </button>
+          <button
+            type="button"
+            disabled={bulkBusy}
+            onClick={() => bulkAlert("resolve")}
+            style={{
+              padding: "12px 20px",
+              borderRadius: 12,
+              background: "rgba(48,209,88,0.9)",
+              border: "none",
+              color: "#00220c",
+              fontSize: 13.5,
+              fontWeight: 700,
+              cursor: bulkBusy ? "default" : "pointer",
+              opacity: bulkBusy ? 0.6 : 1,
+            }}
+          >
+            {bulkBusy ? "Working…" : "Resolve"}
+          </button>
+        </div>
       )}
     </div>
   )
