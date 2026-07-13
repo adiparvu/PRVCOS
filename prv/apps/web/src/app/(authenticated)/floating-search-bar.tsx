@@ -1,7 +1,9 @@
 "use client"
 
 import { useState, useCallback, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import type { SystemRole } from "@prv/auth"
+import { useEntitySearch } from "@/components/command-palette/useEntitySearch"
 import { resolveShell } from "@/lib/shell-config"
 
 const SearchIcon = () => (
@@ -48,6 +50,8 @@ interface FloatingSearchBarProps {
 export function FloatingSearchBar({ role }: FloatingSearchBarProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [query, setQuery] = useState("")
+  const router = useRouter()
+  const { results, loading } = useEntitySearch(query)
   const { searchScopes } = resolveShell(role)
 
   const openSearch = useCallback(() => setIsOpen(true), [])
@@ -214,7 +218,7 @@ export function FloatingSearchBar({ role }: FloatingSearchBarProps) {
                 </div>
               )}
 
-              {query.length > 0 && (
+              {query.trim().length >= 2 && (
                 <div
                   className="mt-[2px] rounded-[12px] overflow-hidden"
                   style={{
@@ -224,12 +228,89 @@ export function FloatingSearchBar({ role }: FloatingSearchBarProps) {
                     WebkitBackdropFilter: "blur(48px)",
                   }}
                 >
-                  <div
-                    className="px-4 py-10 text-center text-sm"
-                    style={{ color: "rgba(255,255,255,0.30)" }}
-                  >
-                    No results
-                  </div>
+                  {loading ? (
+                    <div
+                      className="px-4 py-8 text-center text-sm"
+                      style={{ color: "rgba(255,255,255,0.30)" }}
+                    >
+                      Searching…
+                    </div>
+                  ) : results.length === 0 ? (
+                    <div
+                      className="px-4 py-10 text-center text-sm"
+                      style={{ color: "rgba(255,255,255,0.30)" }}
+                    >
+                      No results
+                    </div>
+                  ) : (
+                    results.map((r) => (
+                      <button
+                        key={r.id}
+                        type="button"
+                        onClick={() => {
+                          closeSearch()
+                          router.push(r.href)
+                        }}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 12,
+                          width: "100%",
+                          padding: "12px 16px",
+                          background: "none",
+                          border: "none",
+                          borderBottom: "1px solid rgba(255,255,255,0.05)",
+                          cursor: "pointer",
+                          textAlign: "left",
+                        }}
+                      >
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div
+                            style={{
+                              fontSize: 14,
+                              fontWeight: 600,
+                              color: "rgba(255,255,255,0.9)",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {r.title}
+                          </div>
+                          {r.subtitle && (
+                            <div
+                              style={{
+                                fontSize: 12,
+                                color: "rgba(255,255,255,0.45)",
+                                marginTop: 1,
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                whiteSpace: "nowrap",
+                              }}
+                            >
+                              {r.subtitle}
+                            </div>
+                          )}
+                        </div>
+                        <span
+                          style={{
+                            fontSize: 9,
+                            fontWeight: 600,
+                            textTransform: "uppercase",
+                            letterSpacing: "0.05em",
+                            color: "rgba(255,255,255,0.45)",
+                            background: "rgba(255,255,255,0.06)",
+                            border: "1px solid rgba(255,255,255,0.08)",
+                            borderRadius: 5,
+                            padding: "3px 7px",
+                            flexShrink: 0,
+                          }}
+                        >
+                          {r.entityType.replace(/_/g, " ")}
+                        </span>
+                      </button>
+                    ))
+                  )}
                 </div>
               )}
             </div>
