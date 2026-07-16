@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
-import { useSheetStack } from "@prv/ui"
+import { useSheetStack, useToast } from "@prv/ui"
 import type { TimeOffRequest } from "@/app/api/people/time-off/route"
 import { useTimeOffRequests } from "@/lib/api-hooks"
 
@@ -47,6 +47,58 @@ export function TimeOffClient({ role: _role }: TimeOffClientProps) {
   const apiRequests = data?.requests ?? []
   const [dismissed, setDismissed] = useState<Set<string>>(new Set())
   const requests = apiRequests.filter((r) => !dismissed.has(r.id))
+  const { toast } = useToast()
+  const [selectMode, setSelectMode] = useState(false)
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [bulkBusy, setBulkBusy] = useState(false)
+
+  const toggleSelect = (id: string) =>
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+
+  const exitSelect = () => {
+    setSelectMode(false)
+    setSelected(new Set())
+  }
+
+  const bulkDecision = (action: "approve" | "decline") => {
+    const ids = [...selected]
+    if (ids.length === 0) return
+    setBulkBusy(true)
+    setDismissed((prev) => new Set([...prev, ...ids]))
+    Promise.all(
+      ids.map((rid) =>
+        fetch(`/api/people/time-off/${rid}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action }),
+        })
+          .then((r) => ({ rid, ok: r.ok }))
+          .catch(() => ({ rid, ok: false }))
+      )
+    )
+      .then((outcomes) => {
+        const failedIds = outcomes.filter((o) => !o.ok).map((o) => o.rid)
+        const ok = outcomes.length - failedIds.length
+        if (failedIds.length > 0) {
+          setDismissed((prev) => {
+            const next = new Set(prev)
+            failedIds.forEach((rid) => next.delete(rid))
+            return next
+          })
+        }
+        const verb = action === "approve" ? "approved" : "declined"
+        if (failedIds.length === 0) toast.success(`${ok} ${verb}`)
+        else if (ok === 0) toast.error(`Couldn't ${action} requests`, "Please try again.")
+        else toast.warning(`${ok} ${verb}`, `${failedIds.length} could not be processed.`)
+        exitSelect()
+      })
+      .finally(() => setBulkBusy(false))
+  }
 
   const handleAction = useCallback(
     (req: TimeOffRequest, defaultAction: "approve" | "decline") => {
@@ -103,26 +155,55 @@ export function TimeOffClient({ role: _role }: TimeOffClientProps) {
 
   return (
     <div style={{ paddingBottom: 100 }}>
-      <div style={{ padding: "20px 20px 12px" }}>
-        <h1
-          style={{
-            fontSize: 28,
-            fontWeight: 700,
-            color: "var(--prv-text-1)",
-            margin: 0,
-            letterSpacing: -0.5,
-          }}
-        >
-          Time-Off
-        </h1>
-        {requests.length > 0 ? (
-          <p style={{ fontSize: 14, color: "var(--prv-text-3)", margin: "4px 0 0" }}>
-            {requests.length} pending approval{requests.length !== 1 ? "s" : ""}
-          </p>
-        ) : (
-          <p style={{ fontSize: 14, color: "var(--prv-text-3)", margin: "4px 0 0" }}>
-            All caught up
-          </p>
+      <div
+        style={{
+          padding: "20px 20px 12px",
+          display: "flex",
+          alignItems: "flex-start",
+          justifyContent: "space-between",
+          gap: 12,
+        }}
+      >
+        <div>
+          <h1
+            style={{
+              fontSize: 28,
+              fontWeight: 700,
+              color: "var(--prv-text-1)",
+              margin: 0,
+              letterSpacing: -0.5,
+            }}
+          >
+            Time-Off
+          </h1>
+          {requests.length > 0 ? (
+            <p style={{ fontSize: 14, color: "var(--prv-text-3)", margin: "4px 0 0" }}>
+              {requests.length} pending approval{requests.length !== 1 ? "s" : ""}
+            </p>
+          ) : (
+            <p style={{ fontSize: 14, color: "var(--prv-text-3)", margin: "4px 0 0" }}>
+              All caught up
+            </p>
+          )}
+        </div>
+        {requests.length > 0 && (
+          <button
+            type="button"
+            onClick={() => (selectMode ? exitSelect() : setSelectMode(true))}
+            style={{
+              fontSize: 13,
+              fontWeight: 600,
+              padding: "7px 14px",
+              borderRadius: 100,
+              background: "rgba(255,255,255,0.08)",
+              border: "1px solid rgba(255,255,255,0.14)",
+              color: "rgba(255,255,255,0.8)",
+              cursor: "pointer",
+              flexShrink: 0,
+            }}
+          >
+            {selectMode ? "Cancel" : "Select"}
+          </button>
         )}
       </div>
 
@@ -179,6 +260,9 @@ export function TimeOffClient({ role: _role }: TimeOffClientProps) {
             <RequestCard
               key={req.id}
               req={req}
+              selectMode={selectMode}
+              selected={selected.has(req.id)}
+              onToggle={() => toggleSelect(req.id)}
               onApprove={() => handleAction(req, "approve")}
               onDecline={() => handleAction(req, "decline")}
               onViewDetail={() => router.push(`/people/time-off/${req.id}`)}
@@ -205,17 +289,96 @@ export function TimeOffClient({ role: _role }: TimeOffClientProps) {
           )}
         </div>
       )}
+
+      {selectMode && selected.size > 0 && (
+        <div
+          style={{
+            position: "fixed",
+            left: 16,
+            right: 16,
+            bottom: 24,
+            zIndex: 70,
+            display: "flex",
+            gap: 10,
+            padding: 12,
+            borderRadius: 18,
+            background: "rgba(28,28,30,0.82)",
+            backdropFilter: "blur(32px) saturate(180%)",
+            WebkitBackdropFilter: "blur(32px) saturate(180%)",
+            border: "1px solid rgba(255,255,255,0.14)",
+            boxShadow: "0 12px 40px rgba(0,0,0,0.6)",
+            maxWidth: 620,
+            margin: "0 auto",
+          }}
+        >
+          <span
+            style={{
+              flex: 1,
+              display: "flex",
+              alignItems: "center",
+              paddingLeft: 8,
+              fontSize: 14,
+              fontWeight: 600,
+              color: "rgba(255,255,255,0.75)",
+            }}
+          >
+            {selected.size} selected
+          </span>
+          <button
+            type="button"
+            disabled={bulkBusy}
+            onClick={() => bulkDecision("decline")}
+            style={{
+              padding: "12px 18px",
+              borderRadius: 12,
+              background: "rgba(255,69,58,0.15)",
+              border: "1px solid rgba(255,69,58,0.28)",
+              color: "rgba(255,69,58,0.95)",
+              fontSize: 13.5,
+              fontWeight: 700,
+              cursor: bulkBusy ? "default" : "pointer",
+              opacity: bulkBusy ? 0.6 : 1,
+            }}
+          >
+            Decline
+          </button>
+          <button
+            type="button"
+            disabled={bulkBusy}
+            onClick={() => bulkDecision("approve")}
+            style={{
+              padding: "12px 22px",
+              borderRadius: 12,
+              background: "#fff",
+              border: "none",
+              color: "#000",
+              fontSize: 13.5,
+              fontWeight: 700,
+              cursor: bulkBusy ? "default" : "pointer",
+              opacity: bulkBusy ? 0.6 : 1,
+            }}
+          >
+            {bulkBusy ? "Working…" : "Approve"}
+          </button>
+        </div>
+      )}
     </div>
   )
 }
 
 function RequestCard({
   req,
+  selectMode = false,
+  selected = false,
+  onToggle,
   onApprove,
   onDecline,
   onViewDetail,
 }: {
   req: TimeOffRequest
+  selectMode?: boolean
+  selected?: boolean
+  onToggle?: () => void
   onApprove: () => void
   onDecline: () => void
   onViewDetail: () => void
@@ -226,17 +389,40 @@ function RequestCard({
 
   return (
     <div
+      onClick={selectMode ? onToggle : undefined}
       style={{
         borderRadius: 20,
         background: "var(--prv-g1)",
-        border: "1px solid var(--prv-border-subtle)",
+        border: `1px solid ${selected ? "rgba(255,255,255,0.5)" : "var(--prv-border-subtle)"}`,
         boxShadow: "inset 0 1px 0 rgba(255,255,255,0.08)",
         overflow: "hidden",
+        cursor: selectMode ? "pointer" : "default",
       }}
     >
       <div style={{ padding: "16px 16px 14px" }}>
         {/* Header: avatar + name + submitted */}
         <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 14 }}>
+          {selectMode && (
+            <span
+              style={{
+                width: 22,
+                height: 22,
+                borderRadius: 7,
+                flexShrink: 0,
+                marginTop: 2,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                border: selected ? "2px solid transparent" : "2px solid rgba(255,255,255,0.3)",
+                background: selected ? "rgba(255,255,255,0.95)" : "transparent",
+                color: "#000",
+                fontSize: 13,
+                fontWeight: 800,
+              }}
+            >
+              {selected ? "✓" : ""}
+            </span>
+          )}
           <div
             style={{
               width: 44,
@@ -259,13 +445,13 @@ function RequestCard({
           <div style={{ flex: 1 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <p
-                onClick={onViewDetail}
+                onClick={selectMode ? undefined : onViewDetail}
                 style={{
                   fontSize: 15,
                   fontWeight: 600,
                   color: "var(--prv-text-1)",
                   margin: 0,
-                  cursor: "pointer",
+                  cursor: selectMode ? "default" : "pointer",
                 }}
               >
                 {req.employeeName}
@@ -389,88 +575,90 @@ function RequestCard({
       </div>
 
       {/* Action buttons */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          borderTop: "1px solid var(--prv-border-subtle)",
-        }}
-      >
-        <button
-          onClick={onDecline}
+      {!selectMode && (
+        <div
           style={{
-            padding: "13px 12px",
-            background: "transparent",
-            border: "none",
-            borderRight: "1px solid var(--prv-border-subtle)",
-            color: "rgba(255,99,90,0.85)",
-            fontSize: 14,
-            fontWeight: 600,
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 6,
-            transition: "background 0.15s",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = "rgba(255,59,48,0.08)"
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = "transparent"
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            borderTop: "1px solid var(--prv-border-subtle)",
           }}
         >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
+          <button
+            onClick={onDecline}
+            style={{
+              padding: "13px 12px",
+              background: "transparent",
+              border: "none",
+              borderRight: "1px solid var(--prv-border-subtle)",
+              color: "rgba(255,99,90,0.85)",
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 6,
+              transition: "background 0.15s",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "rgba(255,59,48,0.08)"
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "transparent"
+            }}
           >
-            <line x1="18" y1="6" x2="6" y2="18" />
-            <line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
-          Decline
-        </button>
-        <button
-          onClick={onApprove}
-          style={{
-            padding: "13px 12px",
-            background: "transparent",
-            border: "none",
-            color: "var(--prv-text-1)",
-            fontSize: 14,
-            fontWeight: 600,
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 6,
-            transition: "background 0.15s",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = "rgba(255,255,255,0.06)"
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = "transparent"
-          }}
-        >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+            >
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+            Decline
+          </button>
+          <button
+            onClick={onApprove}
+            style={{
+              padding: "13px 12px",
+              background: "transparent",
+              border: "none",
+              color: "var(--prv-text-1)",
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 6,
+              transition: "background 0.15s",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "rgba(255,255,255,0.06)"
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "transparent"
+            }}
           >
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
-          Approve
-        </button>
-      </div>
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+            >
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+            Approve
+          </button>
+        </div>
+      )}
     </div>
   )
 }
