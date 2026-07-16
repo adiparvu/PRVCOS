@@ -42,3 +42,12 @@ export function summarizeBulk(outcomes: readonly BulkItemOutcome[]): BulkSummary
   const kind: BulkToastKind = failed === 0 ? "success" : ok === 0 ? "error" : "warning"
   return { ok, failed, total: outcomes.length, kind }
 }
+
+/**
+ * Same as {@link summarizeBulk}, but for bars that fan out with
+ * `Promise.allSettled` instead of tagging each result themselves. A
+ * `fulfilled` result counts as a success and a `rejected` one as a failure.
+ */
+export function summarizeSettled(results: readonly PromiseSettledResult<unknown>[]): BulkSummary {
+  return summarizeBulk(results.map((r) => ({ ok: r.status === "fulfilled" })))
+}

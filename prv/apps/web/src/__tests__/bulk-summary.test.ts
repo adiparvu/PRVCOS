@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { summarizeBulk } from "@/lib/bulk"
+import { summarizeBulk, summarizeSettled } from "@/lib/bulk"
 
 describe("summarizeBulk", () => {
   it("reports a plain success when every item succeeds", () => {
@@ -31,5 +31,27 @@ describe("summarizeBulk", () => {
     const copy = input.map((o) => ({ ...o }))
     summarizeBulk(input)
     expect(input).toEqual(copy)
+  })
+})
+
+describe("summarizeSettled", () => {
+  const fulfilled: PromiseSettledResult<unknown> = { status: "fulfilled", value: undefined }
+  const rejected: PromiseSettledResult<unknown> = { status: "rejected", reason: new Error("x") }
+
+  it("counts fulfilled results as successes and rejected as failures", () => {
+    const s = summarizeSettled([fulfilled, rejected, fulfilled])
+    expect(s).toEqual({ ok: 2, failed: 1, total: 3, kind: "warning" })
+  })
+
+  it("reports success when every result is fulfilled", () => {
+    expect(summarizeSettled([fulfilled, fulfilled]).kind).toBe("success")
+  })
+
+  it("reports error when every result is rejected", () => {
+    expect(summarizeSettled([rejected, rejected]).kind).toBe("error")
+  })
+
+  it("treats an empty result set as a vacuous success", () => {
+    expect(summarizeSettled([])).toEqual({ ok: 0, failed: 0, total: 0, kind: "success" })
   })
 })

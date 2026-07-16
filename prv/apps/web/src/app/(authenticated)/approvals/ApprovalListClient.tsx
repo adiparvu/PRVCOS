@@ -2,6 +2,7 @@
 import { useRouter } from "next/navigation"
 
 import { useState } from "react"
+import { summarizeSettled } from "@/lib/bulk"
 import { useQueryClient } from "@tanstack/react-query"
 import Link from "next/link"
 import { useSheetStack, useToast } from "@prv/ui"
@@ -480,13 +481,12 @@ export function ApprovalListClient() {
       )
     )
       .then((results) => {
-        const ok = results.filter((r) => r.status === "fulfilled").length
-        const failed = results.length - ok
+        const { ok, failed, kind } = summarizeSettled(results)
         void queryClient.invalidateQueries({ queryKey: ["approvals"] })
         ids.forEach((aid) => queryClient.invalidateQueries({ queryKey: ["approval-detail", aid] }))
         const verb = action === "approve" ? "approved" : "rejected"
-        if (failed === 0) toast.success(`${ok} ${verb}`)
-        else if (ok === 0) toast.error(`Couldn't ${action} approvals`, "Please try again.")
+        if (kind === "success") toast.success(`${ok} ${verb}`)
+        else if (kind === "error") toast.error(`Couldn't ${action} approvals`, "Please try again.")
         else toast.warning(`${ok} ${verb}`, `${failed} could not be processed.`)
         exitSelect()
       })

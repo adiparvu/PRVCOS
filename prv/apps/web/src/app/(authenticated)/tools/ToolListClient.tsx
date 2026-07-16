@@ -2,6 +2,7 @@
 import { useRouter } from "next/navigation"
 
 import { useState } from "react"
+import { summarizeSettled } from "@/lib/bulk"
 import { useQueryClient } from "@tanstack/react-query"
 import Link from "next/link"
 import { useSheetStack, useToast } from "@prv/ui"
@@ -300,12 +301,11 @@ export function ToolListClient() {
       )
     )
       .then((results) => {
-        const ok = results.filter((r) => r.status === "fulfilled").length
-        const failed = results.length - ok
+        const { ok, failed, kind } = summarizeSettled(results)
         void queryClient.invalidateQueries({ queryKey: ["tools"] })
         void queryClient.invalidateQueries({ queryKey: ["tool-inventory"] })
-        if (failed === 0) toast.success(`${ok} sent to service`)
-        else if (ok === 0) toast.error("Couldn't send to service", "Please try again.")
+        if (kind === "success") toast.success(`${ok} sent to service`)
+        else if (kind === "error") toast.error("Couldn't send to service", "Please try again.")
         else toast.warning(`${ok} sent to service`, `${failed} could not be processed.`)
         exitSelect()
       })

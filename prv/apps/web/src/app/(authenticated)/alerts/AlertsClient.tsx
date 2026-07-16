@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useCallback } from "react"
+import { summarizeSettled } from "@/lib/bulk"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { useToast } from "@prv/ui"
 import Link from "next/link"
@@ -613,12 +614,11 @@ export function AlertsClient() {
         )
       )
         .then((results) => {
-          const ok = results.filter((r) => r.status === "fulfilled").length
-          const failed = results.length - ok
+          const { ok, failed, kind } = summarizeSettled(results)
           void queryClient.invalidateQueries({ queryKey: ["alerts"] })
           const verb = action === "acknowledge" ? "acknowledged" : "resolved"
-          if (failed === 0) toast.success(`${ok} ${verb}`)
-          else if (ok === 0) toast.error(`Couldn't ${action} alerts`, "Please try again.")
+          if (kind === "success") toast.success(`${ok} ${verb}`)
+          else if (kind === "error") toast.error(`Couldn't ${action} alerts`, "Please try again.")
           else toast.warning(`${ok} ${verb}`, `${failed} could not be processed.`)
           exitSelect()
         })
