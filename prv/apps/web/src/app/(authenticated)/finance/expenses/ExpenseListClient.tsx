@@ -1,7 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useState, type CSSProperties } from "react"
 import Link from "next/link"
+import { useQueryClient } from "@tanstack/react-query"
+import { useToast } from "@prv/ui"
 import type { Expense, ExpenseCategory, ExpenseStatus } from "@/app/api/finance/expenses/route"
 import { useExpenses } from "@/lib/api-hooks"
 
@@ -192,38 +194,35 @@ function Skeleton() {
 
 // ── Expense card ──────────────────────────────────────────────────────────────
 
-function ExpenseCard({ expense }: { expense: Expense }) {
+function ExpenseCard({
+  expense,
+  selectMode = false,
+  selected = false,
+  onToggle,
+}: {
+  expense: Expense
+  selectMode?: boolean
+  selected?: boolean
+  onToggle?: (id: string) => void
+}) {
   const cfg = STATUS_CONFIG[expense.status]
   const isPending = expense.status === "pending"
+  const selectable = selectMode && isPending
 
-  return (
-    <Link
-      href={`/finance/expenses/${expense.id}`}
-      style={{
-        display: "block",
-        background: "var(--prv-g1)",
-        border: "1px solid var(--prv-border-subtle)",
-        borderRadius: 16,
-        padding: "12px 14px",
-        position: "relative",
-        overflow: "hidden",
-        textDecoration: "none",
-        marginBottom: 8,
-      }}
-    >
-      {isPending && (
-        <div
-          style={{
-            position: "absolute",
-            left: 0,
-            top: 0,
-            bottom: 0,
-            width: 3,
-            background: "linear-gradient(180deg,#ffaa00,#ffcc44)",
-            borderRadius: "16px 0 0 16px",
-          }}
-        />
-      )}
+  const cardStyle: CSSProperties = {
+    display: "block",
+    background: "var(--prv-g1)",
+    border: `1px solid ${selected ? "rgba(255,255,255,0.5)" : "var(--prv-border-subtle)"}`,
+    borderRadius: 16,
+    padding: "12px 14px",
+    position: "relative",
+    overflow: "hidden",
+    textDecoration: "none",
+    marginBottom: 8,
+  }
+
+  const rows = (
+    <>
       <div
         style={{
           paddingLeft: isPending ? 4 : 0,
@@ -320,6 +319,74 @@ function ExpenseCard({ expense }: { expense: Expense }) {
           <IconChevronRight />
         </span>
       </div>
+    </>
+  )
+
+  const checkbox = (
+    <span
+      style={{
+        width: 22,
+        height: 22,
+        borderRadius: 7,
+        flexShrink: 0,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        border: selected ? "2px solid transparent" : "2px solid rgba(255,255,255,0.3)",
+        background: selected ? "rgba(255,255,255,0.95)" : "transparent",
+        color: "#000",
+        fontSize: 13,
+        fontWeight: 800,
+      }}
+    >
+      {selected ? "\u2713" : ""}
+    </span>
+  )
+
+  const inner = selectMode ? (
+    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+      {checkbox}
+      <div style={{ flex: 1, minWidth: 0 }}>{rows}</div>
+    </div>
+  ) : (
+    rows
+  )
+
+  if (selectMode) {
+    return (
+      <button
+        type="button"
+        onClick={() => selectable && onToggle?.(expense.id)}
+        disabled={!selectable}
+        style={{
+          ...cardStyle,
+          width: "100%",
+          textAlign: "left",
+          cursor: selectable ? "pointer" : "default",
+          opacity: selectable ? 1 : 0.4,
+        }}
+      >
+        {inner}
+      </button>
+    )
+  }
+
+  return (
+    <Link href={`/finance/expenses/${expense.id}`} style={cardStyle}>
+      {isPending && (
+        <div
+          style={{
+            position: "absolute",
+            left: 0,
+            top: 0,
+            bottom: 0,
+            width: 3,
+            background: "linear-gradient(180deg,#ffaa00,#ffcc44)",
+            borderRadius: "16px 0 0 16px",
+          }}
+        />
+      )}
+      {inner}
     </Link>
   )
 }
@@ -329,7 +396,57 @@ function ExpenseCard({ expense }: { expense: Expense }) {
 export function ExpenseListClient() {
   const [filter, setFilter] = useState<FilterId>("all")
   const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useExpenses()
+  const queryClient = useQueryClient()
+  const { toast } = useToast()
+  const [selectMode, setSelectMode] = useState(false)
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [bulkBusy, setBulkBusy] = useState(false)
   const expenses = data?.expenses ?? []
+
+  const toggleSelect = (id: string) =>
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+
+  const exitSelect = () => {
+    setSelectMode(false)
+    setSelected(new Set())
+  }
+
+  const bulkDecision = (status: "approved" | "rejected") => {
+    const ids = [...selected]
+    if (ids.length === 0) return
+    setBulkBusy(true)
+    Promise.all(
+      ids.map((rid) =>
+        fetch(`/api/finance/expenses/${rid}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status }),
+        })
+          .then((r) => ({ rid, ok: r.ok }))
+          .catch(() => ({ rid, ok: false }))
+      )
+    )
+      .then((outcomes) => {
+        const failed = outcomes.filter((o) => !o.ok).length
+        const ok = outcomes.length - failed
+        void queryClient.invalidateQueries({ queryKey: ["expenses"] })
+        const verb = status === "approved" ? "approved" : "rejected"
+        if (failed === 0) toast.success(`${ok} ${verb}`)
+        else if (ok === 0)
+          toast.error(
+            `Couldn't ${status === "approved" ? "approve" : "reject"} expenses`,
+            "Please try again."
+          )
+        else toast.warning(`${ok} ${verb}`, `${failed} could not be processed.`)
+        exitSelect()
+      })
+      .finally(() => setBulkBusy(false))
+  }
 
   if (isLoading) return <Skeleton />
 
@@ -367,22 +484,42 @@ export function ExpenseListClient() {
             Cheltuieli
           </h1>
         </div>
-        <Link
-          href="/finance/expenses/new"
-          style={{
-            width: 32,
-            height: 32,
-            background: "rgba(255,255,255,0.92)",
-            borderRadius: 100,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            color: "#000",
-            textDecoration: "none",
-          }}
-        >
-          <IconPlus />
-        </Link>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          {pending.length > 0 && (
+            <button
+              type="button"
+              onClick={() => (selectMode ? exitSelect() : setSelectMode(true))}
+              style={{
+                fontSize: 13,
+                fontWeight: 600,
+                padding: "6px 13px",
+                borderRadius: 100,
+                background: "rgba(255,255,255,0.08)",
+                border: "1px solid rgba(255,255,255,0.14)",
+                color: "rgba(255,255,255,0.8)",
+                cursor: "pointer",
+              }}
+            >
+              {selectMode ? "Cancel" : "Select"}
+            </button>
+          )}
+          <Link
+            href="/finance/expenses/new"
+            style={{
+              width: 32,
+              height: 32,
+              background: "rgba(255,255,255,0.92)",
+              borderRadius: 100,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#000",
+              textDecoration: "none",
+            }}
+          >
+            <IconPlus />
+          </Link>
+        </div>
       </div>
 
       {/* KPI strip */}
@@ -529,7 +666,15 @@ export function ExpenseListClient() {
             No expenses found
           </div>
         ) : (
-          visible.map((e) => <ExpenseCard key={e.id} expense={e} />)
+          visible.map((e) => (
+            <ExpenseCard
+              key={e.id}
+              expense={e}
+              selectMode={selectMode}
+              selected={selected.has(e.id)}
+              onToggle={toggleSelect}
+            />
+          ))
         )}
         {hasNextPage && (
           <button
@@ -552,6 +697,79 @@ export function ExpenseListClient() {
           </button>
         )}
       </div>
+
+      {selectMode && selected.size > 0 && (
+        <div
+          style={{
+            position: "fixed",
+            left: 16,
+            right: 16,
+            bottom: 24,
+            zIndex: 70,
+            display: "flex",
+            gap: 10,
+            padding: 12,
+            borderRadius: 18,
+            background: "rgba(28,28,30,0.82)",
+            backdropFilter: "blur(32px) saturate(180%)",
+            WebkitBackdropFilter: "blur(32px) saturate(180%)",
+            border: "1px solid rgba(255,255,255,0.14)",
+            boxShadow: "0 12px 40px rgba(0,0,0,0.6)",
+            maxWidth: 620,
+            margin: "0 auto",
+          }}
+        >
+          <span
+            style={{
+              flex: 1,
+              display: "flex",
+              alignItems: "center",
+              paddingLeft: 8,
+              fontSize: 14,
+              fontWeight: 600,
+              color: "rgba(255,255,255,0.75)",
+            }}
+          >
+            {selected.size} selected
+          </span>
+          <button
+            type="button"
+            disabled={bulkBusy}
+            onClick={() => bulkDecision("rejected")}
+            style={{
+              padding: "12px 18px",
+              borderRadius: 12,
+              background: "rgba(255,69,58,0.15)",
+              border: "1px solid rgba(255,69,58,0.28)",
+              color: "rgba(255,69,58,0.95)",
+              fontSize: 13.5,
+              fontWeight: 700,
+              cursor: bulkBusy ? "default" : "pointer",
+              opacity: bulkBusy ? 0.6 : 1,
+            }}
+          >
+            Reject
+          </button>
+          <button
+            type="button"
+            disabled={bulkBusy}
+            onClick={() => bulkDecision("approved")}
+            style={{
+              padding: "12px 22px",
+              borderRadius: 12,
+              background: "#fff",
+              border: "none",
+              color: "#000",
+              fontSize: 13.5,
+              fontWeight: 700,
+              cursor: bulkBusy ? "default" : "pointer",
+              opacity: bulkBusy ? 0.6 : 1,
+            }}
+          >
+            {bulkBusy ? "Working\u2026" : "Approve"}
+          </button>
+        </div>
+      )}
     </div>
   )
 }
