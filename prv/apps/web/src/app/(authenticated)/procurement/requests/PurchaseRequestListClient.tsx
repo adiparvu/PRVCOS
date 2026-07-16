@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useQueryClient } from "@tanstack/react-query"
-import { useSheetStack } from "@prv/ui"
+import { useSheetStack, useToast } from "@prv/ui"
 import { usePurchaseRequests } from "@/lib/api-hooks"
 import type { PurchaseRequest } from "@/lib/api-hooks"
 
@@ -389,13 +389,58 @@ export function PurchaseRequestListClient() {
   const router = useRouter()
   const queryClient = useQueryClient()
   const { openSheet } = useSheetStack()
+  const { toast } = useToast()
   const [filter, setFilter] = useState<FilterTab>("All")
+  const [selectMode, setSelectMode] = useState(false)
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [bulkBusy, setBulkBusy] = useState(false)
 
   const statusParam = filter === "All" ? null : filter.toLowerCase()
   const { data, isLoading, fetchNextPage, hasNextPage } = usePurchaseRequests(statusParam)
 
   const requests = data?.requests ?? []
   const meta = data?.meta
+  const hasSubmitted = requests.some((r) => r.status === "submitted")
+
+  const toggleSelect = (id: string) =>
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+
+  const exitSelect = () => {
+    setSelectMode(false)
+    setSelected(new Set())
+  }
+
+  const bulkApprove = () => {
+    const ids = [...selected]
+    if (ids.length === 0) return
+    setBulkBusy(true)
+    Promise.all(
+      ids.map((rid) =>
+        fetch(`/api/procurement/requests/${rid}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "approve" }),
+        })
+          .then((r) => ({ rid, ok: r.ok }))
+          .catch(() => ({ rid, ok: false }))
+      )
+    )
+      .then((outcomes) => {
+        const failed = outcomes.filter((o) => !o.ok).length
+        const ok = outcomes.length - failed
+        void queryClient.invalidateQueries({ queryKey: ["purchase-requests"] })
+        if (failed === 0) toast.success(`${ok} approved`)
+        else if (ok === 0) toast.error("Couldn't approve requests", "Please try again.")
+        else toast.warning(`${ok} approved`, `${failed} could not be processed.`)
+        exitSelect()
+      })
+      .finally(() => setBulkBusy(false))
+  }
 
   function handleNewPR() {
     openSheet({
@@ -423,15 +468,44 @@ export function PurchaseRequestListClient() {
       }}
     >
       {/* Header */}
-      <div style={{ marginBottom: 20 }}>
-        <h1
-          style={{ fontSize: 28, fontWeight: 700, color: "var(--prv-text-1)", margin: "0 0 4px" }}
-        >
-          Purchase Requests
-        </h1>
-        <p style={{ fontSize: 14, color: "var(--prv-text-3)", margin: 0 }}>
-          Procurement approval workflow
-        </p>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "flex-start",
+          justifyContent: "space-between",
+          gap: 12,
+          marginBottom: 20,
+        }}
+      >
+        <div>
+          <h1
+            style={{ fontSize: 28, fontWeight: 700, color: "var(--prv-text-1)", margin: "0 0 4px" }}
+          >
+            Purchase Requests
+          </h1>
+          <p style={{ fontSize: 14, color: "var(--prv-text-3)", margin: 0 }}>
+            Procurement approval workflow
+          </p>
+        </div>
+        {hasSubmitted && (
+          <button
+            type="button"
+            onClick={() => (selectMode ? exitSelect() : setSelectMode(true))}
+            style={{
+              fontSize: 13,
+              fontWeight: 600,
+              padding: "7px 14px",
+              borderRadius: 100,
+              background: "rgba(255,255,255,0.08)",
+              border: "1px solid rgba(255,255,255,0.14)",
+              color: "rgba(255,255,255,0.8)",
+              cursor: "pointer",
+              flexShrink: 0,
+            }}
+          >
+            {selectMode ? "Cancel" : "Select"}
+          </button>
+        )}
       </div>
 
       {/* Meta strip */}
@@ -566,17 +640,25 @@ export function PurchaseRequestListClient() {
           {requests.map((pr) => {
             const sc = STATUS_CONFIG[pr.status]
             const urg = URGENCY_CONFIG[pr.urgency]
+            const selectable = selectMode && pr.status === "submitted"
+            const isSelected = selected.has(pr.id)
             return (
               <button
                 key={pr.id}
-                onClick={() => router.push(`/procurement/requests/${pr.id}`)}
+                onClick={
+                  selectMode
+                    ? () => selectable && toggleSelect(pr.id)
+                    : () => router.push(`/procurement/requests/${pr.id}`)
+                }
+                disabled={selectMode && !selectable}
                 style={{
                   background: "var(--prv-g1)",
-                  border: "1px solid var(--prv-border-subtle)",
+                  border: `1px solid ${isSelected ? "rgba(255,255,255,0.5)" : "var(--prv-border-subtle)"}`,
                   borderRadius: 18,
                   padding: 16,
                   textAlign: "left",
-                  cursor: "pointer",
+                  cursor: selectMode ? (selectable ? "pointer" : "default") : "pointer",
+                  opacity: selectMode && !selectable ? 0.4 : 1,
                   position: "relative",
                   overflow: "hidden",
                   width: "100%",
@@ -598,6 +680,30 @@ export function PurchaseRequestListClient() {
                     marginBottom: 8,
                   }}
                 >
+                  {selectMode && (
+                    <span
+                      style={{
+                        width: 22,
+                        height: 22,
+                        borderRadius: 7,
+                        flexShrink: 0,
+                        marginRight: 10,
+                        marginTop: 2,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        border: isSelected
+                          ? "2px solid transparent"
+                          : "2px solid rgba(255,255,255,0.3)",
+                        background: isSelected ? "rgba(255,255,255,0.95)" : "transparent",
+                        color: "#000",
+                        fontSize: 13,
+                        fontWeight: 800,
+                      }}
+                    >
+                      {isSelected ? "\u2713" : ""}
+                    </span>
+                  )}
                   <div style={{ flex: 1, marginRight: 10 }}>
                     <p
                       style={{
@@ -714,6 +820,61 @@ export function PurchaseRequestListClient() {
               Load more
             </button>
           )}
+        </div>
+      )}
+
+      {selectMode && selected.size > 0 && (
+        <div
+          style={{
+            position: "fixed",
+            left: 16,
+            right: 16,
+            bottom: 24,
+            zIndex: 70,
+            display: "flex",
+            gap: 10,
+            padding: 12,
+            borderRadius: 18,
+            background: "rgba(28,28,30,0.82)",
+            backdropFilter: "blur(32px) saturate(180%)",
+            WebkitBackdropFilter: "blur(32px) saturate(180%)",
+            border: "1px solid rgba(255,255,255,0.14)",
+            boxShadow: "0 12px 40px rgba(0,0,0,0.6)",
+            maxWidth: 620,
+            margin: "0 auto",
+          }}
+        >
+          <span
+            style={{
+              flex: 1,
+              display: "flex",
+              alignItems: "center",
+              paddingLeft: 8,
+              fontSize: 14,
+              fontWeight: 600,
+              color: "rgba(255,255,255,0.75)",
+            }}
+          >
+            {selected.size} selected
+          </span>
+          <button
+            type="button"
+            disabled={bulkBusy}
+            onClick={bulkApprove}
+            style={{
+              padding: "12px 22px",
+              borderRadius: 12,
+              background: "#fff",
+              border: "none",
+              color: "#000",
+              fontSize: 13.5,
+              fontWeight: 700,
+              cursor: bulkBusy ? "default" : "pointer",
+              opacity: bulkBusy ? 0.6 : 1,
+            }}
+          >
+            {bulkBusy ? "Working\u2026" : "Approve"}
+          </button>
         </div>
       )}
 
