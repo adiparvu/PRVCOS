@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { useSheetStack, useToast } from "@prv/ui"
 import type { TimeOffRequest } from "@/app/api/people/time-off/route"
 import { useTimeOffRequests } from "@/lib/api-hooks"
+import { summarizeBulk } from "@/lib/bulk"
 
 interface TimeOffClientProps {
   role: string
@@ -83,7 +84,6 @@ export function TimeOffClient({ role: _role }: TimeOffClientProps) {
     )
       .then((outcomes) => {
         const failedIds = outcomes.filter((o) => !o.ok).map((o) => o.rid)
-        const ok = outcomes.length - failedIds.length
         if (failedIds.length > 0) {
           setDismissed((prev) => {
             const next = new Set(prev)
@@ -91,10 +91,11 @@ export function TimeOffClient({ role: _role }: TimeOffClientProps) {
             return next
           })
         }
+        const { ok, failed, kind } = summarizeBulk(outcomes)
         const verb = action === "approve" ? "approved" : "declined"
-        if (failedIds.length === 0) toast.success(`${ok} ${verb}`)
-        else if (ok === 0) toast.error(`Couldn't ${action} requests`, "Please try again.")
-        else toast.warning(`${ok} ${verb}`, `${failedIds.length} could not be processed.`)
+        if (kind === "success") toast.success(`${ok} ${verb}`)
+        else if (kind === "error") toast.error(`Couldn't ${action} requests`, "Please try again.")
+        else toast.warning(`${ok} ${verb}`, `${failed} could not be processed.`)
         exitSelect()
       })
       .finally(() => setBulkBusy(false))

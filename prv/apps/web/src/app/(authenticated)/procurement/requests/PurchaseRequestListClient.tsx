@@ -6,6 +6,7 @@ import { useQueryClient } from "@tanstack/react-query"
 import { useSheetStack, useToast } from "@prv/ui"
 import { usePurchaseRequests } from "@/lib/api-hooks"
 import type { PurchaseRequest } from "@/lib/api-hooks"
+import { summarizeBulk } from "@/lib/bulk"
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
@@ -431,11 +432,10 @@ export function PurchaseRequestListClient() {
       )
     )
       .then((outcomes) => {
-        const failed = outcomes.filter((o) => !o.ok).length
-        const ok = outcomes.length - failed
+        const { ok, failed, kind } = summarizeBulk(outcomes)
         void queryClient.invalidateQueries({ queryKey: ["purchase-requests"] })
-        if (failed === 0) toast.success(`${ok} approved`)
-        else if (ok === 0) toast.error("Couldn't approve requests", "Please try again.")
+        if (kind === "success") toast.success(`${ok} approved`)
+        else if (kind === "error") toast.error("Couldn't approve requests", "Please try again.")
         else toast.warning(`${ok} approved`, `${failed} could not be processed.`)
         exitSelect()
       })

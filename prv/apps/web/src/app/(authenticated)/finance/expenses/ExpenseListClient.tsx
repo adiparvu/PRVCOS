@@ -6,6 +6,7 @@ import { useQueryClient } from "@tanstack/react-query"
 import { useToast } from "@prv/ui"
 import type { Expense, ExpenseCategory, ExpenseStatus } from "@/app/api/finance/expenses/route"
 import { useExpenses } from "@/lib/api-hooks"
+import { summarizeBulk } from "@/lib/bulk"
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
@@ -432,12 +433,11 @@ export function ExpenseListClient() {
       )
     )
       .then((outcomes) => {
-        const failed = outcomes.filter((o) => !o.ok).length
-        const ok = outcomes.length - failed
+        const { ok, failed, kind } = summarizeBulk(outcomes)
         void queryClient.invalidateQueries({ queryKey: ["expenses"] })
         const verb = status === "approved" ? "approved" : "rejected"
-        if (failed === 0) toast.success(`${ok} ${verb}`)
-        else if (ok === 0)
+        if (kind === "success") toast.success(`${ok} ${verb}`)
+        else if (kind === "error")
           toast.error(
             `Couldn't ${status === "approved" ? "approve" : "reject"} expenses`,
             "Please try again."
