@@ -364,6 +364,423 @@ function AssignDriverForm({
   )
 }
 
+function StartTripForm({
+  onSubmit,
+  onCancel,
+  pending,
+  defaultOdometer,
+}: {
+  onSubmit: (p: {
+    driverId?: string
+    purpose?: string
+    startOdometerKm?: number
+    notes?: string
+  }) => void
+  onCancel: () => void
+  pending: boolean
+  defaultOdometer: number
+}) {
+  const [userId, setUserId] = useState("")
+  const [purpose, setPurpose] = useState("")
+  const [odo, setOdo] = useState(String(defaultOdometer))
+  const [notes, setNotes] = useState("")
+  const { data: peopleData } = useQuery<{
+    members: { id: string; firstName: string; lastName: string; role: string }[]
+  }>({
+    queryKey: ["people", "picker"],
+    queryFn: () => fetch("/api/people?limit=200").then((r) => r.json()),
+  })
+  const people = peopleData?.members ?? []
+  const inputStyle: React.CSSProperties = {
+    width: "100%",
+    boxSizing: "border-box",
+    background: "rgba(255,255,255,0.04)",
+    border: "1px solid rgba(255,255,255,0.12)",
+    borderRadius: 12,
+    padding: 12,
+    color: "rgba(255,255,255,0.92)",
+    fontSize: 13.5,
+    fontFamily: "inherit",
+  }
+  const labelStyle: React.CSSProperties = {
+    fontSize: 11,
+    textTransform: "uppercase",
+    letterSpacing: "0.06em",
+    color: "var(--prv-text-3)",
+    fontWeight: 600,
+    display: "block",
+    marginBottom: 6,
+  }
+  return (
+    <div style={{ padding: "12px 16px 40px", display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={{ fontSize: 12, color: "var(--prv-text-3)", lineHeight: 1.5, padding: "0 2px" }}>
+        Start a journey. The vehicle stays in use until the trip is completed.
+      </div>
+      <div>
+        <span style={labelStyle}>Driver</span>
+        <select value={userId} onChange={(e) => setUserId(e.target.value)} style={inputStyle}>
+          <option value="">Unassigned</option>
+          {people.map((m) => (
+            <option key={m.id} value={m.id}>
+              {m.firstName} {m.lastName} · {m.role}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div>
+        <span style={labelStyle}>Purpose</span>
+        <input
+          value={purpose}
+          onChange={(e) => setPurpose(e.target.value)}
+          placeholder="Delivery, site visit…"
+          style={inputStyle}
+        />
+      </div>
+      <div>
+        <span style={labelStyle}>Start odometer (km)</span>
+        <input
+          inputMode="numeric"
+          value={odo}
+          onChange={(e) => setOdo(e.target.value.replace(/[^0-9]/g, ""))}
+          style={inputStyle}
+        />
+      </div>
+      <div>
+        <span style={labelStyle}>Notes</span>
+        <textarea
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          style={{ ...inputStyle, minHeight: 56, resize: "vertical", lineHeight: 1.5 }}
+        />
+      </div>
+      <div style={{ display: "flex", gap: 8 }}>
+        <button
+          type="button"
+          disabled={pending}
+          onClick={() =>
+            onSubmit({
+              driverId: userId || undefined,
+              purpose: purpose.trim() || undefined,
+              startOdometerKm: odo.trim() !== "" ? Number(odo) : undefined,
+              notes: notes.trim() || undefined,
+            })
+          }
+          style={{
+            flex: 1,
+            padding: "10px 18px",
+            background: "rgba(10,132,255,0.9)",
+            border: 0,
+            borderRadius: 10,
+            color: "#fff",
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: pending ? "default" : "pointer",
+            opacity: pending ? 0.6 : 1,
+          }}
+        >
+          Start trip
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          style={{
+            padding: "10px 18px",
+            background: "rgba(255,255,255,0.07)",
+            border: "1px solid rgba(255,255,255,0.12)",
+            borderRadius: 10,
+            color: "rgba(255,255,255,0.75)",
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: "pointer",
+          }}
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function CompleteTripForm({
+  onSubmit,
+  onCancel,
+  pending,
+  startOdometer,
+}: {
+  onSubmit: (p: { endOdometerKm: number; fuelCost?: number; notes?: string }) => void
+  onCancel: () => void
+  pending: boolean
+  startOdometer: number
+}) {
+  const [odo, setOdo] = useState("")
+  const [fuelCost, setFuelCost] = useState("")
+  const [notes, setNotes] = useState("")
+  const endNum = Number(odo)
+  const valid = odo.trim() !== "" && !Number.isNaN(endNum) && endNum >= startOdometer
+  const inputStyle: React.CSSProperties = {
+    width: "100%",
+    boxSizing: "border-box",
+    background: "rgba(255,255,255,0.04)",
+    border: "1px solid rgba(255,255,255,0.12)",
+    borderRadius: 12,
+    padding: 12,
+    color: "rgba(255,255,255,0.92)",
+    fontSize: 13.5,
+    fontFamily: "inherit",
+  }
+  const labelStyle: React.CSSProperties = {
+    fontSize: 11,
+    textTransform: "uppercase",
+    letterSpacing: "0.06em",
+    color: "var(--prv-text-3)",
+    fontWeight: 600,
+    display: "block",
+    marginBottom: 6,
+  }
+  return (
+    <div style={{ padding: "12px 16px 40px", display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={{ fontSize: 12, color: "var(--prv-text-3)", lineHeight: 1.5, padding: "0 2px" }}>
+        Close the trip. Distance is derived from the odometer; start was{" "}
+        {startOdometer.toLocaleString()} km.
+      </div>
+      <div>
+        <span style={labelStyle}>End odometer (km)</span>
+        <input
+          inputMode="numeric"
+          value={odo}
+          onChange={(e) => setOdo(e.target.value.replace(/[^0-9]/g, ""))}
+          style={inputStyle}
+        />
+        {odo.trim() !== "" && !valid && (
+          <p style={{ fontSize: 11, color: "rgba(255,69,58,.9)", margin: "6px 2px 0" }}>
+            Must be at or above the start reading.
+          </p>
+        )}
+      </div>
+      <div>
+        <span style={labelStyle}>Fuel cost (optional)</span>
+        <input
+          inputMode="decimal"
+          value={fuelCost}
+          onChange={(e) => setFuelCost(e.target.value.replace(/[^0-9.]/g, ""))}
+          style={inputStyle}
+        />
+      </div>
+      <div>
+        <span style={labelStyle}>Notes</span>
+        <textarea
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          style={{ ...inputStyle, minHeight: 56, resize: "vertical", lineHeight: 1.5 }}
+        />
+      </div>
+      <div style={{ display: "flex", gap: 8 }}>
+        <button
+          type="button"
+          disabled={pending || !valid}
+          onClick={() =>
+            onSubmit({
+              endOdometerKm: endNum,
+              fuelCost: fuelCost.trim() !== "" ? Number(fuelCost) : undefined,
+              notes: notes.trim() || undefined,
+            })
+          }
+          style={{
+            flex: 1,
+            padding: "10px 18px",
+            background: valid ? "rgba(48,209,88,0.9)" : "rgba(255,255,255,0.07)",
+            border: 0,
+            borderRadius: 10,
+            color: valid ? "#fff" : "rgba(255,255,255,0.4)",
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: pending || !valid ? "default" : "pointer",
+          }}
+        >
+          Complete trip
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          style={{
+            padding: "10px 18px",
+            background: "rgba(255,255,255,0.07)",
+            border: "1px solid rgba(255,255,255,0.12)",
+            borderRadius: 10,
+            color: "rgba(255,255,255,0.75)",
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: "pointer",
+          }}
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function LogMaintenanceForm({
+  onSubmit,
+  onCancel,
+  pending,
+}: {
+  onSubmit: (p: {
+    type: string
+    status: "scheduled" | "in_progress"
+    provider?: string
+    cost?: number
+    scheduledDate?: string
+    notes?: string
+  }) => void
+  onCancel: () => void
+  pending: boolean
+}) {
+  const [type, setType] = useState("Service")
+  const [inProgress, setInProgress] = useState(false)
+  const [provider, setProvider] = useState("")
+  const [cost, setCost] = useState("")
+  const [scheduledDate, setScheduledDate] = useState("")
+  const [notes, setNotes] = useState("")
+  const inputStyle: React.CSSProperties = {
+    width: "100%",
+    boxSizing: "border-box",
+    background: "rgba(255,255,255,0.04)",
+    border: "1px solid rgba(255,255,255,0.12)",
+    borderRadius: 12,
+    padding: 12,
+    color: "rgba(255,255,255,0.92)",
+    fontSize: 13.5,
+    fontFamily: "inherit",
+  }
+  const labelStyle: React.CSSProperties = {
+    fontSize: 11,
+    textTransform: "uppercase",
+    letterSpacing: "0.06em",
+    color: "var(--prv-text-3)",
+    fontWeight: 600,
+    display: "block",
+    marginBottom: 6,
+  }
+  return (
+    <div style={{ padding: "12px 16px 40px", display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={{ fontSize: 12, color: "var(--prv-text-3)", lineHeight: 1.5, padding: "0 2px" }}>
+        Open a maintenance record. The vehicle goes out of service until the record is closed.
+      </div>
+      <div>
+        <span style={labelStyle}>Type</span>
+        <select value={type} onChange={(e) => setType(e.target.value)} style={inputStyle}>
+          {["Service", "Reparație", "ITP", "Anvelope", "Altele"].map((t) => (
+            <option key={t} value={t}>
+              {t}
+            </option>
+          ))}
+        </select>
+      </div>
+      <label
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+          fontSize: 13.5,
+          color: "var(--prv-text-1)",
+          cursor: "pointer",
+        }}
+      >
+        <input
+          type="checkbox"
+          checked={inProgress}
+          onChange={(e) => setInProgress(e.target.checked)}
+        />
+        Start now (in progress)
+      </label>
+      <div>
+        <span style={labelStyle}>Provider (optional)</span>
+        <input
+          value={provider}
+          onChange={(e) => setProvider(e.target.value)}
+          placeholder="Garage / service"
+          style={inputStyle}
+        />
+      </div>
+      <div style={{ display: "flex", gap: 12 }}>
+        <div style={{ flex: 1 }}>
+          <span style={labelStyle}>Cost (optional)</span>
+          <input
+            inputMode="decimal"
+            value={cost}
+            onChange={(e) => setCost(e.target.value.replace(/[^0-9.]/g, ""))}
+            style={inputStyle}
+          />
+        </div>
+        <div style={{ flex: 1 }}>
+          <span style={labelStyle}>Scheduled date</span>
+          <input
+            type="date"
+            value={scheduledDate}
+            onChange={(e) => setScheduledDate(e.target.value)}
+            style={inputStyle}
+          />
+        </div>
+      </div>
+      <div>
+        <span style={labelStyle}>Notes</span>
+        <textarea
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          style={{ ...inputStyle, minHeight: 56, resize: "vertical", lineHeight: 1.5 }}
+        />
+      </div>
+      <div style={{ display: "flex", gap: 8 }}>
+        <button
+          type="button"
+          disabled={pending}
+          onClick={() =>
+            onSubmit({
+              type,
+              status: inProgress ? "in_progress" : "scheduled",
+              provider: provider.trim() || undefined,
+              cost: cost.trim() !== "" ? Number(cost) : undefined,
+              scheduledDate: scheduledDate || undefined,
+              notes: notes.trim() || undefined,
+            })
+          }
+          style={{
+            flex: 1,
+            padding: "10px 18px",
+            background: "rgba(255,159,10,0.9)",
+            border: 0,
+            borderRadius: 10,
+            color: "#fff",
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: pending ? "default" : "pointer",
+            opacity: pending ? 0.6 : 1,
+          }}
+        >
+          Log maintenance
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          style={{
+            padding: "10px 18px",
+            background: "rgba(255,255,255,0.07)",
+            border: "1px solid rgba(255,255,255,0.12)",
+            borderRadius: 10,
+            color: "rgba(255,255,255,0.75)",
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: "pointer",
+          }}
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export function VehicleDetailClient({ id }: VehicleDetailClientProps) {
   const { data, isError } = useVehicleDetail(id)
   const vehicle = data?.vehicle ?? null
@@ -387,6 +804,140 @@ export function VehicleDetailClient({ id }: VehicleDetailClientProps) {
       void queryClient.invalidateQueries({ queryKey: ["fleet-readiness"] })
     },
   })
+
+  const { data: tripsData } = useQuery<{
+    active: { id: string; startOdometerKm: number } | null
+  }>({
+    queryKey: ["vehicle-trips", id],
+    queryFn: () => fetch(`/api/fleet/${id}/trips`).then((r) => r.json()),
+    enabled: !!vehicle,
+  })
+  const activeTrip = tripsData?.active ?? null
+
+  const invalidateVehicle = () => {
+    void queryClient.invalidateQueries({ queryKey: ["vehicle-detail", id] })
+    void queryClient.invalidateQueries({ queryKey: ["fleet"] })
+    void queryClient.invalidateQueries({ queryKey: ["fleet-readiness"] })
+    void queryClient.invalidateQueries({ queryKey: ["vehicle-trips", id] })
+    void queryClient.invalidateQueries({ queryKey: ["vehicle-maintenance", id] })
+  }
+
+  const startTripMutation = useMutation({
+    mutationFn: (p: {
+      driverId?: string
+      purpose?: string
+      startOdometerKm?: number
+      notes?: string
+    }) =>
+      fetch(`/api/fleet/${id}/trips`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(p),
+      }).then(async (r) => {
+        if (!r.ok) throw new Error("Could not start trip")
+        return r.json()
+      }),
+    onSuccess: invalidateVehicle,
+  })
+
+  const completeTripMutation = useMutation({
+    mutationFn: (vars: {
+      tripId: string
+      endOdometerKm: number
+      fuelCost?: number
+      notes?: string
+    }) =>
+      fetch(`/api/fleet/${id}/trips/${vars.tripId}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          action: "complete",
+          endOdometerKm: vars.endOdometerKm,
+          fuelCost: vars.fuelCost,
+          notes: vars.notes,
+        }),
+      }).then(async (r) => {
+        if (!r.ok) throw new Error("Could not complete trip")
+        return r.json()
+      }),
+    onSuccess: invalidateVehicle,
+  })
+
+  const maintenanceMutation = useMutation({
+    mutationFn: (p: {
+      type: string
+      status: "scheduled" | "in_progress"
+      provider?: string
+      cost?: number
+      scheduledDate?: string
+      notes?: string
+    }) =>
+      fetch(`/api/fleet/${id}/maintenance`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(p),
+      }).then(async (r) => {
+        if (!r.ok) throw new Error("Could not log maintenance")
+        return r.json()
+      }),
+    onSuccess: invalidateVehicle,
+  })
+
+  const openStartTrip = () => {
+    openSheet({
+      snapPoints: ["mid", "full"],
+      defaultSnap: "mid",
+      title: "Start Trip",
+      render: (onClose) => (
+        <StartTripForm
+          pending={startTripMutation.isPending}
+          defaultOdometer={vehicle?.odometer ?? 0}
+          onCancel={onClose}
+          onSubmit={(p) => {
+            startTripMutation.mutate(p)
+            onClose()
+          }}
+        />
+      ),
+    })
+  }
+
+  const openCompleteTrip = (tripId: string, startOdometer: number) => {
+    openSheet({
+      snapPoints: ["mid", "full"],
+      defaultSnap: "mid",
+      title: "Complete Trip",
+      render: (onClose) => (
+        <CompleteTripForm
+          pending={completeTripMutation.isPending}
+          startOdometer={startOdometer}
+          onCancel={onClose}
+          onSubmit={(p) => {
+            completeTripMutation.mutate({ tripId, ...p })
+            onClose()
+          }}
+        />
+      ),
+    })
+  }
+
+  const openLogMaintenance = () => {
+    openSheet({
+      snapPoints: ["mid", "full"],
+      defaultSnap: "mid",
+      title: "Log Maintenance",
+      render: (onClose) => (
+        <LogMaintenanceForm
+          pending={maintenanceMutation.isPending}
+          onCancel={onClose}
+          onSubmit={(p) => {
+            maintenanceMutation.mutate(p)
+            onClose()
+          }}
+        />
+      ),
+    })
+  }
 
   const openAssignDriver = () => {
     openSheet({
@@ -442,6 +993,80 @@ export function VehicleDetailClient({ id }: VehicleDetailClientProps) {
           <div
             style={{ padding: "8px 16px 40px", display: "flex", flexDirection: "column", gap: 10 }}
           >
+            {activeTrip ? (
+              <SheetBtn
+                color="green"
+                icon={
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="rgba(48,209,88,.9)"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M9 11l3 3L22 4" />
+                    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                  </svg>
+                }
+                label="Complete Trip"
+                sub="Close the trip in progress"
+                onClick={() => {
+                  onClose()
+                  openCompleteTrip(activeTrip.id, activeTrip.startOdometerKm)
+                }}
+              />
+            ) : (
+              <SheetBtn
+                color="blue"
+                icon={
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="rgba(10,132,255,.9)"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <line x1="22" y1="2" x2="11" y2="13" />
+                    <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                  </svg>
+                }
+                label="Start Trip"
+                sub="Log a new journey"
+                onClick={() => {
+                  onClose()
+                  openStartTrip()
+                }}
+              />
+            )}
+            <SheetBtn
+              color="amber"
+              icon={
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="rgba(255,159,10,.9)"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+                </svg>
+              }
+              label="Log Maintenance"
+              sub="Record a service with cost & provider"
+              onClick={() => {
+                onClose()
+                openLogMaintenance()
+              }}
+            />
             <SheetBtn
               color="amber"
               icon={
