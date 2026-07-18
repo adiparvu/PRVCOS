@@ -573,6 +573,168 @@ function ReturnForm({
   )
 }
 
+function ToolMaintenanceForm({
+  onSubmit,
+  onCancel,
+  pending,
+}: {
+  onSubmit: (p: {
+    type: string
+    status: "scheduled" | "in_progress"
+    description?: string
+    provider?: string
+    cost?: number
+    scheduledDate?: string
+    notes?: string
+  }) => void
+  onCancel: () => void
+  pending: boolean
+}) {
+  const [type, setType] = useState("Service")
+  const [inProgress, setInProgress] = useState(false)
+  const [provider, setProvider] = useState("")
+  const [cost, setCost] = useState("")
+  const [scheduledDate, setScheduledDate] = useState("")
+  const [notes, setNotes] = useState("")
+  const inputStyle: React.CSSProperties = {
+    width: "100%",
+    boxSizing: "border-box",
+    background: "rgba(255,255,255,0.04)",
+    border: "1px solid rgba(255,255,255,0.12)",
+    borderRadius: 12,
+    padding: 12,
+    color: "rgba(255,255,255,0.92)",
+    fontSize: 13.5,
+    fontFamily: "inherit",
+  }
+  const labelStyle: React.CSSProperties = {
+    fontSize: 11,
+    textTransform: "uppercase",
+    letterSpacing: "0.06em",
+    color: "var(--prv-text-3)",
+    fontWeight: 600,
+    display: "block",
+    marginBottom: 6,
+  }
+  return (
+    <div style={{ padding: "12px 16px 40px", display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={{ fontSize: 12, color: "var(--prv-text-3)", lineHeight: 1.5, padding: "0 2px" }}>
+        Open a maintenance record. The tool goes out of service until the record is closed.
+      </div>
+      <div>
+        <span style={labelStyle}>Type</span>
+        <select value={type} onChange={(e) => setType(e.target.value)} style={inputStyle}>
+          {["Service", "Reparație", "Calibrare", "Inspecție", "Altele"].map((t) => (
+            <option key={t} value={t}>
+              {t}
+            </option>
+          ))}
+        </select>
+      </div>
+      <label
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+          fontSize: 13.5,
+          color: "var(--prv-text-1)",
+          cursor: "pointer",
+        }}
+      >
+        <input
+          type="checkbox"
+          checked={inProgress}
+          onChange={(e) => setInProgress(e.target.checked)}
+        />
+        Start now (in progress)
+      </label>
+      <div>
+        <span style={labelStyle}>Provider (optional)</span>
+        <input
+          value={provider}
+          onChange={(e) => setProvider(e.target.value)}
+          placeholder="Service / workshop"
+          style={inputStyle}
+        />
+      </div>
+      <div style={{ display: "flex", gap: 12 }}>
+        <div style={{ flex: 1 }}>
+          <span style={labelStyle}>Cost (optional)</span>
+          <input
+            inputMode="decimal"
+            value={cost}
+            onChange={(e) => setCost(e.target.value.replace(/[^0-9.]/g, ""))}
+            style={inputStyle}
+          />
+        </div>
+        <div style={{ flex: 1 }}>
+          <span style={labelStyle}>Scheduled date</span>
+          <input
+            type="date"
+            value={scheduledDate}
+            onChange={(e) => setScheduledDate(e.target.value)}
+            style={inputStyle}
+          />
+        </div>
+      </div>
+      <div>
+        <span style={labelStyle}>Notes</span>
+        <textarea
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          style={{ ...inputStyle, minHeight: 56, resize: "vertical", lineHeight: 1.5 }}
+        />
+      </div>
+      <div style={{ display: "flex", gap: 8 }}>
+        <button
+          type="button"
+          disabled={pending}
+          onClick={() =>
+            onSubmit({
+              type,
+              status: inProgress ? "in_progress" : "scheduled",
+              provider: provider.trim() || undefined,
+              cost: cost.trim() !== "" ? Number(cost) : undefined,
+              scheduledDate: scheduledDate || undefined,
+              notes: notes.trim() || undefined,
+            })
+          }
+          style={{
+            flex: 1,
+            padding: "10px 18px",
+            background: "rgba(255,159,10,0.9)",
+            border: 0,
+            borderRadius: 10,
+            color: "#fff",
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: pending ? "default" : "pointer",
+            opacity: pending ? 0.6 : 1,
+          }}
+        >
+          Log maintenance
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          style={{
+            padding: "10px 18px",
+            background: "rgba(255,255,255,0.07)",
+            border: "1px solid rgba(255,255,255,0.12)",
+            borderRadius: 10,
+            color: "rgba(255,255,255,0.75)",
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: "pointer",
+          }}
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export function ToolDetailClient({ id }: ToolDetailClientProps) {
   const { data: toolData, isError } = useToolDetail(id)
   const tool = toolData?.tool ?? null
@@ -603,6 +765,7 @@ export function ToolDetailClient({ id }: ToolDetailClientProps) {
     void queryClient.invalidateQueries({ queryKey: ["tools"] })
     void queryClient.invalidateQueries({ queryKey: ["tool-inventory"] })
     void queryClient.invalidateQueries({ queryKey: ["tool-checkouts", id] })
+    void queryClient.invalidateQueries({ queryKey: ["tool-maintenance", id] })
   }
 
   const checkoutMutation = useMutation({
@@ -634,6 +797,45 @@ export function ToolDetailClient({ id }: ToolDetailClientProps) {
       }),
     onSuccess: invalidateTool,
   })
+
+  const maintenanceMutation = useMutation({
+    mutationFn: (p: {
+      type: string
+      status: "scheduled" | "in_progress"
+      description?: string
+      provider?: string
+      cost?: number
+      scheduledDate?: string
+      notes?: string
+    }) =>
+      fetch(`/api/tools/${id}/maintenance`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(p),
+      }).then(async (r) => {
+        if (!r.ok) throw new Error("Could not log maintenance")
+        return r.json()
+      }),
+    onSuccess: invalidateTool,
+  })
+
+  const openLogMaintenance = () => {
+    openSheet({
+      snapPoints: ["mid", "full"],
+      defaultSnap: "mid",
+      title: "Log Maintenance",
+      render: (onClose) => (
+        <ToolMaintenanceForm
+          pending={maintenanceMutation.isPending}
+          onCancel={onClose}
+          onSubmit={(p) => {
+            maintenanceMutation.mutate(p)
+            onClose()
+          }}
+        />
+      ),
+    })
+  }
 
   const openCheckout = () => {
     openSheet({
@@ -808,6 +1010,29 @@ export function ToolDetailClient({ id }: ToolDetailClientProps) {
             onClick={() => {
               toolMutation.mutate({ status: "maintenance", assignedUserId: null })
               onClose()
+            }}
+          />
+          <SheetBtn
+            color="amber"
+            icon={
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="rgba(255,159,10,.9)"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+              </svg>
+            }
+            label="Log Maintenance"
+            sub="Record a service with cost & provider"
+            onClick={() => {
+              onClose()
+              openLogMaintenance()
             }}
           />
           {isInUse && (
