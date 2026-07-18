@@ -165,8 +165,59 @@ export const vehicleDailyLogsRelations = relations(vehicleDailyLogs, ({ one }) =
   recordedBy: one(users, { fields: [vehicleDailyLogs.recordedBy], references: [users.id] }),
 }))
 
-export const toolsRelations = relations(tools, ({ one }) => ({
+export const toolsRelations = relations(tools, ({ one, many }) => ({
   company: one(companies, { fields: [tools.companyId], references: [companies.id] }),
   assignedUser: one(users, { fields: [tools.assignedUserId], references: [users.id] }),
   store: one(stores, { fields: [tools.storeId], references: [stores.id] }),
+  checkouts: many(toolCheckouts),
+}))
+
+// ─── Tool checkouts (custody ledger) ──────────────────────────────────────────
+// One row per checkout session: who took a tool, when it is due back, and — once
+// returned — its condition and any damage. At most one open (unreturned) checkout
+// exists per tool, enforced by a partial unique index (see migration 0045).
+
+export const toolCheckoutStatusEnum = pgEnum("tool_checkout_status", ["open", "returned"])
+
+export const toolCheckouts = pgTable(
+  "tool_checkouts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id, { onDelete: "cascade" }),
+    toolId: uuid("tool_id")
+      .notNull()
+      .references(() => tools.id, { onDelete: "cascade" }),
+    // Custodian — the employee who has the tool while it is out.
+    custodianId: uuid("custodian_id").references(() => users.id, { onDelete: "set null" }),
+    // Actors who performed the checkout / return (audit trail).
+    checkedOutBy: uuid("checked_out_by").references(() => users.id, { onDelete: "set null" }),
+    returnedBy: uuid("returned_by").references(() => users.id, { onDelete: "set null" }),
+
+    status: toolCheckoutStatusEnum("status").notNull().default("open"),
+
+    checkedOutAt: timestamp("checked_out_at", { withTimezone: true }).notNull().defaultNow(),
+    expectedReturnAt: timestamp("expected_return_at", { withTimezone: true }),
+    returnedAt: timestamp("returned_at", { withTimezone: true }),
+
+    checkoutNotes: text("checkout_notes"),
+    returnConditionNotes: text("return_condition_notes"),
+    damageReported: boolean("damage_reported").notNull().default(false),
+    damageNotes: text("damage_notes"),
+
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("tool_checkouts_company_id_idx").on(table.companyId),
+    index("tool_checkouts_tool_id_idx").on(table.toolId),
+    index("tool_checkouts_custodian_id_idx").on(table.custodianId),
+  ]
+)
+
+export const toolCheckoutsRelations = relations(toolCheckouts, ({ one }) => ({
+  company: one(companies, { fields: [toolCheckouts.companyId], references: [companies.id] }),
+  tool: one(tools, { fields: [toolCheckouts.toolId], references: [tools.id] }),
+  custodian: one(users, { fields: [toolCheckouts.custodianId], references: [users.id] }),
 }))
