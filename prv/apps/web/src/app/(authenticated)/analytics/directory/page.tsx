@@ -176,6 +176,11 @@ const GROUPS: Group[] = [
         label: "Tool Inventory",
         description: "Availability, utilization and lost assets.",
       },
+      {
+        href: "/analytics/maintenance-analytics",
+        label: "Maintenance & Trips",
+        description: "Maintenance cost by asset and work type, plus trip distance and fuel.",
+      },
     ],
   },
   {

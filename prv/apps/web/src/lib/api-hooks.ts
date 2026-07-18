@@ -3393,6 +3393,21 @@ export function useFleetUtilization() {
   })
 }
 
+export type { MaintenanceAnalyticsResponse } from "@/app/api/analytics/maintenance-analytics/route"
+
+export function useMaintenanceAnalytics() {
+  return useQuery({
+    queryKey: ["maintenance-analytics"],
+    queryFn: async () => {
+      const res = await fetch("/api/analytics/maintenance-analytics")
+      if (!res.ok) throw new Error("Failed to load maintenance analytics")
+      return res.json() as Promise<
+        import("@/app/api/analytics/maintenance-analytics/route").MaintenanceAnalyticsResponse
+      >
+    },
+  })
+}
+
 export type { SupplierSpendResponse } from "@/app/api/analytics/supplier-spend/route"
 
 export function useSupplierSpend() {
