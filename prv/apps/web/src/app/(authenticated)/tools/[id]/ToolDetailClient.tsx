@@ -321,16 +321,18 @@ function EditToolForm({
   )
 }
 
-function AssignForm({
+function CheckoutForm({
   onSubmit,
   onCancel,
   pending,
 }: {
-  onSubmit: (userId: string) => void
+  onSubmit: (payload: { custodianId: string; expectedReturnAt?: string; notes?: string }) => void
   onCancel: () => void
   pending: boolean
 }) {
   const [userId, setUserId] = useState("")
+  const [dueDate, setDueDate] = useState("")
+  const [checkoutNotes, setCheckoutNotes] = useState("")
   const { data: peopleData } = useQuery<{
     members: { id: string; firstName: string; lastName: string; role: string }[]
   }>({
@@ -341,7 +343,8 @@ function AssignForm({
   return (
     <div style={{ padding: "12px 16px 40px", display: "flex", flexDirection: "column", gap: 12 }}>
       <div style={{ fontSize: 12, color: "var(--prv-text-3)", lineHeight: 1.5, padding: "0 2px" }}>
-        Assign this tool to an employee. It moves to In Use under their name.
+        Check this tool out to an employee — it moves to In Use and is recorded in the custody
+        ledger.
       </div>
       <select
         value={userId}
@@ -365,11 +368,67 @@ function AssignForm({
           </option>
         ))}
       </select>
+      <div>
+        <span
+          style={{
+            fontSize: 11,
+            textTransform: "uppercase",
+            letterSpacing: "0.06em",
+            color: "var(--prv-text-3)",
+            fontWeight: 600,
+            display: "block",
+            marginBottom: 6,
+          }}
+        >
+          Expected return (optional)
+        </span>
+        <input
+          type="date"
+          value={dueDate}
+          onChange={(e) => setDueDate(e.target.value)}
+          style={{
+            width: "100%",
+            boxSizing: "border-box",
+            background: "rgba(255,255,255,0.04)",
+            border: "1px solid rgba(255,255,255,0.12)",
+            borderRadius: 12,
+            padding: 12,
+            color: "rgba(255,255,255,0.92)",
+            fontSize: 13.5,
+            fontFamily: "inherit",
+          }}
+        />
+      </div>
+      <textarea
+        value={checkoutNotes}
+        onChange={(e) => setCheckoutNotes(e.target.value)}
+        placeholder="Checkout notes (optional)…"
+        style={{
+          width: "100%",
+          boxSizing: "border-box",
+          background: "rgba(255,255,255,0.04)",
+          border: "1px solid rgba(255,255,255,0.12)",
+          borderRadius: 12,
+          padding: 12,
+          color: "rgba(255,255,255,0.92)",
+          fontSize: 13.5,
+          fontFamily: "inherit",
+          minHeight: 60,
+          resize: "vertical",
+          lineHeight: 1.5,
+        }}
+      />
       <div style={{ display: "flex", gap: 8 }}>
         <button
           type="button"
           disabled={pending || !userId}
-          onClick={() => onSubmit(userId)}
+          onClick={() =>
+            onSubmit({
+              custodianId: userId,
+              expectedReturnAt: dueDate ? new Date(dueDate).toISOString() : undefined,
+              notes: checkoutNotes.trim() || undefined,
+            })
+          }
           style={{
             padding: "10px 18px",
             background: userId ? "rgba(10,132,255,0.9)" : "rgba(255,255,255,0.07)",
@@ -381,7 +440,117 @@ function AssignForm({
             cursor: pending || !userId ? "default" : "pointer",
           }}
         >
-          Assign tool
+          Check out
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          style={{
+            padding: "10px 18px",
+            background: "rgba(255,255,255,0.07)",
+            border: "1px solid rgba(255,255,255,0.12)",
+            borderRadius: 10,
+            color: "rgba(255,255,255,0.75)",
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: "pointer",
+          }}
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function ReturnForm({
+  onSubmit,
+  onCancel,
+  pending,
+  custodianName,
+}: {
+  onSubmit: (payload: {
+    conditionNotes?: string
+    damageReported: boolean
+    damageNotes?: string
+  }) => void
+  onCancel: () => void
+  pending: boolean
+  custodianName: string | null
+}) {
+  const [conditionNotes, setConditionNotes] = useState("")
+  const [damage, setDamage] = useState(false)
+  const [damageNotes, setDamageNotes] = useState("")
+
+  const inputStyle: React.CSSProperties = {
+    width: "100%",
+    boxSizing: "border-box",
+    background: "rgba(255,255,255,0.04)",
+    border: "1px solid rgba(255,255,255,0.12)",
+    borderRadius: 12,
+    padding: 12,
+    color: "rgba(255,255,255,0.92)",
+    fontSize: 13.5,
+    fontFamily: "inherit",
+  }
+
+  return (
+    <div style={{ padding: "12px 16px 40px", display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={{ fontSize: 12, color: "var(--prv-text-3)", lineHeight: 1.5, padding: "0 2px" }}>
+        Return this tool{custodianName ? ` from ${custodianName}` : ""}. Reporting damage sends it
+        to maintenance instead of back into the pool.
+      </div>
+      <textarea
+        value={conditionNotes}
+        onChange={(e) => setConditionNotes(e.target.value)}
+        placeholder="Condition on return (optional)…"
+        style={{ ...inputStyle, minHeight: 60, resize: "vertical", lineHeight: 1.5 }}
+      />
+      <label
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+          fontSize: 13.5,
+          color: "var(--prv-text-1)",
+          cursor: "pointer",
+        }}
+      >
+        <input type="checkbox" checked={damage} onChange={(e) => setDamage(e.target.checked)} />
+        Report damage (tool → maintenance)
+      </label>
+      {damage && (
+        <textarea
+          value={damageNotes}
+          onChange={(e) => setDamageNotes(e.target.value)}
+          placeholder="Describe the damage…"
+          style={{ ...inputStyle, minHeight: 60, resize: "vertical", lineHeight: 1.5 }}
+        />
+      )}
+      <div style={{ display: "flex", gap: 8 }}>
+        <button
+          type="button"
+          disabled={pending}
+          onClick={() =>
+            onSubmit({
+              conditionNotes: conditionNotes.trim() || undefined,
+              damageReported: damage,
+              damageNotes: damage ? damageNotes.trim() || undefined : undefined,
+            })
+          }
+          style={{
+            padding: "10px 18px",
+            background: damage ? "rgba(255,159,10,0.9)" : "rgba(48,209,88,0.9)",
+            border: 0,
+            borderRadius: 10,
+            color: "#fff",
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: pending ? "default" : "pointer",
+            opacity: pending ? 0.6 : 1,
+          }}
+        >
+          {damage ? "Return as damaged" : "Confirm return"}
         </button>
         <button
           type="button"
@@ -425,20 +594,77 @@ export function ToolDetailClient({ id }: ToolDetailClientProps) {
       void queryClient.invalidateQueries({ queryKey: ["tool-detail", id] })
       void queryClient.invalidateQueries({ queryKey: ["tools"] })
       void queryClient.invalidateQueries({ queryKey: ["tool-inventory"] })
+      void queryClient.invalidateQueries({ queryKey: ["tool-checkouts", id] })
     },
   })
 
-  const openAssign = () => {
+  const invalidateTool = () => {
+    void queryClient.invalidateQueries({ queryKey: ["tool-detail", id] })
+    void queryClient.invalidateQueries({ queryKey: ["tools"] })
+    void queryClient.invalidateQueries({ queryKey: ["tool-inventory"] })
+    void queryClient.invalidateQueries({ queryKey: ["tool-checkouts", id] })
+  }
+
+  const checkoutMutation = useMutation({
+    mutationFn: (payload: { custodianId: string; expectedReturnAt?: string; notes?: string }) =>
+      fetch(`/api/tools/${id}/checkout`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(payload),
+      }).then(async (r) => {
+        if (!r.ok) throw new Error("Checkout failed")
+        return r.json()
+      }),
+    onSuccess: invalidateTool,
+  })
+
+  const returnMutation = useMutation({
+    mutationFn: (payload: {
+      conditionNotes?: string
+      damageReported: boolean
+      damageNotes?: string
+    }) =>
+      fetch(`/api/tools/${id}/return`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(payload),
+      }).then(async (r) => {
+        if (!r.ok) throw new Error("Return failed")
+        return r.json()
+      }),
+    onSuccess: invalidateTool,
+  })
+
+  const openCheckout = () => {
     openSheet({
-      snapPoints: ["mid"],
+      snapPoints: ["mid", "full"],
       defaultSnap: "mid",
-      title: "Assign Tool",
+      title: "Check Out Tool",
       render: (onClose) => (
-        <AssignForm
-          pending={toolMutation.isPending}
+        <CheckoutForm
+          pending={checkoutMutation.isPending}
           onCancel={onClose}
-          onSubmit={(userId) => {
-            toolMutation.mutate({ status: "in_use", assignedUserId: userId })
+          onSubmit={(payload) => {
+            checkoutMutation.mutate(payload)
+            onClose()
+          }}
+        />
+      ),
+    })
+  }
+
+  const openReturn = () => {
+    openSheet({
+      snapPoints: ["mid", "full"],
+      defaultSnap: "mid",
+      title: "Return Tool",
+      render: (onClose) => (
+        <ReturnForm
+          pending={returnMutation.isPending}
+          custodianName={tool?.assignedTo ?? null}
+          onCancel={onClose}
+          onSubmit={(payload) => {
+            returnMutation.mutate(payload)
             onClose()
           }}
         />
@@ -554,11 +780,11 @@ export function ToolDetailClient({ id }: ToolDetailClientProps) {
                 <line x1="20" y1="14" x2="26" y2="14" />
               </svg>
             }
-            label="Assign"
+            label="Check Out"
             sub={isInUse ? `Assigned: ${tool.assignedTo ?? "—"}` : "Assign to an employee"}
             onClick={() => {
               onClose()
-              openAssign()
+              openCheckout()
             }}
           />
           <SheetBtn
@@ -604,8 +830,8 @@ export function ToolDetailClient({ id }: ToolDetailClientProps) {
               label="Mark Returned"
               sub={`Retur de la ${tool.assignedTo ?? "—"}`}
               onClick={() => {
-                toolMutation.mutate({ status: "available", assignedUserId: null })
                 onClose()
+                openReturn()
               }}
             />
           )}

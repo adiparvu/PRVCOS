@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
 import { writeAuditLog } from "@prv/auth"
 import { db } from "@prv/db"
-import { tools, users, stores, auditLogs } from "@prv/db/schema"
+import { tools, toolCheckouts, users, stores, auditLogs } from "@prv/db/schema"
 import { and, count, eq, gte, isNull } from "drizzle-orm"
 import { z } from "zod"
 
@@ -32,7 +32,7 @@ export interface ToolDetail {
   status: string
   assignedTo: string | null
   site: string | null
-  dueBack: null
+  dueBack: string | null
   location: string | null
   notes: string | null
   storeId: string | null
@@ -92,7 +92,7 @@ export const GET = withGates(
     monthStart.setDate(1)
     monthStart.setHours(0, 0, 0, 0)
 
-    const [rows, usageCountRows] = await Promise.all([
+    const [rows, usageCountRows, openCheckoutRows] = await Promise.all([
       db
         .select({
           id: tools.id,
@@ -128,6 +128,12 @@ export const GET = withGates(
             gte(auditLogs.createdAt, monthStart)
           )
         ),
+
+      db
+        .select({ expectedReturnAt: toolCheckouts.expectedReturnAt })
+        .from(toolCheckouts)
+        .where(and(eq(toolCheckouts.toolId, id), eq(toolCheckouts.status, "open")))
+        .limit(1),
     ])
 
     const row = rows[0]
@@ -178,7 +184,10 @@ export const GET = withGates(
       site: row.storeName ?? null,
       notes: row.notes ?? null,
       storeId: row.storeId ?? null,
-      dueBack: null,
+      dueBack: (() => {
+        const d = openCheckoutRows[0]?.expectedReturnAt
+        return d ? fmtDate(d) : null
+      })(),
       location: row.storeName ?? null,
       lastUsed: row.lastServiceAt ? fmtDate(row.lastServiceAt) : null,
       utilisationPct,
