@@ -98,6 +98,7 @@ export * from "./communications"
 export * from "./analytics"
 // Phase 18: Safety Center — incidents, inspections, briefings, training records
 export * from "./safety"
+export * from "./maintenance"
 // Phase 21: Procurement completion — purchase requests, GRNs
 export {
   purchaseRequestStatusEnum,
