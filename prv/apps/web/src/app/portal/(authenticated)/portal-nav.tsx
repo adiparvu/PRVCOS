@@ -13,6 +13,7 @@ const NAV_ITEMS = [
   { href: "/portal/projects", label: "Projects", icon: FolderIcon },
   { href: "/portal/invoices", label: "Invoices", icon: InvoiceIcon },
   { href: "/portal/quotes", label: "Quotes", icon: QuoteIcon },
+  { href: "/portal/contracts", label: "Contracts", icon: ContractIcon },
   { href: "/portal/documents", label: "Documents", icon: DocIcon },
   { href: "/portal/profile", label: "Profile", icon: ProfileIcon },
 ]
@@ -138,6 +139,34 @@ function FolderIcon({ size = 20 }: { size?: number }) {
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <path
         d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+function ContractIcon({ size = 20 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path
+        d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <polyline
+        points="14 2 14 8 20 8"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M8 17c1.5-2 3-2 4 0s2.5 2 4 0"
         stroke="currentColor"
         strokeWidth="1.5"
         strokeLinecap="round"
