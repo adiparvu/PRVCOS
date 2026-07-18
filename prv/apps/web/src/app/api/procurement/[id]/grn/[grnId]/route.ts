@@ -3,7 +3,13 @@ import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
 import { writeAuditLog } from "@prv/auth"
 import { db } from "@prv/db"
-import { goodsReceiptNotes, grnItems, purchaseOrders } from "@prv/db/schema"
+import {
+  goodsReceiptNotes,
+  grnItems,
+  purchaseOrders,
+  purchaseOrderItems,
+  products,
+} from "@prv/db/schema"
 import { and, asc, eq } from "drizzle-orm"
 
 export const dynamic = "force-dynamic"
@@ -141,8 +147,10 @@ export const PATCH = withGates(
         orderedQty: grnItems.orderedQty,
         receivedQty: grnItems.receivedQty,
         condition: grnItems.condition,
+        ref: purchaseOrderItems.ref,
       })
       .from(grnItems)
+      .leftJoin(purchaseOrderItems, eq(grnItems.purchaseOrderItemId, purchaseOrderItems.id))
       .where(eq(grnItems.grnId, grnId))
 
     const matchStatus = computeMatchStatus(items)
@@ -158,6 +166,26 @@ export const PATCH = withGates(
         .update(purchaseOrders)
         .set({ status: "received", updatedAt: new Date() })
         .where(and(eq(purchaseOrders.id, poId), eq(purchaseOrders.companyId, companyId)))
+    }
+
+    // Post received goods to inventory (Phase 21.4): add the received quantity
+    // of each accepted line to the matching product's stock, keyed by SKU (the
+    // PO line ref). Best-effort — lines with no SKU match are left for manual
+    // receiving. Runs once, since a GRN can only be confirmed out of draft.
+    for (const line of items) {
+      if (line.condition !== "good" || !line.ref) continue
+      const qty = Math.round(Number(line.receivedQty))
+      if (!Number.isFinite(qty) || qty <= 0) continue
+      const [product] = await db
+        .select({ id: products.id, stockQuantity: products.stockQuantity })
+        .from(products)
+        .where(and(eq(products.companyId, companyId), eq(products.sku, line.ref)))
+        .limit(1)
+      if (!product) continue
+      await db
+        .update(products)
+        .set({ stockQuantity: product.stockQuantity + qty, updatedAt: new Date() })
+        .where(eq(products.id, product.id))
     }
 
     void writeAuditLog({
