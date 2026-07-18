@@ -7,6 +7,7 @@ import {
   boolean,
   jsonb,
   integer,
+  numeric,
   pgEnum,
   index,
   date,
@@ -15,6 +16,7 @@ import {
 import { relations } from "drizzle-orm"
 import { companies, stores } from "./companies"
 import { users } from "./users"
+import { projects } from "./projects"
 
 // ─── Vehicles ────────────────────────────────────────────────────────────────
 
@@ -157,6 +159,7 @@ export const vehiclesRelations = relations(vehicles, ({ one, many }) => ({
   assignedUser: one(users, { fields: [vehicles.assignedUserId], references: [users.id] }),
   store: one(stores, { fields: [vehicles.storeId], references: [stores.id] }),
   dailyLogs: many(vehicleDailyLogs),
+  trips: many(vehicleTrips),
 }))
 
 export const vehicleDailyLogsRelations = relations(vehicleDailyLogs, ({ one }) => ({
@@ -220,4 +223,59 @@ export const toolCheckoutsRelations = relations(toolCheckouts, ({ one }) => ({
   company: one(companies, { fields: [toolCheckouts.companyId], references: [companies.id] }),
   tool: one(tools, { fields: [toolCheckouts.toolId], references: [tools.id] }),
   custodian: one(users, { fields: [toolCheckouts.custodianId], references: [users.id] }),
+}))
+
+// ─── Vehicle trips ────────────────────────────────────────────────────────────
+// A single vehicle journey: who drove, for what (optionally against a project),
+// with start/end odometer readings from which distance and fuel cost-per-km are
+// derived. Status moves in_progress → completed | cancelled, one way only.
+
+export const vehicleTripStatusEnum = pgEnum("vehicle_trip_status", [
+  "in_progress",
+  "completed",
+  "cancelled",
+])
+
+export const vehicleTrips = pgTable(
+  "vehicle_trips",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id, { onDelete: "cascade" }),
+    vehicleId: uuid("vehicle_id")
+      .notNull()
+      .references(() => vehicles.id, { onDelete: "cascade" }),
+    driverId: uuid("driver_id").references(() => users.id, { onDelete: "set null" }),
+    projectId: uuid("project_id").references(() => projects.id, { onDelete: "set null" }),
+
+    status: vehicleTripStatusEnum("status").notNull().default("in_progress"),
+    purpose: varchar("purpose", { length: 255 }),
+
+    startOdometerKm: integer("start_odometer_km").notNull(),
+    endOdometerKm: integer("end_odometer_km"),
+    distanceKm: integer("distance_km"),
+    fuelCost: numeric("fuel_cost", { precision: 12, scale: 2 }),
+
+    startedAt: timestamp("started_at", { withTimezone: true }).notNull().defaultNow(),
+    endedAt: timestamp("ended_at", { withTimezone: true }),
+
+    notes: text("notes"),
+
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("vehicle_trips_company_id_idx").on(table.companyId),
+    index("vehicle_trips_vehicle_id_idx").on(table.vehicleId),
+    index("vehicle_trips_driver_id_idx").on(table.driverId),
+    index("vehicle_trips_project_id_idx").on(table.projectId),
+  ]
+)
+
+export const vehicleTripsRelations = relations(vehicleTrips, ({ one }) => ({
+  company: one(companies, { fields: [vehicleTrips.companyId], references: [companies.id] }),
+  vehicle: one(vehicles, { fields: [vehicleTrips.vehicleId], references: [vehicles.id] }),
+  driver: one(users, { fields: [vehicleTrips.driverId], references: [users.id] }),
+  project: one(projects, { fields: [vehicleTrips.projectId], references: [projects.id] }),
 }))
