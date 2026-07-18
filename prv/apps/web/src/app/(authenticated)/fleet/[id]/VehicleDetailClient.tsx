@@ -1817,6 +1817,13 @@ export function VehicleDetailClient({ id }: VehicleDetailClientProps) {
             }}
           >
             Curse Recente
+            {" · "}
+            <Link
+              href={`/fleet/${id}/trips`}
+              style={{ color: "var(--prv-text-2)", textDecoration: "none", fontWeight: 600 }}
+            >
+              vezi toate
+            </Link>
           </p>
           <div
             style={{
