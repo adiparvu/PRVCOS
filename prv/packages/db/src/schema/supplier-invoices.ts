@@ -12,7 +12,7 @@ import {
 import { relations } from "drizzle-orm"
 import { companies } from "./companies"
 import { suppliers } from "./suppliers"
-import { purchaseOrders } from "./procurement"
+import { purchaseOrders, goodsReceiptNotes } from "./procurement"
 import { users } from "./users"
 
 // Accounts Payable — supplier invoices (roadmap 11.6). A bill received from a
@@ -37,6 +37,14 @@ export const supplierInvoices = pgTable(
     purchaseOrderId: uuid("purchase_order_id").references(() => purchaseOrders.id, {
       onDelete: "set null",
     }),
+    // 3-way match leg (roadmap 21.4): the receipt this invoice was reconciled
+    // against, the resulting status, and the signed price variance vs the value
+    // of goods actually received.
+    grnId: uuid("grn_id").references(() => goodsReceiptNotes.id, {
+      onDelete: "set null",
+    }),
+    matchStatus: varchar("match_status", { length: 20 }).notNull().default("unmatched"),
+    matchVariance: numeric("match_variance", { precision: 12, scale: 2 }),
 
     invoiceNumber: varchar("invoice_number", { length: 60 }).notNull(),
     status: payableStatusEnum("status").notNull().default("received"),
