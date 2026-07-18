@@ -71,6 +71,13 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }
   Missing: { label: "Missing", color: "rgba(255,69,58,.95)", bg: "rgba(255,69,58,.12)" },
 }
 
+const RECORD_STATUS_STYLE: Record<string, { label: string; color: string; bg: string }> = {
+  scheduled: { label: "Programat", color: "rgba(255,159,10,.95)", bg: "rgba(255,159,10,.13)" },
+  in_progress: { label: "În curs", color: "rgba(10,132,255,.9)", bg: "rgba(10,132,255,.13)" },
+  completed: { label: "Efectuat", color: "rgba(48,209,88,.95)", bg: "rgba(48,209,88,.13)" },
+  cancelled: { label: "Anulat", color: "rgba(255,255,255,.55)", bg: "rgba(255,255,255,.08)" },
+}
+
 // ── Sheet button helper ───────────────────────────────────────────────────────
 
 type SheetColor = "amber" | "blue" | "green" | "red" | "white"
@@ -742,6 +749,20 @@ export function ToolDetailClient({ id }: ToolDetailClientProps) {
   const { openSheet } = useSheetStack()
   const queryClient = useQueryClient()
 
+  const { data: maintData } = useQuery<{
+    records: {
+      id: string
+      type: string
+      status: string
+      provider: string | null
+      cost: number | null
+      scheduledDate: string | null
+    }[]
+  }>({
+    queryKey: ["tool-maintenance", id],
+    queryFn: () => fetch(`/api/tools/${id}/maintenance`).then((r) => r.json()),
+  })
+
   const toolMutation = useMutation({
     mutationFn: (payload: Record<string, unknown>) =>
       fetch(`/api/tools/${id}`, {
@@ -1208,6 +1229,7 @@ export function ToolDetailClient({ id }: ToolDetailClientProps) {
       </div>
     )
 
+  const serviceRecords = maintData?.records ?? []
   const sc = STATUS_CONFIG[tool.status] ?? {
     label: tool.status,
     color: "var(--prv-text-3)",
@@ -1598,6 +1620,87 @@ export function ToolDetailClient({ id }: ToolDetailClientProps) {
           )
         })}
       </div>
+
+      {/* Service records */}
+      {serviceRecords.length > 0 && (
+        <>
+          <p
+            style={{
+              fontSize: 11,
+              fontWeight: 600,
+              color: "var(--prv-text-3)",
+              textTransform: "uppercase",
+              letterSpacing: "0.07em",
+              margin: "0 2px 10px",
+            }}
+          >
+            Service Records
+          </p>
+          <div
+            style={{
+              background: "var(--prv-g1)",
+              border: "1px solid var(--prv-border-subtle)",
+              borderRadius: 18,
+              overflow: "hidden",
+              marginBottom: 14,
+            }}
+          >
+            {serviceRecords.slice(0, 6).map((r, i) => {
+              const st = RECORD_STATUS_STYLE[r.status] ?? {
+                label: r.status,
+                color: "var(--prv-text-3)",
+                bg: "var(--prv-border-subtle)",
+              }
+              return (
+                <div
+                  key={r.id}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    padding: "11px 16px",
+                    borderBottom:
+                      i < Math.min(serviceRecords.length, 6) - 1
+                        ? "1px solid var(--prv-border-subtle)"
+                        : "none",
+                  }}
+                >
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p
+                      style={{
+                        fontSize: 13,
+                        fontWeight: 600,
+                        color: "var(--prv-text-1)",
+                        margin: 0,
+                      }}
+                    >
+                      {r.type}
+                      {r.provider ? ` · ${r.provider}` : ""}
+                    </p>
+                    <p style={{ fontSize: 11, color: "var(--prv-text-3)", margin: "2px 0 0" }}>
+                      {r.cost != null ? `${r.cost.toLocaleString()} RON` : "—"}
+                      {r.scheduledDate ? ` · ${r.scheduledDate}` : ""}
+                    </p>
+                  </div>
+                  <span
+                    style={{
+                      fontSize: 9,
+                      fontWeight: 600,
+                      padding: "3px 7px",
+                      borderRadius: 5,
+                      background: st.bg,
+                      color: st.color,
+                      flexShrink: 0,
+                    }}
+                  >
+                    {st.label}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        </>
+      )}
 
       {/* FAB */}
       <button

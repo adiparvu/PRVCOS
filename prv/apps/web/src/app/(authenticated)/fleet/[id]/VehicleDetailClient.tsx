@@ -85,6 +85,19 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }
   Unavailable: { label: "Indisponibil", color: "rgba(255,69,58,.95)", bg: "rgba(255,69,58,.12)" },
 }
 
+const TRIP_STATUS_STYLE: Record<string, { label: string; color: string; bg: string }> = {
+  in_progress: { label: "În curs", color: "rgba(10,132,255,.9)", bg: "rgba(10,132,255,.13)" },
+  completed: { label: "Finalizat", color: "rgba(48,209,88,.95)", bg: "rgba(48,209,88,.13)" },
+  cancelled: { label: "Anulat", color: "rgba(255,255,255,.55)", bg: "rgba(255,255,255,.08)" },
+}
+
+const RECORD_STATUS_STYLE: Record<string, { label: string; color: string; bg: string }> = {
+  scheduled: { label: "Programat", color: "rgba(255,159,10,.95)", bg: "rgba(255,159,10,.13)" },
+  in_progress: { label: "În curs", color: "rgba(10,132,255,.9)", bg: "rgba(10,132,255,.13)" },
+  completed: { label: "Efectuat", color: "rgba(48,209,88,.95)", bg: "rgba(48,209,88,.13)" },
+  cancelled: { label: "Anulat", color: "rgba(255,255,255,.55)", bg: "rgba(255,255,255,.08)" },
+}
+
 // ── Sheet button helper ───────────────────────────────────────────────────────
 
 type SheetColor = "amber" | "blue" | "red" | "white" | "green"
@@ -807,12 +820,35 @@ export function VehicleDetailClient({ id }: VehicleDetailClientProps) {
 
   const { data: tripsData } = useQuery<{
     active: { id: string; startOdometerKm: number } | null
+    trips: {
+      id: string
+      status: string
+      purpose: string | null
+      driver: string | null
+      project: string | null
+      distanceKm: number | null
+    }[]
   }>({
     queryKey: ["vehicle-trips", id],
     queryFn: () => fetch(`/api/fleet/${id}/trips`).then((r) => r.json()),
     enabled: !!vehicle,
   })
   const activeTrip = tripsData?.active ?? null
+
+  const { data: maintData } = useQuery<{
+    records: {
+      id: string
+      type: string
+      status: string
+      provider: string | null
+      cost: number | null
+      scheduledDate: string | null
+    }[]
+  }>({
+    queryKey: ["vehicle-maintenance", id],
+    queryFn: () => fetch(`/api/fleet/${id}/maintenance`).then((r) => r.json()),
+    enabled: !!vehicle,
+  })
 
   const invalidateVehicle = () => {
     void queryClient.invalidateQueries({ queryKey: ["vehicle-detail", id] })
@@ -1334,6 +1370,8 @@ export function VehicleDetailClient({ id }: VehicleDetailClientProps) {
       </div>
     )
 
+  const trips = tripsData?.trips ?? []
+  const serviceRecords = maintData?.records ?? []
   const sc = STATUS_CONFIG[vehicle.status] ?? {
     label: vehicle.status,
     color: "var(--prv-text-3)",
@@ -1764,6 +1802,170 @@ export function VehicleDetailClient({ id }: VehicleDetailClientProps) {
           )
         })}
       </div>
+
+      {/* Trips */}
+      {trips.length > 0 && (
+        <>
+          <p
+            style={{
+              fontSize: 11,
+              fontWeight: 600,
+              color: "var(--prv-text-3)",
+              textTransform: "uppercase",
+              letterSpacing: "0.07em",
+              margin: "0 2px 10px",
+            }}
+          >
+            Curse Recente
+          </p>
+          <div
+            style={{
+              background: "var(--prv-g1)",
+              border: "1px solid var(--prv-border-subtle)",
+              borderRadius: 18,
+              overflow: "hidden",
+              marginBottom: 14,
+            }}
+          >
+            {trips.slice(0, 6).map((t, i) => {
+              const st = TRIP_STATUS_STYLE[t.status] ?? {
+                label: t.status,
+                color: "var(--prv-text-3)",
+                bg: "var(--prv-border-subtle)",
+              }
+              return (
+                <div
+                  key={t.id}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    padding: "11px 16px",
+                    borderBottom:
+                      i < Math.min(trips.length, 6) - 1
+                        ? "1px solid var(--prv-border-subtle)"
+                        : "none",
+                  }}
+                >
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p
+                      style={{
+                        fontSize: 13,
+                        fontWeight: 600,
+                        color: "var(--prv-text-1)",
+                        margin: 0,
+                      }}
+                    >
+                      {t.purpose || "Cursă"}
+                      {t.driver ? ` · ${t.driver}` : ""}
+                    </p>
+                    <p style={{ fontSize: 11, color: "var(--prv-text-3)", margin: "2px 0 0" }}>
+                      {t.distanceKm != null
+                        ? `${t.distanceKm.toLocaleString()} km`
+                        : "în desfășurare"}
+                      {t.project ? ` · ${t.project}` : ""}
+                    </p>
+                  </div>
+                  <span
+                    style={{
+                      fontSize: 9,
+                      fontWeight: 600,
+                      padding: "3px 7px",
+                      borderRadius: 5,
+                      background: st.bg,
+                      color: st.color,
+                      flexShrink: 0,
+                    }}
+                  >
+                    {st.label}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        </>
+      )}
+
+      {/* Service records */}
+      {serviceRecords.length > 0 && (
+        <>
+          <p
+            style={{
+              fontSize: 11,
+              fontWeight: 600,
+              color: "var(--prv-text-3)",
+              textTransform: "uppercase",
+              letterSpacing: "0.07em",
+              margin: "0 2px 10px",
+            }}
+          >
+            Service Records
+          </p>
+          <div
+            style={{
+              background: "var(--prv-g1)",
+              border: "1px solid var(--prv-border-subtle)",
+              borderRadius: 18,
+              overflow: "hidden",
+              marginBottom: 14,
+            }}
+          >
+            {serviceRecords.slice(0, 6).map((r, i) => {
+              const st = RECORD_STATUS_STYLE[r.status] ?? {
+                label: r.status,
+                color: "var(--prv-text-3)",
+                bg: "var(--prv-border-subtle)",
+              }
+              return (
+                <div
+                  key={r.id}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    padding: "11px 16px",
+                    borderBottom:
+                      i < Math.min(serviceRecords.length, 6) - 1
+                        ? "1px solid var(--prv-border-subtle)"
+                        : "none",
+                  }}
+                >
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p
+                      style={{
+                        fontSize: 13,
+                        fontWeight: 600,
+                        color: "var(--prv-text-1)",
+                        margin: 0,
+                      }}
+                    >
+                      {r.type}
+                      {r.provider ? ` · ${r.provider}` : ""}
+                    </p>
+                    <p style={{ fontSize: 11, color: "var(--prv-text-3)", margin: "2px 0 0" }}>
+                      {r.cost != null ? `${r.cost.toLocaleString()} RON` : "—"}
+                      {r.scheduledDate ? ` · ${r.scheduledDate}` : ""}
+                    </p>
+                  </div>
+                  <span
+                    style={{
+                      fontSize: 9,
+                      fontWeight: 600,
+                      padding: "3px 7px",
+                      borderRadius: 5,
+                      background: st.bg,
+                      color: st.color,
+                      flexShrink: 0,
+                    }}
+                  >
+                    {st.label}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        </>
+      )}
 
       {/* Activity */}
       <p
