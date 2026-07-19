@@ -571,6 +571,22 @@ export function ProjectDetailClient({ id }: ProjectDetailClientProps) {
           >
             Activity log ›
           </Link>
+          <Link
+            href={`/projects/${id}/messages`}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 5,
+              marginTop: 12,
+              marginLeft: 16,
+              fontSize: 12,
+              fontWeight: 600,
+              color: "var(--prv-text-2)",
+              textDecoration: "none",
+            }}
+          >
+            Client messages ›
+          </Link>
         </div>
       </div>
 
