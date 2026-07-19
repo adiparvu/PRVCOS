@@ -16,6 +16,7 @@ import { relations } from "drizzle-orm"
 import { companies } from "./companies"
 import { users } from "./users"
 import { clients } from "./clients"
+import { projects } from "./projects"
 
 // ─── Enums ───────────────────────────────────────────────────────────────────
 
@@ -124,6 +125,9 @@ export const renovationProjects = pgTable(
       .notNull()
       .references(() => companies.id, { onDelete: "cascade" }),
     clientId: uuid("client_id").references(() => clients.id, { onDelete: "set null" }),
+    // Bridge to the generic project used by the client portal (Phase 23.6), so
+    // renovation site-report photos and progress surface on the portal project.
+    projectId: uuid("project_id").references(() => projects.id, { onDelete: "set null" }),
 
     projectCode: varchar("project_code", { length: 50 }),
     title: varchar("title", { length: 255 }).notNull(),
@@ -165,6 +169,7 @@ export const renovationProjects = pgTable(
   (table) => [
     index("renovation_projects_company_id_idx").on(table.companyId),
     index("renovation_projects_client_id_idx").on(table.clientId),
+    index("renovation_projects_project_id_idx").on(table.projectId),
     index("renovation_projects_status_idx").on(table.status),
     index("renovation_projects_manager_id_idx").on(table.projectManagerId),
   ]

@@ -1,6 +1,12 @@
 import { getPortalSession } from "@/lib/portal-auth"
 import { db } from "@prv/db"
-import { projects, invoices, projectMilestones } from "@prv/db/schema"
+import {
+  projects,
+  invoices,
+  projectMilestones,
+  renovationProjects,
+  renovationSiteReports,
+} from "@prv/db/schema"
 import { and, asc, desc, eq, isNull } from "drizzle-orm"
 import { notFound, redirect } from "next/navigation"
 import Link from "next/link"
@@ -123,6 +129,30 @@ export default async function PortalProjectDetailPage({
       .where(eq(projectMilestones.projectId, project.id))
       .orderBy(asc(projectMilestones.sortOrder)),
   ])
+
+  // Client-visible site-report photos from any renovation project bridged to
+  // this portal project.
+  const photoReports = await db
+    .select({
+      photos: renovationSiteReports.photos,
+      reportDate: renovationSiteReports.reportDate,
+    })
+    .from(renovationSiteReports)
+    .innerJoin(renovationProjects, eq(renovationSiteReports.projectId, renovationProjects.id))
+    .where(
+      and(
+        eq(renovationProjects.projectId, project.id),
+        eq(renovationProjects.companyId, session.companyId),
+        eq(renovationSiteReports.clientVisible, true)
+      )
+    )
+    .orderBy(desc(renovationSiteReports.reportDate))
+
+  const photos = photoReports.flatMap((r) =>
+    (Array.isArray(r.photos) ? (r.photos as unknown[]) : [])
+      .filter((u): u is string => typeof u === "string")
+      .map((url) => ({ url, date: r.reportDate }))
+  )
 
   // Compute progress from milestones when available, else fall back to status
   const completedCount = milestones.filter((m) => m.isComplete).length
@@ -352,6 +382,28 @@ export default async function PortalProjectDetailPage({
                   </span>
                 </div>
               </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Photos */}
+      {photos.length > 0 && (
+        <div className="mt-6">
+          <p className="mb-2 px-1 text-[11px] font-medium uppercase tracking-wider text-white/35">
+            Photos
+          </p>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {photos.slice(0, 24).map((ph, i) => (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                key={`${ph.url}-${i}`}
+                src={ph.url}
+                alt={`Site photo ${new Date(ph.date).toLocaleDateString("ro-RO")}`}
+                loading="lazy"
+                className="aspect-square w-full rounded-[14px] object-cover"
+                style={{ border: "1px solid rgba(255,255,255,0.10)" }}
+              />
             ))}
           </div>
         </div>

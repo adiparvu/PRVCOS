@@ -225,6 +225,7 @@ const patchSchema = z.object({
   priority: z.enum(["low", "medium", "high", "urgent"]).optional(),
   projectType: z.enum(["residential", "commercial", "industrial", "public"]).optional(),
   clientId: z.string().uuid().nullable().optional(),
+  projectId: z.string().uuid().nullable().optional(),
   projectManagerId: z.string().uuid().nullable().optional(),
   siteSupervisorId: z.string().uuid().nullable().optional(),
   address: z.string().optional(),
