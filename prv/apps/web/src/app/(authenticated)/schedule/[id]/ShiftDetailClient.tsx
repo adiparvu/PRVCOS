@@ -479,7 +479,8 @@ function StaffingSheet({ shiftId }: { shiftId: string }) {
   const openSlots = shift?.openSlots ?? 0
   const totalSlots = shift?.totalSlots ?? 0
   const filled = totalSlots - openSlots
-  const [userId, setUserId] = useState("")
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const [bulkNote, setBulkNote] = useState<string | null>(null)
 
   const { data: peopleData } = useQuery<{
     members: { id: string; firstName: string; lastName: string; role: string }[]
@@ -495,18 +496,19 @@ function StaffingSheet({ shiftId }: { shiftId: string }) {
     void qc.invalidateQueries({ queryKey: ["schedule"] })
   }
 
-  const assign = useMutation({
-    mutationFn: (uid: string) =>
+  const bulkAssign = useMutation({
+    mutationFn: (uids: string[]) =>
       fetch(`/api/schedule/${shiftId}/assignments`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ userId: uid }),
+        body: JSON.stringify({ userIds: uids }),
       }).then((r) => {
         if (!r.ok) throw new Error("Assign failed")
-        return r.json()
+        return r.json() as Promise<{ assigned: number; failed: number }>
       }),
-    onSuccess: () => {
-      setUserId("")
+    onSuccess: (res) => {
+      setSelectedIds([])
+      setBulkNote(`${res.assigned} assigned${res.failed ? ` · ${res.failed} skipped` : ""}`)
       invalidate()
     },
   })
@@ -521,7 +523,7 @@ function StaffingSheet({ shiftId }: { shiftId: string }) {
     onSuccess: invalidate,
   })
 
-  const busy = assign.isPending || unassign.isPending
+  const busy = bulkAssign.isPending || unassign.isPending
 
   return (
     <div style={{ padding: "2px 18px 32px", display: "flex", flexDirection: "column", gap: 8 }}>
@@ -602,45 +604,82 @@ function StaffingSheet({ shiftId }: { shiftId: string }) {
           >
             Add employee
           </p>
-          <div style={{ display: "flex", gap: 8 }}>
-            <select
-              value={userId}
-              onChange={(e) => setUserId(e.target.value)}
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <div
               style={{
-                flex: 1,
-                background: "rgba(255,255,255,0.04)",
-                border: "1px solid rgba(255,255,255,0.12)",
-                borderRadius: 11,
-                padding: 11,
-                color: "rgba(255,255,255,0.92)",
-                fontSize: 13.5,
-                fontFamily: "inherit",
+                maxHeight: 200,
+                overflowY: "auto",
+                display: "flex",
+                flexDirection: "column",
+                gap: 4,
               }}
             >
-              <option value="">Select an employee…</option>
-              {people.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.firstName} {m.lastName} · {m.role}
-                </option>
-              ))}
-            </select>
+              {people.length === 0 && (
+                <p style={{ fontSize: 12, color: "var(--prv-text-3)", padding: 6 }}>
+                  No eligible employees.
+                </p>
+              )}
+              {people.map((m) => {
+                const checked = selectedIds.includes(m.id)
+                return (
+                  <label
+                    key={m.id}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 10,
+                      padding: "8px 10px",
+                      borderRadius: 10,
+                      background: checked ? "rgba(48,209,88,0.10)" : "rgba(255,255,255,0.03)",
+                      border: `1px solid ${checked ? "rgba(48,209,88,0.25)" : "rgba(255,255,255,0.08)"}`,
+                      cursor: "pointer",
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() =>
+                        setSelectedIds((prev) =>
+                          checked ? prev.filter((x) => x !== m.id) : [...prev, m.id]
+                        )
+                      }
+                    />
+                    <span style={{ fontSize: 13, color: "var(--prv-text-1)" }}>
+                      {m.firstName} {m.lastName} · {m.role}
+                    </span>
+                  </label>
+                )
+              })}
+            </div>
             <button
               type="button"
-              disabled={busy || !userId}
-              onClick={() => userId && assign.mutate(userId)}
+              disabled={busy || selectedIds.length === 0}
+              onClick={() => selectedIds.length > 0 && bulkAssign.mutate(selectedIds)}
               style={{
-                background: userId ? "rgba(48,209,88,0.85)" : "rgba(255,255,255,0.07)",
-                color: userId ? "#00220c" : "rgba(255,255,255,0.4)",
+                background: selectedIds.length ? "rgba(48,209,88,0.85)" : "rgba(255,255,255,0.07)",
+                color: selectedIds.length ? "#00220c" : "rgba(255,255,255,0.4)",
                 border: "none",
                 borderRadius: 11,
-                padding: "0 18px",
+                padding: "10px 18px",
                 fontSize: 13.5,
                 fontWeight: 700,
-                cursor: busy || !userId ? "default" : "pointer",
+                cursor: busy || !selectedIds.length ? "default" : "pointer",
               }}
             >
-              Add
+              {selectedIds.length > 1 ? `Assign ${selectedIds.length}` : "Assign"}
             </button>
+            {bulkNote && (
+              <p
+                style={{
+                  fontSize: 11.5,
+                  color: "var(--prv-text-3)",
+                  textAlign: "center",
+                  margin: 0,
+                }}
+              >
+                {bulkNote}
+              </p>
+            )}
           </div>
         </>
       ) : (

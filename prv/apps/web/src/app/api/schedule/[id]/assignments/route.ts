@@ -5,7 +5,7 @@ import { writeAuditLog } from "@prv/auth"
 import { z } from "zod"
 import { db } from "@prv/db"
 import { shiftAssignments, shifts, users } from "@prv/db/schema"
-import { and, asc, count, eq, isNull, ne } from "drizzle-orm"
+import { and, asc, count, eq, inArray, isNull, ne } from "drizzle-orm"
 import { findConflict } from "@/lib/shift-overlap"
 
 export const dynamic = "force-dynamic"
@@ -56,9 +56,14 @@ export const GET = withGates(
 
 // ── POST /api/schedule/[id]/assignments ───────────────────────────────────────
 
-const createSchema = z.object({
-  userId: z.string().uuid(),
-})
+const createSchema = z
+  .object({
+    userId: z.string().uuid().optional(),
+    userIds: z.array(z.string().uuid()).min(1).max(50).optional(),
+  })
+  .refine((d) => !!d.userId || !!(d.userIds && d.userIds.length > 0), {
+    message: "userId or userIds is required",
+  })
 
 export const POST = withGates(
   { action: "schedule.update", endpointClass: "api_write" },
@@ -89,11 +94,102 @@ export const POST = withGates(
         { status: 422 }
       )
 
+    // ── Bulk mode: assign several employees at once, each validated the same
+    // way, returning a per-user result. Single-user posts keep their behaviour.
+    if (parsed.data.userIds && parsed.data.userIds.length > 0) {
+      const ids = [...new Set(parsed.data.userIds)]
+
+      const members = await db
+        .select({ id: users.id })
+        .from(users)
+        .where(and(inArray(users.id, ids), eq(users.companyId, companyId)))
+      const memberSet = new Set(members.map((m) => m.id))
+
+      const existing = await db
+        .select({ userId: shiftAssignments.userId })
+        .from(shiftAssignments)
+        .where(eq(shiftAssignments.shiftId, sid))
+      const assignedSet = new Set(existing.map((e) => e.userId))
+      let filled = assignedSet.size
+
+      type Result = { userId: string; ok: boolean; reason?: string; assignmentId?: string }
+      const results: Result[] = []
+
+      for (const uid of ids) {
+        if (!memberSet.has(uid)) {
+          results.push({ userId: uid, ok: false, reason: "not_in_company" })
+          continue
+        }
+        if (assignedSet.has(uid)) {
+          results.push({ userId: uid, ok: false, reason: "already_assigned" })
+          continue
+        }
+        if (shift.totalSlots !== null && filled >= shift.totalSlots) {
+          results.push({ userId: uid, ok: false, reason: "full" })
+          continue
+        }
+        const sameDay = await db
+          .select({
+            id: shifts.id,
+            title: shifts.title,
+            startTime: shifts.startTime,
+            endTime: shifts.endTime,
+          })
+          .from(shiftAssignments)
+          .innerJoin(shifts, eq(shiftAssignments.shiftId, shifts.id))
+          .where(
+            and(
+              eq(shiftAssignments.userId, uid),
+              eq(shifts.companyId, companyId),
+              eq(shifts.date, shift.date),
+              ne(shifts.id, sid),
+              isNull(shifts.deletedAt)
+            )
+          )
+        if (findConflict(shift.startTime, shift.endTime, sameDay)) {
+          results.push({ userId: uid, ok: false, reason: "conflict" })
+          continue
+        }
+        const [asg] = await db
+          .insert(shiftAssignments)
+          .values({ shiftId: sid, userId: uid, companyId })
+          .onConflictDoNothing()
+          .returning({ id: shiftAssignments.id })
+        if (!asg) {
+          results.push({ userId: uid, ok: false, reason: "already_assigned" })
+          continue
+        }
+        assignedSet.add(uid)
+        filled++
+        results.push({ userId: uid, ok: true, assignmentId: asg.id })
+      }
+
+      const assigned = results.filter((r) => r.ok).length
+      void writeAuditLog({
+        companyId,
+        actorId,
+        sessionId,
+        action: "schedule.assignment.bulk_create",
+        entityType: "shift",
+        entityId: sid,
+        payload: { requested: ids.length, assigned },
+        method: "POST",
+        path: req.nextUrl.pathname,
+        ipAddress: ctx.ipAddress,
+        userAgent: ctx.userAgent,
+      })
+
+      return NextResponse.json({ results, assigned, failed: results.length - assigned })
+    }
+
+    const singleId = parsed.data.userId
+    if (!singleId) return NextResponse.json({ error: "userId is required" }, { status: 422 })
+
     // Verify user belongs to this company
     const [member] = await db
       .select({ id: users.id })
       .from(users)
-      .where(and(eq(users.id, parsed.data.userId), eq(users.companyId, companyId)))
+      .where(and(eq(users.id, singleId), eq(users.companyId, companyId)))
       .limit(1)
 
     if (!member) return NextResponse.json({ error: "User not found in company" }, { status: 404 })
@@ -120,7 +216,7 @@ export const POST = withGates(
       .innerJoin(shifts, eq(shiftAssignments.shiftId, shifts.id))
       .where(
         and(
-          eq(shiftAssignments.userId, parsed.data.userId),
+          eq(shiftAssignments.userId, singleId),
           eq(shifts.companyId, companyId),
           eq(shifts.date, shift.date),
           ne(shifts.id, sid),
@@ -141,7 +237,7 @@ export const POST = withGates(
 
     const [assignment] = await db
       .insert(shiftAssignments)
-      .values({ shiftId: sid, userId: parsed.data.userId, companyId })
+      .values({ shiftId: sid, userId: singleId, companyId })
       .onConflictDoNothing()
       .returning({ id: shiftAssignments.id })
 
@@ -155,7 +251,7 @@ export const POST = withGates(
       action: "schedule.assignment.create",
       entityType: "shift_assignment",
       entityId: assignment.id,
-      payload: { shiftId: sid, userId: parsed.data.userId },
+      payload: { shiftId: sid, userId: singleId },
       method: "POST",
       path: req.nextUrl.pathname,
       ipAddress: ctx.ipAddress,
