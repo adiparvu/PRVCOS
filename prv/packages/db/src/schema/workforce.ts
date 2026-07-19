@@ -383,3 +383,46 @@ export const leaveBalancesRelations = relations(leaveBalances, ({ one }) => ({
   company: one(companies, { fields: [leaveBalances.companyId], references: [companies.id] }),
   user: one(users, { fields: [leaveBalances.userId], references: [users.id] }),
 }))
+
+// ─── Shift swap requests (Phase 7.2) ──────────────────────────────────────────
+// A worker requests to swap or give up a shift they are assigned to; a team
+// leader approves (reassigning the shift) or rejects.
+
+export const shiftSwapStatusEnum = pgEnum("shift_swap_status", [
+  "pending",
+  "approved",
+  "rejected",
+  "cancelled",
+])
+
+export const shiftSwapRequests = pgTable(
+  "shift_swap_requests",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id, { onDelete: "cascade" }),
+    shiftId: uuid("shift_id")
+      .notNull()
+      .references(() => shifts.id, { onDelete: "cascade" }),
+    requesterId: uuid("requester_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    // Proposed replacement; null = open request (any cover / drop).
+    targetUserId: uuid("target_user_id").references(() => users.id, { onDelete: "set null" }),
+
+    status: shiftSwapStatusEnum("status").notNull().default("pending"),
+    note: text("note"),
+
+    decidedById: uuid("decided_by_id").references(() => users.id, { onDelete: "set null" }),
+    decidedAt: timestamp("decided_at", { withTimezone: true }),
+
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("shift_swap_requests_company_id_idx").on(table.companyId),
+    index("shift_swap_requests_shift_id_idx").on(table.shiftId),
+    index("shift_swap_requests_status_idx").on(table.status),
+  ]
+)

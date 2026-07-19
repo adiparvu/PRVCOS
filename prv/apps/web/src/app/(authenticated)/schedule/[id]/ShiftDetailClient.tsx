@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useShiftDetail } from "@/lib/api-hooks"
 import Link from "next/link"
 import { useSheetStack, useToast } from "@prv/ui"
+import { ShiftSwaps } from "./ShiftSwaps"
 import type { ShiftDetail } from "@/app/api/schedule/[id]/route"
 import type { ShiftRole, ShiftStatus } from "@/app/api/schedule/route"
 
@@ -689,6 +690,7 @@ function StaffingSheet({ shiftId }: { shiftId: string }) {
           All slots filled.
         </p>
       )}
+      <ShiftSwaps shiftId={shiftId} />
     </div>
   )
 }
