@@ -67,6 +67,11 @@ const GROUPS: Group[] = [
         description: "Export any analytics dataset as CSV.",
       },
       {
+        href: "/analytics/report-schedules",
+        label: "Scheduled Reports",
+        description: "Email KPI reports on a recurring schedule.",
+      },
+      {
         href: "/analytics/expense-breakdown",
         label: "Expense Breakdown",
         description: "Committed spend by category with a monthly trend.",
