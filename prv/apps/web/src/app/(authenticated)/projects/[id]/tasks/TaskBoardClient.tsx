@@ -10,6 +10,8 @@ import {
   type TaskSummary,
   type ProjectTaskStatus,
 } from "@/lib/api-hooks"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
+import { TaskTimer } from "./TaskTimer"
 
 const COLUMNS: { status: ProjectTaskStatus; label: string }[] = [
   { status: "backlog", label: "Backlog" },
@@ -44,6 +46,20 @@ export function TaskBoardClient({ id }: { id: string }) {
   const { data, isLoading } = useProjectTasks(id)
   const update = useUpdateTask(id)
   const create = useCreateTask(id)
+  const qc = useQueryClient()
+  const { data: runningData } = useQuery({
+    queryKey: ["running-timer"],
+    queryFn: () =>
+      fetch("/api/me/running-timer").then(
+        (r) => r.json() as Promise<{ running: { taskId: string; startedAt: string } | null }>
+      ),
+    refetchInterval: 60_000,
+  })
+  const running = runningData?.running ?? null
+  const onTimerChange = () => {
+    qc.invalidateQueries({ queryKey: ["running-timer"] })
+    qc.invalidateQueries({ queryKey: ["project-tasks", id] })
+  }
 
   const [dragId, setDragId] = useState<string | null>(null)
   const [overCol, setOverCol] = useState<ProjectTaskStatus | null>(null)
@@ -357,7 +373,21 @@ export function TaskBoardClient({ id }: { id: string }) {
                           >
                             {initials(t.assigneeName)}
                           </span>
-                          <span style={{ marginLeft: "auto", display: "flex", gap: 9 }}>
+                          <span
+                            style={{
+                              marginLeft: "auto",
+                              display: "flex",
+                              gap: 9,
+                              alignItems: "center",
+                            }}
+                          >
+                            <TaskTimer
+                              projectId={id}
+                              taskId={t.id}
+                              runningTaskId={running?.taskId ?? null}
+                              runningStartedAt={running?.startedAt ?? null}
+                              onChange={onTimerChange}
+                            />
                             {subs > 0 && <span>↳ {subs}</span>}
                             {hrs && <span>{hrs}</span>}
                           </span>
