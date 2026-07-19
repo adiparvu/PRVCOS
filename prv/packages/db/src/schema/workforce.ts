@@ -121,6 +121,10 @@ export const attendanceRecords = pgTable(
     clockOut: timestamp("clock_out", { withTimezone: true }),
     lateMinutes: integer("late_minutes"),
     gpsVerified: boolean("gps_verified").notNull().default(false),
+    locationLat: numeric("location_lat", { precision: 9, scale: 6 }),
+    locationLng: numeric("location_lng", { precision: 9, scale: 6 }),
+    locationAccuracyM: integer("location_accuracy_m"),
+    clockInMethod: varchar("clock_in_method", { length: 20 }),
     approvedByUserId: uuid("approved_by_user_id").references(() => users.id, {
       onDelete: "set null",
     }),

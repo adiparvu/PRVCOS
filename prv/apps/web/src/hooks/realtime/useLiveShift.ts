@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import type { LiveShiftResponse } from "@/app/api/me/shift/route"
 
 export interface ShiftState {
@@ -61,9 +61,11 @@ function computeRemaining(end: string): { h: number; m: number } {
   return { h: Math.floor(remMs / 3_600_000), m: Math.floor((remMs % 3_600_000) / 60_000) }
 }
 
-export function useLiveShift(userId: string, enabled = true): ShiftState {
+export function useLiveShift(userId: string, enabled = true): ShiftState & { refetch: () => void } {
   const [raw, setRaw] = useState<LiveShiftResponse | null>(null)
   const [state, setState] = useState<ShiftState>(DEFAULT_STATE)
+  const [nonce, setNonce] = useState(0)
+  const refetch = useCallback(() => setNonce((n) => n + 1), [])
 
   // Fetch shift data from the API, refresh every 2 minutes
   useEffect(() => {
@@ -87,7 +89,7 @@ export function useLiveShift(userId: string, enabled = true): ShiftState {
       cancelled = true
       clearInterval(interval)
     }
-  }, [userId, enabled])
+  }, [userId, enabled, nonce])
 
   // Recompute progress every minute using cached raw data
   useEffect(() => {
@@ -119,5 +121,5 @@ export function useLiveShift(userId: string, enabled = true): ShiftState {
     return () => clearInterval(t)
   }, [raw, enabled])
 
-  return state
+  return useMemo(() => ({ ...state, refetch }), [state, refetch])
 }

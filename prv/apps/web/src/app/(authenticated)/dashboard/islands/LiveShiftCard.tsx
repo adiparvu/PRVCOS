@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { useLiveShift } from "@/hooks/realtime"
 import { GlassCard } from "../_shared"
 
@@ -7,8 +8,27 @@ interface Props {
   userId: string
 }
 
+// Best-effort browser geolocation; resolves to null coords if unavailable/denied.
+function getPosition(): Promise<{ lat: number; lng: number; accuracy: number } | null> {
+  return new Promise((resolve) => {
+    if (typeof navigator === "undefined" || !navigator.geolocation) return resolve(null)
+    navigator.geolocation.getCurrentPosition(
+      (pos) =>
+        resolve({
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+          accuracy: pos.coords.accuracy,
+        }),
+      () => resolve(null),
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 60_000 }
+    )
+  })
+}
+
 export function LiveShiftCard({ userId }: Props) {
   const shift = useLiveShift(userId)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   if (!shift.hasShift) return null
 
@@ -17,6 +37,31 @@ export function LiveShiftCard({ userId }: Props) {
     : shift.isClockedIn
       ? { label: "Active", bg: "rgba(80,220,120,0.16)", color: "rgba(80,220,120,0.90)" }
       : { label: "Scheduled", bg: "rgba(10,132,255,0.14)", color: "rgba(10,132,255,0.90)" }
+
+  const clockMode: "in" | "out" | null = shift.isClockedOut
+    ? null
+    : shift.isClockedIn
+      ? "out"
+      : "in"
+
+  async function clock() {
+    setBusy(true)
+    setError(null)
+    try {
+      const pos = await getPosition()
+      const res = await fetch("/api/me/shift", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(pos ? { ...pos, method: "web" } : { method: "web" }),
+      })
+      if (!res.ok) throw new Error("Clock action failed")
+      shift.refetch()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Something went wrong")
+    } finally {
+      setBusy(false)
+    }
+  }
 
   return (
     <GlassCard className="mb-3.5">
@@ -59,6 +104,29 @@ export function LiveShiftCard({ userId }: Props) {
           }}
         />
       </div>
+
+      {clockMode && (
+        <button
+          type="button"
+          disabled={busy}
+          onClick={clock}
+          className="mt-3 w-full rounded-[12px] py-2.5 text-[13px] font-semibold transition-all"
+          style={{
+            background: clockMode === "in" ? "rgba(80,220,120,0.16)" : "rgba(255,255,255,0.9)",
+            border: clockMode === "in" ? "1px solid rgba(80,220,120,0.30)" : "none",
+            color: clockMode === "in" ? "rgba(120,240,150,0.95)" : "#000",
+            cursor: busy ? "default" : "pointer",
+            opacity: busy ? 0.6 : 1,
+          }}
+        >
+          {busy ? "…" : clockMode === "in" ? "Clock In" : "Clock Out"}
+        </button>
+      )}
+      {error && (
+        <p className="mt-2 text-[11px]" style={{ color: "rgba(255,99,90,0.9)" }}>
+          {error}
+        </p>
+      )}
     </GlassCard>
   )
 }
