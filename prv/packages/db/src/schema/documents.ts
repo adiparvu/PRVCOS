@@ -62,6 +62,10 @@ export const documents = pgTable(
     isPublic: boolean("is_public").notNull().default(false),
     expiresAt: timestamp("expires_at", { withTimezone: true }),
 
+    // The live file always sits on this row; each replacement snapshots the prior
+    // file into document_versions and bumps this counter (Phase 12.2).
+    versionNumber: integer("version_number").notNull().default(1),
+
     // Legal hold blocks retention archival / GDPR erasure while litigation or an
     // investigation is active (Phase 12.5).
     legalHold: boolean("legal_hold").notNull().default(false),
@@ -104,12 +108,56 @@ export const documentSignatures = pgTable(
   (table) => [index("document_signatures_document_id_idx").on(table.documentId)]
 )
 
+// Document file version history (Phase 12.2) — every prior file of a document is
+// snapshotted here before the live file on the documents row is replaced, so no
+// upload silently overwrites a superseded file. Restoring an old version writes a
+// NEW version rather than reusing an old number, preserving an append-only chain.
+export const documentVersions = pgTable(
+  "document_versions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    documentId: uuid("document_id")
+      .notNull()
+      .references(() => documents.id, { onDelete: "cascade" }),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id, { onDelete: "cascade" }),
+    uploadedByUserId: uuid("uploaded_by_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+
+    version: integer("version").notNull(),
+    fileUrl: text("file_url").notNull(),
+    fileName: varchar("file_name", { length: 500 }).notNull(),
+    fileSizeBytes: varchar("file_size_bytes", { length: 20 }),
+    mimeType: varchar("mime_type", { length: 100 }),
+    changeNote: text("change_note"),
+
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("document_versions_document_id_idx").on(table.documentId),
+    index("document_versions_company_id_idx").on(table.companyId),
+    unique("document_versions_document_version_unique").on(table.documentId, table.version),
+  ]
+)
+
 export const documentsRelations = relations(documents, ({ one, many }) => ({
   company: one(companies, { fields: [documents.companyId], references: [companies.id] }),
   uploadedBy: one(users, { fields: [documents.uploadedByUserId], references: [users.id] }),
   project: one(projects, { fields: [documents.projectId], references: [projects.id] }),
   client: one(clients, { fields: [documents.clientId], references: [clients.id] }),
   signatures: many(documentSignatures),
+  versions: many(documentVersions),
+}))
+
+export const documentVersionsRelations = relations(documentVersions, ({ one }) => ({
+  document: one(documents, {
+    fields: [documentVersions.documentId],
+    references: [documents.id],
+  }),
+  company: one(companies, { fields: [documentVersions.companyId], references: [companies.id] }),
+  uploadedBy: one(users, { fields: [documentVersions.uploadedByUserId], references: [users.id] }),
 }))
 
 export const documentSignaturesRelations = relations(documentSignatures, ({ one }) => ({
@@ -146,3 +194,5 @@ export const retentionPoliciesRelations = relations(retentionPolicies, ({ one })
 }))
 
 export type RetentionPolicy = typeof retentionPolicies.$inferSelect
+
+export type DocumentVersion = typeof documentVersions.$inferSelect
