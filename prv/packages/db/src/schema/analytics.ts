@@ -8,6 +8,7 @@ import {
   numeric,
   timestamp,
   jsonb,
+  boolean,
   index,
 } from "drizzle-orm/pg-core"
 
@@ -154,3 +155,44 @@ export const alerts = pgTable(
     index("alerts_created_at_idx").on(t.createdAt),
   ]
 )
+
+// ─── Scheduled Report Delivery (Phase 15.4) ───────────────────────────────────
+// A recurring email of a company report. An hourly sweep delivers every schedule
+// whose next_run_at has passed, then advances next_run_at by its frequency.
+export const reportScheduleFrequencyEnum = pgEnum("report_schedule_frequency", [
+  "daily",
+  "weekly",
+  "monthly",
+])
+
+export const reportSchedules = pgTable(
+  "report_schedules",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    companyId: uuid("company_id").notNull(),
+    createdByUserId: uuid("created_by_user_id"),
+
+    name: varchar("name", { length: 200 }).notNull(),
+    // Which report to render. Only "company_kpi" ships today; kept open for growth.
+    reportType: varchar("report_type", { length: 40 }).notNull().default("company_kpi"),
+    frequency: reportScheduleFrequencyEnum("frequency").notNull(),
+    sendHourUtc: integer("send_hour_utc").notNull().default(7),
+    // Array of recipient email addresses.
+    recipients: jsonb("recipients").notNull().default([]),
+
+    enabled: boolean("enabled").notNull().default(true),
+    nextRunAt: timestamp("next_run_at", { withTimezone: true }).notNull(),
+    lastRunAt: timestamp("last_run_at", { withTimezone: true }),
+    lastStatus: varchar("last_status", { length: 20 }), // ok | error | null
+    lastError: text("last_error"),
+
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("report_schedules_company_id_idx").on(t.companyId),
+    index("report_schedules_due_idx").on(t.enabled, t.nextRunAt),
+  ]
+)
+
+export type ReportSchedule = typeof reportSchedules.$inferSelect
