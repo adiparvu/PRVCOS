@@ -12,7 +12,8 @@ import {
 import { getRedis } from "@prv/cache"
 import type { PRVSession } from "@prv/auth"
 import { db } from "@prv/db"
-import { users } from "@prv/db/schema"
+import { users, userDevices } from "@prv/db/schema"
+import { isDeviceTrusted } from "@/lib/device-trust"
 import { eq, and } from "drizzle-orm"
 import { z } from "zod"
 
@@ -191,34 +192,55 @@ export async function POST(req: NextRequest) {
   const mfaVerified = aalData?.currentLevel === "aal2"
 
   if (needsMfa) {
-    const factors = await supabase.auth.mfa.listFactors()
-    const totpFactor = factors.data?.totp?.[0]
-
-    // Bridge Supabase session to the MFA verify route via Redis (300s TTL)
-    const {
-      data: { session: sbSession },
-    } = await supabase.auth.getSession()
-    if (sbSession && totpFactor) {
-      const redis = getRedis()
-      await redis.set(
-        `mfa_pending:${totpFactor.id}`,
-        JSON.stringify({
-          accessToken: sbSession.access_token,
-          refreshToken: sbSession.refresh_token,
-          supabaseUserId: supabaseUser.id,
-        }),
-        { ex: 300 }
-      )
+    // Trusted-device MFA skip: a device the user previously verified and marked
+    // trusted may sign in without a second factor until its trust window lapses.
+    const headerDeviceId = req.headers.get("x-device-id")
+    let deviceTrusted = false
+    if (headerDeviceId && /^[0-9a-fA-F-]{36}$/.test(headerDeviceId)) {
+      const [dev] = await db
+        .select({ isTrusted: userDevices.isTrusted, trustExpiresAt: userDevices.trustExpiresAt })
+        .from(userDevices)
+        .where(and(eq(userDevices.userId, prvUser.id), eq(userDevices.deviceId, headerDeviceId)))
+        .limit(1)
+      deviceTrusted = isDeviceTrusted(dev ?? null, new Date())
+      if (deviceTrusted) {
+        await db
+          .update(userDevices)
+          .set({ lastSeenAt: new Date() })
+          .where(and(eq(userDevices.userId, prvUser.id), eq(userDevices.deviceId, headerDeviceId)))
+      }
     }
 
-    return NextResponse.json(
-      {
-        requiresMfa: true,
-        factorId: totpFactor?.id,
-        code: "MFA_REQUIRED",
-      },
-      { status: 200 }
-    )
+    if (!deviceTrusted) {
+      const factors = await supabase.auth.mfa.listFactors()
+      const totpFactor = factors.data?.totp?.[0]
+
+      // Bridge Supabase session to the MFA verify route via Redis (300s TTL)
+      const {
+        data: { session: sbSession },
+      } = await supabase.auth.getSession()
+      if (sbSession && totpFactor) {
+        const redis = getRedis()
+        await redis.set(
+          `mfa_pending:${totpFactor.id}`,
+          JSON.stringify({
+            accessToken: sbSession.access_token,
+            refreshToken: sbSession.refresh_token,
+            supabaseUserId: supabaseUser.id,
+          }),
+          { ex: 300 }
+        )
+      }
+
+      return NextResponse.json(
+        {
+          requiresMfa: true,
+          factorId: totpFactor?.id,
+          code: "MFA_REQUIRED",
+        },
+        { status: 200 }
+      )
+    }
   }
 
   // Create PRV session
