@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useMemo } from "react"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 import {
   GlassShiftCard,
   GlassTimeSlotPicker,
@@ -347,6 +348,8 @@ export function ScheduleWorkspace({ storeName }: { storeName: string }) {
   const [dismissed, setDismissed] = useState(new Set<string>())
 
   const { data: shiftData, isLoading: shiftsLoading } = useShifts()
+  const qc = useQueryClient()
+  const [copyNote, setCopyNote] = useState<string | null>(null)
   const { data: leaveData, isLoading: leaveLoading } = useTimeOffRequests("pending")
 
   // Team availability + today's booked slots come from real shifts / approved
@@ -428,6 +431,36 @@ export function ScheduleWorkspace({ storeName }: { storeName: string }) {
 
   const openCount = meta?.open ?? 0
   const weekLabel = meta?.weekLabel ?? ""
+
+  const mondayISO = useMemo(() => {
+    const t = new Date()
+    const dow = t.getDay()
+    const m = new Date(t)
+    m.setDate(t.getDate() - (dow === 0 ? 6 : dow - 1))
+    m.setHours(0, 0, 0, 0)
+    return m.toISOString().split("T")[0]!
+  }, [])
+
+  const copyWeek = useMutation({
+    mutationFn: () => {
+      const prevMonday = new Date(new Date(mondayISO).getTime() - 7 * 86_400_000)
+        .toISOString()
+        .split("T")[0]!
+      return fetch("/api/schedule/copy-week", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ sourceWeekStart: prevMonday, targetWeekStart: mondayISO }),
+      }).then(async (r) => {
+        if (!r.ok) throw new Error("Copy failed")
+        return r.json() as Promise<{ copied: number }>
+      })
+    },
+    onSuccess: (res) => {
+      setCopyNote(`${res.copied} shift${res.copied === 1 ? "" : "s"} copied from last week`)
+      void qc.invalidateQueries({ queryKey: ["schedule"] })
+    },
+    onError: () => setCopyNote("Couldn't copy last week"),
+  })
 
   return (
     <div className="px-4">
@@ -560,7 +593,29 @@ export function ScheduleWorkspace({ storeName }: { storeName: string }) {
       </div>
 
       {/* Shift cards */}
-      <SectionLabel>This week&apos;s shifts</SectionLabel>
+      <div className="flex items-center justify-between">
+        <SectionLabel>This week&apos;s shifts</SectionLabel>
+        <button
+          type="button"
+          disabled={copyWeek.isPending}
+          onClick={() => copyWeek.mutate()}
+          className="text-[12px] font-semibold px-2.5 py-1 rounded-[8px]"
+          style={{
+            background: g2,
+            border: `1px solid ${bds}`,
+            color: t2,
+            cursor: copyWeek.isPending ? "default" : "pointer",
+            opacity: copyWeek.isPending ? 0.6 : 1,
+          }}
+        >
+          {copyWeek.isPending ? "Copying…" : "Copy last week"}
+        </button>
+      </div>
+      {copyNote && (
+        <p className="text-[11px] mb-2" style={{ color: t3 }}>
+          {copyNote}
+        </p>
+      )}
       {shiftsLoading ? (
         <div className="text-center py-8 text-[13px]" style={{ color: t3 }}>
           Loading shifts…
