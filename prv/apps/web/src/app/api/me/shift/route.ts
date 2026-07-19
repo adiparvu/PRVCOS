@@ -6,7 +6,14 @@ import { attendanceRecords, shifts, shiftAssignments, stores } from "@prv/db/sch
 import type { GateContext } from "@prv/auth"
 import { writeAuditLog } from "@prv/auth"
 import { z } from "zod"
-import { resolveClockAction, lateMinutes, isGpsVerified, clockInStatus } from "@/lib/clock"
+import {
+  resolveClockAction,
+  lateMinutes,
+  isGpsVerified,
+  clockInStatus,
+  resolveBreakState,
+  breakDurationMinutes,
+} from "@/lib/clock"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -25,6 +32,8 @@ export interface LiveShiftResponse {
   clockOut: string | null
   location: string | null
   status: string | null
+  onBreak: boolean
+  breakMinutes: number | null
 }
 
 // GET /api/me/shift — today's shift state for the calling user
@@ -43,6 +52,9 @@ export const GET = withGates(
         clockOut: attendanceRecords.clockOut,
         status: attendanceRecords.status,
         storeId: attendanceRecords.storeId,
+        breakStart: attendanceRecords.breakStart,
+        breakEnd: attendanceRecords.breakEnd,
+        breakMinutes: attendanceRecords.breakMinutes,
       })
       .from(attendanceRecords)
       .where(
@@ -73,6 +85,10 @@ export const GET = withGates(
         clockOut: record.clockOut?.toISOString() ?? null,
         location,
         status: record.status,
+        onBreak:
+          resolveBreakState({ breakStart: record.breakStart, breakEnd: record.breakEnd }) ===
+          "on_break",
+        breakMinutes: record.breakMinutes ?? null,
       }
       return NextResponse.json(data)
     }
@@ -116,6 +132,8 @@ export const GET = withGates(
         clockOut: null,
         location,
         status: "scheduled",
+        onBreak: false,
+        breakMinutes: null,
       }
       return NextResponse.json(data)
     }
@@ -128,6 +146,8 @@ export const GET = withGates(
       clockOut: null,
       location: null,
       status: null,
+      onBreak: false,
+      breakMinutes: null,
     } satisfies LiveShiftResponse)
   }
 )
@@ -148,6 +168,7 @@ const clockBodySchema = z.object({
   lng: z.number().min(-180).max(180).optional(),
   accuracy: z.number().nonnegative().optional(),
   method: z.enum(["web", "mobile", "kiosk"]).optional(),
+  intent: z.enum(["break_start", "break_end"]).optional(),
 })
 
 export const POST = withGates(
@@ -172,6 +193,8 @@ export const POST = withGates(
         clockOut: attendanceRecords.clockOut,
         scheduledStart: attendanceRecords.scheduledStart,
         storeId: attendanceRecords.storeId,
+        breakStart: attendanceRecords.breakStart,
+        breakEnd: attendanceRecords.breakEnd,
       })
       .from(attendanceRecords)
       .where(
@@ -182,6 +205,91 @@ export const POST = withGates(
         )
       )
       .limit(1)
+
+    // ── Break start / end while clocked in ──────────────────────────────────
+    if (parsed.data.intent) {
+      if (!record || !record.clockIn || record.clockOut) {
+        return NextResponse.json(
+          { error: "You must be clocked in to take a break" },
+          { status: 409 }
+        )
+      }
+      const breakState = resolveBreakState({
+        breakStart: record.breakStart,
+        breakEnd: record.breakEnd,
+      })
+      const breakNow = new Date()
+
+      if (parsed.data.intent === "break_start") {
+        if (breakState !== "none") {
+          return NextResponse.json(
+            {
+              error:
+                breakState === "on_break" ? "Break already in progress" : "Break already taken",
+            },
+            { status: 409 }
+          )
+        }
+        await db
+          .update(attendanceRecords)
+          .set({ breakStart: breakNow, updatedAt: breakNow })
+          .where(
+            and(
+              eq(attendanceRecords.userId, userId),
+              eq(attendanceRecords.companyId, companyId),
+              eq(attendanceRecords.date, today)
+            )
+          )
+        void writeAuditLog({
+          companyId,
+          actorId: userId,
+          sessionId,
+          action: "attendance.break_start",
+          entityType: "attendance_record",
+          entityId: userId,
+          payload: { date: today },
+          method: "POST",
+          path: "/api/me/shift",
+          ipAddress: ctx.ipAddress,
+          userAgent: ctx.userAgent,
+        })
+        return NextResponse.json({ intent: "break_start", breakStart: breakNow.toISOString() })
+      }
+
+      // break_end
+      if (breakState !== "on_break" || !record.breakStart) {
+        return NextResponse.json({ error: "No break in progress" }, { status: 409 })
+      }
+      const breakMins = breakDurationMinutes(record.breakStart, breakNow)
+      await db
+        .update(attendanceRecords)
+        .set({ breakEnd: breakNow, breakMinutes: breakMins, updatedAt: breakNow })
+        .where(
+          and(
+            eq(attendanceRecords.userId, userId),
+            eq(attendanceRecords.companyId, companyId),
+            eq(attendanceRecords.date, today)
+          )
+        )
+      void writeAuditLog({
+        companyId,
+        actorId: userId,
+        sessionId,
+        action: "attendance.break_end",
+        entityType: "attendance_record",
+        entityId: userId,
+        payload: { date: today, breakMinutes: breakMins },
+        method: "POST",
+        path: "/api/me/shift",
+        ipAddress: ctx.ipAddress,
+        userAgent: ctx.userAgent,
+      })
+      return NextResponse.json({
+        intent: "break_end",
+        breakEnd: breakNow.toISOString(),
+        breakMinutes: breakMins,
+      })
+    }
 
     const action = resolveClockAction(
       record ? { clockIn: record.clockIn, clockOut: record.clockOut } : null

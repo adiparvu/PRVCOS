@@ -43,3 +43,20 @@ export function isGpsVerified(
 export function clockInStatus(lateMin: number): "present" | "late" {
   return lateMin > 0 ? "late" : "present"
 }
+
+export type BreakState = "none" | "on_break" | "taken"
+
+/** Where the shift's single break stands: not started, in progress, or done. */
+export function resolveBreakState(record: {
+  breakStart: Date | null
+  breakEnd: Date | null
+}): BreakState {
+  if (record.breakStart && !record.breakEnd) return "on_break"
+  if (record.breakStart && record.breakEnd) return "taken"
+  return "none"
+}
+
+/** Whole minutes between a break's start and end, floored at zero. */
+export function breakDurationMinutes(start: Date, end: Date): number {
+  return Math.max(0, Math.round((end.getTime() - start.getTime()) / 60_000))
+}

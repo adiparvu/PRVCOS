@@ -63,6 +63,24 @@ export function LiveShiftCard({ userId }: Props) {
     }
   }
 
+  async function toggleBreak() {
+    setBusy(true)
+    setError(null)
+    try {
+      const res = await fetch("/api/me/shift", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ intent: shift.onBreak ? "break_end" : "break_start" }),
+      })
+      if (!res.ok) throw new Error("Break action failed")
+      shift.refetch()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Something went wrong")
+    } finally {
+      setBusy(false)
+    }
+  }
+
   return (
     <GlassCard className="mb-3.5">
       <div className="flex items-start justify-between mb-2">
@@ -120,6 +138,23 @@ export function LiveShiftCard({ userId }: Props) {
           }}
         >
           {busy ? "…" : clockMode === "in" ? "Clock In" : "Clock Out"}
+        </button>
+      )}
+      {clockMode === "out" && (
+        <button
+          type="button"
+          disabled={busy}
+          onClick={toggleBreak}
+          className="mt-2 w-full rounded-[12px] py-2 text-[12.5px] font-semibold transition-all"
+          style={{
+            background: shift.onBreak ? "rgba(255,179,64,0.16)" : "rgba(255,255,255,0.06)",
+            border: `1px solid ${shift.onBreak ? "rgba(255,179,64,0.30)" : "rgba(255,255,255,0.10)"}`,
+            color: shift.onBreak ? "rgba(255,199,110,0.95)" : "var(--prv-text-2)",
+            cursor: busy ? "default" : "pointer",
+            opacity: busy ? 0.6 : 1,
+          }}
+        >
+          {shift.onBreak ? "End Break" : "Start Break"}
         </button>
       )}
       {error && (

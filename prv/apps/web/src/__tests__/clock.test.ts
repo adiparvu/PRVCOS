@@ -1,5 +1,12 @@
 import { describe, it, expect } from "vitest"
-import { resolveClockAction, lateMinutes, isGpsVerified, clockInStatus } from "@/lib/clock"
+import {
+  resolveClockAction,
+  lateMinutes,
+  isGpsVerified,
+  clockInStatus,
+  resolveBreakState,
+  breakDurationMinutes,
+} from "@/lib/clock"
 
 const d = (s: string) => new Date(s)
 
@@ -55,5 +62,38 @@ describe("clockInStatus", () => {
   it("is late only when minutes late is positive", () => {
     expect(clockInStatus(0)).toBe("present")
     expect(clockInStatus(1)).toBe("late")
+  })
+})
+
+describe("resolveBreakState", () => {
+  const d = (s: string) => new Date(s)
+  it("is none when no break has started", () => {
+    expect(resolveBreakState({ breakStart: null, breakEnd: null })).toBe("none")
+  })
+  it("is on_break while a break is open", () => {
+    expect(resolveBreakState({ breakStart: d("2026-01-01T12:00:00Z"), breakEnd: null })).toBe(
+      "on_break"
+    )
+  })
+  it("is taken once the break has ended", () => {
+    expect(
+      resolveBreakState({
+        breakStart: d("2026-01-01T12:00:00Z"),
+        breakEnd: d("2026-01-01T12:30:00Z"),
+      })
+    ).toBe("taken")
+  })
+})
+
+describe("breakDurationMinutes", () => {
+  it("counts whole minutes", () => {
+    expect(
+      breakDurationMinutes(new Date("2026-01-01T12:00:00Z"), new Date("2026-01-01T12:30:00Z"))
+    ).toBe(30)
+  })
+  it("floors a reversed interval at zero", () => {
+    expect(
+      breakDurationMinutes(new Date("2026-01-01T12:30:00Z"), new Date("2026-01-01T12:00:00Z"))
+    ).toBe(0)
   })
 })

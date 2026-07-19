@@ -13,6 +13,7 @@ export interface ShiftState {
   hasShift: boolean
   isClockedIn: boolean
   isClockedOut: boolean
+  onBreak: boolean
 }
 
 const DEFAULT_STATE: ShiftState = {
@@ -25,6 +26,7 @@ const DEFAULT_STATE: ShiftState = {
   hasShift: false,
   isClockedIn: false,
   isClockedOut: false,
+  onBreak: false,
 }
 
 function timeToMs(hhmm: string): number {
@@ -113,6 +115,7 @@ export function useLiveShift(userId: string, enabled = true): ShiftState & { ref
         hasShift: true,
         isClockedIn: !!raw.clockIn && !raw.clockOut,
         isClockedOut: !!raw.clockOut,
+        onBreak: raw.onBreak ?? false,
       })
     }
 
