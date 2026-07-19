@@ -13,6 +13,7 @@ import {
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { TaskTimer } from "./TaskTimer"
 import { ApplyTemplateButton } from "./ApplyTemplateButton"
+import { RecurringTasksButton } from "./RecurringTasksButton"
 
 const COLUMNS: { status: ProjectTaskStatus; label: string }[] = [
   { status: "backlog", label: "Backlog" },
@@ -163,6 +164,7 @@ export function TaskBoardClient({ id }: { id: string }) {
             projectId={id}
             onApplied={() => qc.invalidateQueries({ queryKey: ["project-tasks", id] })}
           />
+          <RecurringTasksButton projectId={id} />
           <div
             style={{
               display: "flex",
