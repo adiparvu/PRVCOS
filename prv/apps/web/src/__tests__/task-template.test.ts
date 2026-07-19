@@ -16,7 +16,9 @@ describe("normalizeTemplateItems", () => {
     expect(normalizeTemplateItems([{ title: "  " }, { description: "x" }, 5, null])).toEqual([])
   })
   it("falls back to medium for an invalid priority and null for bad hours", () => {
-    const [item] = normalizeTemplateItems([{ title: "T", priority: "urgent", estimatedHours: -3 }])
+    const item = normalizeTemplateItems([
+      { title: "T", priority: "urgent", estimatedHours: -3 },
+    ])[0]!
     expect(item.priority).toBe("medium")
     expect(item.estimatedHours).toBeNull()
   })
@@ -35,7 +37,7 @@ describe("buildTasksFromTemplate", () => {
       startOrderIndex: 10,
     })
     expect(built).toHaveLength(2)
-    expect(built[0]).toMatchObject({
+    expect(built[0]!).toMatchObject({
       companyId: "co",
       projectId: "pr",
       title: "A",
@@ -43,7 +45,7 @@ describe("buildTasksFromTemplate", () => {
       status: "backlog",
       orderIndex: 11,
     })
-    expect(built[1].orderIndex).toBe(12)
+    expect(built[1]!.orderIndex).toBe(12)
   })
   it("treats a non-finite start index as 0", () => {
     const built = buildTasksFromTemplate(items, {
@@ -51,6 +53,6 @@ describe("buildTasksFromTemplate", () => {
       projectId: "pr",
       startOrderIndex: Number.NaN,
     })
-    expect(built[0].orderIndex).toBe(1)
+    expect(built[0]!.orderIndex).toBe(1)
   })
 })
