@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query"
 import { useRouter } from "next/navigation"
 import { useSheetStack, useToast } from "@prv/ui"
 import type { DocumentDetail } from "@/app/api/documents/[id]/route"
+import { DocumentVersionsCard } from "./DocumentVersionsCard"
 
 const g1 = "var(--prv-g1)"
 const bds = "var(--prv-border-subtle)"
@@ -1638,6 +1639,9 @@ export function DocumentDetailClient({ id }: { id: string }) {
             </div>
           ))}
         </SectionCard>
+
+        {/* Version history (Phase 12.2) */}
+        <DocumentVersionsCard id={id} onChanged={loadDoc} />
       </div>
 
       {/* FAB */}
