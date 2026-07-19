@@ -12,6 +12,7 @@ import {
 } from "@/lib/api-hooks"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { TaskTimer } from "./TaskTimer"
+import { ApplyTemplateButton } from "./ApplyTemplateButton"
 
 const COLUMNS: { status: ProjectTaskStatus; label: string }[] = [
   { status: "backlog", label: "Backlog" },
@@ -157,36 +158,42 @@ export function TaskBoardClient({ id }: { id: string }) {
         <h1 style={{ fontSize: 28, fontWeight: 680, letterSpacing: "-0.02em", margin: 0 }}>
           Task Board
         </h1>
-        <div
-          style={{
-            display: "flex",
-            gap: 2,
-            padding: 3,
-            borderRadius: 10,
-            background: "var(--prv-g1)",
-            border: "1px solid var(--prv-border-subtle)",
-          }}
-        >
-          {(["board", "timeline"] as const).map((v) => (
-            <button
-              key={v}
-              type="button"
-              onClick={() => setView(v)}
-              style={{
-                padding: "5px 12px",
-                borderRadius: 8,
-                border: "none",
-                fontSize: 12,
-                fontWeight: 600,
-                textTransform: "capitalize",
-                cursor: "pointer",
-                background: view === v ? "rgba(255,255,255,0.9)" : "transparent",
-                color: view === v ? "#000" : "var(--prv-text-2)",
-              }}
-            >
-              {v}
-            </button>
-          ))}
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <ApplyTemplateButton
+            projectId={id}
+            onApplied={() => qc.invalidateQueries({ queryKey: ["project-tasks", id] })}
+          />
+          <div
+            style={{
+              display: "flex",
+              gap: 2,
+              padding: 3,
+              borderRadius: 10,
+              background: "var(--prv-g1)",
+              border: "1px solid var(--prv-border-subtle)",
+            }}
+          >
+            {(["board", "timeline"] as const).map((v) => (
+              <button
+                key={v}
+                type="button"
+                onClick={() => setView(v)}
+                style={{
+                  padding: "5px 12px",
+                  borderRadius: 8,
+                  border: "none",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  textTransform: "capitalize",
+                  cursor: "pointer",
+                  background: view === v ? "rgba(255,255,255,0.9)" : "transparent",
+                  color: view === v ? "#000" : "var(--prv-text-2)",
+                }}
+              >
+                {v}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
