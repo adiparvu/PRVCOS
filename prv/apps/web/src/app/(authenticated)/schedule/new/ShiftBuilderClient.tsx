@@ -67,6 +67,8 @@ interface FormState {
   roleLabel: string
   location: string
   totalSlots: string
+  recurrenceFreq: string
+  recurrenceUntil: string
 }
 
 const EMPTY_FORM: FormState = {
@@ -78,6 +80,8 @@ const EMPTY_FORM: FormState = {
   roleLabel: "",
   location: "",
   totalSlots: "1",
+  recurrenceFreq: "",
+  recurrenceUntil: "",
 }
 
 export function ShiftBuilderClient() {
@@ -106,6 +110,10 @@ export function ShiftBuilderClient() {
         roleLabel: form.roleLabel || undefined,
         location: form.location || undefined,
         totalSlots: form.totalSlots ? Number(form.totalSlots) : undefined,
+        recurrence:
+          form.recurrenceFreq && form.recurrenceUntil
+            ? { freq: form.recurrenceFreq, until: form.recurrenceUntil }
+            : undefined,
       }
       const res = await fetch("/api/schedule", {
         method: "POST",
@@ -343,6 +351,34 @@ export function ShiftBuilderClient() {
                     step="1"
                     placeholder="1"
                   />
+                </div>
+                <div style={ROW_2}>
+                  <div>
+                    <label style={LABEL}>Repeat</label>
+                    <select
+                      style={SELECT}
+                      value={form.recurrenceFreq}
+                      onChange={(e) => set("recurrenceFreq", e.target.value)}
+                    >
+                      <option value="">Does not repeat</option>
+                      <option value="daily">Daily</option>
+                      <option value="weekly">Weekly</option>
+                      <option value="biweekly">Every 2 weeks</option>
+                      <option value="monthly">Monthly</option>
+                    </select>
+                  </div>
+                  {form.recurrenceFreq && (
+                    <div>
+                      <label style={LABEL}>Repeat until</label>
+                      <input
+                        style={FIELD}
+                        type="date"
+                        value={form.recurrenceUntil}
+                        onChange={(e) => set("recurrenceUntil", e.target.value)}
+                        min={form.date || undefined}
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

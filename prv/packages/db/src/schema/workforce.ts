@@ -160,6 +160,13 @@ export const shiftStatusEnum = pgEnum("shift_status", [
   "cancelled",
 ])
 
+export const shiftRecurrenceEnum = pgEnum("shift_recurrence_freq", [
+  "daily",
+  "weekly",
+  "biweekly",
+  "monthly",
+])
+
 export const shifts = pgTable(
   "shifts",
   {
@@ -183,6 +190,12 @@ export const shifts = pgTable(
     status: shiftStatusEnum("status").notNull().default("draft"),
     totalSlots: integer("total_slots").notNull().default(1),
 
+    // Recurring shifts (Phase 7.2): the series frequency + inclusive end date are
+    // stored on every occurrence; generated occurrences link back via parentShiftId.
+    recurrenceFreq: shiftRecurrenceEnum("recurrence_freq"),
+    recurrenceUntil: varchar("recurrence_until", { length: 10 }),
+    parentShiftId: uuid("parent_shift_id"),
+
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
@@ -190,6 +203,7 @@ export const shifts = pgTable(
   (table) => [
     index("shifts_company_id_idx").on(table.companyId),
     index("shifts_date_idx").on(table.date),
+    index("shifts_parent_shift_id_idx").on(table.parentShiftId),
   ]
 )
 

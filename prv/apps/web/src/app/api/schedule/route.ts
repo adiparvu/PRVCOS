@@ -411,7 +411,15 @@ const createShiftSchema = z.object({
   location: z.string().max(255).optional(),
   totalSlots: z.number().int().min(1).optional(),
   projectId: z.string().uuid().nullable().optional(),
+  recurrence: z
+    .object({
+      freq: z.enum(["daily", "weekly", "biweekly", "monthly"]),
+      until: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Expected YYYY-MM-DD"),
+    })
+    .optional(),
 })
+
+import { expandRecurrence } from "@/lib/recurrence"
 
 function calcShiftHours(start: string, end: string): number {
   const [sh = 0, sm = 0] = start.split(":").map(Number)
@@ -439,16 +447,44 @@ export const POST = withGates(
       )
     }
 
+    const { recurrence, ...shiftData } = parsed.data
+    const durationHours = String(calcShiftHours(shiftData.startTime, shiftData.endTime))
+
     const [record] = await db
       .insert(shifts)
       .values({
         companyId,
-        ...parsed.data,
-        durationHours: String(calcShiftHours(parsed.data.startTime, parsed.data.endTime)),
+        ...shiftData,
+        durationHours,
+        ...(recurrence
+          ? { recurrenceFreq: recurrence.freq, recurrenceUntil: recurrence.until }
+          : {}),
       })
       .returning({ id: shifts.id, title: shifts.title })
 
     if (!record) return NextResponse.json({ error: "Insert failed" }, { status: 500 })
+
+    // Recurring series: generate the remaining occurrences, each linked back to
+    // the first via parentShiftId.
+    let occurrences = 1
+    if (recurrence) {
+      const dates = expandRecurrence(shiftData.date, recurrence.freq, recurrence.until)
+      const childDates = dates.slice(1)
+      if (childDates.length > 0) {
+        await db.insert(shifts).values(
+          childDates.map((d) => ({
+            companyId,
+            ...shiftData,
+            date: d,
+            durationHours,
+            parentShiftId: record.id,
+            recurrenceFreq: recurrence.freq,
+            recurrenceUntil: recurrence.until,
+          }))
+        )
+        occurrences += childDates.length
+      }
+    }
 
     void writeAuditLog({
       companyId,
@@ -464,6 +500,6 @@ export const POST = withGates(
       userAgent: ctx.userAgent,
     })
 
-    return NextResponse.json({ id: record.id, title: record.title }, { status: 201 })
+    return NextResponse.json({ id: record.id, title: record.title, occurrences }, { status: 201 })
   }
 )
