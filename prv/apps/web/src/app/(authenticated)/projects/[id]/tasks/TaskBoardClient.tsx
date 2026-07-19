@@ -1,6 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
+import { ProjectTimeline } from "./ProjectTimeline"
 import Link from "next/link"
 import {
   useProjectTasks,
@@ -49,6 +50,7 @@ export function TaskBoardClient({ id }: { id: string }) {
   const [notice, setNotice] = useState<string | null>(null)
   const [addingIn, setAddingIn] = useState<ProjectTaskStatus | null>(null)
   const [draftTitle, setDraftTitle] = useState("")
+  const [view, setView] = useState<"board" | "timeline">("board")
 
   const tasks = useMemo(() => data?.tasks ?? [], [data])
   const subtaskCounts = useMemo(() => {
@@ -128,9 +130,49 @@ export function TaskBoardClient({ id }: { id: string }) {
       >
         Project · Tasks
       </div>
-      <h1 style={{ fontSize: 28, fontWeight: 680, letterSpacing: "-0.02em", margin: "3px 0 20px" }}>
-        Task Board
-      </h1>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          margin: "3px 0 20px",
+        }}
+      >
+        <h1 style={{ fontSize: 28, fontWeight: 680, letterSpacing: "-0.02em", margin: 0 }}>
+          Task Board
+        </h1>
+        <div
+          style={{
+            display: "flex",
+            gap: 2,
+            padding: 3,
+            borderRadius: 10,
+            background: "var(--prv-g1)",
+            border: "1px solid var(--prv-border-subtle)",
+          }}
+        >
+          {(["board", "timeline"] as const).map((v) => (
+            <button
+              key={v}
+              type="button"
+              onClick={() => setView(v)}
+              style={{
+                padding: "5px 12px",
+                borderRadius: 8,
+                border: "none",
+                fontSize: 12,
+                fontWeight: 600,
+                textTransform: "capitalize",
+                cursor: "pointer",
+                background: view === v ? "rgba(255,255,255,0.9)" : "transparent",
+                color: view === v ? "#000" : "var(--prv-text-2)",
+              }}
+            >
+              {v}
+            </button>
+          ))}
+        </div>
+      </div>
 
       {notice && (
         <div
@@ -151,6 +193,11 @@ export function TaskBoardClient({ id }: { id: string }) {
 
       {isLoading ? (
         <p style={{ padding: "40px 20px", color: "var(--prv-text-4)" }}>Loading tasks…</p>
+      ) : view === "timeline" ? (
+        <ProjectTimeline
+          tasks={tasks}
+          onReschedule={(taskId, dueDate) => update.mutate({ taskId, patch: { dueDate } })}
+        />
       ) : (
         <div style={{ display: "flex", gap: 14, overflowX: "auto", paddingBottom: 8 }}>
           {COLUMNS.map((col) => {
