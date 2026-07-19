@@ -4,6 +4,7 @@ import { useState } from "react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import Link from "next/link"
 import type { SecuritySession, SecurityActivity } from "@/app/api/me/security/route"
+import { PasskeysAndDevices } from "./PasskeysAndDevices"
 
 type SecurityData = {
   mfa: { enabled: boolean; backupCodesRemaining: number } | null
@@ -449,6 +450,9 @@ export function SecurityClient() {
           </div>
         ))}
       </div>
+
+      {/* Passkeys & trusted devices */}
+      <PasskeysAndDevices />
 
       {/* Active Sessions */}
       <p
