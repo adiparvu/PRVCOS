@@ -8,6 +8,7 @@ import {
   date,
   timestamp,
   jsonb,
+  boolean,
   pgEnum,
   index,
   type AnyPgColumn,
@@ -172,3 +173,48 @@ export const taskTemplatesRelations = relations(taskTemplates, ({ one }) => ({
 }))
 
 export type TaskTemplate = typeof taskTemplates.$inferSelect
+
+// recurring_tasks (Phase 6.2) — a rule that generates a task on a project on a
+// daily/weekly/monthly cadence. An hourly sweep creates a backlog task for every
+// due rule and advances next_run_at. Frequency is a plain varchar validated in
+// code (shares the daily|weekly|monthly contract with report schedules).
+export const recurringTasks = pgTable(
+  "recurring_tasks",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id, { onDelete: "cascade" }),
+    projectId: uuid("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    createdByUserId: uuid("created_by_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    title: varchar("title", { length: 255 }).notNull(),
+    description: text("description"),
+    priority: projectTaskPriorityEnum("priority").notNull().default("medium"),
+    estimatedHours: numeric("estimated_hours", { precision: 8, scale: 2 }),
+    assigneeId: uuid("assignee_id").references(() => users.id, { onDelete: "set null" }),
+    frequency: varchar("frequency", { length: 10 }).notNull(), // daily | weekly | monthly
+    sendHourUtc: integer("send_hour_utc").notNull().default(7),
+    enabled: boolean("enabled").notNull().default(true),
+    nextRunAt: timestamp("next_run_at", { withTimezone: true }).notNull(),
+    lastRunAt: timestamp("last_run_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("recurring_tasks_company_id_idx").on(table.companyId),
+    index("recurring_tasks_project_id_idx").on(table.projectId),
+    index("recurring_tasks_due_idx").on(table.enabled, table.nextRunAt),
+  ]
+)
+
+export const recurringTasksRelations = relations(recurringTasks, ({ one }) => ({
+  company: one(companies, { fields: [recurringTasks.companyId], references: [companies.id] }),
+  project: one(projects, { fields: [recurringTasks.projectId], references: [projects.id] }),
+  assignee: one(users, { fields: [recurringTasks.assigneeId], references: [users.id] }),
+}))
+
+export type RecurringTask = typeof recurringTasks.$inferSelect
