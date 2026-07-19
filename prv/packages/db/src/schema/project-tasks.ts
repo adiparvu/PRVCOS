@@ -93,3 +93,43 @@ export const projectTasksRelations = relations(projectTasks, ({ one, many }) => 
 
 export type ProjectTaskStatus = (typeof projectTaskStatusEnum.enumValues)[number]
 export type ProjectTaskPriority = (typeof projectTaskPriorityEnum.enumValues)[number]
+
+// task_time_entries (Phase 6.2) — start/stop time tracking per task. An entry is
+// "running" while ended_at is null; on stop its duration rolls into the task's
+// actualHours. At most one running entry per user is enforced at the API layer.
+export const taskTimeEntries = pgTable(
+  "task_time_entries",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id, { onDelete: "cascade" }),
+    taskId: uuid("task_id")
+      .notNull()
+      .references((): AnyPgColumn => projectTasks.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    startedAt: timestamp("started_at", { withTimezone: true }).notNull().defaultNow(),
+    endedAt: timestamp("ended_at", { withTimezone: true }),
+    durationMinutes: integer("duration_minutes"),
+    note: text("note"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("task_time_entries_task_id_idx").on(table.taskId),
+    index("task_time_entries_user_id_idx").on(table.userId),
+    index("task_time_entries_company_id_idx").on(table.companyId),
+  ]
+)
+
+export const taskTimeEntriesRelations = relations(taskTimeEntries, ({ one }) => ({
+  task: one(projectTasks, {
+    fields: [taskTimeEntries.taskId],
+    references: [projectTasks.id],
+  }),
+  user: one(users, { fields: [taskTimeEntries.userId], references: [users.id] }),
+  company: one(companies, { fields: [taskTimeEntries.companyId], references: [companies.id] }),
+}))
+
+export type TaskTimeEntry = typeof taskTimeEntries.$inferSelect
