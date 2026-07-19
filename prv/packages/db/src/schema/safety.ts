@@ -6,6 +6,7 @@ import {
   timestamp,
   boolean,
   integer,
+  jsonb,
   pgEnum,
   index,
   real,
@@ -236,3 +237,69 @@ export const safetyTrainingRecordsRelations = relations(safetyTrainingRecords, (
   }),
   user: one(users, { fields: [safetyTrainingRecords.userId], references: [users.id] }),
 }))
+
+// Phase 18.2 — Inspection checklists.
+// inspection_templates: reusable checklists (jsonb item list). inspection_item_results:
+// the executed answers for one inspection, from which its score is computed and, on a
+// failed item, a corrective task may be spawned.
+export const inspectionTemplates = pgTable(
+  "inspection_templates",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id, { onDelete: "cascade" }),
+    createdByUserId: uuid("created_by_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    name: varchar("name", { length: 200 }).notNull(),
+    description: text("description"),
+    items: jsonb("items")
+      .$type<{ label: string; weight: number; requirePhoto: boolean; critical: boolean }[]>()
+      .notNull()
+      .default([]),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("inspection_templates_company_id_idx").on(t.companyId)]
+)
+
+export const inspectionItemResults = pgTable(
+  "inspection_item_results",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id, { onDelete: "cascade" }),
+    inspectionId: uuid("inspection_id")
+      .notNull()
+      .references(() => safetyInspections.id, { onDelete: "cascade" }),
+    itemIndex: integer("item_index").notNull(),
+    label: varchar("label", { length: 500 }).notNull(),
+    weight: integer("weight").notNull().default(1),
+    critical: boolean("critical").notNull().default(false),
+    result: varchar("result", { length: 8 }).notNull(), // pass | fail | na
+    note: text("note"),
+    photoUrl: text("photo_url"),
+    correctiveTaskId: uuid("corrective_task_id"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("inspection_item_results_inspection_id_idx").on(t.inspectionId),
+    index("inspection_item_results_company_id_idx").on(t.companyId),
+  ]
+)
+
+export const inspectionTemplatesRelations = relations(inspectionTemplates, ({ one }) => ({
+  company: one(companies, { fields: [inspectionTemplates.companyId], references: [companies.id] }),
+}))
+
+export const inspectionItemResultsRelations = relations(inspectionItemResults, ({ one }) => ({
+  inspection: one(safetyInspections, {
+    fields: [inspectionItemResults.inspectionId],
+    references: [safetyInspections.id],
+  }),
+}))
+
+export type InspectionTemplate = typeof inspectionTemplates.$inferSelect
+export type InspectionItemResult = typeof inspectionItemResults.$inferSelect
