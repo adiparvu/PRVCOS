@@ -133,3 +133,42 @@ export const taskTimeEntriesRelations = relations(taskTimeEntries, ({ one }) => 
 }))
 
 export type TaskTimeEntry = typeof taskTimeEntries.$inferSelect
+
+// task_templates (Phase 6.2) — a reusable checklist of task definitions saved on
+// the company and applied to any project to create tasks in bulk. Items are held
+// as a normalized jsonb array (title/description/priority/estimatedHours).
+export const taskTemplates = pgTable(
+  "task_templates",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id, { onDelete: "cascade" }),
+    createdByUserId: uuid("created_by_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    name: varchar("name", { length: 200 }).notNull(),
+    description: text("description"),
+    items: jsonb("items")
+      .$type<
+        {
+          title: string
+          description: string | null
+          priority: string
+          estimatedHours: string | null
+        }[]
+      >()
+      .notNull()
+      .default([]),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("task_templates_company_id_idx").on(table.companyId)]
+)
+
+export const taskTemplatesRelations = relations(taskTemplates, ({ one }) => ({
+  company: one(companies, { fields: [taskTemplates.companyId], references: [companies.id] }),
+  createdBy: one(users, { fields: [taskTemplates.createdByUserId], references: [users.id] }),
+}))
+
+export type TaskTemplate = typeof taskTemplates.$inferSelect
