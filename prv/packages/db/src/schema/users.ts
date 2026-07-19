@@ -1,16 +1,17 @@
 import {
-  pgTable,
-  uuid,
-  varchar,
-  text,
-  timestamp,
   boolean,
+  foreignKey,
+  index,
+  integer,
   jsonb,
   numeric,
   pgEnum,
-  index,
+  pgTable,
+  text,
+  timestamp,
   unique,
-  foreignKey,
+  uuid,
+  varchar,
 } from "drizzle-orm/pg-core"
 import { relations } from "drizzle-orm"
 import { companies, departments, teams, stores } from "./companies"
@@ -159,6 +160,31 @@ export const userMfaMethods = pgTable(
 )
 
 // Trusted devices
+export const webauthnCredentials = pgTable(
+  "webauthn_credentials",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+
+    // Base64URL credential id (the authenticator's handle) — unique per user set.
+    credentialId: text("credential_id").notNull().unique(),
+    // Base64URL COSE public key used to verify assertions.
+    publicKey: text("public_key").notNull(),
+    // Signature counter — monotonic; a decrease signals a cloned authenticator.
+    counter: integer("counter").notNull().default(0),
+    transports: jsonb("transports").notNull().default([]),
+    deviceType: varchar("device_type", { length: 20 }), // singleDevice | multiDevice
+    backedUp: boolean("backed_up").notNull().default(false),
+    nickname: varchar("nickname", { length: 100 }),
+
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+  },
+  (table) => [index("webauthn_credentials_user_id_idx").on(table.userId)]
+)
+
 export const userDevices = pgTable(
   "user_devices",
   {
