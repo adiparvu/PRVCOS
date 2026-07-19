@@ -11,6 +11,7 @@ import { and, asc, desc, eq, isNull } from "drizzle-orm"
 import { notFound, redirect } from "next/navigation"
 import Link from "next/link"
 import type { Metadata } from "next"
+import { ProjectThread } from "./ProjectThread"
 
 export const dynamic = "force-dynamic"
 
@@ -408,6 +409,8 @@ export default async function PortalProjectDetailPage({
           </div>
         </div>
       )}
+
+      <ProjectThread projectId={project.id} />
     </div>
   )
 }
