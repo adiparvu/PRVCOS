@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { InspectionChecklist } from "./InspectionChecklist"
 import Link from "next/link"
 
 interface Inspection {
@@ -434,6 +435,11 @@ export function InspectionDetailClient({ id }: { id: string }) {
               </p>
             )}
           </div>
+
+          <InspectionChecklist
+            inspectionId={id}
+            onSubmitted={() => void queryClient.invalidateQueries({ queryKey: ["inspection", id] })}
+          />
         </>
       )}
     </div>
