@@ -21,3 +21,6 @@ export { contractSignedEmail } from "./contract-signed"
 export type { ContractSignedEmailProps } from "./contract-signed"
 export { quoteSentEmail } from "./quote-sent"
 export type { QuoteSentEmailProps } from "./quote-sent"
+
+export { reportDigestEmail } from "./report-digest"
+export type { ReportDigestEmailProps, ReportDigestKpis } from "./report-digest"
