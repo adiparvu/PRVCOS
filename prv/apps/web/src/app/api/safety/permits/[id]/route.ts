@@ -3,14 +3,14 @@ import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
 import { writeAuditLog } from "@prv/auth"
 import { db } from "@prv/db"
-import { safetyPermits, users, projects, permitEvents } from "@prv/db/schema"
+import { safetyPermits, users, projects, permitEvents, permitDesignations } from "@prv/db/schema"
 import { aliasedTable, and, asc, eq } from "drizzle-orm"
 import { z } from "zod"
 import {
   allowedActionsForValidity,
   effectivePermitStatus,
+  resolvePermitActor,
   type PermitAction,
-  type PermitActor,
   type PermitStatus,
   type PermitType,
 } from "@/lib/ptw"
@@ -114,12 +114,23 @@ export const GET = withGates(
       .where(eq(permitEvents.permitId, p.id))
       .orderBy(asc(permitEvents.createdAt))
     const ADMIN_ROLES = new Set(["group_ceo", "ceo", "co_ceo", "system_administrator"])
-    const actor: PermitActor = {
-      isRequester: p.requestedBy === ctx.session.userId,
-      isSupervisor: p.supervisorId === ctx.session.userId,
-      isSafetyOfficer: p.safetyOfficerId === ctx.session.userId,
+    const myDesignations = await db
+      .select({ role: permitDesignations.role })
+      .from(permitDesignations)
+      .where(
+        and(
+          eq(permitDesignations.userId, ctx.session.userId),
+          eq(permitDesignations.companyId, companyId)
+        )
+      )
+    const actor = resolvePermitActor({
+      userId: ctx.session.userId,
       isAdmin: ADMIN_ROLES.has(ctx.session.role),
-    }
+      requestedBy: p.requestedBy,
+      supervisorId: p.supervisorId,
+      safetyOfficerId: p.safetyOfficerId,
+      designations: myDesignations.map((d) => d.role),
+    })
     const canEdit = p.status === "draft" && (actor.isRequester || actor.isAdmin)
     const name = (f: string | null, l: string | null) => (f && l ? `${f} ${l}` : null)
     const detail: PermitDetail = {

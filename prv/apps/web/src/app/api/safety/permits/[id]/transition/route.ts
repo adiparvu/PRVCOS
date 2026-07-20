@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
 import { writeAuditLog } from "@prv/auth"
 import { db } from "@prv/db"
-import { safetyPermits, notifications, permitEvents } from "@prv/db/schema"
+import { safetyPermits, notifications, permitEvents, permitDesignations } from "@prv/db/schema"
 import { and, eq } from "drizzle-orm"
 import { z } from "zod"
 import {
@@ -13,9 +13,9 @@ import {
   FORWARD_ACTIONS,
   isExpiredWindow,
   permitNotificationRecipients,
+  resolvePermitActor,
   validatePermitForSubmit,
   type PermitAction,
-  type PermitActor,
 } from "@/lib/ptw"
 
 export const dynamic = "force-dynamic"
@@ -62,12 +62,20 @@ export const POST = withGates(
       .limit(1)
     if (!permit) return NextResponse.json({ error: "Not found" }, { status: 404 })
 
-    const actor: PermitActor = {
-      isRequester: permit.requestedBy === userId,
-      isSupervisor: permit.supervisorId === userId,
-      isSafetyOfficer: permit.safetyOfficerId === userId,
+    const myDesignations = await db
+      .select({ role: permitDesignations.role })
+      .from(permitDesignations)
+      .where(
+        and(eq(permitDesignations.userId, userId), eq(permitDesignations.companyId, companyId))
+      )
+    const actor = resolvePermitActor({
+      userId,
       isAdmin: ADMIN_ROLES.has(role),
-    }
+      requestedBy: permit.requestedBy,
+      supervisorId: permit.supervisorId,
+      safetyOfficerId: permit.safetyOfficerId,
+      designations: myDesignations.map((d) => d.role),
+    })
 
     const transition = canTransition(permit.status, action)
     if (!transition.ok || !transition.to)
