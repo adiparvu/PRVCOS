@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
 import { writeAuditLog } from "@prv/auth"
 import { db } from "@prv/db"
-import { safetyIncidents, users } from "@prv/db/schema"
+import { safetyIncidents, users, notifications } from "@prv/db/schema"
 import { and, eq } from "drizzle-orm"
 import { z } from "zod"
 
@@ -174,7 +174,12 @@ export const PATCH = withGates(
     }
 
     const [existing] = await db
-      .select({ id: safetyIncidents.id })
+      .select({
+        id: safetyIncidents.id,
+        severity: safetyIncidents.severity,
+        title: safetyIncidents.title,
+        assignedTo: safetyIncidents.assignedTo,
+      })
       .from(safetyIncidents)
       .where(and(eq(safetyIncidents.id, id), eq(safetyIncidents.companyId, companyId)))
       .limit(1)
@@ -214,6 +219,34 @@ export const PATCH = withGates(
       ipAddress: ctx.ipAddress,
       userAgent: ctx.userAgent,
     })
+
+    // Critical-alert producer (Phase 14.5): a NEW investigator assigned to a
+    // 'critical'-severity (emergency) incident gets a requiresAck critical alert.
+    // Recipient is the explicit assignee — never guessed. Self-assignment and an
+    // unchanged assignee do not fire (the assigner already knows).
+    const effectiveSeverity = d.severity ?? existing.severity
+    const newAssignee = d.assignedTo !== undefined && d.assignedTo !== null ? d.assignedTo : null
+    if (
+      newAssignee &&
+      newAssignee !== existing.assignedTo &&
+      newAssignee !== userId &&
+      effectiveSeverity === "critical"
+    ) {
+      const incidentTitle = d.title ?? existing.title
+      await db.insert(notifications).values({
+        userId: newAssignee,
+        companyId,
+        type: "error",
+        channel: "in_app",
+        title: `Incident critic alocat: ${incidentTitle}`.slice(0, 500),
+        body: `Ai fost desemnat investigator pentru un incident de severitate critică. Necesită atenția ta imediată.`,
+        entityType: "safety_incident",
+        entityId: id,
+        actionUrl: `/safety/incidents/${id}`,
+        requiresAck: true,
+        deliveredAt: new Date(),
+      })
+    }
 
     return NextResponse.json(updated)
   }
