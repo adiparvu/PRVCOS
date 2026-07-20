@@ -158,6 +158,10 @@ export const safetyTrainingRecords = pgTable(
     provider: varchar("provider", { length: 200 }),
     completedAt: timestamp("completed_at", { withTimezone: true }).notNull(),
     expiresAt: timestamp("expires_at", { withTimezone: true }),
+    // Stamped once the expiry reminder has been sent, so the daily cron alerts
+    // the worker exactly once per certificate (Phase 18.3). A renewed cert is a
+    // new row with a null stamp and gets its own reminder.
+    reminderSentAt: timestamp("reminder_sent_at", { withTimezone: true }),
     certificateUrl: varchar("certificate_url", { length: 500 }),
     notes: text("notes"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
