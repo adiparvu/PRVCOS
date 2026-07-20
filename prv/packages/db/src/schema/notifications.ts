@@ -107,6 +107,14 @@ export const notifications = pgTable(
     // is only ever set on the ORIGINAL notification, never the escalation copy.
     escalatedAt: timestamp("escalated_at", { withTimezone: true }),
 
+    // Critical alerts (Phase 14.5). requiresAck marks a notification that must be
+    // explicitly acknowledged — it shows as a persistent banner until the user
+    // presses "Am înțeles", which stamps acknowledgedAt. ackEscalatedAt guards
+    // the one-time escalation to the recipient's manager if it stays unacked.
+    requiresAck: boolean("requires_ack").notNull().default(false),
+    acknowledgedAt: timestamp("acknowledged_at", { withTimezone: true }),
+    ackEscalatedAt: timestamp("ack_escalated_at", { withTimezone: true }),
+
     metadata: jsonb("metadata").notNull().default({}),
 
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

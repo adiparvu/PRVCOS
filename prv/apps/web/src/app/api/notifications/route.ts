@@ -126,6 +126,8 @@ const dispatchSchema = z.object({
   channel: z.enum(["in_app", "push", "email", "sms"]).default("in_app"),
   scheduledFor: z.string().datetime().optional(),
   expiresAt: z.string().datetime().optional(),
+  // Critical alert: shows as a persistent banner until explicitly acknowledged.
+  requiresAck: z.boolean().default(false),
 })
 
 // POST /api/notifications — dispatch a notification (internal/system use, requires admin)
@@ -165,6 +167,7 @@ export const POST = withGates(
         entityId: parsed.data.entityId,
         scheduledFor: parsed.data.scheduledFor ? new Date(parsed.data.scheduledFor) : undefined,
         expiresAt: parsed.data.expiresAt ? new Date(parsed.data.expiresAt) : undefined,
+        requiresAck: parsed.data.requiresAck,
         deliveredAt: !parsed.data.scheduledFor ? new Date() : undefined,
       })
       .returning({ id: notifications.id })
