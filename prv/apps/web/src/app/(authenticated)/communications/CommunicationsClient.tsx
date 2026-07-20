@@ -34,6 +34,7 @@ interface Channel {
   isArchived: boolean
   lastMessageAt: string | null
   lastMessagePreview: string | null
+  unreadCount?: number
   createdAt: string
 }
 
@@ -1324,6 +1325,28 @@ export function CommunicationsClient({ userId, companyId }: Props) {
                     {ch.lastMessagePreview ?? ch.description ?? "Apasă pentru a intra în canal"}
                   </p>
                 </div>
+                {ch.unreadCount ? (
+                  <span
+                    style={{
+                      flexShrink: 0,
+                      alignSelf: "center",
+                      minWidth: 20,
+                      height: 20,
+                      padding: "0 6px",
+                      borderRadius: 100,
+                      background: "rgba(255,255,255,0.92)",
+                      color: "#000",
+                      fontSize: 11,
+                      fontWeight: 700,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                    aria-label={`${ch.unreadCount} necitite`}
+                  >
+                    {ch.unreadCount > 99 ? "99+" : ch.unreadCount}
+                  </span>
+                ) : null}
               </GlassRow>
             ))}
         </>
