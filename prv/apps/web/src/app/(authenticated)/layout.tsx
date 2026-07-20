@@ -10,6 +10,7 @@ import { CommandPaletteClient } from "./command-palette-client"
 import { QueryProvider } from "./query-provider"
 import { ToastProvider } from "@prv/ui"
 import { SidebarNav } from "./sidebar-nav"
+import { CriticalAlertBanner } from "./CriticalAlertBanner"
 
 export const dynamic = "force-dynamic"
 
@@ -52,6 +53,8 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
       {/* Main content — shifts right on md+ to accommodate sidebar */}
       <ToastProvider>
         <QueryProvider>
+          {/* Persistent critical-alert banner (Phase 14.5) — global, above content */}
+          <CriticalAlertBanner />
           <CommandPaletteClient role={session.role}>
             <SheetStackClient>
               <main
