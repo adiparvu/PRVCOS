@@ -193,6 +193,21 @@ function fmtLocale(locale: string | null) {
   return LOCALES.find((l) => l.value === locale)?.label ?? locale ?? "Romanian"
 }
 
+// Roles that may configure company-wide notification escalation policies. The
+// /settings/escalation page enforces this server-side; this only decides whether
+// to surface the entry so a worker isn't shown a link that would just redirect.
+const ESCALATION_MANAGER_ROLES = new Set([
+  "group_ceo",
+  "ceo",
+  "co_ceo",
+  "system_administrator",
+  "operations_manager",
+  "department_head",
+  "hr_payroll",
+  "project_director",
+  "shop_director",
+])
+
 // ── Skeleton ──────────────────────────────────────────────────────────────────
 
 function Skeleton() {
@@ -1094,6 +1109,14 @@ export function SettingsClient() {
           toggle={notifPrefs.sms}
           onToggle={() => updateNotif({ sms: !notifPrefs.sms })}
         />
+        {profile && ESCALATION_MANAGER_ROLES.has(profile.role) && (
+          <Row
+            icon={<IconClock />}
+            label="Escaladare (SLA)"
+            value="Configurează"
+            href="/settings/escalation"
+          />
+        )}
       </Section>
 
       {/* Preferences */}
