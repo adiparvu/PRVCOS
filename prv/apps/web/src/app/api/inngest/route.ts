@@ -32,6 +32,7 @@ import {
   invoiceOverdueFunction,
   inspectionOverdueFunction,
   trainingExpiryReminderFunction,
+  criticalAlertEscalateFunction,
 } from "@prv/jobs/functions"
 
 // Inngest webhook handler — receives events and dispatches to functions
@@ -70,6 +71,7 @@ export const { GET, POST, PUT } = serve({
     invoiceOverdueFunction,
     inspectionOverdueFunction,
     trainingExpiryReminderFunction,
+    criticalAlertEscalateFunction,
   ],
   signingKey: process.env["INNGEST_SIGNING_KEY"],
 })
