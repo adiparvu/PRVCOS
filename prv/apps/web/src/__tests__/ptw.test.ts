@@ -10,6 +10,7 @@ import {
   isPermitStatus,
   allowedActionsForValidity,
   approverSeparationErrors,
+  permitNotificationRecipients,
   type PermitActor,
 } from "@/lib/ptw"
 
@@ -249,5 +250,37 @@ describe("suspend / reinstate / revoke lifecycle", () => {
     expect(allowedActionsForValidity("suspended", supervisor, 500, now)).not.toContain("reinstate")
     // revoke/close still available on an expired suspended permit
     expect(allowedActionsForValidity("suspended", supervisor, 500, now)).toContain("revoke")
+  })
+})
+
+describe("permitNotificationRecipients", () => {
+  const parties = {
+    title: "Sudură",
+    requestedBy: "req",
+    supervisorId: "sup",
+    safetyOfficerId: "off",
+  }
+  it("submit notifies the supervisor", () => {
+    expect(permitNotificationRecipients("submit", "pending_supervisor", parties)).toEqual([
+      { userId: "sup", title: "Permis de aprobat: Sudură" },
+    ])
+  })
+  it("stage-1 approve notifies the safety officer; stage-2 approve notifies the requester", () => {
+    expect(
+      permitNotificationRecipients("approve", "pending_safety_officer", parties)[0]!.userId
+    ).toBe("off")
+    expect(permitNotificationRecipients("approve", "approved", parties)[0]!.userId).toBe("req")
+  })
+  it("suspend notifies requester + safety officer", () => {
+    const r = permitNotificationRecipients("suspend", "suspended", parties).map((n) => n.userId)
+    expect(r).toEqual(["req", "off"])
+  })
+  it("skips null recipients", () => {
+    expect(
+      permitNotificationRecipients("submit", "pending_supervisor", {
+        ...parties,
+        supervisorId: null,
+      })
+    ).toEqual([])
   })
 })

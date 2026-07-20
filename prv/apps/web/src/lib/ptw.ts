@@ -227,3 +227,59 @@ export function approverSeparationErrors(
     errors.push("Cei doi aprobatori trebuie să fie persoane diferite")
   return errors
 }
+
+export interface PermitParties {
+  title: string
+  requestedBy: string
+  supervisorId: string | null
+  safetyOfficerId: string | null
+}
+
+export interface PermitNotice {
+  userId: string
+  title: string
+}
+
+// Who to notify after a stage change, and with what headline. Recipients that are
+// null are skipped; the acting user is de-duplicated by the caller. Uses toStatus to
+// disambiguate the two approve stages.
+export function permitNotificationRecipients(
+  action: PermitAction,
+  toStatus: PermitStatus,
+  permit: PermitParties
+): PermitNotice[] {
+  const push = (userId: string | null, title: string): PermitNotice[] =>
+    userId ? [{ userId, title }] : []
+  const t = permit.title
+  switch (action) {
+    case "submit":
+      return push(permit.supervisorId, `Permis de aprobat: ${t}`)
+    case "approve":
+      return toStatus === "pending_safety_officer"
+        ? push(permit.safetyOfficerId, `Permis de aprobat (SSM/PSI): ${t}`)
+        : push(permit.requestedBy, `Permis aprobat: ${t}`)
+    case "reject":
+      return push(permit.requestedBy, `Permis respins: ${t}`)
+    case "activate":
+      return [
+        ...push(permit.supervisorId, `Permis activat: ${t}`),
+        ...push(permit.safetyOfficerId, `Permis activat: ${t}`),
+      ]
+    case "close":
+      return [
+        ...push(permit.supervisorId, `Permis închis: ${t}`),
+        ...push(permit.safetyOfficerId, `Permis închis: ${t}`),
+      ]
+    case "suspend":
+      return [
+        ...push(permit.requestedBy, `Permis suspendat: ${t}`),
+        ...push(permit.safetyOfficerId, `Permis suspendat: ${t}`),
+      ]
+    case "reinstate":
+      return push(permit.requestedBy, `Permis reluat: ${t}`)
+    case "revoke":
+      return push(permit.requestedBy, `Permis revocat: ${t}`)
+    default:
+      return []
+  }
+}

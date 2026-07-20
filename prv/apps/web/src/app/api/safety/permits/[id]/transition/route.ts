@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
 import { writeAuditLog } from "@prv/auth"
 import { db } from "@prv/db"
-import { safetyPermits } from "@prv/db/schema"
+import { safetyPermits, notifications } from "@prv/db/schema"
 import { and, eq } from "drizzle-orm"
 import { z } from "zod"
 import {
@@ -12,6 +12,7 @@ import {
   canTransition,
   FORWARD_ACTIONS,
   isExpiredWindow,
+  permitNotificationRecipients,
   validatePermitForSubmit,
   type PermitAction,
   type PermitActor,
@@ -154,6 +155,28 @@ export const POST = withGates(
       .set(set)
       .where(and(eq(safetyPermits.id, id), eq(safetyPermits.companyId, companyId)))
       .returning({ id: safetyPermits.id, status: safetyPermits.status })
+
+    // Notify the next actor / requester of the stage change (in-app), skipping the
+    // acting user and de-duplicating recipients.
+    const notices = permitNotificationRecipients(action, transition.to, {
+      title: permit.title,
+      requestedBy: permit.requestedBy,
+      supervisorId: permit.supervisorId,
+      safetyOfficerId: permit.safetyOfficerId,
+    })
+    const seen = new Set<string>([userId])
+    const notifRows = notices
+      .filter((n) => !seen.has(n.userId) && (seen.add(n.userId), true))
+      .map((n) => ({
+        userId: n.userId,
+        companyId,
+        type: "action_required" as const,
+        title: n.title,
+        actionUrl: `/safety/permits/${id}`,
+        entityType: "safety_permit",
+        entityId: id,
+      }))
+    if (notifRows.length > 0) await db.insert(notifications).values(notifRows)
 
     void writeAuditLog({
       companyId,
