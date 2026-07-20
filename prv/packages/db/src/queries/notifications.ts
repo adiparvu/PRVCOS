@@ -3,8 +3,19 @@ import { notifications } from "../schema/notifications"
 import { approvalRequests } from "../schema/approvals"
 import { purchaseOrders } from "../schema/procurement"
 import { leaveRequests } from "../schema/workforce"
-import { eq, and, desc, lt, or, inArray, sql } from "drizzle-orm"
+import { eq, and, desc, lt, lte, gt, or, isNull, inArray, sql } from "drizzle-orm"
 import type { SQL } from "drizzle-orm"
+
+// Mirrors isNotificationVisible() in ./notification-visibility (kept in sync):
+// a row belongs in the live feed only if its scheduledFor has passed (or is
+// null) and its expiresAt is still in the future (or is null). isDismissed is
+// enforced separately by each query.
+function feedTimingConditions(now: Date): SQL<unknown>[] {
+  return [
+    or(isNull(notifications.scheduledFor), lte(notifications.scheduledFor, now)) as SQL<unknown>,
+    or(isNull(notifications.expiresAt), gt(notifications.expiresAt, now)) as SQL<unknown>,
+  ]
+}
 
 export type NotificationFilter = "all" | "alerts" | "approvals" | "inbox" | "system"
 export type NotificationActionKind = "approve" | "decline"
@@ -53,6 +64,7 @@ export async function queryNotifications(
   cursor?: string,
   limit = 30
 ): Promise<NotificationRow[]> {
+  const now = new Date()
   const rows = await db
     .select({
       id: notifications.id,
@@ -73,6 +85,7 @@ export async function queryNotifications(
         eq(notifications.userId, userId),
         eq(notifications.companyId, companyId),
         eq(notifications.isDismissed, false),
+        ...feedTimingConditions(now),
         filterClause(filter),
         cursor ? lt(notifications.createdAt, new Date(parseInt(cursor, 10))) : undefined
       )
@@ -87,6 +100,7 @@ export async function queryNotificationCounts(
   userId: string,
   companyId: string
 ): Promise<NotificationCounts> {
+  const now = new Date()
   const rows = await db
     .select({
       type: notifications.type,
@@ -98,7 +112,8 @@ export async function queryNotificationCounts(
         eq(notifications.userId, userId),
         eq(notifications.companyId, companyId),
         eq(notifications.isRead, false),
-        eq(notifications.isDismissed, false)
+        eq(notifications.isDismissed, false),
+        ...feedTimingConditions(now)
       )
     )
     .groupBy(notifications.type)
@@ -197,12 +212,19 @@ export async function executeNotificationAction(
     await db
       .update(approvalRequests)
       .set({ status: decision, resolvedAt: new Date(), updatedAt: new Date() })
-      .where(and(eq(approvalRequests.id, entityId), inArray(approvalRequests.status, ["pending", "urgent"])))
+      .where(
+        and(
+          eq(approvalRequests.id, entityId),
+          inArray(approvalRequests.status, ["pending", "urgent"])
+        )
+      )
   } else if (entityType === "purchase_order" && entityId) {
     await db
       .update(purchaseOrders)
       .set({ status: decision, updatedAt: new Date() })
-      .where(and(eq(purchaseOrders.id, entityId), inArray(purchaseOrders.status, ["draft", "pending"])))
+      .where(
+        and(eq(purchaseOrders.id, entityId), inArray(purchaseOrders.status, ["draft", "pending"]))
+      )
   } else if ((entityType === "time_off_request" || entityType === "leave_request") && entityId) {
     await db
       .update(leaveRequests)

@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server"
 import { withMobileAuth } from "@/lib/mobile/auth"
 import { db } from "@prv/db"
 import { notifications } from "@prv/db/schema"
-import { eq, and, desc, sql } from "drizzle-orm"
+import { eq, and, desc, sql, or, isNull, lte, gt } from "drizzle-orm"
 import { z } from "zod"
 
 export const dynamic = "force-dynamic"
@@ -12,10 +12,14 @@ export const runtime = "nodejs"
 type FilterType = "all" | "unread" | "alerts" | "approvals" | "messages" | "tasks" | "system"
 
 function filterConditions(userId: string, companyId: string, filter: FilterType) {
+  const now = new Date()
   const base = [
     eq(notifications.userId, userId),
     eq(notifications.companyId, companyId),
     eq(notifications.isDismissed, false),
+    // Honor scheduledFor / expiresAt (see @prv/db notification-visibility).
+    or(isNull(notifications.scheduledFor), lte(notifications.scheduledFor, now)),
+    or(isNull(notifications.expiresAt), gt(notifications.expiresAt, now)),
   ]
   switch (filter) {
     case "unread":
@@ -55,6 +59,7 @@ export const GET = withMobileAuth(async (req: NextRequest, ctx) => {
   const hasMore = rows.length > limit
   const items = rows.slice(0, limit)
 
+  const unreadNow = new Date()
   const [unreadRow] = await db
     .select({ count: sql<number>`count(*)::int` })
     .from(notifications)
@@ -63,7 +68,9 @@ export const GET = withMobileAuth(async (req: NextRequest, ctx) => {
         eq(notifications.userId, ctx.userId),
         eq(notifications.companyId, ctx.companyId),
         eq(notifications.isDismissed, false),
-        eq(notifications.isRead, false)
+        eq(notifications.isRead, false),
+        or(isNull(notifications.scheduledFor), lte(notifications.scheduledFor, unreadNow)),
+        or(isNull(notifications.expiresAt), gt(notifications.expiresAt, unreadNow))
       )
     )
 
