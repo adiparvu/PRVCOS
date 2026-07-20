@@ -91,6 +91,23 @@ const BASE: CommandEntry[] = [
     href: "/people/holidays",
   },
   {
+    id: "nav.payslips",
+    label: "Fluturașii mei",
+    section: "Navigation",
+    keywords: [
+      "payslip",
+      "payslips",
+      "fluturas",
+      "fluturasi",
+      "salariu",
+      "salary",
+      "pay",
+      "net",
+      "brut",
+    ],
+    href: "/people/payslips",
+  },
+  {
     id: "nav.contracts",
     label: "Employment Contracts",
     section: "Navigation",
