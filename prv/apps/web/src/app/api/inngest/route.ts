@@ -28,6 +28,7 @@ import {
   notificationEscalateFunction,
   announcementExpireFunction,
   documentRetentionArchiveFunction,
+  promotionExpireFunction,
 } from "@prv/jobs/functions"
 
 // Inngest webhook handler — receives events and dispatches to functions
@@ -62,6 +63,7 @@ export const { GET, POST, PUT } = serve({
     notificationEscalateFunction,
     announcementExpireFunction,
     documentRetentionArchiveFunction,
+    promotionExpireFunction,
   ],
   signingKey: process.env["INNGEST_SIGNING_KEY"],
 })
