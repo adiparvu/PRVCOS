@@ -6,6 +6,7 @@ import {
   timestamp,
   boolean,
   jsonb,
+  integer,
   pgEnum,
   index,
   unique,
@@ -99,6 +100,13 @@ export const notifications = pgTable(
     scheduledFor: timestamp("scheduled_for", { withTimezone: true }),
     expiresAt: timestamp("expires_at", { withTimezone: true }),
 
+    // SLA escalation (Phase 14.6). When an action_required notification stays
+    // unread AND undismissed past a company escalation policy's threshold, the
+    // hourly cron escalates it — creating a NEW notification for the policy's
+    // named target — and stamps this so it escalates at most once. This column
+    // is only ever set on the ORIGINAL notification, never the escalation copy.
+    escalatedAt: timestamp("escalated_at", { withTimezone: true }),
+
     metadata: jsonb("metadata").notNull().default({}),
 
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -141,7 +149,62 @@ export const notificationPreferences = pgTable(
   ]
 )
 
+// ─── Escalation policies (Phase 14.6) ────────────────────────────────────────
+// Admin-declared SLA rules. An action_required notification that stays unread
+// AND undismissed for longer than `slaMinutes` is escalated to `escalateToUserId`
+// — an EXPLICIT, admin-chosen recipient. The platform never guesses an org chart
+// or "who the manager is"; the target is always named on the policy. An optional
+// `entityType` scopes the rule (e.g. only "safety_permit" notifications); null
+// applies to every action_required notification in the company.
+export const notificationEscalationPolicies = pgTable(
+  "notification_escalation_policies",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id, { onDelete: "cascade" }),
+
+    name: varchar("name", { length: 200 }).notNull(),
+
+    // null = applies to all action_required notifications; otherwise scopes to
+    // notifications whose entityType matches (e.g. "safety_permit", "approval").
+    entityType: varchar("entity_type", { length: 100 }),
+
+    // How long a notification may stay unacknowledged before escalating.
+    slaMinutes: integer("sla_minutes").notNull().default(60),
+
+    // The explicit, admin-chosen recipient of the escalation notification.
+    escalateToUserId: uuid("escalate_to_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+
+    isActive: boolean("is_active").notNull().default(true),
+
+    createdById: uuid("created_by_id").references(() => users.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("notif_escalation_policies_company_id_idx").on(table.companyId),
+    index("notif_escalation_policies_active_idx").on(table.companyId, table.isActive),
+  ]
+)
+
 // ─── Relations ───────────────────────────────────────────────────────────────
+
+export const notificationEscalationPoliciesRelations = relations(
+  notificationEscalationPolicies,
+  ({ one }) => ({
+    company: one(companies, {
+      fields: [notificationEscalationPolicies.companyId],
+      references: [companies.id],
+    }),
+    escalateTo: one(users, {
+      fields: [notificationEscalationPolicies.escalateToUserId],
+      references: [users.id],
+    }),
+  })
+)
 
 export const notificationsRelations = relations(notifications, ({ one }) => ({
   user: one(users, { fields: [notifications.userId], references: [users.id] }),
