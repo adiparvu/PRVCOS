@@ -64,7 +64,7 @@ export const notificationEscalateFunction = inngest.createFunction(
     return step.run("escalate-breached", async () => {
       const { db } = await import("@prv/db")
       const { notifications, notificationEscalationPolicies } = await import("@prv/db/schema")
-      const { and, eq, isNull, sql } = await import("drizzle-orm")
+      const { and, eq, isNull, inArray } = await import("drizzle-orm")
       const now = new Date()
 
       // 1. Active policies across all companies.
@@ -104,7 +104,7 @@ export const notificationEscalateFunction = inngest.createFunction(
             eq(notifications.isRead, false),
             eq(notifications.isDismissed, false),
             isNull(notifications.escalatedAt),
-            sql`${notifications.companyId} = ANY(${companyIds})`
+            inArray(notifications.companyId, companyIds)
           )
         )
         .limit(1000)
