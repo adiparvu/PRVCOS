@@ -157,6 +157,11 @@ const GROUPS: Group[] = [
         description: "Days-since-incident, near-miss, high-risk sites.",
       },
       {
+        href: "/analytics/permit-compliance",
+        label: "PTW Compliance",
+        description: "Permit-to-work close-out rate and lifecycle.",
+      },
+      {
         href: "/analytics/safety-training",
         label: "Training Compliance",
         description: "Certification and training expiry register.",
