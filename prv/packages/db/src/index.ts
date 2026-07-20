@@ -48,3 +48,9 @@ export type {
   NotificationRow,
   NotificationCounts,
 } from "./queries/notifications"
+export {
+  effectiveExpiryISO,
+  daysUntilExpiry,
+  isRetentionArchiveDue,
+} from "./queries/retention-archive"
+export type { RetentionArchiveDoc } from "./queries/retention-archive"
