@@ -277,6 +277,47 @@ export function PermitDetailClient({ id }: { id: string }) {
         <Row k="Supervizor" v={permit.supervisorName ?? "neasignat"} />
         <Row k="Aprobat supervizor" v={fmt(permit.supervisorApprovedAt)} />
         <Row k="Responsabil SSM/PSI" v={permit.safetyOfficerName ?? "neasignat"} />
+        {permit.officerCompetency && permit.safetyOfficerId && (
+          <div style={{ padding: "0 16px 6px", marginTop: -4 }}>
+            {(() => {
+              const c = permit.officerCompetency
+              const meta =
+                c.status === "covered"
+                  ? {
+                      label: "Competență acoperită",
+                      color: "rgba(48,209,88,0.95)",
+                      bg: "rgba(48,209,88,0.13)",
+                    }
+                  : c.status === "expired"
+                    ? {
+                        label: "Certificare expirată",
+                        color: "rgba(255,159,10,0.95)",
+                        bg: "rgba(255,159,10,0.13)",
+                      }
+                    : {
+                        label: "Fără certificare potrivită",
+                        color: "rgba(255,159,10,0.95)",
+                        bg: "rgba(255,159,10,0.13)",
+                      }
+              return (
+                <span
+                  title={c.matchedName ?? `Necesar: ${c.keywords.join(", ")}`}
+                  style={{
+                    fontSize: 10.5,
+                    fontWeight: 700,
+                    padding: "2px 9px",
+                    borderRadius: 100,
+                    background: meta.bg,
+                    color: meta.color,
+                  }}
+                >
+                  {meta.label}
+                  {c.status === "covered" ? " ✓" : " ⚠︎"}
+                </span>
+              )
+            })()}
+          </div>
+        )}
         <Row k="Aprobat SSM/PSI" v={fmt(permit.safetyOfficerApprovedAt)} />
         {permit.activatedAt && <Row k="Activat" v={fmt(permit.activatedAt)} />}
         {permit.closedAt && <Row k="Închis" v={fmt(permit.closedAt)} />}

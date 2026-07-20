@@ -3,9 +3,17 @@ import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
 import { writeAuditLog } from "@prv/auth"
 import { db } from "@prv/db"
-import { safetyPermits, users, projects, permitEvents, permitDesignations } from "@prv/db/schema"
+import {
+  safetyPermits,
+  users,
+  projects,
+  permitEvents,
+  permitDesignations,
+  safetyTrainingRecords,
+} from "@prv/db/schema"
 import { aliasedTable, and, asc, eq } from "drizzle-orm"
 import { z } from "zod"
+import { assessCompetency, type CompetencyAssessment } from "@/lib/permit-competency"
 import {
   allowedActionsForValidity,
   effectivePermitStatus,
@@ -62,6 +70,7 @@ export interface PermitDetail {
     reason: string | null
     at: string
   }[]
+  officerCompetency: CompetencyAssessment | null
 }
 
 function permitId(req: NextRequest): string {
@@ -113,6 +122,30 @@ export const GET = withGates(
       .leftJoin(users, eq(permitEvents.actorId, users.id))
       .where(eq(permitEvents.permitId, p.id))
       .orderBy(asc(permitEvents.createdAt))
+    let officerCompetency: CompetencyAssessment | null = null
+    if (p.safetyOfficerId) {
+      const training = await db
+        .select({
+          trainingName: safetyTrainingRecords.trainingName,
+          expiresAt: safetyTrainingRecords.expiresAt,
+        })
+        .from(safetyTrainingRecords)
+        .where(
+          and(
+            eq(safetyTrainingRecords.userId, p.safetyOfficerId),
+            eq(safetyTrainingRecords.companyId, companyId)
+          )
+        )
+        .limit(200)
+      officerCompetency = assessCompetency(
+        training.map((t) => ({
+          trainingName: t.trainingName,
+          expiresAt: t.expiresAt?.toISOString() ?? null,
+        })),
+        p.type,
+        Date.now()
+      )
+    }
     const ADMIN_ROLES = new Set(["group_ceo", "ceo", "co_ceo", "system_administrator"])
     const myDesignations = await db
       .select({ role: permitDesignations.role })
@@ -177,6 +210,7 @@ export const GET = withGates(
         reason: e.reason,
         at: e.createdAt.toISOString(),
       })),
+      officerCompetency,
     }
     return NextResponse.json(detail)
   }
