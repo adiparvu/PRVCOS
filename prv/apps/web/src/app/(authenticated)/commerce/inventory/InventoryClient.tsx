@@ -1,4 +1,5 @@
 "use client"
+import Link from "next/link"
 
 import { useState } from "react"
 import {
@@ -242,6 +243,18 @@ export function InventoryClient() {
           >
             Stock Levels
           </h1>
+          <Link
+            href="/commerce/inventory/stock-takes"
+            style={{
+              fontSize: 12.5,
+              color: "rgba(10,132,255,0.9)",
+              textDecoration: "none",
+              marginTop: 4,
+              display: "inline-block",
+            }}
+          >
+            Inventarieri →
+          </Link>
         </div>
         <button
           onClick={() => setShowForm((v) => !v)}
