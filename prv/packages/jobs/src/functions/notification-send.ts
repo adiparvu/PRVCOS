@@ -1,5 +1,6 @@
 import { inngest } from "../client"
 import { sendExpoPushNotifications, isExpoToken } from "../lib/expo-push"
+import { shouldDeliver } from "../lib/notification-delivery"
 
 export const notificationSendFunction = inngest.createFunction(
   {
@@ -58,7 +59,7 @@ export const notificationSendFunction = inngest.createFunction(
         .limit(1)
 
       const [user] = await db
-        .select({ email: users.email, firstName: users.firstName })
+        .select({ email: users.email, firstName: users.firstName, timezone: users.timezone })
         .from(users)
         .where(eq(users.id, userId))
         .limit(1)
@@ -69,16 +70,55 @@ export const notificationSendFunction = inngest.createFunction(
         .where(and(eq(pushTokens.userId, userId), eq(pushTokens.isActive, true)))
 
       return {
+        inApp: pref?.inApp ?? true,
         email: pref?.email ?? true,
         push: pref?.push ?? true,
+        sms: pref?.sms ?? false,
+        quietHoursStart: pref?.quietHoursStart ?? null,
+        quietHoursEnd: pref?.quietHoursEnd ?? null,
+        timezone: user?.timezone ?? "UTC",
         userEmail: user?.email,
         firstName: user?.firstName,
         pushTokenList: tokens.map((t) => t.token).filter(isExpoToken),
       }
     })
 
+    // Delivery gate: quiet hours / DND suppress the interruptive channels (push,
+    // sms) unless the notification is critical. `error` maps to critical so it
+    // always breaks through; every other type respects quiet hours (in-app +
+    // email still land — email is not interruptive). Quiet hours are evaluated in
+    // the user's own timezone. Shared, unit-tested pure logic (packages/jobs/lib).
+    const deliveryPrefs = {
+      inApp: prefs.inApp,
+      push: prefs.push,
+      email: prefs.email,
+      sms: prefs.sms,
+      quietHoursStart: prefs.quietHoursStart,
+      quietHoursEnd: prefs.quietHoursEnd,
+    }
+    const priority = type === "error" ? "critical" : ("normal" as "critical" | "normal")
+    let nowHHMM = "00:00"
+    try {
+      nowHHMM = new Intl.DateTimeFormat("en-GB", {
+        timeZone: prefs.timezone,
+        hour: "2-digit",
+        minute: "2-digit",
+        hourCycle: "h23",
+      }).format(new Date())
+    } catch {
+      // Unknown timezone → fall back to UTC.
+      nowHHMM = new Intl.DateTimeFormat("en-GB", {
+        timeZone: "UTC",
+        hour: "2-digit",
+        minute: "2-digit",
+        hourCycle: "h23",
+      }).format(new Date())
+    }
+    const emailAllowed = shouldDeliver(deliveryPrefs, priority, "email", nowHHMM)
+    const pushAllowed = shouldDeliver(deliveryPrefs, priority, "push", nowHHMM)
+
     // Step 3: email channel
-    if (prefs.email && prefs.userEmail) {
+    if (emailAllowed && prefs.userEmail) {
       await step.run("send-email", async () => {
         const { sendEmail, EmailFrom, notificationEmail } = await import("@prv/email")
 
@@ -109,7 +149,7 @@ export const notificationSendFunction = inngest.createFunction(
     let pushSent = false
     let pushDeregisteredCount = 0
 
-    if (prefs.push && prefs.pushTokenList.length > 0) {
+    if (pushAllowed && prefs.pushTokenList.length > 0) {
       const pushResult = await step.run("send-push", async () => {
         const accessToken = process.env["EXPO_ACCESS_TOKEN"]
         const title = (variables["title"] as string | undefined) ?? templateId
@@ -172,7 +212,7 @@ export const notificationSendFunction = inngest.createFunction(
       companyId,
       channels: {
         inApp: true,
-        email: !!(prefs.email && prefs.userEmail),
+        email: !!(emailAllowed && prefs.userEmail),
         push: pushSent,
         pushTokenCount: prefs.pushTokenList.length,
         pushDeregistered: pushDeregisteredCount,
