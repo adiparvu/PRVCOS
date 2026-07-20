@@ -303,3 +303,93 @@ export const inspectionItemResultsRelations = relations(inspectionItemResults, (
 
 export type InspectionTemplate = typeof inspectionTemplates.$inferSelect
 export type InspectionItemResult = typeof inspectionItemResults.$inferSelect
+
+// Phase 18.3 — Permit-to-Work.
+// An 8-state permit with a two-stage approval (supervisor → safety officer)
+// modelled directly on the row (paired approver/decision stamps). Ordering and
+// authorization are enforced in the pure lib apps/web/src/lib/ptw.ts.
+export const permitTypeEnum = pgEnum("permit_type", [
+  "hot_work",
+  "confined_space",
+  "working_at_height",
+  "electrical",
+  "excavation",
+])
+
+export const permitStatusEnum = pgEnum("permit_status", [
+  "draft",
+  "pending_supervisor",
+  "pending_safety_officer",
+  "approved",
+  "active",
+  "closed",
+  "rejected",
+  "expired",
+])
+
+export const safetyPermits = pgTable(
+  "safety_permits",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id, { onDelete: "cascade" }),
+    projectId: uuid("project_id").references(() => projects.id, { onDelete: "set null" }),
+    requestedBy: uuid("requested_by")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    supervisorId: uuid("supervisor_id").references(() => users.id, { onDelete: "set null" }),
+    safetyOfficerId: uuid("safety_officer_id").references(() => users.id, { onDelete: "set null" }),
+
+    type: permitTypeEnum("type").notNull(),
+    status: permitStatusEnum("status").notNull().default("draft"),
+    title: varchar("title", { length: 300 }).notNull(),
+    description: text("description").notNull(),
+    location: varchar("location", { length: 300 }),
+    validFrom: timestamp("valid_from", { withTimezone: true }).notNull(),
+    validTo: timestamp("valid_to", { withTimezone: true }).notNull(),
+
+    riskAssessment: jsonb("risk_assessment")
+      .$type<{ hazard: string; control: string; residualRisk: "low" | "medium" | "high" }[]>()
+      .notNull()
+      .default([]),
+    ppe: jsonb("ppe").$type<string[]>().notNull().default([]),
+    typeDetails: jsonb("type_details").$type<Record<string, unknown>>().notNull().default({}),
+
+    supervisorApprovedBy: uuid("supervisor_approved_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    supervisorApprovedAt: timestamp("supervisor_approved_at", { withTimezone: true }),
+    safetyOfficerApprovedBy: uuid("safety_officer_approved_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    safetyOfficerApprovedAt: timestamp("safety_officer_approved_at", { withTimezone: true }),
+    rejectedBy: uuid("rejected_by").references(() => users.id, { onDelete: "set null" }),
+    rejectedAt: timestamp("rejected_at", { withTimezone: true }),
+    rejectionReason: text("rejection_reason"),
+    activatedBy: uuid("activated_by").references(() => users.id, { onDelete: "set null" }),
+    activatedAt: timestamp("activated_at", { withTimezone: true }),
+    closedBy: uuid("closed_by").references(() => users.id, { onDelete: "set null" }),
+    closedAt: timestamp("closed_at", { withTimezone: true }),
+    closeOutNotes: text("close_out_notes"),
+
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("safety_permits_company_id_idx").on(t.companyId),
+    index("safety_permits_project_id_idx").on(t.projectId),
+    index("safety_permits_status_idx").on(t.status),
+    index("safety_permits_type_idx").on(t.type),
+    index("safety_permits_valid_to_idx").on(t.validTo),
+    index("safety_permits_requested_by_idx").on(t.requestedBy),
+  ]
+)
+
+export const safetyPermitsRelations = relations(safetyPermits, ({ one }) => ({
+  company: one(companies, { fields: [safetyPermits.companyId], references: [companies.id] }),
+  project: one(projects, { fields: [safetyPermits.projectId], references: [projects.id] }),
+  requester: one(users, { fields: [safetyPermits.requestedBy], references: [users.id] }),
+}))
+
+export type SafetyPermit = typeof safetyPermits.$inferSelect
