@@ -205,6 +205,25 @@ export function KnowledgeArticleClient({ id }: { id: string }) {
       .finally(() => setBusy(false))
   }, [article, id, loadArticle, toast])
 
+  const submitFeedback = useCallback(
+    (rating: "helpful" | "not_helpful") => {
+      if (busy) return
+      setBusy(true)
+      fetch(`/api/knowledge/${id}/feedback`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ rating }),
+      })
+        .then(async (r) => {
+          if (!r.ok) throw new Error("feedback")
+          await loadArticle()
+        })
+        .catch(() => toast.error("Nu s-a putut trimite", "Încearcă din nou."))
+        .finally(() => setBusy(false))
+    },
+    [busy, id, loadArticle, toast]
+  )
+
   const archiveArticle = useCallback(() => {
     setBusy(true)
     fetch(`/api/knowledge/${id}`, { method: "DELETE" })
@@ -793,6 +812,63 @@ export function KnowledgeArticleClient({ id }: { id: string }) {
             ))}
           </SectionCard>
         )}
+
+        {/* Was this helpful? */}
+        <div
+          style={{
+            margin: "16px",
+            padding: "16px 18px",
+            background: "rgba(255,255,255,0.06)",
+            border: "1px solid rgba(255,255,255,0.12)",
+            borderRadius: 16,
+            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.18)",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            <span style={{ fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.85)" }}>
+              A fost util articolul?
+            </span>
+            {article.feedback.helpfulPct !== null && (
+              <span style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", marginLeft: "auto" }}>
+                {article.feedback.helpfulPct}% util ·{" "}
+                {article.feedback.helpful + article.feedback.notHelpful} voturi
+              </span>
+            )}
+          </div>
+          <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+            {[
+              { r: "helpful" as const, label: "👍 Da" },
+              { r: "not_helpful" as const, label: "👎 Nu" },
+            ].map(({ r, label }) => {
+              const active = article.feedback.yourRating === r
+              return (
+                <button
+                  key={r}
+                  type="button"
+                  disabled={busy}
+                  onClick={() => submitFeedback(r)}
+                  style={{
+                    padding: "8px 16px",
+                    borderRadius: 100,
+                    fontSize: 13,
+                    fontWeight: 640,
+                    cursor: busy ? "default" : "pointer",
+                    background: active ? "rgba(255,255,255,0.92)" : "rgba(255,255,255,0.06)",
+                    color: active ? "#000" : "rgba(255,255,255,0.75)",
+                    border: active ? "none" : "1px solid rgba(255,255,255,0.14)",
+                  }}
+                >
+                  {label}
+                </button>
+              )
+            })}
+            {article.feedback.yourRating && (
+              <span style={{ alignSelf: "center", fontSize: 12, color: "rgba(48,209,88,0.9)" }}>
+                Mulțumim pentru feedback!
+              </span>
+            )}
+          </div>
+        </div>
 
         {/* Related */}
         {article.related.length > 0 && (
