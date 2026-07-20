@@ -283,3 +283,40 @@ export function permitNotificationRecipients(
       return []
   }
 }
+
+// ── Permit approver designations (safe-variant Safety Officer model) ──────────
+// "Safety Officer" / "Supervisor" are per-company DESIGNATIONS (a managed list),
+// not global roles. The permit stores an assigned approver per stage; at action
+// time we additionally require the acting user to still HOLD the matching
+// designation (or be an elevated admin), so a revoked designation immediately
+// removes approval power even on an already-assigned permit.
+
+export const PERMIT_DESIGNATION_ROLES = ["supervisor", "safety_officer"] as const
+export type PermitDesignationRole = (typeof PERMIT_DESIGNATION_ROLES)[number]
+
+export function isDesignationRole(v: string): v is PermitDesignationRole {
+  return (PERMIT_DESIGNATION_ROLES as readonly string[]).includes(v)
+}
+
+export interface ResolveActorInput {
+  userId: string
+  isAdmin: boolean
+  requestedBy: string
+  supervisorId: string | null
+  safetyOfficerId: string | null
+  designations: PermitDesignationRole[]
+}
+
+// Build the PermitActor with the designation tightening applied. A user is treated
+// as this permit's supervisor/safety-officer only when they are BOTH the assigned
+// approver AND currently designated for that role (admins bypass the designation
+// requirement, matching canAct's admin fallback).
+export function resolvePermitActor(input: ResolveActorInput): PermitActor {
+  const has = (r: PermitDesignationRole): boolean => input.isAdmin || input.designations.includes(r)
+  return {
+    isRequester: input.requestedBy === input.userId,
+    isSupervisor: input.supervisorId === input.userId && has("supervisor"),
+    isSafetyOfficer: input.safetyOfficerId === input.userId && has("safety_officer"),
+    isAdmin: input.isAdmin,
+  }
+}

@@ -7,6 +7,7 @@ import {
   boolean,
   integer,
   jsonb,
+  unique,
   pgEnum,
   index,
   real,
@@ -438,3 +439,40 @@ export const permitEventsRelations = relations(permitEvents, ({ one }) => ({
 }))
 
 export type PermitEvent = typeof permitEvents.$inferSelect
+
+// permit_designations (Phase 18.3 safe-variant) — the per-company managed list of
+// who may act as supervisor or safety officer on permits. Not a global role.
+export const permitDesignationRoleEnum = pgEnum("permit_designation_role", [
+  "supervisor",
+  "safety_officer",
+])
+
+export const permitDesignations = pgTable(
+  "permit_designations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    role: permitDesignationRoleEnum("role").notNull(),
+    createdByUserId: uuid("created_by_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("permit_designations_company_id_idx").on(t.companyId),
+    index("permit_designations_user_id_idx").on(t.userId),
+    unique("permit_designations_company_user_role_unique").on(t.companyId, t.userId, t.role),
+  ]
+)
+
+export const permitDesignationsRelations = relations(permitDesignations, ({ one }) => ({
+  company: one(companies, { fields: [permitDesignations.companyId], references: [companies.id] }),
+  user: one(users, { fields: [permitDesignations.userId], references: [users.id] }),
+}))
+
+export type PermitDesignation = typeof permitDesignations.$inferSelect

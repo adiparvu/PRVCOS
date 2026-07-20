@@ -11,6 +11,8 @@ import {
   allowedActionsForValidity,
   approverSeparationErrors,
   permitNotificationRecipients,
+  resolvePermitActor,
+  isDesignationRole,
   type PermitActor,
 } from "@/lib/ptw"
 
@@ -282,5 +284,49 @@ describe("permitNotificationRecipients", () => {
         supervisorId: null,
       })
     ).toEqual([])
+  })
+})
+
+describe("resolvePermitActor (designation tightening)", () => {
+  const perm = { requestedBy: "req", supervisorId: "sup", safetyOfficerId: "off" }
+  it("treats an assigned + designated approver as that stage's actor", () => {
+    const a = resolvePermitActor({
+      userId: "sup",
+      isAdmin: false,
+      ...perm,
+      designations: ["supervisor"],
+    })
+    expect(a.isSupervisor).toBe(true)
+    expect(a.isSafetyOfficer).toBe(false)
+  })
+  it("strips approval power when the designation was revoked", () => {
+    const a = resolvePermitActor({ userId: "sup", isAdmin: false, ...perm, designations: [] })
+    expect(a.isSupervisor).toBe(false)
+  })
+  it("requires the matching designation, not just any", () => {
+    const a = resolvePermitActor({
+      userId: "off",
+      isAdmin: false,
+      ...perm,
+      designations: ["supervisor"],
+    })
+    expect(a.isSafetyOfficer).toBe(false)
+  })
+  it("admins bypass the designation requirement", () => {
+    const a = resolvePermitActor({ userId: "sup", isAdmin: true, ...perm, designations: [] })
+    expect(a.isAdmin).toBe(true)
+    expect(a.isSupervisor).toBe(true)
+  })
+  it("marks the requester", () => {
+    const a = resolvePermitActor({ userId: "req", isAdmin: false, ...perm, designations: [] })
+    expect(a.isRequester).toBe(true)
+  })
+})
+
+describe("isDesignationRole", () => {
+  it("guards the two designation roles", () => {
+    expect(isDesignationRole("safety_officer")).toBe(true)
+    expect(isDesignationRole("supervisor")).toBe(true)
+    expect(isDesignationRole("ceo")).toBe(false)
   })
 })
