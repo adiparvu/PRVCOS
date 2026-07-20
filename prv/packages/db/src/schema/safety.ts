@@ -458,6 +458,10 @@ export const permitDesignations = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     role: permitDesignationRoleEnum("role").notNull(),
+    // How this approver maps into the real PRV org chain (Team Leader / OPM / Ops
+    // Manager / Safety officer …) — makes the PTW↔org reconciliation explicit and
+    // admin-declared rather than guessed.
+    orgRole: varchar("org_role", { length: 80 }),
     createdByUserId: uuid("created_by_user_id").references(() => users.id, {
       onDelete: "set null",
     }),

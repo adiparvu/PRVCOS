@@ -13,6 +13,18 @@ const ROLE_LABEL: Record<PermitDesignationRole, string> = {
   safety_officer: "Responsabil SSM/PSI",
 }
 
+// Real PRV org roles, so the admin can map each approver to the org chain.
+const ORG_ROLES = [
+  "Team Leader",
+  "OPM",
+  "Ops Manager",
+  "Project Manager",
+  "Department Head",
+  "HR",
+  "Responsabil SSM",
+  "Altul",
+]
+
 const card: React.CSSProperties = {
   background: "var(--prv-g1)",
   border: "1px solid var(--prv-border)",
@@ -39,6 +51,7 @@ export function PermitDesignationsClient() {
   const [busy, setBusy] = useState(false)
   const [pick, setPick] = useState("")
   const [role, setRole] = useState<PermitDesignationRole>("safety_officer")
+  const [orgRole, setOrgRole] = useState("")
 
   const load = useCallback(() => {
     return fetch("/api/safety/permit-designations")
@@ -69,7 +82,7 @@ export function PermitDesignationsClient() {
     fetch("/api/safety/permit-designations", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ userId: pick, role }),
+      body: JSON.stringify({ userId: pick, role, orgRole: orgRole || undefined }),
     })
       .then(async (r) => {
         if (!r.ok) {
@@ -77,6 +90,7 @@ export function PermitDesignationsClient() {
           throw new Error(j.error ?? "Add failed")
         }
         setPick("")
+        setOrgRole("")
         await load()
         toast.success("Desemnare adăugată")
       })
@@ -133,7 +147,7 @@ export function PermitDesignationsClient() {
             padding: 18,
             marginTop: 20,
             display: "grid",
-            gridTemplateColumns: "1fr 190px auto",
+            gridTemplateColumns: "1fr 170px 150px auto",
             gap: 10,
           }}
         >
@@ -152,6 +166,14 @@ export function PermitDesignationsClient() {
           >
             <option value="safety_officer">Responsabil SSM/PSI</option>
             <option value="supervisor">Supervizor</option>
+          </select>
+          <select value={orgRole} onChange={(e) => setOrgRole(e.target.value)} style={input}>
+            <option value="">Rol org…</option>
+            {ORG_ROLES.map((o) => (
+              <option key={o} value={o}>
+                {o}
+              </option>
+            ))}
           </select>
           <button
             type="button"
@@ -206,8 +228,23 @@ export function PermitDesignationsClient() {
                       borderTop: i > 0 ? "1px solid rgba(255,255,255,0.05)" : "none",
                     }}
                   >
-                    <div style={{ flex: 1, fontSize: 14, fontWeight: 560 }}>
-                      {d.userName ?? "—"}
+                    <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ fontSize: 14, fontWeight: 560 }}>{d.userName ?? "—"}</span>
+                      {d.orgRole && (
+                        <span
+                          style={{
+                            fontSize: 10.5,
+                            fontWeight: 600,
+                            padding: "1px 8px",
+                            borderRadius: 100,
+                            background: "var(--prv-g2)",
+                            border: "1px solid var(--prv-border-subtle)",
+                            color: "var(--prv-text-3)",
+                          }}
+                        >
+                          {d.orgRole}
+                        </span>
+                      )}
                     </div>
                     {canManage && (
                       <button

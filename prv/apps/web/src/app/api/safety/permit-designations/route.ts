@@ -19,6 +19,7 @@ export interface PermitDesignationDto {
   userId: string
   userName: string | null
   role: PermitDesignationRole
+  orgRole: string | null
   createdAt: string
 }
 
@@ -33,6 +34,7 @@ export const GET = withGates(
         id: permitDesignations.id,
         userId: permitDesignations.userId,
         role: permitDesignations.role,
+        orgRole: permitDesignations.orgRole,
         createdAt: permitDesignations.createdAt,
         firstName: users.firstName,
         lastName: users.lastName,
@@ -47,6 +49,7 @@ export const GET = withGates(
       userId: r.userId,
       userName: r.firstName && r.lastName ? `${r.firstName} ${r.lastName}` : null,
       role: r.role,
+      orgRole: r.orgRole,
       createdAt: r.createdAt.toISOString(),
     }))
     return NextResponse.json({ designations, canManage: MANAGE_ROLES.has(role) })
@@ -56,6 +59,7 @@ export const GET = withGates(
 const createSchema = z.object({
   userId: z.string().uuid(),
   role: z.enum(["supervisor", "safety_officer"]),
+  orgRole: z.string().max(80).optional(),
 })
 
 // POST /api/safety/permit-designations — designate a user (owner-level only).
@@ -83,6 +87,7 @@ export const POST = withGates(
         companyId,
         userId: parsed.data.userId,
         role: parsed.data.role,
+        orgRole: parsed.data.orgRole?.trim() || null,
         createdByUserId: userId,
       })
       .onConflictDoNothing()
