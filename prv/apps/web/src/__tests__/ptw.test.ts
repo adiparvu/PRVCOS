@@ -7,6 +7,9 @@ import {
   requiredFieldsForType,
   isWithinValidity,
   effectivePermitStatus,
+  isPermitStatus,
+  allowedActionsForValidity,
+  approverSeparationErrors,
   type PermitActor,
 } from "@/lib/ptw"
 
@@ -175,5 +178,48 @@ describe("effectivePermitStatus", () => {
     expect(effectivePermitStatus("draft", 100, 200)).toBe("draft")
     expect(effectivePermitStatus("closed", 100, 200)).toBe("closed")
     expect(effectivePermitStatus("rejected", 100, 200)).toBe("rejected")
+  })
+})
+
+describe("isPermitStatus", () => {
+  it("guards enum membership", () => {
+    expect(isPermitStatus("active")).toBe(true)
+    expect(isPermitStatus("bogus")).toBe(false)
+  })
+})
+
+describe("allowedActionsForValidity", () => {
+  const now = 1000
+  it("keeps all actions while in-window", () => {
+    expect(allowedActionsForValidity("approved", requester, 2000, now)).toEqual(["activate"])
+  })
+  it("suppresses forward actions once expired but keeps close/reject", () => {
+    expect(allowedActionsForValidity("approved", requester, 500, now)).toEqual([])
+    expect(allowedActionsForValidity("active", requester, 500, now)).toEqual(["close"])
+  })
+})
+
+describe("approverSeparationErrors", () => {
+  it("passes for three distinct people", () => {
+    expect(approverSeparationErrors("r", "s", "o")).toEqual([])
+  })
+  it("requires both approvers", () => {
+    expect(approverSeparationErrors("r", null, "o").some((e) => e.includes("supervizor"))).toBe(
+      true
+    )
+    expect(approverSeparationErrors("r", "s", null).some((e) => e.includes("SSM"))).toBe(true)
+  })
+  it("blocks the requester being an approver", () => {
+    expect(approverSeparationErrors("r", "r", "o").some((e) => e.includes("solicitantul"))).toBe(
+      true
+    )
+    expect(approverSeparationErrors("r", "s", "r").some((e) => e.includes("solicitantul"))).toBe(
+      true
+    )
+  })
+  it("blocks the two approvers being the same person", () => {
+    expect(
+      approverSeparationErrors("r", "x", "x").some((e) => e.includes("persoane diferite"))
+    ).toBe(true)
   })
 })

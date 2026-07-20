@@ -7,8 +7,11 @@ import { safetyPermits } from "@prv/db/schema"
 import { and, eq } from "drizzle-orm"
 import { z } from "zod"
 import {
+  approverSeparationErrors,
   canAct,
   canTransition,
+  FORWARD_ACTIONS,
+  isExpiredWindow,
   validatePermitForSubmit,
   type PermitAction,
   type PermitActor,
@@ -69,15 +72,31 @@ export const POST = withGates(
         { status: 403 }
       )
 
+    // Forward progress is blocked once the validity window has elapsed (an expired
+    // permit can still be rejected or closed out, but not advanced/activated).
+    if (FORWARD_ACTIONS.includes(action) && isExpiredWindow(permit.validTo.getTime(), Date.now()))
+      return NextResponse.json(
+        { error: "Permit validity window has already passed" },
+        { status: 409 }
+      )
+
     // Submitting also enforces the completeness gate.
     if (action === "submit") {
-      const errors = validatePermitForSubmit({
-        type: permit.type,
-        validFromMs: permit.validFrom.getTime(),
-        validToMs: permit.validTo.getTime(),
-        riskAssessment: permit.riskAssessment ?? [],
-        typeDetails: permit.typeDetails ?? {},
-      })
+      const errors = [
+        ...validatePermitForSubmit({
+          type: permit.type,
+          validFromMs: permit.validFrom.getTime(),
+          validToMs: permit.validTo.getTime(),
+          riskAssessment: permit.riskAssessment ?? [],
+          typeDetails: permit.typeDetails ?? {},
+        }),
+        // Separation of duties: distinct, assigned supervisor and safety officer.
+        ...approverSeparationErrors(
+          permit.requestedBy,
+          permit.supervisorId,
+          permit.safetyOfficerId
+        ),
+      ]
       if (errors.length > 0)
         return NextResponse.json({ error: "Permit incomplete", issues: errors }, { status: 422 })
     }

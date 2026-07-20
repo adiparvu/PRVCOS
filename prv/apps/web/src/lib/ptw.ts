@@ -154,3 +154,50 @@ export function effectivePermitStatus(
   if ((status === "approved" || status === "active") && validToMs < nowMs) return "expired"
   return status
 }
+
+export function isPermitStatus(v: string): v is PermitStatus {
+  return (PERMIT_STATUSES as readonly string[]).includes(v)
+}
+
+// Actions that move a permit FORWARD through the lifecycle. These are blocked once
+// the validity window has passed; reject and close (close-out) remain allowed so an
+// expired permit can still be legitimately terminated.
+export const FORWARD_ACTIONS: PermitAction[] = ["submit", "approve", "activate"]
+
+export function isExpiredWindow(validToMs: number, nowMs: number): boolean {
+  return validToMs < nowMs
+}
+
+// Actions the actor may take, additionally suppressing forward progress once the
+// validity window has elapsed — keeps the buttons and the transition guard in sync
+// with the displayed effective (expired) status.
+export function allowedActionsForValidity(
+  status: PermitStatus,
+  actor: PermitActor,
+  validToMs: number,
+  nowMs: number
+): PermitAction[] {
+  const acts = allowedActions(status, actor)
+  if (!isExpiredWindow(validToMs, nowMs)) return acts
+  return acts.filter((a) => !FORWARD_ACTIONS.includes(a))
+}
+
+// Separation-of-duties gate enforced at submit: both approvers must be assigned,
+// distinct from the requester, and distinct from each other. Without this a single
+// user could assign themselves both stages and self-approve end-to-end.
+export function approverSeparationErrors(
+  requestedBy: string,
+  supervisorId: string | null,
+  safetyOfficerId: string | null
+): string[] {
+  const errors: string[] = []
+  if (!supervisorId) errors.push("Trebuie asignat un supervizor")
+  if (!safetyOfficerId) errors.push("Trebuie asignat un responsabil SSM/PSI")
+  if (supervisorId && supervisorId === requestedBy)
+    errors.push("Supervizorul nu poate fi solicitantul")
+  if (safetyOfficerId && safetyOfficerId === requestedBy)
+    errors.push("Responsabilul SSM/PSI nu poate fi solicitantul")
+  if (supervisorId && safetyOfficerId && supervisorId === safetyOfficerId)
+    errors.push("Cei doi aprobatori trebuie să fie persoane diferite")
+  return errors
+}

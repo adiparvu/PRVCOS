@@ -7,7 +7,7 @@ import { safetyPermits, users, projects } from "@prv/db/schema"
 import { aliasedTable, and, eq } from "drizzle-orm"
 import { z } from "zod"
 import {
-  allowedActions,
+  allowedActionsForValidity,
   effectivePermitStatus,
   type PermitAction,
   type PermitActor,
@@ -124,7 +124,7 @@ export const GET = withGates(
       closedAt: p.closedAt?.toISOString() ?? null,
       closeOutNotes: p.closeOutNotes,
       createdAt: p.createdAt.toISOString(),
-      allowedActions: allowedActions(p.status, actor),
+      allowedActions: allowedActionsForValidity(p.status, actor, p.validTo.getTime(), Date.now()),
       canEdit,
     }
     return NextResponse.json(detail)
@@ -166,11 +166,21 @@ export const PATCH = withGates(
       )
 
     const [existing] = await db
-      .select({ id: safetyPermits.id, status: safetyPermits.status })
+      .select({
+        id: safetyPermits.id,
+        status: safetyPermits.status,
+        requestedBy: safetyPermits.requestedBy,
+      })
       .from(safetyPermits)
       .where(and(eq(safetyPermits.id, id), eq(safetyPermits.companyId, companyId)))
       .limit(1)
     if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 })
+    const PATCH_ADMIN_ROLES = new Set(["group_ceo", "ceo", "co_ceo", "system_administrator"])
+    if (existing.requestedBy !== userId && !PATCH_ADMIN_ROLES.has(ctx.session.role))
+      return NextResponse.json(
+        { error: "Only the requester can edit this permit" },
+        { status: 403 }
+      )
     if (existing.status !== "draft")
       return NextResponse.json({ error: "Only draft permits can be edited" }, { status: 409 })
 

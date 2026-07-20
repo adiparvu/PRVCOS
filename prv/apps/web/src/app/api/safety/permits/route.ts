@@ -6,7 +6,13 @@ import { db } from "@prv/db"
 import { safetyPermits, users } from "@prv/db/schema"
 import { and, count, desc, eq, gte, inArray, lte, sql } from "drizzle-orm"
 import { z } from "zod"
-import { effectivePermitStatus, isPermitType, type PermitStatus, type PermitType } from "@/lib/ptw"
+import {
+  effectivePermitStatus,
+  isPermitStatus,
+  isPermitType,
+  type PermitStatus,
+  type PermitType,
+} from "@/lib/ptw"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -44,7 +50,8 @@ export const GET = withGates(
     const limit = Math.min(200, Math.max(1, Number(url.get("limit")) || 100))
 
     const conds = [eq(safetyPermits.companyId, companyId)]
-    if (statusFilter) conds.push(eq(safetyPermits.status, statusFilter as PermitStatus))
+    if (statusFilter && isPermitStatus(statusFilter))
+      conds.push(eq(safetyPermits.status, statusFilter))
     if (typeFilter && isPermitType(typeFilter)) conds.push(eq(safetyPermits.type, typeFilter))
 
     const now = new Date()
@@ -71,7 +78,13 @@ export const GET = withGates(
       db
         .select({ c: count() })
         .from(safetyPermits)
-        .where(and(eq(safetyPermits.companyId, companyId), eq(safetyPermits.status, "active"))),
+        .where(
+          and(
+            eq(safetyPermits.companyId, companyId),
+            eq(safetyPermits.status, "active"),
+            gte(safetyPermits.validTo, now)
+          )
+        ),
       db
         .select({ c: count() })
         .from(safetyPermits)
