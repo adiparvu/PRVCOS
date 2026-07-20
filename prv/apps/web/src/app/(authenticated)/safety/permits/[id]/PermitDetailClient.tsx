@@ -30,6 +30,8 @@ const STATUS_META: Record<PermitStatus, { label: string; color: string; bg: stri
   closed: { label: "Închis", color: "var(--prv-text-3)", bg: "rgba(255,255,255,0.06)" },
   rejected: { label: "Respins", color: "rgba(255,69,58,0.95)", bg: "rgba(255,69,58,0.14)" },
   expired: { label: "Expirat", color: "rgba(255,69,58,0.95)", bg: "rgba(255,69,58,0.14)" },
+  suspended: { label: "Suspendat", color: "rgba(255,159,10,0.95)", bg: "rgba(255,159,10,0.13)" },
+  revoked: { label: "Revocat", color: "rgba(255,69,58,0.95)", bg: "rgba(255,69,58,0.14)" },
 }
 const ACTION_LABEL: Record<PermitAction, string> = {
   submit: "Trimite spre aprobare",
@@ -37,6 +39,9 @@ const ACTION_LABEL: Record<PermitAction, string> = {
   reject: "Respinge",
   activate: "Activează",
   close: "Închide permisul",
+  suspend: "Suspendă",
+  reinstate: "Reia",
+  revoke: "Revocă",
 }
 
 const card: React.CSSProperties = {
@@ -113,8 +118,14 @@ export function PermitDetailClient({ id }: { id: string }) {
     if (busy) return
     let reason: string | undefined
     let closeOutNotes: string | undefined
-    if (action === "reject") {
-      reason = window.prompt("Motivul respingerii:") ?? undefined
+    if (action === "reject" || action === "suspend" || action === "revoke") {
+      const q =
+        action === "reject"
+          ? "Motivul respingerii:"
+          : action === "suspend"
+            ? "Motivul suspendării:"
+            : "Motivul revocării:"
+      reason = window.prompt(q) ?? undefined
       if (!reason?.trim()) return
     }
     if (action === "close") {
@@ -273,6 +284,19 @@ export function PermitDetailClient({ id }: { id: string }) {
         {permit.rejectionReason && (
           <div style={{ padding: "9px 16px", fontSize: 12.5, color: "rgba(255,120,110,0.95)" }}>
             Motiv: {permit.rejectionReason}
+          </div>
+        )}
+        {permit.suspendedAt && <Row k="Suspendat" v={fmt(permit.suspendedAt)} />}
+        {permit.suspensionReason && (
+          <div style={{ padding: "9px 16px", fontSize: 12.5, color: "rgba(255,159,10,0.95)" }}>
+            Suspendare: {permit.suspensionReason}
+          </div>
+        )}
+        {permit.reinstatedAt && <Row k="Reluat" v={fmt(permit.reinstatedAt)} />}
+        {permit.revokedAt && <Row k="Revocat" v={fmt(permit.revokedAt)} />}
+        {permit.revocationReason && (
+          <div style={{ padding: "9px 16px", fontSize: 12.5, color: "rgba(255,120,110,0.95)" }}>
+            Revocare: {permit.revocationReason}
           </div>
         )}
         {permit.closeOutNotes && (

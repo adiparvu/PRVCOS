@@ -195,7 +195,7 @@ describe("allowedActionsForValidity", () => {
   })
   it("suppresses forward actions once expired but keeps close/reject", () => {
     expect(allowedActionsForValidity("approved", requester, 500, now)).toEqual([])
-    expect(allowedActionsForValidity("active", requester, 500, now)).toEqual(["close"])
+    expect(allowedActionsForValidity("active", requester, 500, now)).toEqual(["close", "suspend"])
   })
 })
 
@@ -221,5 +221,33 @@ describe("approverSeparationErrors", () => {
     expect(
       approverSeparationErrors("r", "x", "x").some((e) => e.includes("persoane diferite"))
     ).toBe(true)
+  })
+})
+
+describe("suspend / reinstate / revoke lifecycle", () => {
+  it("active can suspend, close, or revoke", () => {
+    expect(canTransition("active", "suspend")).toEqual({ ok: true, to: "suspended" })
+    expect(canTransition("active", "revoke")).toEqual({ ok: true, to: "revoked" })
+    expect(canTransition("active", "close")).toEqual({ ok: true, to: "closed" })
+  })
+  it("suspended can reinstate, close, or revoke; revoked is terminal", () => {
+    expect(canTransition("suspended", "reinstate")).toEqual({ ok: true, to: "active" })
+    expect(canTransition("suspended", "revoke")).toEqual({ ok: true, to: "revoked" })
+    expect(canTransition("suspended", "close")).toEqual({ ok: true, to: "closed" })
+    expect(canTransition("revoked", "reinstate").ok).toBe(false)
+  })
+  it("stop-work: requester may suspend but only an approver may reinstate or revoke", () => {
+    expect(canAct("active", "suspend", requester)).toBe(true)
+    expect(canAct("suspended", "reinstate", requester)).toBe(false)
+    expect(canAct("suspended", "reinstate", supervisor)).toBe(true)
+    expect(canAct("active", "revoke", requester)).toBe(false)
+    expect(canAct("active", "revoke", officer)).toBe(true)
+  })
+  it("reinstate is a forward action blocked once the window has passed", () => {
+    const now = 1000
+    expect(allowedActionsForValidity("suspended", supervisor, 2000, now)).toContain("reinstate")
+    expect(allowedActionsForValidity("suspended", supervisor, 500, now)).not.toContain("reinstate")
+    // revoke/close still available on an expired suspended permit
+    expect(allowedActionsForValidity("suspended", supervisor, 500, now)).toContain("revoke")
   })
 })

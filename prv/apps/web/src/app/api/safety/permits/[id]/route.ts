@@ -46,6 +46,11 @@ export interface PermitDetail {
   activatedAt: string | null
   closedAt: string | null
   closeOutNotes: string | null
+  suspendedAt: string | null
+  suspensionReason: string | null
+  reinstatedAt: string | null
+  revokedAt: string | null
+  revocationReason: string | null
   createdAt: string
   allowedActions: PermitAction[]
   canEdit: boolean
@@ -123,6 +128,11 @@ export const GET = withGates(
       activatedAt: p.activatedAt?.toISOString() ?? null,
       closedAt: p.closedAt?.toISOString() ?? null,
       closeOutNotes: p.closeOutNotes,
+      suspendedAt: p.suspendedAt?.toISOString() ?? null,
+      suspensionReason: p.suspensionReason,
+      reinstatedAt: p.reinstatedAt?.toISOString() ?? null,
+      revokedAt: p.revokedAt?.toISOString() ?? null,
+      revocationReason: p.revocationReason,
       createdAt: p.createdAt.toISOString(),
       allowedActions: allowedActionsForValidity(p.status, actor, p.validTo.getTime(), Date.now()),
       canEdit,

@@ -325,6 +325,8 @@ export const permitStatusEnum = pgEnum("permit_status", [
   "closed",
   "rejected",
   "expired",
+  "suspended",
+  "revoked",
 ])
 
 export const safetyPermits = pgTable(
@@ -372,6 +374,14 @@ export const safetyPermits = pgTable(
     closedBy: uuid("closed_by").references(() => users.id, { onDelete: "set null" }),
     closedAt: timestamp("closed_at", { withTimezone: true }),
     closeOutNotes: text("close_out_notes"),
+    suspendedBy: uuid("suspended_by").references(() => users.id, { onDelete: "set null" }),
+    suspendedAt: timestamp("suspended_at", { withTimezone: true }),
+    suspensionReason: text("suspension_reason"),
+    reinstatedBy: uuid("reinstated_by").references(() => users.id, { onDelete: "set null" }),
+    reinstatedAt: timestamp("reinstated_at", { withTimezone: true }),
+    revokedBy: uuid("revoked_by").references(() => users.id, { onDelete: "set null" }),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+    revocationReason: text("revocation_reason"),
 
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),

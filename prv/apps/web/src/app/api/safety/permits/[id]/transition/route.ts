@@ -29,7 +29,16 @@ function permitId(req: NextRequest): string {
 }
 
 const bodySchema = z.object({
-  action: z.enum(["submit", "approve", "reject", "activate", "close"]),
+  action: z.enum([
+    "submit",
+    "approve",
+    "reject",
+    "activate",
+    "close",
+    "suspend",
+    "reinstate",
+    "revoke",
+  ]),
   reason: z.string().max(2000).optional(),
   closeOutNotes: z.string().max(2000).optional(),
 })
@@ -101,8 +110,11 @@ export const POST = withGates(
         return NextResponse.json({ error: "Permit incomplete", issues: errors }, { status: 422 })
     }
 
-    if (action === "reject" && !parsed.data.reason?.trim())
-      return NextResponse.json({ error: "A rejection reason is required" }, { status: 422 })
+    if (
+      (action === "reject" || action === "suspend" || action === "revoke") &&
+      !parsed.data.reason?.trim()
+    )
+      return NextResponse.json({ error: "A reason is required for this action" }, { status: 422 })
 
     const now = new Date()
     const set: Record<string, unknown> = { status: transition.to, updatedAt: now }
@@ -124,6 +136,17 @@ export const POST = withGates(
       set.closedBy = userId
       set.closedAt = now
       set.closeOutNotes = parsed.data.closeOutNotes?.trim() ?? null
+    } else if (action === "suspend") {
+      set.suspendedBy = userId
+      set.suspendedAt = now
+      set.suspensionReason = parsed.data.reason?.trim() ?? null
+    } else if (action === "reinstate") {
+      set.reinstatedBy = userId
+      set.reinstatedAt = now
+    } else if (action === "revoke") {
+      set.revokedBy = userId
+      set.revokedAt = now
+      set.revocationReason = parsed.data.reason?.trim() ?? null
     }
 
     const [updated] = await db

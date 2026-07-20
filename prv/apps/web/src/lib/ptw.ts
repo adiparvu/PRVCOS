@@ -25,10 +25,21 @@ export const PERMIT_STATUSES = [
   "closed",
   "rejected",
   "expired",
+  "suspended",
+  "revoked",
 ] as const
 export type PermitStatus = (typeof PERMIT_STATUSES)[number]
 
-export const PERMIT_ACTIONS = ["submit", "approve", "reject", "activate", "close"] as const
+export const PERMIT_ACTIONS = [
+  "submit",
+  "approve",
+  "reject",
+  "activate",
+  "close",
+  "suspend",
+  "reinstate",
+  "revoke",
+] as const
 export type PermitAction = (typeof PERMIT_ACTIONS)[number]
 
 export function isPermitType(v: string): v is PermitType {
@@ -55,10 +66,12 @@ export const TRANSITIONS: Record<PermitStatus, Partial<Record<PermitAction, Perm
   pending_supervisor: { approve: "pending_safety_officer", reject: "rejected" },
   pending_safety_officer: { approve: "approved", reject: "rejected" },
   approved: { activate: "active" },
-  active: { close: "closed" },
+  active: { close: "closed", suspend: "suspended", revoke: "revoked" },
+  suspended: { reinstate: "active", close: "closed", revoke: "revoked" },
   closed: {},
   rejected: {},
   expired: {},
+  revoked: {},
 }
 
 export interface TransitionResult {
@@ -96,7 +109,20 @@ export function canAct(from: PermitStatus, action: PermitAction, actor: PermitAc
     case "activate":
       return from === "approved" && (actor.isRequester || actor.isSupervisor)
     case "close":
+      return (
+        (from === "active" || from === "suspended") &&
+        (actor.isRequester || actor.isSupervisor || actor.isSafetyOfficer)
+      )
+    case "suspend":
+      // Stop-work authority is broad: anyone on the permit may halt active work.
       return from === "active" && (actor.isRequester || actor.isSupervisor || actor.isSafetyOfficer)
+    case "reinstate":
+      // Re-authorizing paused work needs an approver, not the requester alone.
+      return from === "suspended" && (actor.isSupervisor || actor.isSafetyOfficer)
+    case "revoke":
+      return (
+        (from === "active" || from === "suspended") && (actor.isSupervisor || actor.isSafetyOfficer)
+      )
     default:
       return false
   }
@@ -162,7 +188,7 @@ export function isPermitStatus(v: string): v is PermitStatus {
 // Actions that move a permit FORWARD through the lifecycle. These are blocked once
 // the validity window has passed; reject and close (close-out) remain allowed so an
 // expired permit can still be legitimately terminated.
-export const FORWARD_ACTIONS: PermitAction[] = ["submit", "approve", "activate"]
+export const FORWARD_ACTIONS: PermitAction[] = ["submit", "approve", "activate", "reinstate"]
 
 export function isExpiredWindow(validToMs: number, nowMs: number): boolean {
   return validToMs < nowMs

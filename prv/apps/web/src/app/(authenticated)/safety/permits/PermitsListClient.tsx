@@ -30,6 +30,8 @@ const STATUS_META: Record<PermitStatus, { label: string; color: string; bg: stri
   closed: { label: "Închis", color: "var(--prv-text-3)", bg: "rgba(255,255,255,0.06)" },
   rejected: { label: "Respins", color: "rgba(255,69,58,0.95)", bg: "rgba(255,69,58,0.14)" },
   expired: { label: "Expirat", color: "rgba(255,69,58,0.95)", bg: "rgba(255,69,58,0.14)" },
+  suspended: { label: "Suspendat", color: "rgba(255,159,10,0.95)", bg: "rgba(255,159,10,0.13)" },
+  revoked: { label: "Revocat", color: "rgba(255,69,58,0.95)", bg: "rgba(255,69,58,0.14)" },
 }
 
 const card: React.CSSProperties = {
@@ -447,27 +449,33 @@ export function PermitsListClient() {
 
       {/* Filter */}
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 14 }}>
-        {["", "pending_supervisor", "pending_safety_officer", "approved", "active", "closed"].map(
-          (s) => (
-            <button
-              key={s || "all"}
-              type="button"
-              onClick={() => setStatusFilter(s)}
-              style={{
-                padding: "6px 12px",
-                borderRadius: 100,
-                fontSize: 12,
-                fontWeight: 600,
-                cursor: "pointer",
-                border: `1px solid ${statusFilter === s ? "transparent" : "var(--prv-border)"}`,
-                background: statusFilter === s ? "rgba(255,255,255,0.9)" : "transparent",
-                color: statusFilter === s ? "#000" : "var(--prv-text-3)",
-              }}
-            >
-              {s === "" ? "Toate" : STATUS_META[s as PermitStatus].label}
-            </button>
-          )
-        )}
+        {[
+          "",
+          "pending_supervisor",
+          "pending_safety_officer",
+          "approved",
+          "active",
+          "suspended",
+          "closed",
+        ].map((s) => (
+          <button
+            key={s || "all"}
+            type="button"
+            onClick={() => setStatusFilter(s)}
+            style={{
+              padding: "6px 12px",
+              borderRadius: 100,
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: "pointer",
+              border: `1px solid ${statusFilter === s ? "transparent" : "var(--prv-border)"}`,
+              background: statusFilter === s ? "rgba(255,255,255,0.9)" : "transparent",
+              color: statusFilter === s ? "#000" : "var(--prv-text-3)",
+            }}
+          >
+            {s === "" ? "Toate" : STATUS_META[s as PermitStatus].label}
+          </button>
+        ))}
       </div>
 
       <div style={{ display: "grid", gap: 10 }}>
