@@ -289,6 +289,13 @@ export function SafetyDashboardClient() {
         >
           Briefings
         </Link>
+        <span style={{ fontSize: 12, color: "rgba(255,255,255,0.20)" }}>·</span>
+        <Link
+          href="/safety/permits"
+          style={{ fontSize: 12, color: "rgba(255,255,255,0.55)", textDecoration: "none" }}
+        >
+          Permits
+        </Link>
       </div>
 
       {/* KPI row */}

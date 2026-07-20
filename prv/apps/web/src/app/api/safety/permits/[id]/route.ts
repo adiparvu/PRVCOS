@@ -6,7 +6,14 @@ import { db } from "@prv/db"
 import { safetyPermits, users, projects } from "@prv/db/schema"
 import { aliasedTable, and, eq } from "drizzle-orm"
 import { z } from "zod"
-import { effectivePermitStatus, type PermitStatus, type PermitType } from "@/lib/ptw"
+import {
+  allowedActions,
+  effectivePermitStatus,
+  type PermitAction,
+  type PermitActor,
+  type PermitStatus,
+  type PermitType,
+} from "@/lib/ptw"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -40,6 +47,8 @@ export interface PermitDetail {
   closedAt: string | null
   closeOutNotes: string | null
   createdAt: string
+  allowedActions: PermitAction[]
+  canEdit: boolean
 }
 
 function permitId(req: NextRequest): string {
@@ -77,6 +86,14 @@ export const GET = withGates(
     if (!row) return NextResponse.json({ error: "Not found" }, { status: 404 })
 
     const p = row.p
+    const ADMIN_ROLES = new Set(["group_ceo", "ceo", "co_ceo", "system_administrator"])
+    const actor: PermitActor = {
+      isRequester: p.requestedBy === ctx.session.userId,
+      isSupervisor: p.supervisorId === ctx.session.userId,
+      isSafetyOfficer: p.safetyOfficerId === ctx.session.userId,
+      isAdmin: ADMIN_ROLES.has(ctx.session.role),
+    }
+    const canEdit = p.status === "draft" && (actor.isRequester || actor.isAdmin)
     const name = (f: string | null, l: string | null) => (f && l ? `${f} ${l}` : null)
     const detail: PermitDetail = {
       id: p.id,
@@ -107,6 +124,8 @@ export const GET = withGates(
       closedAt: p.closedAt?.toISOString() ?? null,
       closeOutNotes: p.closeOutNotes,
       createdAt: p.createdAt.toISOString(),
+      allowedActions: allowedActions(p.status, actor),
+      canEdit,
     }
     return NextResponse.json(detail)
   }
