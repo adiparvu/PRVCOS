@@ -403,3 +403,38 @@ export const safetyPermitsRelations = relations(safetyPermits, ({ one }) => ({
 }))
 
 export type SafetyPermit = typeof safetyPermits.$inferSelect
+
+// permit_events (Phase 18.3 follow-up) — append-only stage-transition history for a
+// permit, surfaced as the in-app timeline (complements the SHA-chained audit log).
+export const permitEvents = pgTable(
+  "permit_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id, { onDelete: "cascade" }),
+    permitId: uuid("permit_id")
+      .notNull()
+      .references(() => safetyPermits.id, { onDelete: "cascade" }),
+    actorId: uuid("actor_id").references(() => users.id, { onDelete: "set null" }),
+    action: varchar("action", { length: 20 }).notNull(),
+    fromStatus: varchar("from_status", { length: 24 }),
+    toStatus: varchar("to_status", { length: 24 }).notNull(),
+    reason: text("reason"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("permit_events_permit_id_idx").on(t.permitId),
+    index("permit_events_company_id_idx").on(t.companyId),
+  ]
+)
+
+export const permitEventsRelations = relations(permitEvents, ({ one }) => ({
+  permit: one(safetyPermits, {
+    fields: [permitEvents.permitId],
+    references: [safetyPermits.id],
+  }),
+  actor: one(users, { fields: [permitEvents.actorId], references: [users.id] }),
+}))
+
+export type PermitEvent = typeof permitEvents.$inferSelect

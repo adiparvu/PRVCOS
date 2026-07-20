@@ -3,8 +3,8 @@ import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
 import { writeAuditLog } from "@prv/auth"
 import { db } from "@prv/db"
-import { safetyPermits, users, projects } from "@prv/db/schema"
-import { aliasedTable, and, eq } from "drizzle-orm"
+import { safetyPermits, users, projects, permitEvents } from "@prv/db/schema"
+import { aliasedTable, and, asc, eq } from "drizzle-orm"
 import { z } from "zod"
 import {
   allowedActionsForValidity,
@@ -54,6 +54,14 @@ export interface PermitDetail {
   createdAt: string
   allowedActions: PermitAction[]
   canEdit: boolean
+  events: {
+    action: string
+    fromStatus: string | null
+    toStatus: string
+    actorName: string | null
+    reason: string | null
+    at: string
+  }[]
 }
 
 function permitId(req: NextRequest): string {
@@ -91,6 +99,20 @@ export const GET = withGates(
     if (!row) return NextResponse.json({ error: "Not found" }, { status: 404 })
 
     const p = row.p
+    const eventRows = await db
+      .select({
+        action: permitEvents.action,
+        fromStatus: permitEvents.fromStatus,
+        toStatus: permitEvents.toStatus,
+        reason: permitEvents.reason,
+        createdAt: permitEvents.createdAt,
+        firstName: users.firstName,
+        lastName: users.lastName,
+      })
+      .from(permitEvents)
+      .leftJoin(users, eq(permitEvents.actorId, users.id))
+      .where(eq(permitEvents.permitId, p.id))
+      .orderBy(asc(permitEvents.createdAt))
     const ADMIN_ROLES = new Set(["group_ceo", "ceo", "co_ceo", "system_administrator"])
     const actor: PermitActor = {
       isRequester: p.requestedBy === ctx.session.userId,
@@ -136,6 +158,14 @@ export const GET = withGates(
       createdAt: p.createdAt.toISOString(),
       allowedActions: allowedActionsForValidity(p.status, actor, p.validTo.getTime(), Date.now()),
       canEdit,
+      events: eventRows.map((e) => ({
+        action: e.action,
+        fromStatus: e.fromStatus,
+        toStatus: e.toStatus,
+        actorName: e.firstName && e.lastName ? `${e.firstName} ${e.lastName}` : null,
+        reason: e.reason,
+        at: e.createdAt.toISOString(),
+      })),
     }
     return NextResponse.json(detail)
   }

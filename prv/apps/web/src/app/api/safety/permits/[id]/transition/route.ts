@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
 import { writeAuditLog } from "@prv/auth"
 import { db } from "@prv/db"
-import { safetyPermits, notifications } from "@prv/db/schema"
+import { safetyPermits, notifications, permitEvents } from "@prv/db/schema"
 import { and, eq } from "drizzle-orm"
 import { z } from "zod"
 import {
@@ -155,6 +155,17 @@ export const POST = withGates(
       .set(set)
       .where(and(eq(safetyPermits.id, id), eq(safetyPermits.companyId, companyId)))
       .returning({ id: safetyPermits.id, status: safetyPermits.status })
+
+    // Append-only stage history for the in-app timeline.
+    await db.insert(permitEvents).values({
+      companyId,
+      permitId: id,
+      actorId: userId,
+      action,
+      fromStatus: permit.status,
+      toStatus: transition.to,
+      reason: parsed.data.reason?.trim() ?? parsed.data.closeOutNotes?.trim() ?? null,
+    })
 
     // Notify the next actor / requester of the stage change (in-app), skipping the
     // acting user and de-duplicating recipients.

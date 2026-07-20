@@ -352,6 +352,39 @@ export function PermitDetailClient({ id }: { id: string }) {
           ))}
         </Section>
       )}
+
+      {permit.events.length > 0 && (
+        <Section title="Istoric">
+          {permit.events.map((e, i) => (
+            <div
+              key={i}
+              style={{
+                padding: "10px 16px",
+                borderBottom:
+                  i < permit.events.length - 1 ? "1px solid rgba(255,255,255,0.05)" : "none",
+              }}
+            >
+              <div
+                style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: 13 }}
+              >
+                <span style={{ fontWeight: 600 }}>
+                  {ACTION_LABEL[e.action as PermitAction] ?? e.action}
+                </span>
+                <span style={{ color: "var(--prv-text-3)", fontSize: 12 }}>{fmt(e.at)}</span>
+              </div>
+              <div style={{ fontSize: 11.5, color: "var(--prv-text-3)", marginTop: 2 }}>
+                {e.actorName ?? "Sistem"} ·{" "}
+                {STATUS_META[e.toStatus as keyof typeof STATUS_META]?.label ?? e.toStatus}
+              </div>
+              {e.reason && (
+                <div style={{ fontSize: 12, color: "var(--prv-text-2)", marginTop: 3 }}>
+                  {e.reason}
+                </div>
+              )}
+            </div>
+          ))}
+        </Section>
+      )}
     </div>
   )
 }
