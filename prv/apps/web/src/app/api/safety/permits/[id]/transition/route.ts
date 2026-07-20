@@ -197,6 +197,31 @@ export const POST = withGates(
       }))
     if (notifRows.length > 0) await db.insert(notifications).values(notifRows)
 
+    // Critical-alert producer (Phase 14.5): revoking or suspending a permit is an
+    // emergency stop-work — the requester gets a requiresAck critical alert so it
+    // shows as a persistent banner (and escalates if unacknowledged). Recipient is
+    // the explicit permit requester; skipped when they performed the action.
+    if ((action === "revoke" || action === "suspend") && permit.requestedBy !== userId) {
+      await db.insert(notifications).values({
+        userId: permit.requestedBy,
+        companyId,
+        type: "error",
+        channel: "in_app",
+        title: `Permis ${action === "revoke" ? "revocat" : "suspendat"}: ${permit.title}`.slice(
+          0,
+          500
+        ),
+        body: `Lucrul sub acest permis trebuie oprit imediat. Motiv: ${
+          parsed.data.reason?.trim() ?? "—"
+        }`,
+        entityType: "safety_permit",
+        entityId: id,
+        actionUrl: `/safety/permits/${id}`,
+        requiresAck: true,
+        deliveredAt: now,
+      })
+    }
+
     void writeAuditLog({
       companyId,
       actorId: userId,
