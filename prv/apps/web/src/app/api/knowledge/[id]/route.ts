@@ -3,10 +3,11 @@ import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
 import { writeAuditLog } from "@prv/auth"
 import { db } from "@prv/db"
-import { knowledgeArticles, articleReadProgress, users } from "@prv/db/schema"
+import { knowledgeArticles, articleReadProgress, articleFeedback, users } from "@prv/db/schema"
 import { and, eq, isNull } from "drizzle-orm"
 import { z } from "zod"
 import type { ArticleType, ArticleCategory } from "../route"
+import { summarizeArticleFeedback, type ArticleFeedbackRating } from "@/lib/article-feedback"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -47,6 +48,12 @@ export interface KnowledgeArticleDetail {
   version: string | null
   isPinned: boolean
   readProgress: number
+  feedback: {
+    helpful: number
+    notHelpful: number
+    helpfulPct: number | null
+    yourRating: ArticleFeedbackRating | null
+  }
   checklist: ChecklistItem[] | null
   toc: TocSection[]
   related: RelatedArticle[]
@@ -95,7 +102,7 @@ export const GET = withGates(
 
     const { companyId, userId } = ctx.session
 
-    const [articleRows, progressRows] = await Promise.all([
+    const [articleRows, progressRows, feedbackRows] = await Promise.all([
       db
         .select({
           id: knowledgeArticles.id,
@@ -126,6 +133,11 @@ export const GET = withGates(
         .from(articleReadProgress)
         .where(and(eq(articleReadProgress.articleId, id), eq(articleReadProgress.userId, userId)))
         .limit(1),
+
+      db
+        .select({ userId: articleFeedback.userId, rating: articleFeedback.rating })
+        .from(articleFeedback)
+        .where(eq(articleFeedback.articleId, id)),
     ])
 
     const row = articleRows[0]
@@ -133,6 +145,14 @@ export const GET = withGates(
 
     const readProgress = progressRows[0]?.progressPct ?? 0
     const authorName = row.authorFirstName ? `${row.authorFirstName} ${row.authorLastName}` : "—"
+
+    const fbSummary = summarizeArticleFeedback(
+      feedbackRows.map((f) => f.rating as ArticleFeedbackRating)
+    )
+    const yourRating =
+      (feedbackRows.find((f) => f.userId === userId)?.rating as
+        | ArticleFeedbackRating
+        | undefined) ?? null
 
     const detail: KnowledgeArticleDetail = {
       id: row.id,
@@ -148,6 +168,12 @@ export const GET = withGates(
       version: row.version ?? null,
       isPinned: row.isPinned,
       readProgress,
+      feedback: {
+        helpful: fbSummary.helpful,
+        notHelpful: fbSummary.notHelpful,
+        helpfulPct: fbSummary.helpfulPct,
+        yourRating,
+      },
       checklist: null,
       toc: [],
       related: [],
