@@ -26,6 +26,7 @@ import {
   recurringTaskGenerateFunction,
   permitExpireFunction,
   notificationEscalateFunction,
+  announcementExpireFunction,
 } from "@prv/jobs/functions"
 
 // Inngest webhook handler — receives events and dispatches to functions
@@ -58,6 +59,7 @@ export const { GET, POST, PUT } = serve({
     recurringTaskGenerateFunction,
     permitExpireFunction,
     notificationEscalateFunction,
+    announcementExpireFunction,
   ],
   signingKey: process.env["INNGEST_SIGNING_KEY"],
 })

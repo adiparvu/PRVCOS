@@ -253,6 +253,11 @@ export const announcements = pgTable(
     ackCount: integer("ack_count").notNull().default(0),
     expiresAt: timestamp("expires_at", { withTimezone: true }),
 
+    // When an announcement passes expiresAt, the hourly cron stamps this so the
+    // active feed hides it. Distinct from deletedAt: an archived announcement is
+    // history (still visible in admin/receipt views), not deleted.
+    archivedAt: timestamp("archived_at", { withTimezone: true }),
+
     publishedAt: timestamp("published_at", { withTimezone: true }),
     scheduledAt: timestamp("scheduled_at", { withTimezone: true }),
 

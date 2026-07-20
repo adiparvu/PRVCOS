@@ -1,6 +1,6 @@
 import { withGates } from "@/lib/with-gates"
 import { NextRequest, NextResponse } from "next/server"
-import { eq, and, desc, isNull, lte, or } from "drizzle-orm"
+import { eq, and, desc, isNull, lte, gt, or } from "drizzle-orm"
 import { db } from "@prv/db"
 import { announcements, announcementReads, users } from "@prv/db/schema"
 import { writeAuditLog } from "@prv/auth"
@@ -27,6 +27,8 @@ export const GET = withGates(
   async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
     const { searchParams } = req.nextUrl
     const pinned = searchParams.get("pinned")
+    // Managers can request the history feed (archived + expired) explicitly.
+    const includeArchived = searchParams.get("includeArchived") === "true"
     const now = new Date()
 
     const conditions = [
@@ -36,6 +38,17 @@ export const GET = withGates(
         typeof eq
       >,
     ]
+
+    if (!includeArchived) {
+      // Active feed only: hide archived, and hide expired even before the cron
+      // has stamped archivedAt (see lib/announcement-visibility).
+      conditions.push(isNull(announcements.archivedAt))
+      conditions.push(
+        or(isNull(announcements.expiresAt), gt(announcements.expiresAt, now)) as ReturnType<
+          typeof eq
+        >
+      )
+    }
 
     if (pinned === "true") {
       conditions.push(eq(announcements.isPinned, true))

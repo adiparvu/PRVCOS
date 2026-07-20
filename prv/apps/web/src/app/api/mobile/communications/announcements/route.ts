@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { withMobileAuth } from "@/lib/mobile/auth"
 import { db } from "@prv/db"
 import { announcements, announcementReads, users } from "@prv/db/schema"
-import { and, desc, eq, isNull, lte, or } from "drizzle-orm"
+import { and, desc, eq, isNull, lte, gt, or } from "drizzle-orm"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -15,9 +15,12 @@ export const GET = withMobileAuth(async (req: NextRequest, ctx) => {
   const conditions: ReturnType<typeof eq>[] = [
     eq(announcements.companyId, companyId),
     isNull(announcements.deletedAt),
+    // Active feed only: hide archived + expired (see lib/announcement-visibility).
+    isNull(announcements.archivedAt),
     or(isNull(announcements.scheduledAt), lte(announcements.scheduledAt, now)) as ReturnType<
       typeof eq
     >,
+    or(isNull(announcements.expiresAt), gt(announcements.expiresAt, now)) as ReturnType<typeof eq>,
   ]
 
   if (pinned === "true") {
