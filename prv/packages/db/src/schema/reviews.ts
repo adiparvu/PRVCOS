@@ -81,6 +81,55 @@ export const reviews = pgTable(
   ]
 )
 
+// 360° peer feedback (roadmap 8.4). A review can request feedback from any
+// number of peers; each peer independently submits a 1–5 rating and comments, or
+// declines. The aggregate complements the self/manager/HR dimensions already on
+// the review row. One request per (review, peer). A peer is never the review
+// subject (enforced at the API). Confidentiality: the review SUBJECT sees only
+// the aggregate; managers/HR see attributed detail.
+export const peerFeedbackStatusEnum = pgEnum("peer_feedback_status", [
+  "pending",
+  "submitted",
+  "declined",
+])
+
+export const reviewPeerFeedback = pgTable(
+  "review_peer_feedback",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id, { onDelete: "cascade" }),
+    reviewId: uuid("review_id")
+      .notNull()
+      .references(() => reviews.id, { onDelete: "cascade" }),
+    peerId: uuid("peer_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    requestedById: uuid("requested_by_id").references(() => users.id, { onDelete: "set null" }),
+    status: peerFeedbackStatusEnum("status").notNull().default("pending"),
+    rating: integer("rating"),
+    comments: text("comments"),
+    requestedAt: timestamp("requested_at", { withTimezone: true }).notNull().defaultNow(),
+    submittedAt: timestamp("submitted_at", { withTimezone: true }),
+  },
+  (table) => [
+    unique("review_peer_feedback_review_peer_unique").on(table.reviewId, table.peerId),
+    index("review_peer_feedback_company_id_idx").on(table.companyId),
+    index("review_peer_feedback_review_id_idx").on(table.reviewId),
+    index("review_peer_feedback_peer_id_idx").on(table.peerId),
+  ]
+)
+
+export const reviewPeerFeedbackRelations = relations(reviewPeerFeedback, ({ one }) => ({
+  company: one(companies, {
+    fields: [reviewPeerFeedback.companyId],
+    references: [companies.id],
+  }),
+  review: one(reviews, { fields: [reviewPeerFeedback.reviewId], references: [reviews.id] }),
+  peer: one(users, { fields: [reviewPeerFeedback.peerId], references: [users.id] }),
+}))
+
 export const reviewCyclesRelations = relations(reviewCycles, ({ one, many }) => ({
   company: one(companies, { fields: [reviewCycles.companyId], references: [companies.id] }),
   reviews: many(reviews),
@@ -94,3 +143,4 @@ export const reviewsRelations = relations(reviews, ({ one }) => ({
 
 export type ReviewCadence = (typeof reviewCadenceEnum.enumValues)[number]
 export type ReviewStage = (typeof reviewStageEnum.enumValues)[number]
+export type PeerFeedbackStatus = (typeof peerFeedbackStatusEnum.enumValues)[number]
