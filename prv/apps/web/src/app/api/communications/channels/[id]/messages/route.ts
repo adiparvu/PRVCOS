@@ -60,6 +60,19 @@ export const GET = withGates(
       if (!isMember) return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
+    // Opening a channel marks it read for the caller — advances their lastReadAt
+    // so the channels list unread badge clears (no-op if they are not a member).
+    void db
+      .update(channelMembers)
+      .set({ lastReadAt: new Date() })
+      .where(
+        and(
+          eq(channelMembers.channelId, channelId),
+          eq(channelMembers.userId, ctx.session.userId),
+          eq(channelMembers.companyId, ctx.session.companyId)
+        )
+      )
+
     const conditions = [
       eq(channelMessages.channelId, channelId),
       eq(channelMessages.companyId, ctx.session.companyId),

@@ -1,8 +1,8 @@
 import { withGates } from "@/lib/with-gates"
 import { NextRequest, NextResponse } from "next/server"
-import { eq, and, desc, ilike, asc } from "drizzle-orm"
+import { eq, and, desc, ilike, asc, gt, isNull, or, sql } from "drizzle-orm"
 import { db } from "@prv/db"
-import { chatChannels, channelMembers } from "@prv/db/schema"
+import { chatChannels, channelMembers, channelMessages } from "@prv/db/schema"
 import { writeAuditLog } from "@prv/auth"
 import { z } from "zod"
 import type { GateContext } from "@prv/auth"
@@ -54,7 +54,35 @@ export const GET = withGates(
       .orderBy(desc(chatChannels.lastMessageAt), asc(chatChannels.name))
       .limit(100)
 
-    return NextResponse.json({ channels: rows })
+    // Per-channel unread counts for the caller: messages posted by someone else,
+    // not deleted, after the caller's lastReadAt (channels they are a member of).
+    const { userId, companyId } = ctx.session
+    const unreadRows = await db
+      .select({
+        channelId: channelMessages.channelId,
+        unread: sql<number>`cast(count(*) as int)`,
+      })
+      .from(channelMessages)
+      .innerJoin(channelMembers, eq(channelMembers.channelId, channelMessages.channelId))
+      .where(
+        and(
+          eq(channelMembers.userId, userId),
+          eq(channelMembers.companyId, companyId),
+          eq(channelMessages.companyId, companyId),
+          isNull(channelMessages.deletedAt),
+          sql`${channelMessages.userId} <> ${userId}`,
+          or(
+            isNull(channelMembers.lastReadAt),
+            gt(channelMessages.createdAt, channelMembers.lastReadAt)
+          )
+        )
+      )
+      .groupBy(channelMessages.channelId)
+
+    const unreadByChannel = new Map(unreadRows.map((r) => [r.channelId, r.unread]))
+    const channels = rows.map((c) => ({ ...c, unreadCount: unreadByChannel.get(c.id) ?? 0 }))
+
+    return NextResponse.json({ channels })
   }
 )
 

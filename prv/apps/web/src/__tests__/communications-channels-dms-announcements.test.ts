@@ -21,6 +21,7 @@ const mockDb = {
   returning: vi.fn().mockResolvedValue([{ id: "item-1" }]),
   values: vi.fn().mockReturnThis(),
   orderBy: vi.fn().mockReturnThis(),
+  groupBy: vi.fn().mockResolvedValue([]),
   onConflictDoNothing: vi.fn().mockReturnThis(),
   onConflictDoUpdate: vi.fn().mockReturnThis(),
 }
@@ -88,6 +89,8 @@ function resetMocks() {
   mockDb.values.mockReturnThis()
   // orderBy must return this so .limit() can be chained after it
   mockDb.orderBy.mockReturnThis()
+  // groupBy is a terminal for the unread-count query → resolves []
+  mockDb.groupBy.mockResolvedValue([])
   mockDb.onConflictDoNothing.mockReturnThis()
   mockDb.onConflictDoUpdate.mockReturnThis()
 }
