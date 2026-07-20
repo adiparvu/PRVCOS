@@ -11,6 +11,9 @@ import { inngest } from "../client"
 // recipient's EXPLICIT managerId — no org-chart guessing; a recipient with no
 // manager is simply marked processed and never escalated.
 const ESCALATE_MINUTES = 15
+// Cap the manager chain so a managerId cycle (data bug) can never ping-pong
+// critical alerts forever. Covers Employee → TL → OMS → Ops Manager → CEO.
+const MAX_ESCALATION_DEPTH = 5
 
 export const criticalAlertEscalateFunction = inngest.createFunction(
   {
@@ -42,6 +45,7 @@ export const criticalAlertEscalateFunction = inngest.createFunction(
           entityType: notifications.entityType,
           entityId: notifications.entityId,
           managerId: users.managerId,
+          metadata: notifications.metadata,
         })
         .from(notifications)
         .innerJoin(users, eq(users.id, notifications.userId))
@@ -75,6 +79,11 @@ export const criticalAlertEscalateFunction = inngest.createFunction(
         // Only create the manager's alert when a manager exists.
         if (!n.managerId || n.managerId === n.userId) continue
 
+        // Stop the chain at a fixed depth — a managerId cycle must never loop.
+        const meta = (n.metadata ?? {}) as Record<string, unknown>
+        const depth = typeof meta.escalationDepth === "number" ? meta.escalationDepth : 0
+        if (depth >= MAX_ESCALATION_DEPTH) continue
+
         await db.insert(notifications).values({
           userId: n.managerId,
           companyId: n.companyId,
@@ -89,7 +98,11 @@ export const criticalAlertEscalateFunction = inngest.createFunction(
           entityId: n.entityId,
           requiresAck: true,
           deliveredAt: now,
-          metadata: { escalatedFrom: n.id, originalRecipient: n.userId },
+          metadata: {
+            escalatedFrom: n.id,
+            originalRecipient: n.userId,
+            escalationDepth: depth + 1,
+          },
         })
         escalated++
       }
