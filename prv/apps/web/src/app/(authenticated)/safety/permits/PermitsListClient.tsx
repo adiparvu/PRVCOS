@@ -80,7 +80,6 @@ function StatusBadge({ status }: { status: PermitStatus }) {
   )
 }
 
-type Person = { id: string; firstName: string; lastName: string; role: string }
 type RiskRow = { hazard: string; control: string; residualRisk: "low" | "medium" | "high" }
 
 export function PermitsListClient() {
@@ -103,7 +102,11 @@ export function PermitsListClient() {
   const [risks, setRisks] = useState<RiskRow[]>([{ hazard: "", control: "", residualRisk: "low" }])
   const [ppe, setPpe] = useState("")
   const [details, setDetails] = useState<Record<string, string>>({})
-  const [people, setPeople] = useState<Person[]>([])
+  const [designated, setDesignated] = useState<
+    { userId: string; userName: string | null; role: string }[] | null
+  >(null)
+  const supervisors = (designated ?? []).filter((d) => d.role === "supervisor")
+  const safetyOfficers = (designated ?? []).filter((d) => d.role === "safety_officer")
 
   const load = useCallback(() => {
     const qs = statusFilter ? `?status=${statusFilter}` : ""
@@ -121,13 +124,15 @@ export function PermitsListClient() {
   }, [load])
 
   useEffect(() => {
-    if (showForm && people.length === 0) {
-      fetch("/api/people?limit=200")
+    if (showForm && designated === null) {
+      fetch("/api/safety/permit-designations")
         .then((r) => r.json())
-        .then((d: { members?: Person[] }) => setPeople(d.members ?? []))
-        .catch(() => setPeople([]))
+        .then((d: { designations?: { userId: string; userName: string | null; role: string }[] }) =>
+          setDesignated(d.designations ?? [])
+        )
+        .catch(() => setDesignated([]))
     }
-  }, [showForm, people.length])
+  }, [showForm, designated])
 
   const reqFields = requiredFieldsForType(type)
   const validRisks = risks.filter((r) => r.hazard.trim() && r.control.trim())
@@ -307,9 +312,9 @@ export function PermitsListClient() {
                 style={input}
               >
                 <option value="">—</option>
-                {people.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.firstName} {p.lastName}
+                {supervisors.map((p) => (
+                  <option key={p.userId} value={p.userId}>
+                    {p.userName ?? p.userId}
                   </option>
                 ))}
               </select>
@@ -322,14 +327,23 @@ export function PermitsListClient() {
                 style={input}
               >
                 <option value="">—</option>
-                {people.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.firstName} {p.lastName}
+                {safetyOfficers.map((p) => (
+                  <option key={p.userId} value={p.userId}>
+                    {p.userName ?? p.userId}
                   </option>
                 ))}
               </select>
             </div>
           </div>
+          {supervisors.length === 0 && safetyOfficers.length === 0 && designated !== null && (
+            <div style={{ fontSize: 11.5, color: "var(--prv-text-3)", marginTop: -4 }}>
+              Niciun aprobator desemnat.{" "}
+              <Link href="/safety/permit-designations" style={{ color: "rgba(10,132,255,0.9)" }}>
+                Gestionează desemnări
+              </Link>
+              .
+            </div>
+          )}
           <div>
             <span style={label}>Evaluare de risc</span>
             <div style={{ display: "grid", gap: 8 }}>
