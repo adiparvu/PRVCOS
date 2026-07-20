@@ -11,6 +11,7 @@ import {
   type ReviewCycleSummary,
   type ReviewSummary,
 } from "@/lib/api-hooks"
+import { MyPeerReviewsSection, ReviewPeerPanel } from "./PeerFeedback"
 
 const CADENCE = ["annual", "semi_annual", "quarterly"] as const
 const CADENCE_LABEL: Record<string, string> = {
@@ -124,7 +125,17 @@ function CycleCard({
   )
 }
 
-function ReviewRow({ r, onAdvance }: { r: ReviewSummary; onAdvance: () => void }) {
+function ReviewRow({
+  r,
+  onAdvance,
+  expanded,
+  onToggle,
+}: {
+  r: ReviewSummary
+  onAdvance: () => void
+  expanded: boolean
+  onToggle: () => void
+}) {
   const idx = STAGE_INDEX[r.stage] ?? 1
   return (
     <div
@@ -173,6 +184,21 @@ function ReviewRow({ r, onAdvance }: { r: ReviewSummary; onAdvance: () => void }
           </div>
         )}
       </div>
+      <button
+        onClick={onToggle}
+        style={{
+          fontSize: 11,
+          fontWeight: 600,
+          color: expanded ? "#000" : "var(--prv-text-2)",
+          background: expanded ? "rgba(255,255,255,0.92)" : "var(--prv-g1)",
+          border: "1px solid var(--prv-border)",
+          borderRadius: 100,
+          padding: "4px 11px",
+          cursor: "pointer",
+        }}
+      >
+        360°
+      </button>
       {r.signedOff ? (
         <span
           style={{
@@ -223,6 +249,7 @@ export function ReviewsClient() {
   const reviews = reviewsData?.reviews ?? []
 
   const [showForm, setShowForm] = useState(false)
+  const [expandedReview, setExpandedReview] = useState<string | null>(null)
   const [name, setName] = useState("")
   const [cadence, setCadence] = useState<(typeof CADENCE)[number]>("annual")
   const [addUser, setAddUser] = useState("")
@@ -336,6 +363,8 @@ export function ReviewsClient() {
         </div>
       )}
 
+      <MyPeerReviewsSection />
+
       <div style={{ marginTop: 20 }}>
         {isLoading ? (
           <p style={{ padding: "40px 20px", color: "var(--prv-text-4)" }}>Loading cycles…</p>
@@ -420,11 +449,19 @@ export function ReviewsClient() {
               </p>
             ) : (
               reviews.map((r) => (
-                <ReviewRow
-                  key={r.id}
-                  r={r}
-                  onAdvance={() => advance.mutate({ id: r.id, rating: 4 })}
-                />
+                <div key={r.id}>
+                  <ReviewRow
+                    r={r}
+                    onAdvance={() => advance.mutate({ id: r.id, rating: 4 })}
+                    expanded={expandedReview === r.id}
+                    onToggle={() => setExpandedReview(expandedReview === r.id ? null : r.id)}
+                  />
+                  {expandedReview === r.id && (
+                    <div style={{ padding: "12px 0 2px" }}>
+                      <ReviewPeerPanel reviewId={r.id} subjectUserId={r.userId} people={people} />
+                    </div>
+                  )}
+                </div>
               ))
             )}
           </div>
