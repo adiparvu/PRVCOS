@@ -1117,6 +1117,14 @@ export function SettingsClient() {
             href="/settings/escalation"
           />
         )}
+        {profile && ESCALATION_MANAGER_ROLES.has(profile.role) && (
+          <Row
+            icon={<IconBell />}
+            label="Rutare alerte critice"
+            value="Configurează"
+            href="/settings/critical-routes"
+          />
+        )}
       </Section>
 
       {/* Preferences */}
