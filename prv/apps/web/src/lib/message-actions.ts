@@ -34,3 +34,34 @@ export function canModifyMessage(msg: EditableLike, userId: string): boolean {
   if (msg.deletedAt) return false
   return msg.authorId === userId
 }
+
+// Roles allowed to moderate (remove) another member's channel message for policy
+// or compliance reasons (roadmap 13.6). Deliberately narrow: sysadmin, HR, and
+// the company/group executives — never a general manager. Editing someone else's
+// words is never permitted; moderation can only REMOVE (tombstone).
+export const MESSAGE_MODERATOR_ROLES = new Set<string>([
+  "system_administrator",
+  "hr_payroll",
+  "group_ceo",
+  "ceo",
+  "co_ceo",
+])
+
+export function canModerateMessages(role: string | null | undefined): boolean {
+  return role != null && MESSAGE_MODERATOR_ROLES.has(role)
+}
+
+/**
+ * Who may REMOVE (tombstone) a channel message: its author, or a moderator role.
+ * Never an already-tombstoned message. Unlike edit, removal is allowed for
+ * moderators so HR/Sysadmin can take down policy-violating content.
+ */
+export function canRemoveMessage(
+  msg: EditableLike,
+  userId: string,
+  role: string | null | undefined
+): boolean {
+  if (msg.deletedAt) return false
+  if (msg.authorId === userId) return true
+  return canModerateMessages(role)
+}

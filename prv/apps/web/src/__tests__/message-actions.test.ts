@@ -3,6 +3,8 @@ import {
   applyReaction,
   reactionTotal,
   canModifyMessage,
+  canModerateMessages,
+  canRemoveMessage,
   TOMBSTONE_CONTENT,
 } from "@/lib/message-actions"
 
@@ -39,6 +41,42 @@ describe("canModifyMessage", () => {
   })
   it("blocks modifying a deleted message", () => {
     expect(canModifyMessage({ authorId: "u1", deletedAt: "2026-01-01" }, "u1")).toBe(false)
+  })
+})
+
+describe("canModerateMessages", () => {
+  it("allows sysadmin, HR, and executives only", () => {
+    expect(canModerateMessages("system_administrator")).toBe(true)
+    expect(canModerateMessages("hr_payroll")).toBe(true)
+    expect(canModerateMessages("ceo")).toBe(true)
+    expect(canModerateMessages("group_ceo")).toBe(true)
+  })
+  it("denies general managers and workers", () => {
+    expect(canModerateMessages("operations_manager")).toBe(false)
+    expect(canModerateMessages("store_manager")).toBe(false)
+    expect(canModerateMessages("worker")).toBe(false)
+    expect(canModerateMessages(null)).toBe(false)
+    expect(canModerateMessages(undefined)).toBe(false)
+  })
+})
+
+describe("canRemoveMessage", () => {
+  it("lets the author remove their own live message", () => {
+    expect(canRemoveMessage({ authorId: "u1", deletedAt: null }, "u1", "worker")).toBe(true)
+  })
+  it("lets a moderator remove someone else's message", () => {
+    expect(canRemoveMessage({ authorId: "u1", deletedAt: null }, "hr", "hr_payroll")).toBe(true)
+  })
+  it("denies a non-moderator removing someone else's message", () => {
+    expect(canRemoveMessage({ authorId: "u1", deletedAt: null }, "u2", "worker")).toBe(false)
+    expect(canRemoveMessage({ authorId: "u1", deletedAt: null }, "u2", "operations_manager")).toBe(
+      false
+    )
+  })
+  it("never removes an already-tombstoned message, even by a moderator", () => {
+    expect(
+      canRemoveMessage({ authorId: "u1", deletedAt: "2026-01-01" }, "sys", "system_administrator")
+    ).toBe(false)
   })
 })
 

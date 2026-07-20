@@ -9,6 +9,7 @@ import { z } from "zod"
 import {
   applyReaction,
   canModifyMessage,
+  canRemoveMessage,
   TOMBSTONE_CONTENT,
   type ReactionMap,
 } from "@/lib/message-actions"
@@ -112,15 +113,34 @@ export const DELETE = withGates(
 
     const msg = await loadMessage(id, companyId)
     if (!msg) return NextResponse.json({ error: "Not found" }, { status: 404 })
+
+    // The author may always remove their own message; a moderator role (HR /
+    // Sysadmin / exec) may remove anyone's for policy/compliance (roadmap 13.6).
     if (
-      !canModifyMessage({ authorId: msg.userId, deletedAt: msg.deletedAt ? "x" : null }, userId)
+      !canRemoveMessage(
+        { authorId: msg.userId, deletedAt: msg.deletedAt ? "x" : null },
+        userId,
+        ctx.session.role
+      )
     ) {
-      return NextResponse.json({ error: "Not the author" }, { status: 403 })
+      return NextResponse.json({ error: "Not allowed" }, { status: 403 })
     }
+
+    // A removal by anyone other than the author is a moderation action — record
+    // who did it and why on the tombstone so it is auditable and not deniable.
+    const isModeration = msg.userId !== userId
+    const reason = req.nextUrl.searchParams.get("reason")?.slice(0, 500) || null
 
     const [updated] = await db
       .update(channelMessages)
-      .set({ deletedAt: new Date(), content: TOMBSTONE_CONTENT, reactions: {} })
+      .set({
+        deletedAt: new Date(),
+        content: TOMBSTONE_CONTENT,
+        reactions: {},
+        ...(isModeration
+          ? { metadata: { moderated: true, moderatedByUserId: userId, reason } }
+          : {}),
+      })
       .where(and(eq(channelMessages.id, id), eq(channelMessages.companyId, companyId)))
       .returning({ id: channelMessages.id })
 
@@ -128,16 +148,16 @@ export const DELETE = withGates(
       companyId,
       actorId: userId,
       sessionId,
-      action: "communications.message.delete",
+      action: isModeration ? "communications.message.moderate" : "communications.message.delete",
       entityType: "channel_message",
       entityId: id,
-      payload: {},
+      payload: isModeration ? { moderated: true, authorId: msg.userId, reason } : {},
       method: "DELETE",
       path: req.nextUrl.pathname,
       ipAddress: ctx.ipAddress,
       userAgent: ctx.userAgent,
     })
 
-    return NextResponse.json({ id: updated?.id, deleted: true })
+    return NextResponse.json({ id: updated?.id, deleted: true, moderated: isModeration })
   }
 )
