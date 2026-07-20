@@ -198,6 +198,38 @@ export const notificationEscalationPolicies = pgTable(
   ]
 )
 
+// ─── Critical alert routing (Phase 14.5) ─────────────────────────────────────
+// Admin-declared map of a company-level critical trigger (e.g. cash below
+// threshold, a missed milestone, a security event) to the EXPLICIT user who
+// receives that critical alert. Producers resolve triggerKey → routeToUserId; a
+// trigger with no active route simply raises no routed alert (never guessed).
+export const criticalAlertRoutes = pgTable(
+  "critical_alert_routes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id, { onDelete: "cascade" }),
+    triggerKey: varchar("trigger_key", { length: 100 }).notNull(),
+    routeToUserId: uuid("route_to_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    isActive: boolean("is_active").notNull().default(true),
+    createdById: uuid("created_by_id").references(() => users.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    unique("critical_alert_routes_company_trigger_unique").on(table.companyId, table.triggerKey),
+    index("critical_alert_routes_company_id_idx").on(table.companyId),
+  ]
+)
+
+export const criticalAlertRoutesRelations = relations(criticalAlertRoutes, ({ one }) => ({
+  company: one(companies, { fields: [criticalAlertRoutes.companyId], references: [companies.id] }),
+  routeTo: one(users, { fields: [criticalAlertRoutes.routeToUserId], references: [users.id] }),
+}))
+
 // ─── Relations ───────────────────────────────────────────────────────────────
 
 export const notificationEscalationPoliciesRelations = relations(
