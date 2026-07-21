@@ -3,10 +3,10 @@ import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
 import { writeAuditLog } from "@prv/auth"
 import { db } from "@prv/db"
-import { shiftSwapRequests, shiftAssignments, shifts } from "@prv/db/schema"
+import { shiftSwapRequests, shiftAssignments, shifts, notifications } from "@prv/db/schema"
 import { and, eq, isNull, ne } from "drizzle-orm"
 import { z } from "zod"
-import { canDecideSwap, swapDecisionStatus } from "@/lib/swap"
+import { canCancelSwap, canDecideSwap, swapDecisionStatus } from "@/lib/swap"
 import { findConflict } from "@/lib/shift-overlap"
 
 export const dynamic = "force-dynamic"
@@ -37,8 +37,11 @@ export const PATCH = withGates(
         shiftId: shiftSwapRequests.shiftId,
         requesterId: shiftSwapRequests.requesterId,
         targetUserId: shiftSwapRequests.targetUserId,
+        shiftTitle: shifts.title,
+        shiftDate: shifts.date,
       })
       .from(shiftSwapRequests)
+      .leftJoin(shifts, eq(shiftSwapRequests.shiftId, shifts.id))
       .where(and(eq(shiftSwapRequests.id, id), eq(shiftSwapRequests.companyId, companyId)))
       .limit(1)
     if (!swap) return NextResponse.json({ error: "Swap not found" }, { status: 404 })
@@ -114,6 +117,56 @@ export const PATCH = withGates(
       })
       .where(eq(shiftSwapRequests.id, id))
 
+    // Notify the affected named users of the decision. The requester always
+    // hears the outcome; on approval the named replacement also learns the
+    // shift is now theirs. Recipients are explicit columns on the row, so no
+    // routing is guessed; the deciding leader is skipped if they are one of them.
+    const label = swap.shiftTitle ? `${swap.shiftTitle} · ${swap.shiftDate}` : "tura"
+    const notices: {
+      userId: string
+      type: "success" | "warning" | "info"
+      title: string
+      body: string
+    }[] = []
+    if (parsed.data.decision === "approve") {
+      notices.push({
+        userId: swap.requesterId,
+        type: "success",
+        title: "Schimb de tură aprobat",
+        body: `Cererea ta de schimb pentru ${label} a fost aprobată.`,
+      })
+      if (swap.targetUserId)
+        notices.push({
+          userId: swap.targetUserId,
+          type: "info",
+          title: "Tură nouă atribuită",
+          body: `Ți-a fost atribuită tura ${label} în urma unui schimb aprobat.`,
+        })
+    } else {
+      notices.push({
+        userId: swap.requesterId,
+        type: "warning",
+        title: "Schimb de tură respins",
+        body: `Cererea ta de schimb pentru ${label} a fost respinsă.`,
+      })
+    }
+    const seen = new Set<string>([userId])
+    const notifRows = notices
+      .filter((n) => !seen.has(n.userId) && (seen.add(n.userId), true))
+      .map((n) => ({
+        userId: n.userId,
+        companyId,
+        type: n.type,
+        channel: "in_app" as const,
+        title: n.title.slice(0, 500),
+        body: n.body,
+        entityType: "shift_swap_request",
+        entityId: id,
+        actionUrl: "/schedule",
+        deliveredAt: now,
+      }))
+    if (notifRows.length > 0) await db.insert(notifications).values(notifRows)
+
     void writeAuditLog({
       companyId,
       actorId: userId,
@@ -129,5 +182,59 @@ export const PATCH = withGates(
     })
 
     return NextResponse.json({ id, status: swapDecisionStatus(parsed.data.decision) })
+  }
+)
+
+// ── DELETE /api/schedule/swaps/[id] — the requester withdraws a pending swap ──
+export const DELETE = withGates(
+  { action: "schedule.read", endpointClass: "api_write" },
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
+    const { companyId, userId, sessionId } = ctx.session
+    const id = swapId(req)
+    if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 })
+
+    const [swap] = await db
+      .select({
+        id: shiftSwapRequests.id,
+        status: shiftSwapRequests.status,
+        shiftId: shiftSwapRequests.shiftId,
+        requesterId: shiftSwapRequests.requesterId,
+      })
+      .from(shiftSwapRequests)
+      .where(and(eq(shiftSwapRequests.id, id), eq(shiftSwapRequests.companyId, companyId)))
+      .limit(1)
+    if (!swap) return NextResponse.json({ error: "Swap not found" }, { status: 404 })
+
+    // Only the worker who opened the request may withdraw it — cancelling is not
+    // a leader decision, so it does not touch the shift assignment.
+    if (swap.requesterId !== userId)
+      return NextResponse.json(
+        { error: "Only the requester can cancel this swap" },
+        { status: 403 }
+      )
+    if (!canCancelSwap(swap.status))
+      return NextResponse.json({ error: `Swap is already ${swap.status}` }, { status: 409 })
+
+    const now = new Date()
+    await db
+      .update(shiftSwapRequests)
+      .set({ status: "cancelled", updatedAt: now })
+      .where(eq(shiftSwapRequests.id, id))
+
+    void writeAuditLog({
+      companyId,
+      actorId: userId,
+      sessionId,
+      action: "schedule.swap.cancel",
+      entityType: "shift_swap_request",
+      entityId: id,
+      payload: { shiftId: swap.shiftId },
+      method: "DELETE",
+      path: req.nextUrl.pathname,
+      ipAddress: ctx.ipAddress,
+      userAgent: ctx.userAgent,
+    })
+
+    return NextResponse.json({ id, status: "cancelled" })
   }
 )

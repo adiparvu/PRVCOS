@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { canDecideSwap, swapDecisionStatus, type SwapStatus } from "@/lib/swap"
+import { canCancelSwap, canDecideSwap, swapDecisionStatus, type SwapStatus } from "@/lib/swap"
 
 describe("canDecideSwap", () => {
   it("allows deciding only a pending swap", () => {
@@ -14,5 +14,14 @@ describe("swapDecisionStatus", () => {
   it("maps a decision to the resulting status", () => {
     expect(swapDecisionStatus("approve")).toBe("approved")
     expect(swapDecisionStatus("reject")).toBe("rejected")
+  })
+})
+
+describe("canCancelSwap", () => {
+  it("allows cancelling only a pending swap", () => {
+    expect(canCancelSwap("pending")).toBe(true)
+    for (const s of ["approved", "rejected", "cancelled"] as SwapStatus[]) {
+      expect(canCancelSwap(s), s).toBe(false)
+    }
   })
 })

@@ -15,3 +15,9 @@ export function canDecideSwap(status: SwapStatus): boolean {
 export function swapDecisionStatus(decision: "approve" | "reject"): SwapStatus {
   return decision === "approve" ? "approved" : "rejected"
 }
+
+/** A swap can only be cancelled (withdrawn by its requester) while still
+ * pending — once decided it is terminal. */
+export function canCancelSwap(status: SwapStatus): boolean {
+  return status === "pending"
+}
