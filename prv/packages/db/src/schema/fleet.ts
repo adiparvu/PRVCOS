@@ -209,6 +209,12 @@ export const toolCheckouts = pgTable(
     damageReported: boolean("damage_reported").notNull().default(false),
     damageNotes: text("damage_notes"),
 
+    // Custody-overdue reminder (Phase 22.1). Stamped once when the daily sweep
+    // first finds an open checkout past its expectedReturnAt, so the custodian
+    // is reminded exactly once (claim-on-null). Returning the tool closes the
+    // checkout, removing it from the candidate set.
+    overdueNotifiedAt: timestamp("overdue_notified_at", { withTimezone: true }),
+
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
