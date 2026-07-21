@@ -3,6 +3,8 @@ import { withMobileAuth } from "@/lib/mobile/auth"
 import { db } from "@prv/db"
 import { knowledgeArticles, articleReadProgress, users } from "@prv/db/schema"
 import { and, eq, isNull } from "drizzle-orm"
+import { z } from "zod"
+import { writeAuditLog } from "@prv/auth"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -126,4 +128,124 @@ export const GET = withMobileAuth(async (req: NextRequest, ctx) => {
         readMinutes: r.readMinutes ?? 5,
       })),
   })
+})
+
+// ─── PATCH /api/mobile/knowledge/[id] — edit + pin/unpin ─────────────────────
+
+const patchSchema = z
+  .object({
+    title: z.string().min(1).max(500).optional(),
+    type: z.enum(["sop", "policy", "guide", "faq"]).optional(),
+    category: z
+      .enum(["operations", "hr", "finance", "procurement", "fleet", "projects"])
+      .optional(),
+    isPinned: z.boolean().optional(),
+    readMinutes: z.number().int().min(1).max(300).optional(),
+  })
+  .refine((d) => Object.keys(d).length > 0, { message: "At least one field required" })
+
+export const PATCH = withMobileAuth(async (req: NextRequest, ctx) => {
+  const ipAddress =
+    req.headers.get("x-real-ip") ??
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    "unknown"
+
+  const id = req.nextUrl.pathname.split("/").pop()
+  if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 })
+
+  let body: unknown
+  try {
+    body = await req.json()
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 })
+  }
+
+  const parsed = patchSchema.safeParse(body)
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Invalid payload", issues: parsed.error.issues },
+      { status: 422 }
+    )
+  }
+
+  const [existing] = await db
+    .select({ id: knowledgeArticles.id, title: knowledgeArticles.title })
+    .from(knowledgeArticles)
+    .where(
+      and(
+        eq(knowledgeArticles.id, id),
+        eq(knowledgeArticles.companyId, ctx.companyId),
+        isNull(knowledgeArticles.deletedAt)
+      )
+    )
+    .limit(1)
+  if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 })
+
+  const [updated] = await db
+    .update(knowledgeArticles)
+    .set({ ...parsed.data, updatedAt: new Date() })
+    .where(and(eq(knowledgeArticles.id, id), eq(knowledgeArticles.companyId, ctx.companyId)))
+    .returning({ id: knowledgeArticles.id, isPinned: knowledgeArticles.isPinned })
+
+  void writeAuditLog({
+    companyId: ctx.companyId,
+    actorId: ctx.userId,
+    sessionId: ctx.sessionId,
+    action: "mobile.knowledge.update",
+    entityType: "knowledge_article",
+    entityId: id,
+    method: "PATCH",
+    path: `/api/mobile/knowledge/${id}`,
+    ipAddress,
+    userAgent: req.headers.get("user-agent") ?? "",
+    payload: { title: existing.title, changes: parsed.data },
+  })
+
+  return NextResponse.json(updated)
+})
+
+// ─── DELETE /api/mobile/knowledge/[id] — soft-delete ─────────────────────────
+
+export const DELETE = withMobileAuth(async (req: NextRequest, ctx) => {
+  const ipAddress =
+    req.headers.get("x-real-ip") ??
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    "unknown"
+
+  const id = req.nextUrl.pathname.split("/").pop()
+  if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 })
+
+  const [existing] = await db
+    .select({ id: knowledgeArticles.id, title: knowledgeArticles.title })
+    .from(knowledgeArticles)
+    .where(
+      and(
+        eq(knowledgeArticles.id, id),
+        eq(knowledgeArticles.companyId, ctx.companyId),
+        isNull(knowledgeArticles.deletedAt)
+      )
+    )
+    .limit(1)
+  if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 })
+
+  await db
+    .update(knowledgeArticles)
+    .set({ deletedAt: new Date(), updatedAt: new Date() })
+    .where(and(eq(knowledgeArticles.id, id), eq(knowledgeArticles.companyId, ctx.companyId)))
+
+  void writeAuditLog({
+    companyId: ctx.companyId,
+    actorId: ctx.userId,
+    sessionId: ctx.sessionId,
+    action: "mobile.knowledge.delete",
+    entityType: "knowledge_article",
+    entityId: id,
+    method: "DELETE",
+    path: `/api/mobile/knowledge/${id}`,
+    ipAddress,
+    userAgent: req.headers.get("user-agent") ?? "",
+    payload: { title: existing.title },
+  })
+
+  return new NextResponse(null, { status: 204 })
 })

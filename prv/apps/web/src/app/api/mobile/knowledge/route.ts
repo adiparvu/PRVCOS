@@ -3,6 +3,8 @@ import { withMobileAuth } from "@/lib/mobile/auth"
 import { db } from "@prv/db"
 import { knowledgeArticles, articleReadProgress, users } from "@prv/db/schema"
 import { and, desc, eq, gte, isNull, sql } from "drizzle-orm"
+import { z } from "zod"
+import { writeAuditLog } from "@prv/auth"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -113,4 +115,60 @@ export const GET = withMobileAuth(async (req: NextRequest, ctx) => {
   }
 
   return NextResponse.json({ meta, articles })
+})
+
+// ─── POST /api/mobile/knowledge — create an article ──────────────────────────
+
+const createArticleSchema = z.object({
+  title: z.string().min(1).max(500),
+  type: z.enum(["sop", "policy", "guide", "faq"]).optional(),
+  category: z.enum(["operations", "hr", "finance", "procurement", "fleet", "projects"]).optional(),
+  content: z.string().optional(),
+  readMinutes: z.number().int().positive().optional(),
+  isPinned: z.boolean().optional(),
+})
+
+export const POST = withMobileAuth(async (req: NextRequest, ctx) => {
+  const ipAddress =
+    req.headers.get("x-real-ip") ??
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    "unknown"
+
+  let body: unknown
+  try {
+    body = await req.json()
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 })
+  }
+
+  const parsed = createArticleSchema.safeParse(body)
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Invalid payload", issues: parsed.error.issues },
+      { status: 422 }
+    )
+  }
+
+  const [record] = await db
+    .insert(knowledgeArticles)
+    .values({ companyId: ctx.companyId, authorUserId: ctx.userId, ...parsed.data })
+    .returning({ id: knowledgeArticles.id, title: knowledgeArticles.title })
+
+  if (!record) return NextResponse.json({ error: "Insert failed" }, { status: 500 })
+
+  void writeAuditLog({
+    companyId: ctx.companyId,
+    actorId: ctx.userId,
+    sessionId: ctx.sessionId,
+    action: "mobile.knowledge.create",
+    entityType: "knowledge_article",
+    entityId: record.id,
+    method: "POST",
+    path: "/api/mobile/knowledge",
+    ipAddress,
+    userAgent: req.headers.get("user-agent") ?? "",
+    payload: { ...parsed.data },
+  })
+
+  return NextResponse.json({ id: record.id, title: record.title }, { status: 201 })
 })
