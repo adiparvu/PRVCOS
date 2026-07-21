@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server"
 import { z } from "zod"
 import { withMobileAuth } from "@/lib/mobile/auth"
 import { db } from "@prv/db"
-import { projects } from "@prv/db/schema"
+import { projects, projectMembers } from "@prv/db/schema"
 import { writeAuditLog } from "@prv/auth"
 import { eq, and, isNull, count } from "drizzle-orm"
 
@@ -40,7 +40,7 @@ export const POST = withMobileAuth(async (req: NextRequest, ctx) => {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 })
   }
 
-  const { name, clientId, storeId, dueDate, status } = parsed.data
+  const { name, clientId, storeId, dueDate, status, memberIds } = parsed.data
 
   // Generate project code (PROJ-YYYY-XXXX)
   const year = new Date().getFullYear().toString()
@@ -74,6 +74,16 @@ export const POST = withMobileAuth(async (req: NextRequest, ctx) => {
 
   if (!project) {
     return NextResponse.json({ error: "Failed to create project" }, { status: 500 })
+  }
+
+  // Wire the previously-dropped memberIds: enrol each as a project member.
+  if (memberIds && memberIds.length > 0) {
+    await db
+      .insert(projectMembers)
+      .values(
+        memberIds.map((userId) => ({ projectId: project.id, userId, companyId: ctx.companyId }))
+      )
+      .onConflictDoNothing()
   }
 
   void writeAuditLog({

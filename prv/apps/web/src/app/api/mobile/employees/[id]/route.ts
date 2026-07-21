@@ -228,22 +228,20 @@ export const GET = withMobileAuth(async (req: NextRequest, ctx) => {
 const employeePatchSchema = z
   .object({
     status: z.enum(["active", "inactive", "suspended", "onboarding", "offboarded"]).optional(),
+    firstName: z.string().min(1).max(100).optional(),
+    lastName: z.string().min(1).max(100).optional(),
     jobTitle: z.string().max(255).optional(),
+    bio: z.string().optional(),
+    avatarUrl: z.string().url().optional(),
     departmentId: z.string().uuid().nullable().optional(),
     teamId: z.string().uuid().nullable().optional(),
     storeId: z.string().uuid().nullable().optional(),
+    managerId: z.string().uuid().nullable().optional(),
     phone: z.string().max(32).optional(),
+    locale: z.string().max(10).optional(),
+    timezone: z.string().max(50).optional(),
   })
-  .refine(
-    (d) =>
-      d.status !== undefined ||
-      d.jobTitle !== undefined ||
-      d.departmentId !== undefined ||
-      d.teamId !== undefined ||
-      d.storeId !== undefined ||
-      d.phone !== undefined,
-    { message: "At least one field required" }
-  )
+  .refine((d) => Object.keys(d).length > 0, { message: "At least one field required" })
 
 export const PATCH = withMobileAuth(async (req: NextRequest, ctx) => {
   const ipAddress =
@@ -274,17 +272,17 @@ export const PATCH = withMobileAuth(async (req: NextRequest, ctx) => {
   if (!existing) return NextResponse.json({ error: "Employee not found" }, { status: 404 })
 
   const d = parsed.data
+  // A user cannot be their own manager (self-referential FK) — parity with the
+  // web people PATCH guard.
+  if (d.managerId === employeeId)
+    return NextResponse.json(
+      { error: "An employee cannot be their own manager", code: "SELF_MANAGER" },
+      { status: 409 }
+    )
+
   const [updated] = await db
     .update(users)
-    .set({
-      ...(d.status !== undefined && { status: d.status }),
-      ...(d.jobTitle !== undefined && { jobTitle: d.jobTitle }),
-      ...(d.departmentId !== undefined && { departmentId: d.departmentId }),
-      ...(d.teamId !== undefined && { teamId: d.teamId }),
-      ...(d.storeId !== undefined && { storeId: d.storeId }),
-      ...(d.phone !== undefined && { phone: d.phone }),
-      updatedAt: new Date(),
-    })
+    .set({ ...d, updatedAt: new Date() })
     .where(
       and(eq(users.id, employeeId), eq(users.companyId, ctx.companyId), isNull(users.deletedAt))
     )
@@ -338,7 +336,7 @@ export const DELETE = withMobileAuth(async (req: NextRequest, ctx) => {
 
   await db
     .update(users)
-    .set({ deletedAt: new Date(), isActive: false })
+    .set({ deletedAt: new Date(), isActive: false, status: "offboarded" })
     .where(and(eq(users.id, employeeId), eq(users.companyId, ctx.companyId)))
 
   void writeAuditLog({

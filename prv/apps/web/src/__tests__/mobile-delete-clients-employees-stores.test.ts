@@ -162,6 +162,37 @@ describe("DELETE /api/mobile/employees/[id]", () => {
   })
 })
 
+describe("PATCH /api/mobile/employees/[id] self-manager guard", () => {
+  beforeEach(resetMocks)
+
+  it("rejects an employee set as their own manager (409)", async () => {
+    const UID = "11111111-1111-1111-1111-111111111111"
+    mockDb.limit.mockResolvedValueOnce([{ id: UID, firstName: "J", lastName: "D" }])
+    const { PATCH } = await import("@/app/api/mobile/employees/[id]/route")
+    const res = await PATCH(
+      makeReq(`/api/mobile/employees/${UID}`, "PATCH", {
+        json: async () => ({ managerId: UID }),
+      }),
+      mobileCtx
+    )
+    expect(res.status).toBe(409)
+    expect((await res.json()).code).toBe("SELF_MANAGER")
+  })
+
+  it("accepts a widened profile field (firstName)", async () => {
+    mockDb.limit.mockResolvedValueOnce([{ id: "emp-1", firstName: "Old", lastName: "Name" }])
+    mockDb.returning.mockResolvedValueOnce([{ id: "emp-1", status: "active" }])
+    const { PATCH } = await import("@/app/api/mobile/employees/[id]/route")
+    const res = await PATCH(
+      makeReq("/api/mobile/employees/emp-1", "PATCH", {
+        json: async () => ({ firstName: "New" }),
+      }),
+      mobileCtx
+    )
+    expect(res.status).toBe(200)
+  })
+})
+
 // ─── Mobile stores DELETE ─────────────────────────────────────────────────────
 
 describe("DELETE /api/mobile/stores/[id]", () => {

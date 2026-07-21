@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { withMobileAuth } from "@/lib/mobile/auth"
+import { writeAuditLog } from "@prv/auth"
 import { db } from "@prv/db"
 import { announcements, announcementReads, users } from "@prv/db/schema"
 import { and, desc, eq, isNull, lte, gt, or } from "drizzle-orm"
@@ -106,6 +107,23 @@ export const POST = withMobileAuth(async (req: NextRequest, ctx) => {
       scheduledAt: body.scheduledAt ? new Date(body.scheduledAt) : undefined,
     })
     .returning()
+
+  if (announcement)
+    void writeAuditLog({
+      companyId,
+      actorId: userId,
+      sessionId: ctx.sessionId,
+      action: "communications.announcement.created",
+      entityType: "announcement",
+      entityId: announcement.id,
+      method: "POST",
+      path: "/api/mobile/communications/announcements",
+      ipAddress:
+        req.headers.get("x-real-ip") ??
+        req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+        "unknown",
+      userAgent: req.headers.get("user-agent") ?? "",
+    })
 
   return NextResponse.json({ announcement }, { status: 201 })
 })

@@ -81,9 +81,30 @@ export const GET = withMobileAuth(async (req: NextRequest, ctx) => {
   })
 })
 
-const patchSchema = z.object({
-  status: z.enum(["submitted", "approved", "rejected", "paid"]),
-})
+const patchSchema = z
+  .object({
+    status: z.enum(["draft", "submitted", "approved", "rejected", "paid"]).optional(),
+    title: z.string().min(1).max(255).optional(),
+    category: z
+      .enum([
+        "materials",
+        "labor",
+        "equipment",
+        "transport",
+        "rent",
+        "utilities",
+        "marketing",
+        "salaries",
+        "subscriptions",
+        "other",
+      ])
+      .optional(),
+    amount: z.number().positive().optional(),
+    currency: z.string().length(3).optional(),
+    notes: z.string().optional(),
+    receiptUrl: z.string().url().nullable().optional(),
+  })
+  .refine((d) => Object.keys(d).length > 0, { message: "No fields to update" })
 
 export const PATCH = withMobileAuth(async (req: NextRequest, ctx) => {
   const ipAddress =
@@ -108,8 +129,6 @@ export const PATCH = withMobileAuth(async (req: NextRequest, ctx) => {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 })
   }
 
-  const { status } = parsed.data
-
   const [existing] = await db
     .select({ id: expenses.id, status: expenses.status })
     .from(expenses)
@@ -126,9 +145,14 @@ export const PATCH = withMobileAuth(async (req: NextRequest, ctx) => {
     return NextResponse.json({ error: "Expense not found" }, { status: 404 })
   }
 
+  const { amount, ...expenseFields } = parsed.data
   const [updated] = await db
     .update(expenses)
-    .set({ status, updatedAt: new Date() })
+    .set({
+      ...expenseFields,
+      ...(amount !== undefined ? { amount: String(amount) } : {}),
+      updatedAt: new Date(),
+    })
     .where(eq(expenses.id, expenseId))
     .returning({ id: expenses.id, status: expenses.status })
 
@@ -147,7 +171,7 @@ export const PATCH = withMobileAuth(async (req: NextRequest, ctx) => {
     path: `/api/mobile/expenses/${expenseId}`,
     ipAddress,
     userAgent: req.headers.get("user-agent") ?? "",
-    payload: { from: existing.status, to: status },
+    payload: { from: existing.status, ...parsed.data },
   })
 
   return NextResponse.json({ id: updated.id, status: updated.status })

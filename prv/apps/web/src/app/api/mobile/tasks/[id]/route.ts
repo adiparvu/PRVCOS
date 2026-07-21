@@ -65,9 +65,19 @@ export const GET = withMobileAuth(async (req: NextRequest, ctx) => {
   })
 })
 
-const patchSchema = z.object({
-  isComplete: z.boolean(),
-})
+const patchSchema = z
+  .object({
+    title: z.string().min(1).max(255).optional(),
+    description: z.string().nullable().optional(),
+    dueDate: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .nullable()
+      .optional(),
+    isComplete: z.boolean().optional(),
+    sortOrder: z.number().int().nonnegative().optional(),
+  })
+  .refine((d) => Object.keys(d).length > 0, { message: "No fields to update" })
 
 export const PATCH = withMobileAuth(async (req: NextRequest, ctx) => {
   const ipAddress =
@@ -115,11 +125,14 @@ export const PATCH = withMobileAuth(async (req: NextRequest, ctx) => {
     return NextResponse.json({ error: "Task not found" }, { status: 404 })
   }
 
+  const { isComplete: _ic, ...milestoneFields } = parsed.data
   const [updated] = await db
     .update(projectMilestones)
     .set({
-      isComplete,
-      completedAt: isComplete ? new Date() : null,
+      ...milestoneFields,
+      ...(isComplete !== undefined
+        ? { isComplete, completedAt: isComplete ? new Date() : null }
+        : {}),
       updatedAt: new Date(),
     })
     .where(eq(projectMilestones.id, taskId))
@@ -133,14 +146,19 @@ export const PATCH = withMobileAuth(async (req: NextRequest, ctx) => {
     companyId: ctx.companyId,
     actorId: ctx.userId,
     sessionId: ctx.sessionId,
-    action: isComplete ? "mobile.task.complete" : "mobile.task.reopen",
+    action:
+      isComplete === undefined
+        ? "mobile.task.update"
+        : isComplete
+          ? "mobile.task.complete"
+          : "mobile.task.reopen",
     entityType: "project_milestone",
     entityId: taskId,
     method: "PATCH",
     path: `/api/mobile/tasks/${taskId}`,
     ipAddress,
     userAgent: req.headers.get("user-agent") ?? "",
-    payload: { projectId: existing.projectId, isComplete },
+    payload: { projectId: existing.projectId, ...parsed.data },
   })
 
   return NextResponse.json({ id: updated.id, isComplete: updated.isComplete })

@@ -239,9 +239,30 @@ export const GET = withMobileAuth(async (req: NextRequest, ctx) => {
   })
 })
 
-const patchProjectSchema = z.object({
-  status: z.enum(["draft", "active", "on_hold", "completed", "cancelled"]),
-})
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
+const patchProjectSchema = z
+  .object({
+    name: z.string().min(1).max(255).optional(),
+    description: z.string().optional(),
+    status: z.enum(["draft", "active", "on_hold", "completed", "cancelled", "archived"]).optional(),
+    type: z.enum(["renovation", "installation", "maintenance", "consultation", "other"]).optional(),
+    priority: z.enum(["critical", "high", "medium", "low"]).optional(),
+    budget: z.number().nonnegative().optional(),
+    approvedBudget: z.number().nonnegative().optional(),
+    spentBudget: z.number().nonnegative().optional(),
+    clientId: z.string().uuid().nullable().optional(),
+    storeId: z.string().uuid().nullable().optional(),
+    ownerId: z.string().uuid().nullable().optional(),
+    projectManagerId: z.string().uuid().nullable().optional(),
+    projectDirectorId: z.string().uuid().nullable().optional(),
+    startDate: z.string().regex(ISO_DATE).nullable().optional(),
+    dueDate: z.string().regex(ISO_DATE).nullable().optional(),
+    actualStartDate: z.string().regex(ISO_DATE).nullable().optional(),
+    actualEndDate: z.string().regex(ISO_DATE).nullable().optional(),
+    tags: z.array(z.string()).optional(),
+    metadata: z.record(z.unknown()).optional(),
+  })
+  .refine((d) => Object.keys(d).length > 0, { message: "No fields to update" })
 
 export const PATCH = withMobileAuth(async (req: NextRequest, ctx) => {
   const ipAddress =
@@ -266,8 +287,6 @@ export const PATCH = withMobileAuth(async (req: NextRequest, ctx) => {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 })
   }
 
-  const { status } = parsed.data
-
   const [existing] = await db
     .select({ id: projects.id, status: projects.status })
     .from(projects)
@@ -284,10 +303,17 @@ export const PATCH = withMobileAuth(async (req: NextRequest, ctx) => {
     return NextResponse.json({ error: "Project not found" }, { status: 404 })
   }
 
-  const updateValues: Record<string, unknown> = { status }
-  if (status === "completed") {
+  const { budget, approvedBudget, spentBudget, ...projectFields } = parsed.data
+  const updateValues: Record<string, unknown> = {
+    ...projectFields,
+    ...(budget !== undefined ? { budget: String(budget) } : {}),
+    ...(approvedBudget !== undefined ? { approvedBudget: String(approvedBudget) } : {}),
+    ...(spentBudget !== undefined ? { spentBudget: String(spentBudget) } : {}),
+    updatedAt: new Date(),
+  }
+  if (parsed.data.status === "completed") {
     updateValues.completedAt = new Date()
-  } else if (existing.status === "completed") {
+  } else if (parsed.data.status !== undefined && existing.status === "completed") {
     updateValues.completedAt = null
   }
 
@@ -312,7 +338,7 @@ export const PATCH = withMobileAuth(async (req: NextRequest, ctx) => {
     path: `/api/mobile/projects/${projectId}`,
     ipAddress,
     userAgent: req.headers.get("user-agent") ?? "",
-    payload: { from: existing.status, to: status },
+    payload: { from: existing.status, ...parsed.data },
   })
 
   return NextResponse.json({ id: updated.id, status: updated.status })
@@ -351,7 +377,7 @@ export const DELETE = withMobileAuth(async (req: NextRequest, ctx) => {
 
   await db
     .update(projects)
-    .set({ deletedAt: new Date() })
+    .set({ deletedAt: new Date(), isActive: false, status: "cancelled" })
     .where(and(eq(projects.id, projectId), eq(projects.companyId, ctx.companyId)))
 
   void writeAuditLog({

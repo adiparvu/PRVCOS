@@ -663,7 +663,7 @@ describe("PATCH /api/mobile/projects/[id]", () => {
     const { PATCH } = await import("@/app/api/mobile/projects/[id]/route")
     const res = await PATCH(
       makeReq("/api/mobile/projects/proj-1", "PATCH", {
-        json: async () => ({ status: "archived" }),
+        json: async () => ({ status: "bogus" }),
       }),
       mobileCtx
     )

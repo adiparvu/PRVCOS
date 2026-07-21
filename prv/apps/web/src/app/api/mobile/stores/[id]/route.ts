@@ -356,6 +356,8 @@ export const DELETE = withMobileAuth(async (req: NextRequest, ctx) => {
     .limit(1)
 
   if (!existing) return NextResponse.json({ error: "Store not found" }, { status: 404 })
+  if (!existing.isActive)
+    return NextResponse.json({ error: "Store is already inactive" }, { status: 409 })
 
   await db
     .update(stores)

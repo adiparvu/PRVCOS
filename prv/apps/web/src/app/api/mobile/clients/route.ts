@@ -49,6 +49,7 @@ const bodySchema = z.object({
   type: z.enum(["business", "individual"]).default("business"),
   email: z.string().email().max(254).optional(),
   phone: z.string().max(32).optional(),
+  address: z.string().max(500).optional(),
   city: z.string().max(100).optional(),
   vatNumber: z.string().max(50).optional(),
   notes: z.string().max(2000).optional(),
@@ -72,7 +73,7 @@ export const POST = withMobileAuth(async (req: NextRequest, ctx) => {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 })
   }
 
-  const { name, type, email, phone, city, vatNumber, notes } = parsed.data
+  const { name, type, email, phone, address, city, vatNumber, notes } = parsed.data
 
   const [client] = await db
     .insert(clients)
@@ -84,6 +85,7 @@ export const POST = withMobileAuth(async (req: NextRequest, ctx) => {
       name,
       email: email ?? null,
       phone: phone ?? null,
+      address: address ?? null,
       city: city ?? null,
       vatNumber: vatNumber ?? null,
       notes: notes ?? null,

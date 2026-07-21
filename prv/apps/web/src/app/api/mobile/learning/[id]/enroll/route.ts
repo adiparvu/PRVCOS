@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 import { z } from "zod"
 import { withMobileAuth } from "@/lib/mobile/auth"
+import { writeAuditLog } from "@prv/auth"
 import { db } from "@prv/db"
 import { courseEnrollments, learningCourses } from "@prv/db/schema"
 import { and, eq, isNull } from "drizzle-orm"
@@ -52,6 +53,22 @@ export const POST = withMobileAuth(async (req: NextRequest, ctx) => {
       target: [courseEnrollments.userId, courseEnrollments.courseId],
       set: { status: "in_progress", updatedAt: new Date() },
     })
+
+  void writeAuditLog({
+    companyId,
+    actorId: userId,
+    sessionId: ctx.sessionId,
+    action: "learning.enroll",
+    entityType: "course",
+    entityId: id,
+    method: "POST",
+    path: `/api/mobile/learning/${id}/enroll`,
+    ipAddress:
+      req.headers.get("x-real-ip") ??
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+      "unknown",
+    userAgent: req.headers.get("user-agent") ?? "",
+  })
 
   return NextResponse.json({ courseId: id, status: "in_progress" }, { status: 201 })
 })
@@ -138,6 +155,23 @@ export const PATCH = withMobileAuth(async (req: NextRequest, ctx) => {
       })
     }
   }
+
+  void writeAuditLog({
+    companyId,
+    actorId: userId,
+    sessionId: ctx.sessionId,
+    action: "learning.progress",
+    entityType: "course",
+    entityId: id,
+    method: "PATCH",
+    path: `/api/mobile/learning/${id}/enroll`,
+    ipAddress:
+      req.headers.get("x-real-ip") ??
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+      "unknown",
+    userAgent: req.headers.get("user-agent") ?? "",
+    payload: { progressPct: parsed.data.progressPct, status: autoStatus ?? null },
+  })
 
   return NextResponse.json({ courseId: id, progressPct: parsed.data.progressPct })
 })

@@ -175,22 +175,22 @@ export const GET = withMobileAuth(async (req: NextRequest, ctx) => {
 const clientPatchSchema = z
   .object({
     status: z.enum(["active", "inactive", "prospect", "archived"]).optional(),
+    name: z.string().min(1).max(255).optional(),
     phone: z.string().max(32).optional(),
     email: z.string().email().max(254).optional(),
+    website: z.string().url().optional(),
     address: z.string().max(500).optional(),
     city: z.string().max(100).optional(),
+    country: z.string().length(2).optional(),
+    postalCode: z.string().max(20).optional(),
+    vatNumber: z.string().max(50).optional(),
+    registrationNumber: z.string().max(50).optional(),
     notes: z.string().max(2000).optional(),
+    tags: z.array(z.string()).optional(),
+    type: z.enum(["individual", "business"]).optional(),
+    assignedUserId: z.string().uuid().nullable().optional(),
   })
-  .refine(
-    (d) =>
-      d.status !== undefined ||
-      d.phone !== undefined ||
-      d.email !== undefined ||
-      d.address !== undefined ||
-      d.city !== undefined ||
-      d.notes !== undefined,
-    { message: "At least one field required" }
-  )
+  .refine((d) => Object.keys(d).length > 0, { message: "At least one field required" })
 
 export const PATCH = withMobileAuth(async (req: NextRequest, ctx) => {
   const ipAddress =
@@ -223,15 +223,7 @@ export const PATCH = withMobileAuth(async (req: NextRequest, ctx) => {
   const d = parsed.data
   const [updated] = await db
     .update(clients)
-    .set({
-      ...(d.status !== undefined && { status: d.status }),
-      ...(d.phone !== undefined && { phone: d.phone }),
-      ...(d.email !== undefined && { email: d.email }),
-      ...(d.address !== undefined && { address: d.address }),
-      ...(d.city !== undefined && { city: d.city }),
-      ...(d.notes !== undefined && { notes: d.notes }),
-      updatedAt: new Date(),
-    })
+    .set({ ...d, updatedAt: new Date() })
     .where(and(eq(clients.id, clientId), eq(clients.companyId, ctx.companyId)))
     .returning({ id: clients.id, status: clients.status })
 

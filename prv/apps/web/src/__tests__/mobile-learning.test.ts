@@ -4,6 +4,8 @@ vi.mock("@/lib/mobile/auth", () => ({
   withMobileAuth: (handler: unknown) => handler,
 }))
 
+vi.mock("@prv/auth", () => ({ writeAuditLog: vi.fn() }))
+
 vi.mock("@prv/jobs/client", () => ({
   inngest: { send: vi.fn().mockResolvedValue({}) },
 }))
@@ -92,13 +94,13 @@ describe("GET /api/mobile/learning", () => {
 
   it("returns 200 with empty courses and meta when db returns nothing", async () => {
     mockDb.where
-      .mockReturnValueOnce(mockDb)  // A: non-terminal, continue chain
-      .mockResolvedValueOnce([])    // B: terminal — enrollments
+      .mockReturnValueOnce(mockDb) // A: non-terminal, continue chain
+      .mockResolvedValueOnce([]) // B: terminal — enrollments
     // C: falls through to default mockReturnThis → non-terminal, fine
 
     mockDb.orderBy
-      .mockReturnValueOnce(mockDb)  // A: non-terminal, continue to limit
-      .mockResolvedValueOnce([])    // C: terminal — achievements
+      .mockReturnValueOnce(mockDb) // A: non-terminal, continue to limit
+      .mockResolvedValueOnce([]) // C: terminal — achievements
 
     mockDb.limit.mockResolvedValueOnce([]) // A: terminal — courses
 
@@ -133,13 +135,13 @@ describe("GET /api/mobile/learning", () => {
     }
 
     mockDb.where
-      .mockReturnValueOnce(mockDb)  // A: non-terminal
-      .mockResolvedValueOnce([])    // B: terminal — no enrollments
+      .mockReturnValueOnce(mockDb) // A: non-terminal
+      .mockResolvedValueOnce([]) // B: terminal — no enrollments
     // C: non-terminal via default
 
     mockDb.orderBy
-      .mockReturnValueOnce(mockDb)  // A: non-terminal
-      .mockResolvedValueOnce([])    // C: terminal — no achievements
+      .mockReturnValueOnce(mockDb) // A: non-terminal
+      .mockResolvedValueOnce([]) // C: terminal — no achievements
 
     mockDb.limit.mockResolvedValueOnce([courseRow]) // A: terminal — one course
 
@@ -196,7 +198,7 @@ describe("GET /api/mobile/learning/[id]", () => {
 
     mockDb.limit
       .mockResolvedValueOnce([courseRow]) // A: course found
-      .mockResolvedValueOnce([])           // B: no enrollment
+      .mockResolvedValueOnce([]) // B: no enrollment
 
     const { GET } = await import("@/app/api/mobile/learning/[id]/route")
     const res = await GET(makeReq("/api/mobile/learning/course-1", "GET"), mobileCtx)
@@ -229,7 +231,7 @@ describe("GET /api/mobile/learning/[id]", () => {
     const enrollmentRow = { status: "in_progress", progressPct: 40, currentModule: 2 }
 
     mockDb.limit
-      .mockResolvedValueOnce([courseRow])    // A: course found
+      .mockResolvedValueOnce([courseRow]) // A: course found
       .mockResolvedValueOnce([enrollmentRow]) // B: enrollment found
 
     const { GET } = await import("@/app/api/mobile/learning/[id]/route")
@@ -268,6 +270,16 @@ describe("POST /api/mobile/learning/[id]/enroll", () => {
     expect(body.courseId).toBe("course-1")
     expect(body.status).toBe("in_progress")
   })
+
+  it("writes an audit log on enrollment (parity with web)", async () => {
+    const { writeAuditLog } = await import("@prv/auth")
+    mockDb.limit.mockResolvedValueOnce([{ id: "course-1" }])
+    const { POST } = await import("@/app/api/mobile/learning/[id]/enroll/route")
+    await POST(makeReq("/api/mobile/learning/course-1/enroll", "POST"), mobileCtx)
+    expect(writeAuditLog).toHaveBeenCalledWith(
+      expect.objectContaining({ action: "learning.enroll" })
+    )
+  })
 })
 
 // ─── PATCH /api/mobile/learning/[id]/enroll ──────────────────────────────────
@@ -290,7 +302,9 @@ describe("PATCH /api/mobile/learning/[id]/enroll", () => {
     const { PATCH } = await import("@/app/api/mobile/learning/[id]/enroll/route")
     const res = await PATCH(
       makeReq("/api/mobile/learning/course-1/enroll", "PATCH", {
-        json: async () => { throw new Error("bad json") },
+        json: async () => {
+          throw new Error("bad json")
+        },
       }),
       mobileCtx
     )
@@ -331,7 +345,7 @@ describe("PATCH /api/mobile/learning/[id]/enroll", () => {
 
     // enrollment found, then course details for inngest event
     mockDb.limit
-      .mockResolvedValueOnce([{ userId: "user-1" }])                              // enrollment check
+      .mockResolvedValueOnce([{ userId: "user-1" }]) // enrollment check
       .mockResolvedValueOnce([{ title: "Safety Basics", category: "safety", instructorName: null }]) // course for event
 
     const { PATCH } = await import("@/app/api/mobile/learning/[id]/enroll/route")

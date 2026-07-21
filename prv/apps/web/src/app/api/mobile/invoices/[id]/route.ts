@@ -135,9 +135,17 @@ export const GET = withMobileAuth(async (req: NextRequest, ctx) => {
   })
 })
 
-const patchSchema = z.object({
-  status: z.enum(["sent", "paid", "cancelled"]),
-})
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
+const patchSchema = z
+  .object({
+    status: z.enum(["sent", "paid", "cancelled"]).optional(),
+    notes: z.string().nullable().optional(),
+    dueDate: z.string().regex(ISO_DATE).optional(),
+    issueDate: z.string().regex(ISO_DATE).optional(),
+    clientId: z.string().uuid().nullable().optional(),
+    projectId: z.string().uuid().nullable().optional(),
+  })
+  .refine((d) => Object.keys(d).length > 0, { message: "No fields to update" })
 
 export const PATCH = withMobileAuth(async (req: NextRequest, ctx) => {
   const ipAddress =
@@ -164,7 +172,7 @@ export const PATCH = withMobileAuth(async (req: NextRequest, ctx) => {
 
   const { status } = parsed.data
 
-  const [existing] = await db
+  const [existingCheck] = await db
     .select({ id: invoices.id, status: invoices.status })
     .from(invoices)
     .where(
@@ -176,11 +184,11 @@ export const PATCH = withMobileAuth(async (req: NextRequest, ctx) => {
     )
     .limit(1)
 
-  if (!existing) {
+  if (!existingCheck) {
     return NextResponse.json({ error: "Invoice not found" }, { status: 404 })
   }
 
-  const updateValues: Record<string, unknown> = { status }
+  const updateValues: Record<string, unknown> = { ...parsed.data, updatedAt: new Date() }
   if (status === "paid") {
     updateValues.paidAt = new Date()
   }
@@ -206,7 +214,7 @@ export const PATCH = withMobileAuth(async (req: NextRequest, ctx) => {
     path: `/api/mobile/invoices/${invoiceId}`,
     ipAddress,
     userAgent: req.headers.get("user-agent") ?? "",
-    payload: { from: existing.status, to: status },
+    payload: { from: existingCheck.status, ...parsed.data },
   })
 
   return NextResponse.json({ id: updated.id, status: updated.status })
