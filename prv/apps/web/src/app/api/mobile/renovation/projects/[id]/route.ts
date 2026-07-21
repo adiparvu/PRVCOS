@@ -12,6 +12,8 @@ import {
   users,
 } from "@prv/db/schema"
 import { and, asc, desc, eq, isNull } from "drizzle-orm"
+import { z } from "zod"
+import { writeAuditLog } from "@prv/auth"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -142,4 +144,134 @@ export const GET = withMobileAuth(async (req: NextRequest, ctx: MobileContext) =
       recentReports,
     },
   })
+})
+
+// ─── PATCH /api/mobile/renovation/projects/[id] ──────────────────────────────
+
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
+const patchSchema = z
+  .object({
+    status: z
+      .enum([
+        "inquiry",
+        "estimation",
+        "contracted",
+        "in_progress",
+        "paused",
+        "completed",
+        "cancelled",
+      ])
+      .optional(),
+    priority: z.enum(["low", "medium", "high", "urgent"]).optional(),
+    completionPercentage: z.number().int().min(0).max(100).optional(),
+    estimatedStartDate: z.string().regex(ISO_DATE).nullable().optional(),
+    estimatedEndDate: z.string().regex(ISO_DATE).nullable().optional(),
+    actualStartDate: z.string().regex(ISO_DATE).nullable().optional(),
+    actualEndDate: z.string().regex(ISO_DATE).nullable().optional(),
+    projectManagerId: z.string().uuid().nullable().optional(),
+    siteSupervisorId: z.string().uuid().nullable().optional(),
+  })
+  .refine((d) => Object.keys(d).length > 0, { message: "No fields to update" })
+
+export const PATCH = withMobileAuth(async (req: NextRequest, ctx: MobileContext) => {
+  const ipAddress =
+    req.headers.get("x-real-ip") ??
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    "unknown"
+
+  const pid = projectId(req)
+  if (!pid) return NextResponse.json({ error: "Missing project ID" }, { status: 400 })
+
+  let body: unknown
+  try {
+    body = await req.json()
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 })
+  }
+
+  const parsed = patchSchema.safeParse(body)
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 })
+  }
+
+  const [existing] = await db
+    .select({ id: renovationProjects.id })
+    .from(renovationProjects)
+    .where(
+      and(
+        eq(renovationProjects.id, pid),
+        eq(renovationProjects.companyId, ctx.companyId),
+        isNull(renovationProjects.deletedAt)
+      )
+    )
+    .limit(1)
+  if (!existing) return NextResponse.json({ error: "Project not found" }, { status: 404 })
+
+  const [updated] = await db
+    .update(renovationProjects)
+    .set({ ...parsed.data, updatedAt: new Date() })
+    .where(and(eq(renovationProjects.id, pid), eq(renovationProjects.companyId, ctx.companyId)))
+    .returning({ id: renovationProjects.id, status: renovationProjects.status })
+
+  void writeAuditLog({
+    companyId: ctx.companyId,
+    actorId: ctx.userId,
+    sessionId: ctx.sessionId,
+    action: "renovation.projects.update",
+    entityType: "renovation_project",
+    entityId: pid,
+    method: "PATCH",
+    path: `/api/mobile/renovation/projects/${pid}`,
+    ipAddress,
+    userAgent: req.headers.get("user-agent") ?? "",
+    payload: { ...parsed.data },
+  })
+
+  return NextResponse.json(updated)
+})
+
+// ─── DELETE /api/mobile/renovation/projects/[id] ─────────────────────────────
+
+export const DELETE = withMobileAuth(async (req: NextRequest, ctx: MobileContext) => {
+  const ipAddress =
+    req.headers.get("x-real-ip") ??
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    "unknown"
+
+  const pid = projectId(req)
+  if (!pid) return NextResponse.json({ error: "Missing project ID" }, { status: 400 })
+
+  const [existing] = await db
+    .select({ id: renovationProjects.id, title: renovationProjects.title })
+    .from(renovationProjects)
+    .where(
+      and(
+        eq(renovationProjects.id, pid),
+        eq(renovationProjects.companyId, ctx.companyId),
+        isNull(renovationProjects.deletedAt)
+      )
+    )
+    .limit(1)
+  if (!existing) return NextResponse.json({ error: "Project not found" }, { status: 404 })
+
+  await db
+    .update(renovationProjects)
+    .set({ deletedAt: new Date(), status: "cancelled", updatedAt: new Date() })
+    .where(and(eq(renovationProjects.id, pid), eq(renovationProjects.companyId, ctx.companyId)))
+
+  void writeAuditLog({
+    companyId: ctx.companyId,
+    actorId: ctx.userId,
+    sessionId: ctx.sessionId,
+    action: "renovation.projects.delete",
+    entityType: "renovation_project",
+    entityId: pid,
+    method: "DELETE",
+    path: `/api/mobile/renovation/projects/${pid}`,
+    ipAddress,
+    userAgent: req.headers.get("user-agent") ?? "",
+    payload: { title: existing.title },
+  })
+
+  return new NextResponse(null, { status: 204 })
 })

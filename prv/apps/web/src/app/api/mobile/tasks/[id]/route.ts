@@ -163,3 +163,47 @@ export const PATCH = withMobileAuth(async (req: NextRequest, ctx) => {
 
   return NextResponse.json({ id: updated.id, isComplete: updated.isComplete })
 })
+
+// ─── DELETE /api/mobile/tasks/[id] — delete a project milestone ──────────────
+
+export const DELETE = withMobileAuth(async (req: NextRequest, ctx) => {
+  const ipAddress =
+    req.headers.get("x-real-ip") ??
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    "unknown"
+
+  const taskId = req.nextUrl.pathname.split("/").pop() ?? ""
+  if (!taskId) return NextResponse.json({ error: "Missing task ID" }, { status: 400 })
+
+  const [existing] = await db
+    .select({ id: projectMilestones.id, title: projectMilestones.title })
+    .from(projectMilestones)
+    .innerJoin(projects, eq(projectMilestones.projectId, projects.id))
+    .where(
+      and(
+        eq(projectMilestones.id, taskId),
+        eq(projects.companyId, ctx.companyId),
+        isNull(projects.deletedAt)
+      )
+    )
+    .limit(1)
+  if (!existing) return NextResponse.json({ error: "Task not found" }, { status: 404 })
+
+  await db.delete(projectMilestones).where(eq(projectMilestones.id, taskId))
+
+  void writeAuditLog({
+    companyId: ctx.companyId,
+    actorId: ctx.userId,
+    sessionId: ctx.sessionId,
+    action: "mobile.task.delete",
+    entityType: "project_milestone",
+    entityId: taskId,
+    method: "DELETE",
+    path: `/api/mobile/tasks/${taskId}`,
+    ipAddress,
+    userAgent: req.headers.get("user-agent") ?? "",
+    payload: { title: existing.title },
+  })
+
+  return new NextResponse(null, { status: 204 })
+})
