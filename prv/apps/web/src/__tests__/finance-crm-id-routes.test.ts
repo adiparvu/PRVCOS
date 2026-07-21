@@ -40,8 +40,10 @@ vi.mock("@prv/db/schema", () => ({
     currency: {},
     date: {},
     notes: {},
+    title: {},
     $inferInsert: {},
   },
+  notifications: { id: {}, userId: {}, companyId: {} },
   invoices: {
     id: {},
     companyId: {},
@@ -206,6 +208,41 @@ describe("PATCH /api/finance/expenses/[id]", () => {
     expect(writeAuditLog).toHaveBeenCalledWith(
       expect.objectContaining({ action: "finance.expenses.update" })
     )
+  })
+
+  it("notifies the submitter when the expense is approved", async () => {
+    mockDb.limit.mockResolvedValueOnce([
+      { id: "exp-1", status: "submitted", submittedById: "user-2", title: "Taxi" },
+    ])
+    mockDb.returning.mockResolvedValueOnce([{ id: "exp-1" }])
+    const { PATCH } = await import("@/app/api/finance/expenses/[id]/route")
+    const res = await PATCH(
+      makeReq("/api/finance/expenses/exp-1", "PATCH", {
+        json: async () => ({ status: "approved" }),
+      }),
+      webCtx
+    )
+    expect(res.status).toBe(200)
+    expect(mockDb.insert).toHaveBeenCalled()
+    expect(mockDb.values).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: "user-2", entityType: "expense" })
+    )
+  })
+
+  it("does not notify when the submitter decides their own expense", async () => {
+    mockDb.limit.mockResolvedValueOnce([
+      { id: "exp-1", status: "submitted", submittedById: "user-1", title: "Taxi" },
+    ])
+    mockDb.returning.mockResolvedValueOnce([{ id: "exp-1" }])
+    const { PATCH } = await import("@/app/api/finance/expenses/[id]/route")
+    const res = await PATCH(
+      makeReq("/api/finance/expenses/exp-1", "PATCH", {
+        json: async () => ({ status: "approved" }),
+      }),
+      webCtx
+    )
+    expect(res.status).toBe(200)
+    expect(mockDb.insert).not.toHaveBeenCalled()
   })
 })
 

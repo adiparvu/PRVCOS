@@ -4,7 +4,7 @@ import type { GateContext } from "@prv/auth"
 import { writeAuditLog } from "@prv/auth"
 import type { ExpenseCategory, ExpenseStatus } from "../route"
 import { db } from "@prv/db"
-import { expenses } from "@prv/db/schema"
+import { expenses, notifications } from "@prv/db/schema"
 import { eq, and, isNull } from "drizzle-orm"
 import { z } from "zod"
 
@@ -216,7 +216,18 @@ export const GET = withGates(
 const patchExpenseSchema = z.object({
   title: z.string().min(1).max(255).optional(),
   category: z
-    .enum(["materials", "labor", "equipment", "transport", "rent", "utilities", "marketing", "salaries", "subscriptions", "other"])
+    .enum([
+      "materials",
+      "labor",
+      "equipment",
+      "transport",
+      "rent",
+      "utilities",
+      "marketing",
+      "salaries",
+      "subscriptions",
+      "other",
+    ])
     .optional(),
   status: z.enum(["draft", "submitted", "approved", "rejected", "paid"]).optional(),
   amount: z.number().positive().optional(),
@@ -234,9 +245,16 @@ export const PATCH = withGates(
     const companyId = ctx.session.companyId
 
     const [existing] = await db
-      .select({ id: expenses.id })
+      .select({
+        id: expenses.id,
+        status: expenses.status,
+        submittedById: expenses.submittedById,
+        title: expenses.title,
+      })
       .from(expenses)
-      .where(and(eq(expenses.id, id), eq(expenses.companyId, companyId), isNull(expenses.deletedAt)))
+      .where(
+        and(eq(expenses.id, id), eq(expenses.companyId, companyId), isNull(expenses.deletedAt))
+      )
       .limit(1)
 
     if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 })
@@ -264,8 +282,46 @@ export const PATCH = withGates(
         ...(amount !== undefined ? { amount: String(amount) } : {}),
         updatedAt: new Date(),
       })
-      .where(and(eq(expenses.id, id), eq(expenses.companyId, companyId), isNull(expenses.deletedAt)))
+      .where(
+        and(eq(expenses.id, id), eq(expenses.companyId, companyId), isNull(expenses.deletedAt))
+      )
       .returning({ id: expenses.id })
+
+    // Notify the submitter when their expense is decided. Fires only on a real
+    // transition into approved/rejected (not a no-op re-save), to the
+    // unambiguous submitter, skipping self-actions and unassigned expenses.
+    const decided = parsed.data.status
+    if (
+      (decided === "approved" || decided === "rejected") &&
+      decided !== existing.status &&
+      existing.submittedById &&
+      existing.submittedById !== ctx.session.userId
+    ) {
+      const notice =
+        decided === "approved"
+          ? {
+              type: "success" as const,
+              title: "Cheltuială aprobată",
+              body: `Cheltuiala „${existing.title}" a fost aprobată.`,
+            }
+          : {
+              type: "warning" as const,
+              title: "Cheltuială respinsă",
+              body: `Cheltuiala „${existing.title}" a fost respinsă.`,
+            }
+      await db.insert(notifications).values({
+        userId: existing.submittedById,
+        companyId,
+        type: notice.type,
+        channel: "in_app",
+        title: notice.title.slice(0, 500),
+        body: notice.body,
+        entityType: "expense",
+        entityId: id,
+        actionUrl: `/finance/expenses/${id}`,
+        deliveredAt: new Date(),
+      })
+    }
 
     void writeAuditLog({
       companyId,
@@ -296,9 +352,16 @@ export const DELETE = withGates(
     const companyId = ctx.session.companyId
 
     const [existing] = await db
-      .select({ id: expenses.id })
+      .select({
+        id: expenses.id,
+        status: expenses.status,
+        submittedById: expenses.submittedById,
+        title: expenses.title,
+      })
       .from(expenses)
-      .where(and(eq(expenses.id, id), eq(expenses.companyId, companyId), isNull(expenses.deletedAt)))
+      .where(
+        and(eq(expenses.id, id), eq(expenses.companyId, companyId), isNull(expenses.deletedAt))
+      )
       .limit(1)
 
     if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 })
@@ -306,7 +369,9 @@ export const DELETE = withGates(
     await db
       .update(expenses)
       .set({ deletedAt: new Date(), updatedAt: new Date() })
-      .where(and(eq(expenses.id, id), eq(expenses.companyId, companyId), isNull(expenses.deletedAt)))
+      .where(
+        and(eq(expenses.id, id), eq(expenses.companyId, companyId), isNull(expenses.deletedAt))
+      )
 
     void writeAuditLog({
       companyId,
