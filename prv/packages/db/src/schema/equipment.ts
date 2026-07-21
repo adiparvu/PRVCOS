@@ -44,6 +44,11 @@ export const equipmentAssignments = pgTable(
     assignedByUserId: uuid("assigned_by_user_id").references(() => users.id, {
       onDelete: "set null",
     }),
+    // Custody-overdue reminder (roadmap 7.6). Stamped once when the daily sweep
+    // first finds an assignment still out past its expectedReturnDate, so the
+    // holder is reminded exactly once (claim-on-null). Returning the item moves
+    // it off "assigned", removing it from the candidate set.
+    overdueNotifiedAt: timestamp("overdue_notified_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },

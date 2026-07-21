@@ -36,6 +36,7 @@ import {
   milestoneMissedFunction,
   contractExpireFunction,
   toolCheckoutOverdueFunction,
+  equipmentReturnOverdueFunction,
 } from "@prv/jobs/functions"
 
 // Inngest webhook handler — receives events and dispatches to functions
@@ -78,6 +79,7 @@ export const { GET, POST, PUT } = serve({
     milestoneMissedFunction,
     contractExpireFunction,
     toolCheckoutOverdueFunction,
+    equipmentReturnOverdueFunction,
   ],
   signingKey: process.env["INNGEST_SIGNING_KEY"],
 })
