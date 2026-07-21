@@ -146,6 +146,27 @@ describe("/api/projects/[id]/tasks", () => {
     expect(mockDb.insert).not.toHaveBeenCalled()
   })
 
+  it("PATCH refuses to make a task depend on itself (409)", async () => {
+    const SELF = "11111111-1111-1111-1111-111111111111"
+    const selfReq = {
+      method: "PATCH",
+      nextUrl: {
+        pathname: `/api/projects/${PROJECT}/tasks/${SELF}`,
+        searchParams: new URLSearchParams(),
+      },
+      url: `http://localhost/api/projects/${PROJECT}/tasks/${SELF}`,
+      json: async () => ({ dependsOnTaskId: SELF }),
+      headers: { get: () => null },
+    } as unknown as Request
+    queue.push([{ id: PROJECT }]) // verifyProject
+    queue.push([{ id: SELF, status: "todo", startedAt: null, dependsOnTaskId: null }]) // current
+    const { PATCH } = await import("@/app/api/projects/[id]/tasks/[taskId]/route")
+    const res = await PATCH(selfReq, ctx)
+    expect(res.status).toBe(409)
+    expect((await res.json()).code).toBe("SELF_DEPENDENCY")
+    expect(mockDb.update).not.toHaveBeenCalled()
+  })
+
   it("PATCH refuses to start a task blocked by an unfinished dependency (409)", async () => {
     queue.push([{ id: PROJECT }]) // verifyProject
     queue.push([{ id: TASK, status: "todo", startedAt: null, dependsOnTaskId: "blocker" }]) // current

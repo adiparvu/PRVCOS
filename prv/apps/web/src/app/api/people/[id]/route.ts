@@ -116,9 +116,7 @@ const patchPersonSchema = z.object({
   managerId: z.string().uuid().nullable().optional(),
   locale: z.string().max(10).optional(),
   timezone: z.string().max(50).optional(),
-  status: z
-    .enum(["active", "inactive", "onboarding", "offboarded", "suspended"])
-    .optional(),
+  status: z.enum(["active", "inactive", "onboarding", "offboarded", "suspended"]).optional(),
 })
 
 export const PATCH = withGates(
@@ -151,6 +149,14 @@ export const PATCH = withGates(
         { status: 422 }
       )
     }
+
+    // A user cannot be their own manager (self-referential FK managerId) — it
+    // would create a 1-cycle that breaks org-chart / manager-chain traversal.
+    if (parsed.data.managerId === id)
+      return NextResponse.json(
+        { error: "A person cannot be their own manager", code: "SELF_MANAGER" },
+        { status: 409 }
+      )
 
     const [updated] = await db
       .update(users)
@@ -197,7 +203,12 @@ export const DELETE = withGates(
 
     await db
       .update(users)
-      .set({ isActive: false, deletedAt: new Date(), status: "offboarded" as const, updatedAt: new Date() })
+      .set({
+        isActive: false,
+        deletedAt: new Date(),
+        status: "offboarded" as const,
+        updatedAt: new Date(),
+      })
       .where(and(eq(users.id, id), eq(users.companyId, companyId), isNull(users.deletedAt)))
 
     void writeAuditLog({

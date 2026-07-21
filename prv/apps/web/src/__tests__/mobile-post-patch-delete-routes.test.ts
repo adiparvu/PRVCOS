@@ -594,6 +594,20 @@ describe("PATCH /api/mobile/orders/[id]", () => {
     const body = await res.json()
     expect(body.status).toBe("confirmed")
   })
+
+  it("returns 409 on an illegal lifecycle transition", async () => {
+    mockDb.limit.mockResolvedValueOnce([
+      { id: "ord-1", status: "delivered", companyId: "company-1" },
+    ])
+    const { PATCH } = await import("@/app/api/mobile/orders/[id]/route")
+    const res = await PATCH(
+      makeReq("/api/mobile/orders/ord-1", "PATCH", {
+        json: async () => ({ status: "pending" }),
+      }),
+      mobileCtx
+    )
+    expect(res.status).toBe(409)
+  })
 })
 
 // ─── POST /api/mobile/projects ─────────────────────────────────────────────────

@@ -187,6 +187,23 @@ describe("people PATCH schema", () => {
   })
 })
 
+describe("PATCH /api/people/[id] self-manager guard", () => {
+  beforeEach(resetMocks)
+
+  it("returns 409 when a person is set as their own manager", async () => {
+    const UID = "11111111-1111-1111-1111-111111111111"
+    mockDb.limit.mockResolvedValueOnce([{ id: UID }]) // existing
+    const { PATCH } = await import("@/app/api/people/[id]/route")
+    const res = await PATCH(
+      makeReq(`/api/people/${UID}`, "PATCH", { json: async () => ({ managerId: UID }) }),
+      webCtx
+    )
+    expect(res.status).toBe(409)
+    expect((await res.json()).code).toBe("SELF_MANAGER")
+    expect(mockDb.update).not.toHaveBeenCalled()
+  })
+})
+
 // ─── People DELETE ────────────────────────────────────────────────────────────
 
 describe("DELETE /api/people/[id]", () => {

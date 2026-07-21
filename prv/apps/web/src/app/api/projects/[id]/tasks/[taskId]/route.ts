@@ -95,6 +95,14 @@ export const PATCH = withGates(
       .limit(1)
     if (!current) return NextResponse.json({ error: "Task not found" }, { status: 404 })
 
+    // A task cannot depend on itself (self-referential FK dependsOnTaskId) —
+    // a 1-cycle would deadlock it against its own dependency guard below.
+    if (d.dependsOnTaskId && d.dependsOnTaskId === taskId)
+      return NextResponse.json(
+        { error: "A task cannot depend on itself", code: "SELF_DEPENDENCY" },
+        { status: 409 }
+      )
+
     // Dependency guard: cannot move into an active status while the blocking
     // task is unfinished.
     const nextStatus = (d.status ?? current.status) as Status

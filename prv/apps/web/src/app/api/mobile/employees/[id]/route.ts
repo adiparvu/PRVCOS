@@ -267,7 +267,9 @@ export const PATCH = withMobileAuth(async (req: NextRequest, ctx) => {
   const [existing] = await db
     .select({ id: users.id, firstName: users.firstName, lastName: users.lastName })
     .from(users)
-    .where(and(eq(users.id, employeeId), eq(users.companyId, ctx.companyId)))
+    .where(
+      and(eq(users.id, employeeId), eq(users.companyId, ctx.companyId), isNull(users.deletedAt))
+    )
     .limit(1)
   if (!existing) return NextResponse.json({ error: "Employee not found" }, { status: 404 })
 
@@ -283,7 +285,9 @@ export const PATCH = withMobileAuth(async (req: NextRequest, ctx) => {
       ...(d.phone !== undefined && { phone: d.phone }),
       updatedAt: new Date(),
     })
-    .where(and(eq(users.id, employeeId), eq(users.companyId, ctx.companyId)))
+    .where(
+      and(eq(users.id, employeeId), eq(users.companyId, ctx.companyId), isNull(users.deletedAt))
+    )
     .returning({ id: users.id, status: users.status })
 
   if (!updated) return NextResponse.json({ error: "Failed to update employee" }, { status: 500 })

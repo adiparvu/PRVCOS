@@ -185,6 +185,26 @@ export const PATCH = withMobileAuth(async (req: NextRequest, ctx) => {
     return NextResponse.json({ error: "Order not found" }, { status: 404 })
   }
 
+  // Enforce the same order-lifecycle state machine as the web sibling
+  // (shop/orders/[id]); without it mobile could move a terminal order back
+  // (e.g. delivered -> pending), corrupting the lifecycle. Keep in sync.
+  const ALLOWED_TRANSITIONS: Record<string, string[]> = {
+    pending: ["confirmed", "cancelled"],
+    confirmed: ["processing", "cancelled"],
+    processing: ["shipped", "cancelled"],
+    shipped: ["delivered", "cancelled"],
+    delivered: [],
+    cancelled: [],
+    refunded: [],
+  }
+  const allowed = ALLOWED_TRANSITIONS[existing.status] ?? []
+  if (!allowed.includes(status)) {
+    return NextResponse.json(
+      { error: `Cannot transition from '${existing.status}' to '${status}'`, allowed },
+      { status: 409 }
+    )
+  }
+
   const [updated] = await db
     .update(orders)
     .set({ status })
