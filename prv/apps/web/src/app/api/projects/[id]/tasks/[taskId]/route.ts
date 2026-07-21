@@ -121,7 +121,11 @@ export const PATCH = withGates(
       patch.assigneeId = d.assigneeId
       patch.assignedById = d.assigneeId ? actorId : null
     }
-    if (d.dueDate !== undefined) patch.dueDate = d.dueDate
+    if (d.dueDate !== undefined) {
+      patch.dueDate = d.dueDate
+      // Re-arm the overdue reminder: a rescheduled task may lapse again.
+      patch.overdueNotifiedAt = null
+    }
     if (d.estimatedHours !== undefined)
       patch.estimatedHours = d.estimatedHours != null ? d.estimatedHours.toFixed(2) : null
     if (d.actualHours !== undefined)

@@ -68,6 +68,11 @@ export const projectTasks = pgTable(
     }),
     orderIndex: integer("order_index").notNull().default(0),
     tags: jsonb("tags").$type<string[]>().notNull().default([]),
+    // Overdue reminder (roadmap 6.2). Stamped once when the daily sweep finds an
+    // open task past its dueDate, so the assignee is nudged once (claim-on-null).
+    // The task PATCH route clears this on a dueDate change, re-arming the nudge
+    // after a reschedule; reaching a terminal status leaves the candidate set.
+    overdueNotifiedAt: timestamp("overdue_notified_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
