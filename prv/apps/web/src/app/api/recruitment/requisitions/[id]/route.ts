@@ -3,7 +3,7 @@ import { withGates } from "@/lib/with-gates"
 import type { GateContext } from "@prv/auth"
 import { writeAuditLog } from "@prv/auth"
 import { db } from "@prv/db"
-import { jobRequisitions, candidates, departments, users } from "@prv/db/schema"
+import { jobRequisitions, candidates, departments, users, notifications } from "@prv/db/schema"
 import { and, eq } from "drizzle-orm"
 import { z } from "zod"
 import { computeFunnel, type Funnel } from "@/lib/recruitment"
@@ -104,6 +104,17 @@ export const PATCH = withGates(
       return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 })
     }
 
+    const [before] = await db
+      .select({
+        status: jobRequisitions.status,
+        hiringManagerId: jobRequisitions.hiringManagerId,
+        title: jobRequisitions.title,
+      })
+      .from(jobRequisitions)
+      .where(and(eq(jobRequisitions.id, rowId), eq(jobRequisitions.companyId, companyId)))
+      .limit(1)
+    if (!before) return NextResponse.json({ error: "Requisition not found" }, { status: 404 })
+
     const patch: Record<string, unknown> = { updatedAt: new Date(), ...parsed.data }
 
     const [updated] = await db
@@ -113,6 +124,42 @@ export const PATCH = withGates(
       .returning({ id: jobRequisitions.id, status: jobRequisitions.status })
 
     if (!updated) return NextResponse.json({ error: "Requisition not found" }, { status: 404 })
+
+    // Notify the hiring manager when their requisition is filled or closed by
+    // someone else (typically a recruiter). Fires only on a real transition, to
+    // the explicit owner column, skipping self-actions and ownerless reqs.
+    const decided = parsed.data.status
+    if (
+      (decided === "filled" || decided === "closed") &&
+      decided !== before.status &&
+      before.hiringManagerId &&
+      before.hiringManagerId !== actorId
+    ) {
+      const notice =
+        decided === "filled"
+          ? {
+              type: "success" as const,
+              title: "Post ocupat",
+              body: `Postul „${before.title}" a fost marcat ca ocupat.`,
+            }
+          : {
+              type: "info" as const,
+              title: "Recrutare închisă",
+              body: `Recrutarea pentru „${before.title}" a fost închisă.`,
+            }
+      await db.insert(notifications).values({
+        userId: before.hiringManagerId,
+        companyId,
+        type: notice.type,
+        channel: "in_app",
+        title: notice.title.slice(0, 500),
+        body: notice.body,
+        entityType: "job_requisition",
+        entityId: rowId,
+        actionUrl: `/recruitment/${rowId}`,
+        deliveredAt: new Date(),
+      })
+    }
 
     void writeAuditLog({
       companyId,

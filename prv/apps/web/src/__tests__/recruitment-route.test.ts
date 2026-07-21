@@ -26,7 +26,8 @@ vi.mock("@prv/db", () => ({ db: mockDb }))
 vi.mock("@prv/db/schema", () => {
   const col = () => new Proxy({}, { get: () => ({}) })
   const mod: Record<string, unknown> = {}
-  for (const t of ["jobRequisitions", "candidates", "departments", "users"]) mod[t] = col()
+  for (const t of ["jobRequisitions", "candidates", "departments", "users", "notifications"])
+    mod[t] = col()
   return mod
 })
 vi.mock("drizzle-orm", async (importOriginal) => {
@@ -178,5 +179,32 @@ describe("recruitment routes", () => {
     const { PATCH: P2 } = await import("@/app/api/recruitment/candidates/[id]/route")
     const miss = await P2(req("/api/recruitment/candidates/nope", "PATCH", { stage: "hired" }), ctx)
     expect(miss.status).toBe(404)
+  })
+
+  it("requisition PATCH notifies the hiring manager when filled", async () => {
+    queue.push([{ status: "open", hiringManagerId: "mgr-1", title: "Dulgher" }]) // before
+    queue.push([{ id: REQ, status: "filled" }]) // update returning
+    const { PATCH } = await import("@/app/api/recruitment/requisitions/[id]/route")
+    const res = await PATCH(
+      req(`/api/recruitment/requisitions/${REQ}`, "PATCH", { status: "filled" }),
+      ctx
+    )
+    expect(res.status).toBe(200)
+    expect(mockDb.insert).toHaveBeenCalled()
+    expect(mockDb.values).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: "mgr-1", entityType: "job_requisition" })
+    )
+  })
+
+  it("requisition PATCH does not notify the acting hiring manager", async () => {
+    queue.push([{ status: "open", hiringManagerId: "actor-1", title: "Dulgher" }]) // before
+    queue.push([{ id: REQ, status: "filled" }]) // update returning
+    const { PATCH } = await import("@/app/api/recruitment/requisitions/[id]/route")
+    const res = await PATCH(
+      req(`/api/recruitment/requisitions/${REQ}`, "PATCH", { status: "filled" }),
+      ctx
+    )
+    expect(res.status).toBe(200)
+    expect(mockDb.insert).not.toHaveBeenCalled()
   })
 })
