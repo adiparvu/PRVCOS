@@ -27,7 +27,7 @@ vi.mock("@prv/db", () => ({ db: mockDb }))
 vi.mock("@prv/db/schema", () => {
   const col = () => new Proxy({}, { get: () => ({}) })
   const mod: Record<string, unknown> = {}
-  for (const t of ["orderReturns", "orderReturnItems", "orders"]) mod[t] = col()
+  for (const t of ["orderReturns", "orderReturnItems", "orders", "notifications"]) mod[t] = col()
   return mod
 })
 vi.mock("drizzle-orm", async (importOriginal) => {
@@ -165,7 +165,7 @@ describe("advance return (PATCH returns/[id])", () => {
   beforeEach(reset)
 
   it("advances through a valid transition and audits", async () => {
-    queue.push([{ status: "requested" }]) // current
+    queue.push([{ status: "requested", createdById: "creator-1", returnNumber: "RET-9" }]) // current
     queue.push([{ id: RETURN, status: "approved" }]) // update returning
     const { PATCH } = await import("@/app/api/shop/returns/[id]/route")
     const res = await PATCH(rq(`/api/shop/returns/${RETURN}`, "PATCH", { status: "approved" }), ctx)
@@ -173,6 +173,20 @@ describe("advance return (PATCH returns/[id])", () => {
     const body = await res.json()
     expect(body.status).toBe("approved")
     expect(auditSpy).toHaveBeenCalledTimes(1)
+    // Notifies the return's creator of the decision.
+    expect(mockDb.insert).toHaveBeenCalledTimes(1)
+    expect(mockDb.values).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: "creator-1", entityType: "order_return" })
+    )
+  })
+
+  it("does not notify when the actor is the return's own creator", async () => {
+    queue.push([{ status: "requested", createdById: "actor-1", returnNumber: "RET-9" }]) // current
+    queue.push([{ id: RETURN, status: "approved" }]) // update returning
+    const { PATCH } = await import("@/app/api/shop/returns/[id]/route")
+    const res = await PATCH(rq(`/api/shop/returns/${RETURN}`, "PATCH", { status: "approved" }), ctx)
+    expect(res.status).toBe(200)
+    expect(mockDb.insert).not.toHaveBeenCalled()
   })
 
   it("409s with INVALID_TRANSITION on an illegal jump", async () => {
