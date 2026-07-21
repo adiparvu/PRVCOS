@@ -107,6 +107,38 @@ describe("product-suppliers routes", () => {
     const body = await res.json()
     expect(body.links[0].id).toBe("l2") // preferred first
     expect(body.links[0].cost).toBe(6.2)
+    expect(body.preferredSupplierId).toBe("s2") // the flagged-preferred supplier
+  })
+
+  it("GET falls back to the lowest-cost supplier when none is preferred", async () => {
+    queue.push([{ id: PRODUCT }]) // verifyProduct
+    queue.push([
+      {
+        id: "l1",
+        supplierId: "s1",
+        supplierSku: "A",
+        cost: "5.95",
+        leadTimeDays: 5,
+        minOrderQty: null,
+        isPreferred: false,
+        supplierName: "Dedeman",
+      },
+      {
+        id: "l2",
+        supplierId: "s2",
+        supplierSku: "B",
+        cost: "6.20",
+        leadTimeDays: 3,
+        minOrderQty: 20,
+        isPreferred: false,
+        supplierName: "Brico",
+      },
+    ])
+    const { GET } = await import("@/app/api/shop/products/[id]/suppliers/route")
+    const res = await GET(rq(`/api/shop/products/${PRODUCT}/suppliers`), ctx)
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.preferredSupplierId).toBe("s1") // cheapest, no preferred flag
   })
 
   it("POST links a supplier (preferred → unsets others); 404 for foreign product", async () => {

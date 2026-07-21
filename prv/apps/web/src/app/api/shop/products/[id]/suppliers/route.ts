@@ -6,6 +6,7 @@ import { db } from "@prv/db"
 import { productSuppliers, products, suppliers } from "@prv/db/schema"
 import { and, eq, ne, asc } from "drizzle-orm"
 import { z } from "zod"
+import { pickPreferredSupplier } from "@/lib/product-suppliers"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -78,7 +79,12 @@ export const GET = withGates(
     }))
     links.sort((a, b) => Number(b.isPreferred) - Number(a.isPreferred))
 
-    return NextResponse.json({ links })
+    // The single best sourcing option: the preferred link, else the lowest-cost
+    // one (a fallback the preferred-first sort above does not provide) — so a
+    // reorder/PO draft can pick a default supplier without re-deriving it.
+    const preferredSupplierId = pickPreferredSupplier(links)?.supplierId ?? null
+
+    return NextResponse.json({ links, preferredSupplierId })
   }
 )
 
