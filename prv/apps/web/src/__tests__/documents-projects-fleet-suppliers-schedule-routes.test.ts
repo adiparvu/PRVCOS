@@ -195,6 +195,38 @@ describe("PATCH /api/projects/[id]", () => {
     expect(res.status).toBe(422)
   })
 
+  it("stamps completedAt when a project is marked completed", async () => {
+    mockDb.limit.mockResolvedValueOnce([{ id: "proj-1", name: "Renovation", status: "active" }])
+    mockDb.returning.mockResolvedValueOnce([
+      { id: "proj-1", name: "Renovation", status: "completed" },
+    ])
+    const { PATCH } = await import("@/app/api/projects/[id]/route")
+    const res = await PATCH(
+      makeReq("/api/projects/proj-1", "PATCH", {
+        json: async () => ({ status: "completed" }),
+      }),
+      webCtx
+    )
+    expect(res.status).toBe(200)
+    expect(mockDb.set).toHaveBeenCalledWith(
+      expect.objectContaining({ completedAt: expect.any(Date) })
+    )
+  })
+
+  it("clears completedAt when a completed project reopens", async () => {
+    mockDb.limit.mockResolvedValueOnce([{ id: "proj-1", name: "Renovation", status: "completed" }])
+    mockDb.returning.mockResolvedValueOnce([{ id: "proj-1", name: "Renovation", status: "active" }])
+    const { PATCH } = await import("@/app/api/projects/[id]/route")
+    const res = await PATCH(
+      makeReq("/api/projects/proj-1", "PATCH", {
+        json: async () => ({ status: "active" }),
+      }),
+      webCtx
+    )
+    expect(res.status).toBe(200)
+    expect(mockDb.set).toHaveBeenCalledWith(expect.objectContaining({ completedAt: null }))
+  })
+
   it("updates project and returns 200 with audit log", async () => {
     const { writeAuditLog } = await import("@prv/auth")
     mockDb.limit.mockResolvedValueOnce([{ id: "proj-1", name: "Renovation" }])

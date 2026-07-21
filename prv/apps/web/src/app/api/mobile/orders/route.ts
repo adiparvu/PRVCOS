@@ -12,7 +12,7 @@ export const runtime = "nodejs"
 
 const lineItemSchema = z.object({
   name: z.string().min(1).max(500),
-  qty: z.number().positive(),
+  qty: z.number().int().positive(),
   unitPrice: z.number().min(0),
   vatRate: z.number().min(0).max(100).default(19),
 })

@@ -268,7 +268,7 @@ export const PATCH = withGates(
     const { companyId } = ctx.session
 
     const [existing] = await db
-      .select({ id: projects.id, name: projects.name })
+      .select({ id: projects.id, name: projects.name, status: projects.status })
       .from(projects)
       .where(
         and(eq(projects.id, id), eq(projects.companyId, companyId), isNull(projects.deletedAt))
@@ -293,10 +293,20 @@ export const PATCH = withGates(
     }
 
     const { budget, approvedBudget, spentBudget, ...projectFields } = parsed.data
+    // Lifecycle stamp (parity with the mobile + phase routes): stamp completedAt
+    // when a project enters "completed", and clear it when it leaves — otherwise
+    // a project completed via this generic PATCH keeps completedAt = null.
+    const completedAtPatch =
+      parsed.data.status === "completed"
+        ? { completedAt: new Date() }
+        : parsed.data.status !== undefined && existing.status === "completed"
+          ? { completedAt: null }
+          : {}
     const [updated] = await db
       .update(projects)
       .set({
         ...projectFields,
+        ...completedAtPatch,
         ...(budget !== undefined ? { budget: String(budget) } : {}),
         ...(approvedBudget !== undefined ? { approvedBudget: String(approvedBudget) } : {}),
         ...(spentBudget !== undefined ? { spentBudget: String(spentBudget) } : {}),
@@ -335,7 +345,7 @@ export const DELETE = withGates(
     const { companyId } = ctx.session
 
     const [existing] = await db
-      .select({ id: projects.id, name: projects.name })
+      .select({ id: projects.id, name: projects.name, status: projects.status })
       .from(projects)
       .where(
         and(eq(projects.id, id), eq(projects.companyId, companyId), isNull(projects.deletedAt))

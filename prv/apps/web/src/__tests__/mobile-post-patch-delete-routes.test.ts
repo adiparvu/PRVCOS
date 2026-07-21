@@ -511,6 +511,17 @@ describe("PATCH /api/mobile/invoices/[id]", () => {
 // ─── POST /api/mobile/orders ───────────────────────────────────────────────────
 
 describe("POST /api/mobile/orders", () => {
+  it("returns 422 for a fractional line-item qty (integer column)", async () => {
+    const { POST } = await import("@/app/api/mobile/orders/route")
+    const res = await POST(
+      makeReq("/api/mobile/orders", "POST", {
+        json: async () => ({ items: [{ name: "Item A", qty: 2.5, unitPrice: 100 }] }),
+      }),
+      mobileCtx
+    )
+    expect(res.status).toBe(422)
+  })
+
   beforeEach(resetMocks)
 
   it("returns 422 when items is missing", async () => {
