@@ -4,7 +4,7 @@ import type { GateContext } from "@prv/auth"
 import { writeAuditLog } from "@prv/auth"
 import { z } from "zod"
 import { db } from "@prv/db"
-import { purchaseRequests, purchaseOrders, users } from "@prv/db/schema"
+import { purchaseRequests, purchaseOrders, users, notifications } from "@prv/db/schema"
 import { and, count, eq, isNull } from "drizzle-orm"
 
 export const dynamic = "force-dynamic"
@@ -137,6 +137,7 @@ export const PATCH = withGates(
         itemDescription: purchaseRequests.itemDescription,
         estimatedCost: purchaseRequests.estimatedCost,
         currency: purchaseRequests.currency,
+        requestedByUserId: purchaseRequests.requestedByUserId,
       })
       .from(purchaseRequests)
       .where(
@@ -217,6 +218,51 @@ export const PATCH = withGates(
         .update(purchaseRequests)
         .set({ status: nextStatus, updatedAt: new Date() })
         .where(and(eq(purchaseRequests.id, id), eq(purchaseRequests.companyId, companyId)))
+    }
+
+    // Notify the requester of the decision on their purchase request. The
+    // recipient is the unambiguous submitter; skipped when they performed the
+    // action themselves (e.g. self-submit) and when no requester is recorded.
+    // 'submit' is the requester's own step, so it raises no notification.
+    if (
+      action !== "submit" &&
+      existing.requestedByUserId &&
+      existing.requestedByUserId !== userId
+    ) {
+      const item = existing.itemDescription
+      const notice =
+        action === "approve"
+          ? {
+              type: "success" as const,
+              title: "Cerere de achiziție aprobată",
+              body: `Cererea „${item}" a fost aprobată.`,
+            }
+          : action === "reject"
+            ? {
+                type: "warning" as const,
+                title: "Cerere de achiziție respinsă",
+                body: `Cererea „${item}" a fost respinsă. Motiv: ${
+                  parsed.data.action === "reject" ? parsed.data.rejectionReason : "—"
+                }`,
+              }
+            : {
+                type: "info" as const,
+                title: "Cerere convertită în comandă",
+                body: `Cererea „${item}" a fost convertită în comandă de achiziție.`,
+              }
+
+      await db.insert(notifications).values({
+        userId: existing.requestedByUserId,
+        companyId,
+        type: notice.type,
+        channel: "in_app",
+        title: notice.title.slice(0, 500),
+        body: notice.body,
+        entityType: "purchase_request",
+        entityId: id,
+        actionUrl: `/procurement/requests/${id}`,
+        deliveredAt: new Date(),
+      })
     }
 
     void writeAuditLog({
