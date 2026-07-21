@@ -19,9 +19,15 @@ function courseId(req: NextRequest): string {
 
 // ─── POST /api/mobile/learning/[id]/enroll ────────────────────────────────────
 
+const enrollSchema = z.object({
+  status: z.enum(["in_progress", "saved"]).default("in_progress"),
+})
+
 export const POST = withMobileAuth(async (req: NextRequest, ctx) => {
   const id = courseId(req)
   const { companyId, userId } = ctx
+  const enrollStatus =
+    enrollSchema.safeParse(await req.json().catch(() => ({}))).data?.status ?? "in_progress"
 
   const [course] = await db
     .select({ id: learningCourses.id })
@@ -45,13 +51,13 @@ export const POST = withMobileAuth(async (req: NextRequest, ctx) => {
       companyId,
       userId,
       courseId: id,
-      status: "in_progress",
+      status: enrollStatus,
       progressPct: 0,
       currentModule: 0,
     })
     .onConflictDoUpdate({
       target: [courseEnrollments.userId, courseEnrollments.courseId],
-      set: { status: "in_progress", updatedAt: new Date() },
+      set: { status: enrollStatus, updatedAt: new Date() },
     })
 
   void writeAuditLog({
@@ -70,7 +76,7 @@ export const POST = withMobileAuth(async (req: NextRequest, ctx) => {
     userAgent: req.headers.get("user-agent") ?? "",
   })
 
-  return NextResponse.json({ courseId: id, status: "in_progress" }, { status: 201 })
+  return NextResponse.json({ courseId: id, status: enrollStatus }, { status: 201 })
 })
 
 // ─── PATCH /api/mobile/learning/[id]/enroll ───────────────────────────────────

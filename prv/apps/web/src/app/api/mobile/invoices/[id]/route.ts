@@ -138,7 +138,7 @@ export const GET = withMobileAuth(async (req: NextRequest, ctx) => {
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
 const patchSchema = z
   .object({
-    status: z.enum(["sent", "paid", "cancelled"]).optional(),
+    status: z.enum(["draft", "sent", "paid", "overdue", "cancelled", "refunded"]).optional(),
     notes: z.string().nullable().optional(),
     dueDate: z.string().regex(ISO_DATE).optional(),
     issueDate: z.string().regex(ISO_DATE).optional(),

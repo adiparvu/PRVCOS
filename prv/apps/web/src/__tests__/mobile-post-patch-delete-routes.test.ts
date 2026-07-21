@@ -20,7 +20,12 @@ const mockRedis = {
 vi.mock("@prv/cache", () => ({
   getRedis: vi.fn(() => mockRedis),
   cacheKey: { session: vi.fn((id: string) => `session:${id}`) },
+  appendRealtimeEvent: vi.fn().mockResolvedValue(undefined),
+  realtimeChannel: { shop: vi.fn((c: string) => `shop:${c}`) },
+  REALTIME_EVENT: { SHOP_UPDATE: "shop.update" },
 }))
+
+vi.mock("@prv/jobs/client", () => ({ inngest: { send: vi.fn().mockResolvedValue(undefined) } }))
 
 vi.mock("@/lib/supabase/server", () => ({
   createSupabaseAdminClient: vi.fn(),
@@ -474,7 +479,7 @@ describe("PATCH /api/mobile/invoices/[id]", () => {
     const { PATCH } = await import("@/app/api/mobile/invoices/[id]/route")
     const res = await PATCH(
       makeReq("/api/mobile/invoices/inv-1", "PATCH", {
-        json: async () => ({ status: "draft" }),
+        json: async () => ({ status: "bogus" }),
       }),
       mobileCtx
     )

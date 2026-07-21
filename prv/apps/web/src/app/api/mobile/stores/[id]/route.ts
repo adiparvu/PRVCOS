@@ -258,24 +258,16 @@ export const GET = withMobileAuth(async (req: NextRequest, ctx) => {
 const storePatchSchema = z
   .object({
     name: z.string().min(1).max(255).optional(),
+    code: z.string().min(1).max(50).optional(),
     phone: z.string().max(32).optional(),
     email: z.string().email().max(254).optional(),
     address: z.string().max(500).optional(),
     city: z.string().max(100).optional(),
     region: z.string().max(100).optional(),
+    settings: z.record(z.unknown()).optional(),
     isActive: z.boolean().optional(),
   })
-  .refine(
-    (d) =>
-      d.name !== undefined ||
-      d.phone !== undefined ||
-      d.email !== undefined ||
-      d.address !== undefined ||
-      d.city !== undefined ||
-      d.region !== undefined ||
-      d.isActive !== undefined,
-    { message: "At least one field required" }
-  )
+  .refine((d) => Object.keys(d).length > 0, { message: "At least one field required" })
 
 export const PATCH = withMobileAuth(async (req: NextRequest, ctx) => {
   const ipAddress =
@@ -297,25 +289,29 @@ export const PATCH = withMobileAuth(async (req: NextRequest, ctx) => {
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 })
 
   const [existing] = await db
-    .select({ id: stores.id, name: stores.name })
+    .select({ id: stores.id, name: stores.name, code: stores.code })
     .from(stores)
     .where(and(eq(stores.id, storeId), eq(stores.companyId, ctx.companyId)))
     .limit(1)
   if (!existing) return NextResponse.json({ error: "Store not found" }, { status: 404 })
 
   const d = parsed.data
+  // Per-company store code uniqueness (parity with the web stores PATCH).
+  if (d.code && d.code !== existing.code) {
+    const [conflict] = await db
+      .select({ id: stores.id })
+      .from(stores)
+      .where(and(eq(stores.companyId, ctx.companyId), eq(stores.code, d.code)))
+      .limit(1)
+    if (conflict)
+      return NextResponse.json(
+        { error: `Store code "${d.code}" is already in use` },
+        { status: 409 }
+      )
+  }
   const [updated] = await db
     .update(stores)
-    .set({
-      ...(d.name !== undefined && { name: d.name }),
-      ...(d.phone !== undefined && { phone: d.phone }),
-      ...(d.email !== undefined && { email: d.email }),
-      ...(d.address !== undefined && { address: d.address }),
-      ...(d.city !== undefined && { city: d.city }),
-      ...(d.region !== undefined && { region: d.region }),
-      ...(d.isActive !== undefined && { isActive: d.isActive }),
-      updatedAt: new Date(),
-    })
+    .set({ ...d, updatedAt: new Date() })
     .where(and(eq(stores.id, storeId), eq(stores.companyId, ctx.companyId)))
     .returning({ id: stores.id, name: stores.name, isActive: stores.isActive })
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { withMobileAuth } from "@/lib/mobile/auth"
+import { z } from "zod"
 import { writeAuditLog } from "@prv/auth"
 import { db } from "@prv/db"
 import { announcements, announcementReads, users } from "@prv/db/schema"
@@ -75,36 +76,38 @@ export const GET = withMobileAuth(async (req: NextRequest, ctx) => {
   return NextResponse.json({ announcements: items })
 })
 
+const announcementSchema = z.object({
+  title: z.string().min(1).max(300),
+  body: z.string().min(1),
+  audience: z.enum(["all", "managers", "employees", "department", "team"]).default("all"),
+  audienceTargetId: z.string().uuid().optional(),
+  isPinned: z.boolean().optional(),
+  sendEmail: z.boolean().optional(),
+  publishedAt: z.string().datetime().optional(),
+  scheduledAt: z.string().datetime().optional(),
+})
+
 export const POST = withMobileAuth(async (req: NextRequest, ctx) => {
   const { companyId, userId } = ctx
-  const body = (await req.json().catch(() => ({}))) as {
-    title?: string
-    body?: string
-    audience?: "all" | "managers" | "employees" | "department" | "team"
-    audienceTargetId?: string
-    isPinned?: boolean
-    sendEmail?: boolean
-    publishedAt?: string
-    scheduledAt?: string
+  const parsed = announcementSchema.safeParse(await req.json().catch(() => ({})))
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 })
   }
-
-  if (!body.title?.trim() || !body.body?.trim()) {
-    return NextResponse.json({ error: "title and body are required" }, { status: 400 })
-  }
+  const data = parsed.data
 
   const [announcement] = await db
     .insert(announcements)
     .values({
       companyId,
       authorUserId: userId,
-      title: body.title.trim(),
-      body: body.body.trim(),
-      audience: body.audience ?? "all",
-      audienceTargetId: body.audienceTargetId,
-      isPinned: body.isPinned ?? false,
-      sendEmail: body.sendEmail ?? false,
-      publishedAt: body.publishedAt ? new Date(body.publishedAt) : new Date(),
-      scheduledAt: body.scheduledAt ? new Date(body.scheduledAt) : undefined,
+      title: data.title.trim(),
+      body: data.body.trim(),
+      audience: data.audience,
+      audienceTargetId: data.audienceTargetId,
+      isPinned: data.isPinned ?? false,
+      sendEmail: data.sendEmail ?? false,
+      publishedAt: data.publishedAt ? new Date(data.publishedAt) : new Date(),
+      scheduledAt: data.scheduledAt ? new Date(data.scheduledAt) : undefined,
     })
     .returning()
 

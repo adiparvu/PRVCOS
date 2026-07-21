@@ -5,6 +5,8 @@ import { withMobileAuth } from "@/lib/mobile/auth"
 import { db } from "@prv/db"
 import { orders, orderItems, clients, stores, users } from "@prv/db/schema"
 import { writeAuditLog } from "@prv/auth"
+import { appendRealtimeEvent, realtimeChannel, REALTIME_EVENT } from "@prv/cache"
+import { inngest } from "@prv/jobs/client"
 import { eq, and, isNull } from "drizzle-orm"
 
 export const dynamic = "force-dynamic"
@@ -144,9 +146,16 @@ export const GET = withMobileAuth(async (req: NextRequest, ctx) => {
   })
 })
 
-const patchOrderSchema = z.object({
-  status: z.enum(["pending", "confirmed", "processing", "shipped", "delivered", "cancelled"]),
-})
+const patchOrderSchema = z
+  .object({
+    status: z
+      .enum(["pending", "confirmed", "processing", "shipped", "delivered", "cancelled"])
+      .optional(),
+    notes: z.string().nullable().optional(),
+  })
+  .refine((d) => d.status !== undefined || d.notes !== undefined, {
+    message: "At least one field required",
+  })
 
 export const PATCH = withMobileAuth(async (req: NextRequest, ctx) => {
   const ipAddress =
@@ -171,10 +180,10 @@ export const PATCH = withMobileAuth(async (req: NextRequest, ctx) => {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 })
   }
 
-  const { status } = parsed.data
+  const { status, notes } = parsed.data
 
   const [existing] = await db
-    .select({ id: orders.id, status: orders.status })
+    .select({ id: orders.id, status: orders.status, orderNumber: orders.orderNumber })
     .from(orders)
     .where(
       and(eq(orders.id, orderId), eq(orders.companyId, ctx.companyId), isNull(orders.deletedAt))
@@ -197,17 +206,23 @@ export const PATCH = withMobileAuth(async (req: NextRequest, ctx) => {
     cancelled: [],
     refunded: [],
   }
-  const allowed = ALLOWED_TRANSITIONS[existing.status] ?? []
-  if (!allowed.includes(status)) {
-    return NextResponse.json(
-      { error: `Cannot transition from '${existing.status}' to '${status}'`, allowed },
-      { status: 409 }
-    )
+  if (status !== undefined) {
+    const allowed = ALLOWED_TRANSITIONS[existing.status] ?? []
+    if (!allowed.includes(status)) {
+      return NextResponse.json(
+        { error: `Cannot transition from '${existing.status}' to '${status}'`, allowed },
+        { status: 409 }
+      )
+    }
   }
 
   const [updated] = await db
     .update(orders)
-    .set({ status })
+    .set({
+      ...(status !== undefined && { status }),
+      ...(notes !== undefined && { notes }),
+      updatedAt: new Date(),
+    })
     .where(eq(orders.id, orderId))
     .returning({ id: orders.id, status: orders.status })
 
@@ -226,8 +241,32 @@ export const PATCH = withMobileAuth(async (req: NextRequest, ctx) => {
     path: `/api/mobile/orders/${orderId}`,
     ipAddress,
     userAgent: req.headers.get("user-agent") ?? "",
-    payload: { from: existing.status, to: status },
+    payload: { from: existing.status, to: status ?? existing.status },
   })
+
+  // Parity with the web sibling: on a status change, push a realtime shop event
+  // and trigger the order-processing job so mobile-driven transitions fire the
+  // same automations as web.
+  if (status !== undefined && status !== existing.status) {
+    void appendRealtimeEvent(realtimeChannel.shop(ctx.companyId), REALTIME_EVENT.SHOP_UPDATE, {
+      entityType: "order",
+      entityId: orderId,
+      action: "updated",
+      companyId: ctx.companyId,
+    }).catch(() => null)
+    void inngest
+      .send({
+        name: "prv/shop.order.status_changed",
+        data: {
+          orderId,
+          companyId: ctx.companyId,
+          orderNumber: existing.orderNumber,
+          fromStatus: existing.status,
+          toStatus: status,
+        },
+      })
+      .catch(() => null)
+  }
 
   return NextResponse.json({ id: updated.id, status: updated.status })
 })
@@ -253,7 +292,7 @@ export const DELETE = withMobileAuth(async (req: NextRequest, ctx) => {
 
   if (!existing) return NextResponse.json({ error: "Order not found" }, { status: 404 })
 
-  if (!["pending", "cancelled"].includes(existing.status))
+  if (!["cancelled", "refunded"].includes(existing.status))
     return NextResponse.json(
       { error: `Cannot delete an order with status '${existing.status}'` },
       { status: 409 }
