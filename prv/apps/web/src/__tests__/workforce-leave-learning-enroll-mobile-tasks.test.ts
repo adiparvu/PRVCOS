@@ -282,6 +282,22 @@ describe("POST /api/workforce/leave", () => {
     expect(res.status).toBe(422)
   })
 
+  it("returns 422 when endDate precedes startDate", async () => {
+    const { POST } = await import("@/app/api/workforce/leave/route")
+    const res = await POST(
+      makeReq("/api/workforce/leave", "POST", {
+        json: async () => ({
+          userId: "00000000-1111-2222-3333-444444444444",
+          startDate: "2026-06-10",
+          endDate: "2026-06-05",
+        }),
+      }),
+      webCtx
+    )
+    expect(res.status).toBe(422)
+    expect((await res.json()).error).toMatch(/on or before/)
+  })
+
   it("returns 201 with {id} on valid payload", async () => {
     mockDb.returning.mockResolvedValueOnce([{ id: "leave-new-1" }])
 

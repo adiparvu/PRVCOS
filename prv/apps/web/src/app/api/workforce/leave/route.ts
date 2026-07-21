@@ -65,6 +65,12 @@ export const POST = withGates(
         { status: 422 }
       )
 
+    // Date-order integrity: the leave window cannot end before it starts. The
+    // sibling people/time-off route (same leaveRequests table) already enforces
+    // this; without it here, an inverted window would be persisted.
+    if (new Date(parsed.data.startDate) > new Date(parsed.data.endDate))
+      return NextResponse.json({ error: "startDate must be on or before endDate" }, { status: 422 })
+
     const [row] = await db
       .insert(leaveRequests)
       .values({
