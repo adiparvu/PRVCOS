@@ -275,6 +275,15 @@ export const POST = withGates(
       )
     }
 
+    // Date-order integrity: the project window cannot end before it starts.
+    // Fires only when both dates are supplied and parse validly.
+    if (
+      parsed.data.startDate &&
+      parsed.data.dueDate &&
+      new Date(parsed.data.startDate) > new Date(parsed.data.dueDate)
+    )
+      return NextResponse.json({ error: "startDate must be on or before dueDate" }, { status: 422 })
+
     const [record] = await db
       .insert(projects)
       .values({

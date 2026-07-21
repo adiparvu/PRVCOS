@@ -140,6 +140,19 @@ export const POST = withGates(
       )
     }
 
+    // Date-order integrity: an estimated window cannot end before it starts.
+    // Fires only when both dates are supplied and parse validly (an unparseable
+    // string leaves the comparison false, so no spurious 422).
+    if (
+      parsed.data.estimatedStartDate &&
+      parsed.data.estimatedEndDate &&
+      new Date(parsed.data.estimatedStartDate) > new Date(parsed.data.estimatedEndDate)
+    )
+      return NextResponse.json(
+        { error: "estimatedStartDate must be on or before estimatedEndDate" },
+        { status: 422 }
+      )
+
     const { estimatedValue, ...rest } = parsed.data
     const [record] = await db
       .insert(renovationProjects)

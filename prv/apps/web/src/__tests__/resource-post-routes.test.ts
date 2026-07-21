@@ -99,6 +99,18 @@ describe("POST /api/projects", () => {
     expect(res.status).toBe(422)
   })
 
+  it("returns 422 when dueDate precedes startDate", async () => {
+    const { POST } = await import("@/app/api/projects/route")
+    const res = await POST(
+      makeReq("/api/projects", "POST", {
+        json: async () => ({ name: "P", startDate: "2026-06-10", dueDate: "2026-06-01" }),
+      }),
+      webCtx
+    )
+    expect(res.status).toBe(422)
+    expect((await res.json()).error).toMatch(/on or before/)
+  })
+
   it("creates project and returns 201 with id and name", async () => {
     mockDb.returning.mockResolvedValueOnce([{ id: "proj-new", name: "New Project" }])
     const { POST } = await import("@/app/api/projects/route")
