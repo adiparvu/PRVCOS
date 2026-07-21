@@ -20,12 +20,13 @@ export default async function ShiftDetailPage({ params }: Props) {
   const sessionId = cookieStore.get("prv_session")?.value
   if (!sessionId) redirect("/auth/login")
 
+  let session
   try {
-    await getSession(sessionId)
+    session = await getSession(sessionId)
   } catch {
     redirect("/auth/login")
   }
 
   const { id } = await params
-  return <ShiftDetailClient id={id} />
+  return <ShiftDetailClient id={id} currentUserId={session.userId} />
 }

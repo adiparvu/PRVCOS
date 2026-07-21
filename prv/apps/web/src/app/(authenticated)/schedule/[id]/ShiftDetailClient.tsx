@@ -11,6 +11,7 @@ import type { ShiftRole, ShiftStatus } from "@/app/api/schedule/route"
 
 interface ShiftDetailClientProps {
   id: string
+  currentUserId: string
 }
 
 function Skeleton({ w, h, radius = 6 }: { w: number | string; h: number; radius?: number }) {
@@ -472,7 +473,7 @@ function EditShiftForm({
   )
 }
 
-function StaffingSheet({ shiftId }: { shiftId: string }) {
+function StaffingSheet({ shiftId, currentUserId }: { shiftId: string; currentUserId: string }) {
   const qc = useQueryClient()
   const { data } = useShiftDetail(shiftId)
   const shift = data?.shift ?? null
@@ -690,7 +691,7 @@ function StaffingSheet({ shiftId }: { shiftId: string }) {
           All slots filled.
         </p>
       )}
-      <ShiftSwaps shiftId={shiftId} />
+      <ShiftSwaps shiftId={shiftId} currentUserId={currentUserId} />
     </div>
   )
 }
@@ -838,7 +839,7 @@ function MarkPresentSheet({ shiftId }: { shiftId: string }) {
   )
 }
 
-export function ShiftDetailClient({ id }: ShiftDetailClientProps) {
+export function ShiftDetailClient({ id, currentUserId }: ShiftDetailClientProps) {
   const { data, isLoading: loading } = useShiftDetail(id)
   const shift = data?.shift ?? null
   const { openSheet } = useSheetStack()
@@ -887,7 +888,7 @@ export function ShiftDetailClient({ id }: ShiftDetailClientProps) {
       snapPoints: ["mid", "full"],
       defaultSnap: "mid",
       title: "Staffing",
-      render: () => <StaffingSheet shiftId={id} />,
+      render: () => <StaffingSheet shiftId={id} currentUserId={currentUserId} />,
     })
   }
 

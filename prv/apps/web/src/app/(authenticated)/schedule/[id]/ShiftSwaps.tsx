@@ -5,12 +5,13 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 interface Swap {
   id: string
   status: string
+  requesterId: string
   requester: string | null
   target: string | null
   note: string | null
 }
 
-export function ShiftSwaps({ shiftId }: { shiftId: string }) {
+export function ShiftSwaps({ shiftId, currentUserId }: { shiftId: string; currentUserId: string }) {
   const qc = useQueryClient()
   const { data } = useQuery<{ swaps: Swap[] }>({
     queryKey: ["shift-swaps", shiftId],
@@ -56,7 +57,19 @@ export function ShiftSwaps({ shiftId }: { shiftId: string }) {
     onSuccess: invalidate,
   })
 
-  const busy = request.isPending || decide.isPending
+  const cancel = useMutation({
+    mutationFn: (id: string) =>
+      fetch(`/api/schedule/swaps/${id}`, { method: "DELETE" }).then(async (r) => {
+        if (!r.ok) {
+          const d = await r.json().catch(() => ({}))
+          throw new Error((d as { error?: string }).error ?? "Failed")
+        }
+        return r.json()
+      }),
+    onSuccess: invalidate,
+  })
+
+  const busy = request.isPending || decide.isPending || cancel.isPending
 
   return (
     <div style={{ marginTop: 14 }}>
@@ -98,6 +111,25 @@ export function ShiftSwaps({ shiftId }: { shiftId: string }) {
                   </p>
                 )}
               </div>
+              {s.requesterId === currentUserId && (
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => cancel.mutate(s.id)}
+                  style={{
+                    padding: "5px 10px",
+                    borderRadius: 8,
+                    border: "1px solid rgba(255,255,255,0.12)",
+                    background: "rgba(255,255,255,0.05)",
+                    color: "var(--prv-text-2)",
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: busy ? "default" : "pointer",
+                  }}
+                >
+                  Retrage
+                </button>
+              )}
               <button
                 type="button"
                 disabled={busy}
