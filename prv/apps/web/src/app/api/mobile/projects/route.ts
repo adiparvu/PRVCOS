@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 import { z } from "zod"
 import { withMobileAuth } from "@/lib/mobile/auth"
+import { upsertDocument } from "@prv/search"
 import { db } from "@prv/db"
 import { projects, projectMembers } from "@prv/db/schema"
 import { writeAuditLog } from "@prv/auth"
@@ -97,6 +98,14 @@ export const POST = withMobileAuth(async (req: NextRequest, ctx) => {
     path: "/api/mobile/projects",
     ipAddress,
     userAgent: req.headers.get("user-agent") ?? "",
+  })
+
+  void upsertDocument("projects", {
+    id: project.id,
+    company_id: ctx.companyId,
+    title: project.name,
+    status: project.status,
+    created_at: Math.floor(Date.now() / 1000),
   })
 
   return NextResponse.json(
