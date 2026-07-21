@@ -203,6 +203,13 @@ export const renovationPhases = pgTable(
 
     lexorank: varchar("lexorank", { length: 255 }),
 
+    // Critical-alert routing (Phase 14.5). Stamped once when the milestone-missed
+    // cron raises the `ops.milestone_missed` critical alert for this phase, so an
+    // open phase past its planned end date alerts the routed recipient exactly
+    // once (claim-on-null). A phase reaching a terminal status leaves the cron's
+    // candidate set, so it is never considered again.
+    milestoneMissedAlertedAt: timestamp("milestone_missed_alerted_at", { withTimezone: true }),
+
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
