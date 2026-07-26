@@ -18,6 +18,7 @@ import {
   type AttendanceItem,
 } from "@/hooks/usePeople"
 import { useLearning, type CourseItem, type CourseStatus } from "@/hooks/useLearning"
+import { useMyAttendance, useClockMutation } from "@/hooks/useMyAttendance"
 import { useRouter } from "expo-router"
 import { FABWithSheets } from "@/components/FABWithSheets"
 import { colors, radius, spacing } from "@/tokens"
@@ -645,6 +646,58 @@ function ScheduleContent({ data }: { data: ReturnType<typeof usePeople>["data"] 
   )
 }
 
+// Self-service clock card (offline-safe: mutations queue with no signal and
+// replay on reconnect). Uses only existing surfaces/tokens — ListCard glass,
+// text hierarchy by opacity, status colors already used by the KPI pills.
+function SelfClockCard() {
+  const { data, isPending: isLoading } = useMyAttendance()
+  const { mutate: clock, isPending } = useClockMutation()
+  const [queuedNote, setQueuedNote] = useState(false)
+
+  const record = data?.record ?? null
+  const clockedIn = !!record?.clockIn && !record?.clockOut
+  const done = !!record?.clockOut
+  const onLeave = record?.status === "leave"
+
+  const stateLabel = done
+    ? `In ${formatTime(record!.clockIn)} · Out ${formatTime(record!.clockOut)}`
+    : clockedIn
+      ? `In since ${formatTime(record!.clockIn)}${record?.lateMinutes ? ` · ${record.lateMinutes} min late` : ""}`
+      : onLeave
+        ? "On approved leave today"
+        : "Not clocked in yet"
+
+  const action: "in" | "out" = clockedIn ? "out" : "in"
+  const disabled = isPending || isLoading || done || onLeave
+
+  return (
+    <View style={s.clockCard}>
+      <View style={s.clockCardShine} pointerEvents="none" />
+      <View style={{ flex: 1 }}>
+        <Text style={s.clockTitle}>My Attendance</Text>
+        <Text style={s.clockState}>{stateLabel}</Text>
+        {queuedNote ? <Text style={s.clockQueued}>Saved offline — will sync</Text> : null}
+      </View>
+      {!done && !onLeave ? (
+        <TouchableOpacity
+          style={[s.clockBtn, clockedIn ? s.clockBtnOut : null, disabled && s.clockBtnDisabled]}
+          activeOpacity={0.85}
+          disabled={disabled}
+          onPress={() =>
+            clock(action, {
+              onSuccess: (result) => setQueuedNote(result.queued),
+            })
+          }
+        >
+          <Text style={[s.clockBtnText, clockedIn ? s.clockBtnTextOut : null]}>
+            {isPending ? "…" : clockedIn ? "Clock out" : "Clock in"}
+          </Text>
+        </TouchableOpacity>
+      ) : null}
+    </View>
+  )
+}
+
 function AttendanceContent({ data }: { data: ReturnType<typeof usePeople>["data"] }) {
   if (!data) return <SkeletonContent />
 
@@ -661,6 +714,7 @@ function AttendanceContent({ data }: { data: ReturnType<typeof usePeople>["data"
 
   return (
     <>
+      <SelfClockCard />
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -848,20 +902,12 @@ function CourseCard({ item }: { item: CourseItem }) {
                 s.progressFill,
                 {
                   width: `${item.progress}%`,
-                  backgroundColor:
-                    item.progress === 100
-                      ? colors.green
-                      : "rgba(255,255,255,0.75)",
+                  backgroundColor: item.progress === 100 ? colors.green : "rgba(255,255,255,0.75)",
                 },
               ]}
             />
           </View>
-          <Text
-            style={[
-              s.progressPct,
-              item.progress === 100 ? { color: colors.green } : null,
-            ]}
-          >
+          <Text style={[s.progressPct, item.progress === 100 ? { color: colors.green } : null]}>
             {item.progress}%
           </Text>
         </View>
@@ -905,12 +951,18 @@ function LearningContent() {
         style={s.kpiScrollWrap}
         contentContainerStyle={s.kpiStrip}
       >
-        <KPIPill value={String(meta.completedCount)} label="Completed" valueColor={meta.completedCount > 0 ? colors.green : undefined} />
-        <KPIPill value={String(meta.inProgressCount)} label="In Progress" valueColor={meta.inProgressCount > 0 ? colors.amber : undefined} />
+        <KPIPill
+          value={String(meta.completedCount)}
+          label="Completed"
+          valueColor={meta.completedCount > 0 ? colors.green : undefined}
+        />
+        <KPIPill
+          value={String(meta.inProgressCount)}
+          label="In Progress"
+          valueColor={meta.inProgressCount > 0 ? colors.amber : undefined}
+        />
         <KPIPill value={`${meta.monthlyHours}h`} label="This Month" />
-        {meta.avgScore > 0 ? (
-          <KPIPill value={`${meta.avgScore}%`} label="Avg Score" />
-        ) : null}
+        {meta.avgScore > 0 ? <KPIPill value={`${meta.avgScore}%`} label="Avg Score" /> : null}
       </ScrollView>
 
       {/* Filter pills */}
@@ -929,9 +981,7 @@ function LearningContent() {
               onPress={() => setStatusFilter(f.key === "all" ? undefined : f.key)}
               activeOpacity={0.75}
             >
-              <Text style={[s.filterPillText, active && s.filterPillTextActive]}>
-                {f.label}
-              </Text>
+              <Text style={[s.filterPillText, active && s.filterPillTextActive]}>{f.label}</Text>
             </TouchableOpacity>
           )
         })}
@@ -942,11 +992,17 @@ function LearningContent() {
           <SectionHeader title="Achievements" />
           <ListCard>
             {achievements.map((a, i) => (
-              <View key={a.id} style={[s.listRow, i === achievements.length - 1 ? s.listRowLast : null]}>
+              <View
+                key={a.id}
+                style={[s.listRow, i === achievements.length - 1 ? s.listRowLast : null]}
+              >
                 <View
                   style={[
                     s.achievementBadge,
-                    { backgroundColor: a.colorType === "amber" ? "rgba(255,159,10,0.12)" : "rgba(48,209,88,0.12)" },
+                    {
+                      backgroundColor:
+                        a.colorType === "amber" ? "rgba(255,159,10,0.12)" : "rgba(48,209,88,0.12)",
+                    },
                   ]}
                 >
                   <Text style={{ fontSize: 16 }}>{a.colorType === "amber" ? "★" : "✓"}</Text>
@@ -1055,6 +1111,44 @@ export default function PeopleScreen() {
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const s = StyleSheet.create({
+  clockCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: colors.glass1,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.card,
+    padding: spacing.base,
+    marginHorizontal: spacing.base,
+    marginBottom: spacing.md,
+    overflow: "hidden",
+  },
+  clockCardShine: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 1,
+    backgroundColor: colors.shineTop,
+  },
+  clockTitle: { fontSize: 13, fontWeight: "600", color: colors.text2 },
+  clockState: { fontSize: 15, fontWeight: "700", color: colors.text1, marginTop: 2 },
+  clockQueued: { fontSize: 11, color: colors.amber, marginTop: 4 },
+  clockBtn: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm + 2,
+    marginLeft: spacing.md,
+  },
+  clockBtnOut: {
+    backgroundColor: colors.glass2,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  clockBtnDisabled: { opacity: 0.5 },
+  clockBtnText: { fontSize: 14, fontWeight: "700", color: "#000000" },
+  clockBtnTextOut: { color: colors.text1 },
   root: { flex: 1, backgroundColor: colors.bg },
 
   header: {
