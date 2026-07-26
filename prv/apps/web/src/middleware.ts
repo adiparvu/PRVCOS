@@ -56,19 +56,26 @@ export async function middleware(request: NextRequest) {
   }
 
   // ── Edge rate limiting (before any DB/session work) ────────────────────
+  // Fail-open on limiter errors: if Redis is unreachable, serving traffic
+  // unthrottled beats a total outage. The per-user limits in the gate chain
+  // and auth wrappers stay fail-closed — this is only the coarse per-IP edge.
   const isAuthRoute = AUTH_PREFIXES.some((p) => pathname.startsWith(p))
   const rlClass = isAuthRoute ? "auth" : "public"
-  const rl = await checkRateLimit(rlClass, ip)
-  if (!rl.success) {
-    return new NextResponse(JSON.stringify({ error: "Too many requests" }), {
-      status: 429,
-      headers: {
-        "Content-Type": "application/json",
-        "X-RateLimit-Limit": String(rl.limit),
-        "X-RateLimit-Remaining": "0",
-        "X-RateLimit-Reset": String(rl.reset),
-      },
-    })
+  try {
+    const rl = await checkRateLimit(rlClass, ip)
+    if (!rl.success) {
+      return new NextResponse(JSON.stringify({ error: "Too many requests" }), {
+        status: 429,
+        headers: {
+          "Content-Type": "application/json",
+          "X-RateLimit-Limit": String(rl.limit),
+          "X-RateLimit-Remaining": "0",
+          "X-RateLimit-Reset": String(rl.reset),
+        },
+      })
+    }
+  } catch (err) {
+    console.error("[middleware] rate limiter unavailable, failing open:", err)
   }
 
   // ── Supabase session refresh ───────────────────────────────────────────

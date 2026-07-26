@@ -206,6 +206,58 @@ jobs:
           pnpm --filter @prv/db exec vitest run src/__tests__/pg-rls.integration.test.ts
           pnpm --filter @prv/auth exec vitest run src/__tests__/integration/pg-audit-chain.integration.test.ts
 
+  e2e:
+    name: E2E Smoke (Playwright)
+    runs-on: ubuntu-latest
+    needs: [lint, typecheck]
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: prv_e2e
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+        ports:
+          - 5434:5432
+
+    env:
+      E2E_DATABASE_URL: postgresql://postgres:password@localhost:5434/prv_e2e
+      CI: "true"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+          cache-dependency-path: prv/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright Chromium
+        run: pnpm --filter @prv/web exec playwright install --with-deps chromium
+
+      - name: Provision full schema (extensions + drizzle push + RLS lockdown)
+        run: |
+          psql "$E2E_DATABASE_URL" -v ON_ERROR_STOP=1 -f packages/db/migrations/extensions.sql
+          DATABASE_URL="$E2E_DATABASE_URL" pnpm --filter @prv/db exec drizzle-kit push --force
+          psql "$E2E_DATABASE_URL" -v ON_ERROR_STOP=1 -f packages/db/migrations/rls-lockdown.sql
+
+      - name: E2E smoke
+        run: pnpm --filter @prv/web test:e2e
+
   security:
     name: Security Audit
     runs-on: ubuntu-latest

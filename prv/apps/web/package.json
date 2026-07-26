@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "clean": "rm -rf .next dist"
+    "clean": "rm -rf .next dist",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@prv/ai-engine": "workspace:*",
@@ -40,6 +41,7 @@
     "zustand": "^5.0.3"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.0",
     "@prv/tsconfig": "workspace:*",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^22",
