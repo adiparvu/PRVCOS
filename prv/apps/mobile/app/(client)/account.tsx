@@ -1,4 +1,4 @@
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native"
+import { Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { GlassCard } from "@/components/Glass"
 import { useAuthStore } from "@/store/auth"
@@ -26,7 +26,12 @@ const SETTINGS = [
     items: [
       { icon: "⌕", label: "Help Center", value: null },
       { icon: "◌", label: "Contact PRV", value: null },
-      { icon: "⊞", label: "Privacy Policy", value: null },
+      {
+        icon: "⊞",
+        label: "Privacy Policy",
+        value: null,
+        href: "https://prvrenovations.ro/privacy",
+      },
     ],
   },
 ]
@@ -42,6 +47,9 @@ function SettingsSection({ section }: { section: (typeof SETTINGS)[number] }) {
             key={item.label}
             style={[styles.menuRow, i < section.items.length - 1 && styles.menuRowBorder]}
             activeOpacity={0.7}
+            onPress={() => {
+              if ("href" in item && item.href) void Linking.openURL(item.href)
+            }}
           >
             <View style={styles.menuLeft}>
               <View style={styles.menuIconWrap}>

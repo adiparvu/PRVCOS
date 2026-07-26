@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import {
   Alert,
   Linking,
@@ -14,6 +14,7 @@ import { useRouter } from "expo-router"
 import { BlurView } from "expo-blur"
 import Svg, { Circle, Path, Rect } from "react-native-svg"
 import { useAuthStore } from "@/store/auth"
+import { isBiometricUnlockEnabled, setBiometricUnlockEnabled } from "@/lib/session"
 import { useProfile, getInitials, formatRole, formatMemberSince } from "@/hooks/useProfile"
 import { colors, radius } from "@/tokens"
 
@@ -354,6 +355,17 @@ export default function ProfileScreen() {
   // identity while retaining legally-required employment/payroll history.
   const [isDeleting, setIsDeleting] = useState(false)
 
+  // Real biometric-unlock preference (was a hardcoded switch that did nothing).
+  const [biometricUnlock, setBiometricUnlock] = useState(true)
+  useEffect(() => {
+    void isBiometricUnlockEnabled().then(setBiometricUnlock)
+  }, [])
+
+  async function toggleBiometricUnlock(next: boolean) {
+    setBiometricUnlock(next)
+    await setBiometricUnlockEnabled(next)
+  }
+
   async function performDelete() {
     setIsDeleting(true)
     try {
@@ -496,8 +508,8 @@ export default function ProfileScreen() {
             chevron={false}
             rightElement={
               <Switch
-                value={true}
-                onValueChange={() => {}}
+                value={biometricUnlock}
+                onValueChange={(v) => void toggleBiometricUnlock(v)}
                 trackColor={{ false: "rgba(255,255,255,0.12)", true: "rgba(52,211,153,0.45)" }}
                 thumbColor={colors.green}
                 ios_backgroundColor="rgba(255,255,255,0.12)"
@@ -523,7 +535,7 @@ export default function ProfileScreen() {
           <SettingsRow
             icon={<InfoIcon />}
             title="App Version"
-            subtitle="1.0.0 (build 42)"
+            subtitle="1.0.0"
             chevron={false}
             last
           />

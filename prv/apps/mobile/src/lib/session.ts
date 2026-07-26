@@ -4,6 +4,7 @@ const KEY_TOKEN = "prv_token"
 const KEY_USER_ID = "prv_user_id"
 const KEY_ROLE = "prv_role"
 const KEY_COMPANY_ID = "prv_company_id"
+const KEY_BIOMETRIC = "prv_biometric_unlock"
 
 export interface StoredSession {
   token: string
@@ -39,4 +40,18 @@ export async function clearSession(): Promise<void> {
     SecureStore.deleteItemAsync(KEY_ROLE),
     SecureStore.deleteItemAsync(KEY_COMPANY_ID),
   ])
+}
+
+// ── Biometric unlock preference ──────────────────────────────────────────────
+// Whether the user wants Face ID / fingerprint offered to unlock the stored
+// session on this device. Defaults to enabled; biometrics still only ever
+// unlock an existing session, never authenticate on their own.
+
+export async function isBiometricUnlockEnabled(): Promise<boolean> {
+  const v = await SecureStore.getItemAsync(KEY_BIOMETRIC)
+  return v !== "false"
+}
+
+export async function setBiometricUnlockEnabled(enabled: boolean): Promise<void> {
+  await SecureStore.setItemAsync(KEY_BIOMETRIC, enabled ? "true" : "false")
 }

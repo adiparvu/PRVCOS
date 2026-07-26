@@ -66,3 +66,27 @@ files, so `drizzle-kit migrate` would silently apply a fraction of them. Prefer
 `migrations/sql/` (3 files) predates the Drizzle set and is no longer wired to
 any command. It is kept for history. Applying it and the canonical set to the
 same database is not supported.
+
+## Creating a login-able account
+
+Seeding writes rows into the application `users` table, but sign-in goes through
+**Supabase Auth** (`auth.users`). A row in one without an account in the other
+cannot log in — so a freshly provisioned database has no usable credentials, and
+`db:seed` refuses to run with `NODE_ENV=production` anyway.
+
+```bash
+pnpm --filter @prv/db db:provision:user <email> <password> [--create-app-row]
+```
+
+It creates (or reuses, resetting the password) the Supabase Auth account and
+links it to the application row via `users.supabase_id`. Requires `SUPABASE_URL`,
+`SUPABASE_SERVICE_ROLE_KEY` and `DATABASE_DIRECT_URL`. Use it to bootstrap the
+first administrator, and to create the demo account App Store review requires —
+never to hand a shared password to real users.
+
+## Fresh environment, end to end
+
+```bash
+pnpm --filter @prv/db db:provision                      # extensions + full schema
+pnpm --filter @prv/db db:provision:user admin@example.com '<strong-password>' --create-app-row
+```

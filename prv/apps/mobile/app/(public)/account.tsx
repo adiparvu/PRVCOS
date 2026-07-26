@@ -1,4 +1,4 @@
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native"
+import { Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { useRouter } from "expo-router"
 import { GlassCard } from "@/components/Glass"
@@ -35,7 +35,12 @@ const MENU_SECTIONS = [
     items: [
       { icon: "⌕", label: "Help Center", value: null },
       { icon: "◌", label: "Contact Us", value: null },
-      { icon: "⬛", label: "Privacy Policy", value: null },
+      {
+        icon: "⬛",
+        label: "Privacy Policy",
+        value: null,
+        href: "https://prvrenovations.ro/privacy",
+      },
     ],
   },
 ]
@@ -51,6 +56,9 @@ function MenuSection({ section }: { section: (typeof MENU_SECTIONS)[number] }) {
             key={item.label}
             style={[styles.menuRow, i < section.items.length - 1 && styles.menuRowBorder]}
             activeOpacity={0.7}
+            onPress={() => {
+              if ("href" in item && item.href) void Linking.openURL(item.href)
+            }}
           >
             <View style={styles.menuRowLeft}>
               <View style={styles.menuIcon}>

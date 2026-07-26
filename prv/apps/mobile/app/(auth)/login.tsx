@@ -16,7 +16,7 @@ import * as LocalAuthentication from "expo-local-authentication"
 import { useRouter } from "expo-router"
 import { PRVMark } from "@/components/PRVMark"
 import { useAuthStore } from "@/store/auth"
-import { getSession } from "@/lib/session"
+import { getSession, isBiometricUnlockEnabled } from "@/lib/session"
 import { colors, radius, spacing, type } from "@/tokens"
 
 export default function LoginScreen() {
@@ -35,11 +35,12 @@ export default function LoginScreen() {
   // present.
   useEffect(() => {
     async function probe() {
-      const [hasHardware, stored] = await Promise.all([
+      const [hasHardware, stored, prefEnabled] = await Promise.all([
         LocalAuthentication.hasHardwareAsync(),
         getSession(),
+        isBiometricUnlockEnabled(),
       ])
-      if (!hasHardware || !stored) return
+      if (!hasHardware || !stored || !prefEnabled) return
       const enrolled = await LocalAuthentication.isEnrolledAsync()
       setBiometricAvailable(enrolled)
     }
