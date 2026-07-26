@@ -10,6 +10,10 @@ export const serverEnvSchema = sharedSchema.extend({
   // Supabase
   DATABASE_URL: z.string().url().describe("Supabase PostgreSQL connection string (PgBouncer)"),
   DATABASE_DIRECT_URL: z.string().url().describe("Supabase direct connection (migrations only)"),
+  SUPABASE_URL: z
+    .string()
+    .url()
+    .describe("Supabase project URL (server side — used by the PDF-generation job)"),
   SUPABASE_SERVICE_ROLE_KEY: z
     .string()
     .min(1)

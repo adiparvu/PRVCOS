@@ -49,7 +49,9 @@ export async function rollbackLatestMigration(migrationsDir: string): Promise<vo
       return
     }
 
-    const downFile = join(migrationsDir, `${latest.version}_${latest.name}_down.sql`)
+    // `version` is the full migration tag (e.g. "0042_add_widgets"), so the
+    // companion down file is "<tag>_down.sql".
+    const downFile = join(migrationsDir, `${latest.version}_down.sql`)
 
     let downSql: string
     try {
@@ -78,7 +80,7 @@ export async function rollbackLatestMigration(migrationsDir: string): Promise<vo
 const isMain = process.argv[1]?.endsWith("rollback.ts") || process.argv[1]?.endsWith("rollback.js")
 
 if (isMain) {
-  const migrationsDir = join(__dirname, "..", "migrations", "sql")
+  const migrationsDir = join(__dirname, "..", "migrations")
   rollbackLatestMigration(migrationsDir)
     .then(() => process.exit(0))
     .catch((err) => {

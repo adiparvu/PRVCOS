@@ -18,6 +18,8 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:migrate:run": "tsx src/migrate.ts",
+    "db:extensions": "psql \"$DATABASE_DIRECT_URL\" -v ON_ERROR_STOP=1 -f ./migrations/extensions.sql",
+    "db:provision": "pnpm db:extensions && drizzle-kit push --force",
     "db:rollback": "tsx src/rollback.ts",
     "db:seed": "tsx src/seed.ts",
     "test": "vitest run",

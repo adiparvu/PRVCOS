@@ -150,7 +150,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Run database migrations
-        run: pnpm --filter @prv/db db:migrate:run
+        run: pnpm --filter @prv/db db:migrate:run migrations/sql
 
       - name: Test
         run: pnpm test
