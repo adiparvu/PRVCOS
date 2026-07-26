@@ -22,7 +22,7 @@ PRV COS is a **large, coherent, unusually disciplined codebase** (~345k lines of
 **Top 5 risks**
 1. **Tenant isolation is single-layered.** RLS is enabled on 5 of 179 tables; isolation rests entirely on application code filtering by `companyId` under a service-role connection. One missed `where` clause = cross-tenant leak. (High)
 2. **No integration or E2E tests.** All 2,206 tests mock `@prv/db` entirely; zero tests execute real SQL; zero Playwright specs. The 18-failed-migrations incident is exactly the class of bug this leaves invisible. (High)
-3. **Rate limiting covers 3 routes** (public endpoints). Login has lockout, but 400+ authenticated routes have no throttle. (Medium-High)
+3. **Rate limiting had a two-wrapper gap.** ~~Original finding "only 3 routes are limited" was WRONG~~ — measurement error: the edge middleware limits every request per IP, and Gate 7 of the gate chain limits per user on all `withGates` routes. The real gap was the mobile (60 routes) and portal (12 routes) wrappers, which had no per-user limit. **Closed in `abfcb9b`.** (was Medium-High → now Low)
 4. **Nothing has ever been deployed.** No staging, no production, no load data point. All performance statements below are static analysis. (Blocker for readiness, not a code defect)
 5. **CSRF posture is `SameSite=lax` only** — no origin/referer check in `middleware.ts` or `with-gates.ts` for state-changing requests. (Medium)
 
@@ -89,7 +89,7 @@ Status scale: **Complete / Mostly Complete / Partial / Missing.** Completion % i
 | Indexes | **Strong** | 389 index/uniqueIndex declarations; FK columns and tenant keys covered in samples inspected |
 | Foreign keys | **Strong** | 457 `references()`; self-FK guards added at app layer (self-manager, self-dependency) |
 | Migrations | **Fixed, watch** | Canonical path is `db:provision` (extensions + drizzle-kit push). Legacy SQL set kept for CI history. Runner now keys by full tag, detects checksum drift, refuses legacy DBs. Residual risk: drizzle-kit push has no rollback story — acceptable pre-launch, needs generated migrations post-launch. |
-| RLS | **Weak — headline finding** | `ENABLE ROW LEVEL SECURITY` appears on **5 tables** (migration 0004). The remaining 174 rely on app-layer scoping under a service-role connection. |
+| RLS | **Closed** (`0f3bec1`) | Was: enabled on 5 of 179 tables. `db:provision` now ends with `db:rls` (rls-lockdown.sql): RLS on every table + company_isolation policy on every company_id table. Verified by execution: anon default-deny, tenant-scoped SELECT under `SET LOCAL app.company_id`. |
 | Normalization | **Good** | 3NF with deliberate denormalized counters; no EAV abuse |
 | Query efficiency | **Good (static)** | Paginated lists, `limit(1)` existence checks, no N+1 patterns in sampled routes. Unverified under load — no production EXPLAIN data exists. |
 | Dead columns | **Documented** | `nationalId`, `bankIban`, `secretEncrypted` are dead, never-written columns; comments now warn no encryption helper exists. Either implement app-layer encryption before first write, or drop them. |
@@ -104,7 +104,7 @@ Status scale: **Complete / Mostly Complete / Partial / Missing.** Completion % i
 - **Caching:** Redis wrapper exists (`packages/cache`: query cache, pub/sub, realtime events, rate-limit); permission sets cached 30s. Response-level caching absent — fine pre-launch.
 - **Background jobs:** 40 Inngest functions (crons for overdue/expiry/retention/escalation + event-driven notifications). Signing key validated via `packages/env`.
 - **Error handling:** consistent JSON error envelopes with `code`; Sentry wired via `instrumentation.ts` + `error.tsx`.
-- **Weaknesses:** (1) rate limiting on only 3 routes; (2) no request-ID correlation between audit log and Sentry; (3) `writeAuditLog` is fire-and-forget void — an audit write failure is silent (deliberate availability trade-off; should at least count failures in Sentry).
+- **Weaknesses:** (1) ~~rate limiting on only 3 routes~~ corrected: per-IP at edge + per-user in Gate 7 existed; mobile/portal wrapper gap closed in `abfcb9b`; (2) no request-ID correlation between audit log and Sentry; (3) `writeAuditLog` is fire-and-forget void — an audit write failure is silent (deliberate availability trade-off; should at least count failures in Sentry).
 
 ## 6. Frontend Review (web)
 
@@ -126,8 +126,8 @@ Status scale: **Complete / Mostly Complete / Partial / Missing.** Completion % i
 | Finding | Severity | Detail |
 |---|---|---|
 | RLS absent on 174/179 tables | **High** | Single-layer tenant isolation under service-role connection. One unscoped query = cross-tenant read. A leak of exactly this class already occurred (public products endpoint, fixed in `0d91cb1`). |
-| No CSRF origin verification | **Medium** | Cookies are `SameSite=lax`; JSON APIs reduce exposure, but no Origin/Referer check on state-changing requests and no CSRF token. Lax + top-level GET nav means low practical risk today; add origin check cheaply. |
-| Rate limiting: 3 routes | **Medium-High** | Public endpoints only. Auth has lockout (1h unlock tokens) which covers brute-force, but authenticated mutation flooding and enumeration are unthrottled. |
+| CSRF origin verification | **Closed** (`f268fe1`) | Middleware rejects state-changing /api requests whose Origin matches neither the request host nor ALLOWED_ORIGINS; native clients without Origin unaffected; "null" origin rejected. |
+| Rate limiting gap on mobile/portal wrappers | **Closed** (`abfcb9b`) | Corrected finding: edge middleware limits per IP globally and Gate 7 limits per user on withGates routes; the gap was withMobileAuth/withPortalAuth only. Both now mirror Gate 7 (api_read/api_write per user+path). |
 | Audit-write failures are silent | **Medium** | void-fired by design; failures should be counted/alerted or the immutability guarantee is unverifiable in practice. |
 | Dead "encrypted" columns | **Medium** | `secretEncrypted`/`bankIban`/`nationalId` — no encryption exists; now documented. Do not write to them until a KMS-backed helper exists. |
 | Secrets | **Low** | `packages/env` validates at boot; no secrets in repo (CI uses labeled stubs); `.env` gitignored. |
@@ -286,3 +286,17 @@ Compressed to the decision-relevant deltas. "✅ matched" = feature exists and w
 **Why 72 and not lower:** the hard, expensive things are done and done consistently — 179-table schema with referential discipline, a uniformly applied zero-trust gate on 100% of business routes, a real hash-chained audit log, 2,206 green tests, and a mobile app that is one ops checklist away from TestFlight. The remaining work is well-understood engineering with known solutions, not research.
 
 *This document supersedes no roadmap and changes no code. Re-run the measurement commands embedded in §2–§11 to re-verify any figure.*
+
+---
+
+## 18. Remediation log (post-audit)
+
+The audit is a point-in-time document at `3ebe21d`. Work completed since:
+
+| Audit item | Commit | What changed |
+|---|---|---|
+| P0.2 / D1 / R1 — RLS second layer | `0f3bec1` | `db:provision` now ends with `db:rls`: RLS enabled on every table, `company_isolation` policy on every `company_id` table. Verified by execution (anon default-deny; tenant-scoped under `SET LOCAL app.company_id`; idempotent). |
+| P0.3 / D4 / R4 — rate limiting | `abfcb9b` | Finding corrected (see §1/§8) — real gap was mobile/portal wrappers; both now enforce per-user api_read/api_write limits with 429 + Retry-After. |
+| P0.4 — CSRF origin check | `f268fe1` | Middleware rejects cross-origin state-changing /api requests; native clients unaffected. |
+
+P0.1 (staging deploy) remains ops work outside the repository.

@@ -24,7 +24,7 @@ PRV COS este un **codebase mare, coerent și neobișnuit de disciplinat** (~345k
 **Top 5 riscuri**
 1. **Izolarea tenantului este într-un singur strat.** RLS este activat pe 5 din 179 tabele; izolarea se sprijină în întregime pe filtrarea `companyId` din codul aplicației, sub o conexiune service-role. Un singur `where` uitat = scurgere cross-tenant. (Ridicat)
 2. **Zero teste de integrare sau E2E.** Toate cele 2.206 teste mock-uiesc integral `@prv/db`; niciun test nu execută SQL real; zero specificații Playwright. Incidentul celor 18 migrații eșuate este exact clasa de bug pe care această lipsă o lasă invizibilă. (Ridicat)
-3. **Rate limiting acoperă 3 rute** (endpoint-urile publice). Login-ul are lockout, dar peste 400 de rute autentificate nu au niciun throttle. (Mediu-Ridicat)
+3. **Rate limiting-ul avea un gol pe două wrapper-e.** ~~Constatarea inițială „doar 3 rute sunt limitate" a fost GREȘITĂ~~ — eroare de măsurare: middleware-ul de edge limitează fiecare request per IP, iar Gate 7 din lanțul de porți limitează per utilizator pe toate rutele `withGates`. Golul real era la wrapper-ele mobile (60 rute) și portal (12 rute), fără limită per utilizator. **Închis în `abfcb9b`.** (era Mediu-Ridicat → acum Scăzut)
 4. **Nimic nu a fost vreodată deployat.** Fără staging, fără producție, fără niciun punct de date sub sarcină. Toate afirmațiile de performanță de mai jos sunt analiză statică. (Blocant pentru readiness, nu defect de cod)
 5. **Postura CSRF este doar `SameSite=lax`** — nicio verificare de Origin/Referer în `middleware.ts` sau `with-gates.ts` pentru request-urile care modifică stare. (Mediu)
 
@@ -91,7 +91,7 @@ Scala de status: **Complet / Aproape complet / Parțial / Lipsă.** Procentul de
 | Indexuri | **Puternice** | 389 declarații index/uniqueIndex; coloanele FK și cheile de tenant acoperite în eșantioanele inspectate |
 | Chei străine | **Puternice** | 457 `references()`; guard-uri self-FK adăugate la nivel de aplicație (self-manager, self-dependency) |
 | Migrații | **Reparate, de urmărit** | Calea canonică este `db:provision` (extensii + drizzle-kit push). Setul SQL legacy păstrat pentru istoricul CI. Runner-ul cheie acum după tag-ul complet, detectează drift de checksum, refuză baze legacy. Risc rezidual: drizzle-kit push nu are poveste de rollback — acceptabil pre-lansare, are nevoie de migrații generate post-lansare. |
-| RLS | **Slab — constatarea principală** | `ENABLE ROW LEVEL SECURITY` apare pe **5 tabele** (migrația 0004). Restul de 174 se bazează pe filtrarea din aplicație sub o conexiune service-role. |
+| RLS | **Închis** (`0f3bec1`) | Era: activat pe 5 din 179 tabele. `db:provision` se încheie acum cu `db:rls` (rls-lockdown.sql): RLS pe fiecare tabel + politică company_isolation pe fiecare tabel cu company_id. Verificat prin execuție: anon deny implicit, SELECT scopat pe tenant sub `SET LOCAL app.company_id`. |
 | Normalizare | **Bună** | 3NF cu contoare denormalizate deliberat; fără abuz de EAV |
 | Eficiența query-urilor | **Bună (static)** | Liste paginate, verificări de existență cu `limit(1)`, fără tipare N+1 în rutele eșantionate. Neverificat sub sarcină — nu există date EXPLAIN de producție. |
 | Coloane moarte | **Documentate** | `nationalId`, `bankIban`, `secretEncrypted` sunt coloane moarte, niciodată scrise; comentariile avertizează acum că nu există niciun helper de criptare. Fie se implementează criptare la nivel de aplicație înainte de prima scriere, fie se elimină. |
@@ -106,7 +106,7 @@ Scala de status: **Complet / Aproape complet / Parțial / Lipsă.** Procentul de
 - **Caching:** wrapper Redis există (`packages/cache`: query cache, pub/sub, evenimente realtime, rate-limit); seturile de permisiuni cache-uite 30s. Caching la nivel de răspuns absent — acceptabil pre-lansare.
 - **Job-uri de fundal:** 40 de funcții Inngest (cron-uri pentru restanțe/expirări/retenție/escaladare + notificări declanșate de evenimente). Cheia de semnare validată prin `packages/env`.
 - **Tratarea erorilor:** plicuri de eroare JSON consistente cu `code`; Sentry cablat prin `instrumentation.ts` + `error.tsx`.
-- **Slăbiciuni:** (1) rate limiting pe doar 3 rute; (2) fără corelare request-ID între jurnalul de audit și Sentry; (3) `writeAuditLog` este fire-and-forget void — un eșec de scriere în audit e silențios (compromis deliberat pentru disponibilitate; ar trebui măcar numărat în Sentry).
+- **Slăbiciuni:** (1) ~~rate limiting pe doar 3 rute~~ corectat: per-IP la edge + per-utilizator în Gate 7 existau; golul wrapper-elor mobile/portal închis în `abfcb9b`; (2) fără corelare request-ID între jurnalul de audit și Sentry; (3) `writeAuditLog` este fire-and-forget void — un eșec de scriere în audit e silențios (compromis deliberat pentru disponibilitate; ar trebui măcar numărat în Sentry).
 
 ## 6. Analiza frontend-ului (web)
 
@@ -128,8 +128,8 @@ Scala de status: **Complet / Aproape complet / Parțial / Lipsă.** Procentul de
 | Constatare | Severitate | Detaliu |
 |---|---|---|
 | RLS absent pe 174/179 tabele | **Ridicat** | Izolare de tenant într-un singur strat sub conexiune service-role. Un query nescopat = citire cross-tenant. O scurgere exact din această clasă s-a produs deja (endpoint-ul public de produse, reparat în `0d91cb1`). |
-| Fără verificare de origine CSRF | **Mediu** | Cookie-urile sunt `SameSite=lax`; API-urile JSON reduc expunerea, dar nu există verificare Origin/Referer pe request-urile mutante și niciun token CSRF. Lax + navigare GET top-level înseamnă risc practic mic azi; verificarea de origine se adaugă ieftin. |
-| Rate limiting: 3 rute | **Mediu-Ridicat** | Doar endpoint-urile publice. Auth are lockout (token-uri de deblocare de 1h) care acoperă brute-force, dar inundarea cu mutații autentificate și enumerarea sunt nelimitate. |
+| Verificare de origine CSRF | **Închis** (`f268fe1`) | Middleware-ul respinge request-urile mutante /api al căror Origin nu corespunde nici host-ului, nici ALLOWED_ORIGINS; clienții nativi fără Origin neafectați; originea „null" respinsă. |
+| Gol de rate limiting pe wrapper-ele mobile/portal | **Închis** (`abfcb9b`) | Constatare corectată: edge-ul limitează per IP global și Gate 7 per utilizator pe rutele withGates; golul era doar withMobileAuth/withPortalAuth. Ambele oglindesc acum Gate 7 (api_read/api_write per utilizator+cale). |
 | Eșecurile de scriere în audit sunt silențioase | **Mediu** | void prin design; eșecurile ar trebui numărate/alertate, altfel garanția de imutabilitate e neverificabilă în practică. |
 | Coloane „criptate" moarte | **Mediu** | `secretEncrypted`/`bankIban`/`nationalId` — nu există criptare; acum documentat. Nu scrieți în ele până nu există un helper pe KMS. |
 | Secrete | **Scăzut** | `packages/env` validează la boot; fără secrete în repo (CI folosește stub-uri etichetate); `.env` în gitignore. |
@@ -290,3 +290,17 @@ Comprimat la diferențele relevante pentru decizii. „✅ egalat" = funcțional
 **De ce 72 și nu mai puțin:** lucrurile grele și scumpe sunt făcute și făcute consistent — o schemă de 179 tabele cu disciplină referențială, o poartă zero-trust aplicată uniform pe 100% din rutele de business, un jurnal de audit real înlănțuit criptografic, 2.206 teste verzi și o aplicație mobilă aflată la o listă de pași de ops distanță de TestFlight. Munca rămasă este inginerie bine înțeleasă, cu soluții cunoscute — nu cercetare.
 
 *Acest document nu înlocuiește niciun roadmap și nu schimbă niciun cod. Rulați din nou comenzile de măsurare din §2–§11 pentru a re-verifica orice cifră.*
+
+---
+
+## 18. Jurnal de remediere (post-audit)
+
+Auditul este un instantaneu la `3ebe21d`. Lucrări finalizate de atunci:
+
+| Element din audit | Commit | Ce s-a schimbat |
+|---|---|---|
+| P0.2 / D1 / R1 — al doilea strat RLS | `0f3bec1` | `db:provision` se încheie acum cu `db:rls`: RLS activat pe fiecare tabel, politică `company_isolation` pe fiecare tabel cu `company_id`. Verificat prin execuție (anon deny implicit; scopat pe tenant sub `SET LOCAL app.company_id`; idempotent). |
+| P0.3 / D4 / R4 — rate limiting | `abfcb9b` | Constatare corectată (vezi §1/§8) — golul real era la wrapper-ele mobile/portal; ambele impun acum limite per utilizator api_read/api_write cu 429 + Retry-After. |
+| P0.4 — verificare Origin CSRF | `f268fe1` | Middleware-ul respinge request-urile mutante /api cross-origin; clienții nativi neafectați. |
+
+P0.1 (deploy de staging) rămâne muncă de ops, în afara repository-ului.
