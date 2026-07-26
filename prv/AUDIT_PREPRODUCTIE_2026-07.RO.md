@@ -302,5 +302,10 @@ Auditul este un instantaneu la `3ebe21d`. Lucrări finalizate de atunci:
 | P0.2 / D1 / R1 — al doilea strat RLS | `0f3bec1` | `db:provision` se încheie acum cu `db:rls`: RLS activat pe fiecare tabel, politică `company_isolation` pe fiecare tabel cu `company_id`. Verificat prin execuție (anon deny implicit; scopat pe tenant sub `SET LOCAL app.company_id`; idempotent). |
 | P0.3 / D4 / R4 — rate limiting | `abfcb9b` | Constatare corectată (vezi §1/§8) — golul real era la wrapper-ele mobile/portal; ambele impun acum limite per utilizator api_read/api_write cu 429 + Retry-After. |
 | P0.4 — verificare Origin CSRF | `f268fe1` | Middleware-ul respinge request-urile mutante /api cross-origin; clienții nativi neafectați. |
+| P1.6 / R5 — verificarea lanțului | `c936ddd` | Cron zilnic re-derivă lanțul fiecărei companii (eveniment critic `audit_chain_broken` la rupere); eșecurile writeAuditLog sunt numărate în Redis și descărcate într-un eveniment `audit_write_failure` de severitate ridicată. |
+| D5 — duplicarea CSP | `a10dc7a` | next.config.ts e unica sursă de headere de securitate; copia divergentă din middleware eliminată. |
+| D6 — coloane sensibile moarte | `a10dc7a` | national_id, bank_iban, secret_encrypted eliminate; re-adăugarea cere mai întâi criptare pe KMS. |
+| D8 — teste instabile în paralel | `a10dc7a` | testTimeout/hookTimeout 30s acoperă înfometarea de scheduling sub sarcina paralelă turbo. |
+| P1.5 / R2 — teste de integrare | `a0f1bf1` | Primele suite pe Postgres real: aserțiuni de izolare cross-tenant + detecție de falsificare a lanțului de audit, rulate în CI pe pgvector/pgvector:pg16 cu provizionarea schemei complete. |
 
 P0.1 (deploy de staging) rămâne muncă de ops, în afara repository-ului.

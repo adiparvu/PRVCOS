@@ -298,5 +298,10 @@ The audit is a point-in-time document at `3ebe21d`. Work completed since:
 | P0.2 / D1 / R1 — RLS second layer | `0f3bec1` | `db:provision` now ends with `db:rls`: RLS enabled on every table, `company_isolation` policy on every `company_id` table. Verified by execution (anon default-deny; tenant-scoped under `SET LOCAL app.company_id`; idempotent). |
 | P0.3 / D4 / R4 — rate limiting | `abfcb9b` | Finding corrected (see §1/§8) — real gap was mobile/portal wrappers; both now enforce per-user api_read/api_write limits with 429 + Retry-After. |
 | P0.4 — CSRF origin check | `f268fe1` | Middleware rejects cross-origin state-changing /api requests; native clients unaffected. |
+| P1.6 / R5 — chain verification | `c936ddd` | Daily cron re-derives every company's chain (critical `audit_chain_broken` event on break); writeAuditLog failures now counted in Redis and drained into a high `audit_write_failure` event. |
+| D5 — CSP duplication | `a10dc7a` | next.config.ts is the single source of security headers; the divergent middleware copy removed. |
+| D6 — dead sensitive columns | `a10dc7a` | national_id, bank_iban, secret_encrypted dropped; re-adding requires KMS-backed encryption first. |
+| D8 — flaky parallel tests | `a10dc7a` | testTimeout/hookTimeout 30s covers scheduling starvation under turbo's parallel load. |
+| P1.5 / R2 — integration tests | `a0f1bf1` | First real-Postgres suites: cross-tenant isolation assertions + audit-chain tamper detection, run in CI against pgvector/pgvector:pg16 with full-schema provisioning. |
 
 P0.1 (staging deploy) remains ops work outside the repository.
