@@ -12,6 +12,7 @@ const GROUP_LABEL: Record<string, string> = {
   finance: "Finanțe",
   operations: "Operațiuni",
   security: "Securitate",
+  safety: "Siguranță",
 }
 
 function triggerMeta(key: string) {

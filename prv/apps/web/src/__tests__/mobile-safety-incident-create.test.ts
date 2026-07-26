@@ -10,6 +10,11 @@ vi.mock("@prv/auth", () => ({
   writeAuditLog: (...a: unknown[]) => auditMock(...a),
 }))
 
+const criticalAlertMock = vi.fn().mockResolvedValue(true)
+vi.mock("@/lib/critical-incident-alert", () => ({
+  raiseCriticalIncidentAlert: (...a: unknown[]) => criticalAlertMock(...a),
+}))
+
 const insertedRows: unknown[] = []
 const valuesMock = vi.fn()
 const mockDb = {
@@ -98,6 +103,23 @@ describe("POST /api/mobile/safety/incidents", () => {
 
   it("accepts a past incidentAt — an offline report replayed hours later", async () => {
     const res = await post({ ...VALID, incidentAt: "2026-07-25T19:00:00.000Z" })
+    expect(res.status).toBe(201)
+  })
+
+  it("raises the routed critical alert only for critical severity", async () => {
+    await post(VALID) // severity "high"
+    expect(criticalAlertMock).not.toHaveBeenCalled()
+
+    const res = await post({ ...VALID, severity: "critical" })
+    expect(res.status).toBe(201)
+    const arg = criticalAlertMock.mock.calls[0]![0] as Record<string, unknown>
+    expect(arg["incidentId"]).toBe("inc-1")
+    expect(arg["reporterId"]).toBe("user-1")
+  })
+
+  it("still answers 201 when the critical alert producer throws (fail-open)", async () => {
+    criticalAlertMock.mockRejectedValueOnce(new Error("redis down"))
+    const res = await post({ ...VALID, severity: "critical" })
     expect(res.status).toBe(201)
   })
 

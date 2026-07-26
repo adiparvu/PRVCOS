@@ -9,7 +9,7 @@
 export interface CriticalTrigger {
   key: string
   label: string
-  group: "finance" | "operations" | "security"
+  group: "finance" | "operations" | "security" | "safety"
 }
 
 // The curated set of routable critical triggers (roadmap 14.5). Triggers whose
@@ -23,6 +23,9 @@ export const CRITICAL_TRIGGERS: CriticalTrigger[] = [
   { key: "ops.system_outage", label: "Indisponibilitate sistem", group: "operations" },
   { key: "security.suspicious_login", label: "Autentificare suspectă", group: "security" },
   { key: "security.breach", label: "Breșă de securitate", group: "security" },
+  // A freshly REPORTED critical incident has no assignee yet, so unlike the
+  // assignment alert (recipient intrinsic) it must be routed explicitly.
+  { key: "safety.incident_critical", label: "Incident critic raportat", group: "safety" },
 ]
 
 const TRIGGER_KEYS = new Set(CRITICAL_TRIGGERS.map((t) => t.key))

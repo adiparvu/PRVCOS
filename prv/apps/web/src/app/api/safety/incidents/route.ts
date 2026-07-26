@@ -1,4 +1,5 @@
 import { withGates } from "@/lib/with-gates"
+import { raiseCriticalIncidentAlert } from "@/lib/critical-incident-alert"
 import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
 import { writeAuditLog } from "@prv/auth"
@@ -193,6 +194,22 @@ export const POST = withGates(
       .returning({ id: safetyIncidents.id, title: safetyIncidents.title })
 
     if (!record) return NextResponse.json({ error: "Insert failed" }, { status: 500 })
+
+    // Routed critical alert on creation (fail-open — the incident is already
+    // committed; a notification hiccup must not fail the request).
+    if (d.severity === "critical") {
+      try {
+        await raiseCriticalIncidentAlert({
+          companyId,
+          incidentId: record.id,
+          title: d.title,
+          location: d.location ?? null,
+          reporterId: userId,
+        })
+      } catch (err) {
+        console.error("[safety.incidents] critical alert failed:", err)
+      }
+    }
 
     void writeAuditLog({
       companyId,

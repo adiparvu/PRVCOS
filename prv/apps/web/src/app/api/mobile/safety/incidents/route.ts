@@ -3,6 +3,7 @@ import { db } from "@prv/db"
 import { safetyIncidents } from "@prv/db/schema"
 import { writeAuditLog } from "@prv/auth"
 import { withMobileAuth } from "@/lib/mobile/auth"
+import { raiseCriticalIncidentAlert } from "@/lib/critical-incident-alert"
 import { z } from "zod"
 
 export const dynamic = "force-dynamic"
@@ -71,6 +72,23 @@ export const POST = withMobileAuth(async (req: NextRequest, ctx) => {
     .returning({ id: safetyIncidents.id, title: safetyIncidents.title })
 
   if (!record) return NextResponse.json({ error: "Insert failed" }, { status: 500 })
+
+  // Routed critical alert on creation (fail-open — the incident is already
+  // committed; a notification hiccup returning 500 would make the offline
+  // queue replay this report and file it twice).
+  if (d.severity === "critical") {
+    try {
+      await raiseCriticalIncidentAlert({
+        companyId: ctx.companyId,
+        incidentId: record.id,
+        title: d.title,
+        location: d.location ?? null,
+        reporterId: ctx.userId,
+      })
+    } catch (err) {
+      console.error("[mobile.safety.incidents] critical alert failed:", err)
+    }
+  }
 
   void writeAuditLog({
     companyId: ctx.companyId,
