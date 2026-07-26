@@ -6,12 +6,11 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": [
-    "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
-    ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts"
-  ],
-  "exclude": ["node_modules"]
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],
+  // .next generated route validators are deliberately NOT typechecked here:
+  // running the E2E suite regenerates them against whichever pnpm-keyed next
+  // instance the dev server resolved, and a peer-hash mismatch (e.g. after
+  // installing @playwright/test, an optional peer of next) fails `tsc` on
+  // generated code. `next build` still validates routes with its own types.
+  "exclude": ["node_modules", ".next"]
 }

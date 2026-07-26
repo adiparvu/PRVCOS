@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/lib/api"
+import { mutateOrQueue } from "@/lib/offline-queue"
 
 export interface TaskDetail {
   task: {
@@ -32,11 +33,24 @@ export function useTaskDetail(taskId: string) {
 export function useToggleTask(taskId: string) {
   const qc = useQueryClient()
   return useMutation({
+    // Offline-safe (P2.10): with no signal on a job site, the toggle is
+    // queued durably and replayed on reconnect instead of being lost.
     mutationFn: (isComplete: boolean) =>
-      api.patch<{ id: string; isComplete: boolean }>(`/api/mobile/tasks/${taskId}`, {
-        isComplete,
+      mutateOrQueue<{ id: string; isComplete: boolean }>({
+        path: `/api/mobile/tasks/${taskId}`,
+        method: "PATCH",
+        body: { isComplete },
+        label: isComplete ? "Complete task" : "Reopen task",
       }),
-    onSuccess: () => {
+    onSuccess: (result, isComplete) => {
+      if (result.queued) {
+        // No server truth yet — reflect the intent locally so the UI (and the
+        // persisted cache) match what will be replayed.
+        qc.setQueryData<TaskDetail>(["task-detail", taskId], (old) =>
+          old ? { ...old, isComplete } : old
+        )
+        return
+      }
       void qc.invalidateQueries({ queryKey: ["task-detail", taskId] })
       void qc.invalidateQueries({ queryKey: ["operations"] })
     },

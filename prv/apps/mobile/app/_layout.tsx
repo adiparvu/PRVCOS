@@ -1,20 +1,48 @@
 import { useEffect } from "react"
 import { Stack, useRouter, useSegments } from "expo-router"
 import { StatusBar } from "expo-status-bar"
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { QueryClient, onlineManager } from "@tanstack/react-query"
+import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client"
+import { createAsyncStoragePersister } from "@tanstack/query-async-storage-persister"
+import AsyncStorage from "@react-native-async-storage/async-storage"
+import NetInfo from "@react-native-community/netinfo"
 import { useAuthStore } from "@/store/auth"
+import { flushQueue } from "@/lib/offline-queue"
 import { useCartStore } from "@/store/cart"
 import { useFavoritesStore } from "@/store/favorites"
 import { usePushNotifications } from "@/hooks/usePushNotifications"
 
+// Offline support (audit P2.10). Three pieces:
+// 1. onlineManager fed by NetInfo — React Query pauses refetches/mutations
+//    while the device is offline instead of burning retries.
+// 2. The query cache persists to AsyncStorage, so every screen renders its
+//    last-known data instantly on a job site with no signal (24h max age —
+//    stale business data older than a shift is worse than an empty state).
+// 3. The durable mutation queue (lib/offline-queue) flushes whenever
+//    connectivity returns.
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 30_000,
       retry: 2,
+      gcTime: 24 * 60 * 60 * 1000, // must be ≥ persister maxAge or restored queries are GC'd
     },
   },
 })
+
+const queryPersister = createAsyncStoragePersister({
+  storage: AsyncStorage,
+  key: "prv_query_cache",
+  throttleTime: 2_000,
+})
+
+onlineManager.setEventListener((setOnline) =>
+  NetInfo.addEventListener((state) => {
+    const online = !!state.isConnected
+    setOnline(online)
+    if (online) void flushQueue()
+  })
+)
 
 export default function RootLayout() {
   const { session, isHydrated, hydrate } = useAuthStore()
@@ -31,6 +59,7 @@ export default function RootLayout() {
     // are restored regardless of auth state.
     void hydrateCart()
     void hydrateFavorites()
+    void flushQueue()
   }, [])
 
   useEffect(() => {
@@ -65,9 +94,12 @@ export default function RootLayout() {
   }, [session, isHydrated, segments])
 
   return (
-    <QueryClientProvider client={queryClient}>
+    <PersistQueryClientProvider
+      client={queryClient}
+      persistOptions={{ persister: queryPersister, maxAge: 24 * 60 * 60 * 1000 }}
+    >
       <StatusBar style="light" />
       <Stack screenOptions={{ headerShown: false, animation: "fade" }} />
-    </QueryClientProvider>
+    </PersistQueryClientProvider>
   )
 }
