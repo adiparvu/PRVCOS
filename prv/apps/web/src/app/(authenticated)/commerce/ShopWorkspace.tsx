@@ -360,7 +360,7 @@ function CartSheet({
               <p style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.88)" }}>
                 {product.name}
               </p>
-              <p style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginTop: 2 }}>
+              <p style={{ fontSize: 11, color: "rgba(255,255,255,0.50)", marginTop: 2 }}>
                 {fmtPrice(product)}
               </p>
             </div>
@@ -1055,7 +1055,7 @@ export function ShopWorkspace() {
           <span
             style={{
               fontSize: 13,
-              color: "rgba(255,255,255,0.35)",
+              color: "rgba(255,255,255,0.50)",
               fontWeight: 500,
             }}
           >

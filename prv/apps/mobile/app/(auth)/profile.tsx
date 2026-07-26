@@ -713,7 +713,7 @@ const s = StyleSheet.create({
     color: "rgba(255,255,255,0.88)",
     letterSpacing: -0.2,
   },
-  rowSub: { fontSize: 12, color: "rgba(255,255,255,0.35)", marginTop: 2 },
+  rowSub: { fontSize: 12, color: "rgba(255,255,255,0.50)", marginTop: 2 },
   badge: { borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2, borderWidth: 1 },
   badgeRed: { backgroundColor: "rgba(255,59,48,0.12)", borderColor: "rgba(255,59,48,0.22)" },
   badgeAmber: { backgroundColor: "rgba(251,191,36,0.12)", borderColor: "rgba(251,191,36,0.22)" },

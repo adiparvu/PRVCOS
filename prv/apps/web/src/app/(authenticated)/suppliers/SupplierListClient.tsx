@@ -135,7 +135,7 @@ const STATUS_CONFIG: Record<
   },
   inactive: {
     label: "Inactive",
-    color: "rgba(255,255,255,0.35)",
+    color: "rgba(255,255,255,0.50)",
     bg: "rgba(255,255,255,0.07)",
     avatarBg: "rgba(255,255,255,0.06)",
     avatarBorder: "rgba(255,255,255,0.09)",
@@ -157,7 +157,7 @@ function Stars({ rating }: { rating: number }) {
           />
         </svg>
       ))}
-      <span style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", marginLeft: 4 }}>
+      <span style={{ fontSize: 10, color: "rgba(255,255,255,0.50)", marginLeft: 4 }}>
         {rating.toFixed(1)}
       </span>
     </div>
@@ -237,7 +237,7 @@ function SupplierRow({ supplier }: { supplier: SupplierSummary }) {
           <p
             style={{
               fontSize: 12,
-              color: "rgba(255,255,255,0.35)",
+              color: "rgba(255,255,255,0.50)",
               margin: "0 0 1px",
               overflow: "hidden",
               textOverflow: "ellipsis",
@@ -277,7 +277,7 @@ function SupplierRow({ supplier }: { supplier: SupplierSummary }) {
             {s.label}
           </span>
           {supplier.annualSpend > 0 && (
-            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", margin: 0 }}>
+            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.50)", margin: 0 }}>
               {fmtK(supplier.annualSpend)} / an
             </p>
           )}
@@ -400,7 +400,7 @@ export function SupplierListClient() {
           style={{
             fontSize: 11,
             fontWeight: 600,
-            color: "rgba(255,255,255,0.35)",
+            color: "rgba(255,255,255,0.50)",
             textTransform: "uppercase",
             letterSpacing: "0.08em",
             marginBottom: 4,
@@ -450,7 +450,7 @@ export function SupplierListClient() {
               style={{
                 fontSize: 10,
                 fontWeight: 600,
-                color: "rgba(255,255,255,0.35)",
+                color: "rgba(255,255,255,0.50)",
                 textTransform: "uppercase",
                 letterSpacing: "0.08em",
                 margin: "3px 0 0",
@@ -482,7 +482,7 @@ export function SupplierListClient() {
             <p style={{ fontSize: 13, fontWeight: 600, color: "#ff6b6b", margin: "0 0 2px" }}>
               {atRiskCount} supplier{atRiskCount > 1 ? "s require" : " requires"} attention
             </p>
-            <p style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", margin: 0 }}>
+            <p style={{ fontSize: 11, color: "rgba(255,255,255,0.50)", margin: 0 }}>
               Expired contract · delayed deliveries
             </p>
           </div>
@@ -575,7 +575,7 @@ export function SupplierListClient() {
             style={{
               padding: "40px 16px",
               textAlign: "center",
-              color: "rgba(255,255,255,0.35)",
+              color: "rgba(255,255,255,0.50)",
               fontSize: 14,
             }}
           >
@@ -586,7 +586,7 @@ export function SupplierListClient() {
             style={{
               padding: "40px 16px",
               textAlign: "center",
-              color: "rgba(255,255,255,0.35)",
+              color: "rgba(255,255,255,0.50)",
               fontSize: 14,
             }}
           >
@@ -608,7 +608,7 @@ export function SupplierListClient() {
             style={{
               fontSize: 11,
               fontWeight: 600,
-              color: "rgba(255,255,255,0.35)",
+              color: "rgba(255,255,255,0.50)",
               textTransform: "uppercase",
               letterSpacing: "0.08em",
               margin: "20px 4px 8px",
@@ -643,7 +643,7 @@ export function SupplierListClient() {
                 borderTop: "1px solid var(--prv-border-subtle)",
               }}
             >
-              <span style={{ fontSize: 13, color: "rgba(255,255,255,0.35)" }}>Total anual</span>
+              <span style={{ fontSize: 13, color: "rgba(255,255,255,0.50)" }}>Total anual</span>
               <span style={{ fontSize: 14, fontWeight: 700, color: "#5affa0" }}>
                 {fmtK(totalSpend)}
               </span>

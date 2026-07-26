@@ -508,7 +508,7 @@ export function WishlistClient() {
             style={{
               fontSize: 15,
               fontWeight: 600,
-              color: "rgba(255,255,255,0.35)",
+              color: "rgba(255,255,255,0.50)",
               marginBottom: 8,
             }}
           >
@@ -540,7 +540,7 @@ export function WishlistClient() {
             style={{
               fontSize: 11,
               fontWeight: 600,
-              color: "rgba(255,255,255,0.35)",
+              color: "rgba(255,255,255,0.50)",
               textTransform: "uppercase",
               letterSpacing: "0.06em",
               marginBottom: 10,

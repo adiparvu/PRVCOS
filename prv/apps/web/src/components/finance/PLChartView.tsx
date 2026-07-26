@@ -167,7 +167,7 @@ function PeriodDetail({ period, currency }: { period: PLPeriod; currency: string
               padding: "8px 10px",
             }}
           >
-            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginBottom: 2 }}>
+            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.50)", marginBottom: 2 }}>
               {item.label}
             </div>
             <div style={{ fontSize: 14, fontWeight: 600, color: item.color }}>

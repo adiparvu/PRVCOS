@@ -184,7 +184,7 @@ function activityIcon(type: LeadActivity["type"]) {
   if (type === "message") return { color: "rgba(255,159,10,0.90)", bg: "rgba(255,159,10,0.10)" }
   if (type === "stage_change")
     return { color: "rgba(255,255,255,0.80)", bg: "rgba(255,255,255,0.08)" }
-  return { color: "rgba(255,255,255,0.35)", bg: "rgba(255,255,255,0.06)" }
+  return { color: "rgba(255,255,255,0.50)", bg: "rgba(255,255,255,0.06)" }
 }
 
 function activityIconSvg(type: LeadActivity["type"]) {
@@ -288,7 +288,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
       style={{
         fontSize: 11,
         fontWeight: 700,
-        color: "rgba(255,255,255,0.35)",
+        color: "rgba(255,255,255,0.50)",
         textTransform: "uppercase",
         letterSpacing: "0.06em",
         marginBottom: 10,
@@ -832,7 +832,7 @@ export function LeadDetailClient({ id }: { id: string }) {
               style={{
                 fontSize: 9,
                 fontWeight: 700,
-                color: "rgba(255,255,255,0.35)",
+                color: "rgba(255,255,255,0.50)",
                 textTransform: "uppercase",
                 letterSpacing: ".06em",
                 marginBottom: 4,
@@ -856,7 +856,7 @@ export function LeadDetailClient({ id }: { id: string }) {
               style={{
                 fontSize: 9,
                 fontWeight: 700,
-                color: "rgba(255,255,255,0.35)",
+                color: "rgba(255,255,255,0.50)",
                 textTransform: "uppercase",
                 letterSpacing: ".06em",
                 marginBottom: 6,
@@ -913,7 +913,7 @@ export function LeadDetailClient({ id }: { id: string }) {
             <circle cx="12" cy="12" r="10" />
             <path d="M12 6v6l4 2" />
           </svg>
-          <span style={{ fontSize: 11, color: "rgba(255,255,255,0.35)" }}>
+          <span style={{ fontSize: 11, color: "rgba(255,255,255,0.50)" }}>
             Ultima activitate{" "}
             <span style={{ color: "rgba(255,255,255,0.55)", fontWeight: 500 }}>
               {lead.lastActivity} ago

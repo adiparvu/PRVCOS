@@ -575,7 +575,7 @@ function MessageThread({
             {title}
           </p>
           {subtitle && (
-            <p style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginTop: 1 }}>
+            <p style={{ fontSize: 11, color: "rgba(255,255,255,0.50)", marginTop: 1 }}>
               {subtitle}
             </p>
           )}
@@ -855,7 +855,7 @@ function AnnouncementDetail({
             style={{
               fontSize: 11,
               fontWeight: 500,
-              color: "rgba(255,255,255,0.35)",
+              color: "rgba(255,255,255,0.50)",
               marginBottom: 8,
             }}
           >
@@ -1234,7 +1234,7 @@ export function CommunicationsClient({ userId, companyId }: Props) {
                     <p
                       style={{
                         fontSize: 12,
-                        color: "rgba(255,255,255,0.35)",
+                        color: "rgba(255,255,255,0.50)",
                         overflow: "hidden",
                         textOverflow: "ellipsis",
                         whiteSpace: "nowrap",
@@ -1316,7 +1316,7 @@ export function CommunicationsClient({ userId, companyId }: Props) {
                   <p
                     style={{
                       fontSize: 12,
-                      color: "rgba(255,255,255,0.35)",
+                      color: "rgba(255,255,255,0.50)",
                       overflow: "hidden",
                       textOverflow: "ellipsis",
                       whiteSpace: "nowrap",

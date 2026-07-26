@@ -307,7 +307,7 @@ function Row({
         {label}
       </span>
       {value && (
-        <span style={{ fontSize: 13, color: "rgba(255,255,255,0.35)", marginRight: 6 }}>
+        <span style={{ fontSize: 13, color: "rgba(255,255,255,0.50)", marginRight: 6 }}>
           {value}
         </span>
       )}

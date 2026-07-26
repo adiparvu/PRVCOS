@@ -120,7 +120,7 @@ const STATUS_CONFIG: Record<
   },
   cold: {
     label: "Cold",
-    color: "rgba(255,255,255,0.35)",
+    color: "rgba(255,255,255,0.50)",
     bg: "rgba(255,255,255,0.07)",
     avatarColor: "rgba(255,255,255,0.07)",
   },
@@ -216,7 +216,7 @@ function ClientCard({ client }: { client: ClientSummary }) {
           <p
             style={{
               fontSize: 12,
-              color: "rgba(255,255,255,0.35)",
+              color: "rgba(255,255,255,0.50)",
               margin: 0,
               whiteSpace: "nowrap",
               overflow: "hidden",
@@ -354,7 +354,7 @@ export function ClientListClient() {
           style={{
             fontSize: 11,
             fontWeight: 600,
-            color: "rgba(255,255,255,0.35)",
+            color: "rgba(255,255,255,0.50)",
             textTransform: "uppercase",
             letterSpacing: "0.08em",
             marginBottom: 4,
@@ -417,7 +417,7 @@ export function ClientListClient() {
               style={{
                 fontSize: 10,
                 fontWeight: 600,
-                color: "rgba(255,255,255,0.35)",
+                color: "rgba(255,255,255,0.50)",
                 textTransform: "uppercase",
                 letterSpacing: "0.08em",
                 margin: "4px 0 0",
@@ -513,7 +513,7 @@ export function ClientListClient() {
             style={{
               padding: "40px 16px",
               textAlign: "center",
-              color: "rgba(255,255,255,0.35)",
+              color: "rgba(255,255,255,0.50)",
               fontSize: 14,
             }}
           >
@@ -524,7 +524,7 @@ export function ClientListClient() {
             style={{
               padding: "40px 16px",
               textAlign: "center",
-              color: "rgba(255,255,255,0.35)",
+              color: "rgba(255,255,255,0.50)",
               fontSize: 14,
             }}
           >

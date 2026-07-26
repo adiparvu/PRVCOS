@@ -214,7 +214,7 @@ function KanbanColumn({
           style={{
             fontSize: 12,
             fontWeight: 600,
-            color: "rgba(255,255,255,0.35)",
+            color: "rgba(255,255,255,0.50)",
             background: "rgba(255,255,255,0.06)",
             border: "1px solid rgba(255,255,255,0.10)",
             borderRadius: 8,

@@ -510,7 +510,7 @@ export function ProductDetailClient({ id }: { id: string }) {
               fontWeight: 700,
               textTransform: "uppercase",
               letterSpacing: "0.07em",
-              color: "rgba(255,255,255,0.35)",
+              color: "rgba(255,255,255,0.50)",
             }}
           >
             {CAT_LABELS[product.category] ?? product.category}

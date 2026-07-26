@@ -647,7 +647,7 @@ function SectionHeader({ label, count }: { label: string; count?: number }) {
         style={{
           fontSize: 11,
           fontWeight: 700,
-          color: "rgba(255,255,255,0.35)",
+          color: "rgba(255,255,255,0.50)",
           textTransform: "uppercase" as const,
           letterSpacing: 0.8,
         }}
@@ -743,7 +743,7 @@ export default function IntelligenceListClient() {
         <p
           style={{
             fontSize: 14,
-            color: "rgba(255,255,255,0.35)",
+            color: "rgba(255,255,255,0.50)",
             margin: "4px 0 0",
             fontWeight: 400,
           }}

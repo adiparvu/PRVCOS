@@ -205,12 +205,12 @@ function KpiTile({
       <p style={{ fontSize: 16, fontWeight: 700, color, letterSpacing: "-0.4px", lineHeight: 1.2 }}>
         {value}
       </p>
-      {sub && <p style={{ fontSize: 9, color: "rgba(255,255,255,0.35)", marginTop: 1 }}>{sub}</p>}
+      {sub && <p style={{ fontSize: 9, color: "rgba(255,255,255,0.50)", marginTop: 1 }}>{sub}</p>}
       <p
         style={{
           fontSize: 9,
           fontWeight: 500,
-          color: "rgba(255,255,255,0.35)",
+          color: "rgba(255,255,255,0.50)",
           textTransform: "uppercase",
           letterSpacing: "0.05em",
           marginTop: 3,
@@ -403,7 +403,7 @@ export function ShopAnalyticsClient() {
           style={{
             fontSize: 11,
             fontWeight: 600,
-            color: "rgba(255,255,255,0.35)",
+            color: "rgba(255,255,255,0.50)",
             textTransform: "uppercase",
             letterSpacing: "0.06em",
             marginBottom: 10,
@@ -481,7 +481,7 @@ export function ShopAnalyticsClient() {
                   <p style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.85)" }}>
                     {fmtRevenue(p.totalRevenue)}
                   </p>
-                  <p style={{ fontSize: 10, color: "rgba(255,255,255,0.35)" }}>
+                  <p style={{ fontSize: 10, color: "rgba(255,255,255,0.50)" }}>
                     {p.totalSold} sold
                   </p>
                 </div>

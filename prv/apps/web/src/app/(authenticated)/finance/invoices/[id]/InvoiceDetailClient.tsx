@@ -736,7 +736,7 @@ function InvoiceActionsSheet({
               border: "none",
               fontSize: 14,
               fontWeight: 700,
-              color: voidReason.trim() ? "#fff" : "rgba(255,255,255,0.35)",
+              color: voidReason.trim() ? "#fff" : "rgba(255,255,255,0.50)",
               cursor: voidReason.trim() ? "pointer" : "default",
               marginBottom: 8,
               transition: "all 0.2s",
@@ -867,7 +867,7 @@ function InvoiceActionsSheet({
                   >
                     {item.label}
                   </p>
-                  <p style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", marginTop: 1 }}>
+                  <p style={{ fontSize: 10, color: "rgba(255,255,255,0.50)", marginTop: 1 }}>
                     {item.sub}
                   </p>
                 </div>
@@ -906,7 +906,7 @@ export function InvoiceDetailClient({ id }: { id: string }) {
         className="px-4 pt-14 pb-28 max-w-2xl mx-auto"
         style={{ textAlign: "center", paddingTop: 80 }}
       >
-        <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 14 }}>Invoice not found.</p>
+        <p style={{ color: "rgba(255,255,255,0.50)", fontSize: 14 }}>Invoice not found.</p>
         <Link
           href="/finance/invoices"
           style={{
@@ -999,7 +999,7 @@ export function InvoiceDetailClient({ id }: { id: string }) {
             <p
               style={{
                 fontSize: 10,
-                color: "rgba(255,255,255,0.35)",
+                color: "rgba(255,255,255,0.50)",
                 textAlign: "right",
                 marginTop: 3,
               }}
@@ -1039,7 +1039,7 @@ export function InvoiceDetailClient({ id }: { id: string }) {
                   fontSize: 9,
                   textTransform: "uppercase",
                   letterSpacing: "0.06em",
-                  color: "rgba(255,255,255,0.35)",
+                  color: "rgba(255,255,255,0.50)",
                 }}
               >
                 {label}
@@ -1188,7 +1188,7 @@ export function InvoiceDetailClient({ id }: { id: string }) {
               <p style={{ fontSize: 12, fontWeight: 500, color: "rgba(255,255,255,0.85)" }}>
                 {item.description}
               </p>
-              <p style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", marginTop: 1 }}>
+              <p style={{ fontSize: 10, color: "rgba(255,255,255,0.50)", marginTop: 1 }}>
                 {item.quantity} {item.unit} × {fmt(item.unitPrice)}/{item.unit}
               </p>
             </div>

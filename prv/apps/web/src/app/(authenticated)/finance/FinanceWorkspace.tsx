@@ -62,8 +62,8 @@ const STATUS_STYLE: Record<string, { bg: string; color: string; label: string }>
   due: { bg: "rgba(255,159,10,0.14)", color: "rgba(255,159,10,0.95)", label: "Scadent" },
   overdue: { bg: "rgba(255,69,58,0.14)", color: "rgba(255,69,58,0.95)", label: "Overdue" },
   partial: { bg: "rgba(10,132,255,0.14)", color: "rgba(10,132,255,0.95)", label: "Partial" },
-  void: { bg: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.35)", label: "Cancelled" },
-  draft: { bg: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.35)", label: "Draft" },
+  void: { bg: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.50)", label: "Cancelled" },
+  draft: { bg: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.50)", label: "Draft" },
 }
 
 const TX_COLUMNS: TableColumn<TxRow>[] = [

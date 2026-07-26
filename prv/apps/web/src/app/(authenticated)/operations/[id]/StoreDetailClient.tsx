@@ -243,7 +243,7 @@ function OrderItem({ order }: { order: StoreOrder }) {
             {order.ref}
           </span>
           <span style={{ fontSize: 11, color: "rgba(255,255,255,0.20)" }}>·</span>
-          <span style={{ fontSize: 12, color: "rgba(255,255,255,0.35)" }}>{order.timeAgo}</span>
+          <span style={{ fontSize: 12, color: "rgba(255,255,255,0.50)" }}>{order.timeAgo}</span>
         </div>
         <span
           style={{
@@ -304,7 +304,7 @@ function SectionCard({
           style={{
             fontSize: 11,
             fontWeight: 700,
-            color: "rgba(255,255,255,0.35)",
+            color: "rgba(255,255,255,0.50)",
             textTransform: "uppercase",
             letterSpacing: 0.8,
           }}

@@ -249,7 +249,7 @@ function QuoteCard({ quote }: { quote: QuoteSummary }) {
           <p style={{ fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.92)" }}>
             {quote.clientName}
           </p>
-          <p style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginTop: 1 }}>
+          <p style={{ fontSize: 11, color: "rgba(255,255,255,0.50)", marginTop: 1 }}>
             {quote.projectName}
           </p>
         </div>
@@ -297,7 +297,7 @@ function QuoteCard({ quote }: { quote: QuoteSummary }) {
               style={{
                 fontSize: 10,
                 fontWeight: 600,
-                color: isUrgent ? "#ffcc44" : "rgba(255,255,255,0.35)",
+                color: isUrgent ? "#ffcc44" : "rgba(255,255,255,0.50)",
                 display: "flex",
                 alignItems: "center",
                 gap: 3,
@@ -414,7 +414,7 @@ export function QuoteListClient() {
             style={{
               fontSize: 9,
               fontWeight: 500,
-              color: "rgba(255,255,255,0.35)",
+              color: "rgba(255,255,255,0.50)",
               textTransform: "uppercase",
               letterSpacing: "0.05em",
               marginTop: 2,
@@ -438,7 +438,7 @@ export function QuoteListClient() {
             style={{
               fontSize: 9,
               fontWeight: 500,
-              color: "rgba(255,255,255,0.35)",
+              color: "rgba(255,255,255,0.50)",
               textTransform: "uppercase",
               letterSpacing: "0.05em",
               marginTop: 2,
@@ -469,7 +469,7 @@ export function QuoteListClient() {
             style={{
               fontSize: 9,
               fontWeight: 500,
-              color: "rgba(255,255,255,0.35)",
+              color: "rgba(255,255,255,0.50)",
               textTransform: "uppercase",
               letterSpacing: "0.05em",
               marginTop: 2,

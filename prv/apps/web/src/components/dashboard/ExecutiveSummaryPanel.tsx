@@ -154,7 +154,7 @@ function StatRow({ label, value, sub }: { label: string; value: string | number;
         <span style={{ fontSize: 14, color: "rgba(255,255,255,0.90)", fontWeight: 600 }}>
           {value}
         </span>
-        {sub && <span style={{ fontSize: 11, color: "rgba(255,255,255,0.35)" }}>{sub}</span>}
+        {sub && <span style={{ fontSize: 11, color: "rgba(255,255,255,0.50)" }}>{sub}</span>}
       </div>
     </div>
   )
@@ -302,7 +302,7 @@ export function ExecutiveSummaryPanel() {
           >
             PROFIT NET
           </span>
-          <span style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginTop: 2 }}>
+          <span style={{ fontSize: 11, color: "rgba(255,255,255,0.50)", marginTop: 2 }}>
             {s.profit.marginPct}% marjă
           </span>
         </div>
@@ -447,7 +447,7 @@ export function ExecutiveSummaryPanel() {
             style={{
               fontSize: 11,
               fontWeight: 600,
-              color: "rgba(255,255,255,0.35)",
+              color: "rgba(255,255,255,0.50)",
               letterSpacing: "0.8px",
               textTransform: "uppercase",
               paddingLeft: 2,

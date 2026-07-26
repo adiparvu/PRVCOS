@@ -66,7 +66,7 @@ const glassCard: React.CSSProperties = {
 const labelStyle: React.CSSProperties = {
   fontSize: 12,
   fontWeight: 600,
-  color: "rgba(255,255,255,0.35)",
+  color: "rgba(255,255,255,0.50)",
   textTransform: "uppercase",
   letterSpacing: "0.08em",
   marginBottom: 10,

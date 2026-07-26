@@ -178,7 +178,7 @@ const BUDGET_STATE = (spent: number, budget: number) => {
   return {
     fill: "rgba(255,255,255,0.65)",
     label: `${Math.round(pct)}% used`,
-    labelColor: "rgba(255,255,255,0.35)",
+    labelColor: "rgba(255,255,255,0.50)",
   }
 }
 

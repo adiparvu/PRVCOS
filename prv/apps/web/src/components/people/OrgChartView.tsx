@@ -121,7 +121,7 @@ function AvatarNode({
           style={{
             fontSize: 10,
             fontWeight: 500,
-            color: "rgba(255,255,255,0.35)",
+            color: "rgba(255,255,255,0.50)",
             letterSpacing: "0.2px",
             maxWidth: 80,
             overflow: "hidden",
@@ -262,7 +262,7 @@ function NodeDetailPanel({ node, onClose }: { node: OrgNode; onClose: () => void
           >
             {node.reportCount}
           </div>
-          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", fontWeight: 500 }}>
+          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.50)", fontWeight: 500 }}>
             Rapoarte directe
           </div>
         </div>
@@ -286,7 +286,7 @@ function NodeDetailPanel({ node, onClose }: { node: OrgNode; onClose: () => void
           >
             {node.depth + 1}
           </div>
-          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", fontWeight: 500 }}>
+          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.50)", fontWeight: 500 }}>
             Nivel ierarhic
           </div>
         </div>
@@ -310,7 +310,7 @@ function NodeDetailPanel({ node, onClose }: { node: OrgNode; onClose: () => void
           >
             {node.isActive ? "Activ" : "Inactiv"}
           </div>
-          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", fontWeight: 500 }}>
+          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.50)", fontWeight: 500 }}>
             Status
           </div>
         </div>
@@ -353,7 +353,7 @@ export function OrgChartView() {
   if (!data || data.nodes.length === 0) {
     return (
       <div style={{ padding: 32, textAlign: "center" }}>
-        <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 14 }}>
+        <p style={{ color: "rgba(255,255,255,0.50)", fontSize: 14 }}>
           Nicio structură organizatorică disponibilă.
         </p>
       </div>
@@ -417,10 +417,10 @@ export function OrgChartView() {
           padding: "4px 16px 16px",
         }}
       >
-        <span style={{ fontSize: 12, color: "rgba(255,255,255,0.35)" }}>
+        <span style={{ fontSize: 12, color: "rgba(255,255,255,0.50)" }}>
           {data.totalNodes} persoane ·{" "}
         </span>
-        <span style={{ fontSize: 12, color: "rgba(255,255,255,0.35)" }}>
+        <span style={{ fontSize: 12, color: "rgba(255,255,255,0.50)" }}>
           {depths.length} niveluri ierarhice
         </span>
       </div>
@@ -485,7 +485,7 @@ export function OrgChartView() {
             </div>
           ))}
           {filtered.length === 0 && (
-            <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 14, padding: "16px 0" }}>
+            <p style={{ color: "rgba(255,255,255,0.50)", fontSize: 14, padding: "16px 0" }}>
               Niciun rezultat
             </p>
           )}

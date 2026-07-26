@@ -44,7 +44,7 @@ function ScoreRing({ score }: { score: number }) {
         <span
           style={{
             fontSize: 9,
-            color: "rgba(255,255,255,0.35)",
+            color: "rgba(255,255,255,0.50)",
             fontWeight: 600,
             letterSpacing: 0.3,
             marginTop: 1,
@@ -232,7 +232,7 @@ function SectionCard({
           style={{
             fontSize: 11,
             fontWeight: 700,
-            color: "rgba(255,255,255,0.35)",
+            color: "rgba(255,255,255,0.50)",
             textTransform: "uppercase" as const,
             letterSpacing: 0.8,
           }}

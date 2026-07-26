@@ -283,7 +283,7 @@ function ProjectCard({ project }: { project: ProjectSummary }) {
               >
                 {project.clientInitials}
               </div>
-              <p style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", margin: 0 }}>
+              <p style={{ fontSize: 11, color: "rgba(255,255,255,0.50)", margin: 0 }}>
                 {project.clientName}
               </p>
             </div>
@@ -406,7 +406,7 @@ function ProjectCard({ project }: { project: ProjectSummary }) {
                     justifyContent: "center",
                     fontSize: 7,
                     fontWeight: 700,
-                    color: "rgba(255,255,255,0.35)",
+                    color: "rgba(255,255,255,0.50)",
                     marginLeft: -4,
                     position: "relative",
                     zIndex: 0,
@@ -514,7 +514,7 @@ export function ProjectListClient() {
             style={{
               fontSize: 9,
               fontWeight: 500,
-              color: "rgba(255,255,255,0.35)",
+              color: "rgba(255,255,255,0.50)",
               textTransform: "uppercase",
               letterSpacing: "0.05em",
               marginTop: 2,
@@ -545,7 +545,7 @@ export function ProjectListClient() {
             style={{
               fontSize: 9,
               fontWeight: 500,
-              color: "rgba(255,255,255,0.35)",
+              color: "rgba(255,255,255,0.50)",
               textTransform: "uppercase",
               letterSpacing: "0.05em",
               marginTop: 2,
@@ -576,7 +576,7 @@ export function ProjectListClient() {
             style={{
               fontSize: 9,
               fontWeight: 500,
-              color: "rgba(255,255,255,0.35)",
+              color: "rgba(255,255,255,0.50)",
               textTransform: "uppercase",
               letterSpacing: "0.05em",
               marginTop: 2,

@@ -445,7 +445,7 @@ function SectionHeader({ label, count }: { label: string; count?: number }) {
         style={{
           fontSize: 11,
           fontWeight: 700,
-          color: "rgba(255,255,255,0.35)",
+          color: "rgba(255,255,255,0.50)",
           textTransform: "uppercase",
           letterSpacing: 0.8,
         }}
@@ -535,7 +535,7 @@ export default function OperationsListClient() {
         <p
           style={{
             fontSize: 14,
-            color: "rgba(255,255,255,0.35)",
+            color: "rgba(255,255,255,0.50)",
             margin: "4px 0 0",
             fontWeight: 400,
           }}
@@ -734,7 +734,7 @@ export default function OperationsListClient() {
                 style={{
                   fontSize: 11,
                   fontWeight: 700,
-                  color: "rgba(255,255,255,0.35)",
+                  color: "rgba(255,255,255,0.50)",
                   textTransform: "uppercase",
                   letterSpacing: 0.8,
                 }}

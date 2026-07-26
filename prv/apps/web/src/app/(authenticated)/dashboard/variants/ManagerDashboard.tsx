@@ -319,7 +319,7 @@ export async function ManagerDashboard({ session }: Props) {
                   >
                     {title}
                   </p>
-                  <p className="text-[11px] mt-0.5" style={{ color: "rgba(255,255,255,0.35)" }}>
+                  <p className="text-[11px] mt-0.5" style={{ color: "rgba(255,255,255,0.50)" }}>
                     {detail}
                   </p>
                 </div>
@@ -347,7 +347,7 @@ export async function ManagerDashboard({ session }: Props) {
           <Link
             href="/attendance"
             className="text-[12px] font-medium no-underline"
-            style={{ color: "rgba(255,255,255,0.35)", textDecoration: "none" }}
+            style={{ color: "rgba(255,255,255,0.50)", textDecoration: "none" }}
           >
             View all →
           </Link>
@@ -375,7 +375,7 @@ export async function ManagerDashboard({ session }: Props) {
               </p>
               <p
                 className="text-[10px] font-medium mt-0.5"
-                style={{ color: "rgba(255,255,255,0.35)" }}
+                style={{ color: "rgba(255,255,255,0.50)" }}
               >
                 {label}
               </p>
@@ -391,7 +391,7 @@ export async function ManagerDashboard({ session }: Props) {
           <Link
             href="/operations"
             className="text-[12px] font-medium no-underline"
-            style={{ color: "rgba(255,255,255,0.35)", textDecoration: "none" }}
+            style={{ color: "rgba(255,255,255,0.50)", textDecoration: "none" }}
           >
             Details →
           </Link>

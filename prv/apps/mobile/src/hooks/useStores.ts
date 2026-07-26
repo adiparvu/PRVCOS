@@ -97,7 +97,7 @@ export function formatDueDate(
   dueDate: string | null,
   isOverdue: boolean
 ): { label: string; color: string } {
-  if (!dueDate) return { label: "—", color: "rgba(255,255,255,0.35)" }
+  if (!dueDate) return { label: "—", color: "rgba(255,255,255,0.50)" }
   const d = new Date(dueDate)
   const diffDays = Math.floor((d.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
   if (isOverdue) return { label: `${Math.abs(diffDays)}d overdue`, color: "#ff453a" }

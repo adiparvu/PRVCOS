@@ -347,7 +347,7 @@ export function AnalyticsClient() {
           style={{
             display: "flex",
             alignItems: "center",
-            color: "rgba(255,255,255,0.35)",
+            color: "rgba(255,255,255,0.50)",
             textDecoration: "none",
           }}
         >
@@ -445,7 +445,7 @@ export function AnalyticsClient() {
               borderRadius: 9,
               border: "none",
               background: tab === t ? "rgba(255,255,255,0.10)" : "transparent",
-              color: tab === t ? "rgba(255,255,255,0.90)" : "rgba(255,255,255,0.35)",
+              color: tab === t ? "rgba(255,255,255,0.90)" : "rgba(255,255,255,0.50)",
               fontSize: 12,
               fontWeight: 600,
               cursor: "pointer",

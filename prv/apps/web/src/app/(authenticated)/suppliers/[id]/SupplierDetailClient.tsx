@@ -242,7 +242,7 @@ const STATUS_CONFIG = {
   },
   inactive: {
     label: "Inactive",
-    color: "rgba(255,255,255,0.35)",
+    color: "rgba(255,255,255,0.50)",
     bg: "rgba(255,255,255,0.07)",
     avatarBg: "rgba(255,255,255,0.06)",
     avatarBorder: "rgba(255,255,255,0.09)",
@@ -254,7 +254,7 @@ const ORDER_STATUS: Record<OrderStatus, { label: string; color: string; bg: stri
   ordered: { label: "Placed", color: "#7eb8ff", bg: "rgba(126,184,255,0.13)" },
   delivered: { label: "Livrat", color: "#5affa0", bg: "rgba(90,255,160,0.12)" },
   partial: { label: "Partial", color: "#ffcc44", bg: "rgba(255,204,68,0.12)" },
-  cancelled: { label: "Cancelled", color: "rgba(255,255,255,0.35)", bg: "rgba(255,255,255,0.07)" },
+  cancelled: { label: "Cancelled", color: "rgba(255,255,255,0.50)", bg: "rgba(255,255,255,0.07)" },
   pending: { label: "Pending", color: "#ffcc44", bg: "rgba(255,204,68,0.12)" },
 }
 
@@ -284,7 +284,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
       style={{
         fontSize: 11,
         fontWeight: 600,
-        color: "rgba(255,255,255,0.35)",
+        color: "rgba(255,255,255,0.50)",
         textTransform: "uppercase",
         letterSpacing: "0.08em",
         margin: "20px 4px 8px",
@@ -931,7 +931,7 @@ export function SupplierDetailClient({ id }: SupplierDetailClientProps) {
         <div
           style={{
             textAlign: "center",
-            color: "rgba(255,255,255,0.35)",
+            color: "rgba(255,255,255,0.50)",
             fontSize: 14,
             paddingTop: 60,
           }}
@@ -1154,7 +1154,7 @@ export function SupplierDetailClient({ id }: SupplierDetailClientProps) {
                   style={{
                     fontSize: 10,
                     fontWeight: 600,
-                    color: "rgba(255,255,255,0.35)",
+                    color: "rgba(255,255,255,0.50)",
                     textTransform: "uppercase",
                     letterSpacing: "0.07em",
                     margin: "3px 0 0",
@@ -1191,7 +1191,7 @@ export function SupplierDetailClient({ id }: SupplierDetailClientProps) {
             {supplier.recentOrders.map((o, idx) => {
               const os = ORDER_STATUS[o.status] ?? {
                 label: o.status,
-                color: "rgba(255,255,255,0.35)",
+                color: "rgba(255,255,255,0.50)",
                 bg: "rgba(255,255,255,0.07)",
               }
               return (
@@ -1222,7 +1222,7 @@ export function SupplierDetailClient({ id }: SupplierDetailClientProps) {
                     <p
                       style={{
                         fontSize: 12,
-                        color: "rgba(255,255,255,0.35)",
+                        color: "rgba(255,255,255,0.50)",
                         margin: 0,
                         overflow: "hidden",
                         textOverflow: "ellipsis",
@@ -1518,7 +1518,7 @@ export function SupplierDetailClient({ id }: SupplierDetailClientProps) {
                     style={{
                       fontSize: 10,
                       fontWeight: 600,
-                      color: "rgba(255,255,255,0.35)",
+                      color: "rgba(255,255,255,0.50)",
                       margin: 0,
                       textTransform: "uppercase",
                       letterSpacing: "0.07em",

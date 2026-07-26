@@ -57,7 +57,7 @@ const glassCard: React.CSSProperties = {
 const labelStyle: React.CSSProperties = {
   fontSize: 12,
   fontWeight: 600,
-  color: "rgba(255,255,255,0.35)",
+  color: "rgba(255,255,255,0.50)",
   textTransform: "uppercase",
   letterSpacing: "0.08em",
   marginBottom: 10,
@@ -340,7 +340,7 @@ export function InspectionDetailClient({ id }: { id: string }) {
                 onChange={(e) => setDraftScore(e.target.value)}
                 disabled={isCompleted}
               />
-              <span style={{ color: "rgba(255,255,255,0.35)", fontSize: 16, marginBottom: 6 }}>
+              <span style={{ color: "rgba(255,255,255,0.50)", fontSize: 16, marginBottom: 6 }}>
                 /
               </span>
               <input

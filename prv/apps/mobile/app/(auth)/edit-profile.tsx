@@ -264,7 +264,7 @@ const f = StyleSheet.create({
   fieldLabel: {
     fontSize: 11,
     fontWeight: "500",
-    color: "rgba(255,255,255,0.35)",
+    color: "rgba(255,255,255,0.50)",
     letterSpacing: 0.04,
     textTransform: "uppercase",
     marginBottom: 4,
@@ -309,7 +309,7 @@ const s = StyleSheet.create({
   saveBtn: { minWidth: 72, alignItems: "flex-end" },
   saveBtnDisabled: { opacity: 0.35 },
   saveLabel: { ...t.headline, color: colors.green },
-  saveLabelDisabled: { color: "rgba(255,255,255,0.35)" },
+  saveLabelDisabled: { color: "rgba(255,255,255,0.50)" },
 
   scroll: { paddingHorizontal: 20, paddingTop: 24 },
 

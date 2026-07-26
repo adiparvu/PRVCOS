@@ -290,7 +290,7 @@ export function PasskeysAndDevices() {
             ...CARD,
             padding: "18px 16px",
             marginBottom: 12,
-            color: "rgba(255,255,255,0.35)",
+            color: "rgba(255,255,255,0.50)",
             fontSize: 13,
           }}
         >
@@ -417,7 +417,7 @@ export function PasskeysAndDevices() {
           style={{
             ...CARD,
             padding: "18px 16px",
-            color: "rgba(255,255,255,0.35)",
+            color: "rgba(255,255,255,0.50)",
             fontSize: 13,
           }}
         >

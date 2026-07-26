@@ -648,7 +648,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     ...type.subhead,
-    color: "rgba(255,255,255,0.35)",
+    color: "rgba(255,255,255,0.50)",
   },
   retryBtn: {
     paddingHorizontal: 20,
@@ -736,7 +736,7 @@ const styles = StyleSheet.create({
   badgeAmber: { backgroundColor: "rgba(255,179,64,0.12)" },
   badgeText: { fontSize: 11, fontWeight: "600" },
   badgeTextGreen: { color: "rgba(52,199,89,0.9)" },
-  badgeTextGray: { color: "rgba(255,255,255,0.35)" },
+  badgeTextGray: { color: "rgba(255,255,255,0.50)" },
   badgeTextAmber: { color: "rgba(255,179,64,0.85)" },
   mfaRiskCard: {
     flexDirection: "row",
@@ -767,7 +767,7 @@ const styles = StyleSheet.create({
   },
   mfaRiskSub: {
     ...type.footnote,
-    color: "rgba(255,255,255,0.35)",
+    color: "rgba(255,255,255,0.50)",
     lineHeight: 16,
   },
   enableMfaBtn: {

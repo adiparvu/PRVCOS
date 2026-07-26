@@ -190,7 +190,7 @@ function DocRow({ doc }: { doc: DocumentRecord }) {
           {doc.categoryLabel} · {doc.author}
         </p>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6 }}>
-          <span style={{ fontSize: 11, color: "rgba(255,255,255,0.35)" }}>
+          <span style={{ fontSize: 11, color: "rgba(255,255,255,0.50)" }}>
             {doc.date} · {doc.sizeLabel}
           </span>
           {isPending && doc.expiresAt && (

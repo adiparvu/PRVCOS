@@ -470,7 +470,7 @@ export function SafetyDashboardClient() {
               style={{
                 padding: "32px 16px",
                 textAlign: "center",
-                color: "rgba(255,255,255,0.35)",
+                color: "rgba(255,255,255,0.50)",
                 fontSize: 13,
               }}
             >
@@ -539,7 +539,7 @@ export function SafetyDashboardClient() {
               style={{
                 padding: "32px 16px",
                 textAlign: "center",
-                color: "rgba(255,255,255,0.35)",
+                color: "rgba(255,255,255,0.50)",
                 fontSize: 13,
               }}
             >

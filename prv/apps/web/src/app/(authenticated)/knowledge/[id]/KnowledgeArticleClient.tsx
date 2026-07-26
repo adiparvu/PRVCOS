@@ -764,7 +764,7 @@ export function KnowledgeArticleClient({ id }: { id: string }) {
           <SectionCard
             title="Cuprins"
             badge={
-              <span style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.35)" }}>
+              <span style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.50)" }}>
                 {article.toc.length} sections
               </span>
             }
@@ -829,7 +829,7 @@ export function KnowledgeArticleClient({ id }: { id: string }) {
               A fost util articolul?
             </span>
             {article.feedback.helpfulPct !== null && (
-              <span style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", marginLeft: "auto" }}>
+              <span style={{ fontSize: 12, color: "rgba(255,255,255,0.50)", marginLeft: "auto" }}>
                 {article.feedback.helpfulPct}% util ·{" "}
                 {article.feedback.helpful + article.feedback.notHelpful} voturi
               </span>

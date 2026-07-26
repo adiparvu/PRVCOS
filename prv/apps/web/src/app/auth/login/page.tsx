@@ -177,7 +177,7 @@ function LoginForm() {
                 }}
                 className="flex-1 py-3.5 text-[13px] font-medium transition-all duration-150 relative"
                 style={{
-                  color: mode === m ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.35)",
+                  color: mode === m ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.50)",
                 }}
                 aria-pressed={mode === m}
               >

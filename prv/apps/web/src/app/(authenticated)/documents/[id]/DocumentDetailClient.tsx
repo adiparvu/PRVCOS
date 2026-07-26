@@ -1578,7 +1578,7 @@ export function DocumentDetailClient({ id }: { id: string }) {
               style={{
                 fontSize: 13,
                 fontWeight: 600,
-                color: doc.signedBy ? "var(--prv-text-1)" : "rgba(255,255,255,0.35)",
+                color: doc.signedBy ? "var(--prv-text-1)" : "rgba(255,255,255,0.50)",
               }}
             >
               {doc.signedBy ?? "—"}

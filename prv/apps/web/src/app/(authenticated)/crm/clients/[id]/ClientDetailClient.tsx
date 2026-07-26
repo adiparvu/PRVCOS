@@ -240,7 +240,7 @@ const STATUS_CONFIG = {
   },
   cold: {
     label: "Cold",
-    color: "rgba(255,255,255,0.35)",
+    color: "rgba(255,255,255,0.50)",
     bg: "rgba(255,255,255,0.07)",
     avatarBg: "rgba(255,255,255,0.07)",
     avatarBorder: "rgba(255,255,255,0.10)",
@@ -265,20 +265,20 @@ const ACTIVITY_DOT: Record<ClientActivityType, string> = {
 // ── Quote/Invoice status config ───────────────────────────────────────────────
 
 const QUOTE_STATUS: Record<string, { label: string; color: string; bg: string }> = {
-  draft: { label: "Draft", color: "rgba(255,255,255,0.35)", bg: "rgba(255,255,255,0.07)" },
+  draft: { label: "Draft", color: "rgba(255,255,255,0.50)", bg: "rgba(255,255,255,0.07)" },
   sent: { label: "Sent", color: "#7eb8ff", bg: "rgba(126,184,255,0.13)" },
   accepted: { label: "Accepted", color: "#5affa0", bg: "rgba(90,255,160,0.12)" },
   rejected: { label: "Rejected", color: "#ff6b6b", bg: "rgba(255,107,107,0.12)" },
-  expired: { label: "Expired", color: "rgba(255,255,255,0.35)", bg: "rgba(255,255,255,0.07)" },
+  expired: { label: "Expired", color: "rgba(255,255,255,0.50)", bg: "rgba(255,255,255,0.07)" },
 }
 
 const INVOICE_STATUS: Record<string, { label: string; color: string; bg: string }> = {
-  draft: { label: "Draft", color: "rgba(255,255,255,0.35)", bg: "rgba(255,255,255,0.07)" },
+  draft: { label: "Draft", color: "rgba(255,255,255,0.50)", bg: "rgba(255,255,255,0.07)" },
   due: { label: "Due", color: "#ffcc44", bg: "rgba(255,204,68,0.12)" },
   partial: { label: "Partial", color: "#ffcc44", bg: "rgba(255,204,68,0.12)" },
   paid: { label: "Paid", color: "#5affa0", bg: "rgba(90,255,160,0.12)" },
   overdue: { label: "Overdue", color: "#ff6b6b", bg: "rgba(255,107,107,0.12)" },
-  void: { label: "Cancelled", color: "rgba(255,255,255,0.35)", bg: "rgba(255,255,255,0.07)" },
+  void: { label: "Cancelled", color: "rgba(255,255,255,0.50)", bg: "rgba(255,255,255,0.07)" },
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -293,7 +293,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
       style={{
         fontSize: 11,
         fontWeight: 600,
-        color: "rgba(255,255,255,0.35)",
+        color: "rgba(255,255,255,0.50)",
         textTransform: "uppercase",
         letterSpacing: "0.08em",
         margin: "20px 4px 8px",
@@ -1023,7 +1023,7 @@ export function ClientDetailClient({ id }: ClientDetailClientProps) {
         <div
           style={{
             textAlign: "center",
-            color: "rgba(255,255,255,0.35)",
+            color: "rgba(255,255,255,0.50)",
             fontSize: 14,
             paddingTop: 60,
           }}
@@ -1130,7 +1130,7 @@ export function ClientDetailClient({ id }: ClientDetailClientProps) {
                 {client.name}
               </p>
             </div>
-            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", margin: 0 }}>
+            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.50)", margin: 0 }}>
               {client.location} · {client.cifVat} · desde {client.since}
             </p>
           </div>
@@ -1239,7 +1239,7 @@ export function ClientDetailClient({ id }: ClientDetailClientProps) {
                 style={{
                   fontSize: 10,
                   fontWeight: 600,
-                  color: "rgba(255,255,255,0.35)",
+                  color: "rgba(255,255,255,0.50)",
                   textTransform: "uppercase",
                   letterSpacing: "0.07em",
                   margin: "3px 0 0",
@@ -1268,7 +1268,7 @@ export function ClientDetailClient({ id }: ClientDetailClientProps) {
             {client.quotes.map((q, idx) => {
               const qs = QUOTE_STATUS[q.status] ?? {
                 label: q.status,
-                color: "rgba(255,255,255,0.35)",
+                color: "rgba(255,255,255,0.50)",
                 bg: "rgba(255,255,255,0.07)",
               }
               return (
@@ -1301,7 +1301,7 @@ export function ClientDetailClient({ id }: ClientDetailClientProps) {
                     <p
                       style={{
                         fontSize: 12,
-                        color: "rgba(255,255,255,0.35)",
+                        color: "rgba(255,255,255,0.50)",
                         margin: 0,
                         overflow: "hidden",
                         textOverflow: "ellipsis",
@@ -1375,7 +1375,7 @@ export function ClientDetailClient({ id }: ClientDetailClientProps) {
             {client.invoices.map((inv, idx) => {
               const is = INVOICE_STATUS[inv.status] ?? {
                 label: inv.status,
-                color: "rgba(255,255,255,0.35)",
+                color: "rgba(255,255,255,0.50)",
                 bg: "rgba(255,255,255,0.07)",
               }
               return (
@@ -1413,7 +1413,7 @@ export function ClientDetailClient({ id }: ClientDetailClientProps) {
                     <p
                       style={{
                         fontSize: 12,
-                        color: "rgba(255,255,255,0.35)",
+                        color: "rgba(255,255,255,0.50)",
                         margin: 0,
                         overflow: "hidden",
                         textOverflow: "ellipsis",
@@ -1552,7 +1552,7 @@ export function ClientDetailClient({ id }: ClientDetailClientProps) {
                     <p
                       style={{
                         fontSize: 11,
-                        color: "rgba(255,255,255,0.35)",
+                        color: "rgba(255,255,255,0.50)",
                         margin: 0,
                       }}
                     >
@@ -1562,7 +1562,7 @@ export function ClientDetailClient({ id }: ClientDetailClientProps) {
                     <p
                       style={{
                         fontSize: 11,
-                        color: budgetRatio > 1 ? "#ff6b6b" : "rgba(255,255,255,0.35)",
+                        color: budgetRatio > 1 ? "#ff6b6b" : "rgba(255,255,255,0.50)",
                         margin: 0,
                         fontWeight: budgetRatio > 1 ? 600 : 400,
                       }}

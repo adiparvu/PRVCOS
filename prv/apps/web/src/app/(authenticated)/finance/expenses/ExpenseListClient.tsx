@@ -256,7 +256,7 @@ function ExpenseCard({
           >
             {expense.title}
           </p>
-          <p style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginTop: 2 }}>
+          <p style={{ fontSize: 11, color: "rgba(255,255,255,0.50)", marginTop: 2 }}>
             {expense.vendorName}
           </p>
         </div>
@@ -541,7 +541,7 @@ export function ExpenseListClient() {
             style={{
               fontSize: 9,
               fontWeight: 500,
-              color: "rgba(255,255,255,0.35)",
+              color: "rgba(255,255,255,0.50)",
               textTransform: "uppercase",
               letterSpacing: "0.05em",
               marginTop: 2,
@@ -565,7 +565,7 @@ export function ExpenseListClient() {
             style={{
               fontSize: 9,
               fontWeight: 500,
-              color: "rgba(255,255,255,0.35)",
+              color: "rgba(255,255,255,0.50)",
               textTransform: "uppercase",
               letterSpacing: "0.05em",
               marginTop: 2,
@@ -596,7 +596,7 @@ export function ExpenseListClient() {
             style={{
               fontSize: 9,
               fontWeight: 500,
-              color: "rgba(255,255,255,0.35)",
+              color: "rgba(255,255,255,0.50)",
               textTransform: "uppercase",
               letterSpacing: "0.05em",
               marginTop: 2,

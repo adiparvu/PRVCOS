@@ -233,7 +233,7 @@ export function RolesClient() {
                       padding: "2px 7px",
                       borderRadius: 100,
                       background: "rgba(255,255,255,0.06)",
-                      color: "rgba(255,255,255,0.35)",
+                      color: "rgba(255,255,255,0.50)",
                       border: "1px solid rgba(255,255,255,0.10)",
                     }}
                   >
@@ -241,7 +241,7 @@ export function RolesClient() {
                   </span>
                 </div>
                 {role.description && (
-                  <p style={{ fontSize: 12, color: "rgba(255,255,255,0.35)" }}>
+                  <p style={{ fontSize: 12, color: "rgba(255,255,255,0.50)" }}>
                     {role.description}
                   </p>
                 )}
@@ -297,7 +297,7 @@ export function RolesClient() {
                       padding: "2px 7px",
                       borderRadius: 100,
                       background: "rgba(255,255,255,0.06)",
-                      color: "rgba(255,255,255,0.35)",
+                      color: "rgba(255,255,255,0.50)",
                       border: "1px solid rgba(255,255,255,0.10)",
                     }}
                   >
@@ -305,7 +305,7 @@ export function RolesClient() {
                   </span>
                 </div>
                 {role.description && (
-                  <p style={{ fontSize: 12, color: "rgba(255,255,255,0.35)" }}>
+                  <p style={{ fontSize: 12, color: "rgba(255,255,255,0.50)" }}>
                     {role.description}
                   </p>
                 )}

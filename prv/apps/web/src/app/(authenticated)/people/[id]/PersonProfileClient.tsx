@@ -239,7 +239,7 @@ function SkillsSection({ isOwnProfile, skills }: { isOwnProfile: boolean; skills
               <button
                 onClick={cancel}
                 className="text-[12px] font-medium"
-                style={{ color: "rgba(255,255,255,0.35)" }}
+                style={{ color: "rgba(255,255,255,0.50)" }}
               >
                 Cancel
               </button>
@@ -256,7 +256,7 @@ function SkillsSection({ isOwnProfile, skills }: { isOwnProfile: boolean; skills
             <button
               onClick={() => setEditing(true)}
               className="text-[12px] font-medium"
-              style={{ color: "rgba(255,255,255,0.35)" }}
+              style={{ color: "rgba(255,255,255,0.50)" }}
             >
               Edit
             </button>
@@ -453,7 +453,7 @@ function UpcomingShifts({ shifts }: { shifts: ProfileShift[] }) {
             >
               <p
                 className="text-[10px] font-semibold uppercase"
-                style={{ color: i === 0 ? "rgba(10,132,255,0.90)" : "rgba(255,255,255,0.35)" }}
+                style={{ color: i === 0 ? "rgba(10,132,255,0.90)" : "rgba(255,255,255,0.50)" }}
               >
                 {day}
               </p>
@@ -473,7 +473,7 @@ function UpcomingShifts({ shifts }: { shifts: ProfileShift[] }) {
               >
                 {shift.startTime} – {shift.endTime}
               </p>
-              <p className="text-[11px] mt-0.5" style={{ color: "rgba(255,255,255,0.35)" }}>
+              <p className="text-[11px] mt-0.5" style={{ color: "rgba(255,255,255,0.50)" }}>
                 {shift.location ?? shift.title}
               </p>
             </div>
@@ -660,7 +660,7 @@ export function PersonProfileClient({
               className="flex-1 py-2 rounded-[11px] text-[13px] font-semibold capitalize transition-all"
               style={{
                 background: activeTab === tab ? "rgba(255,255,255,0.12)" : "transparent",
-                color: activeTab === tab ? "rgba(255,255,255,0.92)" : "rgba(255,255,255,0.35)",
+                color: activeTab === tab ? "rgba(255,255,255,0.92)" : "rgba(255,255,255,0.50)",
                 boxShadow:
                   activeTab === tab
                     ? "inset 0 1px 0 rgba(255,255,255,0.12), 0 1px 4px rgba(0,0,0,0.4)"

@@ -248,7 +248,7 @@ function InvoiceCard({ invoice }: { invoice: InvoiceSummary }) {
           <p style={{ fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.92)" }}>
             {invoice.clientName}
           </p>
-          <p style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginTop: 2 }}>
+          <p style={{ fontSize: 11, color: "rgba(255,255,255,0.50)", marginTop: 2 }}>
             {invoice.projectName}
           </p>
         </div>
@@ -291,7 +291,7 @@ function InvoiceCard({ invoice }: { invoice: InvoiceSummary }) {
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontSize: 11, color: "rgba(255,255,255,0.35)" }}>
+          <span style={{ fontSize: 11, color: "rgba(255,255,255,0.50)" }}>
             Scad. {fmtDate(invoice.dueDate)}
           </span>
           {invoice.daysOverdue !== null && invoice.daysOverdue > 0 && (
@@ -415,7 +415,7 @@ export function InvoiceListClient() {
             style={{
               fontSize: 9,
               fontWeight: 500,
-              color: "rgba(255,255,255,0.35)",
+              color: "rgba(255,255,255,0.50)",
               textTransform: "uppercase",
               letterSpacing: "0.05em",
               marginTop: 2,
@@ -446,7 +446,7 @@ export function InvoiceListClient() {
             style={{
               fontSize: 9,
               fontWeight: 500,
-              color: "rgba(255,255,255,0.35)",
+              color: "rgba(255,255,255,0.50)",
               textTransform: "uppercase",
               letterSpacing: "0.05em",
               marginTop: 2,
@@ -470,7 +470,7 @@ export function InvoiceListClient() {
             style={{
               fontSize: 9,
               fontWeight: 500,
-              color: "rgba(255,255,255,0.35)",
+              color: "rgba(255,255,255,0.50)",
               textTransform: "uppercase",
               letterSpacing: "0.05em",
               marginTop: 2,

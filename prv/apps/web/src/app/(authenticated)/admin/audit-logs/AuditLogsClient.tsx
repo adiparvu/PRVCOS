@@ -148,7 +148,7 @@ function EntryDetail({ entry, onClose }: { entry: AuditEntry; onClose: () => voi
             {entry.action}
           </span>
         </div>
-        <p style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", marginBottom: 16 }}>
+        <p style={{ fontSize: 12, color: "rgba(255,255,255,0.50)", marginBottom: 16 }}>
           {new Date(entry.createdAt).toLocaleString("en-US")}
         </p>
 
@@ -175,7 +175,7 @@ function EntryDetail({ entry, onClose }: { entry: AuditEntry; onClose: () => voi
                 padding: "8px 0",
               }}
             >
-              <span style={{ fontSize: 12, color: "rgba(255,255,255,0.35)" }}>{label}</span>
+              <span style={{ fontSize: 12, color: "rgba(255,255,255,0.50)" }}>{label}</span>
               <span
                 style={{
                   fontSize: 12,
@@ -425,7 +425,7 @@ export function AuditLogsClient() {
               style={{
                 fontSize: 9,
                 fontWeight: 500,
-                color: "rgba(255,255,255,0.35)",
+                color: "rgba(255,255,255,0.50)",
                 textTransform: "uppercase",
                 letterSpacing: "0.05em",
                 marginTop: 2,

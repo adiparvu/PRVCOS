@@ -327,7 +327,7 @@ function FeaturedCard({ article }: { article: KnowledgeArticle }) {
             <span style={{ fontSize: 11, color: "rgba(10,132,255,0.75)", fontWeight: 600 }}>
               {article.readProgress}% citit
             </span>
-            <span style={{ fontSize: 11, color: "rgba(255,255,255,0.35)" }}>
+            <span style={{ fontSize: 11, color: "rgba(255,255,255,0.50)" }}>
               Actualizat {article.updatedDate}
             </span>
           </div>
@@ -385,7 +385,7 @@ export function KnowledgeListClient() {
               <circle cx="11" cy="11" r="8" />
               <line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
-            <span style={{ fontSize: 15, color: "rgba(255,255,255,0.35)" }}>Search an item…</span>
+            <span style={{ fontSize: 15, color: "rgba(255,255,255,0.50)" }}>Search an item…</span>
           </div>
           {[
             {

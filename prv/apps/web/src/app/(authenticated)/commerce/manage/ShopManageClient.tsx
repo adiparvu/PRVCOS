@@ -496,7 +496,7 @@ function CreateSheet({
         style={{
           fontSize: 11,
           fontWeight: 600,
-          color: "rgba(255,255,255,0.35)",
+          color: "rgba(255,255,255,0.50)",
           textTransform: "uppercase",
           letterSpacing: "0.05em",
           marginBottom: 5,
@@ -615,7 +615,7 @@ function CreateSheet({
             style={{
               fontSize: 11,
               fontWeight: 600,
-              color: "rgba(255,255,255,0.35)",
+              color: "rgba(255,255,255,0.50)",
               textTransform: "uppercase",
               letterSpacing: "0.05em",
               marginBottom: 5,
@@ -651,7 +651,7 @@ function CreateSheet({
               style={{
                 fontSize: 11,
                 fontWeight: 600,
-                color: "rgba(255,255,255,0.35)",
+                color: "rgba(255,255,255,0.50)",
                 textTransform: "uppercase",
                 letterSpacing: "0.05em",
                 marginBottom: 5,
@@ -683,7 +683,7 @@ function CreateSheet({
               style={{
                 fontSize: 11,
                 fontWeight: 600,
-                color: "rgba(255,255,255,0.35)",
+                color: "rgba(255,255,255,0.50)",
                 textTransform: "uppercase",
                 letterSpacing: "0.05em",
                 marginBottom: 5,
@@ -1081,7 +1081,7 @@ export function ShopManageClient() {
             style={{
               fontSize: 11,
               fontWeight: 600,
-              color: "rgba(255,255,255,0.35)",
+              color: "rgba(255,255,255,0.50)",
               textTransform: "uppercase",
               letterSpacing: "0.06em",
             }}

@@ -242,7 +242,7 @@ const r = StyleSheet.create({
   },
   body: { flex: 1 },
   title: { ...t.subhead, color: "rgba(255,255,255,0.88)" },
-  sub: { ...t.caption1, color: "rgba(255,255,255,0.35)", marginTop: 2 },
+  sub: { ...t.caption1, color: "rgba(255,255,255,0.50)", marginTop: 2 },
 })
 
 // ── Screen styles ─────────────────────────────────────────────────────────────

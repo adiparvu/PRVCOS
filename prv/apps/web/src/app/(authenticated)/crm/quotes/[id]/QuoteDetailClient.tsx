@@ -308,7 +308,7 @@ const APPROVAL_DOT: Record<ApprovalStepStatus, { bg: string; border: string; col
   waiting: {
     bg: "rgba(255,255,255,0.07)",
     border: "rgba(255,255,255,0.12)",
-    color: "rgba(255,255,255,0.35)",
+    color: "rgba(255,255,255,0.50)",
   },
   rejected: { bg: "rgba(255,60,60,0.14)", border: "rgba(255,80,80,0.22)", color: "#ff6b6b" },
 }
@@ -939,7 +939,7 @@ function QuoteActionsSheet({ quote, onClose }: { quote: QuoteDetail; onClose: ()
                   >
                     {item.label}
                   </p>
-                  <p style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", marginTop: 1 }}>
+                  <p style={{ fontSize: 10, color: "rgba(255,255,255,0.50)", marginTop: 1 }}>
                     {item.sub}
                   </p>
                 </div>
@@ -978,7 +978,7 @@ export function QuoteDetailClient({ id }: { id: string }) {
         className="px-4 pt-14 pb-28 max-w-2xl mx-auto"
         style={{ textAlign: "center", paddingTop: 80 }}
       >
-        <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 14 }}>Quote not found.</p>
+        <p style={{ color: "rgba(255,255,255,0.50)", fontSize: 14 }}>Quote not found.</p>
         <Link
           href="/crm/quotes"
           style={{
@@ -1069,7 +1069,7 @@ export function QuoteDetailClient({ id }: { id: string }) {
             >
               {fmt(quote.amount)}
             </p>
-            <p style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", marginTop: 3 }}>
+            <p style={{ fontSize: 10, color: "rgba(255,255,255,0.50)", marginTop: 3 }}>
               incl. TVA {quote.vatRate}%
             </p>
             <div style={{ marginTop: 5 }}>
@@ -1112,7 +1112,7 @@ export function QuoteDetailClient({ id }: { id: string }) {
                   fontSize: 9,
                   textTransform: "uppercase",
                   letterSpacing: "0.06em",
-                  color: "rgba(255,255,255,0.35)",
+                  color: "rgba(255,255,255,0.50)",
                 }}
               >
                 {label}
@@ -1288,7 +1288,7 @@ export function QuoteDetailClient({ id }: { id: string }) {
               <p style={{ fontSize: 12, fontWeight: 500, color: "rgba(255,255,255,0.85)" }}>
                 {item.description}
               </p>
-              <p style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", marginTop: 1 }}>
+              <p style={{ fontSize: 10, color: "rgba(255,255,255,0.50)", marginTop: 1 }}>
                 {item.quantity} {item.unit} × {fmt(item.unitPrice)}/{item.unit}
               </p>
             </div>
@@ -1459,7 +1459,7 @@ export function QuoteDetailClient({ id }: { id: string }) {
                 <p style={{ fontSize: 12, fontWeight: 500, color: "rgba(255,255,255,0.80)" }}>
                   {step.actorName}
                 </p>
-                <p style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", marginTop: 1 }}>
+                <p style={{ fontSize: 10, color: "rgba(255,255,255,0.50)", marginTop: 1 }}>
                   {step.actorRole}
                 </p>
               </div>

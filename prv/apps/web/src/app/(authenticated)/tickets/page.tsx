@@ -22,7 +22,7 @@ function timeAgo(date: Date): string {
 const PRIORITY_MAP = {
   error: { label: "P1", color: "rgba(255,99,90,0.9)", bg: "rgba(255,99,90,0.12)" },
   action_required: { label: "P2", color: "rgba(255,179,64,0.9)", bg: "rgba(255,179,64,0.12)" },
-  warning: { label: "P3", color: "rgba(255,255,255,0.35)", bg: "rgba(255,255,255,0.06)" },
+  warning: { label: "P3", color: "rgba(255,255,255,0.50)", bg: "rgba(255,255,255,0.06)" },
 } as const
 
 export default async function TicketsPage() {

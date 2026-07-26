@@ -953,7 +953,7 @@ const styles = StyleSheet.create({
   },
   doneCardSub: {
     ...type.footnote,
-    color: "rgba(255,255,255,0.35)",
+    color: "rgba(255,255,255,0.50)",
     lineHeight: 18,
   },
   completionWrap: {

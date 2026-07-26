@@ -257,7 +257,7 @@ export function ShiftBuilderClient() {
         </button>
 
         <div style={{ marginBottom: 28 }}>
-          <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 13, marginBottom: 4 }}>Schedule</p>
+          <p style={{ color: "rgba(255,255,255,0.50)", fontSize: 13, marginBottom: 4 }}>Schedule</p>
           <h1
             style={{
               color: "rgba(255,255,255,0.95)",

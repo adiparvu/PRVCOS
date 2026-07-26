@@ -93,7 +93,7 @@ export function SidebarNav({ role, companyName = "PRV" }: SidebarNavProps) {
             height: 28,
             background: "rgba(255,255,255,0.06)",
             border: "1px solid rgba(255,255,255,0.08)",
-            color: "rgba(255,255,255,0.35)",
+            color: "rgba(255,255,255,0.50)",
           }}
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         >

@@ -211,7 +211,7 @@ function StatusStepper({ current }: { current: OrderStatus }) {
       }}
     >
       {isCancelled ? (
-        <p style={{ textAlign: "center", fontSize: 13, color: "rgba(255,255,255,0.35)" }}>
+        <p style={{ textAlign: "center", fontSize: 13, color: "rgba(255,255,255,0.50)" }}>
           Order cancelled
         </p>
       ) : (
@@ -495,7 +495,7 @@ export function OrderDetailClient({ id }: { id: string }) {
         style={{
           fontSize: 11,
           fontWeight: 600,
-          color: "rgba(255,255,255,0.35)",
+          color: "rgba(255,255,255,0.50)",
           textTransform: "uppercase",
           letterSpacing: "0.06em",
           marginBottom: 8,
