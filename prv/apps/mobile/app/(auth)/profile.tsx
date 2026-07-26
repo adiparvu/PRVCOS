@@ -326,6 +326,7 @@ export default function ProfileScreen() {
   const insets = useSafeAreaInsets()
   const router = useRouter()
   const logout = useAuthStore((s) => s.logout)
+  const session = useAuthStore((s) => s.session)
   const { data, isLoading } = useProfile()
 
   const initials = data ? getInitials(data.firstName, data.lastName) : "…"
@@ -345,6 +346,53 @@ export default function ProfileScreen() {
         },
       },
     ])
+  }
+
+  // Apple App Store Guideline 5.1.1(v): an app that supports account creation
+  // must let the user delete their account from within the app. Two-step
+  // confirmation because the action is irreversible — the server anonymizes the
+  // identity while retaining legally-required employment/payroll history.
+  const [isDeleting, setIsDeleting] = useState(false)
+
+  async function performDelete() {
+    setIsDeleting(true)
+    try {
+      const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/mobile/account`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          ...(session ? { Authorization: `Bearer ${session.token}` } : {}),
+        },
+      })
+      if (!res.ok && res.status !== 204) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string }
+        throw new Error(data.error ?? "Could not delete your account.")
+      }
+      await logout()
+      router.replace("/(auth)/login")
+    } catch (e: unknown) {
+      setIsDeleting(false)
+      Alert.alert("Delete failed", e instanceof Error ? e.message : "Please try again.")
+    }
+  }
+
+  function handleDeleteAccount() {
+    Alert.alert(
+      "Delete Account",
+      "This permanently removes your personal data from PRV and signs you out. Records required by law (payroll, safety and audit history) are kept in anonymized form. This cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Continue",
+          style: "destructive",
+          onPress: () =>
+            Alert.alert("Are you sure?", "Deleting your account cannot be undone.", [
+              { text: "Cancel", style: "cancel" },
+              { text: "Delete my account", style: "destructive", onPress: performDelete },
+            ]),
+        },
+      ]
+    )
   }
 
   return (
@@ -485,6 +533,16 @@ export default function ProfileScreen() {
         <TouchableOpacity style={s.signOutBtn} onPress={handleSignOut} activeOpacity={0.8}>
           <SignOutIcon />
           <Text style={s.signOutText}>Sign Out</Text>
+        </TouchableOpacity>
+
+        {/* Delete account — required by App Store Guideline 5.1.1(v) */}
+        <TouchableOpacity
+          style={s.deleteAccountBtn}
+          onPress={handleDeleteAccount}
+          disabled={isDeleting}
+          activeOpacity={0.8}
+        >
+          <Text style={s.deleteAccountText}>{isDeleting ? "Deleting…" : "Delete Account"}</Text>
         </TouchableOpacity>
 
         <Text style={s.versionFooter}>PRV · v1.0.0 · © 2026</Text>
@@ -668,6 +726,20 @@ const s = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     color: "rgba(255,59,48,0.9)",
+    letterSpacing: -0.2,
+  },
+
+  // Delete account (destructive, quieter than sign-out so it is not mistaken for it)
+  deleteAccountBtn: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 14,
+    marginBottom: 8,
+  },
+  deleteAccountText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "rgba(255,59,48,0.75)",
     letterSpacing: -0.2,
   },
   versionFooter: {

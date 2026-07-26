@@ -2,77 +2,14 @@ import { withGates } from "@/lib/with-gates"
 import { NextRequest, NextResponse } from "next/server"
 import { eq, and } from "drizzle-orm"
 import { db } from "@prv/db"
-import {
-  dataErasureRequests,
-  users,
-  userMfaMethods,
-  userDevices,
-  userAuditLog,
-} from "@prv/db/schema"
+import { dataErasureRequests } from "@prv/db/schema"
 import { writeAuditLog, sha256hex } from "@prv/auth"
 import { RoleSets } from "@prv/auth"
 import type { GateContext } from "@prv/auth"
+import { runErasurePipeline, type TableErasureRecord } from "@/lib/gdpr-erasure"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
-
-interface TableErasureRecord {
-  table: string
-  action: "anonymized" | "deleted"
-  rowsAffected: number
-}
-
-async function runErasurePipeline(
-  targetUserId: string,
-  companyId: string
-): Promise<TableErasureRecord[]> {
-  const log: TableErasureRecord[] = []
-  const erasedEmail = `erased-${targetUserId}@gdpr.erased.prv`
-  const now = new Date()
-
-  const userResult = await db
-    .update(users)
-    .set({
-      email: erasedEmail,
-      phone: null,
-      firstName: "ERASED",
-      lastName: "ERASED",
-      bio: null,
-      avatarUrl: null,
-      employeeId: null,
-      isActive: false,
-      deletedAt: now,
-      updatedAt: now,
-    })
-    .where(and(eq(users.id, targetUserId), eq(users.companyId, companyId)))
-    .returning({ id: users.id })
-
-  log.push({ table: "users", action: "anonymized", rowsAffected: userResult.length })
-
-  const mfaResult = await db
-    .delete(userMfaMethods)
-    .where(eq(userMfaMethods.userId, targetUserId))
-    .returning({ id: userMfaMethods.id })
-
-  log.push({ table: "user_mfa_methods", action: "deleted", rowsAffected: mfaResult.length })
-
-  const devicesResult = await db
-    .delete(userDevices)
-    .where(eq(userDevices.userId, targetUserId))
-    .returning({ id: userDevices.id })
-
-  log.push({ table: "user_devices", action: "deleted", rowsAffected: devicesResult.length })
-
-  const auditResult = await db
-    .update(userAuditLog)
-    .set({ ipAddress: null, userAgent: null })
-    .where(eq(userAuditLog.targetUserId, targetUserId))
-    .returning({ id: userAuditLog.id })
-
-  log.push({ table: "user_audit_log", action: "anonymized", rowsAffected: auditResult.length })
-
-  return log
-}
 
 function makeHandler(
   config: Parameters<typeof withGates>[0],

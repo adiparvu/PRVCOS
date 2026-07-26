@@ -6,6 +6,7 @@ import { users } from "@prv/db/schema"
 import { writeAuditLog } from "@prv/auth"
 import { z } from "zod"
 import type { GateContext } from "@prv/auth"
+import { runErasurePipeline } from "@/lib/gdpr-erasure"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -103,5 +104,50 @@ export const PATCH = withGates(
     })
 
     return NextResponse.json({ ok: true })
+  }
+)
+
+// ─── DELETE /api/me — self-service account deletion ──────────────────────────
+//
+// Apple App Store Guideline 5.1.1(v) requires any app that supports account
+// creation to let the user initiate deletion of their own account from inside
+// the app. This is the self-scoped counterpart of the admin GDPR workflow: it
+// runs the SAME anonymization pipeline, but keyed strictly to the caller's own
+// session — there is no target id in the body, so it can never erase anyone
+// else. Employment/payroll/audit history is retained in anonymized form for
+// legal retention (see lib/gdpr-erasure.ts).
+
+export const DELETE = withGates(
+  { action: "user.profile.update", endpointClass: "api_write" },
+  async (req: NextRequest, ctx: GateContext): Promise<NextResponse> => {
+    const { userId, companyId } = ctx.session
+
+    const [existing] = await db
+      .select({ id: users.id, deletedAt: users.deletedAt })
+      .from(users)
+      .where(and(eq(users.id, userId), eq(users.companyId, companyId)))
+      .limit(1)
+
+    if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 })
+    if (existing.deletedAt)
+      return NextResponse.json({ error: "Account already deleted" }, { status: 409 })
+
+    const erasureLog = await runErasurePipeline(userId, companyId)
+
+    void writeAuditLog({
+      companyId,
+      actorId: userId,
+      sessionId: ctx.session.sessionId,
+      action: "user.account.self_delete",
+      entityType: "user",
+      entityId: userId,
+      payload: { erasureLog },
+      method: "DELETE",
+      path: "/api/me",
+      ipAddress: ctx.ipAddress,
+      userAgent: ctx.userAgent,
+    })
+
+    return new NextResponse(null, { status: 204 })
   }
 )
