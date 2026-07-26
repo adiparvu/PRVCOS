@@ -683,6 +683,12 @@ function SelfClockCard() {
           style={[s.clockBtn, clockedIn ? s.clockBtnOut : null, disabled && s.clockBtnDisabled]}
           activeOpacity={0.85}
           disabled={disabled}
+          accessibilityRole="button"
+          accessibilityLabel={clockedIn ? "Clock out" : "Clock in"}
+          accessibilityHint={
+            clockedIn ? "Ends your work day" : "Records the start of your work day"
+          }
+          accessibilityState={{ disabled, busy: isPending }}
           onPress={() =>
             clock(action, {
               onSuccess: (result) => setQueuedNote(result.queued),
