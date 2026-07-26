@@ -2,7 +2,9 @@ import { Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "r
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { useRouter } from "expo-router"
 import { GlassCard } from "@/components/Glass"
+import { useAuthStore } from "@/store/auth"
 import { useFavoritesStore } from "@/store/favorites"
+import { useProfile, getInitials } from "@/hooks/useProfile"
 import { colors, type, radius, spacing } from "@/tokens"
 
 const MENU_SECTIONS = [
@@ -82,7 +84,10 @@ export default function AccountScreen() {
   const insets = useSafeAreaInsets()
   const router = useRouter()
   const favoriteCount = useFavoritesStore((s) => s.ids.length)
-  const isGuest = true // public app — not authenticated
+  const session = useAuthStore((s) => s.session)
+  const isGuest = !session
+  // Real identity, never placeholders: fetched only when a session exists.
+  const { data: profile } = useProfile(!isGuest)
 
   return (
     <View style={styles.root}>
@@ -127,17 +132,29 @@ export default function AccountScreen() {
             </TouchableOpacity>
           </GlassCard>
         ) : (
-          /* Authenticated profile card */
+          /* Authenticated profile card — real session identity, no placeholders */
           <GlassCard style={styles.profileCard}>
             <View style={styles.profileShine} pointerEvents="none" />
             <View style={styles.profileAvatar}>
-              <Text style={styles.profileAvatarInitials}>AM</Text>
+              <Text style={styles.profileAvatarInitials}>
+                {profile ? getInitials(profile.firstName, profile.lastName) : "…"}
+              </Text>
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.profileName}>Alexandra M.</Text>
-              <Text style={styles.profileEmail}>a.m@example.com</Text>
+              <Text style={styles.profileName}>
+                {profile ? `${profile.firstName} ${profile.lastName}` : "Loading…"}
+              </Text>
+              <Text style={styles.profileEmail} numberOfLines={1}>
+                {profile?.email ?? ""}
+              </Text>
             </View>
-            <TouchableOpacity style={styles.editBtn} activeOpacity={0.8}>
+            <TouchableOpacity
+              style={styles.editBtn}
+              activeOpacity={0.8}
+              onPress={() => router.push("/(auth)/edit-profile")}
+              accessibilityRole="button"
+              accessibilityLabel="Edit profile"
+            >
               <Text style={styles.editBtnIcon}>✎</Text>
             </TouchableOpacity>
           </GlassCard>

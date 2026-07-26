@@ -20,12 +20,13 @@ export interface ProfileData {
   }
 }
 
-export function useProfile() {
+export function useProfile(enabled = true) {
   return useQuery<ProfileData>({
     queryKey: ["profile"],
     queryFn: () => api.get<ProfileData>("/api/mobile/profile"),
     staleTime: 60_000,
     retry: 2,
+    enabled,
   })
 }
 
