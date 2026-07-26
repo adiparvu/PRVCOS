@@ -66,13 +66,9 @@ export const userProfiles = pgTable(
     dateOfBirth: date("date_of_birth"),
     hireDate: date("hire_date"),
 
-    // Sensitive fields. NOT POPULATED TODAY — no route writes them, and there is
-    // no application-layer encryption helper in this codebase. Before wiring any
-    // of them up you MUST add encryption at rest (and declare the collection in
-    // the App Store privacy labels); storing a national ID or IBAN in plaintext
-    // is not acceptable.
-    nationalId: varchar("national_id", { length: 100 }),
-    bankIban: varchar("bank_iban", { length: 50 }),
+    // national_id and bank_iban were dropped (audit D6): never written, and no
+    // application-layer encryption exists. Re-adding them requires a KMS-backed
+    // encryption helper first, plus an App Store privacy-label declaration.
     address: jsonb("address"),
 
     skills: jsonb("skills").notNull().default([]),

@@ -11,7 +11,8 @@ const cspDirectives = [
   isDev ? "script-src 'self' 'unsafe-eval' 'unsafe-inline'" : "script-src 'self' 'unsafe-inline'",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com",
-  `connect-src 'self' ${appUrl} https://*.supabase.co wss://*.supabase.co https://api.resend.com https://cloud.typesense.org https://app.inngest.com https://*.sentry.io`,
+  // upstash entry preserved from the retired middleware copy of this policy (D5)
+  `connect-src 'self' ${appUrl} https://*.supabase.co wss://*.supabase.co https://api.resend.com https://cloud.typesense.org https://app.inngest.com https://*.sentry.io https://*.upstash.io`,
   "img-src 'self' data: blob: https://*.supabase.co",
   "media-src 'self' blob:",
   "object-src 'none'",

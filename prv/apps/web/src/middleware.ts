@@ -4,21 +4,6 @@ import type { NextRequest } from "next/server"
 import { checkRateLimit } from "@prv/cache"
 import { isOriginAllowed, isStateChanging } from "@/lib/origin-check"
 
-// Content-Security-Policy — applied to every response (P-09)
-const CSP = [
-  "default-src 'self'",
-  // Next.js requires 'unsafe-inline' for style; nonce-based CSP is future work
-  "style-src 'self' 'unsafe-inline'",
-  // Next.js inline scripts + Supabase auth (restrict to known domains)
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-  `connect-src 'self' ${process.env["NEXT_PUBLIC_SUPABASE_URL"] ?? "*"} wss://*.supabase.co https://*.upstash.io`,
-  "img-src 'self' data: blob: https:",
-  "font-src 'self'",
-  "frame-ancestors 'none'",
-  "base-uri 'self'",
-  "form-action 'self'",
-].join("; ")
-
 // Allowed CORS origins for API routes (P-09)
 const ALLOWED_ORIGINS = new Set(
   (process.env["ALLOWED_ORIGINS"] ?? process.env["NEXT_PUBLIC_APP_URL"] ?? "http://localhost:3000")
@@ -132,12 +117,9 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(dashboardUrl)
   }
 
-  // ── Security headers — applied to every response (P-09) ──────────────
-  response.headers.set("Content-Security-Policy", CSP)
-  response.headers.set("X-Frame-Options", "DENY")
-  response.headers.set("X-Content-Type-Options", "nosniff")
-  response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin")
-  response.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=(self)")
+  // Security headers (CSP, HSTS, X-Frame-Options, …) are set in ONE place:
+  // next.config.ts headers(). A second, divergent copy used to live here and
+  // the two policies drifted — audit item D5.
 
   // ── CORS for /api/* routes ─────────────────────────────────────────────
   if (pathname.startsWith("/api/")) {
