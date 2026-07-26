@@ -16,6 +16,7 @@ import * as LocalAuthentication from "expo-local-authentication"
 import { useRouter } from "expo-router"
 import { PRVMark } from "@/components/PRVMark"
 import { useAuthStore } from "@/store/auth"
+import { getSession } from "@/lib/session"
 import { colors, radius, spacing, type } from "@/tokens"
 
 export default function LoginScreen() {
@@ -28,10 +29,21 @@ export default function LoginScreen() {
   const [error, setError] = useState<string | null>(null)
   const [biometricAvailable, setBiometricAvailable] = useState(false)
 
+  // Biometrics UNLOCK a session that already exists on this device; they are not
+  // an authentication method on their own. Device-level enrolment alone must
+  // never grant access, so the button is offered only when a stored session is
+  // present.
   useEffect(() => {
-    LocalAuthentication.hasHardwareAsync().then((has) => {
-      if (has) LocalAuthentication.isEnrolledAsync().then(setBiometricAvailable)
-    })
+    async function probe() {
+      const [hasHardware, stored] = await Promise.all([
+        LocalAuthentication.hasHardwareAsync(),
+        getSession(),
+      ])
+      if (!hasHardware || !stored) return
+      const enrolled = await LocalAuthentication.isEnrolledAsync()
+      setBiometricAvailable(enrolled)
+    }
+    void probe()
   }, [])
 
   async function handleLogin() {
@@ -66,15 +78,24 @@ export default function LoginScreen() {
   }
 
   async function handleFaceId() {
+    // Re-read the stored session at press time: it may have been cleared since
+    // the probe ran (e.g. a sign-out in another tab of the flow).
+    const stored = await getSession()
+    if (!stored) {
+      setBiometricAvailable(false)
+      setError("No saved session on this device. Please sign in with your password.")
+      return
+    }
+
     const result = await LocalAuthentication.authenticateAsync({
       promptMessage: "Sign in to PRV",
       fallbackLabel: "Use password",
     })
-    if (result.success) {
-      // After biometric auth passes, exchange stored credential for a fresh token.
-      // For now, navigate — the real implementation uses a stored refresh token.
-      router.replace("/(tabs)/command")
-    }
+    if (!result.success) return
+
+    // Restore the real session so every subsequent request carries its bearer
+    // token. Navigation happens through the auth store, never on its own.
+    await login(stored)
   }
 
   return (
@@ -154,7 +175,7 @@ export default function LoginScreen() {
         )}
 
         {/* Footer */}
-        <Pressable onPress={() => router.push("/(auth)/mfa")} style={styles.forgotWrap}>
+        <Pressable onPress={() => router.push("/(auth)/password-reset")} style={styles.forgotWrap}>
           <Text style={styles.forgot}>Forgot password?</Text>
         </Pressable>
       </ScrollView>

@@ -18,14 +18,7 @@
       "bundleIdentifier": "ro.prv.app",
       "buildNumber": "1",
       "infoPlist": {
-        "NSFaceIDUsageDescription": "PRV uses Face ID to authenticate your identity securely.",
-        "NSCameraUsageDescription": "PRV uses the camera to scan documents and capture site photos.",
-        "NSLocationWhenInUseUsageDescription": "PRV uses your location to verify clock-in at job sites.",
-        "NSLocationAlwaysUsageDescription": "PRV uses your location for field supervisor features.",
-        "NSMicrophoneUsageDescription": "PRV uses the microphone to record voice notes in messages."
-      },
-      "entitlements": {
-        "com.apple.developer.applesignin": ["Default"]
+        "NSFaceIDUsageDescription": "PRV uses Face ID to authenticate your identity securely."
       }
     },
     "android": {
@@ -35,14 +28,7 @@
       },
       "package": "ro.prv.app",
       "versionCode": 1,
-      "permissions": [
-        "CAMERA",
-        "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION",
-        "RECORD_AUDIO",
-        "USE_BIOMETRIC",
-        "USE_FINGERPRINT"
-      ]
+      "permissions": ["USE_BIOMETRIC", "USE_FINGERPRINT"]
     },
     "web": {
       "favicon": "./assets/favicon.png"
