@@ -11,12 +11,102 @@ import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { useLocalSearchParams, useRouter } from "expo-router"
 import { GlassCard } from "@/components/Glass"
 import { usePublicShop } from "@/hooks/usePublicShop"
+import { usePublicReviews, type PublicReview } from "@/hooks/usePublicReviews"
 import { useCartStore, cartCount } from "@/store/cart"
 import { useFavoritesStore } from "@/store/favorites"
 import { colors, radius, spacing, type } from "@/tokens"
 
 function formatPrice(value: number): string {
   return `€${value.toLocaleString("ro-RO", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`
+}
+
+function Stars({ rating, size }: { rating: number; size: number }) {
+  return (
+    <Text
+      style={{ fontSize: size, letterSpacing: 1.5 }}
+      accessibilityLabel={`${rating} out of 5 stars`}
+    >
+      {[1, 2, 3, 4, 5].map((i) => (
+        <Text key={i} style={{ color: i <= rating ? colors.text1 : colors.text4 }}>
+          {"★"}
+        </Text>
+      ))}
+    </Text>
+  )
+}
+
+function ReviewBlock({ review }: { review: PublicReview }) {
+  const date = new Date(review.createdAt).toLocaleDateString("ro-RO", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  })
+  const byline = [review.author, date, review.isVerifiedPurchase ? "✓ Verified Purchase" : null]
+    .filter(Boolean)
+    .join(" · ")
+  return (
+    <View style={styles.review}>
+      {review.title ? <Text style={styles.reviewTitle}>{review.title}</Text> : null}
+      <Stars rating={review.rating} size={10} />
+      {review.body ? <Text style={styles.reviewBody}>{review.body}</Text> : null}
+      <Text style={styles.reviewBy}>{byline}</Text>
+    </View>
+  )
+}
+
+// Ratings & Reviews in the Apple Store manner (preview approved 2026-07):
+// one quiet glass panel — summary line, hairline-divided review blocks,
+// "See all N reviews ›" at the base. Hidden entirely when there are none.
+function ReviewsSection({ productId }: { productId: string }) {
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = usePublicReviews(productId)
+  const summary = data?.pages[0]?.summary
+  if (!summary || summary.totalCount === 0) return null
+
+  const reviews = data?.pages.flatMap((p) => p.reviews) ?? []
+  const remaining = summary.totalCount - reviews.length
+
+  return (
+    <View style={styles.reviewsSect}>
+      <Text style={styles.reviewsTitle}>Ratings & Reviews</Text>
+      <GlassCard style={styles.reviewsPanel}>
+        <View style={styles.summary}>
+          <View style={styles.summaryLine}>
+            {summary.avgRating != null && (
+              <Text style={styles.summaryScore}>{summary.avgRating.toFixed(1)}</Text>
+            )}
+            <Stars rating={Math.round(summary.avgRating ?? 0)} size={12} />
+          </View>
+          <Text style={styles.summaryBased}>
+            Based on {summary.totalCount} {summary.totalCount === 1 ? "review" : "reviews"}
+          </Text>
+        </View>
+        {reviews.map((r) => (
+          <View key={r.id}>
+            <View style={styles.hairline} />
+            <ReviewBlock review={r} />
+          </View>
+        ))}
+        {hasNextPage && remaining > 0 && (
+          <>
+            <View style={styles.hairline} />
+            <TouchableOpacity
+              style={styles.seeAll}
+              activeOpacity={0.7}
+              disabled={isFetchingNextPage}
+              onPress={() => void fetchNextPage()}
+              accessibilityRole="button"
+              accessibilityLabel={`See all ${summary.totalCount} reviews`}
+            >
+              <Text style={styles.seeAllText}>
+                {isFetchingNextPage ? "Loading…" : `See all ${summary.totalCount} reviews`}
+              </Text>
+              <Text style={styles.seeAllChevron}>{"›"}</Text>
+            </TouchableOpacity>
+          </>
+        )}
+      </GlassCard>
+    </View>
+  )
 }
 
 export default function ProductScreen() {
@@ -112,6 +202,8 @@ export default function ProductScreen() {
                 </Text>
               </GlassCard>
             )}
+
+            <ReviewsSection productId={product.id} />
           </ScrollView>
 
           <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.base }]}>
@@ -195,6 +287,27 @@ const styles = StyleSheet.create({
   rating: { ...type.footnote, color: colors.text3, marginTop: spacing.xs },
   notice: { padding: spacing.base, marginTop: spacing.lg },
   noticeText: { ...type.footnote, color: colors.text2 },
+  reviewsSect: { marginTop: spacing.xl },
+  reviewsTitle: { ...type.title3, color: colors.text1, letterSpacing: -0.4 },
+  reviewsPanel: { marginTop: spacing.md, paddingVertical: 0, paddingHorizontal: 0 },
+  summary: { paddingHorizontal: spacing.base, paddingVertical: spacing.base },
+  summaryLine: { flexDirection: "row", alignItems: "baseline", gap: spacing.sm },
+  summaryScore: { ...type.title2, color: colors.text1 },
+  summaryBased: { ...type.caption1, color: colors.text3, marginTop: 4 },
+  hairline: { height: 1, backgroundColor: colors.borderSubtle, marginHorizontal: spacing.base },
+  review: { paddingHorizontal: spacing.base, paddingVertical: spacing.base },
+  reviewTitle: { ...type.subhead, fontWeight: "600", color: colors.text1, marginBottom: 5 },
+  reviewBody: { ...type.footnote, color: colors.text2, lineHeight: 19, marginTop: 8 },
+  reviewBy: { ...type.caption1, color: colors.text3, marginTop: 9 },
+  seeAll: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: spacing.base,
+    paddingVertical: 14,
+  },
+  seeAllText: { ...type.footnote, fontWeight: "600", color: colors.text1 },
+  seeAllChevron: { fontSize: 16, color: colors.text3 },
   footer: {
     position: "absolute",
     left: 0,

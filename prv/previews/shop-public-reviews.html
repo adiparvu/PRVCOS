@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PRV — Ratings & Reviews în aplicația publică (preview v3, stil Apple Store)</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0a0a0a; color: rgba(255,255,255,0.95);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+    min-height: 100vh; padding: 40px 24px 80px; -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1100px; margin: 0 auto; }
+  h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.02em; }
+  .sub { color: rgba(255,255,255,0.65); font-size: 14px; margin-top: 8px; max-width: 780px; line-height: 1.55; }
+  .sub b { color: rgba(255,255,255,0.9); }
+
+  .row { display: flex; gap: 40px; flex-wrap: wrap; margin-top: 36px; justify-content: center; }
+  .stage-label {
+    font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
+    color: rgba(255,255,255,0.50); margin-bottom: 14px; text-align: center;
+  }
+
+  .phone {
+    width: 375px; background: #000; border-radius: 44px;
+    border: 1px solid rgba(255,255,255,0.14);
+    box-shadow: 0 24px 64px rgba(0,0,0,0.7), 0 8px 24px rgba(0,0,0,0.4);
+    padding: 18px 16px 24px; overflow: hidden;
+  }
+
+  .glass {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 20px;
+    position: relative; overflow: hidden;
+  }
+  .glass::before { content:""; position:absolute; top:0; left:0; right:0; height:1px; background: rgba(255,255,255,0.25); }
+
+  .hero { height: 110px; display:flex; align-items:center; justify-content:center; color: rgba(255,255,255,0.15); font-size: 34px; margin-bottom: 14px; }
+  .cat { font-size: 11px; letter-spacing: 0.6px; text-transform: uppercase; color: rgba(255,255,255,0.50); }
+  .pname { font-size: 20px; font-weight: 700; margin-top: 4px; letter-spacing: -0.02em; }
+  .price { font-size: 17px; font-weight: 600; margin-top: 6px; }
+
+  /* ── Ratings & Reviews — Apple Store / apple.com style ──
+     One quiet panel. Summary line, then reviews as text blocks divided by
+     hairlines. No per-review cards, no breakdown bars, no chrome. */
+  .sect { margin-top: 26px; }
+  .sect-title { font-size: 20px; font-weight: 700; letter-spacing: -0.02em; }
+
+  .panel { margin-top: 12px; }
+  .summary { padding: 16px 18px 15px; }
+  .sum-line { display: flex; align-items: baseline; gap: 10px; }
+  .sum-score { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
+  .sum-stars { font-size: 12px; letter-spacing: 1.5px; color: rgba(255,255,255,0.95); }
+  .sum-based { font-size: 12.5px; color: rgba(255,255,255,0.50); margin-top: 4px; }
+
+  .hr { height: 1px; background: rgba(255,255,255,0.08); margin: 0 18px; }
+
+  .review { padding: 15px 18px; }
+  .rtitle { font-size: 14.5px; font-weight: 600; letter-spacing: -0.01em; }
+  .rstars { font-size: 10px; letter-spacing: 1.5px; color: rgba(255,255,255,0.95); margin-top: 5px; }
+  .rstars .off { color: rgba(255,255,255,0.15); }
+  .rbody { font-size: 13.5px; line-height: 1.55; color: rgba(255,255,255,0.65); margin-top: 8px; }
+  .rby { font-size: 12px; color: rgba(255,255,255,0.50); margin-top: 9px; }
+  .rby .v { color: rgba(255,255,255,0.65); }
+
+  .see-all { display: flex; align-items: center; justify-content: space-between; padding: 13px 18px; }
+  .see-all .t { font-size: 13.5px; font-weight: 600; color: rgba(255,255,255,0.95); }
+  .see-all .c { font-size: 15px; color: rgba(255,255,255,0.50); }
+
+  .note {
+    margin: 40px auto 0; padding: 16px 20px; border-radius: 16px; max-width: 900px;
+    border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.04);
+    font-size: 13px; line-height: 1.6; color: rgba(255,255,255,0.65);
+  }
+  .note b { color: rgba(255,255,255,0.9); }
+  .note ul { margin: 8px 0 0 18px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Shop public · Ratings & Reviews — preview v3 (stil Apple Store)</h1>
+  <p class="sub">
+    Ajustat: <b>Apple Store / apple.com</b>, nu App Store. Comerț curat: <b>un singur panou de sticlă</b>
+    cu sumarul pe un rând („4.8 ★★★★★ · Based on 12 reviews"), recenziile ca blocuri de text despărțite
+    de linii hairline — fără carduri separate, fără bare de distribuție, fără chrome. „See all reviews ›"
+    ca rând discret la baza panoului. Monocrom, read-only.
+  </p>
+
+  <div class="row">
+    <div>
+      <div class="stage-label">Ecranul de produs · secțiunea Ratings & Reviews</div>
+      <div class="phone">
+        <div class="glass hero">◈</div>
+        <div class="cat">Flooring</div>
+        <div class="pname">Parchet stejar natur 14mm</div>
+        <div class="price">€38,50</div>
+
+        <div class="sect">
+          <div class="sect-title">Ratings &amp; Reviews</div>
+
+          <div class="glass panel">
+            <div class="summary">
+              <div class="sum-line">
+                <span class="sum-score">4.8</span>
+                <span class="sum-stars">★★★★★</span>
+              </div>
+              <div class="sum-based">Based on 12 reviews</div>
+            </div>
+
+            <div class="hr"></div>
+
+            <div class="review">
+              <div class="rtitle">Exact ca în poze</div>
+              <div class="rstars">★★★★★</div>
+              <div class="rbody">Montat în tot livingul — nuanța e identică cu mostrele, iar livrarea a venit cu două zile mai devreme.</div>
+              <div class="rby">Andrei P. · 12 iul. 2026 · <span class="v">✓ Verified Purchase</span></div>
+            </div>
+
+            <div class="hr"></div>
+
+            <div class="review">
+              <div class="rtitle">Calitate bună la preț corect</div>
+              <div class="rstars">★★★★<span class="off">★</span></div>
+              <div class="rbody">Un singur pachet a venit cu o lamelă ciobită, înlocuită fără discuții.</div>
+              <div class="rby">Ioana M. · 28 iun. 2026</div>
+            </div>
+
+            <div class="hr"></div>
+
+            <div class="see-all">
+              <span class="t">See all 12 reviews</span>
+              <span class="c">›</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note">
+    <b>Ce s-a schimbat față de v2 + deciziile rămase:</b>
+    <ul>
+      <li><b>Un singur panou</b> (Glass 1), în maniera apple.com: sumar → hairline → recenzie → hairline → „See all reviews ›". Fără card per recenzie, fără barele de distribuție 5★→1★, fără numeralul gigant.</li>
+      <li><b>Sumarul pe un rând</b>: nota + stelele + „Based on N reviews" dedesubt, în treapta text3.</li>
+      <li><b>Recenzia ca bloc de text</b>: titlu semibold, stele mici, corp, apoi „Autor · dată · ✓ Verified Purchase" pe un singur rând discret.</li>
+      <li>Primele 3 recenzii inline; „See all reviews ›" încarcă restul (paginare pe cursor, 10/pagină), în același panou.</li>
+      <li><b>Read-only</b>; doar recenzii aprobate; autor = prenume + inițială (fără PII). API: <b>GET /api/public/shop/products/[id]/reviews</b>, fail-closed pe compania publică, identic cu ruta de produse.</li>
+      <li>Produs fără recenzii → secțiunea nu apare.</li>
+    </ul>
+  </div>
+</div>
+</body>
+</html>
