@@ -148,7 +148,10 @@ export const userMfaMethods = pgTable(
 
     method: varchar("method", { length: 20 }).notNull(), // totp | sms | email_otp | passkey
     identifier: varchar("identifier", { length: 255 }), // phone / email / credential id
-    secretEncrypted: text("secret_encrypted"), // TOTP secret (AES-256-GCM)
+    // Unused: TOTP secrets are held by Supabase Auth (see api/auth/totp), which
+    // manages MFA enrolment. Nothing writes this column. If it is ever used, the
+    // value must be encrypted first — the name is a requirement, not a fact.
+    secretEncrypted: text("secret_encrypted"),
     isPrimary: boolean("is_primary").notNull().default(false),
     isVerified: boolean("is_verified").notNull().default(false),
 
