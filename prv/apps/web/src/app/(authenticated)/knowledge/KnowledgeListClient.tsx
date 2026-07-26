@@ -6,6 +6,7 @@ import Link from "next/link"
 import { useSheetStack } from "@prv/ui"
 import type { KnowledgeArticle, KnowledgeMeta, ArticleType } from "@/app/api/knowledge/route"
 import { useKnowledgeArticles } from "@/lib/api-hooks"
+import { SemanticSearch } from "./SemanticSearch"
 
 type FilterType = "All" | "SOP" | "Policies" | "Guides" | "FAQ"
 
@@ -340,10 +341,17 @@ function FeaturedCard({ article }: { article: KnowledgeArticle }) {
 export function KnowledgeListClient() {
   const router = useRouter()
   const [filter, setFilter] = useState<FilterType>("All")
+  const [titleQuery, setTitleQuery] = useState("")
+  const [semanticActive, setSemanticActive] = useState(false)
   const { openSheet } = useSheetStack()
   const type = FILTER_TO_TYPE[filter]
   const { data, hasNextPage, fetchNextPage, isFetchingNextPage } = useKnowledgeArticles(type)
-  const articles: KnowledgeArticle[] = data?.articles ?? []
+  const allArticles: KnowledgeArticle[] = data?.articles ?? []
+  // Typing in the search field filters titles locally; Enter switches to
+  // semantic mode, which replaces the grid entirely (preview approved).
+  const articles: KnowledgeArticle[] = titleQuery.trim()
+    ? allArticles.filter((a) => a.title.toLowerCase().includes(titleQuery.trim().toLowerCase()))
+    : allArticles
   const meta: KnowledgeMeta | null = data?.meta ?? null
 
   const pinned = articles.find((a) => a.isPinned)
@@ -596,10 +604,16 @@ export function KnowledgeListClient() {
         ))}
       </div>
 
+      {/* Semantic search — one field, two modes (typing filters titles,
+          Enter asks the knowledge base; results replace the grid) */}
+      <div style={{ marginBottom: 12 }}>
+        <SemanticSearch onQueryChange={setTitleQuery} onActiveChange={setSemanticActive} />
+      </div>
+
       {/* Filter chips */}
       <div
         style={{
-          display: "flex",
+          display: semanticActive ? "none" : "flex",
           gap: 8,
           marginBottom: 12,
           overflowX: "auto",
@@ -631,8 +645,8 @@ export function KnowledgeListClient() {
         ))}
       </div>
 
-      {/* Content */}
-      {showSections ? (
+      {/* Content — hidden while a semantic search is active */}
+      {semanticActive ? null : showSections ? (
         <>
           {pinned && (
             <>

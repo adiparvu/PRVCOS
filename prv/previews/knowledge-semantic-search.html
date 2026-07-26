@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PRV — Căutare semantică în Knowledge Base (preview)</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #000; color: rgba(255,255,255,0.95);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+    min-height: 100vh; padding: 40px 24px 80px; -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; }
+  h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.02em; }
+  .sub { color: rgba(255,255,255,0.65); font-size: 14px; margin-top: 8px; max-width: 760px; line-height: 1.55; }
+  .sub b { color: rgba(255,255,255,0.9); }
+
+  .stage { margin-top: 36px; }
+  .stage-label {
+    font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
+    color: rgba(255,255,255,0.50); margin-bottom: 14px;
+  }
+
+  /* ── Floating pill search bar (design system: Floating Search Bar) ── */
+  .searchbar {
+    display: flex; align-items: center; gap: 12px;
+    background: rgba(255,255,255,0.10);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 100px;
+    padding: 14px 22px;
+    backdrop-filter: blur(48px) saturate(180%);
+    position: relative; overflow: hidden;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.7), 0 8px 24px rgba(0,0,0,0.4);
+    max-width: 720px;
+  }
+  .searchbar::before { content:""; position:absolute; top:0; left:0; right:0; height:1px; background: rgba(255,255,255,0.32); }
+  .searchbar .icon { color: rgba(255,255,255,0.50); font-size: 16px; }
+  .searchbar .q { font-size: 15px; color: rgba(255,255,255,0.95); flex: 1; }
+  .searchbar .q .caret { display:inline-block; width:1px; height:16px; background:rgba(255,255,255,0.9); vertical-align:-3px; animation: blink 1.1s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+  .searchbar .kbd {
+    font-size: 11px; color: rgba(255,255,255,0.50);
+    border: 1px solid rgba(255,255,255,0.12); border-radius: 6px; padding: 2px 7px;
+  }
+  .mode-note { font-size: 12px; color: rgba(255,255,255,0.50); margin-top: 10px; max-width: 720px; }
+  .mode-note b { color: rgba(255,255,255,0.65); font-weight: 600; }
+
+  /* ── Result cards ── */
+  .results { margin-top: 18px; display: flex; flex-direction: column; gap: 12px; max-width: 720px; }
+  .rcard {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 20px;
+    padding: 16px 18px 14px;
+    backdrop-filter: blur(32px);
+    position: relative; overflow: hidden;
+    transition: background 150ms;
+  }
+  .rcard::before { content:""; position:absolute; top:0; left:0; right:0; height:1px; background: rgba(255,255,255,0.25); }
+  .rcard:hover { background: rgba(255,255,255,0.09); }
+  .rhead { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  .rtitle { font-size: 15px; font-weight: 600; color: rgba(255,255,255,0.95); }
+  .rsim { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+  .rsim .pct { font-size: 12px; font-variant-numeric: tabular-nums; color: rgba(255,255,255,0.50); }
+  .simbar { width: 56px; height: 3px; border-radius: 2px; background: rgba(255,255,255,0.12); overflow: hidden; }
+  .simbar i { display: block; height: 100%; background: rgba(255,255,255,0.85); border-radius: 2px; }
+  .rexcerpt { font-size: 13.5px; line-height: 1.55; color: rgba(255,255,255,0.65); margin-top: 8px; }
+  .rexcerpt mark { background: transparent; color: rgba(255,255,255,0.95); font-weight: 600; }
+  .rfoot { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; }
+  .rmeta { font-size: 12px; color: rgba(255,255,255,0.50); }
+  .ropen { font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.95); }
+
+  /* ── Skeleton / loading ── */
+  .skel { position: relative; overflow: hidden; }
+  .skel .line { height: 12px; border-radius: 6px; background: rgba(255,255,255,0.08); margin-top: 10px; }
+  .skel .line.w60 { width: 60%; } .skel .line.w90 { width: 90%; } .skel .line.w40 { width: 40%; }
+  .skel::after {
+    content:""; position:absolute; inset:0;
+    background: linear-gradient(100deg, transparent 30%, rgba(255,255,255,0.05) 50%, transparent 70%);
+    animation: shimmer 1.6s infinite;
+  }
+  @keyframes shimmer { from { transform: translateX(-100%);} to { transform: translateX(100%);} }
+
+  /* ── Empty & unconfigured states ── */
+  .state {
+    max-width: 720px; margin-top: 18px; text-align: center;
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 20px; padding: 28px 24px; position: relative; overflow: hidden;
+  }
+  .state::before { content:""; position:absolute; top:0; left:0; right:0; height:1px; background: rgba(255,255,255,0.25); }
+  .state .glyph { font-size: 22px; color: rgba(255,255,255,0.50); }
+  .state .t { font-size: 15px; font-weight: 600; margin-top: 10px; color: rgba(255,255,255,0.95); }
+  .state .d { font-size: 13px; color: rgba(255,255,255,0.65); margin-top: 6px; line-height: 1.5; max-width: 440px; margin-left:auto; margin-right:auto; }
+  .state .cta {
+    display: inline-block; margin-top: 14px; font-size: 13px; font-weight: 700;
+    background: #fff; color: #000; border-radius: 100px; padding: 8px 18px;
+  }
+  .state .cta.ghost { background: rgba(255,255,255,0.10); color: rgba(255,255,255,0.95); border: 1px solid rgba(255,255,255,0.12); }
+
+  .note {
+    margin-top: 40px; padding: 16px 20px; border-radius: 16px; max-width: 900px;
+    border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.04);
+    font-size: 13px; line-height: 1.6; color: rgba(255,255,255,0.65);
+  }
+  .note b { color: rgba(255,255,255,0.9); }
+  .note ul { margin: 8px 0 0 18px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Knowledge · Căutare semantică — preview</h1>
+  <p class="sub">
+    Un singur câmp de căutare în vârful paginii Knowledge, cu <b>două moduri sub aceeași bară</b>:
+    filtrarea instantanee după titlu rămâne cea existentă (la tastare), iar <b>Enter lansează căutarea
+    semantică</b> — întrebare în limbaj natural, răspunsuri din conținutul articolelor, ordonate după sens,
+    nu după potrivirea cuvintelor. Monocrom, sticlă, ierarhia de text aprobată (95/65/50).
+  </p>
+
+  <!-- STAREA 1: rezultate -->
+  <div class="stage">
+    <div class="stage-label">1 · Rezultate (după Enter)</div>
+    <div class="searchbar">
+      <span class="icon">⌕</span>
+      <span class="q">ce echipament de protecție e obligatoriu la lucrul la înălțime<span class="caret"></span></span>
+      <span class="kbd">↵ caută în conținut</span>
+    </div>
+    <p class="mode-note"><b>3 potriviri semantice</b> · întrebarea e comparată cu înțelesul textului, nu cu titlurile</p>
+
+    <div class="results">
+      <div class="rcard">
+        <div class="rhead">
+          <div class="rtitle">Norme SSM — lucrul la înălțime</div>
+          <div class="rsim"><div class="simbar"><i style="width:92%"></i></div><span class="pct">92%</span></div>
+        </div>
+        <p class="rexcerpt">…peste 2 metri, <mark>hamul de siguranță cu două puncte de ancorare este obligatoriu</mark>, împreună cu casca cu curea sub bărbie. Verificarea vizuală a hamului se face înainte de fiecare utilizare, iar…</p>
+        <div class="rfoot">
+          <span class="rmeta">Siguranță · fragmentul 3 din articol</span>
+          <span class="ropen">Deschide articolul →</span>
+        </div>
+      </div>
+
+      <div class="rcard">
+        <div class="rhead">
+          <div class="rtitle">Checklist predare șantier</div>
+          <div class="rsim"><div class="simbar"><i style="width:71%"></i></div><span class="pct">71%</span></div>
+        </div>
+        <p class="rexcerpt">…echipa confirmă că <mark>echipamentele individuale de protecție</mark> au fost returnate și inventariate. Lipsurile se raportează șefului de echipă în aceeași zi…</p>
+        <div class="rfoot">
+          <span class="rmeta">Operațiuni · fragmentul 1 din articol</span>
+          <span class="ropen">Deschide articolul →</span>
+        </div>
+      </div>
+
+      <div class="rcard">
+        <div class="rhead">
+          <div class="rtitle">Ghid montaj schelă fațadă</div>
+          <div class="rsim"><div class="simbar"><i style="width:64%"></i></div><span class="pct">64%</span></div>
+        </div>
+        <p class="rexcerpt">…accesul pe schelă este permis numai <mark>cu echipament complet</mark> și după semnarea procesului-verbal de instruire. Podinele se verifică la începutul fiecărui schimb…</p>
+        <div class="rfoot">
+          <span class="rmeta">Ghiduri · fragmentul 2 din articol</span>
+          <span class="ropen">Deschide articolul →</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STAREA 2: loading -->
+  <div class="stage">
+    <div class="stage-label">2 · În căutare (skeleton cu shimmer)</div>
+    <div class="results" style="margin-top:0">
+      <div class="rcard skel"><div class="line w60"></div><div class="line w90"></div><div class="line w40"></div></div>
+      <div class="rcard skel"><div class="line w40"></div><div class="line w90"></div></div>
+    </div>
+  </div>
+
+  <!-- STAREA 3: fără rezultate -->
+  <div class="stage">
+    <div class="stage-label">3 · Nicio potrivire relevantă</div>
+    <div class="state">
+      <div class="glyph">◌</div>
+      <div class="t">Nimic suficient de apropiat</div>
+      <div class="d">Niciun articol nu se apropie de sensul întrebării. Încearcă o formulare diferită — sau scrie articolul care lipsește.</div>
+      <span class="cta ghost">Scrie un articol +</span>
+    </div>
+  </div>
+
+  <!-- STAREA 4: neconfigurat -->
+  <div class="stage">
+    <div class="stage-label">4 · Funcție neprovizionată (fără cheia de embeddings)</div>
+    <div class="state">
+      <div class="glyph">◇</div>
+      <div class="t">Căutarea semantică nu e activată</div>
+      <div class="d">Filtrarea după titlu funcționează în continuare. Căutarea în înțelesul conținutului se activează la provizionarea serviciului de embeddings — un pas de configurare, nu o eroare.</div>
+    </div>
+  </div>
+
+  <div class="note">
+    <b>Decizii în acest preview (spune-mi ce ajustez):</b>
+    <ul>
+      <li><b>Un singur câmp, două moduri</b> — tastarea filtrează titlurile local (comportamentul existent), Enter întreabă semantic conținutul. Fără un al doilea search bar care să concureze cu primul.</li>
+      <li><b>Relevanța ca bară monocromă + procent</b> în treapta text3 (50%) — fără culori, conform limbajului.</li>
+      <li><b>Fragmentul, nu articolul</b> e unitatea de rezultat: se vede exact pasajul care a răspuns, cu termenii-cheie îngroșați (alb 95%), și „fragmentul N" ca meta.</li>
+      <li><b>Starea neconfigurată e liniștită</b> — un panou informativ, nu un banner de eroare; filtrarea clasică rămâne funcțională.</li>
+      <li>Rezultatele înlocuiesc grila de articole cât timp o căutare semantică e activă; ✕ sau golirea câmpului revin la grilă.</li>
+    </ul>
+  </div>
+</div>
+</body>
+</html>
