@@ -23,6 +23,7 @@ export function GlassInput({
   ...props
 }: GlassInputProps) {
   const inputId = id ?? label?.toLowerCase().replace(/\s+/g, "-")
+  const messageId = inputId ? `${inputId}-message` : undefined
 
   return (
     <div className={clsx("flex flex-col gap-1.5", containerClassName)}>
@@ -53,7 +54,9 @@ export function GlassInput({
             "px-3.5 py-0",
             "backdrop-blur-xl",
             "transition-all duration-150",
-            "focus:outline-none",
+            // Visible keyboard focus — outline-none alone leaves keyboard
+            // users navigating blind (WCAG 2.4.7).
+            "focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40",
             "disabled:opacity-40 disabled:cursor-not-allowed",
             leftIcon && "pl-10",
             rightElement && "pr-10",
@@ -65,6 +68,8 @@ export function GlassInput({
             color: "var(--prv-text-1)",
             ...style,
           }}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error || hint ? messageId : undefined}
           {...props}
         />
         {rightElement && (
@@ -77,11 +82,16 @@ export function GlassInput({
         )}
       </div>
       {error ? (
-        <p className="text-[12px]" style={{ color: "rgba(255,100,100,0.85)" }}>
+        <p
+          id={messageId}
+          role="alert"
+          className="text-[12px]"
+          style={{ color: "rgba(255,100,100,0.85)" }}
+        >
           {error}
         </p>
       ) : hint ? (
-        <p className="text-[12px]" style={{ color: "var(--prv-text-3)" }}>
+        <p id={messageId} className="text-[12px]" style={{ color: "var(--prv-text-3)" }}>
           {hint}
         </p>
       ) : null}

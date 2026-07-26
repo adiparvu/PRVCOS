@@ -63,6 +63,7 @@ export function GlassButton({
   return (
     <button
       disabled={isDisabled}
+      aria-busy={loading || undefined}
       className={clsx(
         "inline-flex items-center justify-center",
         "transition-all duration-150",
@@ -76,7 +77,10 @@ export function GlassButton({
       {...props}
     >
       {loading ? (
-        <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+        <span
+          aria-hidden="true"
+          className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"
+        />
       ) : (
         leftIcon
       )}

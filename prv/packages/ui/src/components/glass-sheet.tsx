@@ -44,6 +44,19 @@ export function GlassSheet({
   panelStyle,
 }: GlassSheetProps) {
   const sheetRef = useRef<HTMLDivElement>(null)
+  const restoreFocusRef = useRef<HTMLElement | null>(null)
+
+  // Move focus into the sheet on open and give it back on close — without
+  // this, keyboard/screen-reader users stay "behind" the scrim.
+  useEffect(() => {
+    if (open) {
+      restoreFocusRef.current = document.activeElement as HTMLElement | null
+      sheetRef.current?.focus()
+    } else {
+      restoreFocusRef.current?.focus?.()
+      restoreFocusRef.current = null
+    }
+  }, [open])
 
   useEffect(() => {
     if (!open) return
@@ -66,10 +79,15 @@ export function GlassSheet({
   }, [open])
 
   return (
+    // Dialog semantics only while open: a closed sheet stays mounted for the
+    // exit transition, and leaving role="dialog" + aria-modal on it would
+    // present every page as containing a permanent empty modal (and mark the
+    // page content inert) to assistive tech.
     <div
-      role="dialog"
-      aria-modal="true"
-      aria-label={title}
+      role={open ? "dialog" : undefined}
+      aria-modal={open ? "true" : undefined}
+      aria-label={open ? title : undefined}
+      aria-hidden={open ? undefined : true}
       className={clsx("fixed inset-0 z-50", open ? "pointer-events-auto" : "pointer-events-none")}
     >
       {/* Backdrop */}
@@ -86,8 +104,9 @@ export function GlassSheet({
       {/* Sheet */}
       <div
         ref={sheetRef}
+        tabIndex={-1}
         className={clsx(
-          "absolute overflow-hidden",
+          "absolute overflow-hidden outline-none",
           "border backdrop-blur-[48px] backdrop-saturate-[180%]",
           "transition-transform duration-[400ms] will-change-transform",
           positionClasses[side],

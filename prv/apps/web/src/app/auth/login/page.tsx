@@ -245,7 +245,7 @@ function LoginForm() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    className="w-full h-11 rounded-[12px] px-3.5 text-[15px] text-white placeholder:text-white/20 transition-all duration-150 focus:outline-none"
+                    className="w-full h-11 rounded-[12px] px-3.5 text-[15px] text-white placeholder:text-white/20 transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
                     style={{
                       background: "rgba(255,255,255,0.07)",
                       border: "1px solid rgba(255,255,255,0.10)",
@@ -280,7 +280,7 @@ function LoginForm() {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         onKeyDown={handleKeyDown}
-                        className="w-full h-11 rounded-[12px] px-3.5 pr-10 text-[15px] text-white placeholder:text-white/20 transition-all duration-150 focus:outline-none"
+                        className="w-full h-11 rounded-[12px] px-3.5 pr-10 text-[15px] text-white placeholder:text-white/20 transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
                         style={{
                           background: "rgba(255,255,255,0.07)",
                           border: "1px solid rgba(255,255,255,0.10)",
