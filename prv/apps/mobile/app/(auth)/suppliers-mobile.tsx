@@ -238,7 +238,13 @@ export default function SuppliersMobileScreen() {
           <Text style={s.backText}>‹ Back</Text>
         </TouchableOpacity>
         <Text style={s.headerTitle}>Suppliers</Text>
-        <TouchableOpacity style={s.searchBtn} activeOpacity={0.75}>
+        <TouchableOpacity
+          style={s.searchBtn}
+          activeOpacity={0.75}
+          onPress={() => router.push("/(auth)/search")}
+          accessibilityRole="button"
+          accessibilityLabel="Search"
+        >
           <Text style={s.searchBtnText}>⌕</Text>
         </TouchableOpacity>
       </View>

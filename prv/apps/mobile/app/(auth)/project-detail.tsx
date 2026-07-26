@@ -6,8 +6,11 @@ import {
   TouchableOpacity,
   View,
 } from "react-native"
+import { useState } from "react"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { useLocalSearchParams, useRouter } from "expo-router"
+import { CreateInvoiceSheet } from "@/components/CreateInvoiceSheet"
+import { CreateTaskSheet } from "@/components/CreateTaskSheet"
 import {
   useProjectDetail,
   useUpdateProjectStatus,
@@ -159,22 +162,36 @@ function TimelineStrip({
   )
 }
 
-function QuickActions({ projectId }: { projectId: string }) {
+function QuickActions(_props: { projectId: string }) {
+  const [taskOpen, setTaskOpen] = useState(false)
+  const [invoiceOpen, setInvoiceOpen] = useState(false)
+  // Log Update / Photos await a site-update flow on mobile (follow-up).
   const actions = [
-    { label: "New Task", icon: "◈" },
-    { label: "Log Update", icon: "◎" },
-    { label: "Invoice", icon: "◇" },
-    { label: "Photos", icon: "⊞" },
+    { label: "New Task", icon: "◈", onPress: () => setTaskOpen(true) },
+    { label: "Log Update", icon: "◎", onPress: undefined },
+    { label: "Invoice", icon: "◇", onPress: () => setInvoiceOpen(true) },
+    { label: "Photos", icon: "⊞", onPress: undefined },
   ]
   return (
     <View style={s.quickRow}>
       {actions.map((a) => (
-        <TouchableOpacity key={a.label} style={s.quickBtn} activeOpacity={0.75}>
+        <TouchableOpacity
+          key={a.label}
+          style={[s.quickBtn, !a.onPress && { opacity: 0.4 }]}
+          activeOpacity={0.75}
+          onPress={a.onPress}
+          disabled={!a.onPress}
+          accessibilityRole="button"
+          accessibilityLabel={a.label}
+          accessibilityState={{ disabled: !a.onPress }}
+        >
           <View style={s.quickBtnShine} pointerEvents="none" />
           <Text style={s.quickIcon}>{a.icon}</Text>
           <Text style={s.quickLabel}>{a.label}</Text>
         </TouchableOpacity>
       ))}
+      <CreateTaskSheet visible={taskOpen} onClose={() => setTaskOpen(false)} />
+      <CreateInvoiceSheet visible={invoiceOpen} onClose={() => setInvoiceOpen(false)} />
     </View>
   )
 }

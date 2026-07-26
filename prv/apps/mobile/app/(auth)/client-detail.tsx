@@ -7,9 +7,12 @@ import {
   TouchableOpacity,
   View,
 } from "react-native"
+import { useState } from "react"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { useLocalSearchParams, useRouter } from "expo-router"
 import { useClientDetail } from "@/hooks/useClientDetail"
+import { CreateInvoiceSheet } from "@/components/CreateInvoiceSheet"
+import { CreateProjectSheet } from "@/components/CreateProjectSheet"
 import { colors, radius, spacing } from "@/tokens"
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -151,6 +154,8 @@ export default function ClientDetailScreen() {
   const router = useRouter()
   const { id } = useLocalSearchParams<{ id: string }>()
   const { data, isLoading, isError, refetch } = useClientDetail(id ?? "")
+  const [invoiceOpen, setInvoiceOpen] = useState(false)
+  const [projectOpen, setProjectOpen] = useState(false)
 
   if (isLoading) {
     return (
@@ -259,21 +264,35 @@ export default function ClientDetailScreen() {
           </View>
         </View>
 
-        {/* Quick actions */}
+        {/* Quick actions — Note/More await a client-notes flow (follow-up) */}
         <View style={s.quickRow}>
-          {[
-            { label: "Invoice", icon: "⊕" },
-            { label: "Project", icon: "◎" },
-            { label: "Note", icon: "≡" },
-            { label: "More", icon: "···" },
-          ].map((a) => (
-            <TouchableOpacity key={a.label} style={s.quickBtn} activeOpacity={0.75}>
+          {(
+            [
+              { label: "Invoice", icon: "⊕", onPress: () => setInvoiceOpen(true) },
+              { label: "Project", icon: "◎", onPress: () => setProjectOpen(true) },
+              { label: "Note", icon: "≡", onPress: undefined },
+              { label: "More", icon: "···", onPress: undefined },
+            ] as const
+          ).map((a) => (
+            <TouchableOpacity
+              key={a.label}
+              style={[s.quickBtn, !a.onPress && { opacity: 0.4 }]}
+              activeOpacity={0.75}
+              onPress={a.onPress}
+              disabled={!a.onPress}
+              accessibilityRole="button"
+              accessibilityLabel={a.label}
+              accessibilityState={{ disabled: !a.onPress }}
+            >
               <View style={s.quickShine} pointerEvents="none" />
               <Text style={s.quickIcon}>{a.icon}</Text>
               <Text style={s.quickLabel}>{a.label}</Text>
             </TouchableOpacity>
           ))}
         </View>
+
+        <CreateInvoiceSheet visible={invoiceOpen} onClose={() => setInvoiceOpen(false)} />
+        <CreateProjectSheet visible={projectOpen} onClose={() => setProjectOpen(false)} />
 
         {/* KPI strip */}
         <ScrollView

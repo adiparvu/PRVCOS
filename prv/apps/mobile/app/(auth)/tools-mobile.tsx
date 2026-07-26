@@ -226,7 +226,13 @@ export default function ToolsMobileScreen() {
           <Text style={s.backText}>‹ Back</Text>
         </TouchableOpacity>
         <Text style={s.headerTitle}>Tools</Text>
-        <TouchableOpacity style={s.searchBtn} activeOpacity={0.75}>
+        <TouchableOpacity
+          style={s.searchBtn}
+          activeOpacity={0.75}
+          onPress={() => router.push("/(auth)/search")}
+          accessibilityRole="button"
+          accessibilityLabel="Search"
+        >
           <Text style={s.searchBtnText}>⌕</Text>
         </TouchableOpacity>
       </View>

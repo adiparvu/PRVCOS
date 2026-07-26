@@ -21,6 +21,7 @@ import { useLearning, type CourseItem, type CourseStatus } from "@/hooks/useLear
 import { useMyAttendance, useClockMutation } from "@/hooks/useMyAttendance"
 import { useRouter } from "expo-router"
 import { FABWithSheets } from "@/components/FABWithSheets"
+import { CreateEmployeeSheet } from "@/components/CreateEmployeeSheet"
 import { colors, radius, spacing } from "@/tokens"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -1049,6 +1050,7 @@ const SEGMENTS: { key: Segment; label: string }[] = [
 export default function PeopleScreen() {
   const insets = useSafeAreaInsets()
   const [segment, setSegment] = useState<Segment>("team")
+  const [createOpen, setCreateOpen] = useState(false)
   const { data, isLoading, isError, refetch, isRefetching } = usePeople()
 
   return (
@@ -1056,10 +1058,18 @@ export default function PeopleScreen() {
       {/* Fixed header */}
       <View style={s.header}>
         <Text style={s.title}>People</Text>
-        <TouchableOpacity style={s.headerBtn} activeOpacity={0.7}>
+        <TouchableOpacity
+          style={s.headerBtn}
+          activeOpacity={0.7}
+          onPress={() => setCreateOpen(true)}
+          accessibilityRole="button"
+          accessibilityLabel="Add employee"
+        >
           <Text style={s.headerBtnText}>⊕</Text>
         </TouchableOpacity>
       </View>
+
+      <CreateEmployeeSheet visible={createOpen} onClose={() => setCreateOpen(false)} />
 
       {/* Fixed segment */}
       <View style={s.segmentWrap}>

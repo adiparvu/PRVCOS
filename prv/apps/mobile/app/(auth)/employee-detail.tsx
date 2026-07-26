@@ -7,9 +7,11 @@ import {
   TouchableOpacity,
   View,
 } from "react-native"
+import { useState } from "react"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { useLocalSearchParams, useRouter } from "expo-router"
 import { useEmployeeDetail, getEmployeeInitials, formatActivityTime } from "@/hooks/useEmployees"
+import { CreateTaskSheet } from "@/components/CreateTaskSheet"
 import { colors, radius, spacing } from "@/tokens"
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -247,6 +249,7 @@ export default function EmployeeDetailScreen() {
   const router = useRouter()
   const { id } = useLocalSearchParams<{ id: string }>()
   const { data, isLoading, isError, refetch } = useEmployeeDetail(id ?? "")
+  const [taskSheetOpen, setTaskSheetOpen] = useState(false)
 
   if (isLoading) {
     return (
@@ -369,19 +372,38 @@ export default function EmployeeDetailScreen() {
 
         {/* Quick actions */}
         <View style={s.quickRow}>
-          {[
-            { label: "Message", icon: "✉" },
-            { label: "Assign Task", icon: "◈" },
-            { label: "Schedule", icon: "◎" },
-            { label: "Report", icon: "◇" },
-          ].map((a) => (
-            <TouchableOpacity key={a.label} style={s.quickBtn} activeOpacity={0.75}>
+          {(
+            [
+              {
+                label: "Message",
+                icon: "✉",
+                onPress: () => router.push("/(auth)/communications"),
+              },
+              { label: "Assign Task", icon: "◈", onPress: () => setTaskSheetOpen(true) },
+              { label: "Schedule", icon: "◎", onPress: () => router.push("/(tabs)/people") },
+              {
+                label: "Report",
+                icon: "◇",
+                onPress: () => router.push("/(auth)/report-workforce"),
+              },
+            ] as const
+          ).map((a) => (
+            <TouchableOpacity
+              key={a.label}
+              style={s.quickBtn}
+              activeOpacity={0.75}
+              onPress={a.onPress}
+              accessibilityRole="button"
+              accessibilityLabel={a.label}
+            >
               <View style={s.quickShine} pointerEvents="none" />
               <Text style={s.quickIcon}>{a.icon}</Text>
               <Text style={s.quickLabel}>{a.label}</Text>
             </TouchableOpacity>
           ))}
         </View>
+
+        <CreateTaskSheet visible={taskSheetOpen} onClose={() => setTaskSheetOpen(false)} />
 
         {/* Employment */}
         <SectionHead title="Employment" />

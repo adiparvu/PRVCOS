@@ -6,9 +6,11 @@ import {
   TouchableOpacity,
   View,
 } from "react-native"
+import { useState } from "react"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { useRouter, useLocalSearchParams } from "expo-router"
 import Svg, { Path } from "react-native-svg"
+import { CreateTaskSheet } from "@/components/CreateTaskSheet"
 import { useStoreDetail, getInitials, formatDueDate, type StoreDetail } from "@/hooks/useStores"
 import { colors, radius, spacing, type as t } from "@/tokens"
 
@@ -177,8 +179,16 @@ export default function StoreDetailScreen() {
   const insets = useSafeAreaInsets()
   const router = useRouter()
   const { id } = useLocalSearchParams<{ id: string }>()
+  const [taskOpen, setTaskOpen] = useState(false)
 
   const { data, isLoading, error } = useStoreDetail(id ?? "")
+
+  const quickActionPress: Record<string, () => void> = {
+    "New Task": () => setTaskOpen(true),
+    Inventory: () => router.push("/(tabs)/operations"),
+    Report: () => router.push("/(auth)/report-revenue"),
+    Staff: () => router.push("/(tabs)/people"),
+  }
 
   return (
     <View style={[s.root, { paddingTop: insets.top }]}>
@@ -249,13 +259,22 @@ export default function StoreDetailScreen() {
           {/* Quick actions */}
           <View style={s.actionsRow}>
             {QUICK_ACTIONS.map((a) => (
-              <TouchableOpacity key={a.label} style={s.actionCard} activeOpacity={0.75}>
+              <TouchableOpacity
+                key={a.label}
+                style={s.actionCard}
+                activeOpacity={0.75}
+                onPress={quickActionPress[a.label]}
+                accessibilityRole="button"
+                accessibilityLabel={a.label}
+              >
                 <View style={s.actionShine} pointerEvents="none" />
                 <Text style={s.actionIcon}>{a.icon}</Text>
                 <Text style={s.actionLabel}>{a.label}</Text>
               </TouchableOpacity>
             ))}
           </View>
+
+          <CreateTaskSheet visible={taskOpen} onClose={() => setTaskOpen(false)} />
 
           {/* Staff */}
           {data.staff.length > 0 && (
