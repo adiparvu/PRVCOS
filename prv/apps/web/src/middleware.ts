@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr"
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 import { checkRateLimit } from "@prv/cache"
+import { isOriginAllowed, isStateChanging } from "@/lib/origin-check"
 
 // Content-Security-Policy — applied to every response (P-09)
 const CSP = [
@@ -53,6 +54,21 @@ function getClientIp(req: NextRequest): string {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   const ip = getClientIp(request)
+
+  // ── CSRF origin verification (P0.4) ────────────────────────────────────
+  // State-changing API requests carrying a browser Origin must come from our
+  // own host or the allow-list. Requests without Origin (native apps, curl,
+  // server-to-server) pass — they carry no ambient cookies to ride on.
+  if (pathname.startsWith("/api/") && isStateChanging(request.method)) {
+    const origin = request.headers.get("origin")
+    const host = request.headers.get("host")
+    if (!isOriginAllowed(origin, host, ALLOWED_ORIGINS)) {
+      return new NextResponse(
+        JSON.stringify({ error: "Cross-origin request rejected", code: "ORIGIN_FORBIDDEN" }),
+        { status: 403, headers: { "Content-Type": "application/json" } }
+      )
+    }
+  }
 
   // ── Edge rate limiting (before any DB/session work) ────────────────────
   const isAuthRoute = AUTH_PREFIXES.some((p) => pathname.startsWith(p))
