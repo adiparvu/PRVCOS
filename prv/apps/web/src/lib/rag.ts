@@ -91,3 +91,48 @@ export async function searchChunks(
 
   return rows.map((r) => ({ ...r, similarity: Number(r.similarity) }))
 }
+
+export interface KnowledgeSearchResult {
+  articleId: string
+  articleTitle: string | null
+  chunkIndex: number
+  excerpt: string
+  similarity: number
+}
+
+/**
+ * Shared semantic-search handler for the web and mobile knowledge routes —
+ * one implementation so the two surfaces cannot drift (audit D3). Assumes
+ * the caller already verified isEmbeddingConfigured().
+ */
+export async function searchKnowledgeSemantic(
+  companyId: string,
+  query: string,
+  limit: number
+): Promise<KnowledgeSearchResult[]> {
+  const { embedQuery } = await import("@prv/ai-engine")
+  const { knowledgeArticles } = await import("@prv/db/schema")
+  const { inArray } = await import("drizzle-orm")
+
+  const embedding = await embedQuery(query)
+  const chunks = await searchChunks(companyId, embedding, {
+    k: limit,
+    sourceType: "knowledge_article",
+  })
+  if (chunks.length === 0) return []
+
+  const articleIds = [...new Set(chunks.map((c) => c.sourceId))]
+  const articles = await db
+    .select({ id: knowledgeArticles.id, title: knowledgeArticles.title })
+    .from(knowledgeArticles)
+    .where(inArray(knowledgeArticles.id, articleIds))
+  const titleById = new Map(articles.map((a) => [a.id, a.title]))
+
+  return chunks.map((c) => ({
+    articleId: c.sourceId,
+    articleTitle: titleById.get(c.sourceId) ?? null,
+    chunkIndex: c.chunkIndex,
+    excerpt: c.content.slice(0, 500),
+    similarity: Math.round(c.similarity * 1000) / 1000,
+  }))
+}

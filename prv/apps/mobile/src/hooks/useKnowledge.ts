@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query"
+import { useMutation, useQuery } from "@tanstack/react-query"
 import { api } from "@/lib/api"
 
 export type ArticleType = "sop" | "policy" | "guide" | "faq"
@@ -63,5 +63,31 @@ export function useKnowledgeArticle(articleId: string) {
     staleTime: 60_000,
     retry: 2,
     enabled: !!articleId,
+  })
+}
+
+// ── Semantic search (RAG) ────────────────────────────────────────────────────
+
+export interface SemanticSearchResult {
+  articleId: string
+  articleTitle: string | null
+  chunkIndex: number
+  excerpt: string
+  similarity: number
+}
+
+export interface SemanticSearchResponse {
+  results: SemanticSearchResult[]
+  /** "not_configured" when the embeddings provider is not provisioned */
+  reason?: string
+}
+
+export function useSemanticKnowledgeSearch() {
+  return useMutation({
+    mutationFn: (query: string) =>
+      api.post<SemanticSearchResponse>("/api/mobile/knowledge/semantic-search", {
+        query,
+        limit: 5,
+      }),
   })
 }
