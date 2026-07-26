@@ -27,6 +27,8 @@ export const securityEventTypeEnum = pgEnum("security_event_type", [
   "account_locked",
   "device_untrusted",
   "reauth_required",
+  "audit_chain_broken",
+  "audit_write_failure",
 ])
 
 export const securityEventSeverityEnum = pgEnum("security_event_severity", [

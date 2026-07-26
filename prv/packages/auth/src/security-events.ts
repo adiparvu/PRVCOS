@@ -15,6 +15,8 @@ export type SecurityEventType =
   | "account_locked"
   | "device_untrusted"
   | "reauth_required"
+  | "audit_chain_broken"
+  | "audit_write_failure"
 
 export type SecurityEventSeverity = "low" | "medium" | "high" | "critical"
 

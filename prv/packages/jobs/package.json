@@ -15,6 +15,7 @@
   "dependencies": {
     "@prv/ai-engine": "workspace:*",
     "@prv/approval-engine": "workspace:*",
+    "@prv/auth": "workspace:*",
     "@prv/cache": "workspace:*",
     "@prv/db": "workspace:*",
     "@prv/email": "workspace:*",

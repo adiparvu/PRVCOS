@@ -32,8 +32,14 @@ export {
 } from "./permissions"
 export type { PermissionCheck } from "./permissions"
 
-export { writeAuditLog, computeEntryHash, sha256hex } from "./audit"
-export type { AuditEntry } from "./audit"
+export {
+  writeAuditLog,
+  computeEntryHash,
+  sha256hex,
+  verifyAuditChain,
+  AUDIT_WRITE_FAILURE_KEY,
+} from "./audit"
+export type { AuditEntry, ChainVerificationResult } from "./audit"
 
 export { logSecurityEvent } from "./security-events"
 export type {

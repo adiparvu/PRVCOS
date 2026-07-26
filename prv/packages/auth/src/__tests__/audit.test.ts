@@ -81,3 +81,100 @@ describe("computeEntryHash", () => {
     expect(h2a).not.toBe(h2b)
   })
 })
+
+// ── verifyAuditChain ─────────────────────────────────────────────────────────
+
+import { verifyAuditChain } from "../audit"
+import { db } from "@prv/db"
+
+interface FakeRow {
+  id: string
+  companyId: string
+  actorId: string | null
+  action: string
+  entityType: string | null
+  entityId: string | null
+  payload: unknown
+  gateFailed: number | null
+  prevHash: string
+  entryHash: string
+  sequenceNumber: number
+}
+
+/** Build a genuinely valid chain using the real hash implementation. */
+async function buildChain(companyId: string, actions: string[]): Promise<FakeRow[]> {
+  const rows: FakeRow[] = []
+  let prevHash = "0".repeat(64)
+  for (let i = 0; i < actions.length; i++) {
+    const id = `id-${i}`
+    const entry = makeEntry({ companyId, action: actions[i] })
+    const entryHash = await computeEntryHash(id, entry, prevHash)
+    rows.push({
+      id,
+      companyId,
+      actorId: entry.actorId ?? null,
+      action: entry.action,
+      entityType: entry.entityType ?? null,
+      entityId: entry.entityId ?? null,
+      payload: null,
+      gateFailed: entry.gateFailed ?? 0,
+      prevHash,
+      entryHash,
+      sequenceNumber: i + 1,
+    })
+    prevHash = entryHash
+  }
+  return rows
+}
+
+function mockSelectReturning(rows: FakeRow[]) {
+  // verifyAuditChain reads newest-first (orderBy desc, limit)
+  const newestFirst = [...rows].reverse()
+  const chain = {
+    from: vi.fn().mockReturnThis(),
+    where: vi.fn().mockReturnThis(),
+    orderBy: vi.fn().mockReturnThis(),
+    limit: vi.fn().mockResolvedValue(newestFirst),
+  }
+  ;(db.select as ReturnType<typeof vi.fn>).mockReturnValue(chain)
+}
+
+describe("verifyAuditChain", () => {
+  it("declares an intact chain valid", async () => {
+    const rows = await buildChain("cmp-1", ["login", "user.update", "invoice.create"])
+    mockSelectReturning(rows)
+    const result = await verifyAuditChain("cmp-1")
+    expect(result).toMatchObject({ companyId: "cmp-1", checked: 3, valid: true })
+  })
+
+  it("detects a field edited after the fact (hash_mismatch)", async () => {
+    const rows = await buildChain("cmp-1", ["login", "user.update", "invoice.create"])
+    rows[1]!.action = "user.delete" // tamper with a stored field
+    mockSelectReturning(rows)
+    const result = await verifyAuditChain("cmp-1")
+    expect(result.valid).toBe(false)
+    expect(result.reason).toBe("hash_mismatch")
+    expect(result.brokenAtSequence).toBe(2)
+  })
+
+  it("detects a broken link between entries (link_mismatch)", async () => {
+    const rows = await buildChain("cmp-1", ["a", "b", "c"])
+    // Recompute row 2 self-consistently but pointing at the wrong predecessor —
+    // the classic delete-and-rehash attack.
+    const fakePrev = "f".repeat(64)
+    const entry = makeEntry({ companyId: "cmp-1", action: rows[2]!.action })
+    rows[2]!.prevHash = fakePrev
+    rows[2]!.entryHash = await computeEntryHash(rows[2]!.id, entry, fakePrev)
+    mockSelectReturning(rows)
+    const result = await verifyAuditChain("cmp-1")
+    expect(result.valid).toBe(false)
+    expect(result.reason).toBe("link_mismatch")
+    expect(result.brokenAtSequence).toBe(3)
+  })
+
+  it("an empty window is trivially valid", async () => {
+    mockSelectReturning([])
+    const result = await verifyAuditChain("cmp-empty")
+    expect(result).toMatchObject({ checked: 0, valid: true })
+  })
+})
