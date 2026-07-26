@@ -100,3 +100,21 @@ never to hand a shared password to real users.
 pnpm --filter @prv/db db:provision                      # extensions + full schema
 pnpm --filter @prv/db db:provision:user admin@example.com '<strong-password>' --create-app-row
 ```
+
+## Integration tests against a real database
+
+Two suites run only when `TEST_DATABASE_URL` is set (skipped otherwise, so the
+default gate needs no database):
+
+* `packages/db/src/__tests__/pg-rls.integration.test.ts` — asserts every table
+  is RLS-enabled, every `company_id` table carries the `company_isolation`
+  policy, a non-owner role is default-denied, and `SET LOCAL app.company_id`
+  scopes reads to one tenant.
+* `packages/auth/src/__tests__/integration/pg-audit-chain.integration.test.ts` —
+  writes real audit entries, verifies the chain clean, then proves both tamper
+  scenarios are detected (edited field → `hash_mismatch`, deleted row →
+  `link_mismatch`).
+
+CI runs them in the `integration` job against `pgvector/pgvector:pg16`,
+provisioning with the same three steps as `db:provision`. Locally, provision as
+described above and run with `TEST_DATABASE_URL=postgresql://... vitest run`.
