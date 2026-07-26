@@ -13,11 +13,15 @@ export interface FeatureItem {
 
 export interface GlassFeatureGridProps {
   features: FeatureItem[]
-  /** Column count at full width. Default 3. */
+  /** Column count at full width. Default 3. Collapses responsively below. */
   columns?: number
   className?: string
   style?: React.CSSProperties
 }
+
+/** Minimum card width before the grid drops a column (phone/tablet). */
+const MIN_CARD_WIDTH = 240
+const GRID_GAP = 16
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
@@ -32,8 +36,11 @@ export function GlassFeatureGrid({
       className={clsx(className)}
       style={{
         display: "grid",
-        gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
-        gap: 16,
+        // Never more than `columns` tracks (each at least an even share of the
+        // row), never narrower than MIN_CARD_WIDTH — so the grid collapses to
+        // 2 then 1 columns on tablets and phones without media queries.
+        gridTemplateColumns: `repeat(auto-fit, minmax(min(100%, max(${MIN_CARD_WIDTH}px, calc((100% - ${(columns - 1) * GRID_GAP}px) / ${columns}))), 1fr))`,
+        gap: GRID_GAP,
         ...style,
       }}
     >

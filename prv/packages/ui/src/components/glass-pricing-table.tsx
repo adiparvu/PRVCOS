@@ -81,7 +81,10 @@ export function GlassPricingTable({ plans, onSelect, className, style }: GlassPr
       className={clsx(className)}
       style={{
         display: "grid",
-        gridTemplateColumns: `repeat(${plans.length}, minmax(0, 1fr))`,
+        // One track per plan at full width; each card refuses to shrink below
+        // 260px, so plans stack on phones and pair up on tablets — same
+        // media-query-free collapse as GlassFeatureGrid.
+        gridTemplateColumns: `repeat(auto-fit, minmax(min(100%, max(260px, calc((100% - ${(plans.length - 1) * 16}px) / ${plans.length}))), 1fr))`,
         gap: 16,
         ...style,
       }}

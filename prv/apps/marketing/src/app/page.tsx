@@ -66,7 +66,9 @@ function SectionHeading({ label, title, lead }: { label: string; title: string; 
   return (
     <>
       <div className="text-xs font-semibold uppercase tracking-[0.08em] text-white/50">{label}</div>
-      <h2 className="mt-2.5 text-[32px] font-bold tracking-tight text-white/95">{title}</h2>
+      <h2 className="mt-2.5 text-[26px] font-bold tracking-tight text-white/95 sm:text-[32px]">
+        {title}
+      </h2>
       {lead && <p className="mt-3 max-w-[560px] text-base leading-relaxed text-white/65">{lead}</p>}
     </>
   )
@@ -79,7 +81,7 @@ const glass =
 function BeforeAfter() {
   const [pos, setPos] = useState(50)
   return (
-    <div className={`${glass} mt-9`} style={{ aspectRatio: "21/9" }}>
+    <div className={`${glass} mt-9 aspect-[4/3] sm:aspect-[16/9] md:aspect-[21/9]`}>
       <div
         className="absolute inset-0"
         style={{
@@ -177,7 +179,7 @@ function QuoteForm() {
 
   return (
     <form className={`${glass} p-6`} onSubmit={submit} aria-label="Cerere de ofertă">
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid gap-x-3 sm:grid-cols-2">
         <div className="mb-3">
           <label htmlFor="q-name" className="mb-1.5 block text-[12.5px] font-medium text-white/65">
             Nume*
@@ -304,7 +306,7 @@ export default function RenovationsSite() {
         <div className="text-xs font-semibold uppercase tracking-[0.08em] text-white/50">
           Renovări complete · București & Ilfov
         </div>
-        <h1 className="mx-auto mt-4 max-w-[800px] text-[44px] font-bold leading-[1.05] tracking-tighter sm:text-[56px]">
+        <h1 className="mx-auto mt-4 max-w-[800px] text-[36px] font-bold leading-[1.05] tracking-tighter sm:text-[44px] md:text-[56px]">
           Spații care lucrează
           <br />
           <span className="text-white/50">pentru oamenii din ele.</span>
@@ -313,7 +315,7 @@ export default function RenovationsSite() {
           De la apartamente la spații comerciale — proiectăm, renovăm și predăm la termen. Cu echipe
           proprii, nu subcontractori anonimi.
         </p>
-        <div className="mt-8 flex justify-center gap-3">
+        <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <button
             onClick={() => scrollTo("contact")}
             className="rounded-full bg-white px-7 py-3.5 text-[15px] font-bold text-black"
@@ -442,7 +444,7 @@ export default function RenovationsSite() {
         </div>
       </section>
 
-      <footer className="mx-auto mt-6 flex max-w-[1140px] justify-between border-t border-white/[0.08] px-6 py-9 pb-14 text-[12.5px] text-white/50">
+      <footer className="mx-auto mt-6 flex max-w-[1140px] flex-wrap justify-between gap-3 border-t border-white/[0.08] px-6 py-9 pb-14 text-[12.5px] text-white/50">
         <span>© 2026 PRV Renovations SRL</span>
         <span>Politica de confidențialitate · ANPC</span>
       </footer>

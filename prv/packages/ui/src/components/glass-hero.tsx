@@ -45,7 +45,8 @@ export function GlassHero({
       style={{
         position: "relative",
         overflow: "hidden",
-        padding: "64px 32px",
+        // Fluid padding: full 64/32 on desktop, tightens on phones.
+        padding: "clamp(40px, 9vw, 64px) clamp(20px, 5.5vw, 32px)",
         textAlign: centered ? "center" : "left",
         borderRadius: 24,
         border: "1px solid var(--prv-border-subtle)",
@@ -76,7 +77,8 @@ export function GlassHero({
 
       <h1
         style={{
-          fontSize: 42,
+          // 42px from ~560px viewports up, scaling down to 30px on phones.
+          fontSize: "clamp(30px, 7.5vw, 42px)",
           fontWeight: 800,
           letterSpacing: "-0.03em",
           lineHeight: 1.05,
