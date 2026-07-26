@@ -3,11 +3,11 @@ import "./globals.css"
 
 export const metadata: Metadata = {
   title: {
-    default: "PRV — The Company Operating System",
-    template: "%s · PRV",
+    default: "PRV Renovations — Renovări complete, București & Ilfov",
+    template: "%s · PRV Renovations",
   },
   description:
-    "PRV unifies 18 platforms — projects, workforce, finance, AI — into a single Apple-grade experience.",
+    "Renovări la cheie pentru apartamente, case și spații comerciale. Echipe proprii, predare la termen, deviz gratuit.",
   icons: {
     icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
   },
@@ -21,7 +21,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" data-theme="dark">
+    <html lang="ro" data-theme="dark">
       <body>{children}</body>
     </html>
   )
