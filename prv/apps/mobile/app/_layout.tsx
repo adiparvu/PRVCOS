@@ -3,6 +3,8 @@ import { Stack, useRouter, useSegments } from "expo-router"
 import { StatusBar } from "expo-status-bar"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { useAuthStore } from "@/store/auth"
+import { useCartStore } from "@/store/cart"
+import { useFavoritesStore } from "@/store/favorites"
 import { usePushNotifications } from "@/hooks/usePushNotifications"
 
 const queryClient = new QueryClient({
@@ -16,6 +18,8 @@ const queryClient = new QueryClient({
 
 export default function RootLayout() {
   const { session, isHydrated, hydrate } = useAuthStore()
+  const hydrateCart = useCartStore((s) => s.hydrate)
+  const hydrateFavorites = useFavoritesStore((s) => s.hydrate)
   const router = useRouter()
   const segments = useSegments()
 
@@ -23,6 +27,10 @@ export default function RootLayout() {
 
   useEffect(() => {
     hydrate()
+    // The public shop is usable without a session, so its cart and favourites
+    // are restored regardless of auth state.
+    void hydrateCart()
+    void hydrateFavorites()
   }, [])
 
   useEffect(() => {

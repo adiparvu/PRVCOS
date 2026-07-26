@@ -22,7 +22,10 @@ export function PublicTabBar({ state, descriptors, navigation }: BottomTabBarPro
 
         {state.routes.map((route: { key: string; name: string }, index: number) => {
           const isFocused = state.index === index
-          const meta = TAB_META[route.name] ?? { icon: "●", label: route.name }
+          // Pushed screens (cart, product, quote) share this group so the guest
+          // redirect in the root layout keeps working; they are not tabs.
+          const meta = TAB_META[route.name]
+          if (!meta) return null
 
           const onPress = () => {
             const event = navigation.emit({

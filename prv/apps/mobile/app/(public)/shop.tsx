@@ -1,57 +1,84 @@
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View, RefreshControl } from "react-native"
+import { useMemo, useState } from "react"
+import {
+  ActivityIndicator,
+  Image,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
+import { useRouter } from "expo-router"
 import { GlassCard } from "@/components/Glass"
+import { usePublicShop, type PublicProduct } from "@/hooks/usePublicShop"
+import { useCartStore, cartCount } from "@/store/cart"
+import { useFavoritesStore } from "@/store/favorites"
 import { colors, spacing, type, radius } from "@/tokens"
 
-const CATEGORIES = [
-  { id: "c1", icon: "⬛", label: "Tiles & Stone" },
-  { id: "c2", icon: "◈", label: "Flooring" },
-  { id: "c3", icon: "◻", label: "Fixtures" },
-  { id: "c4", icon: "▪", label: "Hardware" },
-  { id: "c5", icon: "◉", label: "Paint" },
-  { id: "c6", icon: "⊞", label: "Tools" },
-]
+const ALL = "All"
 
-const FEATURED = [
-  {
-    id: "p1",
-    name: "Premium Marble Tile 60×60",
-    price: "€42/m²",
-    category: "Tiles & Stone",
-    badge: "Bestseller",
-  },
-  {
-    id: "p2",
-    name: "Oak Engineered Flooring",
-    price: "€38/m²",
-    category: "Flooring",
-    badge: "New",
-  },
-  { id: "p3", name: "Matte Black Mixer Tap", price: "€189", category: "Fixtures", badge: null },
-  { id: "p4", name: "Epoxy Tile Adhesive 25kg", price: "€24", category: "Hardware", badge: "Sale" },
-]
+function formatPrice(value: number): string {
+  return `\u20ac${value.toLocaleString("ro-RO", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`
+}
 
-function CategoryChip({ icon, label }: { icon: string; label: string }) {
+function CategoryChip({
+  label,
+  active,
+  onPress,
+}: {
+  label: string
+  active: boolean
+  onPress: () => void
+}) {
   return (
-    <TouchableOpacity style={styles.catChip} activeOpacity={0.75}>
-      <Text style={styles.catIcon}>{icon}</Text>
-      <Text style={styles.catLabel}>{label}</Text>
+    <TouchableOpacity
+      style={[styles.catChip, active && styles.catChipActive]}
+      activeOpacity={0.75}
+      onPress={onPress}
+    >
+      <Text style={[styles.catLabel, active && styles.catLabelActive]}>{label}</Text>
     </TouchableOpacity>
   )
 }
 
-function ProductCard({ product }: { product: (typeof FEATURED)[number] }) {
+function ProductCard({
+  product,
+  isFavorite,
+  onOpen,
+  onToggleFavorite,
+  onAdd,
+}: {
+  product: PublicProduct
+  isFavorite: boolean
+  onOpen: () => void
+  onToggleFavorite: () => void
+  onAdd: () => void
+}) {
   return (
-    <TouchableOpacity style={styles.productCard} activeOpacity={0.8}>
+    <TouchableOpacity style={styles.productCard} activeOpacity={0.8} onPress={onOpen}>
       <View style={styles.productShine} pointerEvents="none" />
       <View style={styles.productImage}>
-        {product.badge && (
+        {product.imageUrl ? (
+          <Image
+            source={{ uri: product.imageUrl }}
+            style={styles.productImageFill}
+            resizeMode="cover"
+          />
+        ) : null}
+        {product.outOfStock && (
           <View style={styles.productBadge}>
-            <Text style={styles.productBadgeText}>{product.badge}</Text>
+            <Text style={styles.productBadgeText}>Out of stock</Text>
           </View>
         )}
-        <TouchableOpacity style={styles.favoriteBtn} activeOpacity={0.8}>
-          <Text style={styles.favoriteBtnIcon}>♡</Text>
+        <TouchableOpacity
+          style={styles.favoriteBtn}
+          activeOpacity={0.8}
+          onPress={onToggleFavorite}
+          accessibilityLabel={isFavorite ? "Remove from favourites" : "Add to favourites"}
+        >
+          <Text style={styles.favoriteBtnIcon}>{isFavorite ? "\u2665" : "\u2661"}</Text>
         </TouchableOpacity>
       </View>
       <View style={styles.productInfo}>
@@ -60,8 +87,14 @@ function ProductCard({ product }: { product: (typeof FEATURED)[number] }) {
           {product.name}
         </Text>
         <View style={styles.productBottom}>
-          <Text style={styles.productPrice}>{product.price}</Text>
-          <TouchableOpacity style={styles.addBtn} activeOpacity={0.8}>
+          <Text style={styles.productPrice}>{formatPrice(product.price)}</Text>
+          <TouchableOpacity
+            style={[styles.addBtn, product.outOfStock && styles.addBtnDisabled]}
+            activeOpacity={0.8}
+            disabled={product.outOfStock}
+            onPress={onAdd}
+            accessibilityLabel={`Add ${product.name} to cart`}
+          >
             <Text style={styles.addBtnIcon}>+</Text>
           </TouchableOpacity>
         </View>
@@ -72,6 +105,22 @@ function ProductCard({ product }: { product: (typeof FEATURED)[number] }) {
 
 export default function ShopScreen() {
   const insets = useSafeAreaInsets()
+  const router = useRouter()
+  const { data, isLoading, isError, refetch, isRefetching } = usePublicShop()
+  const [category, setCategory] = useState<string>(ALL)
+
+  const lines = useCartStore((s) => s.lines)
+  const addToCart = useCartStore((s) => s.add)
+  const favoriteIds = useFavoritesStore((s) => s.ids)
+  const toggleFavorite = useFavoritesStore((s) => s.toggle)
+
+  const count = cartCount(lines)
+  const products = data?.products ?? []
+
+  const visible = useMemo(
+    () => (category === ALL ? products : products.filter((p) => p.category === category)),
+    [products, category]
+  )
 
   return (
     <View style={styles.root}>
@@ -83,71 +132,148 @@ export default function ShopScreen() {
         ]}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={false} onRefresh={() => {}} tintColor={colors.text3} />
+          <RefreshControl
+            refreshing={isRefetching}
+            onRefresh={() => void refetch()}
+            tintColor={colors.text3}
+          />
         }
       >
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.pageTitle}>Shop</Text>
           <View style={styles.headerRight}>
-            <TouchableOpacity style={styles.headerBtn} activeOpacity={0.8}>
-              <Text style={styles.headerBtnIcon}>⌕</Text>
+            <TouchableOpacity
+              style={styles.headerBtn}
+              activeOpacity={0.8}
+              onPress={() => router.push("/(public)/search")}
+              accessibilityLabel="Search products"
+            >
+              <Text style={styles.headerBtnIcon}>\u2315</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.cartBtn} activeOpacity={0.8}>
-              <Text style={styles.cartBtnIcon}>⊡</Text>
-              <View style={styles.cartBadge}>
-                <Text style={styles.cartBadgeText}>3</Text>
+            <TouchableOpacity
+              style={styles.cartBtn}
+              activeOpacity={0.8}
+              onPress={() => router.push("/(public)/cart")}
+              accessibilityLabel="Open cart"
+            >
+              <Text style={styles.cartBtnIcon}>\u22a1</Text>
+              {count > 0 && (
+                <View style={styles.cartBadge}>
+                  <Text style={styles.cartBadgeText}>{count > 99 ? "99+" : count}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {isLoading && (
+          <View style={styles.stateBox}>
+            <ActivityIndicator color={colors.text3} />
+          </View>
+        )}
+
+        {isError && !isLoading && (
+          <GlassCard style={styles.stateCard}>
+            <Text style={styles.stateTitle}>Could not load the catalogue</Text>
+            <Text style={styles.stateSub}>Check your connection and try again.</Text>
+            <TouchableOpacity
+              style={styles.stateBtn}
+              activeOpacity={0.8}
+              onPress={() => void refetch()}
+            >
+              <Text style={styles.stateBtnText}>Retry</Text>
+            </TouchableOpacity>
+          </GlassCard>
+        )}
+
+        {!isLoading && !isError && (
+          <>
+            {/* Categories — derived from the catalogue; there is no public
+                categories endpoint, and the API filter keys on slug while the
+                response carries names, so filtering happens here. */}
+            {data && data.categories.length > 0 && (
+              <>
+                <Text style={styles.sectionLabel}>Categories</Text>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  style={styles.catScroll}
+                  contentContainerStyle={styles.catScrollContent}
+                >
+                  {[ALL, ...data.categories].map((c) => (
+                    <CategoryChip
+                      key={c}
+                      label={c}
+                      active={c === category}
+                      onPress={() => setCategory(c)}
+                    />
+                  ))}
+                </ScrollView>
+              </>
+            )}
+
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionLabel}>
+                {category === ALL ? "All products" : category}
+              </Text>
+              {category !== ALL && (
+                <TouchableOpacity activeOpacity={0.6} onPress={() => setCategory(ALL)}>
+                  <Text style={styles.seeAll}>Clear</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {visible.length > 0 ? (
+              <View style={styles.productsGrid}>
+                {visible.map((p) => (
+                  <ProductCard
+                    key={p.id}
+                    product={p}
+                    isFavorite={favoriteIds.includes(p.id)}
+                    onOpen={() =>
+                      router.push({ pathname: "/(public)/product", params: { id: p.id } })
+                    }
+                    onToggleFavorite={() => void toggleFavorite(p.id)}
+                    onAdd={() => void addToCart(p)}
+                  />
+                ))}
               </View>
-            </TouchableOpacity>
-          </View>
-        </View>
+            ) : (
+              <GlassCard style={styles.stateCard}>
+                <Text style={styles.stateTitle}>
+                  {data?.misconfigured ? "Catalogue unavailable" : "Nothing here yet"}
+                </Text>
+                <Text style={styles.stateSub}>
+                  {data?.misconfigured
+                    ? "The storefront is not configured yet. Please try again later."
+                    : category === ALL
+                      ? "New products are added regularly \u2014 check back soon."
+                      : `No products in ${category} right now.`}
+                </Text>
+              </GlassCard>
+            )}
 
-        {/* Promo banner */}
-        <GlassCard style={styles.promoBanner}>
-          <View style={styles.promoShine} pointerEvents="none" />
-          <View style={{ flex: 1 }}>
-            <Text style={styles.promoTag}>Limited offer</Text>
-            <Text style={styles.promoTitle}>15% off all tiles</Text>
-            <Text style={styles.promoSub}>Use code TILES15 · Valid until 30 Jun</Text>
-          </View>
-          <Text style={styles.promoGlyph}>◈</Text>
-        </GlassCard>
-
-        {/* Categories */}
-        <Text style={styles.sectionLabel}>Categories</Text>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.catScroll}
-          contentContainerStyle={styles.catScrollContent}
-        >
-          {CATEGORIES.map((c) => (
-            <CategoryChip key={c.id} icon={c.icon} label={c.label} />
-          ))}
-        </ScrollView>
-
-        {/* Featured products */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionLabel}>Featured Products</Text>
-          <TouchableOpacity activeOpacity={0.6}>
-            <Text style={styles.seeAll}>See all →</Text>
-          </TouchableOpacity>
-        </View>
-        <View style={styles.productsGrid}>
-          {FEATURED.map((p) => (
-            <ProductCard key={p.id} product={p} />
-          ))}
-        </View>
-
-        {/* Browse more */}
-        <GlassCard style={styles.browseCard}>
-          <View style={styles.browseShine} pointerEvents="none" />
-          <Text style={styles.browseTitle}>500+ Products Available</Text>
-          <Text style={styles.browseSub}>Browse the full catalogue for your renovation needs</Text>
-          <TouchableOpacity style={styles.browseBtn} activeOpacity={0.8}>
-            <Text style={styles.browseBtnText}>Browse All →</Text>
-          </TouchableOpacity>
-        </GlassCard>
+            {products.length > 0 && (
+              <GlassCard style={styles.browseCard}>
+                <View style={styles.browseShine} pointerEvents="none" />
+                <Text style={styles.browseTitle}>
+                  {products.length} {products.length === 1 ? "product" : "products"} available
+                </Text>
+                <Text style={styles.browseSub}>
+                  Tell us what you need and we will quote your renovation.
+                </Text>
+                <TouchableOpacity
+                  style={styles.browseBtn}
+                  activeOpacity={0.8}
+                  onPress={() => router.push("/(public)/quote")}
+                >
+                  <Text style={styles.browseBtnText}>Request a quote \u2192</Text>
+                </TouchableOpacity>
+              </GlassCard>
+            )}
+          </>
+        )}
       </ScrollView>
     </View>
   )
@@ -458,6 +584,56 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   browseBtnText: {
+    ...type.footnote,
+    color: colors.text1,
+    fontWeight: "600",
+  },
+
+  productImageFill: {
+    ...StyleSheet.absoluteFillObject,
+    borderTopLeftRadius: radius.card,
+    borderTopRightRadius: radius.card,
+  },
+  catChipActive: {
+    backgroundColor: colors.glass3,
+    borderColor: colors.border,
+  },
+  catLabelActive: {
+    color: colors.text1,
+  },
+  addBtnDisabled: {
+    opacity: 0.35,
+  },
+  stateBox: {
+    paddingVertical: spacing.xxl,
+    alignItems: "center",
+  },
+  stateCard: {
+    padding: spacing.lg,
+    marginBottom: spacing.base,
+    alignItems: "center",
+  },
+  stateTitle: {
+    ...type.headline,
+    color: colors.text1,
+    marginBottom: spacing.xs,
+    textAlign: "center",
+  },
+  stateSub: {
+    ...type.footnote,
+    color: colors.text3,
+    textAlign: "center",
+  },
+  stateBtn: {
+    marginTop: spacing.base,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.pill,
+    backgroundColor: colors.glass2,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  stateBtnText: {
     ...type.footnote,
     color: colors.text1,
     fontWeight: "600",
