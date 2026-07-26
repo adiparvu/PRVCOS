@@ -1,9 +1,18 @@
 import { useState } from "react"
-import { RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native"
+import {
+  Alert,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { useRouter } from "expo-router"
 import { useQuery } from "@tanstack/react-query"
 import { GlassCard } from "@/components/Glass"
+import { ReportIncidentSheet } from "@/components/ReportIncidentSheet"
 import { SkeletonCard, SkeletonRow } from "@/components/Skeleton"
 import { useAuthStore } from "@/store/auth"
 import { colors, radius, spacing, type as t } from "@/tokens"
@@ -250,6 +259,7 @@ export default function SafetyScreen() {
   const insets = useSafeAreaInsets()
   const router = useRouter()
   const { data, isLoading, refetch, isRefetching } = useSafety()
+  const [reportOpen, setReportOpen] = useState(false)
 
   return (
     <View style={[s.root, { backgroundColor: colors.bg }]}>
@@ -259,10 +269,29 @@ export default function SafetyScreen() {
           <Text style={s.backText}>‹ Back</Text>
         </TouchableOpacity>
         <Text style={s.headerTitle}>Safety Center</Text>
-        <TouchableOpacity style={s.reportBtn} activeOpacity={0.75}>
+        <TouchableOpacity
+          style={s.reportBtn}
+          activeOpacity={0.75}
+          onPress={() => setReportOpen(true)}
+          accessibilityRole="button"
+          accessibilityLabel="Report an incident"
+        >
           <Text style={s.reportBtnText}>Report</Text>
         </TouchableOpacity>
       </View>
+
+      <ReportIncidentSheet
+        visible={reportOpen}
+        onClose={() => setReportOpen(false)}
+        onSubmitted={(queued) =>
+          Alert.alert(
+            queued ? "Saved on this phone" : "Report submitted",
+            queued
+              ? "No connection right now — the report will be sent automatically when you are back online."
+              : "The incident is now open in the Safety Center."
+          )
+        }
+      />
 
       {/* Content */}
       {isLoading ? (
