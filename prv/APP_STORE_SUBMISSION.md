@@ -170,9 +170,10 @@ that was declared but unused has already been removed (task #124).
 ### Export compliance
 
 The app uses HTTPS and the platform Keychain, and implements no proprietary
-cryptography. That is the standard exemption — answer the encryption question
-accordingly and set `ITSAppUsesNonExemptEncryption` to `false` when the ops
-steps below are done. Confirm with counsel before the first submission.
+cryptography. That is the standard exemption — `ITSAppUsesNonExemptEncryption`
+is set to `false` in `app.json`, so App Store Connect will not re-ask the
+encryption question on every uploaded build. Confirm with counsel before the
+first submission.
 
 ### Age rating
 

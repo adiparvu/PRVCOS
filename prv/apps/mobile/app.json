@@ -18,7 +18,8 @@
       "bundleIdentifier": "ro.prv.app",
       "buildNumber": "1",
       "infoPlist": {
-        "NSFaceIDUsageDescription": "PRV uses Face ID to authenticate your identity securely."
+        "NSFaceIDUsageDescription": "PRV uses Face ID to authenticate your identity securely.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
