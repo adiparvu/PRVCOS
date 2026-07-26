@@ -6,6 +6,9 @@ import { eq, asc, desc, and, isNull, sql } from "drizzle-orm"
 // here — no sampling params, no budget_tokens). Note thinking is adaptive by
 // default on Sonnet 5 and max_tokens caps thinking + text together.
 const MODEL = "claude-sonnet-5"
+/** The chat model id, exported so usage-log call sites never drift from the
+ *  model actually answering (they previously hardcoded a stale string). */
+export const CHAT_MODEL = MODEL
 const MAX_HISTORY = 20
 
 // Cost per 1M tokens (claude-sonnet-4-6 pricing)

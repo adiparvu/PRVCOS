@@ -5,12 +5,16 @@ import { aiConversations, aiMessages } from "@prv/db/schema"
 import { and, asc, desc, eq, isNull } from "drizzle-orm"
 import {
   AGENT_SYSTEM_PROMPTS,
+  CHAT_MODEL,
+  embedQuery,
+  isEmbeddingConfigured,
   streamChatWithHistory,
   logUsage,
   titleFromMessage,
   type AgentType,
   type ConversationMessage,
 } from "@prv/ai-engine"
+import { searchChunks } from "@/lib/rag"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -90,6 +94,27 @@ export const POST = withMobileAuth(async (req: NextRequest, ctx) => {
     content: r.content,
   }))
 
+  // RAG: same grounding as the web chat route — retrieval trouble must never
+  // take chat down, so this whole block fails open.
+  let retrievedContext: string | undefined
+  if (isEmbeddingConfigured()) {
+    try {
+      const queryEmbedding = await embedQuery(userMessage)
+      const chunks = await searchChunks(companyId, queryEmbedding, {
+        k: 4,
+        sourceType: "knowledge_article",
+      })
+      // Below ~0.3 cosine similarity the "context" is noise that misleads
+      // more than it grounds.
+      const relevant = chunks.filter((c) => c.similarity >= 0.3)
+      if (relevant.length > 0) {
+        retrievedContext = relevant.map((c, i) => `[Excerpt ${i + 1}]\n${c.content}`).join("\n\n")
+      }
+    } catch (err) {
+      console.error("[mobile.intelligence.chat] retrieval failed, continuing without context:", err)
+    }
+  }
+
   // Collect streaming response into a string
   let reply = "Unable to get a response. Please try again."
   try {
@@ -97,7 +122,8 @@ export const POST = withMobileAuth(async (req: NextRequest, ctx) => {
       userMessage,
       history,
       { userId, companyId, role: ctx.role, agentType },
-      agentType
+      agentType,
+      retrievedContext
     )
     const reader = stream.getReader()
     const dec = new TextDecoder()
@@ -135,7 +161,7 @@ export const POST = withMobileAuth(async (req: NextRequest, ctx) => {
     userId,
     conversationId,
     agentType,
-    model: "claude-sonnet-4-6",
+    model: CHAT_MODEL,
     inputTokens: 0,
     outputTokens,
   })
