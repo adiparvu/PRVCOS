@@ -9,7 +9,8 @@ export const colors = {
 
   text1: "rgba(255,255,255,0.92)",
   text2: "rgba(255,255,255,0.65)",
-  text3: "rgba(255,255,255,0.35)",
+  // 50% — approved 2026-07: AA (4.5:1) on every glass level; 35% was 3.0:1.
+  text3: "rgba(255,255,255,0.50)",
   text4: "rgba(255,255,255,0.15)",
 
   border: "rgba(255,255,255,0.12)",

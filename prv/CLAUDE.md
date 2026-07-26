@@ -70,7 +70,7 @@ The experience must feel closer to **Apple** than to traditional ERP software.
 ### Color Palette (Approved)
 - **Background**: Pure Black `#000000`
 - **Glass surfaces**: `rgba(255,255,255, 0.06–0.22)` with backdrop blur
-- **Text hierarchy**: Opacity only — 95% / 65% / 35% / 15% white
+- **Text hierarchy**: Opacity only — 95% / 65% / 50% / 15% white (tertiary raised 35%→50% for WCAG AA, approved 2026-07; 15% is decorative-only, never informative text)
 - **Borders**: `rgba(255,255,255, 0.12)`
 - **Top edge shine**: `rgba(255,255,255, 0.32)`
 - **Accent**: White `#FFFFFF` — inverted for CTAs on dark

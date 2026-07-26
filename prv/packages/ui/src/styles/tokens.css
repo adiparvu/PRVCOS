@@ -13,7 +13,8 @@
 
   --prv-text-1: rgba(255, 255, 255, 0.95);
   --prv-text-2: rgba(255, 255, 255, 0.65);
-  --prv-text-3: rgba(255, 255, 255, 0.35);
+  /* 50% — approved 2026-07: AA (4.5:1) on every glass level; 35% was 3.0:1 */
+  --prv-text-3: rgba(255, 255, 255, 0.5);
   --prv-text-4: rgba(255, 255, 255, 0.15);
 
   --prv-border: rgba(255, 255, 255, 0.12);
@@ -49,7 +50,8 @@
 
   --prv-text-1: rgba(0, 0, 0, 0.9);
   --prv-text-2: rgba(0, 0, 0, 0.6);
-  --prv-text-3: rgba(0, 0, 0, 0.35);
+  /* light theme mirror of the AA correction above */
+  --prv-text-3: rgba(0, 0, 0, 0.55);
   --prv-text-4: rgba(0, 0, 0, 0.2);
 
   --prv-border: rgba(0, 0, 0, 0.08);

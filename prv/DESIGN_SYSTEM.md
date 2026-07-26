@@ -365,7 +365,7 @@ In Liquid Glass interfaces, text hierarchy is expressed through **opacity** — 
 |-----------|---------|-------|
 | Primary | 95% | Titles, key information |
 | Secondary | 65% | Supporting text, descriptions |
-| Tertiary | 35% | Metadata, timestamps, labels |
+| Tertiary | 50% | Metadata, timestamps, labels — raised from 35% for WCAG AA (4.5:1 on every glass level), approved 2026-07 |
 | Disabled | 15% | Unavailable actions, placeholders |
 
 ---
