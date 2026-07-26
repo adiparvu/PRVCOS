@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@prv/db"
-import { products, productCategories } from "@prv/db/schema"
+import { products, productCategories, companies } from "@prv/db/schema"
 import { productReviews } from "@prv/db/schema"
 import { and, avg, count, desc, eq, isNull } from "drizzle-orm"
 
@@ -18,11 +18,32 @@ export interface PublicProduct {
   reviews: number
 }
 
-// GET /api/public/shop/products — no auth required
+// GET /api/public/shop/products — no auth required.
+//
+// This endpoint is unauthenticated, so it MUST be scoped to a single tenant:
+// without a company filter it would expose every company's catalogue to anyone.
+// Scope resolution is fail-closed — no resolvable company means no products,
+// never "all products".
 export async function GET(req: NextRequest): Promise<NextResponse> {
   const { searchParams } = req.nextUrl
   const limit = Math.min(parseInt(searchParams.get("limit") ?? "50", 10), 200)
   const categorySlug = searchParams.get("category")
+
+  // Explicit ?companySlug= wins; otherwise fall back to the storefront's own
+  // company configured via PUBLIC_COMPANY_SLUG.
+  const slug = searchParams.get("companySlug") ?? process.env["PUBLIC_COMPANY_SLUG"] ?? null
+  if (!slug) {
+    return NextResponse.json({ products: [], count: 0, reason: "no_public_company" })
+  }
+
+  const [company] = await db
+    .select({ id: companies.id })
+    .from(companies)
+    .where(eq(companies.slug, slug))
+    .limit(1)
+  if (!company) {
+    return NextResponse.json({ products: [], count: 0, reason: "unknown_company" })
+  }
 
   // Subquery: avg rating + review count per product
   const ratingSq = db
@@ -37,6 +58,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     .as("rating_sq")
 
   const baseWhere = and(
+    eq(products.companyId, company.id),
     eq(products.status, "active"),
     eq(products.isActive, true),
     isNull(products.deletedAt),
