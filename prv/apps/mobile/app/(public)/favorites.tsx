@@ -1,28 +1,49 @@
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native"
+import {
+  ActivityIndicator,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
+import { useRouter } from "expo-router"
 import { GlassCard } from "@/components/Glass"
+import { usePublicShop, type PublicProduct } from "@/hooks/usePublicShop"
+import { useFavoritesStore } from "@/store/favorites"
+import { useCartStore } from "@/store/cart"
 import { colors, type, radius } from "@/tokens"
 
-const FAVORITES = [
-  {
-    id: "f1",
-    name: "Premium Marble Tile 60×60",
-    price: "€42/m²",
-    category: "Tiles & Stone",
-    badge: "Bestseller",
-  },
-  { id: "f2", name: "Oak Engineered Flooring", price: "€38/m²", category: "Flooring", badge: null },
-  { id: "f3", name: "Matte Black Mixer Tap", price: "€189", category: "Fixtures", badge: null },
-]
+function formatPrice(value: number): string {
+  return `\u20ac${value.toLocaleString("ro-RO", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`
+}
 
-function FavoriteCard({ item }: { item: (typeof FAVORITES)[number] }) {
+function FavoriteCard({
+  item,
+  onOpen,
+  onRemove,
+  onAdd,
+}: {
+  item: PublicProduct
+  onOpen: () => void
+  onRemove: () => void
+  onAdd: () => void
+}) {
   return (
-    <TouchableOpacity style={styles.card} activeOpacity={0.8}>
+    <TouchableOpacity style={styles.card} activeOpacity={0.8} onPress={onOpen}>
       <View style={styles.cardShine} pointerEvents="none" />
       <View style={styles.cardThumb}>
-        {item.badge && (
+        {item.imageUrl ? (
+          <Image
+            source={{ uri: item.imageUrl }}
+            style={StyleSheet.absoluteFillObject}
+            resizeMode="cover"
+          />
+        ) : null}
+        {item.outOfStock && (
           <View style={styles.badge}>
-            <Text style={styles.badgeText}>{item.badge}</Text>
+            <Text style={styles.badgeText}>Out of stock</Text>
           </View>
         )}
       </View>
@@ -32,13 +53,24 @@ function FavoriteCard({ item }: { item: (typeof FAVORITES)[number] }) {
           <Text style={styles.cardName} numberOfLines={2}>
             {item.name}
           </Text>
-          <Text style={styles.cardPrice}>{item.price}</Text>
+          <Text style={styles.cardPrice}>{formatPrice(item.price)}</Text>
         </View>
         <View style={styles.cardActions}>
-          <TouchableOpacity style={styles.removeBtn} activeOpacity={0.75}>
-            <Text style={styles.removeBtnIcon}>♡</Text>
+          <TouchableOpacity
+            style={styles.removeBtn}
+            activeOpacity={0.75}
+            onPress={onRemove}
+            accessibilityLabel={`Remove ${item.name} from favourites`}
+          >
+            <Text style={styles.removeBtnIcon}>\u2665</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.addBtn} activeOpacity={0.8}>
+          <TouchableOpacity
+            style={[styles.addBtn, item.outOfStock && styles.addBtnDisabled]}
+            activeOpacity={0.8}
+            disabled={item.outOfStock}
+            onPress={onAdd}
+            accessibilityLabel={`Add ${item.name} to cart`}
+          >
             <Text style={styles.addBtnIcon}>+</Text>
           </TouchableOpacity>
         </View>
@@ -49,7 +81,18 @@ function FavoriteCard({ item }: { item: (typeof FAVORITES)[number] }) {
 
 export default function FavoritesScreen() {
   const insets = useSafeAreaInsets()
-  const isEmpty = FAVORITES.length === 0
+  const router = useRouter()
+  const { data, isLoading } = usePublicShop()
+
+  const ids = useFavoritesStore((s) => s.ids)
+  const toggle = useFavoritesStore((s) => s.toggle)
+  const clearFavorites = useFavoritesStore((s) => s.clear)
+  const addToCart = useCartStore((s) => s.add)
+
+  // Favourites hold product ids; the catalogue query supplies the detail, so an
+  // item that leaves the catalogue simply stops appearing.
+  const items = (data?.products ?? []).filter((p) => ids.includes(p.id))
+  const isEmpty = items.length === 0
 
   return (
     <View style={styles.root}>
@@ -65,45 +108,71 @@ export default function FavoritesScreen() {
         <View style={styles.header}>
           <Text style={styles.pageTitle}>Favorites</Text>
           {!isEmpty && (
-            <TouchableOpacity activeOpacity={0.6}>
+            <TouchableOpacity activeOpacity={0.6} onPress={() => void clearFavorites()}>
               <Text style={styles.clearAll}>Clear all</Text>
             </TouchableOpacity>
           )}
         </View>
 
-        {isEmpty ? (
-          /* Empty state */
+        {isLoading && ids.length > 0 ? (
+          <View style={styles.loadingBox}>
+            <ActivityIndicator color={colors.text3} />
+          </View>
+        ) : isEmpty ? (
           <View style={styles.emptyWrap}>
             <GlassCard style={styles.emptyCard}>
               <View style={styles.emptyShine} pointerEvents="none" />
-              <Text style={styles.emptyIcon}>♡</Text>
+              <Text style={styles.emptyIcon}>\u2661</Text>
               <Text style={styles.emptyTitle}>No favorites yet</Text>
               <Text style={styles.emptySub}>
                 Tap the heart on any product to save it here for quick access.
               </Text>
-              <TouchableOpacity style={styles.emptyBtn} activeOpacity={0.8}>
-                <Text style={styles.emptyBtnText}>Browse Shop →</Text>
+              <TouchableOpacity
+                style={styles.emptyBtn}
+                activeOpacity={0.8}
+                onPress={() => router.push("/(public)/shop")}
+              >
+                <Text style={styles.emptyBtnText}>Browse Shop \u2192</Text>
               </TouchableOpacity>
             </GlassCard>
           </View>
         ) : (
           <>
-            <Text style={styles.sectionLabel}>{FAVORITES.length} Saved Items</Text>
+            <Text style={styles.sectionLabel}>
+              {items.length} saved {items.length === 1 ? "item" : "items"}
+            </Text>
             <View style={styles.list}>
-              {FAVORITES.map((item) => (
-                <FavoriteCard key={item.id} item={item} />
+              {items.map((item) => (
+                <FavoriteCard
+                  key={item.id}
+                  item={item}
+                  onOpen={() =>
+                    router.push({ pathname: "/(public)/product", params: { id: item.id } })
+                  }
+                  onRemove={() => void toggle(item.id)}
+                  onAdd={() => void addToCart(item)}
+                />
               ))}
             </View>
 
-            {/* Share wishlist */}
             <GlassCard style={styles.shareCard}>
               <View style={styles.shareShine} pointerEvents="none" />
               <View style={{ flex: 1 }}>
-                <Text style={styles.shareTitle}>Share Wishlist</Text>
-                <Text style={styles.shareSub}>Send your saved items to someone or get a quote</Text>
+                <Text style={styles.shareTitle}>Get a quote</Text>
+                <Text style={styles.shareSub}>Ask us to price these items for your project</Text>
               </View>
-              <TouchableOpacity style={styles.shareBtn} activeOpacity={0.8}>
-                <Text style={styles.shareBtnIcon}>↗</Text>
+              <TouchableOpacity
+                style={styles.shareBtn}
+                activeOpacity={0.8}
+                accessibilityLabel="Request a quote for saved items"
+                onPress={() =>
+                  router.push({
+                    pathname: "/(public)/quote",
+                    params: { service: items.map((i) => i.name).join(", ") },
+                  })
+                }
+              >
+                <Text style={styles.shareBtnIcon}>\u2197</Text>
               </TouchableOpacity>
             </GlassCard>
           </>
@@ -342,5 +411,13 @@ const styles = StyleSheet.create({
     ...type.footnote,
     color: colors.text1,
     fontWeight: "600",
+  },
+
+  addBtnDisabled: {
+    opacity: 0.35,
+  },
+  loadingBox: {
+    paddingVertical: 32,
+    alignItems: "center",
   },
 })

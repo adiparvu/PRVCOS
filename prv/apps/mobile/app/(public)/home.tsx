@@ -1,4 +1,4 @@
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View, RefreshControl } from "react-native"
+import { Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { useRouter } from "expo-router"
 import { BlurView } from "expo-blur"
@@ -61,9 +61,17 @@ function Stars({ count }: { count: number }) {
   )
 }
 
-function ServiceCard({ icon, label }: { icon: string; label: string }) {
+function ServiceCard({
+  icon,
+  label,
+  onPress,
+}: {
+  icon: string
+  label: string
+  onPress: () => void
+}) {
   return (
-    <TouchableOpacity style={styles.serviceCard} activeOpacity={0.75}>
+    <TouchableOpacity style={styles.serviceCard} activeOpacity={0.75} onPress={onPress}>
       <View style={styles.serviceShine} pointerEvents="none" />
       <Text style={styles.serviceIcon}>{icon}</Text>
       <Text style={styles.serviceLabel}>{label}</Text>
@@ -104,9 +112,6 @@ export default function HomeScreen() {
           { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 104 },
         ]}
         showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl refreshing={false} onRefresh={() => {}} tintColor={colors.text3} />
-        }
       >
         {/* Nav bar */}
         <View style={styles.navBar}>
@@ -134,12 +139,20 @@ export default function HomeScreen() {
             time, every time.
           </Text>
           <View style={styles.heroActions}>
-            <TouchableOpacity style={styles.heroCTA} activeOpacity={0.85}>
+            <TouchableOpacity
+              style={styles.heroCTA}
+              activeOpacity={0.85}
+              onPress={() => router.push("/(public)/quote")}
+            >
               <View style={styles.heroCTAShine} pointerEvents="none" />
               <Text style={styles.heroCTAText}>Get a Free Quote</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.heroSecondary} activeOpacity={0.75}>
-              <Text style={styles.heroSecondaryText}>View Projects →</Text>
+            <TouchableOpacity
+              style={styles.heroSecondary}
+              activeOpacity={0.75}
+              onPress={() => router.push("/(public)/shop")}
+            >
+              <Text style={styles.heroSecondaryText}>Browse products →</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -161,7 +174,17 @@ export default function HomeScreen() {
         <Text style={styles.sectionLabel}>Our Services</Text>
         <View style={styles.servicesGrid}>
           {SERVICES.map((s) => (
-            <ServiceCard key={s.label} icon={s.icon} label={s.label} />
+            <ServiceCard
+              key={s.label}
+              icon={s.icon}
+              label={s.label}
+              onPress={() =>
+                router.push({
+                  pathname: "/(public)/quote",
+                  params: { service: s.label.replace("\n", " ") },
+                })
+              }
+            />
           ))}
         </View>
 
@@ -213,7 +236,11 @@ export default function HomeScreen() {
           <Text style={styles.contactSub}>
             Request a free consultation and get a detailed quote within 24 hours.
           </Text>
-          <TouchableOpacity style={styles.contactBtn} activeOpacity={0.8}>
+          <TouchableOpacity
+            style={styles.contactBtn}
+            activeOpacity={0.8}
+            onPress={() => router.push("/(public)/quote")}
+          >
             <View style={styles.contactBtnShine} pointerEvents="none" />
             <Text style={styles.contactBtnText}>Request Free Quote</Text>
           </TouchableOpacity>
@@ -221,11 +248,21 @@ export default function HomeScreen() {
           <View style={styles.contactInfo}>
             <View style={styles.contactRow}>
               <Text style={styles.contactIcon}>✆</Text>
-              <Text style={styles.contactText}>+40 123 456 789</Text>
+              <Text
+                style={styles.contactText}
+                onPress={() => void Linking.openURL("tel:+40123456789")}
+              >
+                +40 123 456 789
+              </Text>
             </View>
             <View style={styles.contactRow}>
               <Text style={styles.contactIcon}>@</Text>
-              <Text style={styles.contactText}>contact@prvrenovations.ro</Text>
+              <Text
+                style={styles.contactText}
+                onPress={() => void Linking.openURL("mailto:contact@prvrenovations.ro")}
+              >
+                contact@prvrenovations.ro
+              </Text>
             </View>
           </View>
         </GlassCard>

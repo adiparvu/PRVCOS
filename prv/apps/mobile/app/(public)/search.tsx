@@ -1,34 +1,48 @@
-import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native"
+import { useMemo, useState } from "react"
+import {
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
-import { useState } from "react"
+import { useRouter } from "expo-router"
 import { GlassCard } from "@/components/Glass"
+import { usePublicShop } from "@/hooks/usePublicShop"
 import { colors, type, radius, spacing } from "@/tokens"
 
-const RECENT = ["marble tiles", "oak flooring", "mixer tap", "tile adhesive", "paint roller"]
-
-const TRENDING = [
-  { id: "t1", icon: "⬛", label: "Marble Tiles" },
-  { id: "t2", icon: "◈", label: "Engineered Wood" },
-  { id: "t3", icon: "◻", label: "Mixer Taps" },
-  { id: "t4", icon: "▪", label: "Grout & Adhesive" },
-  { id: "t5", icon: "◉", label: "Wall Paint" },
-  { id: "t6", icon: "⊞", label: "Power Tools" },
-]
-
-const RESULTS = [
-  { id: "r1", name: "Premium Marble Tile 60×60", price: "€42/m²", category: "Tiles & Stone" },
-  { id: "r2", name: "Matte Marble Tile 30×60", price: "€31/m²", category: "Tiles & Stone" },
-  { id: "r3", name: "Marble Mosaic Insert", price: "€18/pc", category: "Tiles & Stone" },
-]
+function formatPrice(value: number): string {
+  return `\u20ac${value.toLocaleString("ro-RO", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`
+}
 
 export default function SearchScreen() {
   const insets = useSafeAreaInsets()
+  const router = useRouter()
+  const { data, isLoading } = usePublicShop()
   const [query, setQuery] = useState("")
+  // Recent terms are session-scoped and only ever contain what the user
+  // actually typed — no seeded suggestions pretending to be history.
+  const [recent, setRecent] = useState<string[]>([])
 
   const hasQuery = query.trim().length > 0
-  const results = hasQuery
-    ? RESULTS.filter((r) => r.name.toLowerCase().includes(query.toLowerCase()))
-    : []
+  const products = data?.products ?? []
+
+  const results = useMemo(() => {
+    if (!hasQuery) return []
+    const q = query.trim().toLowerCase()
+    return products.filter(
+      (p) => p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q)
+    )
+  }, [products, query, hasQuery])
+
+  function remember(term: string) {
+    const t = term.trim()
+    if (!t) return
+    setRecent((prev) => [t, ...prev.filter((x) => x !== t)].slice(0, 8))
+  }
 
   return (
     <View style={styles.root}>
@@ -36,19 +50,20 @@ export default function SearchScreen() {
       <View style={[styles.searchBarWrap, { top: insets.top + 12 }]}>
         <View style={styles.searchBar}>
           <View style={styles.searchShine} pointerEvents="none" />
-          <Text style={styles.searchIcon}>⌕</Text>
+          <Text style={styles.searchIcon}>\u2315</Text>
           <TextInput
             style={styles.searchInput}
-            placeholder="Search products, categories…"
+            placeholder="Search products, categories\u2026"
             placeholderTextColor={colors.text3}
             value={query}
             onChangeText={setQuery}
             autoCorrect={false}
             returnKeyType="search"
+            onSubmitEditing={() => remember(query)}
           />
           {hasQuery && (
             <TouchableOpacity onPress={() => setQuery("")} activeOpacity={0.7}>
-              <Text style={styles.clearIcon}>✕</Text>
+              <Text style={styles.clearIcon}>\u2715</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -65,66 +80,105 @@ export default function SearchScreen() {
       >
         {!hasQuery ? (
           <>
-            {/* Recent searches */}
-            <Text style={styles.sectionLabel}>Recent</Text>
-            <GlassCard style={styles.recentCard}>
-              <View style={styles.recentShine} pointerEvents="none" />
-              {RECENT.map((term, i) => (
-                <TouchableOpacity
-                  key={term}
-                  style={[styles.recentRow, i < RECENT.length - 1 && styles.recentRowBorder]}
-                  activeOpacity={0.7}
-                  onPress={() => setQuery(term)}
-                >
-                  <Text style={styles.recentIcon}>↺</Text>
-                  <Text style={styles.recentText}>{term}</Text>
-                  <TouchableOpacity activeOpacity={0.6}>
-                    <Text style={styles.recentRemove}>✕</Text>
-                  </TouchableOpacity>
-                </TouchableOpacity>
-              ))}
-            </GlassCard>
+            {recent.length > 0 && (
+              <>
+                <Text style={styles.sectionLabel}>Recent</Text>
+                <GlassCard style={styles.recentCard}>
+                  <View style={styles.recentShine} pointerEvents="none" />
+                  {recent.map((term, i) => (
+                    <TouchableOpacity
+                      key={term}
+                      style={[styles.recentRow, i < recent.length - 1 && styles.recentRowBorder]}
+                      activeOpacity={0.7}
+                      onPress={() => setQuery(term)}
+                    >
+                      <Text style={styles.recentIcon}>\u21ba</Text>
+                      <Text style={styles.recentText}>{term}</Text>
+                      <TouchableOpacity
+                        activeOpacity={0.6}
+                        onPress={() => setRecent((prev) => prev.filter((x) => x !== term))}
+                        accessibilityLabel={`Remove ${term}`}
+                      >
+                        <Text style={styles.recentRemove}>\u2715</Text>
+                      </TouchableOpacity>
+                    </TouchableOpacity>
+                  ))}
+                </GlassCard>
+              </>
+            )}
 
-            {/* Trending */}
-            <Text style={[styles.sectionLabel, { marginTop: 20 }]}>Trending</Text>
-            <View style={styles.trendingGrid}>
-              {TRENDING.map((item) => (
-                <TouchableOpacity
-                  key={item.id}
-                  style={styles.trendingChip}
-                  activeOpacity={0.75}
-                  onPress={() => setQuery(item.label)}
-                >
-                  <Text style={styles.trendingChipIcon}>{item.icon}</Text>
-                  <Text style={styles.trendingChipLabel}>{item.label}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+            {/* Browse by category — real categories from the catalogue. */}
+            {data && data.categories.length > 0 && (
+              <>
+                <Text style={[styles.sectionLabel, recent.length > 0 && { marginTop: 20 }]}>
+                  Browse by category
+                </Text>
+                <View style={styles.trendingGrid}>
+                  {data.categories.map((c) => (
+                    <TouchableOpacity
+                      key={c}
+                      style={styles.trendingChip}
+                      activeOpacity={0.75}
+                      onPress={() => {
+                        setQuery(c)
+                        remember(c)
+                      }}
+                    >
+                      <Text style={styles.trendingChipLabel}>{c}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </>
+            )}
+
+            {isLoading && (
+              <View style={styles.loadingBox}>
+                <ActivityIndicator color={colors.text3} />
+              </View>
+            )}
           </>
         ) : results.length > 0 ? (
           <>
             <Text style={styles.sectionLabel}>
-              {results.length} Results for "{query}"
+              {results.length} {results.length === 1 ? "result" : "results"} for "{query.trim()}"
             </Text>
             {results.map((r) => (
-              <TouchableOpacity key={r.id} style={styles.resultRow} activeOpacity={0.8}>
+              <TouchableOpacity
+                key={r.id}
+                style={styles.resultRow}
+                activeOpacity={0.8}
+                onPress={() => {
+                  remember(query)
+                  router.push({ pathname: "/(public)/product", params: { id: r.id } })
+                }}
+              >
                 <View style={styles.resultShine} pointerEvents="none" />
                 <View style={styles.resultThumb} />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.resultCategory}>{r.category}</Text>
                   <Text style={styles.resultName}>{r.name}</Text>
-                  <Text style={styles.resultPrice}>{r.price}</Text>
+                  <Text style={styles.resultPrice}>{formatPrice(r.price)}</Text>
                 </View>
-                <Text style={styles.resultArrow}>›</Text>
+                <Text style={styles.resultArrow}>\u203a</Text>
               </TouchableOpacity>
             ))}
           </>
         ) : (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyIcon}>⌕</Text>
-            <Text style={styles.emptyTitle}>No results for "{query}"</Text>
-            <Text style={styles.emptySub}>Try different keywords or browse categories</Text>
-          </View>
+          <GlassCard style={styles.noResultCard}>
+            <Text style={styles.noResultTitle}>No results for "{query.trim()}"</Text>
+            <Text style={styles.noResultSub}>
+              Try a different term, or ask us for a quote and we will source it.
+            </Text>
+            <TouchableOpacity
+              style={styles.noResultBtn}
+              activeOpacity={0.8}
+              onPress={() =>
+                router.push({ pathname: "/(public)/quote", params: { service: query.trim() } })
+              }
+            >
+              <Text style={styles.noResultBtnText}>Request a quote</Text>
+            </TouchableOpacity>
+          </GlassCard>
         )}
       </ScrollView>
     </View>
@@ -327,5 +381,39 @@ const styles = StyleSheet.create({
     ...type.footnote,
     color: colors.text3,
     textAlign: "center",
+  },
+
+  loadingBox: {
+    paddingVertical: spacing.xxl,
+    alignItems: "center",
+  },
+  noResultCard: {
+    padding: spacing.lg,
+    alignItems: "center",
+  },
+  noResultTitle: {
+    ...type.headline,
+    color: colors.text1,
+    marginBottom: spacing.xs,
+    textAlign: "center",
+  },
+  noResultSub: {
+    ...type.footnote,
+    color: colors.text3,
+    textAlign: "center",
+  },
+  noResultBtn: {
+    marginTop: spacing.base,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.pill,
+    backgroundColor: colors.glass2,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  noResultBtnText: {
+    ...type.footnote,
+    color: colors.text1,
+    fontWeight: "600",
   },
 })

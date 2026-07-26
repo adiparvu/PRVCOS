@@ -2,13 +2,14 @@ import { Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "r
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { useRouter } from "expo-router"
 import { GlassCard } from "@/components/Glass"
+import { useFavoritesStore } from "@/store/favorites"
 import { colors, type, radius, spacing } from "@/tokens"
 
 const MENU_SECTIONS = [
   {
     title: "My Orders",
     items: [
-      { icon: "◎", label: "Active Orders", value: "2 in progress" },
+      { icon: "◎", label: "Active Orders", value: null },
       { icon: "⊡", label: "Order History", value: null },
       { icon: "↩", label: "Returns & Refunds", value: null },
     ],
@@ -16,8 +17,8 @@ const MENU_SECTIONS = [
   {
     title: "My Projects",
     items: [
-      { icon: "⟁", label: "Renovation Quotes", value: "1 pending" },
-      { icon: "◈", label: "Active Projects", value: "1 active" },
+      { icon: "⟁", label: "Renovation Quotes", value: null },
+      { icon: "◈", label: "Active Projects", value: null },
       { icon: "◻", label: "Completed Projects", value: null },
     ],
   },
@@ -80,6 +81,7 @@ function MenuSection({ section }: { section: (typeof MENU_SECTIONS)[number] }) {
 export default function AccountScreen() {
   const insets = useSafeAreaInsets()
   const router = useRouter()
+  const favoriteCount = useFavoritesStore((s) => s.ids.length)
   const isGuest = true // public app — not authenticated
 
   return (
@@ -114,12 +116,14 @@ export default function AccountScreen() {
             >
               <Text style={styles.signInBtnText}>Sign In</Text>
             </TouchableOpacity>
+            {/* No self-service signup: business accounts are issued by invitation,
+                so the secondary action is the one a visitor can actually complete. */}
             <TouchableOpacity
               style={styles.registerBtn}
               activeOpacity={0.75}
-              onPress={() => router.push("/(auth)/login")}
+              onPress={() => router.push("/(public)/quote")}
             >
-              <Text style={styles.registerBtnText}>Create Account →</Text>
+              <Text style={styles.registerBtnText}>Request a quote →</Text>
             </TouchableOpacity>
           </GlassCard>
         ) : (
@@ -139,12 +143,13 @@ export default function AccountScreen() {
           </GlassCard>
         )}
 
-        {/* Stats row (always visible as teaser for guests) */}
+        {/* Stats row. Orders/Projects need an authenticated session, so they stay
+            blank for guests; Saved is local and always real. */}
         <View style={styles.statsRow}>
           {[
-            { value: isGuest ? "—" : "2", label: "Orders" },
-            { value: isGuest ? "—" : "1", label: "Projects" },
-            { value: isGuest ? "—" : "3", label: "Saved" },
+            { value: "—", label: "Orders" },
+            { value: "—", label: "Projects" },
+            { value: String(favoriteCount), label: "Saved" },
           ].map((s) => (
             <GlassCard key={s.label} style={styles.statCard}>
               <View style={styles.statShine} pointerEvents="none" />
