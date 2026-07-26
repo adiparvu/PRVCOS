@@ -307,5 +307,7 @@ Auditul este un instantaneu la `3ebe21d`. Lucrări finalizate de atunci:
 | D6 — coloane sensibile moarte | `a10dc7a` | national_id, bank_iban, secret_encrypted eliminate; re-adăugarea cere mai întâi criptare pe KMS. |
 | D8 — teste instabile în paralel | `a10dc7a` | testTimeout/hookTimeout 30s acoperă înfometarea de scheduling sub sarcina paralelă turbo. |
 | P1.5 / R2 — teste de integrare | `a0f1bf1` | Primele suite pe Postgres real: aserțiuni de izolare cross-tenant + detecție de falsificare a lanțului de audit, rulate în CI pe pgvector/pgvector:pg16 cu provizionarea schemei complete. |
+| P2.9 — E2E smoke | `2660154` | Zece specificații Playwright pe serverul real (headere, redirecturi, API public fail-closed, verificarea de Origin cap-coadă); job propriu de CI; limiterul de edge cade acum deschis la o pană Redis. |
+| P2.10 / R6 — offline mobil | `3784c56` | Cache-ul de query-uri persistat în AsyncStorage (24h), onlineManager alimentat de NetInfo, coadă durabilă FIFO de mutații cu replay la reconectare; bifarea task-urilor e primul consumator. |
 
 P0.1 (deploy de staging) rămâne muncă de ops, în afara repository-ului.

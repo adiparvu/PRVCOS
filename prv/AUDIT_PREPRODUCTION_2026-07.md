@@ -303,5 +303,7 @@ The audit is a point-in-time document at `3ebe21d`. Work completed since:
 | D6 — dead sensitive columns | `a10dc7a` | national_id, bank_iban, secret_encrypted dropped; re-adding requires KMS-backed encryption first. |
 | D8 — flaky parallel tests | `a10dc7a` | testTimeout/hookTimeout 30s covers scheduling starvation under turbo's parallel load. |
 | P1.5 / R2 — integration tests | `a0f1bf1` | First real-Postgres suites: cross-tenant isolation assertions + audit-chain tamper detection, run in CI against pgvector/pgvector:pg16 with full-schema provisioning. |
+| P2.9 — E2E smoke | `2660154` | Ten Playwright specs against the running server (headers, redirects, fail-closed public API, origin check end-to-end); own CI job; edge limiter now fails open on Redis outage. |
+| P2.10 / R6 — mobile offline | `3784c56` | Query cache persisted to AsyncStorage (24h), NetInfo-fed onlineManager, durable FIFO mutation queue with reconnect replay; task toggle is the first queued consumer. |
 
 P0.1 (staging deploy) remains ops work outside the repository.
