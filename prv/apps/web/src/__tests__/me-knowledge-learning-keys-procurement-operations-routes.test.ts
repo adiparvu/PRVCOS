@@ -20,7 +20,12 @@ vi.mock("@prv/auth", () => ({
   RoleSets: { admin: [], management: [] },
 }))
 
+vi.mock("@prv/jobs/client", () => ({
+  inngest: { send: vi.fn().mockResolvedValue(undefined) },
+}))
+
 const mockDb = {
+  delete: vi.fn().mockReturnThis(),
   select: vi.fn().mockReturnThis(),
   insert: vi.fn().mockReturnThis(),
   update: vi.fn().mockReturnThis(),
@@ -40,6 +45,7 @@ const mockDb = {
 vi.mock("@prv/db", () => ({ db: mockDb }))
 
 vi.mock("@prv/db/schema", () => ({
+  documentEmbeddings: {},
   users: {
     id: {},
     firstName: {},

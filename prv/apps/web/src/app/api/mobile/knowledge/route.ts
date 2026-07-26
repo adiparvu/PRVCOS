@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { withMobileAuth } from "@/lib/mobile/auth"
 import { db } from "@prv/db"
+import { inngest } from "@prv/jobs/client"
 import { knowledgeArticles, articleReadProgress, users } from "@prv/db/schema"
 import { and, desc, eq, gte, isNull, sql } from "drizzle-orm"
 import { z } from "zod"
@@ -153,6 +154,15 @@ export const POST = withMobileAuth(async (req: NextRequest, ctx) => {
     .insert(knowledgeArticles)
     .values({ companyId: ctx.companyId, authorUserId: ctx.userId, ...parsed.data })
     .returning({ id: knowledgeArticles.id, title: knowledgeArticles.title })
+
+  if (record) {
+    void inngest
+      .send({
+        name: "knowledge/article.upserted",
+        data: { companyId: ctx.companyId, articleId: record.id },
+      })
+      .catch(() => {})
+  }
 
   if (!record) return NextResponse.json({ error: "Insert failed" }, { status: 500 })
 

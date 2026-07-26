@@ -32,6 +32,13 @@ vi.mock("@prv/ai-engine", () => ({
     })
   ),
   titleFromMessage: vi.fn().mockReturnValue("Test Title"),
+  // RAG additions: unconfigured in unit tests → chat runs without retrieval
+  isEmbeddingConfigured: vi.fn().mockReturnValue(false),
+  embedQuery: vi.fn(),
+}))
+
+vi.mock("@/lib/rag", () => ({
+  searchChunks: vi.fn().mockResolvedValue([]),
 }))
 
 const mockDb = {

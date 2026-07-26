@@ -4,6 +4,7 @@ import type { GateContext } from "@prv/auth"
 import { writeAuditLog } from "@prv/auth"
 import { z } from "zod"
 import { db } from "@prv/db"
+import { inngest } from "@prv/jobs/client"
 import { knowledgeArticles, articleReadProgress, users } from "@prv/db/schema"
 import { and, desc, eq, gt, gte, isNull } from "drizzle-orm"
 
@@ -209,6 +210,14 @@ export const POST = withGates(
       .returning({ id: knowledgeArticles.id, title: knowledgeArticles.title })
 
     if (!record) return NextResponse.json({ error: "Insert failed" }, { status: 500 })
+
+    // Keep semantic search fresh: the embed job re-chunks this article.
+    void inngest
+      .send({
+        name: "knowledge/article.upserted",
+        data: { companyId, articleId: record.id },
+      })
+      .catch(() => {})
 
     void writeAuditLog({
       companyId,

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { withMobileAuth } from "@/lib/mobile/auth"
 import { db } from "@prv/db"
-import { knowledgeArticles, articleReadProgress, users } from "@prv/db/schema"
+import { inngest } from "@prv/jobs/client"
+import { documentEmbeddings, knowledgeArticles, articleReadProgress, users } from "@prv/db/schema"
 import { and, eq, isNull } from "drizzle-orm"
 import { z } from "zod"
 import { writeAuditLog } from "@prv/auth"
@@ -187,6 +188,13 @@ export const PATCH = withMobileAuth(async (req: NextRequest, ctx) => {
     .where(and(eq(knowledgeArticles.id, id), eq(knowledgeArticles.companyId, ctx.companyId)))
     .returning({ id: knowledgeArticles.id, isPinned: knowledgeArticles.isPinned })
 
+  void inngest
+    .send({
+      name: "knowledge/article.upserted",
+      data: { companyId: ctx.companyId, articleId: id },
+    })
+    .catch(() => {})
+
   void writeAuditLog({
     companyId: ctx.companyId,
     actorId: ctx.userId,
@@ -232,6 +240,17 @@ export const DELETE = withMobileAuth(async (req: NextRequest, ctx) => {
     .update(knowledgeArticles)
     .set({ deletedAt: new Date(), updatedAt: new Date() })
     .where(and(eq(knowledgeArticles.id, id), eq(knowledgeArticles.companyId, ctx.companyId)))
+
+  // A deleted article must stop surfacing in semantic search immediately.
+  await db
+    .delete(documentEmbeddings)
+    .where(
+      and(
+        eq(documentEmbeddings.companyId, ctx.companyId),
+        eq(documentEmbeddings.sourceType, "knowledge_article"),
+        eq(documentEmbeddings.sourceId, id)
+      )
+    )
 
   void writeAuditLog({
     companyId: ctx.companyId,

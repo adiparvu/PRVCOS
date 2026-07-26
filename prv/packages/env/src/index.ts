@@ -46,6 +46,10 @@ export const serverEnvSchema = sharedSchema.extend({
   // AI
   ANTHROPIC_API_KEY: z.string().startsWith("sk-ant-"),
 
+  // Embeddings for semantic search / RAG — optional; the AI platform's
+  // retrieval features degrade gracefully without it
+  OPENAI_API_KEY: z.string().optional(),
+
   // Push Notifications (Expo Enhanced Push — optional)
   EXPO_ACCESS_TOKEN: z.string().optional(),
 

@@ -116,6 +116,12 @@ export type PRVEvents = {
       notifyUserId?: string
     }
   }
+  "knowledge/article.upserted": {
+    data: {
+      companyId: string
+      articleId: string
+    }
+  }
   "prv/pdf.ready": {
     data: {
       entityId: string

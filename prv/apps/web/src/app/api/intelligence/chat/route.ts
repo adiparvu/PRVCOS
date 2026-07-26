@@ -2,12 +2,15 @@ import { withGates } from "@/lib/with-gates"
 import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
 import { z } from "zod"
+import { searchChunks } from "@/lib/rag"
 import {
   streamChatWithHistory,
   createConversation,
   appendMessage,
   getConversationHistory,
   titleFromMessage,
+  embedQuery,
+  isEmbeddingConfigured,
 } from "@prv/ai-engine"
 
 export const dynamic = "force-dynamic"
@@ -59,12 +62,39 @@ export const POST = withGates(
     const enc = new TextEncoder()
     let fullResponse = ""
 
-    const aiStream = streamChatWithHistory(message, priorHistory, {
-      userId: ctx.session.userId,
-      companyId: ctx.session.companyId,
-      role: ctx.session.role,
+    // RAG: ground the answer in the company's knowledge base when embeddings
+    // are provisioned. Fail-open — retrieval trouble must never take chat down.
+    let retrievedContext: string | undefined
+    if (isEmbeddingConfigured()) {
+      try {
+        const queryEmbedding = await embedQuery(message)
+        const chunks = await searchChunks(ctx.session.companyId, queryEmbedding, {
+          k: 4,
+          sourceType: "knowledge_article",
+        })
+        // Below ~0.3 cosine similarity the "context" is noise that misleads
+        // more than it grounds.
+        const relevant = chunks.filter((c) => c.similarity >= 0.3)
+        if (relevant.length > 0) {
+          retrievedContext = relevant.map((c, i) => `[Excerpt ${i + 1}]\n${c.content}`).join("\n\n")
+        }
+      } catch (err) {
+        console.error("[intelligence.chat] retrieval failed, continuing without context:", err)
+      }
+    }
+
+    const aiStream = streamChatWithHistory(
+      message,
+      priorHistory,
+      {
+        userId: ctx.session.userId,
+        companyId: ctx.session.companyId,
+        role: ctx.session.role,
+        agentType,
+      },
       agentType,
-    })
+      retrievedContext
+    )
 
     const { readable, writable } = new TransformStream<Uint8Array, Uint8Array>()
     const writer = writable.getWriter()

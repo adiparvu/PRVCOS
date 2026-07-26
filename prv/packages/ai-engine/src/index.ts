@@ -2,7 +2,10 @@ import Anthropic from "@anthropic-ai/sdk"
 import { redactPii } from "./pii"
 import { eq, asc, desc, and, isNull, sql } from "drizzle-orm"
 
-const MODEL = "claude-sonnet-4-6"
+// claude-sonnet-5: drop-in successor to sonnet-4-6 (same request shape
+// here — no sampling params, no budget_tokens). Note thinking is adaptive by
+// default on Sonnet 5 and max_tokens caps thinking + text together.
+const MODEL = "claude-sonnet-5"
 const MAX_HISTORY = 20
 
 // Cost per 1M tokens (claude-sonnet-4-6 pricing)
@@ -181,14 +184,21 @@ export function streamChatWithHistory(
   message: string,
   history: ConversationMessage[],
   _ctx: ChatContext,
-  agentType: AgentType = "general"
+  agentType: AgentType = "general",
+  retrievedContext?: string
 ): ReadableStream<Uint8Array> {
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) return makeNoKeyStream("AI chat is not configured. Please set ANTHROPIC_API_KEY.")
 
   // Resolve agent type: explicit param takes precedence, then ctx, then default
   const resolvedAgent: AgentType = agentType ?? _ctx.agentType ?? "general"
-  const systemPrompt = AGENT_SYSTEM_PROMPTS[resolvedAgent] ?? SYSTEM_PROMPT
+  const basePrompt = AGENT_SYSTEM_PROMPTS[resolvedAgent] ?? SYSTEM_PROMPT
+  // RAG: retrieved knowledge is appended AFTER the stable prompt so the
+  // cacheable prefix stays byte-identical across requests. Grounding rules
+  // keep the model from presenting company documents as its own knowledge.
+  const systemPrompt = retrievedContext
+    ? `${basePrompt}\n\n# Company knowledge context\nThe following excerpts come from this company's internal knowledge base and were retrieved for the current question. Prefer them over general knowledge when they are relevant; cite the article title when you use one; if they do not answer the question, say so rather than guessing.\n\n${retrievedContext}`
+    : basePrompt
 
   const client = new Anthropic({ apiKey })
   const enc = new TextEncoder()
@@ -199,7 +209,7 @@ export function streamChatWithHistory(
       try {
         const stream = await client.messages.stream({
           model: MODEL,
-          max_tokens: 1024,
+          max_tokens: 4096,
           system: systemPrompt,
           messages,
         })
@@ -783,3 +793,13 @@ export async function buildReportQuery(
     columns: ["id", "name", "value", "date"],
   }
 }
+
+export {
+  chunkText,
+  embedTexts,
+  embedQuery,
+  isEmbeddingConfigured,
+  EMBEDDING_DIM,
+  EMBEDDING_MODEL,
+} from "./embeddings"
+export type { TextChunk } from "./embeddings"

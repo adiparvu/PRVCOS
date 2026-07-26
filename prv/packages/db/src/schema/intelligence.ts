@@ -10,6 +10,7 @@ import {
   unique,
   customType,
 } from "drizzle-orm/pg-core"
+import { companies } from "./companies"
 
 export const insightTypeEnum = pgEnum("insight_type", [
   "recommendation",
@@ -224,7 +225,11 @@ export const embeddingSourceEnum = pgEnum("embedding_source", [
 
 export const documentEmbeddings = pgTable("document_embeddings", {
   id: uuid("id").primaryKey().defaultRandom(),
-  companyId: uuid("company_id").notNull(),
+  // Cascade added after an integration test proved deleting a company
+  // orphaned its embeddings — residual tenant data with no owner.
+  companyId: uuid("company_id")
+    .notNull()
+    .references(() => companies.id, { onDelete: "cascade" }),
   sourceType: embeddingSourceEnum("source_type").notNull(),
   sourceId: uuid("source_id").notNull(),
   chunkIndex: integer("chunk_index").notNull().default(0),

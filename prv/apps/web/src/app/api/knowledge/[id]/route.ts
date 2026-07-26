@@ -3,7 +3,14 @@ import { NextRequest, NextResponse } from "next/server"
 import type { GateContext } from "@prv/auth"
 import { writeAuditLog } from "@prv/auth"
 import { db } from "@prv/db"
-import { knowledgeArticles, articleReadProgress, articleFeedback, users } from "@prv/db/schema"
+import { inngest } from "@prv/jobs/client"
+import {
+  documentEmbeddings,
+  knowledgeArticles,
+  articleReadProgress,
+  articleFeedback,
+  users,
+} from "@prv/db/schema"
 import { and, eq, isNull } from "drizzle-orm"
 import { z } from "zod"
 import type { ArticleType, ArticleCategory } from "../route"
@@ -249,6 +256,10 @@ export const PATCH = withGates(
       .where(and(eq(knowledgeArticles.id, id), eq(knowledgeArticles.companyId, companyId)))
       .returning({ id: knowledgeArticles.id, isPinned: knowledgeArticles.isPinned })
 
+    void inngest
+      .send({ name: "knowledge/article.upserted", data: { companyId, articleId: id } })
+      .catch(() => {})
+
     void writeAuditLog({
       companyId,
       actorId: userId,
@@ -294,6 +305,17 @@ export const DELETE = withGates(
       .update(knowledgeArticles)
       .set({ deletedAt: new Date(), updatedAt: new Date() })
       .where(and(eq(knowledgeArticles.id, id), eq(knowledgeArticles.companyId, companyId)))
+
+    // A deleted article must stop surfacing in semantic search immediately.
+    await db
+      .delete(documentEmbeddings)
+      .where(
+        and(
+          eq(documentEmbeddings.companyId, companyId),
+          eq(documentEmbeddings.sourceType, "knowledge_article"),
+          eq(documentEmbeddings.sourceId, id)
+        )
+      )
 
     void writeAuditLog({
       companyId,

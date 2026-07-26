@@ -20,7 +20,12 @@ vi.mock("@prv/approval-engine", () => ({
   },
 }))
 
+vi.mock("@prv/jobs/client", () => ({
+  inngest: { send: vi.fn().mockResolvedValue(undefined) },
+}))
+
 const mockDb = {
+  delete: vi.fn().mockReturnThis(),
   select: vi.fn().mockReturnThis(),
   update: vi.fn().mockReturnThis(),
   insert: vi.fn().mockReturnThis(),
@@ -44,6 +49,7 @@ vi.mock("@prv/db/schema", () => ({
   purchaseOrders: {},
   projects: {},
   knowledgeArticles: {},
+  documentEmbeddings: {},
   articleReadProgress: {},
   learningCourses: {},
   courseEnrollments: {},
@@ -82,6 +88,7 @@ function makeReq(path: string, method = "DELETE", overrides: Partial<Request> = 
 
 function resetMocks() {
   vi.resetAllMocks()
+  mockDb.delete.mockReturnThis()
   mockDb.select.mockReturnThis()
   mockDb.update.mockReturnThis()
   mockDb.insert.mockReturnThis()

@@ -203,7 +203,7 @@ jobs:
 
       - name: Integration tests
         run: |
-          pnpm --filter @prv/db exec vitest run src/__tests__/pg-rls.integration.test.ts
+          pnpm --filter @prv/db exec vitest run src/__tests__/pg-rls.integration.test.ts src/__tests__/pg-rag.integration.test.ts
           pnpm --filter @prv/auth exec vitest run src/__tests__/integration/pg-audit-chain.integration.test.ts
 
   e2e:
