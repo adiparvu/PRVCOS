@@ -13,13 +13,23 @@ PgBouncer pooler on 6543 — DDL is unreliable through a transaction-mode pooler
 ## The schema is the source of truth
 
 `packages/db/src/schema/*.ts` defines **179 tables** and is authoritative.
-`db:provision` materialises exactly that, in two steps:
+`db:provision` materialises exactly that, in three steps:
 
 1. `db:extensions` — installs `pgcrypto` (for `gen_random_uuid()`) and `vector`
    (pgvector, for the AI embedding column). These must exist *before* the schema
    is created. Supabase ships both; a self-hosted Postgres needs pgvector
    installed at the OS level or this step fails loudly.
 2. `drizzle-kit push` — creates the schema from the TypeScript definitions.
+3. `db:rls` — applies `migrations/rls-lockdown.sql`: enables Row Level Security
+   on **every** public table and adds a `company_isolation` policy to every
+   table carrying `company_id`. The app connects through the service role
+   (BYPASSRLS) and is unaffected; the point is that the anon key shipped in
+   client bundles can no longer read tables through PostgREST (default-deny).
+   Idempotent — **re-run it after every `db:push`**, since freshly pushed
+   tables start without RLS. Verified by execution: before lockdown a
+   non-owner role read every row; after, it reads zero, while a transaction
+   with `SET LOCAL app.company_id` (the `withRLS()` contract) sees exactly its
+   tenant's rows.
 
 ## Why not the SQL migration files?
 
