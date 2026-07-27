@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { withPortalAuth } from "@/lib/portal-middleware"
+import { notifyStaffUser } from "@/lib/portal-staff-notify"
 import type { PortalSessionContext } from "@/lib/portal-auth"
 import { db } from "@prv/db"
 import { invoices } from "@prv/db/schema"
@@ -39,7 +40,13 @@ export const POST = withPortalAuth(
     if (!parsed.success) return NextResponse.json({ error: "Invalid request" }, { status: 400 })
 
     const [existing] = await db
-      .select({ id: invoices.id, status: invoices.status, metadata: invoices.metadata })
+      .select({
+        id: invoices.id,
+        status: invoices.status,
+        metadata: invoices.metadata,
+        invoiceNumber: invoices.invoiceNumber,
+        createdByUserId: invoices.createdByUserId,
+      })
       .from(invoices)
       .where(
         and(
@@ -78,6 +85,28 @@ export const POST = withPortalAuth(
         updatedAt: new Date(),
       })
       .where(and(eq(invoices.id, id), eq(invoices.companyId, ctx.companyId)))
+
+    // Tell the quote's creator — the client's decision must not sit unseen.
+    if (existing.createdByUserId) {
+      try {
+        await notifyStaffUser({
+          userId: existing.createdByUserId,
+          companyId: ctx.companyId,
+          title:
+            decision === "accepted"
+              ? `Clientul a acceptat oferta ${existing.invoiceNumber}`
+              : `Clientul a respins oferta ${existing.invoiceNumber}`,
+          body: note
+            ? `Notă de la client: ${note.slice(0, 300)}`
+            : "Decizie luată în portalul clientului.",
+          entityType: "invoice",
+          entityId: id,
+          actionUrl: `/crm/quotes`,
+        })
+      } catch (err) {
+        console.error("[portal.quotes.decision] staff notification failed:", err)
+      }
+    }
 
     return NextResponse.json({
       id,

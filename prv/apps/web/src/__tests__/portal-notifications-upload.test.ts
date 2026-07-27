@@ -43,6 +43,11 @@ vi.mock("@prv/db/storage", () => ({
   buildStoragePath: (...parts: string[]) => parts.join("/"),
   uploadFile: (...a: unknown[]) => uploadMock(...a),
 }))
+const notifyManagerMock = vi.fn().mockResolvedValue(true)
+vi.mock("@/lib/portal-staff-notify", () => ({
+  notifyAccountManager: (...a: unknown[]) => notifyManagerMock(...a),
+  notifyStaffUser: vi.fn(),
+}))
 vi.mock("drizzle-orm", async (o) => {
   const actual = await o<typeof import("drizzle-orm")>()
   return { ...actual, eq: vi.fn(), and: vi.fn(), desc: vi.fn(), inArray: vi.fn(), isNull: vi.fn() }
@@ -189,6 +194,13 @@ describe("handlePortalDocumentUpload", () => {
     const meta = row["metadata"] as Record<string, unknown>
     expect(meta["uploadedVia"]).toBe("client_portal")
     expect(meta["portalAccountId"]).toBe("acct-1")
+
+    // the account manager is told about the under-review upload
+    expect(notifyManagerMock).toHaveBeenCalledWith(
+      "co-1",
+      "client-1",
+      expect.objectContaining({ entityType: "document", entityId: "doc-9" })
+    )
   })
 
   it("502s on storage failure without inserting a row", async () => {

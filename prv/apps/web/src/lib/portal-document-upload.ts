@@ -4,6 +4,7 @@ import { db } from "@prv/db"
 import { documents } from "@prv/db/schema"
 import { BucketAllowedMimes, StorageBucket, buildStoragePath, uploadFile } from "@prv/db/storage"
 import type { PortalSessionContext } from "@/lib/portal-auth"
+import { notifyAccountManager } from "@/lib/portal-staff-notify"
 
 // Client-initiated document upload (preview approved 2026-07). Real multipart
 // into the documents bucket — NOT the staff URL-paste flow. The row lands with
@@ -92,5 +93,20 @@ export async function handlePortalDocumentUpload(
     .returning({ id: documents.id, title: documents.title })
 
   if (!row) return NextResponse.json({ error: "Insert failed" }, { status: 500 })
+
+  // Tell the client's account manager — an under-review upload with no
+  // reviewer notified would sit forever. Fail-open.
+  try {
+    await notifyAccountManager(ctx.companyId, ctx.clientId, {
+      title: "Document nou de la client — de verificat",
+      body: `${ctx.name} a încărcat „${row.title}" în portal.`,
+      entityType: "document",
+      entityId: row.id,
+      actionUrl: `/documents/${row.id}`,
+    })
+  } catch (err) {
+    console.error("[portal.documents.upload] staff notification failed:", err)
+  }
+
   return NextResponse.json({ id: row.id, title: row.title, url }, { status: 201 })
 }

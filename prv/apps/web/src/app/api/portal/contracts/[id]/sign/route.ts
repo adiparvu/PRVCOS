@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { withPortalAuth } from "@/lib/portal-middleware"
+import { notifyAccountManager } from "@/lib/portal-staff-notify"
 import type { PortalSessionContext } from "@/lib/portal-auth"
 import { db } from "@prv/db"
 import { renovationContracts, renovationProjects } from "@prv/db/schema"
@@ -33,6 +34,7 @@ export const POST = withPortalAuth(
         id: renovationContracts.id,
         status: renovationContracts.status,
         signedByClientAt: renovationContracts.signedByClientAt,
+        contractNumber: renovationContracts.contractNumber,
         signedByCompanyAt: renovationContracts.signedByCompanyAt,
       })
       .from(renovationContracts)
@@ -69,6 +71,21 @@ export const POST = withPortalAuth(
         updatedAt: now,
       })
       .where(eq(renovationContracts.id, id))
+
+    // Tell the client's account manager — a signature must not sit unseen.
+    try {
+      await notifyAccountManager(ctx.companyId, ctx.clientId!, {
+        title: `Contract ${existing.contractNumber} semnat de client`,
+        body: fullySigned
+          ? "Ambele părți au semnat — contractul este acum complet executat."
+          : "Clientul a semnat; contractul așteaptă semnătura companiei.",
+        entityType: "renovation_contract",
+        entityId: id,
+        actionUrl: "/renovation",
+      })
+    } catch (err) {
+      console.error("[portal.contracts.sign] staff notification failed:", err)
+    }
 
     return NextResponse.json({
       id,
