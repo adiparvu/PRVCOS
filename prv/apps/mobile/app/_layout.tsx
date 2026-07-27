@@ -1,7 +1,8 @@
 import { useEffect } from "react"
 import { Stack, useRouter, useSegments } from "expo-router"
 import { StatusBar } from "expo-status-bar"
-import { QueryClient, onlineManager } from "@tanstack/react-query"
+import { MutationCache, QueryClient, onlineManager } from "@tanstack/react-query"
+import { hapticError, hapticSuccess } from "@/lib/haptics"
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client"
 import { createAsyncStoragePersister } from "@tanstack/query-async-storage-persister"
 import AsyncStorage from "@react-native-async-storage/async-storage"
@@ -21,6 +22,13 @@ import { usePushNotifications } from "@/hooks/usePushNotifications"
 // 3. The durable mutation queue (lib/offline-queue) flushes whenever
 //    connectivity returns.
 const queryClient = new QueryClient({
+  // One wiring point covers every mutation in the app (design system:
+  // "every action has appropriate haptic feedback") — per-screen calls only
+  // add the selection/impact tier on top.
+  mutationCache: new MutationCache({
+    onSuccess: () => hapticSuccess(),
+    onError: () => hapticError(),
+  }),
   defaultOptions: {
     queries: {
       staleTime: 30_000,

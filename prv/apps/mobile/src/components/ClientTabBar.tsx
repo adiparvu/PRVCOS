@@ -3,6 +3,7 @@ import { StyleSheet, Text, TouchableOpacity, View } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs"
 import { colors, radius } from "@/tokens"
+import { hapticSelection } from "@/lib/haptics"
 
 const TAB_META: Record<string, { icon: string; label: string }> = {
   overview: { icon: "⌂", label: "Overview" },
@@ -25,6 +26,7 @@ export function ClientTabBar({ state, descriptors, navigation }: BottomTabBarPro
           const meta = TAB_META[route.name] ?? { icon: "●", label: route.name }
 
           const onPress = () => {
+            hapticSelection()
             const event = navigation.emit({
               type: "tabPress",
               target: route.key,

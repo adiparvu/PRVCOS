@@ -57,7 +57,7 @@ Must follow:
 - **Dynamic Island** — role-specific live context, always active *(roadmap — not yet implemented natively; the web app ships a Dynamic Island-style live bar)*
 - **Live Activities** — real-time data on lock screen and Dynamic Island *(roadmap — not yet implemented)*
 - **Widgets** — Home Screen, Lock Screen, In-App Dashboard *(roadmap — not yet implemented)*
-- **Haptics** — every action has appropriate haptic feedback *(roadmap — expo-haptics not yet wired)*
+- **Haptics** — every action has appropriate haptic feedback *(active: global success/error feedback on every mutation + selection ticks on tab bars via expo-haptics; finer per-gesture tiers ongoing)*
 - **Face ID** — authentication, re-auth for sensitive operations
 - **Accessibility** — WCAG 2.1 AA, VoiceOver, Dynamic Type, Reduced Motion *(in progress — a11y passes ongoing; not yet measured on a deployed build)*
 

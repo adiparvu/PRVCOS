@@ -3,6 +3,7 @@ import { StyleSheet, Text, TouchableOpacity, View } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs"
 import { colors, radius } from "@/tokens"
+import { hapticSelection } from "@/lib/haptics"
 
 const TAB_META: Record<string, { icon: string; label: string }> = {
   home: { icon: "⌂", label: "Home" },
@@ -28,6 +29,7 @@ export function PublicTabBar({ state, descriptors, navigation }: BottomTabBarPro
           if (!meta) return null
 
           const onPress = () => {
+            hapticSelection()
             const event = navigation.emit({
               type: "tabPress",
               target: route.key,
