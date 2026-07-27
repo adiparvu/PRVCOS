@@ -41,6 +41,40 @@ const MAX_AGE_MS = 48 * 60 * 60 * 1000 // 48h
 
 let flushing = false
 
+// ── Sync-state subscribers (no polling) ───────────────────────────────────────
+// The floating sync pill listens here; the queue notifies on enqueue and on
+// every step of a flush. State is best-effort UI signal, not source of truth.
+
+export interface QueueSyncState {
+  pending: number
+  syncing: boolean
+  /** during a flush: how many of the initial batch have been sent */
+  progress?: { done: number; total: number }
+}
+
+type QueueListener = (state: QueueSyncState) => void
+const listeners = new Set<QueueListener>()
+let lastState: QueueSyncState = { pending: 0, syncing: false }
+
+function notify(state: QueueSyncState): void {
+  lastState = state
+  for (const l of listeners) l(state)
+}
+
+/** Subscribe to queue state changes; immediately replays the last known state. */
+export function subscribeQueue(listener: QueueListener): () => void {
+  listeners.add(listener)
+  listener(lastState)
+  // Refresh from storage so a fresh mount shows queued items from a previous
+  // session without waiting for the next enqueue/flush.
+  void pendingCount().then((pending) => {
+    if (!lastState.syncing && pending !== lastState.pending) notify({ pending, syncing: false })
+  })
+  return () => {
+    listeners.delete(listener)
+  }
+}
+
 async function readQueue(): Promise<QueuedMutation[]> {
   try {
     const raw = await AsyncStorage.getItem(KEY)
@@ -69,7 +103,9 @@ export async function enqueueMutation(
   }
   const queue = await readQueue()
   queue.push(item)
-  await writeQueue(queue.slice(-MAX_QUEUE))
+  const trimmed = queue.slice(-MAX_QUEUE)
+  await writeQueue(trimmed)
+  notify({ pending: trimmed.length, syncing: false })
   return item
 }
 
@@ -98,6 +134,8 @@ export async function flushQueue(
 
     const rejected: QueuedMutation[] = []
     let sent = 0
+    const total = fresh.length
+    if (total > 0) notify({ pending: total, syncing: true, progress: { done: 0, total } })
 
     while (fresh.length > 0) {
       const item = fresh[0]!
@@ -107,6 +145,7 @@ export async function flushQueue(
         else await api.delWithBody(item.path, item.body)
         sent++
         fresh.shift()
+        notify({ pending: fresh.length, syncing: true, progress: { done: sent, total } })
       } catch (err) {
         if (isNetworkError(err)) {
           // Still offline — keep this and everything after it, in order.
@@ -120,6 +159,7 @@ export async function flushQueue(
     }
 
     await writeQueue(fresh)
+    notify({ pending: fresh.length, syncing: false })
     return { sent, rejected, expired, remaining: fresh.length }
   } finally {
     flushing = false

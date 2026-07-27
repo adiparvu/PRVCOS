@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PRV — Pill de sincronizare offline (preview)</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0a0a0a; color: rgba(255,255,255,0.95);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+    min-height: 100vh; padding: 40px 24px 80px; -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1100px; margin: 0 auto; }
+  h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.02em; }
+  .sub { color: rgba(255,255,255,0.65); font-size: 14px; margin-top: 8px; max-width: 780px; line-height: 1.55; }
+  .sub b { color: rgba(255,255,255,0.9); }
+
+  .row { display: flex; gap: 40px; flex-wrap: wrap; margin-top: 36px; justify-content: center; }
+  .stage-label {
+    font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
+    color: rgba(255,255,255,0.50); margin-bottom: 14px; text-align: center;
+  }
+  .phone {
+    width: 320px; height: 300px; background: #000; border-radius: 36px;
+    border: 1px solid rgba(255,255,255,0.14);
+    box-shadow: 0 24px 64px rgba(0,0,0,0.7), 0 8px 24px rgba(0,0,0,0.4);
+    padding: 16px; overflow: hidden; position: relative;
+    display: flex; flex-direction: column; justify-content: flex-end;
+  }
+  .content-ghost { position: absolute; inset: 16px 16px 120px; opacity: 0.35; }
+  .ghost-card { height: 52px; border-radius: 16px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.10); margin-bottom: 10px; }
+
+  /* sync pill — Floating Status component */
+  .pill {
+    align-self: center;
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(255,255,255,0.10);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 100px;
+    padding: 9px 16px;
+    backdrop-filter: blur(48px) saturate(180%);
+    box-shadow: 0 12px 32px rgba(0,0,0,0.6);
+    position: relative; overflow: hidden;
+    margin-bottom: 12px;
+  }
+  .pill::before { content:""; position:absolute; top:0; left:14px; right:14px; height:1px; background: rgba(255,255,255,0.28); }
+  .pill .glyph { font-size: 13px; color: rgba(255,255,255,0.65); }
+  .pill .t { font-size: 12.5px; font-weight: 600; color: rgba(255,255,255,0.95); }
+  .pill .d { font-size: 12.5px; color: rgba(255,255,255,0.50); }
+  .spin { display: inline-block; animation: rot 1.2s linear infinite; }
+  @keyframes rot { to { transform: rotate(360deg); } }
+
+  /* tab bar ghost */
+  .tabbar {
+    align-self: center;
+    width: 90%;
+    height: 58px; border-radius: 100px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.12);
+    backdrop-filter: blur(48px);
+    display: flex; align-items: center; justify-content: space-around;
+    position: relative; overflow: hidden;
+  }
+  .tabbar::before { content:""; position:absolute; top:0; left:20px; right:20px; height:1px; background: rgba(255,255,255,0.25); }
+  .tab { font-size: 16px; color: rgba(255,255,255,0.35); }
+  .tab.on { color: rgba(255,255,255,0.95); }
+
+  .note {
+    margin: 40px auto 0; padding: 16px 20px; border-radius: 16px; max-width: 900px;
+    border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.04);
+    font-size: 13px; line-height: 1.6; color: rgba(255,255,255,0.65);
+  }
+  .note b { color: rgba(255,255,255,0.9); }
+  .note ul { margin: 8px 0 0 18px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Sincronizare offline · Floating Status Pill — preview</h1>
+  <p class="sub">
+    Patru fluxuri lucrează deja prin coada offline (task-uri, pontaj, incidente, rapoarte de șantier),
+    dar muncitorul nu vede nicăieri că are modificări nesincronizate. Un <b>pill de status plutitor</b>
+    (componentă cerută de design system) apare deasupra tab bar-ului <b>doar când coada nu e goală</b> și
+    dispare singur când totul a plecat. Zero UI când totul e sincronizat.
+  </p>
+
+  <div class="row">
+    <div>
+      <div class="stage-label">1 · Offline, cu modificări în coadă</div>
+      <div class="phone">
+        <div class="content-ghost"><div class="ghost-card"></div><div class="ghost-card"></div><div class="ghost-card"></div></div>
+        <div class="pill">
+          <span class="glyph">⇅</span>
+          <span class="t">3 waiting to sync</span>
+          <span class="d">· sends when online</span>
+        </div>
+        <div class="tabbar">
+          <span class="tab on">⌂</span><span class="tab">⊞</span><span class="tab">◎</span><span class="tab">⟁</span><span class="tab">✦</span>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="stage-label">2 · Reconectat — se golește coada</div>
+      <div class="phone">
+        <div class="content-ghost"><div class="ghost-card"></div><div class="ghost-card"></div><div class="ghost-card"></div></div>
+        <div class="pill">
+          <span class="glyph spin">◌</span>
+          <span class="t">Syncing…</span>
+          <span class="d">· 1 of 3</span>
+        </div>
+        <div class="tabbar">
+          <span class="tab on">⌂</span><span class="tab">⊞</span><span class="tab">◎</span><span class="tab">⟁</span><span class="tab">✦</span>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="stage-label">3 · Totul sincronizat — pill-ul nu există</div>
+      <div class="phone">
+        <div class="content-ghost"><div class="ghost-card"></div><div class="ghost-card"></div><div class="ghost-card"></div></div>
+        <div class="tabbar">
+          <span class="tab on">⌂</span><span class="tab">⊞</span><span class="tab">◎</span><span class="tab">⟁</span><span class="tab">✦</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note">
+    <b>Decizii în acest preview (spune-mi ce ajustez):</b>
+    <ul>
+      <li><b>Apare doar când există ceva în coadă</b> — nicio pastilă permanentă, zero zgomot când totul e sincronizat.</li>
+      <li><b>Două stări</b>: offline → „N waiting to sync · sends when online"; la reconectare → „Syncing… · k of N" cât durează golirea, apoi dispare.</li>
+      <li>Poziționat deasupra Floating Tab Bar, în toate tab-urile aplicației de business (acolo trăiesc cele 4 fluxuri offline). Glass 2, pill 100px, monocrom.</li>
+      <li>Tap pe pastilă → reîncearcă golirea imediat (util când conexiunea a revenit dar flush-ul automat n-a pornit încă).</li>
+      <li>Tehnic: coada primește un mecanism de subscribe (notificare la enqueue/flush), fără polling.</li>
+    </ul>
+  </div>
+</div>
+</body>
+</html>

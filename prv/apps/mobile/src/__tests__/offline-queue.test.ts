@@ -27,6 +27,8 @@ import {
   mutateOrQueue,
   pendingCount,
   isNetworkError,
+  subscribeQueue,
+  type QueueSyncState,
 } from "@/lib/offline-queue"
 
 function networkError(): Error {
@@ -138,5 +140,44 @@ describe("flushQueue", () => {
     expect(result.sent).toBe(0)
     expect(postMock).not.toHaveBeenCalled()
     expect(await pendingCount()).toBe(0)
+  })
+})
+
+describe("subscribeQueue", () => {
+  it("notifies on enqueue and through a full flush, ending drained", async () => {
+    const states: QueueSyncState[] = []
+    const unsub = subscribeQueue((s) =>
+      states.push({ ...s, progress: s.progress && { ...s.progress } })
+    )
+
+    await enqueueMutation({ path: "/a", method: "POST", body: {}, label: "A" })
+    await enqueueMutation({ path: "/b", method: "POST", body: {}, label: "B" })
+    expect(states.at(-1)).toEqual({ pending: 2, syncing: false })
+
+    postMock.mockResolvedValue({})
+    await flushQueue()
+    // saw a syncing state with progress, and ended drained
+    expect(states.some((s) => s.syncing && s.progress?.total === 2)).toBe(true)
+    expect(states.at(-1)).toEqual({ pending: 0, syncing: false })
+    unsub()
+  })
+
+  it("a flush stopped by a network failure ends not-syncing with items remaining", async () => {
+    const states: QueueSyncState[] = []
+    const unsub = subscribeQueue((s) => states.push({ ...s }))
+    await enqueueMutation({ path: "/a", method: "POST", body: {}, label: "A" })
+    postMock.mockRejectedValue(networkError())
+    await flushQueue()
+    expect(states.at(-1)).toEqual({ pending: 1, syncing: false })
+    unsub()
+  })
+
+  it("stops notifying after unsubscribe", async () => {
+    const listener = vi.fn()
+    const unsub = subscribeQueue(listener)
+    unsub()
+    const before = listener.mock.calls.length
+    await enqueueMutation({ path: "/a", method: "POST", body: {}, label: "A" })
+    expect(listener.mock.calls.length).toBe(before)
   })
 })
