@@ -1,9 +1,10 @@
-import React, { useCallback } from "react"
+import React, { useCallback, useState } from "react"
 import { View, Text, ScrollView, RefreshControl, TouchableOpacity, StyleSheet } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { GlassCard } from "@/components/Glass"
 import { SkeletonCard, SkeletonRow } from "@/components/Skeleton"
-import { useClientOverview, getInitials } from "@/hooks/useClientPortal"
+import { ClientNotificationsSheet } from "@/components/ClientNotificationsSheet"
+import { useClientNotifications, useClientOverview, getInitials } from "@/hooks/useClientPortal"
 import { colors, radius, type as type_, spacing } from "@/tokens"
 
 const ACTIVITY_GLYPHS: Record<string, string> = {
@@ -33,6 +34,9 @@ function StatusBadge({ status, label }: { status: string; label?: string }) {
 
 export default function OverviewScreen() {
   const insets = useSafeAreaInsets()
+  const [notifOpen, setNotifOpen] = useState(false)
+  const { data: notifData } = useClientNotifications()
+  const unreadCount = notifData?.unreadCount ?? 0
   const { data, isLoading, error } = useClientOverview()
   const [refreshing, setRefreshing] = React.useState(false)
 
@@ -77,11 +81,26 @@ export default function OverviewScreen() {
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + spacing.base }]}>
         <Text style={styles.headerTitle}>My Portal</Text>
-        <TouchableOpacity style={styles.bellButton} activeOpacity={0.7}>
+        <TouchableOpacity
+          style={styles.bellButton}
+          activeOpacity={0.7}
+          onPress={() => setNotifOpen(true)}
+          accessibilityRole="button"
+          accessibilityLabel={
+            unreadCount > 0 ? `Notifications, ${unreadCount} unread` : "Notifications"
+          }
+        >
           <View style={styles.bellShine} pointerEvents="none" />
           <Text style={styles.bellIcon}>🔔</Text>
+          {unreadCount > 0 && (
+            <View style={styles.bellBadge}>
+              <Text style={styles.bellBadgeText}>{unreadCount > 9 ? "9+" : unreadCount}</Text>
+            </View>
+          )}
         </TouchableOpacity>
       </View>
+
+      <ClientNotificationsSheet visible={notifOpen} onClose={() => setNotifOpen(false)} />
 
       <ScrollView
         contentContainerStyle={[styles.scrollContent, { paddingBottom }]}
@@ -227,6 +246,19 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: colors.shineTop,
   },
+  bellBadge: {
+    position: "absolute",
+    top: -3,
+    right: -3,
+    minWidth: 17,
+    height: 17,
+    paddingHorizontal: 4,
+    borderRadius: 9,
+    backgroundColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  bellBadgeText: { fontSize: 10, fontWeight: "800", color: "#000" },
   bellIcon: {
     fontSize: 16,
   },

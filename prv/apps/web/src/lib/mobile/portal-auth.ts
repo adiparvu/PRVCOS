@@ -3,6 +3,7 @@ import type { NextRequest } from "next/server"
 import { db } from "@prv/db"
 import { portalAccounts, portalSessions } from "@prv/db/schema"
 import { and, eq, gt, isNull } from "drizzle-orm"
+import { checkRateLimit } from "@prv/cache"
 import { createHash } from "node:crypto"
 import type { PortalSessionContext } from "@/lib/portal-auth"
 
@@ -64,6 +65,26 @@ export function withPortalMobileAuth(
       .set({ lastSeenAt: new Date() })
       .where(eq(portalSessions.id, row.sessionId))
       .catch(() => {})
+
+    // Per-account rate limiting — parity with withPortalAuth (the web portal
+    // wrapper); this mobile wrapper previously had none.
+    const method = (req as NextRequest).method?.toUpperCase() ?? "GET"
+    const endpointClass = method === "GET" || method === "HEAD" ? "api_read" : "api_write"
+    const path = new URL(req.url).pathname
+    const rl = await checkRateLimit(endpointClass, `portal:${row.accountId}:${path}`)
+    if (!rl.success) {
+      return NextResponse.json(
+        { error: "Too many requests", code: "RATE_LIMITED" },
+        {
+          status: 429,
+          headers: {
+            "X-RateLimit-Limit": String(rl.limit),
+            "X-RateLimit-Remaining": String(rl.remaining),
+            "Retry-After": String(Math.max(1, Math.ceil((rl.reset - Date.now()) / 1000))),
+          },
+        }
+      )
+    }
 
     const ctx: PortalSessionContext = {
       sessionId: row.sessionId,

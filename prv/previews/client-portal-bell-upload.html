@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PRV — Portal client: notificări + upload documente (preview)</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0a0a0a; color: rgba(255,255,255,0.95);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+    min-height: 100vh; padding: 40px 24px 80px; -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1100px; margin: 0 auto; }
+  h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.02em; }
+  .sub { color: rgba(255,255,255,0.65); font-size: 14px; margin-top: 8px; max-width: 800px; line-height: 1.55; }
+  .sub b { color: rgba(255,255,255,0.9); }
+
+  .row { display: flex; gap: 40px; flex-wrap: wrap; margin-top: 36px; justify-content: center; }
+  .stage-label {
+    font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
+    color: rgba(255,255,255,0.50); margin-bottom: 14px; text-align: center;
+  }
+  .phone {
+    width: 360px; background: #000; border-radius: 40px;
+    border: 1px solid rgba(255,255,255,0.14);
+    box-shadow: 0 24px 64px rgba(0,0,0,0.7), 0 8px 24px rgba(0,0,0,0.4);
+    padding: 18px 16px 22px; overflow: hidden; position: relative;
+  }
+  .glass {
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 18px; position: relative; overflow: hidden;
+  }
+  .glass::before { content:""; position:absolute; top:0; left:14px; right:14px; height:1px; background: rgba(255,255,255,0.20); }
+
+  .hrow { display:flex; align-items:center; justify-content:space-between; margin-bottom: 14px; }
+  .htitle { font-size: 22px; font-weight: 700; letter-spacing: -0.4px; }
+  .bell { position: relative; width: 38px; height: 38px; border-radius: 19px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); display:flex; align-items:center; justify-content:center; font-size: 15px; color: rgba(255,255,255,0.65); }
+  .badge { position:absolute; top:-3px; right:-3px; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 9px; background: #fff; color: #000; font-size: 10px; font-weight: 800; display:flex; align-items:center; justify-content:center; }
+
+  /* notifications sheet */
+  .sheet {
+    background: rgba(28,28,30,0.97); border: 1px solid rgba(255,255,255,0.12); border-bottom: none;
+    border-radius: 26px 26px 0 0; margin: 8px -16px -22px; padding: 12px 18px 24px;
+    position: relative; overflow: hidden;
+  }
+  .sheet::before { content:""; position:absolute; top:0; left:24px; right:24px; height:1px; background: rgba(255,255,255,0.22); }
+  .handle { width: 36px; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.18); margin: 0 auto 10px; }
+  .sheet-title { font-size: 16px; font-weight: 700; margin-bottom: 10px; }
+  .nrow { display: flex; gap: 11px; padding: 11px 12px; }
+  .nrow + .nrow { border-top: 1px solid rgba(255,255,255,0.06); }
+  .nicon { width: 30px; height: 30px; border-radius: 15px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.10); display:flex; align-items:center; justify-content:center; font-size: 13px; color: rgba(255,255,255,0.65); flex-shrink: 0; }
+  .ntext { flex: 1; }
+  .nt { font-size: 13.5px; font-weight: 600; color: rgba(255,255,255,0.95); }
+  .nd { font-size: 12px; color: rgba(255,255,255,0.65); margin-top: 2px; line-height: 1.4; }
+  .nwhen { font-size: 11px; color: rgba(255,255,255,0.50); margin-top: 3px; }
+  .unread-dot { width: 7px; height: 7px; border-radius: 4px; background: #fff; margin-top: 6px; flex-shrink: 0; }
+
+  /* documents upload */
+  .doc-row { display:flex; align-items:center; gap: 11px; padding: 12px 14px; }
+  .doc-row + .doc-row { border-top: 1px solid rgba(255,255,255,0.06); }
+  .dicon { width: 34px; height: 34px; border-radius: 10px; background: rgba(255,255,255,0.08); display:flex; align-items:center; justify-content:center; font-size: 14px; color: rgba(255,255,255,0.65); }
+  .dname { font-size: 13.5px; font-weight: 600; }
+  .dmeta { font-size: 11.5px; color: rgba(255,255,255,0.50); margin-top: 2px; }
+  .dbadge { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: rgba(255,255,255,0.65); border: 1px solid rgba(255,255,255,0.12); border-radius: 100px; padding: 2px 8px; }
+
+  .upl-sheet-title { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+  .upl-sub { font-size: 12px; color: rgba(255,255,255,0.50); margin-bottom: 12px; }
+  .pick { display: flex; align-items:center; gap: 10px; padding: 13px 14px; }
+  .pick + .pick { border-top: 1px solid rgba(255,255,255,0.06); }
+  .pick .i { font-size: 15px; color: rgba(255,255,255,0.65); width: 20px; text-align: center; }
+  .pick .t { font-size: 14px; font-weight: 600; }
+  .pick .d { font-size: 11.5px; color: rgba(255,255,255,0.50); margin-top: 1px; }
+  .cta { margin-top: 12px; background: rgba(255,255,255,0.92); color: #000; border-radius: 100px; padding: 14px 0; text-align: center; font-size: 14.5px; font-weight: 700; }
+  .fineprint { font-size: 10.5px; color: rgba(255,255,255,0.50); text-align:center; margin-top: 8px; line-height: 1.45; }
+
+  .note {
+    margin: 40px auto 0; padding: 16px 20px; border-radius: 16px; max-width: 940px;
+    border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.04);
+    font-size: 13px; line-height: 1.6; color: rgba(255,255,255,0.65);
+  }
+  .note b { color: rgba(255,255,255,0.9); }
+  .note ul { margin: 8px 0 0 18px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Portal client · Notificări + Upload documente — preview</h1>
+  <p class="sub">
+    Ultimele două butoane moarte din experiența de client devin reale: <b>clopoțelul</b> deschide un feed
+    de notificări derivat din evenimentele relevante clientului (fără tabele noi de evenimente — feed-ul
+    se calculează din datele existente, deci nu poate rata nimic), iar <b>upload-ul</b> permite clientului
+    să trimită documente (contract semnat, act de identitate, planuri) direct în dosarul lui, vizibile
+    instant echipei.
+  </p>
+
+  <div class="row">
+    <div>
+      <div class="stage-label">1 · Clopoțel cu badge → sheet de notificări</div>
+      <div class="phone">
+        <div class="hrow">
+          <span class="htitle">My Portal</span>
+          <span class="bell">🔔<span class="badge">3</span></span>
+        </div>
+        <div class="sheet">
+          <div class="handle"></div>
+          <div class="sheet-title">Notifications</div>
+          <div class="glass">
+            <div class="nrow">
+              <span class="nicon">◎</span>
+              <div class="ntext">
+                <div class="nt">New progress update</div>
+                <div class="nd">Site report published on Apartament Pipera — 5 new photos</div>
+                <div class="nwhen">Today, 14:20</div>
+              </div>
+              <span class="unread-dot"></span>
+            </div>
+            <div class="nrow">
+              <span class="nicon">◇</span>
+              <div class="ntext">
+                <div class="nt">Quote awaiting your decision</div>
+                <div class="nd">Quote #Q-2026-014 · €12,400 — accept or reject in Quotes</div>
+                <div class="nwhen">Yesterday</div>
+              </div>
+              <span class="unread-dot"></span>
+            </div>
+            <div class="nrow">
+              <span class="nicon">⊟</span>
+              <div class="ntext">
+                <div class="nt">Invoice issued</div>
+                <div class="nd">Invoice #INV-0231 · €3,150 · due 5 aug.</div>
+                <div class="nwhen">Yesterday</div>
+              </div>
+              <span class="unread-dot"></span>
+            </div>
+            <div class="nrow">
+              <span class="nicon">≡</span>
+              <div class="ntext">
+                <div class="nt">Contract ready to sign</div>
+                <div class="nd">Renovation contract for Casa Corbeanca awaits your signature</div>
+                <div class="nwhen">24 iul.</div>
+              </div>
+            </div>
+            <div class="nrow">
+              <span class="nicon">⊞</span>
+              <div class="ntext">
+                <div class="nt">Document shared with you</div>
+                <div class="nd">„Plan tehnic etaj 2.pdf" added to your documents</div>
+                <div class="nwhen">22 iul.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="stage-label">2 · Upload document → alegi fișier + tip</div>
+      <div class="phone">
+        <div class="hrow">
+          <span class="htitle">Documents</span>
+          <span class="bell">↑</span>
+        </div>
+        <div class="glass">
+          <div class="doc-row">
+            <span class="dicon">≡</span>
+            <div style="flex:1">
+              <div class="dname">Contract renovare semnat.pdf</div>
+              <div class="dmeta">27 iul. 2026 · 1.2 MB</div>
+            </div>
+            <span class="dbadge">Under review</span>
+          </div>
+          <div class="doc-row">
+            <span class="dicon">⊞</span>
+            <div style="flex:1">
+              <div class="dname">Plan tehnic etaj 2.pdf</div>
+              <div class="dmeta">22 iul. 2026 · 4.8 MB</div>
+            </div>
+            <span class="dbadge">Shared</span>
+          </div>
+        </div>
+
+        <div class="sheet">
+          <div class="handle"></div>
+          <div class="upl-sheet-title">Upload Document</div>
+          <div class="upl-sub">PDF, Word or Excel · max 25 MB</div>
+          <div class="glass">
+            <div class="pick">
+              <span class="i">⊕</span>
+              <div>
+                <div class="t">Contract renovare semnat.pdf</div>
+                <div class="d">1.2 MB · tap to change</div>
+              </div>
+            </div>
+            <div class="pick">
+              <span class="i">◫</span>
+              <div>
+                <div class="t">Type: Contract</div>
+                <div class="d">Contract · Specification · Other</div>
+              </div>
+            </div>
+          </div>
+          <div class="cta">Upload</div>
+          <div class="fineprint">Documentul ajunge la echipa ta de proiect cu status „Under review".</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note">
+    <b>Decizii în acest preview (spune-mi ce ajustez):</b>
+    <ul>
+      <li><b>Feed derivat, nu tabel nou de evenimente</b>: clienții de portal nu au rânduri în users (by design), deci tabela notifications nu-i poate referi. Feed-ul se calculează din datele existente — rapoarte de șantier client-visible, oferte trimise/în așteptare, facturi emise/restante, contracte de semnat, documente partajate, mesaje de la echipă. Nu poate rata evenimente și nu cere plumbing în fiecare producător.</li>
+      <li><b>Unread real</b>: o coloană nouă <code>notifications_seen_at</code> pe portal_accounts; badge-ul = câte elemente sunt mai noi; deschiderea sheet-ului marchează văzut.</li>
+      <li><b>Upload = multipart real în bucket-ul documents</b> (nu URL lipit): PDF/Word/Excel, max 25MB; rândul din documents primește clientId-ul clientului, status „Under review" (echipa validează), uploadedBy rămâne gol + proveniența (contul de portal) în metadata.</li>
+      <li>API-urile merg pe <b>ambele suprafețe</b>: withPortalAuth (portal web) + withPortalMobileAuth (aplicația client mobil) — aceleași contracte.</li>
+      <li><b>Două reparații incluse</b> (bug-uri găsite la investigație): filtrul de tip din Documents e stricat (plural vs singular → mereu gol) și data e afișată ca ISO brut; plus wrapper-ul mobil de portal primește rate limiting (avea zero, spre deosebire de toate celelalte).</li>
+      <li>Notă separată, nu blocantă: azi <b>nu există flux de login de client pe mobil</b> (magic-link-ul setează doar cookie web) — fluxul de autentificare client în aplicație e o felie viitoare de sine stătătoare.</li>
+    </ul>
+  </div>
+</div>
+</body>
+</html>

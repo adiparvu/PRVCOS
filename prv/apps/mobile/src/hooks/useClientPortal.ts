@@ -1,5 +1,5 @@
-import { useQuery } from "@tanstack/react-query"
-import { api } from "@/lib/api"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { api, apiUpload } from "@/lib/api"
 
 export interface ClientOverview {
   client: {
@@ -121,4 +121,77 @@ export function getInitials(firstName: string, lastName: string): string {
 export function formatFileSize(kb: number): string {
   if (kb < 1024) return `${kb} KB`
   return `${(kb / 1024).toFixed(1)} MB`
+}
+
+// ── Notifications (derived feed) ──────────────────────────────────────────────
+
+export interface ClientNotification {
+  id: string
+  kind: "site_report" | "quote" | "invoice" | "contract" | "document" | "message"
+  title: string
+  body: string
+  date: string
+  unread: boolean
+}
+
+export function useClientNotifications() {
+  return useQuery<{ items: ClientNotification[]; unreadCount: number }>({
+    queryKey: ["client-portal-notifications"],
+    queryFn: () => api.get("/api/mobile/client-portal/notifications"),
+    staleTime: 30_000,
+    retry: 2,
+  })
+}
+
+export function useMarkNotificationsSeen() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: () => api.post("/api/mobile/client-portal/notifications/seen", {}),
+    onSuccess: () => {
+      qc.setQueryData<{ items: ClientNotification[]; unreadCount: number }>(
+        ["client-portal-notifications"],
+        (old) =>
+          old ? { items: old.items.map((i) => ({ ...i, unread: false })), unreadCount: 0 } : old
+      )
+    },
+  })
+}
+
+// ── Client document upload (multipart, online-only) ───────────────────────────
+
+export interface ClientUploadInput {
+  uri: string
+  name: string
+  mimeType: string
+  docType: "contract" | "specification" | "other"
+}
+
+export function useUploadClientDocument() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (input: ClientUploadInput) => {
+      const form = new FormData()
+      form.append("file", {
+        uri: input.uri,
+        name: input.name,
+        type: input.mimeType,
+      } as unknown as Blob)
+      form.append("type", input.docType)
+      return apiUpload<{ id: string; title: string }>(
+        "/api/mobile/client-portal/documents/upload",
+        form
+      )
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["client-portal-documents"], exact: false })
+    },
+  })
+}
+
+/** ro-RO short date for document rows (the API sends raw ISO). */
+export function formatDocDate(iso: string): string {
+  const d = new Date(iso)
+  return Number.isNaN(d.getTime())
+    ? iso
+    : d.toLocaleDateString("ro-RO", { day: "numeric", month: "short", year: "numeric" })
 }

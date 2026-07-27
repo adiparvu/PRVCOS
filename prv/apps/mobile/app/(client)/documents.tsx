@@ -1,9 +1,10 @@
 import React, { useState } from "react"
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from "react-native"
+import { Alert, Linking, View, Text, ScrollView, TouchableOpacity, StyleSheet } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { GlassCard } from "@/components/Glass"
 import { SkeletonRow } from "@/components/Skeleton"
-import { useClientDocuments, formatFileSize } from "@/hooks/useClientPortal"
+import { UploadClientDocumentSheet } from "@/components/UploadClientDocumentSheet"
+import { useClientDocuments, formatFileSize, formatDocDate } from "@/hooks/useClientPortal"
 import { colors, radius, type as type_, spacing } from "@/tokens"
 
 type FilterOption = "all" | "contracts" | "photos" | "reports" | "invoices"
@@ -31,8 +32,16 @@ function docGlyph(type: string): string {
 export default function DocumentsScreen() {
   const insets = useSafeAreaInsets()
   const [activeFilter, setActiveFilter] = useState<FilterOption>("all")
+  const [uploadOpen, setUploadOpen] = useState(false)
 
-  const typeParam = activeFilter === "all" ? undefined : activeFilter
+  // The API filters on singular mapped types; the chips are plural labels.
+  const FILTER_TO_TYPE: Record<Exclude<FilterOption, "all">, string> = {
+    contracts: "contract",
+    photos: "photo",
+    reports: "report",
+    invoices: "invoice",
+  }
+  const typeParam = activeFilter === "all" ? undefined : FILTER_TO_TYPE[activeFilter]
   const { data, isLoading } = useClientDocuments(typeParam)
   const documents = data?.documents ?? []
 
@@ -43,11 +52,25 @@ export default function DocumentsScreen() {
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + spacing.base }]}>
         <Text style={styles.headerTitle}>Documents</Text>
-        <TouchableOpacity style={styles.uploadButton} activeOpacity={0.7}>
+        <TouchableOpacity
+          style={styles.uploadButton}
+          activeOpacity={0.7}
+          onPress={() => setUploadOpen(true)}
+          accessibilityRole="button"
+          accessibilityLabel="Upload a document"
+        >
           <View style={styles.uploadButtonShine} pointerEvents="none" />
           <Text style={styles.uploadIcon}>↑</Text>
         </TouchableOpacity>
       </View>
+
+      <UploadClientDocumentSheet
+        visible={uploadOpen}
+        onClose={() => setUploadOpen(false)}
+        onUploaded={(title) =>
+          Alert.alert("Document uploaded", `"${title}" was sent to your project team for review.`)
+        }
+      />
 
       {/* Filter chips */}
       <ScrollView
@@ -105,42 +128,52 @@ export default function DocumentsScreen() {
         {/* Document rows */}
         {!isLoading &&
           documents.map((doc) => (
-            <GlassCard key={doc.id} style={styles.docCard}>
-              <View style={styles.docCardShine} pointerEvents="none" />
-              <View style={styles.docRow}>
-                {/* Left: icon */}
-                <View style={styles.iconArea}>
-                  <View style={styles.iconCircle}>
-                    <Text style={styles.iconGlyph}>{docGlyph(doc.type)}</Text>
+            <TouchableOpacity
+              key={doc.id}
+              activeOpacity={0.75}
+              onPress={() => doc.url && void Linking.openURL(doc.url)}
+              accessibilityRole="button"
+              accessibilityLabel={`Open ${doc.name}`}
+            >
+              <GlassCard style={styles.docCard}>
+                <View style={styles.docCardShine} pointerEvents="none" />
+                <View style={styles.docRow}>
+                  {/* Left: icon */}
+                  <View style={styles.iconArea}>
+                    <View style={styles.iconCircle}>
+                      <Text style={styles.iconGlyph}>{docGlyph(doc.type)}</Text>
+                    </View>
+                    {/* Type badge pinned absolute to top-right of icon area */}
+                    <View style={styles.typeBadge}>
+                      <Text style={styles.typeBadgeText} numberOfLines={1}>
+                        {doc.typeLabel ?? doc.type}
+                      </Text>
+                    </View>
                   </View>
-                  {/* Type badge pinned absolute to top-right of icon area */}
-                  <View style={styles.typeBadge}>
-                    <Text style={styles.typeBadgeText} numberOfLines={1}>
-                      {doc.typeLabel ?? doc.type}
+
+                  {/* Center: name, project, date */}
+                  <View style={styles.docCenter}>
+                    <Text style={styles.docName} numberOfLines={1}>
+                      {doc.name}
                     </Text>
+                    {doc.projectName ? (
+                      <Text style={styles.docProject} numberOfLines={1}>
+                        {doc.projectName}
+                      </Text>
+                    ) : null}
+                    {doc.createdAt ? (
+                      <Text style={styles.docDate}>{formatDocDate(doc.createdAt)}</Text>
+                    ) : null}
+                  </View>
+
+                  {/* Right: fileSize + chevron */}
+                  <View style={styles.docRight}>
+                    <Text style={styles.docSize}>{formatFileSize(doc.sizeKb)}</Text>
+                    <Text style={styles.chevron}>›</Text>
                   </View>
                 </View>
-
-                {/* Center: name, project, date */}
-                <View style={styles.docCenter}>
-                  <Text style={styles.docName} numberOfLines={1}>
-                    {doc.name}
-                  </Text>
-                  {doc.projectName ? (
-                    <Text style={styles.docProject} numberOfLines={1}>
-                      {doc.projectName}
-                    </Text>
-                  ) : null}
-                  {doc.createdAt ? <Text style={styles.docDate}>{doc.createdAt}</Text> : null}
-                </View>
-
-                {/* Right: fileSize + chevron */}
-                <View style={styles.docRight}>
-                  <Text style={styles.docSize}>{formatFileSize(doc.sizeKb)}</Text>
-                  <Text style={styles.chevron}>›</Text>
-                </View>
-              </View>
-            </GlassCard>
+              </GlassCard>
+            </TouchableOpacity>
           ))}
       </ScrollView>
     </View>

@@ -45,6 +45,9 @@ export const portalAccounts = pgTable(
 
     isActive: boolean("is_active").notNull().default(true),
     lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
+    // High-water mark for the derived notifications feed: items newer than
+    // this are "unread". Null = the account has never opened the feed.
+    notificationsSeenAt: timestamp("notifications_seen_at", { withTimezone: true }),
 
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),

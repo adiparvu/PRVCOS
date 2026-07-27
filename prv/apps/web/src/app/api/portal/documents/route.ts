@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { withPortalAuth } from "@/lib/portal-middleware"
+import { handlePortalDocumentUpload } from "@/lib/portal-document-upload"
 import type { PortalSessionContext } from "@/lib/portal-auth"
 import { db } from "@prv/db"
 import { documents } from "@prv/db/schema"
@@ -76,6 +77,21 @@ export const GET = withPortalAuth(
     }))
 
     return NextResponse.json({ documents: data, count: data.length, nextCursor })
+  },
+  { portalType: "client" }
+)
+
+// Client-initiated upload (preview approved 2026-07) — multipart, 25MB,
+// PDF/Word/Excel/plain text; lands as under_review with portal provenance.
+export const POST = withPortalAuth(
+  async (req: NextRequest, ctx: PortalSessionContext): Promise<NextResponse> => {
+    let form: FormData
+    try {
+      form = await req.formData()
+    } catch {
+      return NextResponse.json({ error: "Expected multipart form data" }, { status: 400 })
+    }
+    return handlePortalDocumentUpload(form, ctx)
   },
   { portalType: "client" }
 )
