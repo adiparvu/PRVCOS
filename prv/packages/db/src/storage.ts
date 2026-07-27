@@ -81,3 +81,27 @@ export async function deleteFile(bucket: StorageBucket, path: string): Promise<v
   const { error } = await client.storage.from(bucket).remove([path])
   if (error) throw new Error(`Storage delete error: ${error.message}`)
 }
+
+/**
+ * Upload a file and return its public URL. Callers are responsible for
+ * validating MIME type and size against BucketAllowedMimes / BucketMaxSize
+ * BEFORE calling — this helper only moves bytes.
+ *
+ * The returned URL is the bucket's public URL: only use this for buckets that
+ * are actually public (IMAGES); private content must go through getSignedUrl.
+ */
+export async function uploadFile(
+  bucket: StorageBucket,
+  path: string,
+  body: ArrayBuffer | Uint8Array,
+  contentType: string
+): Promise<string> {
+  const client = getStorageClient()
+  const { error } = await client.storage.from(bucket).upload(path, body, {
+    contentType,
+    upsert: false,
+  })
+  if (error) throw new Error(`Storage upload error: ${error.message}`)
+  const { data } = client.storage.from(bucket).getPublicUrl(path)
+  return data.publicUrl
+}

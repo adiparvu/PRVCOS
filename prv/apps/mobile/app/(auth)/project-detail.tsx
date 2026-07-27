@@ -215,12 +215,16 @@ function QuickActions({ projectId }: { projectId: string }) {
         projectId={projectId}
         visible={updateOpen}
         onClose={() => setUpdateOpen(false)}
-        onSubmitted={(queued) =>
+        onSubmitted={(queued, photosSkipped) =>
           Alert.alert(
             queued ? "Saved on this phone" : "Report submitted",
             queued
-              ? "No connection right now — the report will be sent automatically when you are back online."
-              : "The site update was logged."
+              ? photosSkipped
+                ? `No connection right now — the report will be sent automatically when you are back online. ${photosSkipped} photo${photosSkipped === 1 ? "" : "s"} could not be attached offline; add them again once connected.`
+                : "No connection right now — the report will be sent automatically when you are back online."
+              : photosSkipped
+                ? `The site update was logged, but ${photosSkipped} photo${photosSkipped === 1 ? "" : "s"} failed to upload.`
+                : "The site update was logged."
           )
         }
       />

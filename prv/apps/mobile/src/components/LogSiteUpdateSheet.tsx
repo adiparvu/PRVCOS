@@ -12,9 +12,19 @@ import {
   View,
 } from "react-native"
 import { useRef, useEffect, useState } from "react"
+import { Image } from "react-native"
+import * as ImagePicker from "expo-image-picker"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
+import { useQueryClient } from "@tanstack/react-query"
 import { colors, radius, spacing } from "@/tokens"
+import { apiUpload } from "@/lib/api"
 import { useLogSiteUpdate } from "@/hooks/useSiteReports"
+
+interface PickedPhoto {
+  uri: string
+  type: string
+  name: string
+}
 
 // Daily site update from the field (preview approved 2026-07) — same glass
 // bottom-sheet pattern as the other Create*Sheets, submitted through the
@@ -24,8 +34,17 @@ interface Props {
   projectId: string
   visible: boolean
   onClose: () => void
-  /** Called after a successful submit with whether it was queued offline. */
-  onSubmitted?: (queued: boolean) => void
+  /** Called after a successful submit: whether it was queued offline, and how
+   *  many picked photos could NOT be attached (offline or upload failure). */
+  onSubmitted?: (queued: boolean, photosSkipped?: number) => void
+}
+
+const MAX_PHOTOS = 10
+
+function toPicked(asset: ImagePicker.ImagePickerAsset): PickedPhoto {
+  const type = asset.mimeType ?? "image/jpeg"
+  const ext = type === "image/png" ? "png" : type === "image/webp" ? "webp" : "jpg"
+  return { uri: asset.uri, type, name: asset.fileName ?? `photo.${ext}` }
 }
 
 function Stepper({
@@ -84,9 +103,41 @@ export function LogSiteUpdateSheet({ projectId, visible, onClose, onSubmitted }:
   const [delta, setDelta] = useState(0)
   const [weather, setWeather] = useState("")
   const [clientVisible, setClientVisible] = useState(false)
+  const [photos, setPhotos] = useState<PickedPhoto[]>([])
+  const [isUploading, setIsUploading] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
 
+  const qc = useQueryClient()
   const { mutate, isPending } = useLogSiteUpdate(projectId)
+
+  // Permissions are requested lazily, only when the user taps an add button —
+  // never at app start (App Store submission pack, permissions section).
+  const pickFromCamera = async () => {
+    const perm = await ImagePicker.requestCameraPermissionsAsync()
+    if (!perm.granted) {
+      setFormError("Camera access was denied — you can enable it in Settings.")
+      return
+    }
+    const res = await ImagePicker.launchCameraAsync({ quality: 0.7 })
+    if (!res.canceled && res.assets[0]) {
+      setPhotos((p) => [...p, toPicked(res.assets[0]!)].slice(0, MAX_PHOTOS))
+    }
+  }
+  const pickFromLibrary = async () => {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync()
+    if (!perm.granted) {
+      setFormError("Photo library access was denied — you can enable it in Settings.")
+      return
+    }
+    const res = await ImagePicker.launchImageLibraryAsync({
+      quality: 0.7,
+      allowsMultipleSelection: true,
+      selectionLimit: MAX_PHOTOS,
+    })
+    if (!res.canceled) {
+      setPhotos((p) => [...p, ...res.assets.map(toPicked)].slice(0, MAX_PHOTOS))
+    }
+  }
 
   useEffect(() => {
     if (visible) {
@@ -96,6 +147,8 @@ export function LogSiteUpdateSheet({ projectId, visible, onClose, onSubmitted }:
       setDelta(0)
       setWeather("")
       setClientVisible(false)
+      setPhotos([])
+      setIsUploading(false)
       setFormError(null)
       setShown(true)
       Animated.parallel([
@@ -132,15 +185,50 @@ export function LogSiteUpdateSheet({ projectId, visible, onClose, onSubmitted }:
       },
       {
         onSuccess: (result) => {
-          onClose()
-          onSubmitted?.(result.queued)
+          if (result.queued) {
+            // Photos are too large for the AsyncStorage-backed offline queue —
+            // the report syncs later, the photos are explicitly skipped.
+            onClose()
+            onSubmitted?.(true, photos.length)
+            return
+          }
+          if (photos.length === 0) {
+            onClose()
+            onSubmitted?.(false)
+            return
+          }
+          void (async () => {
+            setIsUploading(true)
+            let failed = 0
+            for (const photo of photos) {
+              try {
+                const form = new FormData()
+                // RN FormData file part: { uri, name, type }
+                form.append("file", {
+                  uri: photo.uri,
+                  name: photo.name,
+                  type: photo.type,
+                } as unknown as Blob)
+                await apiUpload(
+                  `/api/mobile/projects/${projectId}/site-reports/${result.data.id}/photos`,
+                  form
+                )
+              } catch {
+                failed++
+              }
+            }
+            setIsUploading(false)
+            void qc.invalidateQueries({ queryKey: ["site-reports", projectId] })
+            onClose()
+            onSubmitted?.(false, failed || undefined)
+          })()
         },
         onError: () => setFormError("Could not submit the report. Please try again."),
       }
     )
   }
 
-  const canSubmit = workPerformed.trim().length > 0 && !isPending
+  const canSubmit = workPerformed.trim().length > 0 && !isPending && !isUploading
 
   return (
     <Modal transparent visible={shown} animationType="none" onRequestClose={onClose}>
@@ -277,9 +365,52 @@ export function LogSiteUpdateSheet({ projectId, visible, onClose, onSubmitted }:
               </View>
             </View>
 
+            <Text style={s.sectionLabel}>Photos</Text>
+            <View style={s.photoStrip}>
+              {photos.map((p, i) => (
+                <TouchableOpacity
+                  key={`${p.uri}-${i}`}
+                  style={s.photoThumb}
+                  activeOpacity={0.75}
+                  onPress={() => setPhotos((prev) => prev.filter((_, j) => j !== i))}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Remove photo ${i + 1}`}
+                >
+                  <Image source={{ uri: p.uri }} style={StyleSheet.absoluteFillObject} />
+                  <View style={s.photoRemove}>
+                    <Text style={s.photoRemoveText}>✕</Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+              {photos.length < MAX_PHOTOS && (
+                <>
+                  <TouchableOpacity
+                    style={s.photoAdd}
+                    activeOpacity={0.75}
+                    onPress={() => void pickFromCamera()}
+                    accessibilityRole="button"
+                    accessibilityLabel="Take a photo"
+                  >
+                    <Text style={s.photoAddIcon}>⌾</Text>
+                    <Text style={s.photoAddLabel}>Camera</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={s.photoAdd}
+                    activeOpacity={0.75}
+                    onPress={() => void pickFromLibrary()}
+                    accessibilityRole="button"
+                    accessibilityLabel="Pick from library"
+                  >
+                    <Text style={s.photoAddIcon}>⊞</Text>
+                    <Text style={s.photoAddLabel}>Library</Text>
+                  </TouchableOpacity>
+                </>
+              )}
+            </View>
+
             <Text style={s.offlineNote}>
               No signal? The report is saved on this phone and sent automatically when you are back
-              online.
+              online. Photos need a connection — they are skipped when offline.
             </Text>
 
             {formError && <Text style={s.errorText}>{formError}</Text>}
@@ -293,7 +424,9 @@ export function LogSiteUpdateSheet({ projectId, visible, onClose, onSubmitted }:
               disabled={!canSubmit}
               accessibilityRole="button"
             >
-              <Text style={s.ctaText}>{isPending ? "Submitting…" : "Submit Report"}</Text>
+              <Text style={s.ctaText}>
+                {isUploading ? "Uploading photos…" : isPending ? "Submitting…" : "Submit Report"}
+              </Text>
             </TouchableOpacity>
           </View>
         </Animated.View>
@@ -427,6 +560,42 @@ const s = StyleSheet.create({
   },
   toggleTitle: { fontSize: 14, color: colors.text1 },
   toggleDesc: { fontSize: 11, color: colors.text3, marginTop: 2, lineHeight: 15 },
+
+  photoStrip: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  photoThumb: {
+    width: 64,
+    height: 64,
+    borderRadius: 12,
+    overflow: "hidden",
+    backgroundColor: "rgba(255,255,255,0.05)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.09)",
+  },
+  photoRemove: {
+    position: "absolute",
+    top: 3,
+    right: 3,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: "rgba(0,0,0,0.65)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  photoRemoveText: { fontSize: 9, color: "rgba(255,255,255,0.95)" },
+  photoAdd: {
+    width: 64,
+    height: 64,
+    borderRadius: 12,
+    backgroundColor: "rgba(255,255,255,0.05)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.12)",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 2,
+  },
+  photoAddIcon: { fontSize: 16, color: colors.text2 },
+  photoAddLabel: { fontSize: 9, fontWeight: "600", color: colors.text3 },
 
   offlineNote: { fontSize: 11, color: colors.text3, lineHeight: 15, marginTop: 2, marginLeft: 2 },
   errorText: { fontSize: 12, color: colors.red, textAlign: "center", marginTop: 4 },

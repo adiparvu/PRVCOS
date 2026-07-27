@@ -25,3 +25,16 @@ export const api = {
   delWithBody: <T>(path: string, body: unknown) =>
     apiFetch<T>(path, { method: "DELETE", body: JSON.stringify(body) }),
 }
+
+/** Multipart upload — Content-Type is set by fetch from the FormData boundary. */
+export async function apiUpload<T>(path: string, form: FormData): Promise<T> {
+  const { session } = useAuthStore.getState()
+  const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}${path}`, {
+    method: "POST",
+    headers: session ? { Authorization: `Bearer ${session.token}` } : {},
+    body: form,
+  })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.error ?? "Upload failed")
+  return data as T
+}

@@ -137,11 +137,14 @@ Notes for the questionnaire:
   there is no `expo-location` dependency and no `NSLocationWhenInUseUsageDescription`.
   The IP address above is observed by the server, which Apple's own guidance
   treats as coarse location; declare it rather than argue it.
-- **Photos:** answer *No*. Profile avatars are rendered from a URL the app only
-  reads; the app has no upload path and no photo-library access (`src/hooks/useProfile.ts`).
-- **Contacts, Photos library, Camera, Microphone, Health, Financial account
-  numbers:** not accessed. No corresponding permission strings are declared
-  (`app.json`).
+- **Photos or Videos:** answer *Yes — collected, linked to identity, app
+  functionality only* (not tracking, not advertising). Site photos captured or
+  picked by staff are uploaded to company storage and attached to renovation
+  site reports (`POST /api/mobile/projects/[id]/site-reports/[reportId]/photos`);
+  they may be shown to the project's client when the report is marked
+  client-visible.
+- **Contacts, Microphone, Health, Financial account numbers:** not accessed.
+  No corresponding permission strings are declared (`app.json`).
 
 ### Permissions declared
 
@@ -149,9 +152,13 @@ Notes for the questionnaire:
 |---|---|---|
 | Face ID | "PRV uses Face ID to authenticate your identity securely." | Optional biometric unlock and step-up re-auth |
 | Notifications | requested at runtime, after sign-in | Shift changes, approvals, critical alerts |
+| Camera | "PRV lets you photograph site progress and attach it to reports." | Field staff photograph site progress for site reports (requested only when tapping Add Photo) |
+| Photo library | "PRV attaches photos from your library to site reports and documents." | Attach existing photos to site reports (requested only when tapping the library option) |
 
-Android mirrors this with `USE_BIOMETRIC` / `USE_FINGERPRINT` only. Anything
-that was declared but unused has already been removed (task #124).
+Android mirrors biometrics with `USE_BIOMETRIC` / `USE_FINGERPRINT`; camera and
+media access are injected by the `expo-image-picker` config plugin. Permissions
+removed as unused in task #124 were re-introduced deliberately for the site-photo
+flow (2026-07), each gated behind an explicit user action.
 
 ---
 

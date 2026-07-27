@@ -50,6 +50,13 @@
           "color": "#ffffff",
           "sounds": []
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "PRV attaches photos from your library to site reports and documents.",
+          "cameraPermission": "PRV lets you photograph site progress and attach it to reports."
+        }
       ]
     ],
     "experiments": {
