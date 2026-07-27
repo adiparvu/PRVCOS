@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PRV — Login client pe mobil (preview)</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0a0a0a; color: rgba(255,255,255,0.95);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+    min-height: 100vh; padding: 40px 24px 80px; -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1100px; margin: 0 auto; }
+  h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.02em; }
+  .sub { color: rgba(255,255,255,0.65); font-size: 14px; margin-top: 8px; max-width: 780px; line-height: 1.55; }
+  .sub b { color: rgba(255,255,255,0.9); }
+  .row { display: flex; gap: 40px; flex-wrap: wrap; margin-top: 36px; justify-content: center; }
+  .stage-label { font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: rgba(255,255,255,0.50); margin-bottom: 14px; text-align: center; }
+  .phone {
+    width: 340px; background: #000; border-radius: 40px;
+    border: 1px solid rgba(255,255,255,0.14);
+    box-shadow: 0 24px 64px rgba(0,0,0,0.7), 0 8px 24px rgba(0,0,0,0.4);
+    padding: 40px 22px 30px; overflow: hidden;
+  }
+  .logo { text-align: center; font-size: 26px; font-weight: 800; letter-spacing: -0.04em; margin-bottom: 6px; }
+  .tagline { text-align: center; font-size: 12.5px; color: rgba(255,255,255,0.50); margin-bottom: 26px; }
+  .glass { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 18px; position: relative; overflow: hidden; }
+  .glass::before { content:""; position:absolute; top:0; left:14px; right:14px; height:1px; background: rgba(255,255,255,0.20); }
+  .irow { display:flex; align-items:center; gap: 10px; padding: 14px; }
+  .iicon { width: 20px; text-align:center; font-size: 15px; color: rgba(255,255,255,0.50); }
+  .ival { font-size: 14.5px; color: rgba(255,255,255,0.95); }
+  .ival.ph { color: rgba(255,255,255,0.28); }
+  .cta { margin-top: 14px; background: rgba(255,255,255,0.92); color:#000; border-radius: 100px; padding: 15px 0; text-align:center; font-size: 15px; font-weight: 700; }
+  .ghost-link { text-align:center; font-size: 13px; color: rgba(255,255,255,0.65); margin-top: 16px; }
+  .ghost-link b { color: rgba(255,255,255,0.95); }
+  .note-small { font-size: 11.5px; color: rgba(255,255,255,0.50); text-align:center; margin-top: 12px; line-height: 1.5; }
+  .code-row { display:flex; gap: 8px; justify-content: center; margin-top: 4px; }
+  .code-cell {
+    width: 42px; height: 52px; border-radius: 12px;
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
+    display:flex; align-items:center; justify-content:center;
+    font-size: 22px; font-weight: 700;
+  }
+  .code-cell.active { border-color: rgba(255,255,255,0.45); }
+  .stitle { font-size: 19px; font-weight: 700; letter-spacing: -0.3px; text-align:center; }
+  .sdesc { font-size: 13px; color: rgba(255,255,255,0.65); text-align:center; margin: 8px 0 20px; line-height: 1.5; }
+  .sdesc b { color: rgba(255,255,255,0.95); }
+  .note {
+    margin: 40px auto 0; padding: 16px 20px; border-radius: 16px; max-width: 920px;
+    border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.04);
+    font-size: 13px; line-height: 1.6; color: rgba(255,255,255,0.65);
+  }
+  .note b { color: rgba(255,255,255,0.9); }
+  .note ul { margin: 8px 0 0 18px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Login client pe mobil — preview</h1>
+  <p class="sub">
+    Azi niciun client real nu poate intra în aplicație: magic-link-ul de portal setează doar cookie-ul
+    web. Fluxul nou: <b>cod de 6 cifre pe email</b> (aceleași tabele și limite ca magic-link-ul),
+    tastat direct în aplicație — fără deep links, fără parole. La verificare, aplicația primește
+    token-ul de sesiune de portal și intră în experiența de client existentă (Overview / Projects /
+    Invoices / Documents / Account).
+  </p>
+
+  <div class="row">
+    <div>
+      <div class="stage-label">1 · Intrare client — emailul</div>
+      <div class="phone">
+        <div class="logo">PRV</div>
+        <div class="tagline">Client access</div>
+        <div class="stitle">Sign in as client</div>
+        <div class="sdesc">Enter the email your project team has on file. We'll send you a one-time code.</div>
+        <div class="glass">
+          <div class="irow"><span class="iicon">✉</span><span class="ival">ioana@client.ro</span></div>
+        </div>
+        <div class="cta">Send code</div>
+        <div class="ghost-link">Team member? <b>Staff sign in →</b></div>
+      </div>
+    </div>
+
+    <div>
+      <div class="stage-label">2 · Codul din email</div>
+      <div class="phone">
+        <div class="logo">PRV</div>
+        <div class="tagline">Client access</div>
+        <div class="stitle">Check your email</div>
+        <div class="sdesc">We sent a 6-digit code to <b>ioana@client.ro</b>. It expires in 15 minutes.</div>
+        <div class="code-row">
+          <div class="code-cell">4</div>
+          <div class="code-cell">7</div>
+          <div class="code-cell">2</div>
+          <div class="code-cell active"></div>
+          <div class="code-cell"></div>
+          <div class="code-cell"></div>
+        </div>
+        <div class="cta" style="opacity:0.5">Verify</div>
+        <div class="ghost-link">Didn't get it? <b>Resend code</b></div>
+        <div class="note-small">Same security as the web portal link: single-use, hashed at rest, strict rate limits.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note">
+    <b>Decizii în acest preview (spune-mi ce ajustez):</b>
+    <ul>
+      <li><b>Cod OTP, nu deep link</b>: linkul din email deschide browserul, nu aplicația — codul tastat e fluxul robust fără asocieri de domeniu. Emailul de portal va conține și codul (linkul web rămâne neatins pentru desktop).</li>
+      <li><b>Aceeași infrastructură de securitate</b>: codul e stocat doar ca hash în portal_magic_tokens (legat de cont), single-use, expiră în 15 minute, aceleași rate limits (10/min per cont) + răspuns mereu 200 la cerere (anti-enumerare). Verificarea creează un rând normal în portal_sessions (30 zile) și întoarce token-ul brut — exact modelul Bearer pe care withPortalMobileAuth îl validează deja.</li>
+      <li><b>Compania e implicită</b> (EXPO_PUBLIC_COMPANY_SLUG, ca la shop) — clientul nu completează slug-ul.</li>
+      <li>Pe ecranul de login staff apare un rând discret „Client? Sign in with email code"; ruterul existent trimite sesiunile de client în grupul (client) deja construit.</li>
+      <li>Logout-ul de client revocă sesiunea de portal (revokedAt), nu doar șterge token-ul local.</li>
+    </ul>
+  </div>
+</div>
+</body>
+</html>

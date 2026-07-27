@@ -1,6 +1,7 @@
 import { Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { GlassCard } from "@/components/Glass"
+import { api } from "@/lib/api"
 import { useAuthStore } from "@/store/auth"
 import { useClientOverview, getInitials } from "@/hooks/useClientPortal"
 import { colors, type, radius } from "@/tokens"
@@ -148,7 +149,17 @@ export default function ClientAccountScreen() {
         ))}
 
         {/* Sign out */}
-        <TouchableOpacity style={styles.signOutBtn} activeOpacity={0.8} onPress={logout}>
+        <TouchableOpacity
+          style={styles.signOutBtn}
+          activeOpacity={0.8}
+          onPress={() => {
+            // Revoke server-side first — clearing the token alone would leave
+            // a valid 30-day portal session alive. Fail-open: sign out locally
+            // even if the revoke call cannot reach the server.
+            void api.post("/api/mobile/client-portal/logout", {}).catch(() => {})
+            void logout()
+          }}
+        >
           <View style={styles.signOutShine} pointerEvents="none" />
           <Text style={styles.signOutText}>Sign Out</Text>
         </TouchableOpacity>

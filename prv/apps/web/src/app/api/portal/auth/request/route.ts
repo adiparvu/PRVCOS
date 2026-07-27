@@ -3,7 +3,8 @@ import { z } from "zod"
 import { db } from "@prv/db"
 import { companies, portalAccounts, portalMagicTokens } from "@prv/db/schema"
 import { and, eq } from "drizzle-orm"
-import { generateToken, MAGIC_TOKEN_TTL_MS } from "@/lib/portal-auth"
+import { generateToken, hashToken, MAGIC_TOKEN_TTL_MS } from "@/lib/portal-auth"
+import { randomInt } from "node:crypto"
 import { sendEmail, EmailFrom, portalMagicLinkEmail } from "@prv/email"
 import { enforceRateLimit } from "@prv/cache"
 
@@ -104,11 +105,15 @@ export async function POST(req: NextRequest) {
   const { raw, hash } = generateToken()
   const expiresAt = new Date(Date.now() + MAGIC_TOKEN_TTL_MS)
 
-  await db.insert(portalMagicTokens).values({
-    accountId: account.id,
-    tokenHash: hash,
-    expiresAt,
-  })
+  // A parallel 6-digit one-time code lets the mobile app sign the client in
+  // without deep links. Hashed scoped to the account (code alone is low
+  // entropy), same TTL and single-use semantics as the link token.
+  const mobileCode = String(randomInt(0, 1_000_000)).padStart(6, "0")
+
+  await db.insert(portalMagicTokens).values([
+    { accountId: account.id, tokenHash: hash, expiresAt },
+    { accountId: account.id, tokenHash: hashToken(`${account.id}:${mobileCode}`), expiresAt },
+  ])
 
   const baseUrl = process.env["NEXT_PUBLIC_APP_URL"] ?? "http://localhost:3000"
   const magicUrl = `${baseUrl}/portal/verify?token=${encodeURIComponent(raw)}`
@@ -116,6 +121,7 @@ export async function POST(req: NextRequest) {
   const { subject, html } = portalMagicLinkEmail({
     name: account.name,
     magicUrl,
+    mobileCode,
     portalType,
     companyName: company.name,
     expiresInMinutes: 15,

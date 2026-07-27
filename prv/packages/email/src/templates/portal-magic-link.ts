@@ -3,6 +3,8 @@ import { baseTemplate, emailStyles } from "./base"
 export interface PortalMagicLinkEmailProps {
   name: string
   magicUrl: string
+  /** optional 6-digit code for signing in inside the mobile app */
+  mobileCode?: string
   portalType: "client" | "supplier" | "subcontractor" | "employee"
   companyName: string
   expiresInMinutes?: number
@@ -19,6 +21,7 @@ const PORTAL_LABELS: Record<PortalMagicLinkEmailProps["portalType"], string> = {
 export function portalMagicLinkEmail({
   name,
   magicUrl,
+  mobileCode,
   portalType,
   companyName,
   expiresInMinutes = 15,
@@ -35,6 +38,12 @@ export function portalMagicLinkEmail({
     </p>
     <div style="text-align:center;margin:32px 0;">
       <a href="${magicUrl}" style="${emailStyles.button}">Access Portal</a>
+      ${
+        mobileCode
+          ? `<p style="margin-top:24px;font-size:14px;color:#555">Using the PRV app on your phone? Enter this one-time code instead:</p>
+             <p style="font-size:28px;font-weight:700;letter-spacing:6px;margin:8px 0 0">${mobileCode}</p>`
+          : ""
+      }
     </div>
     <p style="${emailStyles.muted};text-align:center;">
       This link expires in ${expiresInMinutes} minutes and can only be used once.
