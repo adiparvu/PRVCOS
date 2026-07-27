@@ -237,3 +237,67 @@ grep -n "UsageDescription\|permissions" apps/mobile/app.json
 sed -n '/bodySchema/,/^})/p' apps/web/src/app/api/public/leads/route.ts
 sed -n '/bodySchema/,/^})/p' apps/web/src/app/api/public/shop/checkout/route.ts
 ```
+
+---
+
+## 7. TestFlight runbook (updated 2026-07-27 — Apple Developer account active)
+
+Repo-side prerequisites are DONE as of this commit: `assets/` exists (icon,
+splash, adaptive icon, notification icon, favicon — brand monochrome,
+replaceable any time), permissions and privacy labels are current (sections
+above), and `expo config` resolves cleanly.
+
+Run these from `prv/apps/mobile` on a machine with your Apple account
+(everything is interactive — no secrets go into the repo):
+
+1. **One-time — link the EAS project** (fills `extra.eas.projectId` in
+   app.json automatically):
+   ```
+   npm i -g eas-cli
+   eas login
+   eas init
+   ```
+
+2. **One-time — create the app record.** In App Store Connect → Apps → “+”:
+   platform iOS, bundle ID `ro.prv.app` (register it when prompted), name
+   “PRV”, SKU e.g. `prv-ios`. Note the numeric **Apple ID of the app**
+   (ascAppId) from the App Information page.
+
+3. **Build for TestFlight:**
+   ```
+   eas build --platform ios --profile production
+   ```
+   First run asks you to sign in with your Apple ID and generates/pushes the
+   distribution certificate + provisioning profile to EAS servers. Wait for
+   the build to finish (link is printed; also visible at expo.dev).
+
+4. **Submit the build:**
+   ```
+   eas submit --platform ios --latest
+   ```
+   Either answer the interactive prompts (Apple ID / app-specific password)
+   or, preferred, create an **App Store Connect API key** (Users and Access →
+   Integrations → App Store Connect API, role App Manager), download the .p8
+   once, and let `eas submit` use it — it will offer to store it with EAS.
+   Optionally fill `submit.production.ios` in eas.json (appleId, ascAppId,
+   appleTeamId) so future submits are non-interactive.
+
+5. **In App Store Connect → TestFlight:** the build appears after Apple’s
+   processing (~5–30 min). Answer the export-compliance question is NOT asked
+   (ITSAppUsesNonExemptEncryption=false is already declared). Add yourself /
+   internal testers; external testers require a short Beta App Review.
+
+### Before testers can actually sign in
+The production build points at `EXPO_PUBLIC_API_URL =
+https://app.prvrenovations.ro`. **That backend is not deployed yet** — the
+app will install and launch, but login/data will fail until the web app is
+live at that URL (with env vars, `db:provision` incl. the RLS step, Supabase
+buckets `documents` + public `images`, and Redis/Inngest/Resend keys).
+Options, in order of preference:
+- deploy the web app to production first (Vercel + Supabase), then build; or
+- for an internal-only test round, build the `preview` profile instead
+  (`eas build --platform ios --profile preview` — points at
+  `https://staging.prvrenovations.ro`) once staging exists; or
+- temporarily point the production env at whatever URL is actually live.
+
+Demo credentials for testers/review are in section 5 (seeded demo account).
