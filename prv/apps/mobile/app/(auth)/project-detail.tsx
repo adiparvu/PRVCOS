@@ -1,5 +1,6 @@
 import {
   ActivityIndicator,
+  Alert,
   ScrollView,
   StyleSheet,
   Text,
@@ -11,6 +12,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { useLocalSearchParams, useRouter } from "expo-router"
 import { CreateInvoiceSheet } from "@/components/CreateInvoiceSheet"
 import { CreateTaskSheet } from "@/components/CreateTaskSheet"
+import { LogSiteUpdateSheet } from "@/components/LogSiteUpdateSheet"
+import { useSiteReports } from "@/hooks/useSiteReports"
 import {
   useProjectDetail,
   useUpdateProjectStatus,
@@ -162,15 +165,31 @@ function TimelineStrip({
   )
 }
 
-function QuickActions(_props: { projectId: string }) {
+function QuickActions({ projectId }: { projectId: string }) {
+  const router = useRouter()
   const [taskOpen, setTaskOpen] = useState(false)
   const [invoiceOpen, setInvoiceOpen] = useState(false)
-  // Log Update / Photos await a site-update flow on mobile (follow-up).
+  const [updateOpen, setUpdateOpen] = useState(false)
+  // Log Update / Photos live on the renovation bridge — enabled only when
+  // this core project has one (preview approved 2026-07).
+  const { data: siteReports } = useSiteReports(projectId)
+  const isRenovation = siteReports?.renovation === true
+
   const actions = [
     { label: "New Task", icon: "◈", onPress: () => setTaskOpen(true) },
-    { label: "Log Update", icon: "◎", onPress: undefined },
+    {
+      label: "Log Update",
+      icon: "◎",
+      onPress: isRenovation ? () => setUpdateOpen(true) : undefined,
+    },
     { label: "Invoice", icon: "◇", onPress: () => setInvoiceOpen(true) },
-    { label: "Photos", icon: "⊞", onPress: undefined },
+    {
+      label: "Photos",
+      icon: "⊞",
+      onPress: isRenovation
+        ? () => router.push({ pathname: "/(auth)/project-photos", params: { id: projectId } })
+        : undefined,
+    },
   ]
   return (
     <View style={s.quickRow}>
@@ -192,6 +211,19 @@ function QuickActions(_props: { projectId: string }) {
       ))}
       <CreateTaskSheet visible={taskOpen} onClose={() => setTaskOpen(false)} />
       <CreateInvoiceSheet visible={invoiceOpen} onClose={() => setInvoiceOpen(false)} />
+      <LogSiteUpdateSheet
+        projectId={projectId}
+        visible={updateOpen}
+        onClose={() => setUpdateOpen(false)}
+        onSubmitted={(queued) =>
+          Alert.alert(
+            queued ? "Saved on this phone" : "Report submitted",
+            queued
+              ? "No connection right now — the report will be sent automatically when you are back online."
+              : "The site update was logged."
+          )
+        }
+      />
     </View>
   )
 }

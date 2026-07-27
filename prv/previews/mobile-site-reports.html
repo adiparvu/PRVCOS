@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PRV — Log Update & Photos pe proiect (mobil, preview)</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0a0a0a; color: rgba(255,255,255,0.95);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+    min-height: 100vh; padding: 40px 24px 80px; -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1100px; margin: 0 auto; }
+  h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.02em; }
+  .sub { color: rgba(255,255,255,0.65); font-size: 14px; margin-top: 8px; max-width: 800px; line-height: 1.55; }
+  .sub b { color: rgba(255,255,255,0.9); }
+
+  .row { display: flex; gap: 40px; flex-wrap: wrap; margin-top: 36px; justify-content: center; }
+  .stage-label {
+    font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
+    color: rgba(255,255,255,0.50); margin-bottom: 14px; text-align: center;
+  }
+  .phone {
+    width: 375px; background: #000; border-radius: 44px;
+    border: 1px solid rgba(255,255,255,0.14);
+    box-shadow: 0 24px 64px rgba(0,0,0,0.7), 0 8px 24px rgba(0,0,0,0.4);
+    padding: 18px 16px 24px; overflow: hidden; position: relative;
+  }
+
+  .glass {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 18px;
+    position: relative; overflow: hidden;
+  }
+  .glass::before { content:""; position:absolute; top:0; left:0; right:0; height:1px; background: rgba(255,255,255,0.22); }
+
+  /* ── Sheet (Log Update) ── */
+  .sheet {
+    background: rgba(28,28,30,0.97);
+    border: 1px solid rgba(255,255,255,0.12); border-bottom: none;
+    border-radius: 28px 28px 0 0;
+    margin: 40px -16px -24px; padding: 12px 22px 26px;
+    position: relative; overflow: hidden;
+  }
+  .sheet::before { content:""; position:absolute; top:0; left:24px; right:24px; height:1px; background: rgba(255,255,255,0.22); }
+  .handle { width: 36px; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.18); margin: 0 auto 12px; }
+  .sheet-head { display:flex; align-items:center; justify-content:space-between; margin-bottom: 12px; }
+  .sheet-title { font-size: 17px; font-weight: 700; letter-spacing: -0.3px; }
+  .x { width: 30px; height: 30px; border-radius: 15px; background: rgba(255,255,255,0.10); border: 1px solid rgba(255,255,255,0.12); display:flex; align-items:center; justify-content:center; font-size: 13px; color: rgba(255,255,255,0.50); }
+
+  .slabel { font-size: 11px; font-weight: 600; letter-spacing: 0.6px; text-transform: uppercase; color: rgba(255,255,255,0.50); margin: 12px 0 7px 2px; }
+  .card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.09); border-radius: 18px; overflow: hidden; }
+  .irow { display: flex; align-items: center; gap: 10px; padding: 12px 14px; }
+  .irow + .irow { border-top: 1px solid rgba(255,255,255,0.05); }
+  .iicon { width: 20px; text-align: center; font-size: 15px; color: rgba(255,255,255,0.50); }
+  .ival { font-size: 14px; color: rgba(255,255,255,0.95); flex: 1; }
+  .ival.ph { color: rgba(255,255,255,0.28); }
+  .multiline { min-height: 64px; align-items: flex-start; }
+
+  .steppers { display: flex; gap: 8px; }
+  .stepper { flex: 1; display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; }
+  .stepper .lab { font-size: 11px; color: rgba(255,255,255,0.50); }
+  .stepper .num { font-size: 15px; font-weight: 700; }
+  .stepper .pm { display: flex; gap: 6px; }
+  .stepper .pm span { width: 24px; height: 24px; border-radius: 12px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); display: inline-flex; align-items: center; justify-content: center; font-size: 13px; color: rgba(255,255,255,0.65); }
+
+  .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; }
+  .toggle-info .t { font-size: 14px; color: rgba(255,255,255,0.95); }
+  .toggle-info .d { font-size: 11px; color: rgba(255,255,255,0.50); margin-top: 2px; max-width: 220px; line-height: 1.4; }
+  .switch { width: 46px; height: 28px; border-radius: 14px; background: rgba(255,255,255,0.85); position: relative; flex-shrink: 0; }
+  .switch::after { content:""; position:absolute; top:2px; right:2px; width:24px; height:24px; border-radius:12px; background:#000; }
+
+  .offline-note { font-size: 11px; color: rgba(255,255,255,0.50); line-height: 1.45; margin: 10px 2px 0; }
+  .cta { margin-top: 14px; background: rgba(255,255,255,0.92); color: #000; border-radius: 100px; padding: 15px 0; text-align: center; font-size: 15px; font-weight: 700; }
+
+  /* ── Photos gallery ── */
+  .ph-head { display: flex; align-items: baseline; justify-content: space-between; margin: 18px 0 0; }
+  .ph-title { font-size: 20px; font-weight: 700; letter-spacing: -0.02em; }
+  .ph-count { font-size: 12px; color: rgba(255,255,255,0.50); }
+  .day-label { font-size: 11px; font-weight: 600; letter-spacing: 0.6px; text-transform: uppercase; color: rgba(255,255,255,0.50); margin: 14px 0 8px 2px; }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .tile { aspect-ratio: 1; border-radius: 12px; background: linear-gradient(150deg, rgba(255,255,255,0.12), rgba(255,255,255,0.03)); border: 1px solid rgba(255,255,255,0.10); position: relative; overflow: hidden; }
+  .tile::before { content:""; position:absolute; top:0; left:0; right:0; height:1px; background: rgba(255,255,255,0.18); }
+  .tile .g { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size: 20px; color: rgba(255,255,255,0.18); }
+  .empty {
+    text-align: center; padding: 26px 20px; margin-top: 14px;
+  }
+  .empty .glyph { font-size: 22px; color: rgba(255,255,255,0.50); }
+  .empty .t { font-size: 15px; font-weight: 600; margin-top: 8px; }
+  .empty .d { font-size: 12.5px; color: rgba(255,255,255,0.65); margin-top: 5px; line-height: 1.5; }
+
+  .backrow { display:flex; align-items:center; justify-content:space-between; margin-bottom: 6px; }
+  .pill-sm { font-size: 13px; color: rgba(255,255,255,0.95); background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 100px; padding: 7px 14px; }
+
+  .note {
+    margin: 40px auto 0; padding: 16px 20px; border-radius: 16px; max-width: 920px;
+    border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.04);
+    font-size: 13px; line-height: 1.6; color: rgba(255,255,255,0.65);
+  }
+  .note b { color: rgba(255,255,255,0.9); }
+  .note ul { margin: 8px 0 0 18px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Proiect · Log Update &amp; Photos (mobil) — preview</h1>
+  <p class="sub">
+    Cele două acțiuni rapide dezactivate de pe ecranul de proiect devin reale: <b>Log Update</b> —
+    raportul zilnic de șantier completat de șeful de echipă direct de pe teren, prin coada offline
+    (fără semnal → salvat pe telefon, trimis la reconectare); <b>Photos</b> — galeria pozelor din
+    rapoartele de șantier existente, grupate pe zile. Disponibile doar pe proiectele de renovare
+    (cele cu punte către modulul Renovation).
+  </p>
+
+  <div class="row">
+    <div>
+      <div class="stage-label">1 · Log Update — bottom sheet (pattern-ul Create*Sheet)</div>
+      <div class="phone">
+        <div class="sheet">
+          <div class="handle"></div>
+          <div class="sheet-head">
+            <span class="sheet-title">Log Site Update</span>
+            <span class="x">✕</span>
+          </div>
+
+          <div class="slabel">Work performed*</div>
+          <div class="card">
+            <div class="irow multiline"><span class="iicon">≡</span><span class="ival">Montat gips-carton et. 2, finalizat trasee electrice băi, început șapă hol.</span></div>
+          </div>
+
+          <div class="slabel">Issues encountered</div>
+          <div class="card">
+            <div class="irow multiline"><span class="iicon">△</span><span class="ival ph">Optional — delays, blockers, missing materials…</span></div>
+          </div>
+
+          <div class="slabel">Site conditions</div>
+          <div class="card steppers" style="background:transparent;border:none;border-radius:0;overflow:visible">
+            <div class="card stepper"><span class="lab">Workers<br>on site</span><span class="num">6</span><span class="pm"><span>−</span><span>+</span></span></div>
+            <div class="card stepper"><span class="lab">Progress<br>delta</span><span class="num">+5%</span><span class="pm"><span>−</span><span>+</span></span></div>
+          </div>
+          <div class="card" style="margin-top:8px">
+            <div class="irow"><span class="iicon">◌</span><span class="ival ph">Weather (optional) — ex. „senin, 24°C"</span></div>
+          </div>
+
+          <div class="card" style="margin-top:12px">
+            <div class="toggle-row">
+              <div class="toggle-info">
+                <div class="t">Visible to client</div>
+                <div class="d">Raportul (și pozele lui) apar în portalul clientului</div>
+              </div>
+              <div class="switch"></div>
+            </div>
+          </div>
+
+          <div class="offline-note">Fără semnal? Raportul se salvează pe telefon și pleacă automat la reconectare.</div>
+          <div class="cta">Submit Report</div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="stage-label">2 · Photos — galerie pe zile (read-only)</div>
+      <div class="phone">
+        <div class="backrow">
+          <span class="pill-sm">‹ Back</span>
+          <span class="pill-sm" style="opacity:0">.</span>
+        </div>
+        <div class="ph-head">
+          <span class="ph-title">Site Photos</span>
+          <span class="ph-count">14 fotografii · 3 zile</span>
+        </div>
+
+        <div class="day-label">Joi, 24 iul. · daily report</div>
+        <div class="grid">
+          <div class="tile"><span class="g">◈</span></div>
+          <div class="tile"><span class="g">◈</span></div>
+          <div class="tile"><span class="g">◈</span></div>
+          <div class="tile"><span class="g">◈</span></div>
+          <div class="tile"><span class="g">◈</span></div>
+        </div>
+
+        <div class="day-label">Miercuri, 23 iul. · milestone</div>
+        <div class="grid">
+          <div class="tile"><span class="g">◈</span></div>
+          <div class="tile"><span class="g">◈</span></div>
+          <div class="tile"><span class="g">◈</span></div>
+        </div>
+
+        <div class="day-label">Luni, 21 iul. · daily report</div>
+        <div class="grid">
+          <div class="tile"><span class="g">◈</span></div>
+          <div class="tile"><span class="g">◈</span></div>
+          <div class="tile"><span class="g">◈</span></div>
+          <div class="tile"><span class="g">◈</span></div>
+          <div class="tile"><span class="g">◈</span></div>
+          <div class="tile"><span class="g">◈</span></div>
+        </div>
+
+        <div class="glass empty" style="margin-top:18px">
+          <div class="glyph">⊞</div>
+          <div class="t">Adding photos from the phone</div>
+          <div class="d">Captura foto de pe telefon e o felie separată — cere permisiuni iOS (cameră/galerie) scoase deliberat la curățenia de dinainte de App Store. Decizi tu dacă le reintroducem.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note">
+    <b>Decizii în acest preview (spune-mi ce ajustez):</b>
+    <ul>
+      <li><b>Log Update = raportul zilnic de șantier</b>, în sheet-ul de sticlă consacrat: Work performed (obligatoriu), Issues, Workers on site și Progress delta ca steppers − / +, Weather, toggle „Visible to client" (implicit oprit — clientul vede doar ce alegi explicit). Data raportului = azi, automat.</li>
+      <li><b>Offline-safe</b> prin coada durabilă (ca pontajul și incidentele): fără semnal → salvat local + mesaj explicit, trimis la reconectare.</li>
+      <li><b>Photos = galerie read-only</b> a pozelor din rapoartele existente, grupate pe zi + tipul raportului, 3 coloane. Stare goală liniștită când nu există poze.</li>
+      <li><b>Captura foto de pe telefon NU e inclusă</b> — reintroducerea permisiunilor iOS (cameră/galerie, privacy labels App Store) e decizia ta, felie separată dacă o vrei.</li>
+      <li>Ambele acțiuni sunt active doar pe proiectele cu punte spre modulul Renovation; pe restul rămân dezactivate (estompate), ca acum.</li>
+      <li>API nou: <b>GET/POST /api/mobile/projects/[id]/site-reports</b> — rezolvă proiectul de renovare prin puntea existentă, POST oglindește contractul rutei web (aceleași validări), auditat.</li>
+    </ul>
+  </div>
+</div>
+</body>
+</html>
