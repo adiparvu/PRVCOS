@@ -309,5 +309,6 @@ Auditul este un instantaneu la `3ebe21d`. Lucrări finalizate de atunci:
 | P1.5 / R2 — teste de integrare | `a0f1bf1` | Primele suite pe Postgres real: aserțiuni de izolare cross-tenant + detecție de falsificare a lanțului de audit, rulate în CI pe pgvector/pgvector:pg16 cu provizionarea schemei complete. |
 | P2.9 — E2E smoke | `2660154` | Zece specificații Playwright pe serverul real (headere, redirecturi, API public fail-closed, verificarea de Origin cap-coadă); job propriu de CI; limiterul de edge cade acum deschis la o pană Redis. |
 | P2.10 / R6 — offline mobil | `3784c56` | Cache-ul de query-uri persistat în AsyncStorage (24h), onlineManager alimentat de NetInfo, coadă durabilă FIFO de mutații cu replay la reconectare; bifarea task-urilor e primul consumator. |
+| D9 — documentație vs implementare | acest commit | Afirmațiile din CLAUDE.md aliniate cu realitatea: read replica, Dynamic Island / Live Activities / Widgets / Haptics, lanțul realtime pe 4 niveluri și cheile Typesense per companie marcate ca roadmap (Never Remove: adnotate, nu șterse); WCAG marcat în lucru; copy-ul fals „read replica" vizibil în produs scos din pagina Integrations. Verificarea lanțului SHA nu a mai cerut modificări — implementată post-audit (`c936ddd`). |
 
 P0.1 (deploy de staging) rămâne muncă de ops, în afara repository-ului.

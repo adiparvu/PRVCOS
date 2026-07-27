@@ -54,12 +54,12 @@ Must follow:
 - **Liquid Glass design language** — all surfaces, all components
 - **Native animations** — spring physics, no CSS linear animations
 - **Native gestures** — swipe, long-press, pinch, drag
-- **Dynamic Island** — role-specific live context, always active
-- **Live Activities** — real-time data on lock screen and Dynamic Island
-- **Widgets** — Home Screen, Lock Screen, In-App Dashboard
-- **Haptics** — every action has appropriate haptic feedback
+- **Dynamic Island** — role-specific live context, always active *(roadmap — not yet implemented natively; the web app ships a Dynamic Island-style live bar)*
+- **Live Activities** — real-time data on lock screen and Dynamic Island *(roadmap — not yet implemented)*
+- **Widgets** — Home Screen, Lock Screen, In-App Dashboard *(roadmap — not yet implemented)*
+- **Haptics** — every action has appropriate haptic feedback *(roadmap — expo-haptics not yet wired)*
 - **Face ID** — authentication, re-auth for sensitive operations
-- **Accessibility** — WCAG 2.1 AA, VoiceOver, Dynamic Type, Reduced Motion
+- **Accessibility** — WCAG 2.1 AA, VoiceOver, Dynamic Type, Reduced Motion *(in progress — a11y passes ongoing; not yet measured on a deployed build)*
 
 The experience must feel closer to **Apple** than to traditional ERP software.
 
@@ -370,16 +370,16 @@ Every feature must integrate with:
 - **Mobile:** Expo SDK + React Native — `apps/mobile`
 - **Marketing:** Next.js — `apps/marketing`
 - **Styling:** Tailwind CSS 4 + Liquid Glass utilities — `packages/ui`
-- **Database:** PostgreSQL 16 via Supabase (primary + read replica)
+- **Database:** PostgreSQL 16 via Supabase (single primary today; read replica: roadmap, no replica wiring yet)
 - **ORM:** Drizzle ORM — `packages/db`
 - **Auth:** Supabase Auth (Passkeys, MFA, OAuth, Magic Link)
 - **Storage:** Supabase Storage
-- **Realtime:** 4-tier — Supabase Realtime → SSE → Redis (Upstash) → Polling
+- **Realtime:** Supabase Realtime, SSE, Redis (Upstash) streams and polling all exist per-feature; the unified 4-tier fallback chain is roadmap
 - **Client State:** Zustand
 - **Server State:** TanStack Query
 - **Background Jobs:** Inngest (5 priority levels)
 - **Cache / Rate Limit:** Redis (Upstash)
-- **Search:** Typesense (scoped keys per company)
+- **Search:** Typesense (multi-collection, company_id-filtered; per-company scoped keys: roadmap — helper exists but unused)
 - **Email:** Resend
 - **Monitoring:** Sentry
 - **CI/CD:** GitHub Actions

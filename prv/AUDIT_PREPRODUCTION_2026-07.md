@@ -305,5 +305,6 @@ The audit is a point-in-time document at `3ebe21d`. Work completed since:
 | P1.5 / R2 — integration tests | `a0f1bf1` | First real-Postgres suites: cross-tenant isolation assertions + audit-chain tamper detection, run in CI against pgvector/pgvector:pg16 with full-schema provisioning. |
 | P2.9 — E2E smoke | `2660154` | Ten Playwright specs against the running server (headers, redirects, fail-closed public API, origin check end-to-end); own CI job; edge limiter now fails open on Redis outage. |
 | P2.10 / R6 — mobile offline | `3784c56` | Query cache persisted to AsyncStorage (24h), NetInfo-fed onlineManager, durable FIFO mutation queue with reconnect replay; task toggle is the first queued consumer. |
+| D9 — docs vs implementation | this commit | CLAUDE.md claims annotated to match reality: read replica, Dynamic Island / Live Activities / Widgets / Haptics, 4-tier realtime chain and Typesense scoped keys marked roadmap (Never Remove: annotated, not deleted); WCAG marked in-progress; false in-product "read replica" copy removed from the Integrations page. SHA-chain verification needed no doc change — implemented post-audit (`c936ddd`). |
 
 P0.1 (staging deploy) remains ops work outside the repository.

@@ -10,7 +10,7 @@ const INTEGRATIONS = [
   {
     name: "Supabase",
     category: "Database",
-    desc: "PostgreSQL 16 primary + read replica, realtime subscriptions",
+    desc: "PostgreSQL 16, realtime subscriptions",
     ok: true,
   },
   {
@@ -126,10 +126,7 @@ export default async function IntegrationsPage() {
             <div className="flex items-start gap-3">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <p
-                    className="text-[14px] font-semibold"
-                    style={{ color: "var(--prv-text-1)" }}
-                  >
+                  <p className="text-[14px] font-semibold" style={{ color: "var(--prv-text-1)" }}>
                     {integration.name}
                   </p>
                   <span
