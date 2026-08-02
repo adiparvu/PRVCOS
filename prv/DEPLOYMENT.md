@@ -21,7 +21,9 @@ production profile points at that URL (`apps/mobile/eas.json`).
 | Sentry | error telemetry | optional |
 | OpenAI | embeddings / semantic search | optional — search reports "not configured" |
 
-Supabase project for production: **PRV COS** (`ancnxpdhovgltasnxcha`, eu-west-1).
+Supabase project for production: **PRV COS** (`ancnxpdhovgltasnxcha`, eu-west-1),
+reachable through the project-scoped MCP server in `.mcp.json`. Its API keys use
+the new format: `sb_publishable_…` for the client, `sb_secret_…` server-side.
 Note the org is on the **free** plan: projects pause after ~1 week idle, which
 would take production down. Upgrade before real users.
 
@@ -40,7 +42,6 @@ DATABASE_URL                 # pooler (6543) for the running app
 DATABASE_DIRECT_URL          # direct (5432) — migrations/CLI only
 SUPABASE_URL                 # server-side (PDF job)
 SUPABASE_SERVICE_ROLE_KEY
-SUPABASE_JWT_SECRET          # min 32 chars
 NEXT_PUBLIC_SUPABASE_URL     # browser + middleware + SSR clients
 NEXT_PUBLIC_SUPABASE_ANON_KEY
 INNGEST_SIGNING_KEY
@@ -75,7 +76,8 @@ rejected.
 
 ### Optional (graceful degradation)
 
-`OPENAI_API_KEY`, `SENTRY_DSN`, `SENTRY_AUTH_TOKEN`, `EXPO_ACCESS_TOKEN`,
+`SUPABASE_JWT_SECRET` (unread today), `OPENAI_API_KEY`, `SENTRY_DSN`,
+`SENTRY_AUTH_TOKEN`, `EXPO_ACCESS_TOKEN`,
 `TYPESENSE_ADMIN_API_KEY` + `TYPESENSE_SEARCH_API_KEY` + `TYPESENSE_HOST`
 (set all three or none).
 

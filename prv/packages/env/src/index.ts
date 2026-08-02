@@ -20,7 +20,16 @@ export const serverEnvSchema = sharedSchema.extend({
     .describe("Supabase service role key (server only — never expose to client)"),
 
   // Auth
-  SUPABASE_JWT_SECRET: z.string().min(32).describe("Supabase JWT secret for token verification"),
+  // Optional: no application code verifies tokens manually today — auth runs on
+  // Supabase SSR cookie sessions. Projects on the new API-key system
+  // (sb_publishable_ / sb_secret_) use asymmetric signing keys and no longer
+  // surface a legacy JWT secret, so requiring it blocked deploys over a value
+  // nothing reads. Kept declared for future manual verification.
+  SUPABASE_JWT_SECRET: z
+    .string()
+    .min(32)
+    .optional()
+    .describe("Supabase JWT secret — reserved for manual token verification; unread today"),
 
   // Inngest
   INNGEST_SIGNING_KEY: z.string().min(1),
