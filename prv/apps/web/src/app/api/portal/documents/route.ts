@@ -5,6 +5,7 @@ import type { PortalSessionContext } from "@/lib/portal-auth"
 import { db } from "@prv/db"
 import { documents } from "@prv/db/schema"
 import { and, desc, eq, isNull, lt, or } from "drizzle-orm"
+import { resolveDocumentUrl } from "@/lib/document-url"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -46,6 +47,7 @@ export const GET = withPortalAuth(
         fileSizeBytes: documents.fileSizeBytes,
         mimeType: documents.mimeType,
         fileUrl: documents.fileUrl,
+        metadata: documents.metadata,
         isPublic: documents.isPublic,
         expiresAt: documents.expiresAt,
         projectId: documents.projectId,
@@ -61,20 +63,24 @@ export const GET = withPortalAuth(
     const nextCursor =
       hasMore && items.length > 0 ? items[items.length - 1]!.createdAt.toISOString() : null
 
-    const data = items.map((r) => ({
-      id: r.id,
-      type: r.type,
-      status: r.status,
-      title: r.title,
-      description: r.description,
-      fileName: r.fileName,
-      fileSizeBytes: r.fileSizeBytes,
-      mimeType: r.mimeType,
-      fileUrl: r.fileUrl,
-      isPublic: r.isPublic,
-      expiresAt: r.expiresAt?.toISOString() ?? null,
-      projectId: r.projectId,
-    }))
+    // The documents bucket is private — objects we stored ourselves are served
+    // through short-lived signed URLs, not the dead public URL (see document-url.ts).
+    const data = await Promise.all(
+      items.map(async (r) => ({
+        id: r.id,
+        type: r.type,
+        status: r.status,
+        title: r.title,
+        description: r.description,
+        fileName: r.fileName,
+        fileSizeBytes: r.fileSizeBytes,
+        mimeType: r.mimeType,
+        fileUrl: await resolveDocumentUrl(r.fileUrl, r.metadata),
+        isPublic: r.isPublic,
+        expiresAt: r.expiresAt?.toISOString() ?? null,
+        projectId: r.projectId,
+      }))
+    )
 
     return NextResponse.json({ documents: data, count: data.length, nextCursor })
   },

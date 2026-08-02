@@ -3,6 +3,7 @@ import { db } from "@prv/db"
 import { documentShares, documentShareAccessLog, documents } from "@prv/db/schema"
 import { eq, sql } from "drizzle-orm"
 import { isShareUsable, type SharePermission } from "@/lib/document-share"
+import { resolveDocumentUrl } from "@/lib/document-url"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -30,6 +31,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       fileName: documents.fileName,
       mimeType: documents.mimeType,
       fileUrl: documents.fileUrl,
+      metadata: documents.metadata,
     })
     .from(documentShares)
     .innerJoin(documents, eq(documentShares.documentId, documents.id))
@@ -72,6 +74,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     mimeType: row.mimeType,
     permission,
     passwordProtected: row.passwordProtected,
-    fileUrl: canDownload ? row.fileUrl : null,
+    // Private bucket — sign objects we stored ourselves (see document-url.ts).
+    fileUrl: canDownload ? await resolveDocumentUrl(row.fileUrl, row.metadata) : null,
   })
 }

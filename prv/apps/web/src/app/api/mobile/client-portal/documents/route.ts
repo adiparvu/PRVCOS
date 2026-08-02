@@ -4,6 +4,7 @@ import type { PortalSessionContext } from "@/lib/portal-auth"
 import { db } from "@prv/db"
 import { documents, projects } from "@prv/db/schema"
 import { and, desc, eq, isNull } from "drizzle-orm"
+import { resolveDocumentUrl } from "@/lib/document-url"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -55,6 +56,7 @@ export const GET = withPortalMobileAuth(
         title: documents.title,
         type: documents.type,
         fileUrl: documents.fileUrl,
+        metadata: documents.metadata,
         fileName: documents.fileName,
         fileSizeBytes: documents.fileSizeBytes,
         createdAt: documents.createdAt,
@@ -73,26 +75,29 @@ export const GET = withPortalMobileAuth(
       invoice_doc: "invoice",
     }
 
-    const docs = rows
-      .filter((r) => {
-        if (!typeFilter) return true
-        const mapped = mobileTypeMappings[r.type] ?? "other"
-        return mapped === typeFilter
-      })
-      .map((r) => {
-        const { type, label } = mapDocType(r.type)
-        const sizeKb = r.fileSizeBytes ? Math.round(Number(r.fileSizeBytes) / 1024) : 0
-        return {
-          id: r.id,
-          name: r.title,
-          type,
-          typeLabel: label,
-          url: r.fileUrl,
-          sizeKb,
-          createdAt: r.createdAt.toISOString(),
-          projectName: r.projectName ?? null,
-        }
-      })
+    // Private bucket — sign objects we stored ourselves (see document-url.ts).
+    const docs = await Promise.all(
+      rows
+        .filter((r) => {
+          if (!typeFilter) return true
+          const mapped = mobileTypeMappings[r.type] ?? "other"
+          return mapped === typeFilter
+        })
+        .map(async (r) => {
+          const { type, label } = mapDocType(r.type)
+          const sizeKb = r.fileSizeBytes ? Math.round(Number(r.fileSizeBytes) / 1024) : 0
+          return {
+            id: r.id,
+            name: r.title,
+            type,
+            typeLabel: label,
+            url: await resolveDocumentUrl(r.fileUrl, r.metadata),
+            sizeKb,
+            createdAt: r.createdAt.toISOString(),
+            projectName: r.projectName ?? null,
+          }
+        })
+    )
 
     return NextResponse.json({ documents: docs })
   },

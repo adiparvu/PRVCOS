@@ -123,21 +123,39 @@ reviewer an owner account — it would expose real payroll and personal data.
 
 ---
 
-## 3. Storage buckets — manual, no script exists
+## 3. Storage buckets
 
-Create in the Supabase dashboard (Storage → New bucket), mirroring
-`packages/db/src/storage.ts`:
+Already created on **PRV COS** (`ancnxpdhovgltasnxcha`) with the visibility and
+limits below. Mirrors `packages/db/src/storage.ts`; recreate the same way on any
+new project (Storage → New bucket).
 
 | Bucket | Public | Limit | MIME |
 |---|---|---|---|
 | `images` | **yes** | 50 MB | jpeg, png, webp, gif |
-| `documents` | no | 500 MB | pdf, doc(x), xls(x), text/plain |
-| `avatars` | yes | 5 MB | jpeg, png, webp |
-| `exports` | no | 100 MB | pdf, csv, zip |
+| `avatars` | **yes** | 5 MB | jpeg, png, webp |
+| `documents` | no | 50 MB | pdf, doc(x), xls(x), text/plain |
+| `exports` | no | 50 MB | pdf, csv, zip |
 | `temp` | no | 50 MB | any |
 
 `images` **must be public** — site-report photos are served by public URL to the
 portal and the mobile gallery.
+
+**50 MB is the free plan's per-file ceiling.** Creating `documents` at 500 MB or
+`exports` at 100 MB fails with HTTP 413 "Payload too large". Raise both when the
+project is upgraded; nothing in the code assumes the current value.
+
+**`documents` must stay private, and private means signed URLs.** It holds
+client contracts and identity paperwork — public visibility would make every one
+of them readable by anyone holding the URL, with no authentication. The
+consequence is that `uploadFile`'s return value (`getPublicUrl`,
+`storage.ts:105`) is a **dead link** for this bucket. Every client-facing read
+path therefore goes through `resolveDocumentUrl` (`apps/web/src/lib/document-url.ts`),
+which signs `metadata.storagePath` for 15 minutes and passes legacy rows —
+staff-entered external URLs with no storage provenance — through unchanged.
+Wired at: the portal documents list and detail APIs, the mobile client-portal
+documents API, the portal document page, and the external share resolver
+(`/api/share/[token]`). **A new read path that renders `documents.fileUrl`
+directly is a broken download** — select `metadata` alongside it and resolve.
 
 ---
 

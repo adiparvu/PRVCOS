@@ -4,6 +4,7 @@ import type { PortalSessionContext } from "@/lib/portal-auth"
 import { db } from "@prv/db"
 import { documents, documentSignatures } from "@prv/db/schema"
 import { and, asc, eq, isNull, or } from "drizzle-orm"
+import { resolveDocumentUrl } from "@/lib/document-url"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -32,6 +33,7 @@ export const GET = withPortalAuth(
           fileSizeBytes: documents.fileSizeBytes,
           mimeType: documents.mimeType,
           fileUrl: documents.fileUrl,
+          metadata: documents.metadata,
           isPublic: documents.isPublic,
           expiresAt: documents.expiresAt,
           tags: documents.tags,
@@ -68,6 +70,9 @@ export const GET = withPortalAuth(
     const row = docRows[0]
     if (!row) return NextResponse.json({ error: "Document not found" }, { status: 404 })
 
+    // Private bucket — sign objects we stored ourselves (see document-url.ts).
+    const fileUrl = await resolveDocumentUrl(row.fileUrl, row.metadata)
+
     return NextResponse.json({
       document: {
         id: row.id,
@@ -78,7 +83,7 @@ export const GET = withPortalAuth(
         fileName: row.fileName,
         fileSizeBytes: row.fileSizeBytes,
         mimeType: row.mimeType,
-        fileUrl: row.fileUrl,
+        fileUrl,
         isPublic: row.isPublic,
         expiresAt: row.expiresAt?.toISOString() ?? null,
         tags: row.tags,

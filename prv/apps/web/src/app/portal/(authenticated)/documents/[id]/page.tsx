@@ -3,6 +3,7 @@ import { db } from "@prv/db"
 import { documents, documentSignatures, projects } from "@prv/db/schema"
 import { and, desc, eq, isNull, or } from "drizzle-orm"
 import { notFound, redirect } from "next/navigation"
+import { resolveDocumentUrl } from "@/lib/document-url"
 import Link from "next/link"
 import type { Metadata } from "next"
 
@@ -107,6 +108,7 @@ export default async function PortalDocumentDetailPage({
       type: documents.type,
       status: documents.status,
       fileUrl: documents.fileUrl,
+      metadata: documents.metadata,
       fileName: documents.fileName,
       fileSizeBytes: documents.fileSizeBytes,
       mimeType: documents.mimeType,
@@ -159,6 +161,10 @@ export default async function PortalDocumentDetailPage({
 
   const typeLabel = TYPE_LABELS[doc.type as DocType] ?? "Document"
   const sizeLabel = formatBytes(doc.fileSizeBytes)
+
+  // The documents bucket is private: the stored public URL is dead for anything
+  // we uploaded ourselves. Sign it per render (15 min) — see document-url.ts.
+  const fileUrl = await resolveDocumentUrl(doc.fileUrl, doc.metadata)
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -220,7 +226,7 @@ export default async function PortalDocumentDetailPage({
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={doc.fileUrl}
+            src={fileUrl}
             alt={doc.title}
             className="w-full object-cover"
             style={{ maxHeight: 480 }}
@@ -235,7 +241,7 @@ export default async function PortalDocumentDetailPage({
           style={{ border: "1px solid rgba(255,255,255,0.10)" }}
         >
           <iframe
-            src={doc.fileUrl}
+            src={fileUrl}
             title={doc.title}
             className="w-full"
             style={{ height: 520, background: "#111" }}
@@ -261,7 +267,7 @@ export default async function PortalDocumentDetailPage({
           </span>
         </div>
         <a
-          href={doc.fileUrl}
+          href={fileUrl}
           download={doc.fileName}
           target="_blank"
           rel="noopener noreferrer"
