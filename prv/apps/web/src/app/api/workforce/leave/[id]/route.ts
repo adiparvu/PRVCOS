@@ -20,7 +20,11 @@ async function resolveLeave(id: string, companyId: string) {
     .select()
     .from(leaveRequests)
     .where(
-      and(eq(leaveRequests.id, id), eq(leaveRequests.companyId, companyId), isNull(leaveRequests.deletedAt))
+      and(
+        eq(leaveRequests.id, id),
+        eq(leaveRequests.companyId, companyId),
+        isNull(leaveRequests.deletedAt)
+      )
     )
     .limit(1)
   return row ?? null
@@ -69,7 +73,10 @@ export const PATCH = withGates(
 
     const parsed = patchSchema.safeParse(body)
     if (!parsed.success)
-      return NextResponse.json({ error: "Invalid payload", issues: parsed.error.issues }, { status: 422 })
+      return NextResponse.json(
+        { error: "Invalid payload", issues: parsed.error.issues },
+        { status: 422 }
+      )
 
     await db
       .update(leaveRequests)
@@ -105,20 +112,22 @@ export const PATCH = withGates(
       ? [approver.firstName, approver.lastName].filter(Boolean).join(" ") || approver.email
       : "Your manager"
 
-    void inngest.send({
-      name: "prv/leave.status_changed",
-      data: {
-        leaveId: id,
-        userId: leave.userId,
-        companyId,
-        decision: parsed.data.status as "approved" | "rejected",
-        leaveType: leave.type,
-        startDate: leave.startDate,
-        endDate: leave.endDate,
-        approverName,
-        notes: parsed.data.notes ?? leave.notes ?? undefined,
-      },
-    })
+    void inngest
+      .send({
+        name: "prv/leave.status_changed",
+        data: {
+          leaveId: id,
+          userId: leave.userId,
+          companyId,
+          decision: parsed.data.status as "approved" | "rejected",
+          leaveType: leave.type,
+          startDate: leave.startDate,
+          endDate: leave.endDate,
+          approverName,
+          notes: parsed.data.notes ?? leave.notes ?? undefined,
+        },
+      })
+      .catch(() => {})
 
     return NextResponse.json({ id, status: parsed.data.status })
   }

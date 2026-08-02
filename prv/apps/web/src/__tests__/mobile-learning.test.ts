@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
+import * as inngestClient from "@prv/jobs/client"
 
 vi.mock("@/lib/mobile/auth", () => ({
   withMobileAuth: (handler: unknown) => handler,
@@ -62,6 +63,9 @@ function makeReq(path: string, method = "GET", overrides: Record<string, unknown
 
 function resetMocks() {
   vi.resetAllMocks()
+  // resetAllMocks wipes implementations — re-prime send so it keeps
+  // returning a Promise, as the real Inngest client does.
+  ;(inngestClient.inngest.send as ReturnType<typeof vi.fn>).mockResolvedValue({})
   mockDb.select.mockReturnThis()
   mockDb.update.mockReturnThis()
   mockDb.insert.mockReturnThis()

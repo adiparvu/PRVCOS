@@ -222,10 +222,12 @@ export const POST = withGates(
       userAgent: ctx.userAgent,
     })
 
-    void inngest.send({
-      name: "prv/approval.deadline",
-      data: { approvalId: id, companyId, deadline: parsed.data.deadline },
-    })
+    void inngest
+      .send({
+        name: "prv/approval.deadline",
+        data: { approvalId: id, companyId, deadline: parsed.data.deadline },
+      })
+      .catch(() => {})
 
     return NextResponse.json({ id }, { status: 201 })
   }

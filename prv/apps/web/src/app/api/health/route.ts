@@ -18,6 +18,18 @@ export async function GET() {
     healthy = false
   }
 
+  // Redis: every authenticated request resolves its session through Redis, so
+  // a dead Redis means a fully unusable app. Reporting "healthy" on the
+  // strength of a database SELECT alone hid exactly that.
+  try {
+    const { getRedis } = await import("@prv/cache")
+    await getRedis().ping()
+    checks["redis"] = "ok"
+  } catch {
+    checks["redis"] = "error"
+    healthy = false
+  }
+
   const status = healthy ? 200 : 503
   return NextResponse.json(
     {

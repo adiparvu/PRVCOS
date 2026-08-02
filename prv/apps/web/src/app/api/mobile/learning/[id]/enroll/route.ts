@@ -147,18 +147,20 @@ export const PATCH = withMobileAuth(async (req: NextRequest, ctx) => {
       .limit(1)
 
     if (course) {
-      void inngest.send({
-        name: "prv/learning.course_completed",
-        data: {
-          enrollmentId: updated.id,
-          courseId: id,
-          userId,
-          companyId,
-          courseTitle: course.title,
-          courseCategory: course.category ?? "general",
-          completedAt: new Date().toISOString(),
-        },
-      })
+      void inngest
+        .send({
+          name: "prv/learning.course_completed",
+          data: {
+            enrollmentId: updated.id,
+            courseId: id,
+            userId,
+            companyId,
+            courseTitle: course.title,
+            courseCategory: course.category ?? "general",
+            completedAt: new Date().toISOString(),
+          },
+        })
+        .catch(() => {})
     }
   }
 
