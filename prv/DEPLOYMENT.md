@@ -85,6 +85,14 @@ rejected.
 
 ## 2. Provision the database
 
+**One command:** `bash scripts/provision-supabase.sh` runs everything below in
+order, with the traps handled and the result verified (table count + zero tables
+without RLS). It refuses to touch a non-empty database unless you pass
+`--allow-existing`, because the push step is destructive and warns about nothing
+on its own. Add `--demo-email=… --demo-password=…` to create the review account
+in the same run. The manual sequence follows, for when you need to run one step
+in isolation.
+
 > `drizzle-kit push --force` is destructive — it drops columns/tables to
 > reconcile with the schema. Safe on the empty database; never aim it casually
 > at a populated production database.
